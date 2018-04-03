@@ -1,0 +1,252 @@
+/*
+ * ESPRESSIF MIT License
+ *
+ * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ *
+ * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
+ * it is free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the Software is furnished
+ * to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+#include <stdlib.h>
+#include <string.h>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/ringbuf.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
+
+#include "driver/i2s.h"
+#include "esp_log.h"
+#include "esp_err.h"
+
+#include "audio_common.h"
+#include "audio_mem.h"
+#include "audio_element.h"
+#include "i2s_stream.h"
+
+static const char *TAG = "I2S_STREAM";
+#define I2S_STREAM_TASK_STACK (3072)
+#define I2S_STREAM_BUF_SIZE (2048)
+#define I2S_STREAM_TASK_PRIO (23)
+
+typedef struct i2s_stream {
+    audio_stream_type_t type;
+    i2s_stream_cfg_t    config;
+    bool                is_open;
+} i2s_stream_t;
+
+static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
+{
+    if (bits == 16) {
+        int16_t *temp_buf = (int16_t *)sbuff;
+        int16_t temp_box;
+        for (int i = 0; i < len / 2; i += 2) {
+            temp_box = temp_buf[i];
+            temp_buf[i] = temp_buf[i + 1];
+            temp_buf[i + 1] = temp_box;
+        }
+    } else if (bits == 32) {
+        int32_t *temp_buf = (int32_t *)sbuff;
+        int32_t temp_box;
+        for (int i = 0; i < len / 4; i += 4) {
+            temp_box = temp_buf[i];
+            temp_buf[i] = temp_buf[i + 1];
+            temp_buf[i + 1] = temp_box;
+        }
+    } else {
+        ESP_LOGE(TAG, "%s %dbits is not supported", __func__, bits);
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+static esp_err_t _i2s_open(audio_element_handle_t self)
+{
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    ESP_LOGD(TAG, "_i2s_open %d", (int)i2s->config.i2s_port);
+    if (i2s->is_open) {
+        return ESP_OK;
+    }
+    if (i2s->type == AUDIO_STREAM_READER) {
+        audio_element_info_t i2s_info = {0};
+        i2s_info.bits = 16;
+        i2s_info.channels = 1;
+        i2s_info.sample_rates = 16000;
+        audio_element_getinfo(self, &i2s_info);
+        ESP_LOGI(TAG, "AUDIO_STREAM_READER,Rate:%d,ch:%d", i2s_info.sample_rates, i2s_info.channels);
+        if (i2s_set_clk(i2s->config.i2s_port, i2s_info.sample_rates, i2s_info.bits, i2s_info.channels) == ESP_FAIL) {
+            ESP_LOGE(TAG, "i2s_set_clk failed, type = %d", i2s->config.type);
+            return ESP_FAIL;
+        }
+    } else if (i2s->type == AUDIO_STREAM_WRITER) {
+        audio_element_set_input_timeout(self, 10 / portTICK_RATE_MS);
+        ESP_LOGI(TAG, "AUDIO_STREAM_WRITER");
+    }
+    i2s->is_open = true;
+    return ESP_OK;
+}
+
+static esp_err_t _i2s_destroy(audio_element_handle_t self)
+{
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    audio_free(i2s);
+    return ESP_OK;
+}
+
+static esp_err_t _i2s_close(audio_element_handle_t self)
+{
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    int index = i2s->config.i2s_config.dma_buf_count;
+    uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
+    mem_assert(buf);
+    while (index--) {
+        i2s_write_bytes(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, portMAX_DELAY);
+    }
+    if (buf) {
+        free(buf);
+    }
+    i2s->is_open = false;
+    if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
+        audio_element_info_t info = {0};
+        audio_element_getinfo(self, &info);
+        info.byte_pos = 0;
+        audio_element_setinfo(self, &info);
+    }
+    return ESP_OK;
+}
+
+static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
+{
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    int r_len =  i2s_read_bytes(i2s->config.i2s_port, buffer, len, ticks_to_wait);
+    audio_element_info_t info;
+    audio_element_getinfo(self, &info);
+    if (r_len > 0) {
+        i2s_mono_fix(info.bits, (uint8_t *)buffer, r_len);
+        info.byte_pos += r_len;
+        audio_element_setinfo(self, &info);
+    }
+    return r_len;
+}
+
+static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
+{
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    audio_element_info_t info;
+    audio_element_getinfo(self, &info);
+    i2s_mono_fix(info.bits, (uint8_t *)buffer, len);
+    int w_len = i2s_write_bytes(i2s->config.i2s_port, buffer, len, ticks_to_wait);
+    info.byte_pos += w_len;
+    audio_element_setinfo(self, &info);
+    return w_len;
+}
+
+static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len)
+{
+    int r_size = audio_element_input(self, in_buffer, in_len);
+    int w_size = 0;
+    if (r_size == AEL_IO_TIMEOUT) {
+        memset(in_buffer, 0, in_len);
+        r_size = in_len;
+    }
+
+    if ((r_size > 0)) {
+        w_size = audio_element_output(self, in_buffer, r_size);
+    } else {
+        i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+        int index = i2s->config.i2s_config.dma_buf_count;
+        uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
+        mem_assert(buf);
+        while (index--) {
+            i2s_write_bytes(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, portMAX_DELAY);
+        }
+        if (buf) {
+            free(buf);
+        }
+        w_size = r_size;
+    }
+    return w_size;
+}
+
+esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bits, int ch)
+{
+    esp_err_t err = ESP_OK;
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(i2s_stream);
+    audio_element_info_t i2s_info = {0};
+    audio_element_state_t state = audio_element_get_state(i2s_stream);
+    if (state == AEL_STATE_RUNNING) {
+        audio_element_pause(i2s_stream);
+    }
+    audio_element_getinfo(i2s_stream, &i2s_info);
+    i2s_info.bits = bits;
+    i2s_info.channels = ch;
+    i2s_info.sample_rates = rate;
+    audio_element_setinfo(i2s_stream, &i2s_info);
+    if (i2s_set_clk(i2s->config.i2s_port, rate, bits, ch) == ESP_FAIL) {
+        ESP_LOGE(TAG, "i2s_set_clk failed, type = %d,port:%d", i2s->config.type, i2s->config.i2s_port);
+        err = ESP_FAIL;
+    }
+    if (state == AEL_STATE_RUNNING) {
+        audio_element_resume(i2s_stream, 0, 0);
+    }
+    return err;
+}
+
+audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
+{
+    audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
+    audio_element_handle_t el;
+    cfg.open = _i2s_open;
+    cfg.close = _i2s_close;
+    cfg.process = _i2s_process;
+    cfg.destroy = _i2s_destroy;
+    cfg.task_prio = I2S_STREAM_TASK_PRIO;
+    cfg.task_stack = I2S_STREAM_TASK_STACK;
+    cfg.tag = "iis";
+    cfg.buffer_len = I2S_STREAM_BUF_SIZE;
+    i2s_stream_t *i2s = audio_calloc(1, sizeof(i2s_stream_t));
+    mem_assert(i2s);
+    memcpy(&i2s->config, config, sizeof(i2s_stream_cfg_t));
+    i2s->type = config->type;
+
+    if (config->type == AUDIO_STREAM_READER) {
+        cfg.read = _i2s_read;
+    } else if (config->type == AUDIO_STREAM_WRITER) {
+        cfg.write = _i2s_write;
+    }
+    el = audio_element_init(&cfg);
+    mem_assert(el);
+    audio_element_setdata(el, i2s);
+
+    audio_element_info_t info;
+    audio_element_getinfo(el, &info);
+    info.sample_rates = config->i2s_config.sample_rate;
+    info.channels = config->i2s_config.channel_format < I2S_CHANNEL_FMT_ONLY_RIGHT ? 2 : 1;
+    info.bits = config->i2s_config.bits_per_sample;
+    audio_element_setinfo(el, &info);
+
+    i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
+    i2s_set_pin(i2s->config.i2s_port, &i2s->config.i2s_pin_config);
+
+    if (i2s->config.i2s_port == 0) {
+        SET_PERI_REG_BITS(PIN_CTRL, CLK_OUT1, 0, CLK_OUT1_S);
+    }
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+
+    return el;
+}

@@ -1,0 +1,10 @@
+menu "ESP HTTP client"
+
+
+config ENABLE_HTTPS
+    bool "Enable https"
+    default y
+    help
+        Enable https.
+
+endmenu
