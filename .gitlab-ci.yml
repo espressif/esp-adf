@@ -123,6 +123,8 @@ push_master_to_github:
   variables:
     GIT_STRATEGY: clone
     GITHUB_PUSH_REFS: refs/remotes/origin/release refs/remotes/origin/master
+  before_script:
+    - echo "skip default before_script"
   script:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
