@@ -31,7 +31,7 @@
 #include "esp_http_client.h"
 #include "aws_sig_v4_signing.h"
 
-#define AWS_POLLY_ENDPOINT "https://polly.us-west-2.amazonaws.com/v1/speech"
+#define AWS_POLLY_ENDPOINT "https://polly."CONFIG_AWS_POLLY_REGION".amazonaws.com/v1/speech"
 #define TTS_TEXT  "Espressif Systems is a fabless semiconductor company, with headquarter in Shanghai Zhangjiang High-Tech Park, providing low power Wi-Fi and Bluetooth SoCs and wireless solutions for Internet of Things applications"
 static const char *polly_payload = "{\"OutputFormat\":\"mp3\",\"SampleRate\":\"22050\",\"Text\":\""TTS_TEXT"\",\"TextType\":\"text\",\"VoiceId\":\"Joanna\"}";
 static const char *TAG = "AWS_POLLY_EXAMPLE";
@@ -56,9 +56,13 @@ static void wait_for_sntp(void)
     }
 }
 
-esp_err_t _before_http_request(void *param)
+int _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
-    esp_http_client_handle_t http_client = (esp_http_client_handle_t)param;
+    esp_http_client_handle_t http_client = (esp_http_client_handle_t)msg->http_client;
+    ESP_LOGI(TAG, "http event_id = %d", msg->event_id);
+    if (msg->event_id != HTTP_STREAM_PRE_REQUEST) {
+        return ESP_OK;
+    }
     struct timeval tv;
     time_t nowtime;
     struct tm *nowtm = NULL;
@@ -72,8 +76,8 @@ esp_err_t _before_http_request(void *param)
     int polly_payload_len = strlen(polly_payload);
 
     char *auth_header = aws_polly_authentication_header(polly_payload,
-                                                       "us-west-2",
-                                                       "application/json",
+                                                        CONFIG_AWS_POLLY_REGION,
+                                                        "application/json",
                                                         CONFIG_AWS_SECRET_KEY,
                                                         CONFIG_AWS_ACCESS_KEY,
                                                         amz_date,
@@ -94,7 +98,6 @@ void app_main(void)
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
     esp_log_level_set("HTTP_STREAM", ESP_LOG_DEBUG);
-    esp_log_level_set("HTTP_CLIENT", ESP_LOG_DEBUG);
 
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
@@ -132,7 +135,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[2.1] Create http stream to read data");
     http_stream_cfg_t http_cfg = {
-        .before_http_request = _before_http_request,
+        .event_handle = _http_stream_event_handle,
         .type = AUDIO_STREAM_READER,
     };
     http_stream_reader = http_stream_init(&http_cfg);
