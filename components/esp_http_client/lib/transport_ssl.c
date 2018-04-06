@@ -183,7 +183,7 @@ static int ssl_poll_write(transport_handle_t t, int timeout_ms)
     return select(ssl->client_fd.fd + 1, NULL, &writeset, NULL, &timeout);
 }
 
-static int ssl_write(transport_handle_t t, char *buffer, int len, int timeout_ms)
+static int ssl_write(transport_handle_t t, const char *buffer, int len, int timeout_ms)
 {
     int poll, ret;
     transport_ssl_t *ssl = transport_get_context_data(t);

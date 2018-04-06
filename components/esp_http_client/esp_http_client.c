@@ -496,7 +496,6 @@ esp_http_client_handle_t esp_http_client_init(esp_http_client_config_t *config)
     // Set default HTTP options
     esp_http_client_set_header(client, "User-Agent", DEFAULT_HTTP_USER_AGENT);
     esp_http_client_set_header(client, "Host", client->connection_info.host);
-    esp_http_client_set_header(client, "Content-Length", "0");
 
     client->event.client = client;
 
@@ -704,7 +703,7 @@ static int esp_http_client_get_data(esp_http_client_handle_t client)
 int esp_http_client_read(esp_http_client_handle_t client, char *buffer, int len)
 {
     http_buffer_t *res_buffer = client->response->buffer;
-    int need_read = len;
+
     int rlen = -1, ridx = 0;
     if (res_buffer->raw_len) {
         int remain_len = client->response->buffer->raw_len;
@@ -714,8 +713,9 @@ int esp_http_client_read(esp_http_client_handle_t client, char *buffer, int len)
         memcpy(buffer, res_buffer->raw_data, remain_len);
         res_buffer->raw_len -= remain_len;
         res_buffer->raw_data += remain_len;
-        return remain_len;
+        ridx = remain_len;
     }
+    int need_read = len - ridx;
     bool is_data_remain = true;
     while (need_read > 0 && is_data_remain) {
         if (client->response->is_chunked) {
@@ -737,7 +737,6 @@ int esp_http_client_read(esp_http_client_handle_t client, char *buffer, int len)
         if (rlen <= 0) {
             return ridx;
         }
-        client->response->data_process = 0;
         http_parser_execute(client->parser, client->parser_settings, res_buffer->data, rlen);
 
         if (res_buffer->raw_len) {
@@ -853,10 +852,9 @@ esp_err_t esp_http_client_open(esp_http_client_handle_t client, int write_len)
     if (write_len >= 0) {
         http_header_set_format(client->request->headers, "Content-Length", "%d", write_len);
     } else if (write_len < 0) {
-        //write chunk
+        esp_http_client_set_header(client, "Transfer-Encoding", "chunked");
+        esp_http_client_set_method(client, HTTP_METHOD_POST);
     }
-
-
 
     int header_index = 0;
     int wlen = client->buffer_size;
@@ -897,14 +895,15 @@ esp_err_t esp_http_client_open(esp_http_client_handle_t client, int write_len)
 }
 
 
-int esp_http_client_write(esp_http_client_handle_t client, char *buffer, int len)
+int esp_http_client_write(esp_http_client_handle_t client, const char *buffer, int len)
 {
     if (client->state < HTTP_STATE_REQ_COMPLETE_HEADER) {
         return -1;
     }
-    int need_write = len;
+    int need_write;
     int wlen = 0, widx = 0;
-    while (need_write > 0) {
+    while (len > 0) {
+        need_write = len;
         if (need_write > client->buffer_size) {
             need_write = client->buffer_size;
         }
@@ -912,10 +911,10 @@ int esp_http_client_write(esp_http_client_handle_t client, char *buffer, int len
         if (wlen <= 0) {
             return wlen;
         }
-        widx += need_write;
-        need_write -= wlen;
+        widx += wlen;
+        len -= wlen;
     }
-    return transport_write(client->transport, buffer, len, client->timeout_ms);
+    return widx;
 }
 
 esp_err_t esp_http_client_close(esp_http_client_handle_t client)
