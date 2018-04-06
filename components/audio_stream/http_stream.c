@@ -44,11 +44,13 @@ static const char *TAG = "HTTP_STREAM";
 #define HTTP_STREAM_TASK_STACK (6 * 1024)
 
 typedef struct http_stream {
-    audio_stream_type_t type;
-    char *uri;
-    bool is_open;
-    esp_http_client_handle_t client;
-    client_callback_t        before_http_request;
+    audio_stream_type_t             type;
+    char                            *uri;
+    bool                            is_open;
+    esp_http_client_handle_t        client;
+    http_stream_event_handle_t      hook;
+    audio_stream_type_t             stream_type;
+    void                            *user_data;
 } http_stream_t;
 
 static audio_codec_t get_audio_type(const char *content_type)
@@ -71,7 +73,7 @@ static audio_codec_t get_audio_type(const char *content_type)
     return AUDIO_CODEC_NONE;
 }
 
-esp_err_t _http_event_handle(esp_http_client_event_t *evt)
+static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
 {
     audio_element_info_t *info = (audio_element_info_t *)evt->user_data;
 
@@ -85,6 +87,20 @@ esp_err_t _http_event_handle(esp_http_client_event_t *evt)
     }
 
     return ESP_OK;
+}
+
+static int dispatch_hook(http_stream_t *http_stream, http_stream_event_id_t type, void *buffer, int buffer_len)
+{
+    http_stream_event_msg_t msg;
+    msg.event_id = type;
+    msg.http_client = http_stream->client;
+    msg.user_data = http_stream->user_data;
+    msg.buffer = buffer;
+    msg.buffer_len = buffer_len;
+    if (http_stream->hook) {
+        return http_stream->hook(&msg);
+    }
+    return ESP_FAIL;
 }
 
 static esp_err_t _http_open(audio_element_handle_t self)
@@ -118,11 +134,17 @@ static esp_err_t _http_open(audio_element_handle_t self)
         esp_http_client_set_header(http->client, "Range", rang_header);
     }
 
-    if (http->before_http_request) {
-        if (http->before_http_request(http->client) != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to process user callback");
-            return ESP_FAIL;
+    if (dispatch_hook(http, HTTP_STREAM_PRE_REQUEST, NULL, 0) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to process user callback");
+        return ESP_FAIL;
+    }
+
+    if (http->stream_type == AUDIO_STREAM_WRITER) {
+        esp_err_t err = esp_http_client_open(http->client, -1);
+        if (err == ESP_OK) {
+            http->is_open = true;
         }
+        return err;
     }
 
     char *buffer = NULL;
@@ -133,14 +155,26 @@ static esp_err_t _http_open(audio_element_handle_t self)
         return ESP_FAIL;
     }
 
-    if (post_len && buffer) {
+    int wrlen = dispatch_hook(http, HTTP_STREAM_ON_REQUEST, buffer, post_len);
+    if (wrlen < 0) {
+        ESP_LOGE(TAG, "Failed to process user callback");
+        return ESP_FAIL;
+    }
+
+    if (post_len && buffer && wrlen == 0) {
         if (esp_http_client_write(http->client, buffer, post_len) <= 0) {
             ESP_LOGE(TAG, "Failed to write data to http stream");
             return ESP_FAIL;
         }
         ESP_LOGD(TAG, "len=%d, data=%s", post_len, buffer);
     }
-    info.total_bytes = esp_http_client_fetch_headers(http->client);;
+
+    if (dispatch_hook(http, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
+        esp_http_client_close(http->client);
+        return ESP_FAIL;
+    }
+
+    info.total_bytes = esp_http_client_fetch_headers(http->client);
     ESP_LOGD(TAG, "total_bytes=%d", (int)info.total_bytes);
     if (esp_http_client_get_status_code(http->client) != 200) {
         ESP_LOGE(TAG, "Invalid HTTP stream");
@@ -158,7 +192,6 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
 
-
     int rlen = esp_http_client_read(http->client, buffer, len);
 
     if (rlen <= 0) {
@@ -173,8 +206,20 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
 
 static int _http_write(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
-    // http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
-    return 0;
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
+    int wrlen = dispatch_hook(http, HTTP_STREAM_ON_REQUEST, buffer, len);
+    if (wrlen < 0) {
+        ESP_LOGE(TAG, "Failed to process user callback");
+        return ESP_FAIL;
+    }
+    if (wrlen > 0) {
+        return wrlen;
+    }
+
+    if ((wrlen = esp_http_client_write(http->client, buffer, len)) <= 0) {
+        ESP_LOGE(TAG, "Failed to write data to http stream, wrlen=%d, errno=%d", wrlen, errno);
+    }
+    return wrlen;
 }
 
 static int _http_process(audio_element_handle_t self, char *in_buffer, int in_len)
@@ -192,10 +237,21 @@ static int _http_process(audio_element_handle_t self, char *in_buffer, int in_le
 static esp_err_t _http_close(audio_element_handle_t self)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
-    if (http->is_open) {
-        esp_http_client_close(http->client);
+    while (http->is_open) {
         http->is_open = false;
+        if (http->stream_type != AUDIO_STREAM_WRITER) {
+            break;
+        }
+        if (dispatch_hook(http, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
+            break;
+        }
+        esp_http_client_fetch_headers(http->client);
+
+        if (dispatch_hook(http, HTTP_STREAM_FINISH_REQUEST, NULL, 0) < 0) {
+            break;
+        }
     }
+    esp_http_client_close(http->client);
     esp_http_client_cleanup(http->client);
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
         audio_element_info_t info = {0};
@@ -228,8 +284,9 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     cfg.tag = "http";
 
     http->type = config->type;
-    http->before_http_request = config->before_http_request;
-
+    http->hook = config->event_handle;
+    http->stream_type = config->type;
+    http->user_data = config->user_data;
     if (config->type == AUDIO_STREAM_READER) {
         cfg.read = _http_read;
     } else if (config->type == AUDIO_STREAM_WRITER) {

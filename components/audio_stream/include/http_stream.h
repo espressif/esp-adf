@@ -33,15 +33,41 @@
 extern "C" {
 #endif
 
-typedef esp_err_t (*client_callback_t)(void *http_client);
+/**
+ * @brief      HTTP Stream hook type
+ */
+typedef enum {
+    HTTP_STREAM_PRE_REQUEST = 0x01, /*!< The event handler will be called before HTTP Client making the connection to the server */
+    HTTP_STREAM_ON_REQUEST,         /*!< The event handler will be called when HTTP Client request data,
+                                     * If the fucntion return the value (-1: ESP_FAIL), HTTP Client will be stopped
+                                     * If the fucntion return the value > 0, HTTP Stream will ignore the post_field
+                                     * If the fucntion return the value = 0, HTTP Stream continue send data from post_field (if any)
+                                     */
+    HTTP_STREAM_POST_REQUEST,       /*!< The event handler will be called after HTTP Client send header and body to the serve, before fetching the headers */
+    HTTP_STREAM_FINISH_REQUEST,     /*!< The event handler will be called after HTTP Client fetch the header and ready to read HTTP body */
+} http_stream_event_id_t;
+
+/**
+ * @brief      Stream event message
+ */
+typedef struct {
+    http_stream_event_id_t  event_id;       /*!< Event ID */
+    void                    *http_client;   /*!< Reference to HTTP Client using by this HTTP Stream */
+    void                    *buffer;        /*!< Reference to Buffer using by the Audio Element */
+    int                     buffer_len;     /*!< Lenght of buffer */
+    void                    *user_data;     /*!< User data context, from `http_stream_cfg_t` */
+} http_stream_event_msg_t;
+
+typedef int (*http_stream_event_handle_t)(http_stream_event_msg_t *msg);
 
 /**
  * @brief      HTTP Stream configurations
  *             Default value will be used if any entry is zero
  */
 typedef struct {
-    audio_stream_type_t type;                   /*!< Type of stream */
-    client_callback_t   before_http_request;    /*!< Hook function will be called before make a HTTP request */
+    audio_stream_type_t         type;                   /*!< Type of stream */
+    http_stream_event_handle_t  event_handle;  /*!< The hook function for HTTP Stream */
+    void                        *user_data;             /*!< User data context */
 } http_stream_cfg_t;
 
 #define HTTP_STREAM_CFG_DEFAULT() {\
