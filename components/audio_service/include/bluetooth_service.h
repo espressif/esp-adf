@@ -49,9 +49,9 @@ typedef enum {
     PERIPH_BLUETOOTH_UNKNOWN = 0,       /*!< No event */
     PERIPH_BLUETOOTH_CONNECTED,         /*!< A bluetooth device was connected */
     PERIPH_BLUETOOTH_DISCONNECTED,      /*!< Last connection was disconnected */
-    PERIPH_BLUETOOTH_AUDIO_STARTED,     /*!< The audio session has started */
-    PERIPH_BLUETOOTH_AUDIO_SUSPENDED,   /*!< The audio session has suspended */
-    PERIPH_BLUETOOTH_AUDIO_STOPPED,     /*!< The audio session has stopped */
+    PERIPH_BLUETOOTH_AUDIO_STARTED,     /*!< The audio session has been started */
+    PERIPH_BLUETOOTH_AUDIO_SUSPENDED,   /*!< The audio session has been suspended */
+    PERIPH_BLUETOOTH_AUDIO_STOPPED,     /*!< The audio session has been stopped */
 } periph_bluetooth_event_id_t;
 
 /**
@@ -64,7 +64,7 @@ typedef struct {
 
 /**
  * @brief      Initialize and start the Bluetooth service. This function can called only 1 time,
- *             and must be call `bluetooth_service_destroy` after used.
+ *             and `bluetooth_service_destroy` must be called after use.
  *
  * @param      config  The configuration
  *
@@ -168,7 +168,7 @@ esp_err_t periph_bluetooth_rewind(esp_periph_handle_t periph);
 esp_err_t periph_bluetooth_fast_forward(esp_periph_handle_t periph);
 
 /**
- * @brief      Destroy and cleanup bluetooth service, this function must be call after destroy
+ * @brief      Destroy and cleanup bluetooth service, this function must be called after destroying
  *             the Bluetoth Stream and Bluetooth Peripheral created by `bluetooth_service_create_stream` and `bluetooth_service_create_periph`
  *
  * @return
