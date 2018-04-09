@@ -10,12 +10,11 @@ The following stream types are supported:
 +======================+======================+
 | I2S                  | Reader / Writer      |
 +----------------------+----------------------+
-| HTTP                 | Reader / :sup:`1`    |
+| HTTP                 | Reader / Writer      |
 +----------------------+----------------------+
 | FatFs                | Reader / Writer      |
 +----------------------+----------------------+
 
-1. The **Writer** type for the HTTP stream is yet to be implemented.
 
 To set the configure the stream type use provided structure, e.g. :cpp:type:`i2s_stream_cfg_t` for I2S stream, together with :cpp:type:`audio_stream_type_t` enumerator.
 
