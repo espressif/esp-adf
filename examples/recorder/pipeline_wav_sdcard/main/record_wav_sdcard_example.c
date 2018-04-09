@@ -123,12 +123,10 @@ void app_main(void)
             continue;
         }
 
-        ESP_LOGI(TAG, "[ * ] Event received: src_type:%d, source:%p cmd:%d, data:%p, data_len:%d",
-                msg.source_type, msg.source, msg.cmd, msg.data, msg.data_len);
-
         /* Stop when the last pipeline element (i2s_stream_reader in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_reader
                 && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
+            ESP_LOGW(TAG, "[ * ] Stop event received"); 
             break;
         }
     }

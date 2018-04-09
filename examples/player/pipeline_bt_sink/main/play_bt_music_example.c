@@ -112,18 +112,23 @@ void app_main(void)
     ESP_LOGI(TAG, "[ 7 ] Listen for all pipeline events");
     while (1) {
         audio_event_iface_msg_t msg;
-        if (audio_event_iface_listen(evt, &msg, portMAX_DELAY) != ESP_OK) {
+        esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret); 
             continue;
         }
-        ESP_LOGI(TAG, "[ * ] Event received: src_type:%d, source:%p cmd:%d, data:%p, data_len:%d",
-                 msg.source_type, msg.source, msg.cmd, msg.data, msg.data_len);
+
+        if (msg.cmd == AEL_MSG_CMD_ERROR) {
+            ESP_LOGE(TAG, "[ * ] Action command error: src_type:%d, source:%p cmd:%d, data:%p, data_len:%d",
+                     msg.source_type, msg.source, msg.cmd, msg.data, msg.data_len);
+        }
 
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) bt_stream_reader
                 && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
             audio_element_info_t music_info = {0};
             audio_element_getinfo(bt_stream_reader, &music_info);
 
-            ESP_LOGI(TAG, "[ * ] Receive music info from bluetooth, sample_rates=%d, bits=%d, ch=%d",
+            ESP_LOGI(TAG, "[ * ] Receive music info from Bluetooth, sample_rates=%d, bits=%d, ch=%d",
                      music_info.sample_rates, music_info.bits, music_info.channels);
 
             audio_element_setinfo(i2s_stream_writer, &music_info);
@@ -136,26 +141,32 @@ void app_main(void)
                 && msg.source == (void *)touch_periph) {
 
             if ((int) msg.data == LYRAT_TOUCH_PLAY) {
+                ESP_LOGI(TAG, "[ * ] [Play] touch tap event"); 
                 periph_bluetooth_play(bt_periph);
             } else if ((int) msg.data == LYRAT_TOUCH_SET) {
+                ESP_LOGI(TAG, "[ * ] [Set] touch tap event"); 
                 periph_bluetooth_stop(bt_periph);
             } else if ((int) msg.data == LYRAT_TOUCH_VOLUP) {
+                ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event"); 
                 periph_bluetooth_next(bt_periph);
             } else if ((int) msg.data == LYRAT_TOUCH_VOLDWN) {
+                ESP_LOGI(TAG, "[ * ] [Vol-] touch tap event"); 
                 periph_bluetooth_prev(bt_periph);
             }
         }
 
-        /* Stop when the Bluetooth disconnect or suppend */
+        /* Stop when the Bluetooth is disconnected or suspended */
         if (msg.source_type == PERIPH_ID_BLUETOOTH
                 && msg.source == (void *)bt_periph) {
             if (msg.cmd == PERIPH_BLUETOOTH_DISCONNECTED || msg.cmd == PERIPH_BLUETOOTH_AUDIO_SUSPENDED) {
+                ESP_LOGW(TAG, "[ * ] Bluetooth disconnected or suspended"); 
                 break;
             }
         }
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
                 && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
+            ESP_LOGW(TAG, "[ * ] Stop event received"); 
             break;
         }
     }

@@ -108,7 +108,6 @@ void app_main(void)
     audio_event_iface_msg_t msg;
     while ((queue_set_member = xQueueSelectFromSet(queue_set, portMAX_DELAY))) {
         xQueueReceive(queue_set_member, &msg, portMAX_DELAY);
-        ESP_LOGI(TAG, "[ * ] Receive event cmd = %d data %d", msg.cmd, (int)msg.data);
 
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) mp3_decoder
                 && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {

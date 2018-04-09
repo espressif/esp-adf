@@ -91,12 +91,11 @@ void app_main(void)
 
     while (1) {
         audio_event_iface_msg_t msg;
-        if (audio_event_iface_listen(evt, &msg, portMAX_DELAY) != ESP_OK) {
+        esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret); 
             continue;
         }
-
-        ESP_LOGI(TAG, "[ * ] Event received: src_type:%d, source:%p cmd:%d, data:%p, data_len:%d",
-                 msg.source_type, msg.source, msg.cmd, msg.data, msg.data_len);
 
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) mp3_decoder
             && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
