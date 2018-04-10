@@ -171,11 +171,6 @@ static int http_on_url(http_parser *parser, const char *at, size_t length)
 
 static int http_on_status(http_parser *parser, const char *at, size_t length)
 {
-    // esp_http_client_handle_t client = parser->data;
-    char *status_text = NULL;
-    assign_string(&status_text, at, length);
-    ESP_LOGD(TAG, "http_on_status=%s", status_text);
-    free(status_text);
     return 0;
 }
 
@@ -191,15 +186,15 @@ static int http_on_header_value(http_parser *parser, const char *at, size_t leng
 {
     esp_http_client_handle_t client = parser->data;
     //TODO: Pre malloc header_value_str to reduce malloc function
-    if (client->current_header_key) {
-        if (strcasecmp(client->current_header_key, "Location") == 0) {
-            assign_string(&client->location, at, length);
-        } else if (strcasecmp(client->current_header_key, "Transfer-Encoding") == 0 && memcmp(at, "chunked", length) == 0) {
-            client->response->is_chunked = true;
-        } else if (strcasecmp(client->current_header_key, "WWW-Authenticate") == 0) {
-            assign_string(&client->auth_header, at, length);
-        }
-        //TODO: Support Set-Cookie
+    if (client->current_header_key == NULL) {
+        return 0;
+    }
+    if (strcasecmp(client->current_header_key, "Location") == 0) {
+        assign_string(&client->location, at, length);
+    } else if (strcasecmp(client->current_header_key, "Transfer-Encoding") == 0 && memcmp(at, "chunked", length) == 0) {
+        client->response->is_chunked = true;
+    } else if (strcasecmp(client->current_header_key, "WWW-Authenticate") == 0) {
+        assign_string(&client->auth_header, at, length);
     }
     assign_string(&client->current_header_value, at, length);
 
