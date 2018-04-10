@@ -178,7 +178,7 @@ static esp_err_t _http_open(audio_element_handle_t self)
     ESP_LOGD(TAG, "total_bytes=%d", (int)info.total_bytes);
     if (esp_http_client_get_status_code(http->client) != 200) {
         ESP_LOGE(TAG, "Invalid HTTP stream");
-        return ESP_FAIL;
+        // return ESP_FAIL;
     }
     http->is_open = true;
     audio_element_setinfo(self, &info);
@@ -191,9 +191,11 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
-
-    int rlen = esp_http_client_read(http->client, buffer, len);
-
+    int wrlen = dispatch_hook(http, HTTP_STREAM_ON_RESPONSE, buffer, len);
+    int rlen = wrlen;
+    if (rlen == 0) {
+        rlen = esp_http_client_read(http->client, buffer, len);
+    }
     if (rlen <= 0) {
         ESP_LOGW(TAG, "No more data,errno:%d", errno);
     } else {

@@ -38,10 +38,15 @@ extern "C" {
  */
 typedef enum {
     HTTP_STREAM_PRE_REQUEST = 0x01, /*!< The event handler will be called before HTTP Client making the connection to the server */
-    HTTP_STREAM_ON_REQUEST,         /*!< The event handler will be called when HTTP Client request data,
+    HTTP_STREAM_ON_REQUEST,         /*!< The event handler will be called when HTTP Client is requesting data,
                                      * If the fucntion return the value (-1: ESP_FAIL), HTTP Client will be stopped
                                      * If the fucntion return the value > 0, HTTP Stream will ignore the post_field
                                      * If the fucntion return the value = 0, HTTP Stream continue send data from post_field (if any)
+                                     */
+    HTTP_STREAM_ON_RESPONSE,        /*!< The event handler will be called when HTTP Client is receiving data
+                                     * If the fucntion return the value (-1: ESP_FAIL), HTTP Client will be stopped
+                                     * If the fucntion return the value > 0, HTTP Stream will ignore the read function
+                                     * If the fucntion return the value = 0, HTTP Stream continue read data from HTTP Server
                                      */
     HTTP_STREAM_POST_REQUEST,       /*!< The event handler will be called after HTTP Client send header and body to the serve, before fetching the headers */
     HTTP_STREAM_FINISH_REQUEST,     /*!< The event handler will be called after HTTP Client fetch the header and ready to read HTTP body */
