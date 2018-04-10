@@ -1,4 +1,4 @@
-/* Play MP3 Stream from Amazon Polly Text to Speech service
+/* Play MP3 Stream from Baidu Text to Speech service
 
    This example code is in the Public Domain (or CC0 licensed, at your option.)
 

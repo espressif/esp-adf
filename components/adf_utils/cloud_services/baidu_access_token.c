@@ -25,52 +25,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include "esp_http_client.h"
-#include "jsmn.h"
+#include "json_utils.h"
 #include "esp_log.h"
 
 #define BAIDU_URI_LENGTH (200)
 #define BAIDU_AUTH_ENDPOINT "https://openapi.baidu.com/oauth/2.0/token?grant_type=client_credentials"
 
 static const char *TAG = "BAIDU_AUTH";
-
-static bool jsoneq(const char *json, jsmntok_t *tok, const char *s)
-{
-    if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
-            strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
-        return true;
-    }
-    return false;
-}
-
-static char *get_token_value(const char *json_string, const char *token_name)
-{
-    jsmn_parser parser;
-    jsmn_init(&parser);
-    jsmntok_t t[20];
-    int i;
-
-    int r = jsmn_parse(&parser, json_string, strlen(json_string), t, 20);
-
-    if (r < 0) {
-        ESP_LOGE(TAG, "Failed to parse JSON: %d", r);
-        return NULL;
-    }
-    /* Assume the top-level element is an object */
-    if (r < 1 || t[0].type != JSMN_OBJECT) {
-        ESP_LOGE(TAG, "Object expected");
-        return NULL;
-    }
-    for (i = 1; i < r; i++) {
-        if (jsoneq(json_string, &t[i], token_name) == 0) {
-            int tok_len = t[i].end - t[i].start;
-            char *tok = calloc(1, tok_len + 1);
-            assert(tok);
-            memcpy(tok, json_string + t[i].start, tok_len);
-            return tok;
-        }
-    }
-    return NULL;
-}
 
 char *baidu_get_access_token(const char *access_key, const char *access_secret)
 {
@@ -108,7 +69,7 @@ char *baidu_get_access_token(const char *access_key, const char *access_secret)
     }
     // Remove unexpect characters
     ESP_LOGD(TAG, "Data=%s", data);
-    token = get_token_value(data, "access_token");
+    token = json_get_token_value(data, "access_token");
     free(data);
     if (token) {
         ESP_LOGI(TAG, "Access token=%s", token);
