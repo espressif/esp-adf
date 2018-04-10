@@ -28,18 +28,18 @@
  * Transport layer structure, which will provide functions, basic properties for transport types
  */
 struct transport_item_t {
-    int port;
-    int socket;                                                                             /*!< Socket to use in this transport */
-    char *scheme;                                                                              /*!< Tag name */
-    void *context;                                                                          /*!< Context data */
-    void *data;                                                                             /*!< Additional transport data */
-    connect_func _connect;  /*!< Connect function of this transport */
-    io_func _read;          /*!< Read */
-    io_func _write;         /*!< Write */
-    trans_func _close;                                                /*!< Close */
-    poll_func _poll_read;                            /*!< Poll and read */
-    poll_func _poll_write;                           /*!< Poll and write */
-    trans_func _destroy;                                              /*!< Destroy and free transport */
+    int             port;
+    int             socket;         /*!< Socket to use in this transport */
+    char            *scheme;        /*!< Tag name */
+    void            *context;       /*!< Context data */
+    void            *data;          /*!< Additional transport data */
+    connect_func    _connect;       /*!< Connect function of this transport */
+    io_read_func    _read;          /*!< Read */
+    io_func         _write;         /*!< Write */
+    trans_func      _close;         /*!< Close */
+    poll_func       _poll_read;     /*!< Poll and read */
+    poll_func       _poll_write;    /*!< Poll and write */
+    trans_func      _destroy;       /*!< Destroy and free transport */
     STAILQ_ENTRY(transport_item_t) next;
 };
 
@@ -143,7 +143,7 @@ int transport_read(transport_handle_t t, char *buffer, int len, int timeout_ms)
     return -1;
 }
 
-int transport_write(transport_handle_t t, char *buffer, int len, int timeout_ms)
+int transport_write(transport_handle_t t, const char *buffer, int len, int timeout_ms)
 {
     if (t && t->_write) {
         return t->_write(t, buffer, len, timeout_ms);
@@ -194,7 +194,7 @@ esp_err_t transport_set_context_data(transport_handle_t t, void *data)
 
 esp_err_t transport_set_func(transport_handle_t t,
                              connect_func _connect,
-                             io_func _read,
+                             io_read_func _read,
                              io_func _write,
                              trans_func _close,
                              poll_func _poll_read,

@@ -244,7 +244,7 @@ esp_err_t esp_http_client_open(esp_http_client_handle_t client, int write_len);
  *     - (-1) if any errors
  *     - Length of data written
  */
-int esp_http_client_write(esp_http_client_handle_t client, char *buffer, int len);
+int esp_http_client_write(esp_http_client_handle_t client, const char *buffer, int len);
 
 /**
  * @brief      This function need to call after esp_http_client_open, it will read from http stream, process all receive headers

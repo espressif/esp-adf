@@ -88,7 +88,7 @@ static int tcp_connect(transport_handle_t t, const char *host, int port, int tim
     return tcp->sock;
 }
 
-static int tcp_write(transport_handle_t t, char *buffer, int len, int timeout_ms)
+static int tcp_write(transport_handle_t t, const char *buffer, int len, int timeout_ms)
 {
     int poll;
     transport_tcp_t *tcp = transport_get_context_data(t);
@@ -148,8 +148,8 @@ static int tcp_close(transport_handle_t t)
 static esp_err_t tcp_destroy(transport_handle_t t)
 {
     transport_tcp_t *tcp = transport_get_context_data(t);
-    free(tcp);
     transport_close(t);
+    free(tcp);
     return 0;
 }
 
