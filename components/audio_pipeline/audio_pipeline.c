@@ -306,6 +306,8 @@ esp_err_t audio_pipeline_wait_for_stop(audio_pipeline_handle_t pipeline)
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
             audio_element_wait_for_stop(el_item->el);
+            audio_element_reset_input_ringbuf(el_item->el);
+            audio_element_reset_output_ringbuf(el_item->el);
         }
     }
     audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
@@ -520,6 +522,8 @@ esp_err_t audio_pipeline_reset_items_state(audio_pipeline_handle_t pipeline)
     ESP_LOGD(TAG, "audio_pipeline_reset_items_state");
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
+            audio_element_reset_input_ringbuf(el_item->el);
+            audio_element_reset_output_ringbuf(el_item->el);
             el_item->el_state = AEL_STATUS_NONE;
         }
     }
