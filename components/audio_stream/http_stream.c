@@ -100,7 +100,7 @@ static int dispatch_hook(http_stream_t *http_stream, http_stream_event_id_t type
     if (http_stream->hook) {
         return http_stream->hook(&msg);
     }
-    return ESP_FAIL;
+    return ESP_OK;
 }
 
 static esp_err_t _http_open(audio_element_handle_t self)
