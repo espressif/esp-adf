@@ -27,4 +27,10 @@ config AWS_SECRET_KEY
     help
         Amazon service Access secret
 
+config AWS_POLLY_REGION
+    string "Amazon service region"
+    default "us-east-1"
+    help
+        Amazon service region
+
 endmenu

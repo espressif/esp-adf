@@ -39,14 +39,19 @@ static char *baidu_access_token = NULL;
 static char request_data[1024];
 
 
-esp_err_t _before_http_request(void *param)
+int _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
-    esp_http_client_handle_t http_client = (esp_http_client_handle_t)param;
+    esp_http_client_handle_t http_client = (esp_http_client_handle_t)msg->http_client;
+
+    if (msg->event_id != HTTP_STREAM_PRE_REQUEST) {
+        return ESP_OK;
+    }
 
     if (baidu_access_token == NULL) {
         // Must freed `baidu_access_token` after used
         baidu_access_token = baidu_get_access_token(CONFIG_BAIDU_ACCESS_KEY, CONFIG_BAIDU_SECRET_KEY);
     }
+
     if (baidu_access_token == NULL) {
         ESP_LOGE(TAG, "Error issuing access token");
         return ESP_FAIL;
@@ -99,7 +104,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[2.1] Create http stream to read data");
     http_stream_cfg_t http_cfg = {
-        .before_http_request = _before_http_request,
+        .event_handle = _http_stream_event_handle,
         .type = AUDIO_STREAM_READER,
     };
     http_stream_reader = http_stream_init(&http_cfg);
@@ -169,7 +174,6 @@ void app_main(void)
             break;
         }
     }
-
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
     audio_pipeline_stop(pipeline);
     audio_pipeline_wait_for_stop(pipeline);
