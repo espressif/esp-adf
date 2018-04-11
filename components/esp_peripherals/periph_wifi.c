@@ -51,6 +51,8 @@ static const char* TAG = "PERIPH_WIFI";
 #define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
 #endif
 
+#define DEFAULT_RECONNECT_TIMEOUT_MS (1000)
+
 typedef struct periph_wifi* periph_wifi_handle_t;
 
 struct periph_wifi {
@@ -61,6 +63,7 @@ struct periph_wifi {
     char* ssid;
     char* password;
     EventGroupHandle_t state_event;
+    int reconnect_timeout_ms;
 };
 
 static const int CONNECTED_BIT = BIT0;
@@ -198,7 +201,7 @@ esp_err_t periph_wifi_config_wait_done(esp_periph_handle_t periph, TickType_t ti
     VALIDATE_WIFI(periph, ESP_FAIL);
     periph_wifi_handle_t periph_wifi = (periph_wifi_handle_t)esp_periph_get_data(periph);
     EventBits_t smartconfig_bit = xEventGroupWaitBits(periph_wifi->state_event,
-        SMARTCONFIG_DONE_BIT | SMARTCONFIG_ERROR_BIT, false, true, tick_to_wait);
+                                  SMARTCONFIG_DONE_BIT | SMARTCONFIG_ERROR_BIT, false, true, tick_to_wait);
 
     if (smartconfig_bit & SMARTCONFIG_DONE_BIT) {
         return ESP_OK;
@@ -207,6 +210,13 @@ esp_err_t periph_wifi_config_wait_done(esp_periph_handle_t periph, TickType_t ti
         return ESP_FAIL;
     }
     return ESP_FAIL;
+}
+
+static void wifi_reconnect_timer(xTimerHandle tmr)
+{
+    esp_periph_handle_t periph = (esp_periph_handle_t) pvTimerGetTimerID(tmr);
+    esp_periph_stop_timer(periph);
+    esp_wifi_connect();
 }
 
 static esp_err_t _wifi_event_callback(void* ctx, system_event_t* event)
@@ -232,9 +242,15 @@ static esp_err_t _wifi_event_callback(void* ctx, system_event_t* event)
             xEventGroupClearBits(periph_wifi->state_event, CONNECTED_BIT);
             xEventGroupSetBits(periph_wifi->state_event, DISCONNECTED_BIT);
             esp_periph_send_event(self, PERIPH_WIFI_DISCONNECTED, NULL, 0);
-            if (!periph_wifi->disable_auto_reconnect) {
-                esp_wifi_connect();
+
+            ESP_LOGW(TAG, "Wi-Fi disconnected from SSID %s, auto-reconnect %s, reconnect after %d ms",
+                     periph_wifi->ssid,
+                     periph_wifi->disable_auto_reconnect == 0 ? "enabled" : "disabled",
+                     periph_wifi->reconnect_timeout_ms);
+            if (periph_wifi->disable_auto_reconnect) {
+                break;
             }
+            esp_periph_start_timer(self, periph_wifi->reconnect_timeout_ms / portTICK_RATE_MS, wifi_reconnect_timer);
             break;
         default:
             break;
@@ -321,6 +337,10 @@ esp_periph_handle_t periph_wifi_init(periph_wifi_cfg_t* config)
     if (config->password) {
         periph_wifi->password = strdup(config->password);
         mem_assert(periph_wifi->password);
+    }
+    periph_wifi->reconnect_timeout_ms = config->reconnect_timeout_ms;
+    if (periph_wifi->reconnect_timeout_ms == 0) {
+        periph_wifi->reconnect_timeout_ms = DEFAULT_RECONNECT_TIMEOUT_MS;
     }
     periph_wifi->disable_auto_reconnect = config->disable_auto_reconnect;
     periph_wifi->state_event = xEventGroupCreate();
