@@ -34,6 +34,7 @@
 #define AWS_POLLY_ENDPOINT "https://polly."CONFIG_AWS_POLLY_REGION".amazonaws.com/v1/speech"
 #define TTS_TEXT  "Espressif Systems is a fabless semiconductor company, with headquarter in Shanghai Zhangjiang High-Tech Park, providing low power Wi-Fi and Bluetooth SoCs and wireless solutions for Internet of Things applications"
 static const char *polly_payload = "{\"OutputFormat\":\"mp3\",\"SampleRate\":\"22050\",\"Text\":\""TTS_TEXT"\",\"TextType\":\"text\",\"VoiceId\":\"Joanna\"}";
+
 static const char *TAG = "AWS_POLLY_EXAMPLE";
 
 static void wait_for_sntp(void)
@@ -47,7 +48,7 @@ static void wait_for_sntp(void)
     sntp_setservername(0, "pool.ntp.org");
     sntp_init();
 
-    const int retry_count = 10;
+    const int retry_count = 20;
     while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
         ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -55,6 +56,21 @@ static void wait_for_sntp(void)
         localtime_r(&now, &timeinfo);
     }
 }
+
+
+aws_sig_v4_context_t sigv4_context;
+aws_sig_v4_config_t polly_sigv4_config = {
+    .service_name = "polly",
+    .region_name = CONFIG_AWS_POLLY_REGION,
+    .access_key = CONFIG_AWS_ACCESS_KEY,
+    .secret_key = CONFIG_AWS_SECRET_KEY,
+    .host = "polly."CONFIG_AWS_POLLY_REGION".amazonaws.com",
+    .method = "POST",
+    .path = "/v1/speech",
+    .query = "",
+    .signed_headers = "content-type",
+    .canonical_headers = "content-type:application/json\n",
+};
 
 int _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
@@ -71,25 +87,26 @@ int _http_stream_event_handle(http_stream_event_msg_t *msg)
     nowtm = localtime(&nowtime);
     char amz_date[32];
     char date_stamp[32];
-    strftime(amz_date, sizeof amz_date, "%Y%m%dT%H%M%SZ", nowtm);//%Y%m%dT%H%M%SZ
-    strftime(date_stamp, sizeof date_stamp, "%Y%m%d", nowtm); //%Y%m%d
-    int polly_payload_len = strlen(polly_payload);
 
-    char *auth_header = aws_polly_authentication_header(polly_payload,
-                                                        CONFIG_AWS_POLLY_REGION,
-                                                        "application/json",
-                                                        CONFIG_AWS_SECRET_KEY,
-                                                        CONFIG_AWS_ACCESS_KEY,
-                                                        amz_date,
-                                                        date_stamp);
+    strftime(amz_date, sizeof amz_date, "%Y%m%dT%H%M%SZ", nowtm);
+    strftime(date_stamp, sizeof date_stamp, "%Y%m%d", nowtm);
+
+    int payload_len = strlen(polly_payload);
+
+    polly_sigv4_config.payload = polly_payload;
+    polly_sigv4_config.payload_len = payload_len;
+    polly_sigv4_config.amz_date = amz_date;
+    polly_sigv4_config.date_stamp = date_stamp;
+
+    char *auth_header = aws_sig_v4_signing_header(&sigv4_context, &polly_sigv4_config);
+
     ESP_LOGI(TAG, "%s, amz_date=%s, date=%s", auth_header, amz_date, date_stamp);
 
-    esp_http_client_set_post_field(http_client, polly_payload, polly_payload_len);
+    esp_http_client_set_post_field(http_client, polly_payload, payload_len);
     esp_http_client_set_method(http_client, HTTP_METHOD_POST);
     esp_http_client_set_header(http_client, "Content-Type", "application/json");
     esp_http_client_set_header(http_client, "Authorization", auth_header);
     esp_http_client_set_header(http_client, "X-Amz-Date", amz_date);
-    free(auth_header);
     return ESP_OK;
 }
 
@@ -97,7 +114,6 @@ void app_main(void)
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
-    esp_log_level_set("HTTP_STREAM", ESP_LOG_DEBUG);
 
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {

@@ -21,6 +21,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+#include "mbedtls/sha256.h"
+#include "mbedtls/md.h"
 
 #ifndef _AWS_SIG_V4_SIGNING_H_
 #define _AWS_SIG_V4_SIGNING_H_
@@ -29,26 +31,48 @@
 extern "C" {
 #endif
 
+
+#define AWS_SIG_V4_BUFFER_SIZE (2048)
+
 /**
- * @brief      Get Amazon Polly Signature V4 signing HTTP header
- *
- * @param[in]  payload       Request data
- * @param[in]  region_name   The region name
- * @param[in]  content_type  The content type
- * @param[in]  secret_key    The secret key
- * @param[in]  access_key    The access key
- * @param[in]  amz_date      The amz_date, full timestamp, format as `%Y%m%dT%H%M%SZ`
- * @param[in]  date_stamp    The date_stamp, only date data format as `%Y%m%d`
- *
- * @return     HTTP authentication header
+ * @brief      Amazon Signature V4 signing context
  */
-char *aws_polly_authentication_header(const char *payload,
-                                      const char *region_name,
-                                      const char *content_type,
-                                      const char *secret_key,
-                                      const char *access_key,
-                                      const char *amz_date,
-                                      const char *date_stamp);
+typedef struct {
+    mbedtls_sha256_context  sha256_ctx;                     /*!< mbedtls SHA256 context */
+    mbedtls_md_context_t    md_ctx;                         /*!< mbedtls HMAC context */
+    char                    buffer[AWS_SIG_V4_BUFFER_SIZE]; /*!< Buffer to use for this library */
+    int                     buffer_offset;                  /*!< The buffer offset have been used */
+} aws_sig_v4_context_t;
+
+/**
+ * @brief      Amazon Signature V4 signing configurations
+ */
+typedef struct {
+    const char *service_name;           /*!< AWS Service name, ex: polly */
+    const char *region_name;            /*!< AWS Region name, ex: us-east-1 */
+    const char *secret_key;             /*!< AWS IAM user secret key */
+    const char *access_key;             /*!< AWS IAM user access key */
+    const char *host;                   /*!< Current request host name, ex: polly.us-east-1.amazonaws.com*/
+    const char *method;                 /*!< Current request method, ex: POST */
+    const char *path;                   /*!< Current request path, ex: "/" or "/v1/speech" */
+    const char *query;                  /*!< Current request query, ex: "" or "?key=value" */
+    const char *amz_date;               /*!< AWS Date, format as `%Y%m%dT%H%M%SZ` */
+    const char *date_stamp;             /*!< Datestamp, format as `%Y%m%d` */
+    const char *signed_headers;         /*!< Singed headers */
+    const char *canonical_headers;      /*!< Canonical headers headers */
+    const char *payload;                /*!< Payload data */
+    int         payload_len;            /*!< Payload length */
+} aws_sig_v4_config_t;
+
+/**
+ * @brief      Create HTTP Header for Amazon Signature V4 signing
+ *
+ * @param      ctx     The context
+ * @param      config  The configuration
+ *
+ * @return     The HTTP Header value of `Authorization`
+ */
+char *aws_sig_v4_signing_header(aws_sig_v4_context_t *ctx, aws_sig_v4_config_t *config);
 
 #ifdef __cplusplus
 }

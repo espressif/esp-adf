@@ -27,159 +27,131 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "freertos/FreeRTOS.h"
-#include "mbedtls/sha256.h" /* SHA-256 only */
-#include "mbedtls/md.h"     /* generic interface */
+#include "aws_sig_v4_signing.h"
 
-// Example from: https://docs.aws.amazon.com/general/latest/gr/sigv4-signed-request-examples.html
+#define HASH_LENGHT (32)
+#define HASH_HEX_LENGTH (65)
+static const char *aws_algorithm = "AWS4-HMAC-SHA256";
+#define GET_BUFFER(ctx) (ctx->buffer + ctx->buffer_offset)
+#define NEXT_BUFFER(ctx, len) (ctx->buffer_offset += len)
+#define REMAIN_BUFFER(ctx) (AWS_SIG_V4_BUFFER_SIZE - ctx->buffer_offset)
 
-char *join(const char *first_str, const char *second_str)
+static void _hmac(char *output, const char *key, int key_size, const char *payload, int payload_size)
 {
-    int first_str_len = strlen(first_str);
-    int second_str_len = strlen(second_str);
-    char *ret = NULL;
-    ret = malloc(first_str_len + second_str_len + 1);
-    assert(ret);
-    memcpy(ret, first_str, first_str_len);
-    memcpy(ret + first_str_len, second_str, second_str_len);
-    ret[first_str_len + second_str_len] = 0;
-    return ret;
-}
-
-static char *sign(const char *key, bool free_key, const char *payload, bool free_payload)
-{
-    unsigned char hmacResult[32];
-    char *result = calloc(1, 33);
-    assert(result);
-
     mbedtls_md_context_t ctx;
-
-    const size_t payloadLength = strlen(payload);
-    const size_t keyLength = strlen(key);
-
     mbedtls_md_init(&ctx);
     mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), 1);
-    mbedtls_md_hmac_starts(&ctx, (const unsigned char *) key, keyLength);
-    mbedtls_md_hmac_update(&ctx, (const unsigned char *) payload, payloadLength);
-    mbedtls_md_hmac_finish(&ctx, hmacResult);
+    mbedtls_md_hmac_starts(&ctx, (const unsigned char *) key, key_size);
+    mbedtls_md_hmac_update(&ctx, (const unsigned char *) payload, payload_size);
+    mbedtls_md_hmac_finish(&ctx, (unsigned char *)output);
     mbedtls_md_free(&ctx);
-
-    // for (int i = 0; i < sizeof(hmacResult); i++) {
-    //     sprintf(result + i * 2, "%02x", (int)hmacResult[i]);
-    // }
-    memcpy(result, hmacResult, 32);
-    if (free_key) {
-        free((void *)key);
+}
+static void _hmac_hex(char *output, const char *key, int key_size, const char *payload, int payload_size)
+{
+    char hmac[HASH_LENGHT];
+    _hmac(hmac, key, key_size, payload, payload_size);
+    for (int i = 0; i < sizeof(hmac); i++) {
+        sprintf(output + i * 2, "%02x", (int)hmac[i]);
     }
-    if (free_payload) {
-        free((void *)payload);
-    }
-    return result;
+    output[HASH_HEX_LENGTH - 1] = 0;
 }
 
-static char *sha256_hex(const char *data, bool need_free)
+static void _sha256_hex(char *output, const char *data, int data_len)
 {
-    unsigned char sha256_res[32];
-    char *result = calloc(1, 65);
-    assert(result);
+    char sha256_res[HASH_LENGHT];
     mbedtls_sha256_context ctx;
     mbedtls_sha256_init(&ctx);
     mbedtls_sha256_starts(&ctx, 0); /* SHA-256, not 224 */
-    mbedtls_sha256_update(&ctx, (const unsigned char*)data, strlen(data));
-    mbedtls_sha256_finish(&ctx, sha256_res);
-    for (int i = 0; i < sizeof(sha256_res); i++) {
-        sprintf(result + i * 2, "%02x", (int)sha256_res[i]);
-    }
+    mbedtls_sha256_update(&ctx, (const unsigned char*)data, data_len);
+    mbedtls_sha256_finish(&ctx, (unsigned char *)sha256_res);
     mbedtls_sha256_free(&ctx);
-    return result;
-}
-
-static char *get_signature_key(const char *key, const char *date_stamp, const char *region_name, const char *service_name)
-{
-    char *aws4_key = join("AWS4", key);
-    char *k_date = sign(aws4_key, true, date_stamp, false);
-    char *k_region = sign(k_date, true, region_name, false);
-    char *k_service = sign(k_region, true, service_name, false);
-    char *k_signing = sign(k_service, true, "aws4_request", false);
-    return k_signing;
-}
-
-static const char *polly_method = "POST";
-static const char *polly_path = "/v1/speech";
-static const char *polly_service_name = "polly";
-static const char *polly_signed_headers = "content-type;host;x-amz-date";
-static const char *polly_algorithm = "AWS4-HMAC-SHA256";
-
-char *aws_polly_authentication_header(const char *payload,
-                                      const char *region_name,
-                                      const char *content_type,
-                                      const char *secret_key,
-                                      const char *access_key,
-                                      const char *amz_date,
-                                      const char *date_stamp)
-{
-
-    char *host = calloc(1, 128);
-    assert(host);
-    snprintf(host, 128, "%s.%s.amazonaws.com", polly_service_name, region_name); //polly.us-west-2.amazonaws.com/v1/speech
-    char *polly_canonical_headers = calloc(1, 512);
-    assert(polly_canonical_headers);
-    //canonical_headers = 'content-type:' + content_type + '\n' + 'host:' + host + '\n' + 'x-amz-date:' + amz_date + '\n'
-    snprintf(polly_canonical_headers, 512, "content-type:%s\nhost:%s\nx-amz-date:%s\n", content_type, host, amz_date);
-
-
-    char *payload_hash = sha256_hex(payload, false);
-
-    char *canonical_request = calloc(1, 512);
-    assert(canonical_request);
-    //canonical_request = method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash
-    snprintf(canonical_request, 512, "%s\n%s\n\n%s\n%s\n%s",
-             polly_method,
-             polly_path,
-             polly_canonical_headers,
-             polly_signed_headers,
-             payload_hash);
-
-    char *canonical_request_sha256 = sha256_hex(canonical_request, false);
-
-
-    char *credential_scope = calloc(1, 512);
-    assert(credential_scope);
-    // credential_scope = date_stamp + '/' + region + '/' + service + '/' + 'aws4_request'
-    snprintf(credential_scope, 512, "%s/%s/%s/aws4_request", date_stamp, region_name, polly_service_name);
-
-    // signing_key = getSignatureKey(secret_key, date_stamp, region, service)
-    char *signing_key = get_signature_key(secret_key, date_stamp, region_name, polly_service_name);
-
-    char *string_to_sign = calloc(1, 512);
-    assert(string_to_sign);
-    //string_to_sign = algorithm + '\n' +  amz_date + '\n' +  credential_scope + '\n' +  hashlib.sha256(canonical_request).hexdigest()
-    snprintf(string_to_sign, 512, "%s\n%s\n%s\n%s", polly_algorithm, amz_date, credential_scope, canonical_request_sha256);
-
-
-    char *signature = sign(signing_key, false, string_to_sign, false);
-    char *signature_hex = calloc(1, 65);
-    assert(signature_hex);
-    for (int i=0; i<32; i++) {
-        sprintf(signature_hex + i * 2, "%02x", (int)signature[i]);
+    for (int i = 0; i < sizeof(sha256_res); i++) {
+        sprintf(output + i * 2, "%02x", (int)sha256_res[i]);
     }
+    output[HASH_HEX_LENGTH - 1] = 0;
+}
+
+static void _get_signature_key(char *output, const char *aws4_key, const char *date_stamp, const char *region_name, const char *service_name)
+{
+    char k_date[HASH_LENGHT], k_region[HASH_LENGHT], k_service[HASH_LENGHT];
+    _hmac(k_date, aws4_key, strlen(aws4_key), date_stamp, strlen(date_stamp));
+    _hmac(k_region, k_date, HASH_LENGHT, region_name, strlen(region_name));
+    _hmac(k_service, k_region, HASH_LENGHT, service_name, strlen(service_name));
+    _hmac(output, k_service, HASH_LENGHT, "aws4_request", strlen("aws4_request"));
+}
 
 
-    char *authorization_header = calloc(1, 512);
-    assert(authorization_header);
-    snprintf(authorization_header, 512, "%s Credential=%s/%s, SignedHeaders=%s, Signature=%s",
-        polly_algorithm, access_key, credential_scope,
-        polly_signed_headers,
-        signature_hex);
-    // authorization_header = algorithm + ' ' + 'Credential=' + access_key + '/' + credential_scope + ', ' +  'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature
-    free(host);
-    free(polly_canonical_headers);
-    free(payload_hash);
-    free(canonical_request_sha256);
-    free(credential_scope);
-    free(signing_key);
-    free(string_to_sign);
-    free(signature);
-    free(signature_hex);
-    free(canonical_request);
+char *aws_sig_v4_signing_header(aws_sig_v4_context_t *ctx, aws_sig_v4_config_t *config)
+{
+    memset(ctx, 0, sizeof(aws_sig_v4_context_t));
+
+    char *payload_hash = GET_BUFFER(ctx);
+    _sha256_hex(payload_hash, config->payload, config->payload_len);
+    NEXT_BUFFER(ctx, HASH_HEX_LENGTH);
+
+    char *canonical_request = GET_BUFFER(ctx);
+    char separate = config->signed_headers && strlen(config->signed_headers) > 0 ? ';' : 0;
+    int canonical_request_len = snprintf(canonical_request,
+                                         REMAIN_BUFFER(ctx),
+                                         "%s\n%s\n%s\n%shost:%s\nx-amz-date:%s\n\n%s%chost;x-amz-date\n%s",
+                                         config->method,
+                                         config->path,
+                                         config->query,
+                                         config->canonical_headers,
+                                         config->host,
+                                         config->amz_date,
+                                         config->signed_headers,
+                                         separate,
+                                         payload_hash);
+    NEXT_BUFFER(ctx, canonical_request_len + 1);
+
+    char *canonical_request_sha256 = GET_BUFFER(ctx);
+    _sha256_hex(canonical_request_sha256, canonical_request, canonical_request_len);
+    NEXT_BUFFER(ctx, HASH_HEX_LENGTH);
+
+    char *credential_scope = GET_BUFFER(ctx);
+    int credential_scope_len = snprintf(credential_scope,
+                                        REMAIN_BUFFER(ctx),
+                                        "%s/%s/%s/aws4_request",
+                                        config->date_stamp,
+                                        config->region_name,
+                                        config->service_name);
+    NEXT_BUFFER(ctx, credential_scope_len + 1);
+
+    char *aws4_key = GET_BUFFER(ctx);
+    int aws4_key_len = snprintf(aws4_key,
+                                REMAIN_BUFFER(ctx),
+                                "AWS4%s",
+                                config->secret_key);
+    NEXT_BUFFER(ctx, aws4_key_len);
+
+    char *signing_key = GET_BUFFER(ctx);
+    _get_signature_key(signing_key, aws4_key, config->date_stamp, config->region_name, config->service_name);
+    NEXT_BUFFER(ctx, HASH_LENGHT);
+
+    char *string_to_sign = GET_BUFFER(ctx);
+    int string_to_sign_len = snprintf(string_to_sign,
+                                      REMAIN_BUFFER(ctx),
+                                      "%s\n%s\n%s\n%s",
+                                      aws_algorithm,
+                                      config->amz_date,
+                                      credential_scope,
+                                      canonical_request_sha256);
+    NEXT_BUFFER(ctx, string_to_sign_len + 1);
+
+    char *signature = GET_BUFFER(ctx);
+    _hmac_hex(signature, signing_key, HASH_LENGHT, string_to_sign, string_to_sign_len);
+    NEXT_BUFFER(ctx, HASH_HEX_LENGTH);
+
+    char *authorization_header = GET_BUFFER(ctx);
+    snprintf(authorization_header,
+             REMAIN_BUFFER(ctx),
+             "%s Credential=%s/%s, SignedHeaders=%s%chost;x-amz-date, Signature=%s",
+             aws_algorithm,
+             config->access_key,
+             credential_scope,
+             config->signed_headers,
+             separate,
+             signature);
     return authorization_header;
 }
