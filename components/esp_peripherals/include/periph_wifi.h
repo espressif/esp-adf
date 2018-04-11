@@ -39,13 +39,14 @@ extern "C" {
  */
 typedef enum {
     PERIPH_WIFI_UNCHANGE = 0,
+    PERIPH_WIFI_CONNECTING,
     PERIPH_WIFI_CONNECTED,
-    PERIPH_WIFI_GOT_IP,
     PERIPH_WIFI_DISCONNECTED,
+    PERIPH_WIFI_SETTING,
     PERIPH_WIFI_SMARTCONFIG_DONE,
     PERIPH_WIFI_SMARTCONFIG_ERROR,
     PERIPH_WIFI_ERROR,
-} periph_wifi_event_id_t;
+} periph_wifi_state_t;
 
 /**
  * @brief   Wi-Fi setup mode type
@@ -99,7 +100,7 @@ esp_err_t periph_wifi_wait_for_connected(esp_periph_handle_t periph, TickType_t 
  *
  * @return     Wi-Fi network status
  */
-bool periph_wifi_is_connected(esp_periph_handle_t periph);
+periph_wifi_state_t periph_wifi_is_connected(esp_periph_handle_t periph);
 
 /**
  * @brief      Start Wi-Fi network setup in `mode`

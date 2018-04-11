@@ -61,6 +61,17 @@ void *audio_calloc(size_t nmemb, size_t size)
     return data;
 }
 
+void *audio_realloc(void *ptr, size_t size)
+{
+    void *p = NULL;
+#if CONFIG_SPIRAM_BOOT_INIT
+    p = heap_caps_realloc(ptr, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+#else
+    p = heap_caps_realloc(ptr, size, MALLOC_CAP_8BIT);
+#endif
+    return p;
+}
+
 void *audio_calloc_inner(size_t n, size_t size)
 {
     void *data =  NULL;

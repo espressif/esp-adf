@@ -174,7 +174,7 @@ static bool _get_line_in_buffer(http_stream_t *http, char **out)
     return false;
 }
 
-static char* _client_read_line(http_stream_t *http)
+static char *_client_read_line(http_stream_t *http)
 {
     int need_read = MAX_PLAYLIST_LINE_SIZE;
     int rlen;
@@ -306,7 +306,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
             valid_playlist = true;
             continue;
         }
-        if (strstr(line, "http") == (void*)line) {
+        if (strstr(line, "http") == (void *)line) {
             _insert_to_playlist(http->playlist, line, uri);
             valid_playlist = true;
             continue;
@@ -314,7 +314,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         if (!valid_playlist) {
             break;
         }
-        if (!is_playlist_uri && strstr(line, "#EXTINF") == (void*)line) {
+        if (!is_playlist_uri && strstr(line, "#EXTINF") == (void *)line) {
             is_playlist_uri = true;
             continue;
         }
@@ -452,7 +452,8 @@ _stream_open_begin:
 
     info.total_bytes = esp_http_client_fetch_headers(http->client);
     ESP_LOGD(TAG, "total_bytes=%d", (int)info.total_bytes);
-    if (esp_http_client_get_status_code(http->client) != 200) {
+    if ((esp_http_client_get_status_code(http->client) != 200)
+        && (esp_http_client_get_status_code(http->client) != 206)) {
         ESP_LOGE(TAG, "Invalid HTTP stream");
         if (http->enable_playlist_parser) {
             _playlist_clear(self);
@@ -632,7 +633,6 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
 
 esp_err_t http_stream_next_track(audio_element_handle_t el)
 {
-    audio_element_reset_state(el);
     http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
 
     track_t *track = _playlist_get_next_track(el);
@@ -648,9 +648,10 @@ esp_err_t http_stream_next_track(audio_element_handle_t el)
         }
 
     } else {
-        ESP_LOGE(TAG, "there are no track");
+        ESP_LOGW(TAG, "there are no track");
         return ESP_OK;
     }
+    audio_element_reset_state(el);
     audio_element_info_t info;
     audio_element_getinfo(el, &info);
     info.byte_pos = 0;

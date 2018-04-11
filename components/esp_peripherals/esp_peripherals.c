@@ -34,7 +34,7 @@
 #include "audio_mutex.h"
 #include "esp_peripherals.h"
 
-static const char* TAG = "ESP_PERIPH";
+static const char *TAG = "ESP_PERIPH";
 
 #define DEFAULT_ESP_PERIPH_STACK_SIZE      (4*1024)
 #define DEFAULT_ESP_PERIPH_TASK_PRIO       (5)
@@ -44,15 +44,15 @@ static const char* TAG = "ESP_PERIPH";
 #define CONTROL_QUEUE_SIZE 5
 
 struct esp_periph {
-    char*                       tag;
+    char                       *tag;
     bool                        disabled;
     esp_periph_id_t             periph_id;
     esp_periph_func             init;
     esp_periph_run_func         run;
     esp_periph_func             destroy;
     esp_periph_state_t          state;
-    void*                       user_context;
-    void*                       periph_data;
+    void                       *user_context;
+    void                       *periph_data;
     TimerHandle_t               timer;
     STAILQ_ENTRY(esp_periph)    entries;
 };
@@ -61,8 +61,8 @@ typedef struct esp_periph_obj {
     EventGroupHandle_t                              state_event_bits;
     xSemaphoreHandle                                lock;
     bool                                            run;
-    void*                                           periph_data;
-    void*                                           user_context;
+    void                                           *periph_data;
+    void                                           *user_context;
     esp_periph_event_handle_t                       event_handle;
     STAILQ_HEAD(esp_periph_list_item, esp_periph)   periph_list;
     audio_event_iface_handle_t                      event_iface;
@@ -82,20 +82,20 @@ static esp_err_t process_peripheral_event(audio_event_iface_msg_t *msg, void *co
     esp_periph_handle_t periph;
     STAILQ_FOREACH(periph, &g_esp_periph_obj->periph_list, entries) {
         if (periph->periph_id == periph_evt->periph_id
-                && periph_evt->state == PERIPH_STATE_RUNNING
-                && periph_evt->run
-                && !periph_evt->disabled) {
+            && periph_evt->state == PERIPH_STATE_RUNNING
+            && periph_evt->run
+            && !periph_evt->disabled) {
             return periph_evt->run(periph_evt, msg);
         }
     }
     return ESP_OK;
 }
 
-esp_err_t esp_periph_init(esp_periph_config_t* config)
+esp_err_t esp_periph_init(esp_periph_config_t *config)
 {
     if (g_esp_periph_obj != NULL) {
-        AUDIO_ERROR(TAG, "Peripherals have been initialized already");
-        return ESP_FAIL;
+        ESP_LOGW(TAG, "Peripherals have been initialized already");
+        return ESP_EXISTS;
     }
     int _err_step = 1;
     bool _success =
@@ -256,7 +256,7 @@ esp_err_t esp_periph_set_function(esp_periph_handle_t periph,
     return ESP_OK;
 }
 
-static void esp_periph_task(void* pv)
+static void esp_periph_task(void *pv)
 {
     esp_periph_handle_t periph;
     ESP_LOGD(TAG, "esp_periph_task is running");
@@ -396,13 +396,13 @@ esp_err_t esp_periph_send_event(esp_periph_handle_t periph, int event_id, void *
 }
 
 
-esp_err_t esp_periph_set_data(esp_periph_handle_t periph, void* data)
+esp_err_t esp_periph_set_data(esp_periph_handle_t periph, void *data)
 {
     periph->periph_data = data;
     return ESP_OK;
 }
 
-void* esp_periph_get_data(esp_periph_handle_t periph)
+void *esp_periph_get_data(esp_periph_handle_t periph)
 {
     return periph->periph_data;
 }
@@ -440,4 +440,14 @@ long long esp_periph_tick_get()
     gettimeofday(&te, NULL);
     long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
     return milliseconds;
+}
+
+esp_err_t esp_periph_set_callback(esp_periph_event_handle_t cb)
+{
+    if (g_esp_periph_obj == NULL) {
+        return ESP_FAIL;
+    } else {
+        g_esp_periph_obj->event_handle = cb;
+        return ESP_OK;
+    }
 }

@@ -758,8 +758,6 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
     el->destroy = config->destroy;
     if (config->task_stack > 0) {
         el->task_stack = config->task_stack;
-    } else {
-        el->task_stack = DEFAULT_ELEMENT_STACK_SIZE;
     }
     if (config->task_prio) {
         el->task_prio = config->task_prio;
