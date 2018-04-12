@@ -31,14 +31,26 @@
 
 static const char *TAG = "RESAMPLE_EXAMPLE";
 
-static audio_element_handle_t create_filter(int source_rate, int source_channel, int dest_rate, int dest_channel)
+#define RECORD_RATE         48000
+#define RECORD_CHANNEL      2
+#define RECORD_BITS         16
+
+#define SAVE_FILE_RATE      16000
+#define SAVE_FILE_CHANNEL   1
+#define SAVE_FILE_BITS      16
+
+#define PLAYBACK_RATE       48000
+#define PLAYBACK_CHANNEL    2
+#define PLAYBACK_BITS       16
+
+static audio_element_handle_t create_filter(int source_rate, int source_channel, int dest_rate, int dest_channel, audio_codec_type_t type)
 {
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg.src_rate = source_rate;
     rsp_cfg.src_ch = source_channel;
     rsp_cfg.dest_rate = dest_rate;
     rsp_cfg.dest_ch = dest_channel;
-    rsp_cfg.type = AUDIO_CODEC_TYPE_ENCODER;
+    rsp_cfg.type = type;
     return rsp_filter_init(&rsp_cfg);
 }
 
@@ -70,7 +82,6 @@ static audio_element_handle_t create_i2s_stream(int sample_rates, int bits, int 
     i2s_info.channels = channels;
     i2s_info.sample_rates = sample_rates;
     audio_element_setinfo(i2s_stream, &i2s_info);
-    i2s_stream_set_clk(i2s_stream, sample_rates, bits, channels);
     return i2s_stream;
 }
 
@@ -85,7 +96,6 @@ static audio_element_handle_t create_wav_decoder()
     wav_decoder_cfg_t wav_cfg = DEFAULT_WAV_DECODER_CONFIG();
     return wav_decoder_init(&wav_cfg);
 }
-
 
 void record_playback_task()
 {
@@ -102,10 +112,10 @@ void record_playback_task()
     pipeline = audio_pipeline_init(&pipeline_cfg);
 
     ESP_LOGI(TAG, "[1.2] Create audio elements for recorder pipeline");
-    audio_element_handle_t i2s_reader_el = create_i2s_stream(48000, 16, 2, AUDIO_STREAM_READER);
-    audio_element_handle_t filter_downsample_el = create_filter(48000, 2, 16000, 1);
+    audio_element_handle_t i2s_reader_el = create_i2s_stream(RECORD_RATE, RECORD_BITS, RECORD_CHANNEL, AUDIO_STREAM_READER);
+    audio_element_handle_t filter_downsample_el = create_filter(RECORD_RATE, RECORD_CHANNEL, SAVE_FILE_RATE, SAVE_FILE_CHANNEL, AUDIO_CODEC_TYPE_ENCODER);
     audio_element_handle_t wav_encoder_el = create_wav_encoder();
-    audio_element_handle_t fatfs_writer_el = create_fatfs_stream(16000, 16, 1, AUDIO_STREAM_WRITER);
+    audio_element_handle_t fatfs_writer_el = create_fatfs_stream(SAVE_FILE_RATE, SAVE_FILE_BITS, SAVE_FILE_CHANNEL, AUDIO_STREAM_WRITER);
 
     ESP_LOGI(TAG, "[1.3] Register audio elements to recorder pipeline");
     audio_pipeline_register(pipeline, i2s_reader_el,        "i2s_reader");
@@ -122,10 +132,10 @@ void record_playback_task()
      */
 
     ESP_LOGI(TAG, "[2.2] Create audio elements for playback pipeline");
-    audio_element_handle_t fatfs_reader_el = create_fatfs_stream(16000, 16, 1, AUDIO_STREAM_READER);
+    audio_element_handle_t fatfs_reader_el = create_fatfs_stream(SAVE_FILE_RATE, SAVE_FILE_BITS, SAVE_FILE_CHANNEL, AUDIO_STREAM_READER);
     audio_element_handle_t wav_decoder_el = create_wav_decoder();
-    audio_element_handle_t filter_upsample_el = create_filter(16000, 1, 48000, 2);
-    audio_element_handle_t i2s_writer_el = create_i2s_stream(48000, 16, 2, AUDIO_STREAM_WRITER);
+    audio_element_handle_t filter_upsample_el = create_filter(SAVE_FILE_RATE, SAVE_FILE_CHANNEL, PLAYBACK_RATE, PLAYBACK_CHANNEL, AUDIO_CODEC_TYPE_DECODER);
+    audio_element_handle_t i2s_writer_el = create_i2s_stream(PLAYBACK_RATE, PLAYBACK_BITS, PLAYBACK_CHANNEL, AUDIO_STREAM_WRITER);
 
     ESP_LOGI(TAG, "[2.3] Register audio elements to playback pipeline");
     audio_pipeline_register(pipeline, fatfs_reader_el,      "file_reader");
@@ -168,6 +178,7 @@ void record_playback_task()
             audio_pipeline_link(pipeline, (const char *[]) {"i2s_reader", "filter_downsample", "wav_encoder", "file_writer"}, 4);
 
             ESP_LOGI(TAG, "Setup file path to save recoded audio");
+            i2s_stream_set_clk(i2s_writer_el, RECORD_RATE, RECORD_BITS, RECORD_CHANNEL);
             audio_element_set_uri(fatfs_writer_el, "/sdcard/rec.wav");
             audio_pipeline_run(pipeline);
         } else if (msg.cmd == PERIPH_BUTTON_RELEASE || msg.cmd == PERIPH_BUTTON_LONG_RELEASE) {
@@ -183,6 +194,7 @@ void record_playback_task()
             audio_pipeline_link(pipeline, (const char *[]) {"file_reader", "wav_decoder", "filter_upsample", "i2s_writer"}, 4);
 
             ESP_LOGI(TAG, "Setup file path to read the wav audio to play");
+            i2s_stream_set_clk(i2s_writer_el, PLAYBACK_RATE, PLAYBACK_BITS, PLAYBACK_CHANNEL);
             audio_element_set_uri(fatfs_reader_el, "/sdcard/rec.wav");
             audio_pipeline_run(pipeline);
         }
