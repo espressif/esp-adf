@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include "esp_log.h"
 #include "jsmn.h"
+#include "audio_error.h"
 
 static const char* TAG = "JSON_UTILS";
 
@@ -61,7 +62,7 @@ char *json_get_token_value(const char *json_string, const char *token_name)
         if (jsoneq(json_string, &t[i], token_name) && i < r) {
             int tok_len = t[i+1].end - t[i+1].start;
             char *tok = calloc(1, tok_len + 1);
-            assert(tok);
+            AUDIO_MEM_CHECK(TAG, tok, return NULL);
             memcpy(tok, json_string + t[i+1].start, tok_len);
             return tok;
         }

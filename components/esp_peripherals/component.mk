@@ -5,3 +5,4 @@
 COMPONENT_ADD_INCLUDEDIRS := ./include
 COMPONENT_SRCDIRS :=  . ./lib ./lib/sdcard ./lib/button ./lib/touch
 COMPONENT_PRIV_INCLUDEDIRS := ./lib/sdcard ./lib/button ./lib/touch
+CFLAGS+=-D__FILENAME__=\"$(<F)\"

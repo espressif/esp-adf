@@ -26,7 +26,7 @@
 #define _BLUETOOTH_SERVICE_H_
 
 #include "freertos/event_groups.h"
-#include "esp_err.h"
+#include "audio_error.h"
 #include "audio_element.h"
 #include "esp_peripherals.h"
 

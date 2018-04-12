@@ -47,11 +47,7 @@ static const char *TAG = "PERIPH_WIFI";
     return ret;\
 }
 
-#ifndef mem_assert
-#define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
-#endif
-
-#define DEFAULT_RECONNECT_TIMEOUT_MS (5000)
+#define DEFAULT_RECONNECT_TIMEOUT_MS (1000)
 
 typedef struct periph_wifi *periph_wifi_handle_t;
 
@@ -307,16 +303,14 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
 static esp_err_t _wifi_destroy(esp_periph_handle_t self)
 {
     periph_wifi_handle_t periph_wifi = (periph_wifi_handle_t)esp_periph_get_data(self);
+    esp_periph_stop_timer(self);
+    periph_wifi->disable_auto_reconnect = true;
     esp_wifi_disconnect();
     periph_wifi_wait_for_disconnected(self, portMAX_DELAY);
     esp_wifi_stop();
     esp_wifi_deinit();
-    if (periph_wifi->ssid) {
-        free(periph_wifi->ssid);
-    }
-    if (periph_wifi->password) {
-        free(periph_wifi->password);
-    }
+    free(periph_wifi->ssid);
+    free(periph_wifi->password);
 
     vEventGroupDelete(periph_wifi->state_event);
     free(periph_wifi);
@@ -326,28 +320,36 @@ static esp_err_t _wifi_destroy(esp_periph_handle_t self)
 
 esp_periph_handle_t periph_wifi_init(periph_wifi_cfg_t *config)
 {
-    periph_wifi_handle_t periph_wifi = calloc(1, sizeof(struct periph_wifi));
-    mem_assert(periph_wifi);
+    esp_periph_handle_t periph = NULL;
+    periph_wifi_handle_t periph_wifi = NULL;
+    bool _success =
+        (
+            (periph = esp_periph_create(PERIPH_ID_WIFI, "periph_wifi")) &&
+            (periph_wifi = calloc(1, sizeof(struct periph_wifi))) &&
+            (periph_wifi->state_event = xEventGroupCreate()) &&
+            (config->ssid ? (bool)(periph_wifi->ssid = strdup(config->ssid)) : true) &&
+            (config->password ? (bool)(periph_wifi->password = strdup(config->password)) : true)
+        );
 
-    if (config->ssid) {
-        periph_wifi->ssid = strdup(config->ssid);
-        mem_assert(periph_wifi->ssid);
-    }
+    AUDIO_MEM_CHECK(TAG, _success, goto _periph_wifi_init_failed);
 
-    if (config->password) {
-        periph_wifi->password = strdup(config->password);
-        mem_assert(periph_wifi->password);
-    }
     periph_wifi->reconnect_timeout_ms = config->reconnect_timeout_ms;
     if (periph_wifi->reconnect_timeout_ms == 0) {
         periph_wifi->reconnect_timeout_ms = DEFAULT_RECONNECT_TIMEOUT_MS;
     }
     periph_wifi->disable_auto_reconnect = config->disable_auto_reconnect;
-    periph_wifi->state_event = xEventGroupCreate();
-    esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_WIFI, "periph_wifi");
-    mem_assert(periph);
+
     esp_periph_set_data(periph, periph_wifi);
     esp_periph_set_function(periph, _wifi_init, _wifi_run, _wifi_destroy);
     g_periph = periph;
     return periph;
+
+_periph_wifi_init_failed:
+    if (periph_wifi) {
+        vEventGroupDelete(periph_wifi->state_event);
+        free(periph_wifi->ssid);
+        free(periph_wifi->password);
+        free(periph_wifi);
+    }
+    return NULL;
 }

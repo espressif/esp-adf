@@ -36,10 +36,6 @@
 
 static const char* TAG = "ESP_PERIPH";
 
-#ifndef mem_assert
-#define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
-#endif
-
 #define DEFAULT_ESP_PERIPH_STACK_SIZE      (4*1024)
 #define DEFAULT_ESP_PERIPH_TASK_PRIO       (5)
 #define DEFAULT_ESP_PERIPH_TASK_CORE       (0)
@@ -86,10 +82,10 @@ static esp_err_t process_peripheral_event(audio_event_iface_msg_t *msg, void *co
     esp_periph_handle_t periph;
     STAILQ_FOREACH(periph, &g_esp_periph_obj->periph_list, entries) {
         if (periph->periph_id == periph_evt->periph_id
-            && periph_evt->state == PERIPH_STATE_RUNNING
-            && periph_evt->run
-            && !periph_evt->disabled) {
-                return periph_evt->run(periph_evt, msg);
+                && periph_evt->state == PERIPH_STATE_RUNNING
+                && periph_evt->run
+                && !periph_evt->disabled) {
+            return periph_evt->run(periph_evt, msg);
         }
     }
     return ESP_OK;
@@ -98,14 +94,22 @@ static esp_err_t process_peripheral_event(audio_event_iface_msg_t *msg, void *co
 esp_err_t esp_periph_init(esp_periph_config_t* config)
 {
     if (g_esp_periph_obj != NULL) {
-        ESP_LOGW(TAG, "Peripherals have been initialized already");
+        AUDIO_ERROR(TAG, "Peripherals have been initialized already");
         return ESP_FAIL;
     }
-    g_esp_periph_obj = calloc(1, sizeof(esp_periph_obj_t));
-    mem_assert(g_esp_periph_obj);
+    int _err_step = 1;
+    bool _success =
+        (
+            (g_esp_periph_obj                   = calloc(1, sizeof(esp_periph_obj_t)))  && _err_step ++ &&
+            (g_esp_periph_obj->state_event_bits = xEventGroupCreate())                  && _err_step ++ &&
+            (g_esp_periph_obj->lock             = mutex_create())                       && _err_step ++
+        );
+
+    AUDIO_MEM_CHECK(TAG, _success, {
+        goto _periph_init_failed;
+    });
 
     STAILQ_INIT(&g_esp_periph_obj->periph_list);
-    g_esp_periph_obj->lock = mutex_create();
 
     //TODO: Should we uninstall gpio isr service??
     //TODO: Because gpio need for sdcard and gpio, then install isr here
@@ -113,7 +117,6 @@ esp_err_t esp_periph_init(esp_periph_config_t* config)
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);
 
     g_esp_periph_obj->run = false;
-    g_esp_periph_obj->state_event_bits = xEventGroupCreate();
     xEventGroupClearBits(g_esp_periph_obj->state_event_bits, STARTED_BIT);
     xEventGroupSetBits(g_esp_periph_obj->state_event_bits, STOPPED_BIT);
     g_esp_periph_obj->user_context = config->user_context;
@@ -125,8 +128,24 @@ esp_err_t esp_periph_init(esp_periph_config_t* config)
     event_cfg.context = g_esp_periph_obj;
     event_cfg.on_cmd = process_peripheral_event;
     g_esp_periph_obj->event_iface = audio_event_iface_init(&event_cfg);
+
+    AUDIO_MEM_CHECK(TAG, g_esp_periph_obj->event_iface, goto _periph_init_failed);
     audio_event_iface_set_cmd_waiting_timeout(g_esp_periph_obj->event_iface, DEFAULT_ESP_PERIPH_WAIT_TICK);
     return ESP_OK;
+
+_periph_init_failed:
+    if (g_esp_periph_obj) {
+        mutex_destroy(g_esp_periph_obj->lock);
+        vEventGroupDelete(g_esp_periph_obj->state_event_bits);
+
+        if (g_esp_periph_obj->event_iface) {
+            audio_event_iface_destroy(g_esp_periph_obj->event_iface);
+        }
+
+        free(g_esp_periph_obj);
+        g_esp_periph_obj = NULL;
+    }
+    return ESP_FAIL;
 }
 
 esp_err_t esp_periph_start_timer(esp_periph_handle_t periph, TickType_t interval_tick, timer_callback callback)
@@ -134,7 +153,7 @@ esp_err_t esp_periph_start_timer(esp_periph_handle_t periph, TickType_t interval
     if (periph->timer == NULL) {
         periph->timer = xTimerCreate("periph_itmer", interval_tick, pdTRUE, periph, callback);
         if (xTimerStart(periph->timer, 0) != pdTRUE) {
-            ESP_LOGE(TAG, "Error start timer");
+            AUDIO_ERROR(TAG, "Error to start timer");
             return ESP_FAIL;
         }
     }
@@ -155,7 +174,7 @@ esp_err_t esp_periph_stop_timer(esp_periph_handle_t periph)
 esp_err_t esp_periph_destroy()
 {
     if (g_esp_periph_obj == NULL) {
-        ESP_LOGE(TAG, "Peripherals have not been initialized");
+        AUDIO_ERROR(TAG, "Peripherals have not been initialized");
         return ESP_FAIL;
     }
     g_esp_periph_obj->run = false;
@@ -164,7 +183,7 @@ esp_err_t esp_periph_destroy()
     esp_periph_handle_t item, tmp;
     STAILQ_FOREACH_SAFE(item, &g_esp_periph_obj->periph_list, entries, tmp) {
         STAILQ_REMOVE(&g_esp_periph_obj->periph_list, item, esp_periph, entries);
-        free (item->tag);
+        free(item->tag);
         free(item);
     }
     mutex_destroy(g_esp_periph_obj->lock);
@@ -181,18 +200,23 @@ esp_err_t esp_periph_destroy()
 esp_periph_handle_t esp_periph_create(int periph_id, const char *tag)
 {
     if (esp_periph_get_by_id(periph_id) != NULL) {
-        ESP_LOGE(TAG, "This peripheral has been added");
+        AUDIO_ERROR(TAG, "This peripheral has been already added");
         return NULL;
     }
 
     esp_periph_handle_t new_entry = calloc(1, sizeof(struct esp_periph));
-    mem_assert(new_entry);
+
+    AUDIO_MEM_CHECK(TAG, new_entry, return NULL);
 
     if (tag) {
         new_entry->tag = strdup(tag);
     } else {
         new_entry->tag = strdup("periph");
     }
+    AUDIO_MEM_CHECK(TAG, new_entry->tag, {
+        free(new_entry);
+        return NULL;
+    })
     new_entry->user_context = g_esp_periph_obj->user_context;
     new_entry->state = PERIPH_STATE_INIT;
     new_entry->periph_id = periph_id;
@@ -204,7 +228,7 @@ esp_periph_handle_t esp_periph_get_by_id(int periph_id)
     esp_periph_handle_t periph;
 
     if (g_esp_periph_obj == NULL) {
-        ESP_LOGE(TAG, "Peripherals have not been initialized");
+        AUDIO_ERROR(TAG, "Peripherals have not been initialized");
         return NULL;
     }
 
@@ -272,7 +296,7 @@ static void esp_periph_task(void* pv)
 esp_err_t esp_periph_start(esp_periph_handle_t periph)
 {
     if (g_esp_periph_obj == NULL) {
-        ESP_LOGE(TAG, "Peripherals have not been initialized");
+        AUDIO_ERROR(TAG, "Peripherals have not been initialized");
         return ESP_FAIL;
     }
     if (esp_periph_get_by_id(periph->periph_id) != NULL) {
@@ -292,7 +316,7 @@ esp_err_t esp_periph_start(esp_periph_handle_t periph)
                                     DEFAULT_ESP_PERIPH_TASK_PRIO,
                                     NULL,
                                     DEFAULT_ESP_PERIPH_TASK_CORE) != pdTRUE) {
-            ESP_LOGE(TAG, "Error create peripheral task");
+            AUDIO_ERROR(TAG, "Error create peripheral task");
             g_esp_periph_obj->run = false;
             return ESP_FAIL;
         }
@@ -312,7 +336,7 @@ esp_err_t esp_periph_stop(esp_periph_handle_t periph)
 esp_err_t esp_periph_stop_all()
 {
     if (g_esp_periph_obj == NULL) {
-        ESP_LOGE(TAG, "Peripherals have not been initialized");
+        AUDIO_ERROR(TAG, "Peripherals have not been initialized");
         return ESP_FAIL;
     }
     esp_periph_handle_t periph;
@@ -413,8 +437,7 @@ audio_event_iface_handle_t esp_periph_get_event_iface()
 long long esp_periph_tick_get()
 {
     struct timeval te;
-    gettimeofday(&te, NULL); // get current time
-    long long milliseconds = te.tv_sec*1000LL + te.tv_usec/1000; // calculate milliseconds
-    // printf("milliseconds: %lld\n", milliseconds);
+    gettimeofday(&te, NULL);
+    long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
     return milliseconds;
 }

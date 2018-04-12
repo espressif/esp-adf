@@ -26,6 +26,7 @@
 #define _ESP_BUTTON_
 
 #include "driver/gpio.h"
+#include "audio_error.h"
 
 #ifdef __cplusplus
 extern "C" {

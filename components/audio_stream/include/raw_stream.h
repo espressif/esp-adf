@@ -25,7 +25,7 @@
 #ifndef _RAW_STREAM_H_
 #define _RAW_STREAM_H_
 
-#include "esp_err.h"
+#include "audio_error.h"
 #include "audio_element.h"
 #include "audio_common.h"
 
