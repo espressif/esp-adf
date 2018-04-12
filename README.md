@@ -9,7 +9,7 @@ Espressif Systems Audio Development Framework (ESP-ADF) is the official audio de
 ESP-ADF supports development of audio applications for the Espressif Systems [ESP32](https://espressif.com/en/products/hardware/esp32/overview) chip in the most comprehensive way. With ESP-ADF, you can easily add features, develop audio applications from simple to complex:
 - Music player or recorder supports audio formats such as MP3, AAC, WAV, OGG, AMR, SPEEX ...
 - Play music from sources: HTTP, SDCARD, Bluetooth A2DP/HFP
-- Intergrate Media services such as: DLNA, Wechat ..
+- Integrate Media services such as: DLNA, Wechat ..
 - Internet Radio
 - Voice recognition and integration with online services such as Alexa, DuerOS, ...
 
@@ -19,6 +19,19 @@ As a general, the ESP-ADF features will be supported as shown below:
 
 
 ## Developing with the ESP-ADF
+
+### Quick Start
+
+You need the ESP32 LyraT board and headphone connected, make sure you clone the project recursive: 
+
+```
+git clone --recursive https://github.com/espressif/esp-adf.git 
+cd esp-adf/examples/get-started 
+make menuconfig
+make flash monitor
+```
+
+If you clone project without `--recursive` flag, please goto the `esp-adf` directory and run command `git submodule update --init` before doing anything.
 
 ### Hardware
 
