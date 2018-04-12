@@ -63,9 +63,10 @@ typedef enum {
  * @brief The Wi-Fi peripheral configuration
  */
 typedef struct {
-    bool disable_auto_reconnect;    /*!< Disable Wi-Fi auto reconnect */
-    const char *ssid;               /*!< SSID of target AP */
-    const char *password;           /*!< password of target AP */
+    bool    disable_auto_reconnect;   /*!< Disable Wi-Fi auto reconnect */
+    int     reconnect_timeout_ms;     /*!< The reconnect timeout after disconnected from Wi-Fi network */
+    const   char *ssid;               /*!< SSID of target AP */
+    const   char *password;           /*!< password of target AP */
 } periph_wifi_cfg_t;
 
 /**
