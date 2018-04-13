@@ -150,12 +150,11 @@ void record_playback_task()
     audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
     while (1) {
         audio_event_iface_msg_t msg;
-        if (audio_event_iface_listen(evt, &msg, portMAX_DELAY) != ESP_OK) {
+        esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret); 
             continue;
         }
-
-        ESP_LOGD(TAG, "Event received: src_type:%d, source:%p cmd:%d, data:%p, data_len:%d",
-                 msg.source_type, msg.source, msg.cmd, msg.data, msg.data_len);
 
         if (msg.source_type != PERIPH_ID_BUTTON) {
             continue;
