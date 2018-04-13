@@ -44,12 +44,12 @@ static const char *TAG = "PERIPH_CONSOLE";
 #define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
 #endif
 
-#define CONSOLE_BUFFER_SIZE (128)
+#define CONSOLE_BUFFER_SIZE (1024)
 #define CONSOLE_MAX_ARGUMENTS (5)
 
 static const int STOPPED_BIT = BIT1;
 
-typedef struct periph_console* periph_console_handle_t;
+typedef struct periph_console *periph_console_handle_t;
 
 typedef struct periph_console {
     char                        *buffer;
@@ -63,7 +63,8 @@ typedef struct periph_console {
     char                        *prompt_string;
 } periph_console_t;
 
-static char *conslole_parse_arguments(char *str, char **saveptr) {
+static char *conslole_parse_arguments(char *str, char **saveptr)
+{
     char *p;
 
     if (str != NULL) {
@@ -95,11 +96,12 @@ static char *conslole_parse_arguments(char *str, char **saveptr) {
     return *p != '\0' ? p : NULL;
 }
 
-bool console_get_line(periph_console_handle_t console, unsigned max_size, TickType_t time_to_wait) {
+bool console_get_line(periph_console_handle_t console, unsigned max_size, TickType_t time_to_wait)
+{
     char c;
     char tx[3];
 
-    int nread = uart_read_bytes(CONFIG_CONSOLE_UART_NUM, (uint8_t*)&c, 1, time_to_wait);
+    int nread = uart_read_bytes(CONFIG_CONSOLE_UART_NUM, (uint8_t *)&c, 1, time_to_wait);
     if (nread <= 0) {
         return false;
     }
@@ -109,14 +111,14 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
             tx[0] = c;
             tx[1] = 0x20;
             tx[2] = c;
-            uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char*)tx, 3);
+            uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 3);
         }
         return false;
     }
     if (c == '\n' || c == '\r') {
         tx[0] = '\r';
         tx[1] = '\n';
-        uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char*)tx, 2);
+        uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 2);
         console->buffer[console->total_bytes] = 0;
         return true;
     }
@@ -124,7 +126,7 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
     if (c < 0x20) {
         return false;
     }
-    uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char*)&c, 1);
+    uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)&c, 1);
     console->buffer[console->total_bytes++] = (char)c;
     if (console->total_bytes > max_size) {
         console->total_bytes = 0;
@@ -213,7 +215,7 @@ static void _console_task(void *pv)
                 console_exec(self, cmd, n, args);
                 console->total_bytes = 0;
             }
-            printf("\r\n%s ", prompt_string);
+            printf("%s ", prompt_string);
         }
 
     }
@@ -223,7 +225,6 @@ static void _console_task(void *pv)
 
 static esp_err_t _console_init(esp_periph_handle_t self)
 {
-
     periph_console_handle_t console = (periph_console_handle_t)esp_periph_get_data(self);
 
     setvbuf(stdin, NULL, _IONBF, 0);
@@ -239,7 +240,7 @@ static esp_err_t _console_init(esp_periph_handle_t self)
     /* Tell VFS to use UART driver */
     esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART_NUM);
 
-    console->buffer = (char*) malloc(CONSOLE_BUFFER_SIZE);
+    console->buffer = (char *) malloc(CONSOLE_BUFFER_SIZE);
     mem_assert(console->buffer);
 
     xTaskCreate(_console_task, "console_task", console->task_stack, self, console->task_prio, NULL);

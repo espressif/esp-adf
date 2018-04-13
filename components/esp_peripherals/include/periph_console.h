@@ -36,7 +36,7 @@ extern "C" {
 typedef esp_err_t (*console_cmd_callback_t)(esp_periph_handle_t periph, int argc, char *argv[]);
 
 #define CONSOLE_DEFAULT_TASK_PRIO       (5)
-#define CONSOLE_DEFAULT_TASK_STACK      (1024*3)
+#define CONSOLE_DEFAULT_TASK_STACK      (1024*5)
 #define CONSOLE_DEFAULT_PROMPT_STRING   "esp32>"
 
 /**

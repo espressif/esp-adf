@@ -98,7 +98,7 @@ static esp_err_t process_peripheral_event(audio_event_iface_msg_t *msg, void *co
 esp_err_t esp_periph_init(esp_periph_config_t* config)
 {
     if (g_esp_periph_obj != NULL) {
-        ESP_LOGE(TAG, "Peripherals have been initialized already");
+        ESP_LOGW(TAG, "Peripherals have been initialized already");
         return ESP_FAIL;
     }
     g_esp_periph_obj = calloc(1, sizeof(esp_periph_obj_t));
