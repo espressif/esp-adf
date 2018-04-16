@@ -47,7 +47,7 @@ Espressif Systems has released a number of support boards for ESP-ADF to develop
 
 #### ESP-IDF
 
-ESP-**A**DF is based on the application layer of ESP-**I**DF ([Espressif IoT Development Framework] (https://github.com/espressif/esp-idf)). So you need to first install the ESP-IDF and then use the ESP-ADF. Please take a look at [Get Started](./docs/en/get-started/index.rst)
+ESP-**A**DF is based on the application layer of ESP-**I**DF ([Espressif IoT Development Framework](https://github.com/espressif/esp-idf)). So you need to first install the ESP-IDF and then use the ESP-ADF. Please take a look at [Get Started](https://esp-adf.readthedocs.io/en/latest/get-started/index.html)
 
 #### Examples
 

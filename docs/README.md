@@ -7,4 +7,4 @@ The sources do not render well in GitHub and some information is not visible at 
 Use actual documentation generated within about 20 minutes on each commit:
 
 * Main server: https://esp-adf.readthedocs.io/en/latest/ or http://esp-adf.readthedocs.io/en/latest/
-* Mirror: https://espressif-docs.readthedocs-hosted.com/projects/esp-adf/en/latest/
+* Mirror: https://docs.espressif.com/projects/esp-adf/en/latest/
