@@ -63,6 +63,13 @@ Having the ESP-IDF to compile, build and upload application for ESP32, you can n
 
 ESP-ADF will be downloaded into ``~/esp/esp-adf``.
 
+.. note::
+
+    Do not miss the ``--recursive`` option. If you have already cloned ESP-ADF without this option, run another command to get all the submodules::
+
+        cd ~/esp/esp-adf
+        git submodule update --init
+
 
 .. _get-started-setup-path:
 
@@ -126,21 +133,24 @@ This will build the application including ESP-IDF / ESP-ADF components, upload b
 
     ...
 
-    I (299) APP: 1. Start audio codec chip
-    I (319) APP: 2. Create audio pipeline, add all elements to pipeline, and subscribe pipeline event
-    I (319) APP: 2.0. Create event queue to listen to all events from all elements, pipeline
-    I (329) APP: 2.1 Create mp3 decoder to decode mp3 file and set custom read callback
-    I (339) APP: 2.2 Create i2s stream to write data to codec chip
-    I (349) APP: 2.3 Register all elements to audio pipeline
-    I (349) APP: 2.4 Link it together [mp3_music_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]
-    I (359) APP: 3. Start audio_pipeline
-    I (389) APP: Status receive from audio_pipeline,pl:0x3ffb338c, cmd:8, status:12
-    W (7019) AUDIO_ELEMENT: [mp3] AEL_MSG_CMD_STOP
-    W (7109) AUDIO_ELEMENT: [i2s] AEL_MSG_CMD_STOP
-    I (7109) APP: Status receive from audio_pipeline,pl:0x3ffb338c, cmd:8, status:14
+    I (303) PLAY_MP3_FLASH: [ 1 ] Start audio codec chip
+    I (323) PLAY_MP3_FLASH: [ 2 ] Create audio pipeline, add all elements to pipeline, and subscribe pipeline event
+    I (323) PLAY_MP3_FLASH: [2.1] Create mp3 decoder to decode mp3 file and set custom read callback
+    I (333) PLAY_MP3_FLASH: [2.2] Create i2s stream to write data to codec chip
+    I (343) PLAY_MP3_FLASH: [2.3] Register all elements to audio pipeline
+    I (353) PLAY_MP3_FLASH: [2.4] Link it together [mp3_music_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]
+    I (363) PLAY_MP3_FLASH: [ 3 ] Setup event listener
+    I (363) PLAY_MP3_FLASH: [3.1] Listening event from all elements of pipeline
+    I (373) PLAY_MP3_FLASH: [ 4 ] Start audio_pipeline
+    W (373) AUDIO_ELEMENT: [mp3] RESUME:Element has not running,state:3,task_run:1
+    W (393) AUDIO_ELEMENT: [i2s] RESUME:Element has not running,state:3,task_run:1
+    I (403) PLAY_MP3_FLASH: [ * ] Receive music info from mp3 decoder, sample_rates=44100, bits=16, ch=2
+    W (433) AUDIO_ELEMENT: [i2s] RESUME:Element has not running,state:3,task_run:1
+    I (7183) PLAY_MP3_FLASH: [ 5 ] Stop audio_pipeline
+    W (7183) AUDIO_PIPELINE: There are no listener registered
 
 
-If there are no issues, besides the above log, you should hear a sound played for about 5 seconds by the speakers or headphones connected to your audio board. Reset the board to hear it again if required.
+If there are no issues, besides the above log, you should hear a sound played for about 7 seconds by the speakers or headphones connected to your audio board. Reset the board to hear it again if required.
 
 Now you are ready to try some other :adf:`examples`, or go right to developing your own applications. Check how the :adf:`examples` are made aware of location of the ESP-ADF. Open the :example_file:`get-started/play_mp3/Makefile` and you should see ::
 
