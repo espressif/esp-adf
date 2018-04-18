@@ -37,6 +37,9 @@ INPUT = \
     ../../components/esp-adf-libs/esp_codec/include/mp3_decoder.h \
     ../../components/esp-adf-libs/esp_codec/include/wav_decoder.h \
     ../../components/esp-adf-libs/esp_codec/include/wav_encoder.h \
+    ## ESP Audio
+     ../../components/esp-adf-libs/esp_audio/include/audio_def.h \
+     ../../components/esp-adf-libs/esp_audio/include/esp_audio.h \
     ## Common Peripherals
     ../../components/esp_peripherals/include/esp_peripherals.h \
     ../../components/esp_peripherals/include/periph_sdcard.h \
