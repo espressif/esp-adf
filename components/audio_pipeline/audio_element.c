@@ -149,7 +149,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
     switch (msg->cmd) {
         case AEL_MSG_CMD_ERROR:
             if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will close ", el->tag);
+                ESP_LOGV(TAG, "[%s] will be close %d", el->tag, __LINE__);
                 el->close(el);
                 el->is_open = false;
             }
@@ -163,7 +163,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             break;
         case AEL_MSG_CMD_FINISH:
             if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be close ", el->tag);
+                ESP_LOGV(TAG, "[%s] will be close %d", el->tag, __LINE__);
                 el->close(el);
                 el->is_open = false;
             }
@@ -176,7 +176,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             break;
         case AEL_MSG_CMD_STOP:
             if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be close ", el->tag);
+                ESP_LOGV(TAG, "[%s] will be close %d", el->tag, __LINE__);
                 el->close(el);
                 el->is_open = false;
             }
@@ -194,7 +194,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
         case AEL_MSG_CMD_PAUSE:
             el->state = AEL_STATE_PAUSED;
             if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be close ", el->tag);
+                ESP_LOGV(TAG, "[%s] will be close %d", el->tag, __LINE__);
                 el->close(el);
                 el->is_open = false;
             }
@@ -273,15 +273,16 @@ static esp_err_t audio_element_process_state_running(audio_element_handle_t el)
                 break;
             case AEL_IO_FAIL:
                 ESP_LOGE(TAG, "[%s] ERROR_PROCESS, AEL_IO_FAIL", el->tag);
+                audio_element_report_status(el, AEL_STATUS_ERROR_PROCESS);
+                audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
                 break;
             case AEL_IO_TIMEOUT:
                 ESP_LOGD(TAG, "[%s] ERROR_PROCESS, AEL_IO_TIMEOUT", el->tag);
                 break;
-            case AEL_PROCESS_FAIL: {
-                    ESP_LOGE(TAG, "[%s] ERROR_PROCESS, AEL_PROCESS_FAIL", el->tag);
-                    audio_element_report_status(el, AEL_STATUS_ERROR_PROCESS);
-                    audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
-                }
+            case AEL_PROCESS_FAIL:
+                ESP_LOGE(TAG, "[%s] ERROR_PROCESS, AEL_PROCESS_FAIL", el->tag);
+                audio_element_report_status(el, AEL_STATUS_ERROR_PROCESS);
+                audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
             default:
                 ESP_LOGW(TAG, "[%s] Process return error,ret:%d", el->tag, process_len);
                 break;
@@ -388,7 +389,7 @@ void audio_element_task(void *pv)
     el->task_run = true;
     xEventGroupSetBits(el->state_event, TASK_CREATED_BIT);
     audio_element_force_set_state(el, AEL_STATE_INIT);
-    audio_element_cmd_send(el, AEL_MSG_CMD_PAUSE);
+    audio_event_iface_set_cmd_waiting_timeout(el->event, portMAX_DELAY);
     if (el->buf_size > 0) {
         el->buf = audio_malloc(el->buf_size);
         AUDIO_MEM_CHECK(TAG, el->buf, {
@@ -897,6 +898,10 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
     }
     if (el->state == AEL_STATE_RUNNING) {
         ESP_LOGD(TAG, "[%s] Element already resumed,state:%d", el->tag, el->state);
+        return ESP_OK;
+    }
+    if (el->state == AEL_STATE_FINISHED) {
+        ESP_LOGI(TAG, "[%s] Element already finished,state:%d", el->tag, el->state);
         return ESP_OK;
     }
     if (el->task_stack <= 0) {
