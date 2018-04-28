@@ -27,7 +27,6 @@
 #include "driver/i2c.h"
 #include "es8388.h"
 #include "board.h"
-
 static const char *ES_TAG = "ES8388_DRIVER";
 
 #define ES_ASSERT(a, format, b, ...) \

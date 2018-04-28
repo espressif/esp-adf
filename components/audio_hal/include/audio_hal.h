@@ -27,7 +27,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-
+#include "sdkconfig.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +36,7 @@ extern "C" {
 
 typedef struct audio_hal* audio_hal_handle_t;
 
+#ifdef CONFIG_ESP32_LYRAT
 #define AUDIO_HAL_ES8388_DEFAULT(){                     \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
@@ -47,7 +48,21 @@ typedef struct audio_hal* audio_hal_handle_t;
             .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
         },                                              \
 };
+#endif
 
+#ifdef CONFIG_AUDIO_KIT
+#define AUDIO_HAL_AC101_DEFAULT(){                     \
+        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
+        .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
+        .codec_mode = AUDIO_HAL_CODEC_MODE_DECODE,        \
+        .i2s_iface = {                                  \
+            .mode = AUDIO_HAL_MODE_MASTER,               \
+            .fmt = AUDIO_HAL_I2S_NORMAL,                \
+            .samples = AUDIO_HAL_16K_SAMPLES,           \
+            .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
+        },                                              \
+};
+#endif
 /**
  * @brief Select media hal codec mode
  */
@@ -99,20 +114,25 @@ typedef enum {
 typedef enum {
     AUDIO_HAL_08K_SAMPLES,   /*!< set to  8k samples per second */
     AUDIO_HAL_11K_SAMPLES,   /*!< set to 11.025k samples per second */
+	AUDIO_HAL_12K_SAMPLES,   /*!< set to 12k samples per second */
     AUDIO_HAL_16K_SAMPLES,   /*!< set to 16k samples in per second */
     AUDIO_HAL_22K_SAMPLES,   /*!< set to 22.050k samples per second */
     AUDIO_HAL_24K_SAMPLES,   /*!< set to 24k samples in per second */
     AUDIO_HAL_32K_SAMPLES,   /*!< set to 32k samples in per second */
     AUDIO_HAL_44K_SAMPLES,   /*!< set to 44.1k samples per second */
     AUDIO_HAL_48K_SAMPLES,   /*!< set to 48k samples per second */
+	AUDIO_HAL_96K_SAMPLES,   /*!< set to 96k samples per second */
+	AUDIO_HAL_192K_SAMPLES,   /*!< set to 192k samples per second */
 } audio_hal_iface_samples_t;
 
 /**
  * @brief Select I2S interface number of bits per sample
  */
 typedef enum {
+	AUDIO_HAL_BIT_LENGTH_8BITS = 0,
     AUDIO_HAL_BIT_LENGTH_16BITS = 1,   /*!< set 16 bits per sample */
-    AUDIO_HAL_BIT_LENGTH_24BITS,   /*!< set 24 bits per sample */
+	AUDIO_HAL_BIT_LENGTH_20BITS,
+	AUDIO_HAL_BIT_LENGTH_24BITS,   /*!< set 24 bits per sample */
     AUDIO_HAL_BIT_LENGTH_32BITS,  /*!< set 32 bits per sample */
 } audio_hal_iface_bits_t;
 
@@ -145,6 +165,7 @@ typedef struct {
     audio_hal_codec_mode_t codec_mode;  /*!< select codec mode: adc, dac or both */
     audio_hal_codec_i2s_iface_t i2s_iface; /*!< set I2S interface configuration */
 } audio_hal_codec_config_t;
+
 
 /**
  * @brief Initialize media codec driver

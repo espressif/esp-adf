@@ -26,10 +26,17 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "audio_hal.h"
-
+#include "board.h"
 #include "audio_mem.h"
 #include "audio_mutex.h"
+#include "sdkconfig.h"
+
+#ifdef CONFIG_ESP32_LYRAT
 #include "es8388.h"
+#endif
+#ifdef CONFIG_AUDIO_KIT
+#include "AC101.h"
+#endif
 
 #define HAL_TAG "AUDIO_HAL"
 
@@ -50,6 +57,22 @@ struct audio_hal {
     void* handle;
 };
 
+
+
+#ifdef CONFIG_AUDIO_KIT
+static struct audio_hal audio_hal_codecs_default[] = {
+    {
+        .audio_codec_initialize = AC101_init,
+        .audio_codec_deinitialize = AC101_deinit,
+        .audio_codec_ctrl = AC101_ctrl_state,
+        .audio_codec_config_iface = AC101_config_i2s,
+        .audio_codec_set_volume = AC101_set_voice_volume,
+        .audio_codec_get_volume = AC101_get_voice_volume,
+    }
+};
+#endif
+
+#ifdef CONFIG_ESP32_LYRAT
 static struct audio_hal audio_hal_codecs_default[] = {
     {
         .audio_codec_initialize = es8388_init,
@@ -60,6 +83,9 @@ static struct audio_hal audio_hal_codecs_default[] = {
         .audio_codec_get_volume = es8388_get_voice_volume,
     }
 };
+#endif
+
+
 
 audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t* audio_hal_conf, int index)
 {
@@ -79,7 +105,9 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t* audio_hal_conf, int 
     audio_hal->handle = audio_hal;
     audio_hal_codecs_default[index].handle = audio_hal;
     mutex_unlock(audio_hal->audio_hal_lock);
+#ifdef CONFIG_ESP32_LYRAT
     es8388_pa_power(true);
+#endif
     return audio_hal;
 }
 
