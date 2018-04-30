@@ -48,8 +48,11 @@ typedef enum {
                                      * If the fucntion return the value > 0, HTTP Stream will ignore the read function
                                      * If the fucntion return the value = 0, HTTP Stream continue read data from HTTP Server
                                      */
-    HTTP_STREAM_POST_REQUEST,       /*!< The event handler will be called after HTTP Client send header and body to the serve, before fetching the headers */
+    HTTP_STREAM_POST_REQUEST,       /*!< The event handler will be called after HTTP Client send header and body to the server, before fetching the headers */
     HTTP_STREAM_FINISH_REQUEST,     /*!< The event handler will be called after HTTP Client fetch the header and ready to read HTTP body */
+    HTTP_STREAM_RESOLVE_ALL_TRACKS,
+    HTTP_STREAM_FINISH_TRACK,
+    HTTP_STREAM_FINISH_PLAYLIST,
 } http_stream_event_id_t;
 
 /**
@@ -59,8 +62,9 @@ typedef struct {
     http_stream_event_id_t  event_id;       /*!< Event ID */
     void                    *http_client;   /*!< Reference to HTTP Client using by this HTTP Stream */
     void                    *buffer;        /*!< Reference to Buffer using by the Audio Element */
-    int                     buffer_len;     /*!< Lenght of buffer */
+    int                     buffer_len;     /*!< Length of buffer */
     void                    *user_data;     /*!< User data context, from `http_stream_cfg_t` */
+    audio_element_handle_t  el;             /*!< Audio element context */
 } http_stream_event_msg_t;
 
 typedef int (*http_stream_event_handle_t)(http_stream_event_msg_t *msg);
@@ -71,8 +75,9 @@ typedef int (*http_stream_event_handle_t)(http_stream_event_msg_t *msg);
  */
 typedef struct {
     audio_stream_type_t         type;                   /*!< Type of stream */
-    http_stream_event_handle_t  event_handle;  /*!< The hook function for HTTP Stream */
+    http_stream_event_handle_t  event_handle;           /*!< The hook function for HTTP Stream */
     void                        *user_data;             /*!< User data context */
+    bool                        enable_playlist_parser; /*!< Enable playlist parser*/
 } http_stream_cfg_t;
 
 #define HTTP_STREAM_CFG_DEFAULT() {\
@@ -89,6 +94,8 @@ typedef struct {
  * @return     The Audio Element handle
  */
 audio_element_handle_t http_stream_init(http_stream_cfg_t *config);
+esp_err_t http_stream_next_track(audio_element_handle_t el);
+esp_err_t http_stream_restart(audio_element_handle_t el);
 
 #ifdef __cplusplus
 }

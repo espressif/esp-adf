@@ -237,7 +237,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
                 el->is_running = true;
                 break;
             }
-            if (el->state != AEL_STATE_RUNNING && el->state != AEL_STATE_PAUSED) {
+            if (el->state != AEL_STATE_INIT && el->state != AEL_STATE_RUNNING && el->state != AEL_STATE_PAUSED) {
                 audio_element_reset_output_ringbuf(el);
             }
             if (audio_element_process_state_init(el) != ESP_OK) {
@@ -271,6 +271,13 @@ static esp_err_t audio_element_process_state_running(audio_element_handle_t el)
                 break;
             case AEL_IO_DONE:
             case AEL_IO_OK:
+                // Re-open if reset_state function called
+                if (audio_element_get_state(el) == AEL_STATE_INIT) {
+                    el->is_open = false;
+                    el->is_running = false;
+                    audio_element_resume(el, 0, 0);
+                    return ESP_OK;
+                }
                 audio_element_set_ringbuf_done(el);
                 audio_element_cmd_send(el, AEL_MSG_CMD_FINISH);
                 break;
@@ -905,7 +912,6 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
         ESP_LOGI(TAG, "[%s] RESUME: Element has finished, state:%d", el->tag, el->state);
         return ESP_OK;
     }
-
     if (wait_for_rb_threshold > 1 || wait_for_rb_threshold < 0) {
         return ESP_FAIL;
     }

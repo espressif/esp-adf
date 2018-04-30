@@ -59,6 +59,7 @@ typedef enum {
     AUDIO_CODEC_MP3,
     AUDIO_CODEC_AAC,
     AUDIO_CODEC_OPUS,
+    AUDIO_PLAYLIST
 } audio_codec_t;
 
 #define mem_assert(x)
