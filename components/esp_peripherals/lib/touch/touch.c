@@ -34,9 +34,6 @@
 #include "rom/queue.h"
 #include "touch.h"
 
-#ifndef mem_assert
-#define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
-#endif
 
 #define TOUCHPAD_TRIGGER_THRESHOLD      100
 #define TOUCHPAD_FILTER_PERIOD          (portTICK_PERIOD_MS+1)
@@ -92,7 +89,8 @@ static void touch_pad_isr_handler(void* arg)
 esp_touch_handle_t esp_touch_init(touch_config_t *config)
 {
     esp_touch_handle_t touch = calloc(1, sizeof(struct esp_touch));
-    mem_assert(touch);
+    AUDIO_MEM_CHECK(TAG, touch, return NULL);
+
     if (config->touch_mask <= 0) {
         ESP_LOGE(TAG, "required at least 1 touch");
         return NULL;
@@ -109,8 +107,12 @@ esp_touch_handle_t esp_touch_init(touch_config_t *config)
     if (touch->tap_threshold_percent == 0) {
         touch->tap_threshold_percent = DEFAULT_TOUCH_THRESHOLD_PERCENT;
     }
+    bool _success = (touch_pad_init() == ESP_OK);
 
-    touch_pad_init();
+    AUDIO_MEM_CHECK(TAG, _success, {
+        free(touch);
+        return NULL;
+    });
 
     int touch_mask = touch->touch_mask;
     int touch_num = 0;
@@ -120,7 +122,11 @@ esp_touch_handle_t esp_touch_init(touch_config_t *config)
         if (touch_mask & 0x01) {
             ESP_LOGD(TAG, "Mask = %x, current_mask = %x, idx=%d", touch->touch_mask, touch_mask, touch_num);
             esp_touch_item_t *new_touch = calloc(1, sizeof(esp_touch_item_t));
-            mem_assert(new_touch);
+            AUDIO_MEM_CHECK(TAG, new_touch, {
+                esp_touch_destroy(touch);
+                free(touch);
+                return NULL;
+            });
             new_touch->touch_num = touch_num;
             new_touch->last_read_tick = tick_get() + touch_index * 10;
             touch_pad_config(touch_num, 0);
@@ -184,7 +190,7 @@ static touch_status_t touch_get_state(esp_touch_handle_t touch, esp_touch_item_t
         touch_item->last_tap_tick = tick_get();
         touch_item->long_tapped = false;
         ESP_LOGD(TAG, "TOUCH_TAPPED[%d] %d, threshold %d",
-            touch_item->touch_num, touch_item->last_read_value, touch_item->threshold_value);
+                 touch_item->touch_num, touch_item->last_read_value, touch_item->threshold_value);
         return TOUCH_TAP;
     }
 
@@ -192,7 +198,7 @@ static touch_status_t touch_get_state(esp_touch_handle_t touch, esp_touch_item_t
         touch_item->last_tap_tick = 0;
         touch_item->long_tapped = false;
         ESP_LOGD(TAG, "TOUCH_LONG_RELEASE[%d] %d, threshold %d",
-            touch_item->touch_num, touch_item->last_read_value, touch_item->threshold_value);
+                 touch_item->touch_num, touch_item->last_read_value, touch_item->threshold_value);
         return TOUCH_LONG_RELEASE;
     }
 
@@ -200,14 +206,14 @@ static touch_status_t touch_get_state(esp_touch_handle_t touch, esp_touch_item_t
         touch_item->last_tap_tick = 0;
         touch_item->long_tapped = false;
         ESP_LOGD(TAG, "TOUCH_RELEASE[%d] %d, threshold %d",
-            touch_item->touch_num, touch_item->last_read_value, touch_item->threshold_value);
+                 touch_item->touch_num, touch_item->last_read_value, touch_item->threshold_value);
         return TOUCH_RELEASE;
     }
 
     if (touch_item->long_tapped == false && touch_item->tapped && tick_get() - touch_item->last_tap_tick > touch->long_tap_time_ms) {
         touch_item->long_tapped = true;
         ESP_LOGD(TAG, "TOUCH_LONG_TAP[%d] %d, threshold %d",
-            touch_item->touch_num, touch_item->last_read_value, touch_item->threshold_value);
+                 touch_item->touch_num, touch_item->last_read_value, touch_item->threshold_value);
         return TOUCH_LONG_TAP;
     }
     return TOUCH_UNCHANGE;

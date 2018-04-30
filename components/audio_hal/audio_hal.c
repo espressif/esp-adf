@@ -31,11 +31,11 @@
 #include "audio_mutex.h"
 #include "es8388.h"
 
-#define HAL_TAG "AUDIO_HAL"
+static const char *TAG = "AUDIO_HAL";
 
 #define AUDIO_HAL_CHECK_NULL(a, format, b, ...) \
     if ((a) == 0) { \
-        ESP_LOGE(HAL_TAG, format, ##__VA_ARGS__); \
+        ESP_LOGE(TAG, format, ##__VA_ARGS__); \
         return b;\
     }
 
@@ -67,11 +67,18 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t* audio_hal_conf, int 
     if (NULL != audio_hal_codecs_default[index].handle) {
         return audio_hal_codecs_default[index].handle;
     }
-    audio_hal_handle_t audio_hal = (audio_hal_handle_t) audio_calloc(1, sizeof(struct audio_hal));
-    assert(audio_hal);
+    audio_hal_handle_t audio_hal =(audio_hal_handle_t) audio_calloc(1, sizeof(struct audio_hal));
+    AUDIO_MEM_CHECK(TAG, audio_hal, return NULL);
     memcpy(audio_hal, &audio_hal_codecs_default[index], sizeof(struct audio_hal));
     audio_hal->audio_hal_lock = mutex_create();
-    assert(audio_hal->audio_hal_lock);
+
+    AUDIO_MEM_CHECK(TAG, audio_hal->audio_hal_lock, {
+        free(audio_hal);
+        return NULL;
+    });
+
+
+
     mutex_lock(audio_hal->audio_hal_lock);
     ret  = audio_hal->audio_codec_initialize(audio_hal_conf);
     ret |= audio_hal->audio_codec_config_iface(AUDIO_HAL_CODEC_MODE_BOTH, &audio_hal_conf->i2s_iface);
@@ -102,7 +109,7 @@ esp_err_t audio_hal_ctrl_codec(audio_hal_handle_t audio_hal, audio_hal_codec_mod
     esp_err_t ret;
     AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
     mutex_lock(audio_hal->audio_hal_lock);
-    ESP_LOGI(HAL_TAG, "Codec mode is %d, Ctrl:%d", mode, audio_hal_state);
+    ESP_LOGI(TAG, "Codec mode is %d, Ctrl:%d", mode, audio_hal_state);
     ret = audio_hal->audio_codec_ctrl(mode, audio_hal_state);
     mutex_unlock(audio_hal->audio_hal_lock);
     return ret;

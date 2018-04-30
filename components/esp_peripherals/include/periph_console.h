@@ -26,7 +26,7 @@
 #define _PERIPH_CONSOLE_H_
 
 #include "rom/queue.h"
-#include "esp_err.h"
+#include "audio_error.h"
 #include "esp_peripherals.h"
 
 #ifdef __cplusplus

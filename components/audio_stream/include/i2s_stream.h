@@ -28,6 +28,7 @@
 #include "driver/i2s.h"
 #include "audio_common.h"
 #include "board.h"
+#include "audio_error.h"
 
 #ifdef __cplusplus
 extern "C" {

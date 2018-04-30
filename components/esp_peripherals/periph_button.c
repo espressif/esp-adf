@@ -41,10 +41,6 @@
 
 static const char* TAG = "PERIPH_BUTTON";
 
-#ifndef mem_assert
-#define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
-#endif
-
 #define VALIDATE_BTN(periph, ret) if (!(periph && esp_periph_get_id(periph) == PERIPH_ID_BUTTON)) { \
     ESP_LOGE(TAG, "Invalid BUTTON periph, at line %d", __LINE__);\
     return ret;\
@@ -100,7 +96,6 @@ static void IRAM_ATTR button_intr_handler(void* param)
 static void button_timer_handler(xTimerHandle tmr)
 {
     esp_periph_handle_t periph = (esp_periph_handle_t) pvTimerGetTimerID(tmr);
-    // ESP_LOGE(TAG, "periph_id=%d", esp_periph_get_id(periph));
     esp_periph_send_cmd_from_isr(periph, 0, NULL, 0);
 }
 
@@ -125,9 +120,13 @@ static esp_err_t _button_init(esp_periph_handle_t self)
 esp_periph_handle_t periph_button_init(periph_button_cfg_t *config)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_BUTTON, "periph_btn");
-    mem_assert(periph);
+    AUDIO_MEM_CHECK(TAG, periph, return NULL);
     periph_button_t *periph_btn = calloc(1, sizeof(periph_button_t));
-    mem_assert(periph_btn);
+
+    AUDIO_MEM_CHECK(TAG, periph_btn, {
+        free(periph);
+        return NULL;
+    });
     periph_btn->gpio_mask = config->gpio_mask;
     periph_btn->long_press_time_ms = config->long_press_time_ms;
 

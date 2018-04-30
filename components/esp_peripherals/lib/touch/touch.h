@@ -25,6 +25,9 @@
 #ifndef _ESP_TOUCH_PAD_H_
 #define _ESP_TOUCH_PAD_H_
 
+#include "audio_error.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

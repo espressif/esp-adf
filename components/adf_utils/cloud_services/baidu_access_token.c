@@ -27,6 +27,7 @@
 #include "esp_http_client.h"
 #include "json_utils.h"
 #include "esp_log.h"
+#include "audio_error.h"
 
 #define BAIDU_URI_LENGTH (200)
 #define BAIDU_AUTH_ENDPOINT "https://openapi.baidu.com/oauth/2.0/token?grant_type=client_credentials"
@@ -37,13 +38,17 @@ char *baidu_get_access_token(const char *access_key, const char *access_secret)
 {
     char *token = NULL;
     char *uri = calloc(1, BAIDU_URI_LENGTH);
-    assert(uri);
+
+    AUDIO_MEM_CHECK(TAG, uri, return NULL);
+
     snprintf(uri, BAIDU_URI_LENGTH, BAIDU_AUTH_ENDPOINT"&client_id=%s&client_secret=%s", access_key, access_secret);
 
     esp_http_client_config_t config = {
         .uri = uri,
     };
     esp_http_client_handle_t http_client = esp_http_client_init(&config);
+    AUDIO_MEM_CHECK(TAG, http_client, return NULL);
+
     if (esp_http_client_open(http_client, 0) != ESP_OK) {
         ESP_LOGE(TAG, "Error open http request to baidu auth server");
         goto _exit;
@@ -51,7 +56,9 @@ char *baidu_get_access_token(const char *access_key, const char *access_secret)
     esp_http_client_fetch_headers(http_client);
     int max_len = 2 * 1024;
     char *data = malloc(max_len);
-    assert(data);
+
+    AUDIO_MEM_CHECK(TAG, data, goto _exit);
+
     int read_index = 0, total_len = 0;
     while (1) {
         int read_len = esp_http_client_read(http_client, data + read_index, max_len - read_index);

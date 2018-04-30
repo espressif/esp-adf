@@ -113,7 +113,9 @@ static esp_err_t _i2s_close(audio_element_handle_t self)
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
     int index = i2s->config.i2s_config.dma_buf_count;
     uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
-    mem_assert(buf);
+
+    AUDIO_MEM_CHECK(TAG, buf, return ESP_ERR_NO_MEM);
+
     while (index--) {
         i2s_write_bytes(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, portMAX_DELAY);
     }
@@ -171,7 +173,9 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
         i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
         int index = i2s->config.i2s_config.dma_buf_count;
         uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
-        mem_assert(buf);
+
+        AUDIO_MEM_CHECK(TAG, buf, return ESP_FAIL);
+
         while (index--) {
             i2s_write_bytes(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, portMAX_DELAY);
         }
@@ -220,7 +224,9 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     cfg.tag = "iis";
     cfg.buffer_len = I2S_STREAM_BUF_SIZE;
     i2s_stream_t *i2s = audio_calloc(1, sizeof(i2s_stream_t));
-    mem_assert(i2s);
+
+    AUDIO_MEM_CHECK(TAG, i2s, return NULL);
+
     memcpy(&i2s->config, config, sizeof(i2s_stream_cfg_t));
     i2s->type = config->type;
 
@@ -230,7 +236,11 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         cfg.write = _i2s_write;
     }
     el = audio_element_init(&cfg);
-    mem_assert(el);
+
+    AUDIO_MEM_CHECK(TAG, el, {
+        audio_free(i2s);
+        return NULL;
+    });
     audio_element_setdata(el, i2s);
 
     audio_element_info_t info;
