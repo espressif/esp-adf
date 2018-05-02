@@ -1,0 +1,14 @@
+menu "Board Config"
+
+config ESP_LYRAT_V4_3_BOARD
+    bool "ESP32_Lyrat_V4.3 board"
+    default "y"
+    help
+        Support Espressif ESP32_LyraT_V4.3 board
+
+config ESP_LYRAT_V4_2_BOARD
+    bool "ESP32_Lyrat_V4.2 board"
+    help
+        Support Espressif ESP32_LyraT_V4.2 board
+
+endmenu
