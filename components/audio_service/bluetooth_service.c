@@ -169,34 +169,36 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
         return ESP_FAIL;
     }
     if (config->mode == BLUETOOTH_A2DP_SOUCE) {
-        ESP_LOGE(TAG, "This working mode does not support now");
+        AUDIO_ERROR(TAG, "This working mode is not supported yet");
         return ESP_FAIL;
     }
+    g_bt_service = calloc(1, sizeof(bluetooth_service_t));
+    AUDIO_MEM_CHECK(TAG, g_bt_service, return ESP_ERR_NO_MEM);
+
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_BLE));
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     if (esp_bt_controller_init(&bt_cfg) != ESP_OK) {
-        ESP_LOGE(TAG, "initialize controller failed");
+        AUDIO_ERROR(TAG, "initialize controller failed");
         return ESP_FAIL;
     }
 
     if (esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT) != ESP_OK) {
-        ESP_LOGE(TAG, "enable controller failed");
+        AUDIO_ERROR(TAG, "enable controller failed");
         return ESP_FAIL;
     }
 
     if (esp_bluedroid_init() != ESP_OK) {
-        ESP_LOGE(TAG, "initialize bluedroid failed");
+        AUDIO_ERROR(TAG, "initialize bluedroid failed");
         return ESP_FAIL;
     }
 
     if (esp_bluedroid_enable() != ESP_OK) {
-        ESP_LOGE(TAG, "enable bluedroid failed");
+        AUDIO_ERROR(TAG, "enable bluedroid failed");
         return ESP_FAIL;
     }
 
-    g_bt_service = calloc(1, sizeof(bluetooth_service_t));
-    assert(g_bt_service);
+
     if (config->device_name) {
         esp_bt_dev_set_device_name(config->device_name);
     } else {
@@ -227,7 +229,7 @@ esp_err_t bluetooth_service_destroy()
     if (g_bt_service &&
             (g_bt_service->stream || g_bt_service->periph)) {
 
-        ESP_LOGE(TAG, "Stream and periph need to stop first");
+        AUDIO_ERROR(TAG, "Stream and periph need to stop first");
         return ESP_FAIL;
     }
     if (g_bt_service) {
@@ -262,7 +264,8 @@ audio_element_handle_t bluetooth_service_create_stream()
     cfg.destroy = _bt_stream_destroy;
     cfg.tag = "bt";
     g_bt_service->stream = audio_element_init(&cfg);
-    mem_assert(g_bt_service->stream);
+
+    AUDIO_MEM_CHECK(TAG, g_bt_service->stream, return NULL);
 
     audio_element_setdata(g_bt_service->stream, g_bt_service);
 

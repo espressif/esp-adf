@@ -30,18 +30,18 @@
 #include "freertos/queue.h"
 #include "ringbuf.h"
 #include "esp_log.h"
-#include "esp_err.h"
 #include "audio_mem.h"
+#include "audio_error.h"
 
-const char *TAG = "RINGBUF";
+static const char *TAG = "RINGBUF";
 
 struct ringbuf {
-    char *p_o;        /**< Original pointer */
-    char *volatile p_r;   /**< Read pointer */
-    char *volatile p_w;   /**< Write pointer */
+    char *p_o;                   /**< Original pointer */
+    char *volatile p_r;          /**< Read pointer */
+    char *volatile p_w;          /**< Write pointer */
     volatile uint32_t fill_cnt;  /**< Number of filled slots */
-    uint32_t size;       /**< Buffer size */
-    uint32_t block_size;
+    uint32_t size;               /**< Buffer size */
+    uint32_t block_size;         /**< Block size */
     SemaphoreHandle_t can_read;
     SemaphoreHandle_t can_write;
     SemaphoreHandle_t task_block;
@@ -49,65 +49,77 @@ struct ringbuf {
     QueueSetHandle_t write_set;
     QueueHandle_t abort_read;
     QueueHandle_t abort_write;
-    bool is_done_write;  //to prevent infinite blocking for buffer read
+    bool is_done_write;         /**< to prevent infinite blocking for buffer read */
 };
 
 static esp_err_t rb_abort_read(ringbuf_handle_t rb);
 static esp_err_t rb_abort_write(ringbuf_handle_t rb);
-void rb_release(SemaphoreHandle_t handle);
+static void rb_release(SemaphoreHandle_t handle);
 
 ringbuf_handle_t rb_create(int size, int block_size)
 {
     if (size < 2) {
+        ESP_LOGE(TAG, "Invalid size");
         return NULL;
     }
 
     if (size % block_size != 0) {
+        ESP_LOGE(TAG, "Invalid size");
         return NULL;
     }
-    ringbuf_handle_t rb = audio_malloc(sizeof(struct ringbuf));
-    configASSERT(rb);
-    char *buf = audio_calloc(1, size);
-    configASSERT(buf);
+    ringbuf_handle_t rb;
+    char *buf = NULL;
+    bool _success =
+        (
+            (rb                 = audio_malloc(sizeof(struct ringbuf))) &&
+            (buf                = audio_calloc(1, size))                &&
+            (rb->abort_read     = xQueueCreate(1, sizeof(int)))         &&
+            (rb->abort_write    = xQueueCreate(1, sizeof(int)))         &&
+            (rb->read_set       = xQueueCreateSet(2))                   &&
+            (rb->write_set      = xQueueCreateSet(2))                   &&
+            (rb->can_read       = xSemaphoreCreateBinary())             &&
+            (rb->task_block     = xSemaphoreCreateMutex())              &&
+            (rb->can_write      = xSemaphoreCreateBinary())             &&
+            (xQueueAddToSet(rb->abort_read, rb->read_set)    == pdTRUE) &&
+            (xQueueAddToSet(rb->can_read, rb->read_set)      == pdTRUE) &&
+            (xQueueAddToSet(rb->abort_write, rb->write_set)  == pdTRUE) &&
+            (xQueueAddToSet(rb->can_write, rb->write_set)    == pdTRUE)
+        );
+
+    AUDIO_MEM_CHECK(TAG, _success, goto _rb_init_failed);
 
     rb->p_o = rb->p_r = rb->p_w = buf;
     rb->fill_cnt = 0;
     rb->size = size;
     rb->block_size = block_size;
     rb->is_done_write = false;
-
-    rb->abort_read = xQueueCreate(1, sizeof(int));
-    rb->abort_write = xQueueCreate(1, sizeof(int));
-    rb->read_set = xQueueCreateSet(2);
-    rb->write_set = xQueueCreateSet(2);
-    rb->task_block = xSemaphoreCreateMutex();
-    rb->can_read = xSemaphoreCreateBinary();
-    rb->can_write = xSemaphoreCreateBinary();
-
-    configASSERT(rb->abort_read);
-    configASSERT(rb->read_set);
-    configASSERT(rb->write_set);
-    configASSERT(rb->task_block);
-    configASSERT(rb->can_read);
-    configASSERT(rb->can_write);
-
-    xQueueAddToSet(rb->abort_read, rb->read_set);
-    xQueueAddToSet(rb->can_read, rb->read_set);
-
-    xQueueAddToSet(rb->abort_write, rb->write_set);
-    xQueueAddToSet(rb->can_write, rb->write_set);
     return rb;
+_rb_init_failed:
+    rb_destroy(rb);
+    return NULL;
 }
 
 esp_err_t rb_destroy(ringbuf_handle_t rb)
 {
+    if (rb == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
     audio_free(rb->p_o);
     rb->p_o = NULL;
-    xQueueRemoveFromSet(rb->abort_read, rb->read_set);
-    xQueueRemoveFromSet(rb->abort_write, rb->write_set);
+    if (rb->read_set && rb->abort_read) {
+        xQueueRemoveFromSet(rb->abort_read, rb->read_set);
+    }
+    if (rb->abort_write && rb->write_set) {
+        xQueueRemoveFromSet(rb->abort_write, rb->write_set);
+    }
 
-    xQueueRemoveFromSet(rb->can_read, rb->read_set);
-    xQueueRemoveFromSet(rb->can_write, rb->write_set);
+    if (rb->can_read && rb->read_set) {
+        xQueueRemoveFromSet(rb->can_read, rb->read_set);
+    }
+
+    if (rb->can_write && rb->write_set) {
+        xQueueRemoveFromSet(rb->can_write, rb->write_set);
+    }
 
     vQueueDelete(rb->abort_read);
     vQueueDelete(rb->abort_write);
@@ -164,7 +176,7 @@ int rb_bytes_filled(ringbuf_handle_t rb)
     return rb->fill_cnt;
 }
 
-void rb_release(SemaphoreHandle_t handle)
+static void rb_release(SemaphoreHandle_t handle)
 {
     xSemaphoreGive(handle);
 }
@@ -275,7 +287,6 @@ read_err:
     if (total_read_size > 0) {
         rb_release(rb->can_write);
     }
-    // rb_release(rb->task_block);
     return total_read_size > 0 ? total_read_size : ret_val;
 }
 
@@ -324,13 +335,10 @@ int rb_write(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wa
         if ((rb->p_w + write_size) > (rb->p_o + rb->size)) {
             int wlen1 = rb->p_o + rb->size - rb->p_w;
             int wlen2 = write_size - wlen1;
-            // ESP_LOGI(TAG, "write(p_w=%x, buf=%x, wlen1=%d)", (int)rb->p_w, (int)buf, wlen1);
-            // ESP_LOGI(TAG, "write(p_o=%x, buf + wlen1=%x, wlen2=%d)", (int)rb->p_o, (int)buf + wlen1, wlen2);
             memcpy(rb->p_w, buf, wlen1);
             memcpy(rb->p_o, buf + wlen1, wlen2);
             rb->p_w = rb->p_o + wlen2;
         } else {
-            // ESP_LOGI(TAG, "write(p_w=%x, buf=%x, write_size=%d)", (int)rb->p_w, (int)buf, write_size);
             memcpy(rb->p_w, buf, write_size);
             rb->p_w = rb->p_w + write_size;
         }
@@ -350,7 +358,6 @@ write_err:
     if (total_write_size > 0) {
         rb_release(rb->can_read);
     }
-    // rb_release(rb->task_block);
     return total_write_size > 0 ? total_write_size : ret_val;
 }
 
@@ -358,9 +365,10 @@ static esp_err_t rb_abort_read(ringbuf_handle_t rb)
 {
     int abort = 1;
     if (rb == NULL) {
-        return ESP_FAIL;
+        return ESP_ERR_INVALID_ARG;
     }
     if (xQueueSend(rb->abort_read, (void *) &abort, 0) != pdPASS) {
+        ESP_LOGD(TAG, "Error send abort read queue");
         return ESP_FAIL;
     }
     return ESP_OK;
@@ -370,9 +378,10 @@ static esp_err_t rb_abort_write(ringbuf_handle_t rb)
 {
     int abort = 1;
     if (rb == NULL) {
-        return ESP_FAIL;
+        return ESP_ERR_INVALID_ARG;
     }
     if (xQueueSend(rb->abort_write, (void *) &abort, 0) != pdPASS) {
+        ESP_LOGD(TAG, "Error send abort write queue");
         return ESP_FAIL;
     }
     return ESP_OK;
@@ -404,7 +413,7 @@ int rb_size_get(ringbuf_handle_t rb)
 esp_err_t rb_done_write(ringbuf_handle_t rb)
 {
     if (rb == NULL) {
-        return ESP_FAIL;
+        return ESP_ERR_INVALID_ARG;
     }
     rb->is_done_write = true;
     rb_release(rb->can_read);
@@ -422,7 +431,7 @@ bool rb_is_done_write(ringbuf_handle_t rb)
 int rb_get_size(ringbuf_handle_t rb)
 {
     if (rb == NULL) {
-        return ESP_FAIL;
+        return ESP_ERR_INVALID_ARG;
     }
     return rb->size;
 }

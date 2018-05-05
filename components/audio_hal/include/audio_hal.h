@@ -27,7 +27,12 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-#include "sdkconfig.h"
+//<<<<<<< HEAD
+//#include "sdkconfig.h"
+//=======
+#include "audio_error.h"
+
+//>>>>>>> 3c90c734af8f1e1065a79b555dc4ee5798a83e61
 #ifdef __cplusplus
 extern "C" {
 #endif

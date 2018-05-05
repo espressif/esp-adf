@@ -80,7 +80,7 @@ audio_element_handle_t raw_stream_init(raw_stream_cfg_t *config)
         return NULL;
     }
     raw_stream_t *raw = audio_calloc(1, sizeof(raw_stream_t));
-    mem_assert(raw);
+    AUDIO_MEM_CHECK(TAG, raw, return NULL);
 
     audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
     cfg.task_stack = -1; // No need task
@@ -88,7 +88,10 @@ audio_element_handle_t raw_stream_init(raw_stream_cfg_t *config)
     cfg.tag = "raw";
     raw->type = config->type;
     audio_element_handle_t el = audio_element_init(&cfg);
-    mem_assert(el);
+    AUDIO_MEM_CHECK(TAG, el, {
+        audio_free(raw);
+        return NULL;
+    });
     if (config->type == AUDIO_STREAM_READER) {
         read_raw_el = el;
     } else if (config->type == AUDIO_STREAM_WRITER) {

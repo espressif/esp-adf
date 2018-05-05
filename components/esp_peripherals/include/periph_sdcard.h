@@ -26,7 +26,7 @@
 #define _SDCARD_DEV_H_
 
 #include "rom/queue.h"
-#include "esp_err.h"
+#include "audio_error.h"
 #include "audio_common.h"
 #include "esp_peripherals.h"
 

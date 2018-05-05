@@ -39,6 +39,7 @@
 #include "audio_common.h"
 #include "audio_mem.h"
 #include "audio_mutex.h"
+#include "audio_error.h"
 
 static const char *TAG = "AUDIO_ELEMENT";
 
@@ -390,7 +391,10 @@ void audio_element_task(void *pv)
     audio_element_cmd_send(el, AEL_MSG_CMD_PAUSE);
     if (el->buf_size > 0) {
         el->buf = audio_malloc(el->buf_size);
-        mem_assert(el->buf);
+        AUDIO_MEM_CHECK(TAG, el->buf, {
+            el->task_run = false;
+            ESP_LOGE(TAG, "[%s] Error malloc element buffer", el->tag);
+        });
     }
     xEventGroupClearBits(el->state_event, STOPPED_BIT);
     while (el->task_run) {
@@ -454,6 +458,9 @@ esp_err_t audio_element_set_tag(audio_element_handle_t el, const char *tag)
 
     if (tag) {
         el->tag = strdup(tag);
+        AUDIO_MEM_CHECK(TAG, el->tag, {
+            return ESP_ERR_NO_MEM;
+        });
     }
     return ESP_OK;
 }
@@ -472,16 +479,16 @@ esp_err_t audio_element_set_uri(audio_element_handle_t el, const char *uri)
 
     if (uri) {
         el->info.uri = strdup(uri);
+        AUDIO_MEM_CHECK(TAG, el->info.uri, {
+            return ESP_ERR_NO_MEM;
+        });
     }
     return ESP_OK;
 }
 
 char *audio_element_get_uri(audio_element_handle_t el)
 {
-    if (el->info.uri) {
-        return el->info.uri;
-    }
-    return NULL;
+    return el->info.uri;
 }
 
 esp_err_t audio_element_msg_set_listener(audio_element_handle_t el, audio_event_iface_handle_t listener)
@@ -710,7 +717,25 @@ esp_err_t audio_element_wait_for_buffer(audio_element_handle_t el, int size_expe
 audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
 {
     audio_element_handle_t el = audio_calloc(1, sizeof(struct audio_element));
-    mem_assert(el);
+
+    AUDIO_MEM_CHECK(TAG, el, {
+        return NULL;
+    });
+
+    audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
+    evt_cfg.on_cmd = audio_element_on_cmd;
+    evt_cfg.context = el;
+    evt_cfg.queue_set_size = 0; // Element have no queue_set by default.
+    bool _success =
+        (
+            ((config->tag ? audio_element_set_tag(el, config->tag) : audio_element_set_tag(el, "unknown")) == ESP_OK) &&
+            (el->lock           = mutex_create())                   &&
+            (el->event          = audio_event_iface_init(&evt_cfg)) &&
+            (el->state_event    = xEventGroupCreate())
+        );
+
+    AUDIO_MEM_CHECK(TAG, _success, goto _element_init_failed);
+
     el->open = config->open;
     el->process = config->process;
     el->close = config->close;
@@ -729,23 +754,10 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
         el->task_core = DEFAULT_ELEMENT_TASK_CORE;
     }
     el->data = config ->data;
-    el->lock = mutex_create();
-    mem_assert(el->lock);
+
     el->state = AEL_STATE_INIT;
     el->buf_size = config->buffer_len;
-    if (config->tag) {
-        audio_element_set_tag(el, config->tag);
-    } else {
-        audio_element_set_tag(el, "unknown");
-    }
 
-    audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
-    evt_cfg.on_cmd = audio_element_on_cmd;
-    evt_cfg.context = el;
-    evt_cfg.queue_set_size = 0; // Element have no queue_set by default.
-    el->event = audio_event_iface_init(&evt_cfg);
-    el->state_event = xEventGroupCreate();
-    mem_assert(el->state_event);
     audio_element_info_t info = AUDIO_ELEMENT_INFO_DEFAULT();
     audio_element_setinfo(el, &info);
     audio_element_set_input_timeout(el, portMAX_DELAY);
@@ -766,6 +778,21 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
     }
 
     return el;
+_element_init_failed:
+    if (el->lock) {
+        mutex_destroy(el->lock);
+    }
+    if (el->state_event) {
+        vEventGroupDelete(el->state_event);
+    }
+    if (el->event) {
+        audio_event_iface_destroy(el->event);
+    }
+    if (el->tag) {
+        audio_element_set_tag(el, NULL);
+    }
+    audio_element_set_uri(el, NULL);
+    return NULL;
 }
 
 esp_err_t audio_element_deinit(audio_element_handle_t el)
@@ -862,7 +889,7 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
         return ESP_FAIL;
     }
     if (!el->is_running) {
-        ESP_LOGW(TAG, "[%s] RESUME:Element has not running,state:%d,task_run:%d", el->tag, el->state, el->task_run);
+        ESP_LOGD(TAG, "[%s] RESUME:Element has not running,state:%d,task_run:%d", el->tag, el->state, el->task_run);
         if ((el->state == AEL_STATE_ERROR) && el->task_stack > 0) {
             ESP_LOGE(TAG, "[%s] RESUME:Element has error,state:%d", el->tag, el->state);
             return ESP_FAIL;
@@ -904,7 +931,7 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
         return ESP_OK;
     }
     if ((el->state != AEL_STATE_PAUSED)
-        && (el->state != AEL_STATE_RUNNING)) {
+            && (el->state != AEL_STATE_RUNNING)) {
         ESP_LOGD(TAG, "[%s] Element already stoped", el->tag);
         return ESP_OK;
     }

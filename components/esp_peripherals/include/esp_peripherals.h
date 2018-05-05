@@ -26,7 +26,7 @@
 #define _ESP_PERIPHERALS_H_
 
 #include "freertos/event_groups.h"
-#include "esp_err.h"
+#include "audio_error.h"
 #include "audio_event_iface.h"
 #include "audio_common.h"
 

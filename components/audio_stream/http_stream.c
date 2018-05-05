@@ -123,10 +123,12 @@ static esp_err_t _http_open(audio_element_handle_t self)
         .uri = uri,
         .event_handle = _http_event_handle,
         .user_data = &info,
-        .timeout_ms = 30*1000,
+        .timeout_ms = 30 * 1000,
     };
 
     http->client = esp_http_client_init(&http_cfg);
+
+    AUDIO_MEM_CHECK(TAG, http->client, return ESP_ERR_NO_MEM);
 
     if (info.byte_pos) {
         char rang_header[32];
@@ -273,9 +275,10 @@ static esp_err_t _http_destroy(audio_element_handle_t self)
 
 audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
 {
-    http_stream_t *http = audio_calloc(1, sizeof(http_stream_t));
-    mem_assert(http);
     audio_element_handle_t el;
+    http_stream_t *http = audio_calloc(1, sizeof(http_stream_t));
+
+    AUDIO_MEM_CHECK(TAG, http, return NULL);
 
     audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
     cfg.open = _http_open;
@@ -295,7 +298,12 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
         cfg.write = _http_write;
     }
     el = audio_element_init(&cfg);
-    mem_assert(el);
+
+
+    AUDIO_MEM_CHECK(TAG, el, {
+        audio_free(http);
+        return NULL;
+    });
     audio_element_setdata(el, http);
     return el;
 }

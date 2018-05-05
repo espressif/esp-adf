@@ -1,10 +1,9 @@
 #ifndef __AC101_H__
 #define __AC101_H__
-#include "esp_types.h"
+#include "sdkconfig.h"
 #include "audio_hal.h"
-#include "driver/i2c.h"
-
-#define AC101_ADDR			0x1a
+#ifdef CONFIG_AUDIO_KIT
+#define AC101_ADDR			0x1a				/*!< Device address*/
 
 #define WRITE_BIT  			I2C_MASTER_WRITE 	/*!< I2C master write */
 #define READ_BIT   			I2C_MASTER_READ  	/*!< I2C master read */
@@ -66,7 +65,6 @@
 #define AC_DAC_DAPOPT   	0xb1
 #define DAC_DAP_ENA     	0xb5
 
-
 typedef enum{
 	SIMPLE_RATE_8000	= 0x0000,
 	SIMPLE_RATE_11052	= 0x1000,
@@ -107,12 +105,12 @@ typedef enum{
 	LRCK_DIV_256	=0x4,
 }ac_i2s1_lrck_div_t;
 
-typedef enum{
-	BIT_LENGTH_8	=0x0,
-	BIT_LENGTH_16	=0x1,
-	BIT_LENGTH_20	=0x2,
-	BIT_LENGTH_24	=0x3,
-}ac_i2s1_word_siz_t;
+typedef enum {
+    BIT_LENGTH_8BITS = 0x00,
+    BIT_LENGTH_16BITS = 0x01,
+    BIT_LENGTH_20BITS = 0x02,
+    BIT_LENGTH_24BITS = 0x03,
+} ac_bits_length_t;
 
 typedef enum {
     AC_MODE_MIN = -1,
@@ -135,6 +133,7 @@ typedef enum{
 	SRC_MIC2	= 2,
 	SRC_LINEIN	= 3,
 }ac_output_mixer_source_t;
+
 typedef enum {
     GAIN_N45DB = 0,
     GAIN_N30DB = 1,
@@ -146,16 +145,8 @@ typedef enum {
     GAIN_60DB  = 7,
 } ac_output_mixer_gain_t;
 
-typedef enum {
-	I2S1_DA0	= 0x8800,
-	I2S1_DA1	= 0x4400,
-	ADC_SRCE	= 0x1100,
-} ac_dac_mixer_source_t;
-
-
-
 /**
- * @brief Configure ES8388 clock
+ * @brief Configure AC101 clock
  */
 typedef struct {
 	ac_i2s1_bclk_div_t bclk_div;    /*!< bits clock divide */
@@ -169,8 +160,6 @@ esp_err_t AC101_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_st
 esp_err_t AC101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t* iface);
 esp_err_t AC101_set_voice_volume(int volume);
 esp_err_t AC101_get_voice_volume(int* volume);
-esp_err_t AC101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t* iface);
-esp_err_t AC101_dac_mixer_source(ac_dac_mixer_source_t src);
 
-
+#endif
 #endif

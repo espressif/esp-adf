@@ -61,17 +61,17 @@ extern "C" {
 
 #ifdef CONFIG_AUDIO_KIT
 /* SD card relateed */
-#define SD_CARD_INTR_GPIO           GPIO_NUM_34
-#define SD_CARD_INTR_SEL            GPIO_SEL_34
+#define SD_CARD_INTR_GPIO           GPIO_NUM_21
+#define SD_CARD_INTR_SEL            GPIO_SEL_21
 #define SD_CARD_OPEN_FILE_NUM_MAX   5
 
 
-#define IIC_CLK 32
-#define IIC_DATA 33
+#define IIC_CLK 18
+#define IIC_DATA 19
 
 /* PA */
-#define GPIO_PA_EN           GPIO_NUM_21
-#define GPIO_SEL_PA_EN       GPIO_SEL_21
+//#define GPIO_PA_EN           GPIO_NUM_16
+//#define GPIO_SEL_PA_EN       GPIO_SEL_16
 
 /* Press button related */
 #define GPIO_SEL_REC         GPIO_SEL_36    //SENSOR_VP

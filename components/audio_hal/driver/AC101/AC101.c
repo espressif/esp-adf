@@ -1,4 +1,6 @@
+
 #include "AC101.h"
+#ifdef CONFIG_AUDIO_KIT
 #include <string.h>
 #include "esp_log.h"
 #include "driver/i2c.h"
@@ -30,6 +32,7 @@ static int i2c_init()
     int res;
     res = i2c_param_config(IIC_PORT, &es_i2c_cfg);
     res |= i2c_driver_install(IIC_PORT, es_i2c_cfg.mode, 0, 0, 0);
+    printf("IIC init %d\r\n", res);
     AC_ASSERT(res, "i2c_init error", -1);
     return res;
 }
@@ -49,6 +52,7 @@ static esp_err_t i2c_example_master_read_slave(uint8_t DevAddr, uint8_t reg,uint
     i2c_master_stop(cmd);
     esp_err_t ret = i2c_master_cmd_begin(IIC_PORT, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
+    //printf("read:%x %x\r\n",data_rd[0],data_rd[1]);
     return ret;
 }
 
@@ -120,7 +124,6 @@ esp_err_t AC101_init(audio_hal_codec_config_t* codec_cfg) {
 	res |= AC101_Write_Reg(DAC_DIG_CTRL, 0x8000);
 	res |= AC101_Write_Reg(OMIXER_SR, 0x0081);
 	res |= AC101_Write_Reg(OMIXER_DACA_CTRL, 0xf080);//}
-	AC101_config_i2s(codec_cfg->codec_mode,&(codec_cfg->i2s_iface));
 	return res;
 }
 
@@ -205,10 +208,10 @@ esp_err_t AC101_start(ac_module_t mode)
     if (mode == AC_MODULE_DAC || mode == AC_MODULE_ADC_DAC || mode == AC_MODULE_LINE) {
     	//* Enable Headphoe output   注意使用耳机时，最后开以下寄存器
     	res |= AC101_Write_Reg(OMIXER_DACA_CTRL, 0xff80);	//out hp & spk
-    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xc3c1);
-    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xcb00);
-    	vTaskDelay(100 / portTICK_PERIOD_MS);
-    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xfbc0);
+//    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xc3c1);
+//    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xcb00);
+//    	vTaskDelay(100 / portTICK_PERIOD_MS);
+    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xF8C0);
     	//* Enable Speaker output
     	res |= AC101_Write_Reg(SPKOUT_CTRL, 0xeabd);
     }
@@ -265,7 +268,7 @@ esp_err_t AC101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_ifac
 {
 
 	esp_err_t res = 0;
-	uint16_t bits = 0;
+	int bits = 0;
 	int fmat = 0;
 	int sample = 0;
 	uint16_t regval;
@@ -273,19 +276,19 @@ esp_err_t AC101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_ifac
 	switch(iface->bits)						//0x10
 	{
 	case AUDIO_HAL_BIT_LENGTH_8BITS:
-		bits = 0x00;
+		bits = BIT_LENGTH_8BITS;
 		break;
 	case AUDIO_HAL_BIT_LENGTH_16BITS:
-		bits = 0x01;
+		bits = BIT_LENGTH_16BITS;
 		break;
 	case AUDIO_HAL_BIT_LENGTH_20BITS:
-		bits = 0x02;
+		bits = BIT_LENGTH_20BITS;
 		break;
 	case AUDIO_HAL_BIT_LENGTH_24BITS:
-		bits = 0x03;
+		bits = BIT_LENGTH_24BITS;
 		break;
 	default:
-		bits = 0x0;
+		bits = BIT_LENGTH_16BITS;
 	}
 	switch(iface->fmt)						//0x10
 	{
@@ -365,12 +368,6 @@ esp_err_t AC101_i2s_config_clock(ac_i2s_clock_t *cfg)
 	return res;
 }
 
-esp_err_t AC101_dac_mixer_source(ac_dac_mixer_source_t src)
-{
-	return AC101_Write_Reg(DAC_MXR_SRC, src);
-	//return AC101_Write_Reg(OMIXER_SR, 0x2040);
-}
-
 esp_err_t AC101_set_voice_volume(int volume)
 {
 	esp_err_t res;
@@ -384,8 +381,7 @@ esp_err_t AC101_get_voice_volume(int* volume)
 	*volume = ac101_get_spk_volume();
 	return 0;
 }
-
-
+#endif
 
 
 
