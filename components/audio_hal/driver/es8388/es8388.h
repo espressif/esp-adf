@@ -23,6 +23,9 @@
  */
 
 #ifndef __ES8388_H__
+
+#include "sdkconfig.h"
+#ifdef CONFIG_ESP32_LYRAT
 #include "esp_types.h"
 #include "audio_hal.h"
 #include "driver/i2c.h"
@@ -437,5 +440,5 @@ esp_err_t es8388_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_s
  *     - void
  */
 void es8388_pa_power(bool enable);
-
+#endif
 #endif //__ES8388_H__

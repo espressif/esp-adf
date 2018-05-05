@@ -22,47 +22,27 @@
  *
  */
 
-#ifndef _BUTTON_DEV_H_
-#define _BUTTON_DEV_H_
 
-#include "rom/queue.h"
-#include "audio_error.h"
-#include "audio_common.h"
-#include "esp_peripherals.h"
+#ifndef _AUDIO_ERROR_H_
+#define _AUDIO_ERROR_H_
+
+#include "esp_err.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * @brief   The Button peripheral configuration
- */
-typedef struct {
-    uint64_t gpio_mask;     /*!< GPIO Mask using for this Button peripheral, it is BIT(GPIO_NUM), ex: GPIO_SEL_36 | GPIO_SEL_36 */
-    int long_press_time_ms; /*!< Long press duration in milliseconds, default is 2000ms */
-} periph_button_cfg_t;
 
-/**
- * @brief      Peripheral button event id
- */
-typedef enum {
-    PERIPH_BUTTON_UNCHANGE = 0, /*!< No event */
-    PERIPH_BUTTON_PRESSED,      /*!< When button is pressed */
-    PERIPH_BUTTON_RELEASE,      /*!< When button is released */
-    PERIPH_BUTTON_LONG_PRESSED, /*!< When button is pressed and kept for more than `long_press_time_ms` */
-    PERIPH_BUTTON_LONG_RELEASE, /*!< When button is released and event PERIPH_BUTTON_LONG_PRESSED happened */
-} periph_button_event_id_t;
+#ifndef __FILENAME__
+#define __FILENAME__ __FILE__
+#endif
 
-/**
- * @brief      Create the button peripheral handle for esp_peripherals.
- *
- * @note       The handle was created by this function automatically destroy when `esp_periph_destroy` is called
- *
- * @param      but_cfg  The but configuration
- *
- * @return     The esp peripheral handle
- */
-esp_periph_handle_t periph_button_init(periph_button_cfg_t* but_cfg);
+
+#define AUDIO_MEM_CHECK(TAG, a, action) if (!(a)) {                                       \
+        ESP_LOGE(TAG,"%s:%d (%s): %s", __FILENAME__, __LINE__, __FUNCTION__, "Memory exhausted");       \
+        action;                                                                   \
+        }
+#define AUDIO_ERROR(TAG, str) ESP_LOGE(TAG, "%s:%d (%s): %s", __FILENAME__, __LINE__, __FUNCTION__, str)
 
 #ifdef __cplusplus
 }

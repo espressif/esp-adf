@@ -34,17 +34,12 @@
 #include "esp_vfs_dev.h"
 #include "rom/queue.h"
 #include "argtable3/argtable3.h"
-
 #include "periph_console.h"
 
 static const char *TAG = "PERIPH_CONSOLE";
 
 
-#ifndef mem_assert
-#define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
-#endif
-
-#define CONSOLE_BUFFER_SIZE (1024)
+#define CONSOLE_BUFFER_SIZE (128)
 #define CONSOLE_MAX_ARGUMENTS (5)
 
 static const int STOPPED_BIT = BIT1;
@@ -240,10 +235,16 @@ static esp_err_t _console_init(esp_periph_handle_t self)
     /* Tell VFS to use UART driver */
     esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART_NUM);
 
-    console->buffer = (char *) malloc(CONSOLE_BUFFER_SIZE);
-    mem_assert(console->buffer);
 
-    xTaskCreate(_console_task, "console_task", console->task_stack, self, console->task_prio, NULL);
+    console->buffer = (char*) malloc(CONSOLE_BUFFER_SIZE);
+    AUDIO_MEM_CHECK(TAG, console->buffer, {
+        return ESP_ERR_NO_MEM;
+    });
+
+    if (xTaskCreate(_console_task, "console_task", console->task_stack, self, console->task_prio, NULL) != pdTRUE) {
+        ESP_LOGE(TAG, "Error create console task, memory exhausted?");
+        return ESP_FAIL;
+    }
     return ESP_OK;
 }
 
@@ -251,8 +252,9 @@ static esp_err_t _console_init(esp_periph_handle_t self)
 esp_periph_handle_t periph_console_init(periph_console_cfg_t *config)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_CONSOLE, "periph_console");
+    AUDIO_MEM_CHECK(TAG, periph, return NULL);
     periph_console_t *console = calloc(1, sizeof(periph_console_t));
-    mem_assert(console);
+    AUDIO_MEM_CHECK(TAG, console, return NULL);
     console->commands = config->commands;
     console->command_num = config->command_num;
     console->task_stack = CONSOLE_DEFAULT_TASK_STACK;
@@ -265,7 +267,10 @@ esp_periph_handle_t periph_console_init(periph_console_cfg_t *config)
     }
     if (config->prompt_string) {
         console->prompt_string = strdup(config->prompt_string);
-        assert(console->prompt_string);
+        AUDIO_MEM_CHECK(TAG, console->prompt_string, {
+            free(console);
+            return NULL;
+        });
     }
     console->state_event_bits = xEventGroupCreate();
     esp_periph_set_data(periph, console);

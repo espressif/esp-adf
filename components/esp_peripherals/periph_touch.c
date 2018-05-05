@@ -48,10 +48,6 @@ static const char* TAG = "PERIPH_TOUCH";
     return ret;\
 }
 
-#ifndef mem_assert
-#define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
-#endif
-
 typedef struct periph_touch {
     esp_touch_handle_t touch;
     int touch_mask;
@@ -123,9 +119,10 @@ static esp_err_t _touch_destroy(esp_periph_handle_t self)
 esp_periph_handle_t periph_touch_init(periph_touch_cfg_t* config)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_TOUCH, "periph_touch");
-    mem_assert(periph);
+    AUDIO_MEM_CHECK(TAG, periph, return NULL);
     periph_touch_t *periph_touch = calloc(1, sizeof(periph_touch_t));
-    mem_assert(periph_touch);
+
+    AUDIO_MEM_CHECK(TAG, periph_touch, return NULL);
     periph_touch->touch_mask = config->touch_mask;
     periph_touch->long_tap_time_ms = config->long_tap_time_ms;
     periph_touch->tap_threshold_percent = config->tap_threshold_percent;

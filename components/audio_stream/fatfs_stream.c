@@ -136,7 +136,7 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
     }
     fatfs->is_open = true;
     if (info.byte_pos && fseek(fatfs->file, info.byte_pos, SEEK_SET) != 0) {
-        ESP_LOGE(TAG, "Failed to seek to %d/%d", (int)info.byte_pos,  (int)info.total_bytes);
+        ESP_LOGE(TAG, "Failed to seek to %d/%d", (int)info.byte_pos, (int)info.total_bytes);
         return ESP_FAIL;
     }
 
@@ -192,10 +192,12 @@ static esp_err_t _fatfs_close(audio_element_handle_t self)
     fatfs_stream_t *fatfs = (fatfs_stream_t *)audio_element_getdata(self);
 
     if (AUDIO_STREAM_WRITER == fatfs->type
-        && fatfs->file
-        && STREAM_TYPE_WAV == fatfs->w_type) {
+            && fatfs->file
+            && STREAM_TYPE_WAV == fatfs->w_type) {
         wav_header_t *wav_info = (wav_header_t *) audio_malloc(sizeof(wav_header_t));
-        mem_assert(wav_info);
+
+        AUDIO_MEM_CHECK(TAG, wav_info, return ESP_ERR_NO_MEM);
+
         if (fseek(fatfs->file, 0, SEEK_SET) != 0) {
             ESP_LOGE(TAG, "Error seek file ,line=%d", __LINE__);
         }
@@ -230,9 +232,10 @@ static esp_err_t _fatfs_destroy(audio_element_handle_t self)
 
 audio_element_handle_t fatfs_stream_init(fatfs_stream_cfg_t *config)
 {
-    fatfs_stream_t *fatfs = audio_calloc(1, sizeof(fatfs_stream_t));
-    mem_assert(fatfs);
     audio_element_handle_t el;
+    fatfs_stream_t *fatfs = audio_calloc(1, sizeof(fatfs_stream_t));
+
+    AUDIO_MEM_CHECK(TAG, fatfs, return NULL);
 
     audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
     cfg.open = _fatfs_open;
@@ -254,7 +257,11 @@ audio_element_handle_t fatfs_stream_init(fatfs_stream_cfg_t *config)
         cfg.read = _fatfs_read;
     }
     el = audio_element_init(&cfg);
-    mem_assert(el);
+
+    AUDIO_MEM_CHECK(TAG, el, goto _fatfs_init_exit);
     audio_element_setdata(el, fatfs);
     return el;
+_fatfs_init_exit:
+    audio_free(fatfs);
+    return NULL;
 }

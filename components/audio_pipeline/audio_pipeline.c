@@ -38,6 +38,7 @@
 #include "audio_common.h"
 #include "audio_mutex.h"
 #include "ringbuf.h"
+#include "audio_error.h"
 
 static const char *TAG = "AUDIO_PIPELINE";
 
@@ -92,7 +93,7 @@ static esp_err_t audio_pipeline_change_state(audio_pipeline_handle_t pipeline, a
 static void audio_pipeline_register_element(audio_pipeline_handle_t pipeline, audio_element_handle_t el)
 {
     audio_element_item_t *el_item = audio_calloc(1, sizeof(audio_element_item_t));
-    mem_assert(el_item);
+    AUDIO_MEM_CHECK(TAG, el_item, return);
     el_item->el = el;
     el_item->linked = true;
     STAILQ_INSERT_TAIL(&pipeline->el_list, el_item, next);
@@ -112,7 +113,7 @@ static void audio_pipeline_unregister_element(audio_pipeline_handle_t pipeline, 
 static void add_rb_to_audio_pipeline(audio_pipeline_handle_t pipeline, ringbuf_handle_t rb)
 {
     ringbuf_item_t *rb_item = (ringbuf_item_t *)audio_calloc(1, sizeof(ringbuf_item_t));
-    mem_assert(rb_item);
+    AUDIO_MEM_CHECK(TAG, rb_item, return);
     rb_item->rb = rb;
     rb_item->rb_size = rb_size_get(rb);
     STAILQ_INSERT_TAIL(&pipeline->rb_list, rb_item, next);
@@ -153,15 +154,19 @@ esp_err_t audio_pipeline_remove_listener(audio_pipeline_handle_t pipeline)
 
 audio_pipeline_handle_t audio_pipeline_init(audio_pipeline_cfg_t *config)
 {
-    audio_pipeline_handle_t pipeline = audio_calloc(1, sizeof(struct audio_pipeline));
-    mem_assert(pipeline);
+    audio_pipeline_handle_t pipeline;
+    bool _success =
+        (
+            (pipeline       = audio_calloc(1, sizeof(struct audio_pipeline)))   &&
+            (pipeline->lock = mutex_create())
+        );
 
+    AUDIO_MEM_CHECK(TAG, _success, return NULL);
     STAILQ_INIT(&pipeline->el_list);
     STAILQ_INIT(&pipeline->rb_list);
 
     pipeline->state = AEL_STATE_INIT;
     pipeline->rb_size = config->rb_size;
-    pipeline->lock = mutex_create();
 
     return pipeline;
 }
@@ -180,7 +185,9 @@ esp_err_t audio_pipeline_register(audio_pipeline_handle_t pipeline, audio_elemen
     audio_pipeline_unregister(pipeline, el);
     audio_element_set_tag(el, name);
     audio_element_item_t *el_item = audio_calloc(1, sizeof(audio_element_item_t));
-    mem_assert(el_item);
+
+    AUDIO_MEM_CHECK(TAG, el_item, return ESP_ERR_NO_MEM);
+
     el_item->el = el;
     el_item->linked = false;
     STAILQ_INSERT_TAIL(&pipeline->el_list, el_item, next);
@@ -243,10 +250,10 @@ esp_err_t audio_pipeline_run(audio_pipeline_handle_t pipeline)
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         ESP_LOGD(TAG, "start el, linked:%d,state:%d,[%p]", el_item->linked,  audio_element_get_state(el_item->el), el_item->el);
         if (el_item->linked
-            && ((AEL_STATE_INIT == audio_element_get_state(el_item->el))
-                || (AEL_STATE_STOPPED == audio_element_get_state(el_item->el))
-                || (AEL_STATE_FINISHED == audio_element_get_state(el_item->el))
-                || (AEL_STATE_ERROR == audio_element_get_state(el_item->el)))) {
+                && ((AEL_STATE_INIT == audio_element_get_state(el_item->el))
+                    || (AEL_STATE_STOPPED == audio_element_get_state(el_item->el))
+                    || (AEL_STATE_FINISHED == audio_element_get_state(el_item->el))
+                    || (AEL_STATE_ERROR == audio_element_get_state(el_item->el)))) {
             audio_element_run(el_item->el);
         }
     }
@@ -334,10 +341,16 @@ esp_err_t audio_pipeline_link(audio_pipeline_handle_t pipeline, const char *link
             if (!first) {
                 audio_element_set_input_ringbuf(el, rb);
             }
-            rb_item = audio_calloc(1, sizeof(ringbuf_item_t));
-            mem_assert(rb_item);
-            rb = rb_create(pipeline->rb_size, 1);
-            mem_assert(rb);
+            bool _success = (
+                                (rb_item = audio_calloc(1, sizeof(ringbuf_item_t))) &&
+                                (rb = rb_create(pipeline->rb_size, 1))
+                            );
+
+            AUDIO_MEM_CHECK(TAG, _success, {
+                free(rb_item);
+                return ESP_ERR_NO_MEM;
+            });
+
             rb_item->rb = rb;
             rb_item->rb_size = pipeline->rb_size;
             STAILQ_INSERT_TAIL(&pipeline->rb_list, rb_item, next);
@@ -347,6 +360,7 @@ esp_err_t audio_pipeline_link(audio_pipeline_handle_t pipeline, const char *link
     }
     pipeline->linked = true;
     return ESP_OK;
+
 }
 
 esp_err_t audio_pipeline_unlink(audio_pipeline_handle_t pipeline)
@@ -381,24 +395,24 @@ esp_err_t audio_pipeline_unlink(audio_pipeline_handle_t pipeline)
 esp_err_t audio_pipeline_register_more(audio_pipeline_handle_t pipeline, audio_element_handle_t element_1, ...)
 {
     va_list args;
-    va_start (args, element_1);
+    va_start(args, element_1);
     while (element_1) {
         audio_pipeline_register_element(pipeline, element_1);
-        element_1 = va_arg (args, audio_element_handle_t);
+        element_1 = va_arg(args, audio_element_handle_t);
     }
-    va_end (args);
+    va_end(args);
     return ESP_OK;
 }
 
 esp_err_t audio_pipeline_unregister_more(audio_pipeline_handle_t pipeline, audio_element_handle_t element_1, ...)
 {
     va_list args;
-    va_start (args, element_1);
+    va_start(args, element_1);
     while (element_1) {
         audio_pipeline_unregister_element(pipeline, element_1);
-        element_1 = va_arg (args, audio_element_handle_t);
+        element_1 = va_arg(args, audio_element_handle_t);
     }
-    va_end (args);
+    va_end(args);
     return ESP_OK;
 }
 
@@ -411,17 +425,17 @@ esp_err_t audio_pipeline_link_more(audio_pipeline_handle_t pipeline, audio_eleme
     if (pipeline->linked) {
         audio_pipeline_unlink(pipeline);
     }
-    va_start (args, element_1);
+    va_start(args, element_1);
     while (element_1) {
         audio_element_handle_t el = element_1;
         audio_element_item_t *el_item = audio_calloc(1, sizeof(audio_element_item_t));
-        mem_assert(el_item);
+        AUDIO_MEM_CHECK(TAG, el_item, return ESP_ERR_NO_MEM);
         el_item->el = el;
         el_item->linked = true;
         STAILQ_INSERT_TAIL(&pipeline->el_list, el_item, next);
         idx ++;
         first = (idx == 1);
-        element_1 = va_arg (args, audio_element_handle_t);
+        element_1 = va_arg(args, audio_element_handle_t);
         if (NULL == element_1) {
             audio_element_set_input_ringbuf(el, rb);
         } else {
@@ -429,14 +443,14 @@ esp_err_t audio_pipeline_link_more(audio_pipeline_handle_t pipeline, audio_eleme
                 audio_element_set_input_ringbuf(el, rb);
             }
             rb = rb_create(pipeline->rb_size, 1);
-            mem_assert(rb);
+            AUDIO_MEM_CHECK(TAG, rb, return ESP_ERR_NO_MEM);
             add_rb_to_audio_pipeline(pipeline, rb);
             audio_element_set_output_ringbuf(el, rb);
         }
         ESP_LOGD(TAG, "element is %p,rb:%p", el, rb);
     }
     pipeline->linked = true;
-    va_end (args);
+    va_end(args);
     return ESP_OK;
 }
 
@@ -457,10 +471,10 @@ esp_err_t audio_pipeline_link_insert(audio_pipeline_handle_t pipeline, bool firs
 esp_err_t audio_pipeline_listen_more(audio_pipeline_handle_t pipeline, audio_element_handle_t element_1, ...)
 {
     va_list args;
-    va_start (args, element_1);
+    va_start(args, element_1);
     while (element_1) {
         audio_element_handle_t el = element_1;
-        element_1 = va_arg (args, audio_element_handle_t);
+        element_1 = va_arg(args, audio_element_handle_t);
         QueueHandle_t que = audio_element_get_event_queue(el);
         audio_event_iface_msg_t dummy = {0};
         // while (xQueueReceive(que, &dummy, 0) == pdTRUE);
@@ -473,7 +487,7 @@ esp_err_t audio_pipeline_listen_more(audio_pipeline_handle_t pipeline, audio_ele
             }
         }
     }
-    va_end (args);
+    va_end(args);
     return ESP_OK;
 }
 

@@ -34,19 +34,14 @@
 #include "rom/queue.h"
 #include "button.h"
 
-#ifndef mem_assert
-#define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
-#endif
-
 #ifdef periph_tick_get
 #define tick_get periph_tick_get
 #else
 static long long tick_get()
 {
     struct timeval te;
-    gettimeofday(&te, NULL); // get current time
-    long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000; // calculate milliseconds
-    // printf("milliseconds: %lld\n", milliseconds);
+    gettimeofday(&te, NULL);
+    long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
     return milliseconds;
 }
 #endif
@@ -100,14 +95,13 @@ static button_status_t button_get_state(esp_button_handle_t button, esp_button_i
 esp_button_handle_t button_init(button_config_t *config)
 {
     esp_button_handle_t btn = calloc(1, sizeof(struct esp_button));
-    mem_assert(btn);
+    AUDIO_MEM_CHECK(TAG, btn, return NULL);
     if (config->gpio_mask <= 0) {
         ESP_LOGE(TAG, "required at least 1 gpio");
         return NULL;
     }
     btn->gpio_mask = config->gpio_mask;
     btn->long_press_time_ms = config->long_press_time_ms;
-
 
     if (btn->long_press_time_ms == 0) {
         btn->long_press_time_ms = DEFAULT_LONG_PRESS_TIME_MS;
@@ -130,7 +124,10 @@ esp_button_handle_t button_init(button_config_t *config)
         if (gpio_mask & 0x01) {
             ESP_LOGD(TAG, "Mask = %llx, current_mask = %llx, idx=%d", btn->gpio_mask, gpio_mask, gpio_num);
             esp_button_item_t *new_btn = calloc(1, sizeof(esp_button_item_t));
-            mem_assert(new_btn);
+            AUDIO_MEM_CHECK(TAG, new_btn, {
+                button_destroy(btn);
+                return NULL;
+            });
             new_btn->gpio_num = gpio_num;
             if (config->button_intr_handler) {
                 gpio_set_intr_type(gpio_num, GPIO_INTR_ANYEDGE);

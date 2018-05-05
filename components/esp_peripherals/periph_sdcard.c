@@ -43,16 +43,13 @@
 
 static const char* TAG = "PERIPH_SDCARD";
 
-#ifndef mem_assert
-#define mem_assert(x) if (x == NULL) { ESP_LOGE(TAG, "Error alloc memory"); assert(x); }
-#endif
-
 #define SDCARD_CHECK_TIMEOUT_MS (20)
 
 #define VALIDATE_SDCARD(periph, ret) if (!(periph && esp_periph_get_id(periph) == PERIPH_ID_SDCARD)) { \
     ESP_LOGE(TAG, "Invalid SDCARD periph, at line %d", __LINE__);\
     return ret;\
 }
+
 #define tick_get periph_tick_get
 
 
@@ -180,13 +177,20 @@ esp_err_t periph_sdcard_unmount(esp_periph_handle_t periph)
 esp_periph_handle_t periph_sdcard_init(periph_sdcard_cfg_t* sdcard_cfg)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_SDCARD, "periph_sdcard");
+    AUDIO_MEM_CHECK(TAG, periph, return NULL);
+
     periph_sdcard_t *sdcard = calloc(1, sizeof(periph_sdcard_t));
-    mem_assert(sdcard);
+    AUDIO_MEM_CHECK(TAG, sdcard, return NULL);
     if (sdcard_cfg->root) {
         sdcard->root = strdup(sdcard_cfg->root);
     } else {
         sdcard->root = strdup("/sdcard");
     }
+    AUDIO_MEM_CHECK(TAG, sdcard->root, {
+        free(sdcard);
+        return NULL;
+    });
+
     sdcard->card_detect_pin = sdcard_cfg->card_detect_pin;
     esp_periph_set_data(periph, sdcard);
     esp_periph_set_function(periph, _sdcard_init, _sdcard_run, _sdcard_destroy);

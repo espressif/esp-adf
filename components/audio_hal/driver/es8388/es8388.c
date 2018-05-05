@@ -21,13 +21,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
+#ifdef CONFIG_ESP32_LYRAT
 #include <string.h>
 #include "esp_log.h"
 #include "driver/i2c.h"
 #include "es8388.h"
 #include "board.h"
-
 static const char *ES_TAG = "ES8388_DRIVER";
 
 #define ES_ASSERT(a, format, b, ...) \
@@ -552,3 +551,4 @@ void es8388_pa_power(bool enable)
         gpio_set_level(GPIO_PA_EN, 0);
     }
 }
+#endif
