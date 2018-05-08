@@ -153,13 +153,17 @@ esp_err_t rb_reset(ringbuf_handle_t rb)
     int dummy = 0;
     QueueSetMemberHandle_t active_handle;
     while ((active_handle = xQueueSelectFromSet(rb->read_set, 0))) {
-        if (active_handle != NULL) {
+        if (active_handle == rb->abort_read) {
             xQueueReceive(active_handle, &dummy, 0);
+        } else {
+            xSemaphoreTake(active_handle, 0);
         }
     }
     while ((active_handle = xQueueSelectFromSet(rb->write_set, 0))) {
-        if (active_handle != NULL) {
+        if (active_handle == rb->abort_write) {
             xQueueReceive(active_handle, &dummy, 0);
+        } else {
+            xSemaphoreTake(active_handle, 0);
         }
     }
     rb_release(rb->can_write);
@@ -187,7 +191,9 @@ static int rb_claim_read(ringbuf_handle_t rb, TickType_t ticks_to_wait)
 {
     QueueSetMemberHandle_t active_handle;
     int dummy;
-    if (xSemaphoreTake(rb->can_read, 0) == pdTRUE) {
+    active_handle = xQueueSelectFromSet(rb->read_set, 0);
+    if (rb->can_read == active_handle) {
+        xSemaphoreTake(rb->can_read, 0);
         return RB_OK;
     }
     active_handle = xQueueSelectFromSet(rb->read_set, ticks_to_wait);
@@ -206,7 +212,9 @@ static int rb_claim_write(ringbuf_handle_t rb, TickType_t ticks_to_wait)
 {
     QueueSetMemberHandle_t active_handle;
     int dummy;
-    if (xSemaphoreTake(rb->can_write, 0) == pdTRUE) {
+    active_handle = xQueueSelectFromSet(rb->write_set, 0);
+    if (rb->can_write == active_handle) {
+        xSemaphoreTake(rb->can_write, 0);
         return RB_OK;
     }
     active_handle = xQueueSelectFromSet(rb->write_set, ticks_to_wait);
