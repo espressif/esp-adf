@@ -137,6 +137,27 @@ static esp_err_t audio_element_msg_sendout(audio_element_handle_t el, audio_even
     return audio_event_iface_sendout(el->event, msg);
 }
 
+static esp_err_t audio_element_process_state_init(audio_element_handle_t el)
+{
+    if (el->open == NULL) {
+        el->is_open = true;
+        xEventGroupSetBits(el->state_event, STARTED_BIT);
+        return ESP_OK;
+    }
+    el->is_open = true;
+    if (el->open(el) == ESP_OK) {
+        ESP_LOGD(TAG, "[%s] el opened", el->tag);
+        audio_element_force_set_state(el, AEL_STATE_RUNNING);
+        audio_element_report_status(el, AEL_STATUS_STATE_RUNNING);
+        xEventGroupSetBits(el->state_event, STARTED_BIT);
+        return ESP_OK;
+    }
+    ESP_LOGE(TAG, "[%s] AEL_STATUS_ERROR_OPEN", el->tag);
+    audio_element_report_status(el, AEL_STATUS_ERROR_OPEN);
+    audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
+    return ESP_FAIL;
+}
+
 static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *context)
 {
     audio_element_handle_t el = (audio_element_handle_t)context;
@@ -210,11 +231,14 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
                 el->is_running = true;
                 break;
             }
-            if (el->state != AEL_STATE_RUNNING) {
+            if (el->state != AEL_STATE_RUNNING && el->state != AEL_STATE_PAUSED) {
                 audio_element_reset_output_ringbuf(el);
             }
+            if (audio_element_process_state_init(el) != ESP_OK) {
+                break;
+            }
+
             audio_event_iface_set_cmd_waiting_timeout(el->event, 0);
-            el->state = AEL_STATE_INIT;
             xEventGroupClearBits(el->state_event, STOPPED_BIT);
             el->is_running = true;
             break;
@@ -225,33 +249,6 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             return ESP_FAIL;
     }
     return ESP_OK;
-}
-
-static esp_err_t audio_element_process_state_init(audio_element_handle_t el)
-{
-    if (el->state != AEL_STATE_INIT) {
-        return ESP_ERR_INVALID_STATE;
-    }
-    if (el->is_open) {
-        return ESP_OK;
-    }
-    if (el->open == NULL) {
-        el->is_open = true;
-        xEventGroupSetBits(el->state_event, STARTED_BIT);
-        return ESP_OK;
-    }
-    el->is_open = true;
-    if (el->open(el) == ESP_OK) {
-        ESP_LOGD(TAG, "[%s] el opened", el->tag);
-        audio_element_force_set_state(el, AEL_STATE_RUNNING);
-        audio_element_report_status(el, AEL_STATUS_STATE_RUNNING);
-        xEventGroupSetBits(el->state_event, STARTED_BIT);
-        return ESP_OK;
-    }
-    ESP_LOGE(TAG, "[%s] AEL_STATUS_ERROR_OPEN", el->tag);
-    audio_element_report_status(el, AEL_STATUS_ERROR_OPEN);
-    audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
-    return ESP_FAIL;
 }
 
 static esp_err_t audio_element_process_state_running(audio_element_handle_t el)
@@ -388,7 +385,7 @@ void audio_element_task(void *pv)
     el->task_run = true;
     xEventGroupSetBits(el->state_event, TASK_CREATED_BIT);
     audio_element_force_set_state(el, AEL_STATE_INIT);
-    audio_element_cmd_send(el, AEL_MSG_CMD_PAUSE);
+    audio_event_iface_set_cmd_waiting_timeout(el->event, portMAX_DELAY);
     if (el->buf_size > 0) {
         el->buf = audio_malloc(el->buf_size);
         AUDIO_MEM_CHECK(TAG, el->buf, {
@@ -400,9 +397,6 @@ void audio_element_task(void *pv)
     while (el->task_run) {
         if (audio_event_iface_waiting_cmd_msg(el->event) != ESP_OK) {
             break;
-        }
-        if (audio_element_process_state_init(el) != ESP_OK) {
-            // continue;
         }
         if (audio_element_process_state_running(el) != ESP_OK) {
             // continue;
@@ -931,7 +925,7 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
         return ESP_OK;
     }
     if ((el->state != AEL_STATE_PAUSED)
-            && (el->state != AEL_STATE_RUNNING)) {
+        && (el->state != AEL_STATE_RUNNING)) {
         ESP_LOGD(TAG, "[%s] Element already stoped", el->tag);
         return ESP_OK;
     }
