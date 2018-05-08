@@ -25,9 +25,9 @@
 #ifndef __ES8388_H__
 
 #include "sdkconfig.h"
+#include "audio_hal.h"
 #ifdef CONFIG_ESP32_LYRAT
 #include "esp_types.h"
-#include "audio_hal.h"
 #include "driver/i2c.h"
 /* ES8388 address */
 #define ES8388_ADDR 0x20  /*!< 0x22:CE=1;0x20:CE=0*/
