@@ -22,22 +22,39 @@
  *
  */
 
-#ifndef _AUDIO_BOARD_H_
-#define _AUDIO_BOARD_H_
-
-#include "sdkconfig.h"
+#ifndef _AUDIO_HEADPHONE_DETEC_H_
+#define _AUDIO_HEADPHONE_DETEC_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-#include "lyrat_v4_3_board.h"
-#endif
+/**
+ * @brief Get headphone insertion status
+ *
+ * @param None.
+ *
+ * @return  int, 0:headphone inserted, 1:headphone not inserted.
+ */
+int headphone_status_get();
 
-#ifdef CONFIG_ESP_LYRAT_V4_2_BOARD
-#include "lyrat_v4_2_board.h"
-#endif
+/**
+ * @brief Initialize headphone detect gpio.
+ *
+ * @param None.
+ *
+ * @return None.
+ */
+void headphone_detect_init();
+
+/**
+ * @brief Delete headphone detect timer.
+ *
+ * @param None.
+ *
+ * @return None.
+ */
+void headphone_detect_deinit();
 
 
 #ifdef __cplusplus

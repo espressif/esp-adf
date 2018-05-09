@@ -260,7 +260,13 @@ esp_err_t es8388_deinit(void)
 esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
 {
     int res = 0;
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    #include "headphone_detect.h"
+    headphone_detect_init();
+#endif
+
     res = i2c_init(); // ESP32 in master mode
+
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL3, 0x04);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
     /* Chip Control and Power Management */
     res |= es_write_reg(ES8388_ADDR, ES8388_CONTROL2, 0x50);
@@ -355,9 +361,9 @@ int es8388_set_voice_volume(int volume)
         volume = 100;
     volume /= 3;
     res = es_write_reg(ES8388_ADDR, ES8388_DACCONTROL24, volume);
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, volume);  //ADC Right Volume=0db
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, volume);
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, volume);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, volume);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, 0);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, 0);
     return res;
 }
 /**
