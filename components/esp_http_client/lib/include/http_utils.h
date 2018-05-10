@@ -27,7 +27,7 @@
  *  - new_str pointer
  *  - NULL
  */
-char *assign_string(char **str, const char *new_str, int len);
+char *http_utils_assign_string(char **str, const char *new_str, int len);
 
 /**
  * @brief      Remove white space at begin and end of string
@@ -36,7 +36,7 @@ char *assign_string(char **str, const char *new_str, int len);
  *
  * @return     New strings have been trimmed
  */
-void trimwhitespace(char **str);
+void http_utils_trim_whitespace(char **str);
 
 /**
  * @brief      Gets the string between 2 string.
@@ -48,7 +48,7 @@ void trimwhitespace(char **str);
  *
  * @return     The string between begin and end
  */
-char *get_string_between(const char *str, const char *begin, const char *end);
+char *http_utils_get_string_between(const char *str, const char *begin, const char *end);
 
 /**
  * @brief      Join 2 strings to one
@@ -63,19 +63,20 @@ char *get_string_between(const char *str, const char *begin, const char *end);
  * - New string pointer
  * - NULL: Invalid input
  */
-char *join_string(const char *first_str, int len_first, const char *second_str, int len_second);
+char *http_utils_join_string(const char *first_str, int len_first, const char *second_str, int len_second);
 
 /**
- * @brief      Check if `str` is start with `start`
+ * @brief      Check if ``str`` is start with ``start``
  *
  * @param[in]  str    The string
  * @param[in]  start  The start
  *
  * @return
- *     - true
- *     - false
+ *     - (-1) if length of ``start`` larger than length of ``str``
+ *     - (1) if ``start`` NOT starts with ``start``
+ *     - (0) if ``str`` starts with ``start``
  */
-int str_starts_with(const char *str, const char *start);
+int http_utils_str_starts_with(const char *str, const char *start);
 
 /**
  * @brief      Convert milliseconds to timeval struct
@@ -83,6 +84,12 @@ int str_starts_with(const char *str, const char *start);
  * @param[in]  timeout_ms  The timeout milliseconds
  * @param[out] tv          Timeval struct
  */
-void ms_to_timeval(int timeout_ms, struct timeval *tv);
+void http_utils_ms_to_timeval(int timeout_ms, struct timeval *tv);
+
+#define HTTP_MEM_CHECK(TAG, a, action) if (!(a)) {                                                      \
+        ESP_LOGE(TAG,"%s:%d (%s): %s", __FILE__, __LINE__, __FUNCTION__, "Memory exhausted");       \
+        action;                                                                                         \
+        }
+
 
 #endif

@@ -22,12 +22,8 @@
 #include "http_header.h"
 #include "http_utils.h"
 
-// static const char *TAG = "HTTP_HEADER";
+static const char *TAG = "HTTP_HEADER";
 #define HEADER_BUFFER (1024)
-
-#ifndef mem_check
-#define mem_check(x) assert(x)
-#endif
 
 /**
  * dictionary item struct, with key-value pair
@@ -44,16 +40,16 @@ STAILQ_HEAD(http_header, http_header_item);
 http_header_handle_t http_header_init()
 {
     http_header_handle_t header = calloc(1, sizeof(struct http_header));
-    mem_check(header);
+    HTTP_MEM_CHECK(TAG, header, return NULL);
     STAILQ_INIT(header);
     return header;
 }
 
 esp_err_t http_header_destroy(http_header_handle_t header)
 {
-    http_header_clean(header);
+    esp_err_t err = http_header_clean(header);
     free(header);
-    return ESP_OK;
+    return err;
 }
 
 http_header_item_handle_t http_header_get_item(http_header_handle_t header, const char *key)
@@ -89,13 +85,19 @@ static esp_err_t http_header_new_item(http_header_handle_t header, const char *k
     http_header_item_handle_t item;
 
     item = calloc(1, sizeof(http_header_item_t));
-    mem_check(item);
-    assign_string(&item->key, key, 0);
-    trimwhitespace(&item->key);
-    assign_string(&item->value, value, 0);
-    trimwhitespace(&item->value);
+    HTTP_MEM_CHECK(TAG, item, return ESP_ERR_NO_MEM);
+    http_utils_assign_string(&item->key, key, 0);
+    HTTP_MEM_CHECK(TAG, item->key, goto _header_new_item_exit);
+    http_utils_trim_whitespace(&item->key);
+    http_utils_assign_string(&item->value, value, 0);
+    HTTP_MEM_CHECK(TAG, item->value, goto _header_new_item_exit);
+    http_utils_trim_whitespace(&item->value);
     STAILQ_INSERT_TAIL(header, item, next);
     return ESP_OK;
+_header_new_item_exit:
+    free(item->key);
+    free(item->value);
+    return ESP_ERR_NO_MEM;
 }
 
 esp_err_t http_header_set(http_header_handle_t header, const char *key, const char *value)
@@ -111,7 +113,7 @@ esp_err_t http_header_set(http_header_handle_t header, const char *key, const ch
     if (item) {
         free(item->value);
         item->value = strdup(value);
-        trimwhitespace(&item->value);
+        http_utils_trim_whitespace(&item->value);
         return ESP_OK;
     }
     return http_header_new_item(header, key, value);
@@ -119,14 +121,15 @@ esp_err_t http_header_set(http_header_handle_t header, const char *key, const ch
 
 esp_err_t http_header_set_from_string(http_header_handle_t header, const char *key_value_data)
 {
-    char* eq_ch;
+    char *eq_ch;
     char *p_str;
 
     p_str = strdup(key_value_data);
+    HTTP_MEM_CHECK(TAG, p_str, return ESP_ERR_NO_MEM);
     eq_ch = strchr(p_str, ':');
     if (eq_ch == NULL) {
         free(p_str);
-        return ESP_FAIL;
+        return ESP_ERR_INVALID_ARG;
     }
     *eq_ch = 0;
 
@@ -144,6 +147,8 @@ esp_err_t http_header_delete(http_header_handle_t header, const char *key)
         free(item->key);
         free(item->value);
         free(item);
+    } else {
+        return ESP_ERR_NOT_FOUND;
     }
     return ESP_OK;
 }
@@ -153,11 +158,14 @@ int http_header_set_format(http_header_handle_t header, const char *key, const c
 {
     va_list argptr;
     int len = 0;
-    char *buf = calloc(1, HEADER_BUFFER);
-    mem_check(buf);
+    char *buf = NULL;
     va_start(argptr, format);
-    len = vsnprintf(buf, HEADER_BUFFER, format, argptr);
+    len = vasprintf(&buf, format, argptr);
+    HTTP_MEM_CHECK(TAG, buf, return 0);
     va_end(argptr);
+    if (buf == NULL) {
+        return 0;
+    }
     http_header_set(header, key, buf);
     free(buf);
     return len;

@@ -37,14 +37,14 @@ static const char *TAG = "BAIDU_AUTH";
 char *baidu_get_access_token(const char *access_key, const char *access_secret)
 {
     char *token = NULL;
-    char *uri = calloc(1, BAIDU_URI_LENGTH);
+    char *url = calloc(1, BAIDU_URI_LENGTH);
 
-    AUDIO_MEM_CHECK(TAG, uri, return NULL);
+    AUDIO_MEM_CHECK(TAG, url, return NULL);
 
-    snprintf(uri, BAIDU_URI_LENGTH, BAIDU_AUTH_ENDPOINT"&client_id=%s&client_secret=%s", access_key, access_secret);
+    snprintf(url, BAIDU_URI_LENGTH, BAIDU_AUTH_ENDPOINT"&client_id=%s&client_secret=%s", access_key, access_secret);
 
     esp_http_client_config_t config = {
-        .uri = uri,
+        .url = url,
     };
     esp_http_client_handle_t http_client = esp_http_client_init(&config);
     AUDIO_MEM_CHECK(TAG, http_client, return NULL);
@@ -82,7 +82,7 @@ char *baidu_get_access_token(const char *access_key, const char *access_secret)
         ESP_LOGI(TAG, "Access token=%s", token);
     }
 _exit:
-    free(uri);
+    free(url);
     esp_http_client_close(http_client);
     esp_http_client_cleanup(http_client);
     return token;
