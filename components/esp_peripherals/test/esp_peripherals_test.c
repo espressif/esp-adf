@@ -36,6 +36,7 @@
 #include "periph_touch.h"
 #include "periph_wifi.h"
 #include "periph_console.h"
+#include "periph_led.h"
 
 #include "esp_peripherals.h"
 #include "unity.h"
@@ -76,10 +77,49 @@ esp_err_t console_test_cb(esp_periph_handle_t periph, int argc, char *argv[])
 {
     int i;
     ESP_LOGI(TAG, "CONSOLE callback, argc=%d", argc);
-    for (i=0; i<argc; i++) {
+    for (i = 0; i < argc; i++) {
         ESP_LOGI(TAG, "CONSOLE argv[%d] %s", i, argv[i]);
     }
     return ESP_OK;
+}
+
+TEST_CASE("Test LED", "[esp-adf]")
+{
+    ESP_LOGI(TAG, "[✓] LED periph test");
+    esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("ESP_PERIPH", ESP_LOG_DEBUG);
+    esp_log_level_set("PERIPH_LED", ESP_LOG_DEBUG);
+
+    esp_periph_config_t periph_cfg = {
+        .event_handle = _periph_event_handle,
+        .user_context = NULL,
+    };
+    esp_periph_init(&periph_cfg);
+    periph_led_cfg_t led_cfg = {
+        .led_speed_mode = LEDC_LOW_SPEED_MODE,
+        .led_duty_resolution = LEDC_TIMER_10_BIT,
+        .led_timer_num = LEDC_TIMER_0,
+        .led_freq_hz = 5000,
+    };
+    esp_periph_handle_t led_handle = periph_led_init(&led_cfg);
+
+    esp_periph_start(led_handle);
+    periph_led_blink(led_handle, GPIO_NUM_19, 1000, 1000, true, -1);
+    periph_led_blink(led_handle, GPIO_NUM_22, 500, 500, false, 4);
+
+    ESP_LOGI(TAG, "running...");
+    vTaskDelay(10000 / portTICK_RATE_MS);
+    ESP_LOGI(TAG, "STOP RED LED");
+    periph_led_stop(led_handle, GPIO_NUM_19);
+
+    vTaskDelay(2000 / portTICK_RATE_MS);
+    ESP_LOGI(TAG, "Changing blink preset...");
+    periph_led_blink(led_handle, GPIO_NUM_19, 500, 200, false, -1);
+    periph_led_blink(led_handle, GPIO_NUM_22, 500, 1000, true, -1);
+
+    vTaskDelay(10000 / portTICK_RATE_MS);
+    ESP_LOGI(TAG, "destroy...");
+    esp_periph_destroy();
 }
 
 TEST_CASE("Test all peripherals", "[esp-adf]")
@@ -101,7 +141,7 @@ TEST_CASE("Test all peripherals", "[esp-adf]")
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
-    ESP_ERROR_CHECK( err );
+    ESP_ERROR_CHECK(err);
 
     tcpip_adapter_init();
 #if CONFIG_HEAP_TRACING
@@ -139,14 +179,14 @@ TEST_CASE("Test all peripherals", "[esp-adf]")
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
 
-    const periph_console_cmd_t cmd[]= {
+    const periph_console_cmd_t cmd[] = {
         { .cmd = "play", .id = 1, .help = "help1" },
         { .cmd = "stop", .id = 2, .help = "help2" },
         { .cmd = "test", .help = "help2", .func = console_test_cb },
     };
 
     periph_console_cfg_t console_cfg = {
-        .command_num = sizeof(cmd)/sizeof(periph_console_cmd_t),
+        .command_num = sizeof(cmd) / sizeof(periph_console_cmd_t),
         .commands = cmd,
     };
     esp_periph_handle_t console_handle = periph_console_init(&console_cfg);
@@ -177,7 +217,7 @@ TEST_CASE("Test all peripherals", "[esp-adf]")
     ESP_LOGI(TAG, "destroy...");
     esp_periph_destroy();
     nvs_flash_deinit();
-    vTaskDelay(100/portTICK_RATE_MS);
+    vTaskDelay(100 / portTICK_RATE_MS);
 
 #if CONFIG_HEAP_TRACING
     ESP_ERROR_CHECK(heap_trace_stop());
