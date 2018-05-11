@@ -35,6 +35,7 @@
 #include "periph_wifi.h"
 #include "periph_button.h"
 #include "periph_console.h"
+#include "aac_decoder.h"
 
 static const char *TAG = "CONSOLE_EXAMPLE";
 static esp_audio_handle_t player;
@@ -46,6 +47,9 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
     const char *uri[] = {
         "file://sdcard/test.mp3",
         "file://sdcard/test.wav",
+        "file://sdcard/test.aac",
+        "file://sdcard/test.m4a",
+        "file://sdcard/test.ts",
         "http://dl.espressif.com/dl/audio/adf_music.mp3",
     };
 
@@ -64,7 +68,7 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
             str = argv[0];
         }
     }
-    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, str);
+    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, str, 0);
     return ESP_OK;
 }
 
@@ -84,7 +88,7 @@ static esp_err_t cli_resume(esp_periph_handle_t periph, int argc, char *argv[])
 
 static esp_err_t cli_stop(esp_periph_handle_t periph, int argc, char *argv[])
 {
-    esp_audio_stop(player, 1);
+    esp_audio_stop(player, 0);
     ESP_LOGI(TAG, "app_audio stop");
     return ESP_OK;
 }
@@ -116,7 +120,7 @@ static esp_err_t cli_get_vol(esp_periph_handle_t periph, int argc, char *argv[])
 static esp_err_t get_pos(esp_periph_handle_t periph, int argc, char *argv[])
 {
     int pos = 0;
-    esp_audio_pos_get(player, &pos);
+    esp_audio_time_get(player, &pos);
     ESP_LOGI(TAG, "Current time position is %d second", pos / 1000);
     return ESP_OK;
 }
@@ -273,8 +277,8 @@ static void cli_setup_player(void)
         return ;
     }
     esp_audio_cfg_t cfg = {
-        .in_stream_buf_size = 5120,
-        .out_stream_buf_size = 4096,
+        .in_stream_buf_size = 10 * 1024,
+        .out_stream_buf_size = 6 * 1024,
         .evt_que = NULL,
         .resample_rate = 0,
         .hal = NULL,
@@ -320,8 +324,17 @@ static void cli_setup_player(void)
     // Add decoders and encoders to esp_audio
     wav_decoder_cfg_t wav_dec_cfg = DEFAULT_WAV_DECODER_CONFIG();
     mp3_decoder_cfg_t mp3_dec_cfg = DEFAULT_MP3_DECODER_CONFIG();
+    aac_decoder_cfg_t aac_dec_cfg = DEFAULT_AAC_DECODER_CONFIG();
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, aac_decoder_init(&aac_dec_cfg));
+    audio_element_handle_t m4a_dec_cfg = aac_decoder_init(&aac_dec_cfg);
+    audio_element_set_tag(m4a_dec_cfg, "m4a");
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, m4a_dec_cfg);
+
+    audio_element_handle_t ts_dec_cfg = aac_decoder_init(&aac_dec_cfg);
+    audio_element_set_tag(ts_dec_cfg, "ts");
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, ts_dec_cfg);
 
     wav_encoder_cfg_t wav_enc_cfg = DEFAULT_WAV_ENCODER_CONFIG();
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_ENCODER, wav_encoder_init(&wav_enc_cfg));
