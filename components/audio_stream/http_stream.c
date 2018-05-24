@@ -120,8 +120,8 @@ static esp_err_t _http_open(audio_element_handle_t self)
         return ESP_FAIL;
     }
     esp_http_client_config_t http_cfg = {
-        .uri = uri,
-        .event_handle = _http_event_handle,
+        .url = uri,
+        .event_handler = _http_event_handle,
         .user_data = &info,
         .timeout_ms = 30 * 1000,
     };

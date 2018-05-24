@@ -74,7 +74,7 @@ static int tcp_connect(transport_handle_t t, const char *host, int port, int tim
     remote_ip.sin_family = AF_INET;
     remote_ip.sin_port = htons(port);
 
-    ms_to_timeval(timeout_ms, &tv);
+    http_utils_ms_to_timeval(timeout_ms, &tv);
 
     setsockopt(tcp->sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
@@ -119,7 +119,7 @@ static int tcp_poll_read(transport_handle_t t, int timeout_ms)
     FD_ZERO(&readset);
     FD_SET(tcp->sock, &readset);
     struct timeval timeout;
-    ms_to_timeval(timeout_ms, &timeout);
+    http_utils_ms_to_timeval(timeout_ms, &timeout);
     return select(tcp->sock + 1, &readset, NULL, NULL, &timeout);
 }
 
@@ -130,7 +130,7 @@ static int tcp_poll_write(transport_handle_t t, int timeout_ms)
     FD_ZERO(&writeset);
     FD_SET(tcp->sock, &writeset);
     struct timeval timeout;
-    ms_to_timeval(timeout_ms, &timeout);
+    http_utils_ms_to_timeval(timeout_ms, &timeout);
     return select(tcp->sock + 1, NULL, &writeset, NULL, &timeout);
 }
 
@@ -157,7 +157,7 @@ transport_handle_t transport_tcp_init()
 {
     transport_handle_t t = transport_init();
     transport_tcp_t *tcp = calloc(1, sizeof(transport_tcp_t));
-    assert(tcp);
+    HTTP_MEM_CHECK(TAG, tcp, return NULL);
     tcp->sock = -1;
     transport_set_func(t, tcp_connect, tcp_read, tcp_write, tcp_close, tcp_poll_read, tcp_poll_write, tcp_destroy);
     transport_set_context_data(t, tcp);

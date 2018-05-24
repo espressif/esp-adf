@@ -71,8 +71,7 @@ typedef esp_err_t (*http_event_handle_cb)(esp_http_client_event_t *evt);
  * @brief HTTP method
  */
 typedef enum {
-    HTTP_METHOD_AUTO = 0,   /*!< Auto select method, default is GET, if there are post_data, the method will be POST */
-    HTTP_METHOD_GET,        /*!< HTTP GET Method */
+    HTTP_METHOD_GET = 0,    /*!< HTTP GET Method */
     HTTP_METHOD_POST,       /*!< HTTP POST Method */
     HTTP_METHOD_PUT,        /*!< HTTP PUT Method */
     HTTP_METHOD_PATCH,      /*!< HTTP PATCH Method */
@@ -90,10 +89,10 @@ typedef enum {
 } esp_http_client_auth_type_t;
 
 /**
- * @brief HTTP configurations
+ * @brief HTTP configuration
  */
 typedef struct {
-    const char                  *uri;                /*!< HTTP URI, the information on the URI is most important, it overrides the other fields below, if any */
+    const char                  *url;                /*!< HTTP URL, the information on the URL is most important, it overrides the other fields below, if any */
     const char                  *host;               /*!< Domain or IP as string */
     int                         port;                /*!< Port to connect, default depend on esp_http_client_transport_t (80 or 443) */
     const char                  *username;           /*!< Using for Http authentication */
@@ -105,13 +104,20 @@ typedef struct {
     esp_http_client_method_t    method;                   /*!< HTTP Method */
     int                         timeout_ms;               /*!< Network timeout in milliseconds */
     bool                        disable_auto_redirect;    /*!< Disable HTTP automatic redirects */
-    int                         max_redirection_count;    /*!< Max redirection number */
-    http_event_handle_cb        event_handle;             /*!< HTTP Event Handle */
+    int                         max_redirection_count;    /*!< Max redirection number, using default value if zero*/
+    http_event_handle_cb        event_handler;             /*!< HTTP Event Handle */
     esp_http_client_transport_t transport_type;           /*!< HTTP transport type, see `esp_http_client_transport_t` */
     int                         buffer_size;              /*!< HTTP buffer size (both send and receive) */
     void                        *user_data;               /*!< HTTP user_data context */
 } esp_http_client_config_t;
 
+
+#define ESP_ERR_HTTP_BASE               (0x7000)                    /*!< Starting number of HTTP error codes */
+#define ESP_ERR_HTTP_MAX_REDIRECT       (ESP_ERR_HTTP_BASE + 1)     /*!< The error exceeds the number of HTTP redirects */
+#define ESP_ERR_HTTP_CONNECT            (ESP_ERR_HTTP_BASE + 2)     /*!< Error open the HTTP connection */
+#define ESP_ERR_HTTP_WRITE_DATA         (ESP_ERR_HTTP_BASE + 3)     /*!< Error write HTTP data */
+#define ESP_ERR_HTTP_FETCH_HEADER       (ESP_ERR_HTTP_BASE + 4)     /*!< Error read HTTP header from server */
+#define ESP_ERR_HTTP_INVALID_TRANSPORT  (ESP_ERR_HTTP_BASE + 5)     /*!< There are no transport support for the input scheme */
 
 /**
  * @brief      Start a HTTP session
@@ -131,14 +137,15 @@ esp_http_client_handle_t esp_http_client_init(esp_http_client_config_t *config);
  * @brief      Invoke this function after `esp_http_client_init` and all the options calls are made, and will perform the
  *             transfer as described in the options. It must be called with the same esp_http_client_handle_t as input as the esp_http_client_init call returned.
  *             esp_http_client_perform performs the entire request in a blocking manner and returns when done, or if it failed.
- *             You can do any amount of calls to esp_http_client_perform while using the same esp_http_client_handle_t. The connection maybe keep if the server doesn't require it close.
+ *             You can do any amount of calls to esp_http_client_perform while using the same esp_http_client_handle_t. The underlying connection may be kept open if the server allows it.
  *             If you intend to transfer more than one file, you are even encouraged to do so.
  *             esp_http_client will then attempt to re-use the same connection for the following transfers, thus making the operations faster, less CPU intense and using less network resources.
  *             Just note that you will have to use `esp_http_client_set_**` between the invokes to set options for the following esp_http_client_perform.
- *             NOTES: You must never call this function simultaneously from two places using the same easy_handle.
+ *
+ * @note       You must never call this function simultaneously from two places using the same client handle.
  *             Let the function return first before invoking it another time.
  *             If you want parallel transfers, you must use several esp_http_client_handle_t.
- *             This function include `esp_http_client_open` -> `esp_http_client_write` -> `esp_http_client_finalize_open` -> `esp_http_client_read` (and option) `esp_http_client_close`.
+ *             This function include `esp_http_client_open` -> `esp_http_client_write` -> `esp_http_client_fetch_headers` -> `esp_http_client_read` (and option) `esp_http_client_close`.
  *
  * @param      client  The esp_http_client handle
  *
@@ -149,16 +156,16 @@ esp_http_client_handle_t esp_http_client_init(esp_http_client_config_t *config);
 esp_err_t esp_http_client_perform(esp_http_client_handle_t client);
 
 /**
- * @brief      Set URI for client, when performing this behavior, the options in the URI will replace the old ones
+ * @brief      Set URL for client, when performing this behavior, the options in the URL will replace the old ones
  *
  * @param[in]  client  The esp_http_client handle
- * @param[in]  uri     The uri
+ * @param[in]  url     The url
  *
  * @return
  *  - ESP_OK
  *  - ESP_FAIL
  */
-esp_err_t esp_http_client_set_uri(esp_http_client_handle_t client, const char *uri);
+esp_err_t esp_http_client_set_url(esp_http_client_handle_t client, const char *url);
 
 /**
  * @brief      Set post data, this function must be called before `esp_http_client_finalize_open` or perform
@@ -178,13 +185,14 @@ esp_err_t esp_http_client_set_post_field(esp_http_client_handle_t client, const 
  * @brief      Get current post field information
  *
  * @param[in]  client  The client
+ * @param[out] data    Point to post data pointer
  *
  * @return     Size of post data
  */
 int esp_http_client_get_post_field(esp_http_client_handle_t client, char **data);
 
 /**
- * @brief      Set http request header, this function must be called after esp_http_client_init and after any
+ * @brief      Set http request header, this function must be called after esp_http_client_init and before any
  *             perform function
  *
  * @param[in]  client  The esp_http_client handle
@@ -198,7 +206,7 @@ int esp_http_client_get_post_field(esp_http_client_handle_t client, char **data)
 esp_err_t esp_http_client_set_header(esp_http_client_handle_t client, const char *key, const char *value);
 
 /**
- * @brief      Set http reuqest method
+ * @brief      Set http request method
  *
  * @param[in]  client  The esp_http_client handle
  * @param[in]  method  The method
@@ -220,11 +228,10 @@ esp_err_t esp_http_client_set_method(esp_http_client_handle_t client, esp_http_c
 esp_err_t esp_http_client_delete_header(esp_http_client_handle_t client, const char *key);
 
 /**
- * @brief      Open the http connection with content length will be written. This function will be open the connection,
- *             write all header strings and return
+ * @brief      This function will be open the connection, write all header strings and return
  *
  * @param[in]  client     The esp_http_client handle
- * @param[in]  write_len  The write length
+ * @param[in]  write_len  HTTP Content length need to write to the server
  *
  * @return
  *  - ESP_OK
@@ -233,12 +240,11 @@ esp_err_t esp_http_client_delete_header(esp_http_client_handle_t client, const c
 esp_err_t esp_http_client_open(esp_http_client_handle_t client, int write_len);
 
 /**
- * @brief      This function will write data to http stream has opened with esp_http_client_open
- *             And data len will be write must not larger than write_len of open function
+ * @brief     This function will write data to the HTTP connection previously opened by esp_http_client_open()
  *
  * @param[in]  client  The esp_http_client handle
  * @param      buffer  The buffer
- * @param[in]  len     The length
+ * @param[in]  len     This value must not be larger than the write_len parameter provided to esp_http_client_open()
  *
  * @return
  *     - (-1) if any errors
@@ -252,7 +258,8 @@ int esp_http_client_write(esp_http_client_handle_t client, const char *buffer, i
  * @param[in]  client  The esp_http_client handle
  *
  * @return
- *     - (-1) if stream doesn't contain content-length header, or chunked transfering (checked by `esp_http_client_is_chunked` response)
+ *     - (0) if stream doesn't contain content-length header, or chunked encoding (checked by `esp_http_client_is_chunked` response)
+ *     - (-1: ESP_FAIL) if any errors
  *     - Download data length defined by content-length header
  */
 int esp_http_client_fetch_headers(esp_http_client_handle_t client);
