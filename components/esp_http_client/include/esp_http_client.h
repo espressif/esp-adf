@@ -112,7 +112,7 @@ typedef struct {
 } esp_http_client_config_t;
 
 
-#define ESP_ERR_HTTP_BASE               (0x6000)                    /*!< Starting number of HTTP error codes */
+#define ESP_ERR_HTTP_BASE               (0x7000)                    /*!< Starting number of HTTP error codes */
 #define ESP_ERR_HTTP_MAX_REDIRECT       (ESP_ERR_HTTP_BASE + 1)     /*!< The error exceeds the number of HTTP redirects */
 #define ESP_ERR_HTTP_CONNECT            (ESP_ERR_HTTP_BASE + 2)     /*!< Error open the HTTP connection */
 #define ESP_ERR_HTTP_WRITE_DATA         (ESP_ERR_HTTP_BASE + 3)     /*!< Error write HTTP data */
@@ -258,7 +258,8 @@ int esp_http_client_write(esp_http_client_handle_t client, const char *buffer, i
  * @param[in]  client  The esp_http_client handle
  *
  * @return
- *     - (-1) if stream doesn't contain content-length header, or chunked encoding (checked by `esp_http_client_is_chunked` response)
+ *     - (0) if stream doesn't contain content-length header, or chunked encoding (checked by `esp_http_client_is_chunked` response)
+ *     - (-1: ESP_FAIL) if any errors
  *     - Download data length defined by content-length header
  */
 int esp_http_client_fetch_headers(esp_http_client_handle_t client);
