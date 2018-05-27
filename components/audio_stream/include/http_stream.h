@@ -81,9 +81,8 @@ typedef struct {
 
 /**
  * @brief      Create a handle to an Audio Element to stream data from HTTP to another Element
- *             or get data from other elements sent to HTTP, depend on the configuration of stream type
- *             is AUDIO_STREAM_READER or AUDIO_STREAM_WRITER.
- *             Notes: Currently only support `AUDIO_STREAM_READER`
+ *             or get data from other elements sent to HTTP, depending on the configuration
+ *             the stream type, either AUDIO_STREAM_READER or AUDIO_STREAM_WRITER.
  *
  * @param      config  The configuration
  *
