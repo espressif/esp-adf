@@ -145,6 +145,9 @@ static esp_err_t _i2s_close(audio_element_handle_t self)
     AUDIO_MEM_CHECK(TAG, buf, return ESP_ERR_NO_MEM);
 
     while (index--) {
+        if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+            memset(buf, 0x80, i2s->config.i2s_config.dma_buf_len * 4);
+        }
         i2s_write_bytes(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, portMAX_DELAY);
     }
     if (buf) {
@@ -169,9 +172,6 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
     if (r_len > 0) {
         if (info.channels == 1) {
             i2s_mono_fix(info.bits, (uint8_t *)buffer, r_len);
-        }
-        if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0){
-            i2s_dac_data_scale(info.bits, (uint8_t *)buffer, r_len);
         }
         info.byte_pos += r_len;
         audio_element_setinfo(self, &info);
