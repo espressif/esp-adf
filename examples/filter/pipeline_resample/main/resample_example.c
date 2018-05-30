@@ -99,7 +99,8 @@ static audio_element_handle_t create_wav_decoder()
 
 void record_playback_task()
 {
-    audio_pipeline_handle_t pipeline = NULL;
+    audio_pipeline_handle_t pipeline_rec = NULL;
+    audio_pipeline_handle_t pipeline_play = NULL;
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
 
     /**
@@ -109,7 +110,8 @@ void record_playback_task()
      * Then write to SDCARD
      */
     ESP_LOGI(TAG, "[1.1] Initialize recorder pipeline");
-    pipeline = audio_pipeline_init(&pipeline_cfg);
+    pipeline_rec = audio_pipeline_init(&pipeline_cfg);
+    pipeline_play = audio_pipeline_init(&pipeline_cfg);
 
     ESP_LOGI(TAG, "[1.2] Create audio elements for recorder pipeline");
     audio_element_handle_t i2s_reader_el = create_i2s_stream(RECORD_RATE, RECORD_BITS, RECORD_CHANNEL, AUDIO_STREAM_READER);
@@ -118,10 +120,10 @@ void record_playback_task()
     audio_element_handle_t fatfs_writer_el = create_fatfs_stream(SAVE_FILE_RATE, SAVE_FILE_BITS, SAVE_FILE_CHANNEL, AUDIO_STREAM_WRITER);
 
     ESP_LOGI(TAG, "[1.3] Register audio elements to recorder pipeline");
-    audio_pipeline_register(pipeline, i2s_reader_el,        "i2s_reader");
-    audio_pipeline_register(pipeline, filter_downsample_el, "filter_downsample");
-    audio_pipeline_register(pipeline, wav_encoder_el,       "wav_encoder");
-    audio_pipeline_register(pipeline, fatfs_writer_el,      "file_writer");
+    audio_pipeline_register(pipeline_rec, i2s_reader_el,        "i2s_reader");
+    audio_pipeline_register(pipeline_rec, filter_downsample_el, "filter_downsample");
+    audio_pipeline_register(pipeline_rec, wav_encoder_el,       "wav_encoder");
+    audio_pipeline_register(pipeline_rec, fatfs_writer_el,      "file_writer");
 
     /**
      * For the Playback:
@@ -138,10 +140,10 @@ void record_playback_task()
     audio_element_handle_t i2s_writer_el = create_i2s_stream(PLAYBACK_RATE, PLAYBACK_BITS, PLAYBACK_CHANNEL, AUDIO_STREAM_WRITER);
 
     ESP_LOGI(TAG, "[2.3] Register audio elements to playback pipeline");
-    audio_pipeline_register(pipeline, fatfs_reader_el,      "file_reader");
-    audio_pipeline_register(pipeline, wav_decoder_el,       "wav_decoder");
-    audio_pipeline_register(pipeline, filter_upsample_el,   "filter_upsample");
-    audio_pipeline_register(pipeline, i2s_writer_el,        "i2s_writer");
+    audio_pipeline_register(pipeline_play, fatfs_reader_el,      "file_reader");
+    audio_pipeline_register(pipeline_play, wav_decoder_el,       "wav_decoder");
+    audio_pipeline_register(pipeline_play, filter_upsample_el,   "filter_upsample");
+    audio_pipeline_register(pipeline_play, i2s_writer_el,        "i2s_writer");
 
     ESP_LOGI(TAG, "[ 3 ] Setup event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -165,45 +167,47 @@ void record_playback_task()
         }
 
         if (msg.cmd == PERIPH_BUTTON_PRESSED) {
-            ESP_LOGE(TAG, "STOP Playback and START [Record]"); //using LOGE to make the log color difference
-            audio_pipeline_stop(pipeline);
-            audio_pipeline_wait_for_stop(pipeline);
+            ESP_LOGE(TAG, "STOP Playback and START [Record]"); //using LOGE to make the log color different
+            audio_pipeline_stop(pipeline_play);
+            audio_pipeline_wait_for_stop(pipeline_play);
 
             /**
-             * Record audio flow:
+             * Audio Recording Flow:
              * [codec_chip]-->i2s_stream--->filter-->wav_encoder-->fatfs_stream-->[sdcard]
              */
             ESP_LOGI(TAG, "Link audio elements to make recorder pipeline ready");
-            audio_pipeline_link(pipeline, (const char *[]) {"i2s_reader", "filter_downsample", "wav_encoder", "file_writer"}, 4);
+            audio_pipeline_link(pipeline_rec, (const char *[]) {"i2s_reader", "filter_downsample", "wav_encoder", "file_writer"}, 4);
 
-            ESP_LOGI(TAG, "Setup file path to save recoded audio");
+            ESP_LOGI(TAG, "Setup file path to save recorded audio");
             i2s_stream_set_clk(i2s_writer_el, RECORD_RATE, RECORD_BITS, RECORD_CHANNEL);
             audio_element_set_uri(fatfs_writer_el, "/sdcard/rec.wav");
-            audio_pipeline_run(pipeline);
+            audio_pipeline_run(pipeline_rec);
         } else if (msg.cmd == PERIPH_BUTTON_RELEASE || msg.cmd == PERIPH_BUTTON_LONG_RELEASE) {
             ESP_LOGI(TAG, "STOP [Record] and START Playback");
-            audio_pipeline_stop(pipeline);
-            audio_pipeline_wait_for_stop(pipeline);
+            audio_pipeline_stop(pipeline_rec);
+            audio_pipeline_wait_for_stop(pipeline_rec);
 
             /**
-             * Playback audio flow:
+             * Audio Playback Flow:
              * [sdcard]-->fatfs_stream-->wav_decoder-->filter-->i2s_stream-->[codec_chip]
              */
             ESP_LOGI(TAG, "Link audio elements to make playback pipeline ready");
-            audio_pipeline_link(pipeline, (const char *[]) {"file_reader", "wav_decoder", "filter_upsample", "i2s_writer"}, 4);
+            audio_pipeline_link(pipeline_play, (const char *[]) {"file_reader", "wav_decoder", "filter_upsample", "i2s_writer"}, 4);
 
             ESP_LOGI(TAG, "Setup file path to read the wav audio to play");
             i2s_stream_set_clk(i2s_writer_el, PLAYBACK_RATE, PLAYBACK_BITS, PLAYBACK_CHANNEL);
             audio_element_set_uri(fatfs_reader_el, "/sdcard/rec.wav");
-            audio_pipeline_run(pipeline);
+            audio_pipeline_run(pipeline_play);
         }
     }
 
     ESP_LOGI(TAG, "[ 4 ] Stop audio_pipeline");
-    audio_pipeline_terminate(pipeline);
+    audio_pipeline_terminate(pipeline_rec);
+    audio_pipeline_terminate(pipeline_play);
 
-    /* Terminal the pipeline before removing the listener */
-    audio_pipeline_remove_listener(pipeline);
+    /* Terminate the pipeline before removing the listener */
+    audio_pipeline_remove_listener(pipeline_rec);
+    audio_pipeline_remove_listener(pipeline_play);
 
     /* Stop all periph before removing the listener */
     esp_periph_stop_all();
