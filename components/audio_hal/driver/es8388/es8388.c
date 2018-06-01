@@ -36,7 +36,7 @@ static const char *ES_TAG = "ES8388_DRIVER";
         return b;\
     }
 
-const i2c_config_t es_i2c_cfg = {
+static const i2c_config_t es_i2c_cfg = {
     .mode = I2C_MODE_MASTER,
     .sda_io_num = IIC_DATA,
     .scl_io_num = IIC_CLK,

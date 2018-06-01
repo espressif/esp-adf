@@ -29,6 +29,7 @@
 
 #include "audio_mem.h"
 #include "audio_mutex.h"
+#include "es8374.h"
 #include "es8388.h"
 
 static const char *TAG = "AUDIO_HAL";
@@ -58,6 +59,14 @@ static struct audio_hal audio_hal_codecs_default[] = {
         .audio_codec_config_iface = es8388_config_i2s,
         .audio_codec_set_volume = es8388_set_voice_volume,
         .audio_codec_get_volume = es8388_get_voice_volume,
+    },
+    {
+        .audio_codec_initialize = es8374_init,
+        .audio_codec_deinitialize = es8374_deinit,
+        .audio_codec_ctrl = es8374_ctrl_state,
+        .audio_codec_config_iface = es8374_config_i2s,
+        .audio_codec_set_volume = es8374_set_voice_volume,
+        .audio_codec_get_volume = es8374_get_voice_volume,
     }
 };
 
@@ -76,8 +85,6 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t* audio_hal_conf, int 
         free(audio_hal);
         return NULL;
     });
-
-
 
     mutex_lock(audio_hal->audio_hal_lock);
     ret  = audio_hal->audio_codec_initialize(audio_hal_conf);
