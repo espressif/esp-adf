@@ -31,6 +31,7 @@
 #include "freertos/task.h"
 
 #include "driver/i2s.h"
+#include "driver/dac.h"
 #include "esp_log.h"
 #include "esp_err.h"
 
@@ -75,6 +76,33 @@ static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
     return ESP_OK;
 }
 
+/**
+ * @brief Scale data to 16bit/32bit for I2S DMA output.
+ *        DAC can only output 8bit data value.
+ *        I2S DMA will still send 16bit or 32bit data, the highest 8bit contains DAC data.
+ */
+static int i2s_dac_data_scale(int bits, uint8_t* sBuff, uint32_t len)
+{
+    if (bits == 16) {
+        short *buf16 = (short *)sBuff;
+        for (int i = 0; i < len / 2; i++) {
+            buf16[i] &= 0xff00;
+            buf16[i] += 0x8000;//turn signed value into unsigned, expand negative value into positive range
+        }
+    } else if (bits == 32) {
+        int *buf32 = (int *)sBuff;
+        for (int i = 0; i < len / 4; i++) {
+            buf32[i] &= 0xff000000;
+            buf32[i] += 0x80000000;//turn signed value into unsigned
+        }
+    } else {
+        ESP_LOGE(TAG, "in %s %dbits is not supported", __func__, bits);
+        return -1;
+    }
+
+    return 0;
+}
+
 static esp_err_t _i2s_open(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
@@ -117,6 +145,9 @@ static esp_err_t _i2s_close(audio_element_handle_t self)
     AUDIO_MEM_CHECK(TAG, buf, return ESP_ERR_NO_MEM);
 
     while (index--) {
+        if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+            memset(buf, 0x80, i2s->config.i2s_config.dma_buf_len * 4);
+        }
         i2s_write_bytes(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, portMAX_DELAY);
     }
     if (buf) {
@@ -139,7 +170,9 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
     if (r_len > 0) {
-        i2s_mono_fix(info.bits, (uint8_t *)buffer, r_len);
+        if (info.channels == 1) {
+            i2s_mono_fix(info.bits, (uint8_t *)buffer, r_len);
+        }
         info.byte_pos += r_len;
         audio_element_setinfo(self, &info);
     }
@@ -151,7 +184,12 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
-    i2s_mono_fix(info.bits, (uint8_t *)buffer, len);
+    if (info.channels == 1) {
+        i2s_mono_fix(info.bits, (uint8_t *)buffer, len);
+    }
+    if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+        i2s_dac_data_scale(info.bits, (uint8_t *)buffer, len);
+    }
     int w_len = i2s_write_bytes(i2s->config.i2s_port, buffer, len, ticks_to_wait);
     info.byte_pos += w_len;
     audio_element_setinfo(self, &info);
@@ -201,6 +239,7 @@ esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bi
     i2s_info.channels = ch;
     i2s_info.sample_rates = rate;
     audio_element_setinfo(i2s_stream, &i2s_info);
+    
     if (i2s_set_clk(i2s->config.i2s_port, rate, bits, ch) == ESP_FAIL) {
         ESP_LOGE(TAG, "i2s_set_clk failed, type = %d,port:%d", i2s->config.type, i2s->config.i2s_port);
         err = ESP_FAIL;
@@ -248,11 +287,15 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     info.sample_rates = config->i2s_config.sample_rate;
     info.channels = config->i2s_config.channel_format < I2S_CHANNEL_FMT_ONLY_RIGHT ? 2 : 1;
     info.bits = config->i2s_config.bits_per_sample;
+
     audio_element_setinfo(el, &info);
-
     i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
-    i2s_set_pin(i2s->config.i2s_port, &i2s->config.i2s_pin_config);
-
+    
+    if((config->i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+        i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
+    } else {
+        i2s_set_pin(i2s->config.i2s_port, &i2s->config.i2s_pin_config);
+    }
     if (i2s->config.i2s_port == 0) {
         SET_PERI_REG_BITS(PIN_CTRL, CLK_OUT1, 0, CLK_OUT1_S);
     }
