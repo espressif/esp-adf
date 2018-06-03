@@ -31,6 +31,7 @@
 #include "audio_mutex.h"
 #include "es8374.h"
 #include "es8388.h"
+#include "wm8978.h"
 
 static const char *TAG = "AUDIO_HAL";
 
