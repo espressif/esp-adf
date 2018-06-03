@@ -1,4 +1,6 @@
-choice
+menu "Audio HAL"
+
+choice AUDIO_BOARD
     prompt "Audio board"
     default ESP_LYRAT_V4_3_BOARD
     help
@@ -9,3 +11,5 @@ config ESP_LYRAT_V4_3_BOARD
 config ESP_LYRAT_V4_2_BOARD
     bool "ESP32-Lyrat V4.2"
 endchoice
+
+endmenu
