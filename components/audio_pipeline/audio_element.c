@@ -170,7 +170,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
     switch (msg->cmd) {
         case AEL_MSG_CMD_ERROR:
             if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be close %d", el->tag, __LINE__);
+                ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
                 el->close(el);
                 el->is_open = false;
             }
@@ -184,7 +184,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             break;
         case AEL_MSG_CMD_FINISH:
             if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be close %d", el->tag, __LINE__);
+                ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
                 el->close(el);
                 el->is_open = false;
             }
@@ -196,26 +196,32 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             ESP_LOGD(TAG, "[%s] AEL_MSG_CMD_FINISH", el->tag);
             break;
         case AEL_MSG_CMD_STOP:
-            if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be close %d", el->tag, __LINE__);
-                el->close(el);
-                el->is_open = false;
-            }
-            audio_element_abort_output_ringbuf(el);
-            audio_element_abort_input_ringbuf(el);
+            if ((el->state != AEL_STATE_FINISHED) && (el->state != AEL_STATE_FINISHED)) {
+                if (el->is_open && el->close) {
+                    ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
+                    el->close(el);
+                    el->is_open = false;
+                }
+                audio_element_abort_output_ringbuf(el);
+                audio_element_abort_input_ringbuf(el);
 
-            el->state = AEL_STATE_STOPPED;
-            audio_event_iface_set_cmd_waiting_timeout(el->event, portMAX_DELAY);
-            audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
-            xEventGroupSetBits(el->state_event, STOPPED_BIT);
-            el->is_running = false;
-            ESP_LOGD(TAG, "[%s] AEL_MSG_CMD_STOP", el->tag);
+                el->state = AEL_STATE_STOPPED;
+                audio_event_iface_set_cmd_waiting_timeout(el->event, portMAX_DELAY);
+                audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
+                xEventGroupSetBits(el->state_event, STOPPED_BIT);
+                el->is_running = false;
+                ESP_LOGD(TAG, "[%s] AEL_MSG_CMD_STOP", el->tag);
+            } else {
+                // Change element state to AEL_STATE_STOPPED, even if AEL_STATE_ERROR or AEL_STATE_FINISHED.
+                el->state = AEL_STATE_STOPPED;
+                xEventGroupSetBits(el->state_event, STOPPED_BIT);
+            }
 
             break;
         case AEL_MSG_CMD_PAUSE:
             el->state = AEL_STATE_PAUSED;
             if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be close %d", el->tag, __LINE__);
+                ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
                 el->close(el);
                 el->is_open = false;
             }
@@ -861,7 +867,7 @@ esp_err_t audio_element_pause(audio_element_handle_t el)
         return ESP_FAIL;
     }
     if ((el->state >= AEL_STATE_PAUSED)) {
-        ESP_LOGD(TAG, "[%s] Element already paused,state:%d", el->tag, el->state);
+        ESP_LOGD(TAG, "[%s] Element already paused, state:%d", el->tag, el->state);
         return ESP_OK;
     }
     xEventGroupClearBits(el->state_event, PAUSED_BIT);
@@ -883,25 +889,23 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
         ESP_LOGW(TAG, "[%s] Element has not create when AUDIO_ELEMENT_RESUME", el->tag);
         return ESP_FAIL;
     }
-    if (!el->is_running) {
-        ESP_LOGD(TAG, "[%s] RESUME:Element has not running,state:%d,task_run:%d", el->tag, el->state, el->task_run);
-        if ((el->state == AEL_STATE_ERROR) && el->task_stack > 0) {
-            ESP_LOGE(TAG, "[%s] RESUME:Element has error,state:%d", el->tag, el->state);
-            return ESP_FAIL;
-        }
-    }
-    if (el->state == AEL_STATE_RUNNING) {
-        ESP_LOGD(TAG, "[%s] Element already resumed,state:%d", el->tag, el->state);
-        return ESP_OK;
-    }
-    if (el->state == AEL_STATE_FINISHED) {
-        ESP_LOGI(TAG, "[%s] Element already finished,state:%d", el->tag, el->state);
+    if ((el->is_running) || (el->state == AEL_STATE_RUNNING)) {
+        ESP_LOGD(TAG, "[%s] RESUME: Element is already running, state:%d, task_run:%d", el->tag, el->state, el->task_run);
         return ESP_OK;
     }
     if (el->task_stack <= 0) {
         audio_element_force_set_state(el, AEL_STATE_RUNNING);
         return ESP_OK;
     }
+    if (el->state == AEL_STATE_ERROR) {
+        ESP_LOGE(TAG, "[%s] RESUME: Element error, state:%d", el->tag, el->state);
+        return ESP_FAIL;
+    }
+    if (el->state == AEL_STATE_FINISHED) {
+        ESP_LOGI(TAG, "[%s] RESUME: Element has finished, state:%d", el->tag, el->state);
+        return ESP_OK;
+    }
+
     if (wait_for_rb_threshold > 1 || wait_for_rb_threshold < 0) {
         return ESP_FAIL;
     }
@@ -919,18 +923,12 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
         ESP_LOGD(TAG, "[%s] Element has not create when AUDIO_ELEMENT_STOP", el->tag);
         return ESP_FAIL;
     }
-    if (!el->is_running) {
-        ESP_LOGD(TAG, "[%s] Element task already stoped", el->tag);
-        xEventGroupSetBits(el->state_event, STOPPED_BIT);
-        return ESP_OK;
-    }
     if (el->task_stack <= 0) {
         el->is_running = false;
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
         return ESP_OK;
     }
-    if ((el->state != AEL_STATE_PAUSED)
-        && (el->state != AEL_STATE_RUNNING)) {
+    if (el->state == AEL_STATE_STOPPED) {
         ESP_LOGD(TAG, "[%s] Element already stoped", el->tag);
         return ESP_OK;
     }
