@@ -316,6 +316,17 @@ esp_err_t audio_pipeline_listen_more(audio_pipeline_handle_t pipeline, audio_ele
  */
 esp_err_t audio_pipeline_check_items_state(audio_pipeline_handle_t pipeline, audio_element_handle_t dest_el, audio_element_status_t status);
 
+/**
+ * @brief      Reset pipeline element items state to `AEL_STATUS_NONE`
+ *
+ * @param[in]  pipeline   The Audio Pipeline Handle
+ *
+ * @return
+ *     - ESP_OK on success
+ *     - ESP_FAIL when any errors
+ */
+esp_err_t audio_pipeline_reset_items_state(audio_pipeline_handle_t pipeline);
+
 #ifdef __cplusplus
 }
 #endif
