@@ -168,17 +168,17 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
     size_t bytes_read = 0;
-    int r_len =  i2s_read(i2s->config.i2s_port, buffer, len, &bytes_read, ticks_to_wait);
+    i2s_read(i2s->config.i2s_port, buffer, len, &bytes_read, ticks_to_wait);
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
-    if (r_len > 0) {
+    if (bytes_read > 0) {
         if (info.channels == 1) {
-            i2s_mono_fix(info.bits, (uint8_t *)buffer, r_len);
+            i2s_mono_fix(info.bits, (uint8_t *)buffer, bytes_read);
         }
-        info.byte_pos += r_len;
+        info.byte_pos += bytes_read;
         audio_element_setinfo(self, &info);
     }
-    return r_len;
+    return bytes_read;
 }
 
 static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
@@ -193,10 +193,10 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
     if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
         i2s_dac_data_scale(info.bits, (uint8_t *)buffer, len);
     }
-    int w_len = i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
-    info.byte_pos += w_len;
+    i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
+    info.byte_pos += bytes_written;
     audio_element_setinfo(self, &info);
-    return w_len;
+    return bytes_written;
 }
 
 static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len)
@@ -243,7 +243,7 @@ esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bi
     i2s_info.channels = ch;
     i2s_info.sample_rates = rate;
     audio_element_setinfo(i2s_stream, &i2s_info);
-    
+
     if (i2s_set_clk(i2s->config.i2s_port, rate, bits, ch) == ESP_FAIL) {
         ESP_LOGE(TAG, "i2s_set_clk failed, type = %d,port:%d", i2s->config.type, i2s->config.i2s_port);
         err = ESP_FAIL;
@@ -294,7 +294,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
 
     audio_element_setinfo(el, &info);
     i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
-    
+
     if((config->i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
         i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
     } else {
