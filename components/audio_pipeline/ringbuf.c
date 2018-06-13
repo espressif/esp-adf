@@ -226,7 +226,7 @@ static int rb_claim_write(ringbuf_handle_t rb, TickType_t ticks_to_wait)
 
 int rb_read(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wait)
 {
-    int read_size = 0, remainder;
+    int read_size = 0, remainder = 0;
     int total_read_size = 0;
     int ret_val = 0;
     if (buf_len == 0) {
@@ -243,6 +243,9 @@ int rb_read(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wai
         if (rb->fill_cnt < buf_len) {
             remainder = rb->fill_cnt % 4;
             read_size = rb->fill_cnt - remainder;
+            if ((read_size == 0) && rb->is_done_write) {
+                read_size = rb->fill_cnt;
+            }
         } else {
             read_size = buf_len;
         }
