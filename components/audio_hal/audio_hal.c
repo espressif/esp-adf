@@ -53,6 +53,7 @@ struct audio_hal {
 };
 
 static struct audio_hal audio_hal_codecs_default[] = {
+#if (defined CONFIG_ESP_LYRAT_V4_3_BOARD) ||(defined CONFIG_ESP_LYRAT_V4_2_BOARD)
     {
         .audio_codec_initialize = es8388_init,
         .audio_codec_deinitialize = es8388_deinit,
@@ -68,7 +69,18 @@ static struct audio_hal audio_hal_codecs_default[] = {
         .audio_codec_config_iface = es8374_config_i2s,
         .audio_codec_set_volume = es8374_set_voice_volume,
         .audio_codec_get_volume = es8374_get_voice_volume,
+    }, 
+#endif
+#ifdef CONFIG_WHYENGINEER_LIN_BOARD
+    {
+        .audio_codec_initialize =wm8978_init,
+        .audio_codec_deinitialize=wm8978_deinit,
+        .audio_codec_ctrl=wm8978_ctrl_state,
+        .audio_codec_config_iface=wm8978_config_i2s,
+        .audio_codec_set_volume=wm8978_set_voice_volume,
+        .audio_codec_get_volume=wm8978_get_voice_volume,
     }
+#endif
 };
 
 audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t* audio_hal_conf, int index)
@@ -94,7 +106,9 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t* audio_hal_conf, int 
     audio_hal->handle = audio_hal;
     audio_hal_codecs_default[index].handle = audio_hal;
     mutex_unlock(audio_hal->audio_hal_lock);
+#if (defined CONFIG_ESP_LYRAT_V4_3_BOARD) ||(defined CONFIG_ESP_LYRAT_V4_2_BOARD)
     es8388_pa_power(true);
+#endif
     return audio_hal;
 }
 

@@ -31,6 +31,7 @@ extern "C" {
 
 #define SD_CARD_OPEN_FILE_NUM_MAX   5
 
+#define IIC_PORT 0
 #define IIC_DATA 19
 #define IIC_CLK 28
 
@@ -50,7 +51,8 @@ extern "C" {
 #define KEY_2 35
 #define KEY_3 32
 
-#define SD_CD 23
+#define SD_CARD_INTR_GPIO           23
+#define SD_CARD_INTR_SEL            23
 
 
 #ifdef __cplusplus
