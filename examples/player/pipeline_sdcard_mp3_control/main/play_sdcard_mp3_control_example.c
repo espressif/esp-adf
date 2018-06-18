@@ -161,39 +161,43 @@ void app_main(void)
     ESP_LOGW(TAG, "      [Vol-] or [Vol+] to adjust volume.");
 
     while (1) {
+        /* Handle event interface messages from pipeline
+           to set music info and to advance to the next song
+        */
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret); 
             continue;
         }
-
-        // Advance to the next song when previous finishes
-        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
-            && msg.cmd == AEL_MSG_CMD_REPORT_STATUS) {
-            audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
-            if (el_state == AEL_STATE_FINISHED) {
-                ESP_LOGI(TAG, "[ * ] Finished, advancing to the next song");
-                audio_pipeline_stop(pipeline);
-                get_file(NEXT);
-                audio_pipeline_resume(pipeline);
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT){
+            // Set music info for a new song to be played
+            if (msg.source == (void *) mp3_decoder
+                && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
+                audio_element_info_t music_info = {0};
+                audio_element_getinfo(mp3_decoder, &music_info);
+                ESP_LOGI(TAG, "[ * ] Received music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
+                    music_info.sample_rates, music_info.bits, music_info.channels);
+                audio_element_setinfo(i2s_stream_writer, &music_info);
+                i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
+                continue;
             }
-            continue;
+            // Advance to the next song when previous finishes
+            if (msg.source == (void *) i2s_stream_writer
+                && msg.cmd == AEL_MSG_CMD_REPORT_STATUS) {
+                audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
+                if (el_state == AEL_STATE_FINISHED) {
+                    ESP_LOGI(TAG, "[ * ] Finished, advancing to the next song");
+                    audio_pipeline_stop(pipeline);
+                    get_file(NEXT);
+                    audio_pipeline_resume(pipeline);
+                }
+                continue;
+            }
         }
-
-        // Set music info for a new song to be played
-        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) mp3_decoder
-            && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
-            audio_element_info_t music_info = {0};
-            audio_element_getinfo(mp3_decoder, &music_info);
-            ESP_LOGI(TAG, "[ * ] Received music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
-                music_info.sample_rates, music_info.bits, music_info.channels);
-            audio_element_setinfo(i2s_stream_writer, &music_info);
-            i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
-            continue;
-        }
-
-        // Handle touch pad to start, pause, resume, finish current song and adjust volume
+        /* Handle touch pad events
+           to start, pause, resume, finish current song and adjust volume
+        */
         if (msg.source_type == PERIPH_ID_TOUCH
                 && msg.cmd == PERIPH_TOUCH_TAP
                 && msg.source == (void *)touch_periph) {
