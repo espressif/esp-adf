@@ -44,7 +44,7 @@ static const char *TAG = "AUDIO_PIPELINE";
 
 typedef struct ringbuf_item {
     STAILQ_ENTRY(ringbuf_item)  next;
-    ringbuf_handle_t             rb;
+    ringbuf_handle_t            rb;
     int                         rb_size;
 } ringbuf_item_t;
 
@@ -54,6 +54,7 @@ typedef struct audio_element_item {
     STAILQ_ENTRY(audio_element_item) next;
     audio_element_handle_t           el;
     int                              index;
+    int                              rb_sz;  // 0:by default; >0: ringbuffer size.
     bool                             linked;
     audio_element_status_t           el_state;
 } audio_element_item_t;
@@ -187,7 +188,6 @@ esp_err_t audio_pipeline_register(audio_pipeline_handle_t pipeline, audio_elemen
     audio_element_item_t *el_item = audio_calloc(1, sizeof(audio_element_item_t));
 
     AUDIO_MEM_CHECK(TAG, el_item, return ESP_ERR_NO_MEM);
-
     el_item->el = el;
     el_item->linked = false;
     STAILQ_INSERT_TAIL(&pipeline->el_list, el_item, next);
@@ -343,7 +343,7 @@ esp_err_t audio_pipeline_link(audio_pipeline_handle_t pipeline, const char *link
             }
             bool _success = (
                                 (rb_item = audio_calloc(1, sizeof(ringbuf_item_t))) &&
-                                (rb = rb_create(pipeline->rb_size, 1))
+                                (rb = rb_create(audio_element_get_output_ringbuf_size(el), 1))
                             );
 
             AUDIO_MEM_CHECK(TAG, _success, {
@@ -442,7 +442,7 @@ esp_err_t audio_pipeline_link_more(audio_pipeline_handle_t pipeline, audio_eleme
             if (!first) {
                 audio_element_set_input_ringbuf(el, rb);
             }
-            rb = rb_create(pipeline->rb_size, 1);
+            rb = rb_create(audio_element_get_output_ringbuf_size(el), 1);
             AUDIO_MEM_CHECK(TAG, rb, return ESP_ERR_NO_MEM);
             add_rb_to_audio_pipeline(pipeline, rb);
             audio_element_set_output_ringbuf(el, rb);
@@ -477,7 +477,6 @@ esp_err_t audio_pipeline_listen_more(audio_pipeline_handle_t pipeline, audio_ele
         element_1 = va_arg(args, audio_element_handle_t);
         QueueHandle_t que = audio_element_get_event_queue(el);
         audio_event_iface_msg_t dummy = {0};
-        // while (xQueueReceive(que, &dummy, 0) == pdTRUE);
         while (1) {
             if (xQueueReceive(que, &dummy, 0) == pdTRUE) {
                 ESP_LOGD(TAG, "Listen_more el:%p,que :%p,OK", el, que);

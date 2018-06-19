@@ -147,10 +147,12 @@ typedef struct {
     int         task_stack; /*!< Element task stack */
     int         task_prio;  /*!< Element task priority (based on freeRTOS priority) */
     int         task_core;  /*!< Element task running in core (0 or 1) */
+    int         out_rb_size;/*!< Output ringbuffer size */
     void        *data;      /*!< User context */
     char        *tag;       /*!< Element tag */
 } audio_element_cfg_t;
 
+#define DEFAULT_ELEMENT_RINGBUF_SIZE    (8*1024)
 #define DEFAULT_ELEMENT_BUFFER_LENGTH   (1024)
 #define DEFAULT_ELEMENT_STACK_SIZE      (2*1024)
 #define DEFAULT_ELEMENT_TASK_PRIO       (5)
@@ -634,6 +636,17 @@ esp_err_t audio_element_set_ringbuf_done(audio_element_handle_t el);
  *     - ESP_FAIL
  */
 esp_err_t audio_element_reset_state(audio_element_handle_t el);
+
+/**
+ * @brief      Get Element output ringbuffer size
+ *
+ * @param[in]  el    The audio element handle
+ *
+ * @return
+ *     - =0: Parameter NULL
+ *     - >0: Size of ringbuffer
+ */
+int audio_element_get_output_ringbuf_size(audio_element_handle_t el);
 
 #ifdef __cplusplus
 }

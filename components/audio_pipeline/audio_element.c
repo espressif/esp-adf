@@ -101,7 +101,7 @@ struct audio_element {
     int                         input_wait_time;
     int                         output_wait_time;
     int                         out_buf_size_expect;
-    int                         rb_size;
+    int                         out_rb_size;
     bool                        is_running;
     bool                        task_run;
 };
@@ -678,6 +678,14 @@ esp_err_t audio_element_set_output_timeout(audio_element_handle_t el, TickType_t
     return ESP_FAIL;
 }
 
+int audio_element_get_output_ringbuf_size(audio_element_handle_t el)
+{
+    if (el) {
+        return el->out_rb_size;
+    }
+    return 0;
+}
+
 esp_err_t audio_element_set_read_cb(audio_element_handle_t el, stream_func fn, void *context)
 {
     if (el) {
@@ -750,6 +758,8 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
     el->destroy = config->destroy;
     if (config->task_stack > 0) {
         el->task_stack = config->task_stack;
+    } else {
+        el->task_stack = DEFAULT_ELEMENT_STACK_SIZE;
     }
     if (config->task_prio) {
         el->task_prio = config->task_prio;
@@ -760,6 +770,11 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
         el->task_core = config->task_core;
     } else {
         el->task_core = DEFAULT_ELEMENT_TASK_CORE;
+    }
+    if (config->out_rb_size > 0) {
+        el->out_rb_size = config->out_rb_size;
+    } else {
+        el->out_rb_size = DEFAULT_ELEMENT_RINGBUF_SIZE;
     }
     el->data = config ->data;
 

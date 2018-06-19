@@ -41,9 +41,6 @@
 #include "i2s_stream.h"
 
 static const char *TAG = "I2S_STREAM";
-#define I2S_STREAM_TASK_STACK (3072)
-#define I2S_STREAM_BUF_SIZE (2048)
-#define I2S_STREAM_TASK_PRIO (23)
 
 typedef struct i2s_stream {
     audio_stream_type_t type;
@@ -81,7 +78,7 @@ static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
  *        DAC can only output 8bit data value.
  *        I2S DMA will still send 16bit or 32bit data, the highest 8bit contains DAC data.
  */
-static int i2s_dac_data_scale(int bits, uint8_t* sBuff, uint32_t len)
+static int i2s_dac_data_scale(int bits, uint8_t *sBuff, uint32_t len)
 {
     if (bits == 16) {
         short *buf16 = (short *)sBuff;
@@ -262,8 +259,10 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     cfg.close = _i2s_close;
     cfg.process = _i2s_process;
     cfg.destroy = _i2s_destroy;
-    cfg.task_prio = I2S_STREAM_TASK_PRIO;
-    cfg.task_stack = I2S_STREAM_TASK_STACK;
+    cfg.task_stack = config->task_stack;
+    cfg.task_prio = config->task_prio;
+    cfg.task_core = config->task_core;
+    cfg.out_rb_size = config->out_rb_size;
     cfg.tag = "iis";
     cfg.buffer_len = I2S_STREAM_BUF_SIZE;
     i2s_stream_t *i2s = audio_calloc(1, sizeof(i2s_stream_t));
@@ -295,7 +294,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     audio_element_setinfo(el, &info);
     i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
 
-    if((config->i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+    if ((config->i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
         i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
     } else {
         i2s_set_pin(i2s->config.i2s_port, &i2s->config.i2s_pin_config);
