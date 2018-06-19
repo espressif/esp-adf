@@ -33,23 +33,27 @@ extern "C" {
 
 #define IIC_PORT 0
 #define IIC_DATA 19
-#define IIC_CLK 28
+#define IIC_CLK 18
 
 
 /* I2S gpios */
 #define IIS_SCLK                    33
 #define IIS_LCLK                    25
-#define IIS_DSIN                    27
-#define IIS_DOUT                    26
+#define IIS_DSIN                    26
+#define IIS_DOUT                    27
 
 
 #define LED_R 5
 #define LED_G 21
 #define LED_B 22
 
-#define KEY_1 34
-#define KEY_2 35
-#define KEY_3 32
+#define KEY_1_SEL GPIO_SEL_34
+#define KEY_2_SEL GPIO_SEL_35
+#define KEY_3_SEL GPIO_SEL_32
+
+#define KEY_1_NUM GPIO_NUM_34
+#define KEY_2_NUM GPIO_NUM_35
+#define KEY_3_NUM GPIO_NUM_32
 
 #define SD_CARD_INTR_GPIO           23
 #define SD_CARD_INTR_SEL            23
