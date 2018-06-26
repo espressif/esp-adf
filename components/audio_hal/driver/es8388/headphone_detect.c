@@ -46,6 +46,7 @@ static void hp_timer_cb(TimerHandle_t xTimer)
     int res;
     res = gpio_get_level(GPIO_HEADPHONE_DETECT);
     es8388_pa_power(res);
+    ESP_LOGW(TAG, "Headphone jack %s", res ? "removed" : "inserted");
 }
 
 static int hp_timer_init()
@@ -90,6 +91,7 @@ void headphone_detect_init()
     io_conf.pull_up_en = 1;
     gpio_config(&io_conf);
 
+    gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_HEADPHONE_DETECT, headphone_gpio_intr_handler, NULL);
 }
 #endif /* CONFIG_ESP_LYRAT_V4_3_BOARD */
