@@ -14,7 +14,6 @@
 #include "freertos/task.h"
 
 #include "esp_log.h"
-#include "sdkconfig.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"
 #include "audio_event_iface.h"
@@ -25,13 +24,9 @@
 #include "esp_peripherals.h"
 #include "periph_touch.h"
 #include "audio_hal.h"
+#include "board.h"
 
 static const char *TAG = "PLAY_MP3_FLASH";
-
-#define LYRAT_TOUCH_SET     TOUCH_PAD_NUM9
-#define LYRAT_TOUCH_PLAY    TOUCH_PAD_NUM8
-#define LYRAT_TOUCH_VOLUP   TOUCH_PAD_NUM7
-#define LYRAT_TOUCH_VOLDWN  TOUCH_PAD_NUM4
 
 /*
    To embed it in the app binary, the mp3 file is named
@@ -97,7 +92,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[3.1] Initialize Touch peripheral");
     periph_touch_cfg_t touch_cfg = {
-        .touch_mask = TOUCH_PAD_SEL4 | TOUCH_PAD_SEL7 | TOUCH_PAD_SEL8 | TOUCH_PAD_SEL9,
+        .touch_mask = TOUCH_SEL_SET | TOUCH_SEL_PLAY | TOUCH_SEL_VOLUP | TOUCH_SEL_VOLDWN,
         .tap_threshold_percent = 70,
     };
     esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
@@ -144,7 +139,7 @@ void app_main(void)
                 && msg.cmd == PERIPH_TOUCH_TAP
                 && msg.source == (void *)touch_periph) {
 
-            if ((int) msg.data == LYRAT_TOUCH_PLAY) {
+            if ((int) msg.data == TOUCH_PLAY) {
                 ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
                 audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
                 switch (el_state) {
@@ -162,17 +157,18 @@ void app_main(void)
                        break;
                    case AEL_STATE_FINISHED :
                        ESP_LOGI(TAG, "[ * ] Rewinding audio pipeline");
+                       audio_pipeline_stop(pipeline);
                        adf_music_mp3_pos = 0;
                        audio_pipeline_resume(pipeline);
                        break;
                    default :
                        ESP_LOGI(TAG, "[ * ] Not supported state %d", el_state);
                 }
-            } else if ((int) msg.data == LYRAT_TOUCH_SET) {
+            } else if ((int) msg.data == TOUCH_SET) {
                 ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
                 ESP_LOGI(TAG, "[ * ] Stopping audio pipeline");
                 break;
-            } else if ((int) msg.data == LYRAT_TOUCH_VOLUP) {
+            } else if ((int) msg.data == TOUCH_VOLUP) {
                 ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event");
                 player_volume += 10;
                 if (player_volume > 100) {
@@ -180,7 +176,7 @@ void app_main(void)
                 }
                 audio_hal_set_volume(hal, player_volume);
                 ESP_LOGI(TAG, "[ * ] Volume set to %d %%", player_volume);
-            } else if ((int) msg.data == LYRAT_TOUCH_VOLDWN) {
+            } else if ((int) msg.data == TOUCH_VOLDWN) {
                 ESP_LOGI(TAG, "[ * ] [Vol-] touch tap event");
                 player_volume -= 10;
                 if (player_volume < 0) {
