@@ -43,8 +43,8 @@ typedef struct {
 
 /**
  * @brief      Create a handle to an Audio Element to stream data from FatFs to another Element
- *             or get data from other elements written to FatFs, depend on the configuration of stream type
- *             is AUDIO_STREAM_READER or AUDIO_STREAM_WRITER
+ *             or get data from other elements written to FatFs, depending on the configuration
+ *             the stream type, either AUDIO_STREAM_READER or AUDIO_STREAM_WRITER.
  *
  * @param      config  The configuration
  *

@@ -72,3 +72,4 @@ See a table of contents below with links to description of all the above compone
     Codecs <codecs/index>
     Peripherals <peripherals/index>
     Abstraction Layer <abstraction/index>
+    Configuration Options <kconfig>
