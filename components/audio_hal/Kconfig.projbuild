@@ -10,6 +10,8 @@ config ESP_LYRAT_V4_3_BOARD
     bool "ESP32-Lyrat V4.3"
 config ESP_LYRAT_V4_2_BOARD
     bool "ESP32-Lyrat V4.2"
+config WHYENGINEER_LIN_BOARD
+    bool "WhyEngineer Lin Audio board"
 endchoice
 
 endmenu
