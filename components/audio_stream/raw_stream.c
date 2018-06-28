@@ -86,6 +86,7 @@ audio_element_handle_t raw_stream_init(raw_stream_cfg_t *config)
     cfg.task_stack = -1; // No need task
     cfg.destroy = _raw_destroy;
     cfg.tag = "raw";
+    cfg.out_rb_size = config->out_rb_size;
     raw->type = config->type;
     audio_element_handle_t el = audio_element_init(&cfg);
     AUDIO_MEM_CHECK(TAG, el, {

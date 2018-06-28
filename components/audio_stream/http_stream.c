@@ -64,7 +64,6 @@ typedef struct {
     int             content_length;
 } playlist_t;
 
-
 typedef struct http_stream {
     audio_stream_type_t             type;
     char                            *uri;
@@ -588,7 +587,10 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     cfg.close = _http_close;
     cfg.process = _http_process;
     cfg.destroy = _http_destroy;
-    cfg.task_stack = HTTP_STREAM_TASK_STACK;
+    cfg.task_stack = config->task_stack;
+    cfg.task_prio = config->task_prio;
+    cfg.task_core = config->task_core;
+    cfg.out_rb_size = config->out_rb_size;
     cfg.tag = "http";
 
     http->type = config->type;
@@ -617,9 +619,8 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     } else if (config->type == AUDIO_STREAM_WRITER) {
         cfg.write = _http_write;
     }
+
     el = audio_element_init(&cfg);
-
-
     AUDIO_MEM_CHECK(TAG, el, {
         audio_free(http);
         audio_free(http->playlist);
