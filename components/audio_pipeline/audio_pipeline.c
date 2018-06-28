@@ -250,10 +250,10 @@ esp_err_t audio_pipeline_run(audio_pipeline_handle_t pipeline)
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         ESP_LOGD(TAG, "start el, linked:%d,state:%d,[%p]", el_item->linked,  audio_element_get_state(el_item->el), el_item->el);
         if (el_item->linked
-                && ((AEL_STATE_INIT == audio_element_get_state(el_item->el))
-                    || (AEL_STATE_STOPPED == audio_element_get_state(el_item->el))
-                    || (AEL_STATE_FINISHED == audio_element_get_state(el_item->el))
-                    || (AEL_STATE_ERROR == audio_element_get_state(el_item->el)))) {
+            && ((AEL_STATE_INIT == audio_element_get_state(el_item->el))
+                || (AEL_STATE_STOPPED == audio_element_get_state(el_item->el))
+                || (AEL_STATE_FINISHED == audio_element_get_state(el_item->el))
+                || (AEL_STATE_ERROR == audio_element_get_state(el_item->el)))) {
             audio_element_run(el_item->el);
         }
     }
@@ -513,4 +513,16 @@ esp_err_t audio_pipeline_check_items_state(audio_pipeline_handle_t pipeline, aud
     } else {
         return ESP_FAIL;
     }
+}
+
+esp_err_t audio_pipeline_reset_items_state(audio_pipeline_handle_t pipeline)
+{
+    audio_element_item_t *el_item;
+    ESP_LOGD(TAG, "audio_pipeline_reset_items_state");
+    STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
+        if (el_item->linked) {
+            el_item->el_state = AEL_STATUS_NONE;
+        }
+    }
+    return ESP_OK;
 }

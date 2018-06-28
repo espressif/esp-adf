@@ -54,6 +54,16 @@ extern "C" {
 #define GPIO_REC                    GPIO_NUM_36
 #define GPIO_MODE                   GPIO_NUM_39
 
+/* Touch pad related */
+#define TOUCH_SEL_SET               TOUCH_PAD_SEL9
+#define TOUCH_SEL_PLAY              TOUCH_PAD_SEL8
+#define TOUCH_SEL_VOLUP             TOUCH_PAD_SEL7
+#define TOUCH_SEL_VOLDWN            TOUCH_PAD_SEL4
+#define TOUCH_SET                   TOUCH_PAD_NUM9
+#define TOUCH_PLAY                  TOUCH_PAD_NUM8
+#define TOUCH_VOLUP                 TOUCH_PAD_NUM7
+#define TOUCH_VOLDWN                TOUCH_PAD_NUM4
+
 /* I2S gpios */
 #define IIS_SCLK                    5
 #define IIS_LCLK                    25
