@@ -55,8 +55,8 @@ esp_err_t es8374_deinit(void);
 /**
  * @brief Configure ES8374 I2S format
  *
- * @param mod:  set ADC or DAC or both
- * @param cfg:  ES8374 I2S format
+ * @param mode:  set ADC or DAC or both
+ * @param fmt:  ES8374 I2S format
  *
  * @return
  *     - ESP_OK
@@ -134,7 +134,7 @@ esp_err_t es8374_get_voice_volume(int *volume);
 /**
  * @brief Mute or unmute ES8374 DAC. Basically you can use this function to mute or unmute the output
  *
- * @param mute(1) or unmute(0)
+ * @param enable mute(1) or unmute(0)
  *
  * @return
  *     - ESP_FAIL Parameter error
