@@ -53,10 +53,10 @@ void *audio_malloc(size_t size);
 void audio_free(void *ptr);
 
 /**
- * @brief  Malloc memory in ADF, if enabled spiram, it will malloc memory in spi ram
+ * @brief  Malloc memory in ADF, if spi ram is enabled, it will malloc memory in the spi ram
  *
  * @param[in]  nmemb   number of block
- * @param[in]  size   block memory size
+ * @param[in]  size    block memory size
  *
  * @return
  *     - valid pointer on success
@@ -79,7 +79,7 @@ void *audio_calloc_inner(size_t nmemb, size_t size);
 /**
  * @brief   Print heap memory status
  *
- * @param[in]  tag   tag of log
+ * @param[in]  tag    tag of log
  * @param[in]  line   line of log
  * @param[in]  func   function name of log
  *
@@ -87,6 +87,19 @@ void *audio_calloc_inner(size_t nmemb, size_t size);
  *     - void
  */
 void audio_mem_print(const char *tag, int line, const char *func);
+
+/**
+ * @brief  Reallocate memory in ADF, if spi ram is enabled, it will allocate memory in the spi ram
+ *
+ * @param[in]  ptr   memory pointer
+ * @param[in]  size  block memory size
+ *
+ * @return
+ *     - valid pointer on success
+ *     - NULL when any errors
+ */
+void *audio_realloc(void *ptr, size_t size);
+
 
 #define AUDIO_MEM_SHOW(x)  audio_mem_print(x, __LINE__, __func__)
 

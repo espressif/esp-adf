@@ -329,6 +329,16 @@ esp_err_t esp_periph_set_function(esp_periph_handle_t periph,
  */
 long long esp_periph_tick_get();
 
+
+/**
+ * @brief      Set event callback function.
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t esp_periph_set_callback(esp_periph_event_handle_t cb);
+
 #define periph_tick_get esp_periph_tick_get
 
 

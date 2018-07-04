@@ -40,6 +40,20 @@
 static const char *TAG = "CONSOLE_EXAMPLE";
 static esp_audio_handle_t player;
 
+int _http_stream_event_handle(http_stream_event_msg_t *msg)
+{
+    if (msg->event_id == HTTP_STREAM_RESOLVE_ALL_TRACKS) {
+        return ESP_OK;
+    }
+
+    if (msg->event_id == HTTP_STREAM_FINISH_TRACK) {
+        return http_stream_next_track(msg->el);
+    }
+    if (msg->event_id == HTTP_STREAM_FINISH_PLAYLIST) {
+        return http_stream_restart(msg->el);
+    }
+    return ESP_OK;
+}
 
 static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
 {
@@ -291,9 +305,8 @@ static void cli_setup_player(void)
     xTaskCreate(esp_audio_state_task, "player_task", 4096, cfg.evt_que, 1, NULL);
 
     // Create readers and add to esp_audio
-    fatfs_stream_cfg_t fs_reader = {
-        .type = AUDIO_STREAM_READER,
-    };
+    fatfs_stream_cfg_t fs_reader = FATFS_STREAM_CFG_DEFAULT();
+    fs_reader.type = AUDIO_STREAM_READER;
     i2s_stream_cfg_t i2s_reader = I2S_STREAM_CFG_DEFAULT();
     i2s_reader.type = AUDIO_STREAM_READER;
     raw_stream_cfg_t raw_reader = {
@@ -304,13 +317,16 @@ static void cli_setup_player(void)
     esp_audio_input_stream_add(player, fatfs_stream_init(&fs_reader));
     esp_audio_input_stream_add(player, i2s_stream_init(&i2s_reader));
     http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
+    http_cfg.event_handle = _http_stream_event_handle;
+    http_cfg.type = AUDIO_STREAM_READER;
+    http_cfg.enable_playlist_parser = true;
     audio_element_handle_t http_stream_reader = http_stream_init(&http_cfg);
     esp_audio_input_stream_add(player, http_stream_reader);
 
     // Create writers and add to esp_audio
-    fatfs_stream_cfg_t fs_writer = {
-        .type = AUDIO_STREAM_WRITER,
-    };
+    fatfs_stream_cfg_t fs_writer = FATFS_STREAM_CFG_DEFAULT();
+    fs_writer.type = AUDIO_STREAM_WRITER;
+
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
@@ -347,6 +363,7 @@ static void cli_setup_player(void)
 
 void app_main(void)
 {
+    esp_log_level_set("*", ESP_LOG_INFO);
     ESP_ERROR_CHECK(nvs_flash_init());
     tcpip_adapter_init();
     esp_periph_config_t periph_cfg = { 0 };

@@ -37,7 +37,7 @@ extern "C" {
 #define mutex_lock(x)       while (xSemaphoreTake(x, portMAX_DELAY) != pdPASS);
 #define mutex_unlock(x)     xSemaphoreGive(x)
 #define mutex_create()      xSemaphoreCreateMutex()
-#define mutex_destroy(x)    vQueueDelete(x)
+#define mutex_destroy(x)    vSemaphoreDelete(x)
 
 
 
