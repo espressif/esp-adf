@@ -1,2 +1,2 @@
-PROJECT_NAME := play_sdcard_mp3_control
+PROJECT_NAME := play_sdcard_mp3_button_control
 include $(ADF_PATH)/project.mk
