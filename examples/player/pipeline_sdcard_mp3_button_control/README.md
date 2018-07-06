@@ -1,4 +1,4 @@
-# Play MP3 files from microSD with touch pad control 
+# Play MP3 files from microSD with butons control 
 
 The demo plays MP3 files stored on the SD card using audio pipeline API.
 
@@ -10,4 +10,4 @@ To run this example you need ESP32 LyraT or compatible board:
 - Insert a microSD card loaded with a MP3 files 'test.mp3', 'test1.mp3' and 'test2.mp3' into board's slot.
 - Connect play button to GPIO35, next song button to GPIO32
 
-Adding volume up/ down function just as same as examples\player\pipeline_sdcard_mp3_control
+Adding volume up/ down function just as same as examples/player/pipeline_sdcard_mp3_control
