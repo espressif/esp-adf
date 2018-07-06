@@ -56,9 +56,8 @@ static audio_element_handle_t create_filter(int source_rate, int source_channel,
 
 static audio_element_handle_t create_fatfs_stream(int sample_rates, int bits, int channels, audio_stream_type_t type)
 {
-    fatfs_stream_cfg_t fatfs_cfg = {
-        .type = type,
-    };
+    fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
+    fatfs_cfg.type = type;
     audio_element_handle_t fatfs_stream = fatfs_stream_init(&fatfs_cfg);
     mem_assert(fatfs_stream);
     audio_element_info_t writer_info = {0};
@@ -154,7 +153,7 @@ void record_playback_task()
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret); 
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
             continue;
         }
 

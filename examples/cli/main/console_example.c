@@ -309,9 +309,8 @@ static void cli_setup_player(void)
     fs_reader.type = AUDIO_STREAM_READER;
     i2s_stream_cfg_t i2s_reader = I2S_STREAM_CFG_DEFAULT();
     i2s_reader.type = AUDIO_STREAM_READER;
-    raw_stream_cfg_t raw_reader = {
-        .type = AUDIO_STREAM_READER,
-    };
+    raw_stream_cfg_t raw_reader = RAW_STREAM_CFG_DEFAULT();
+    raw_reader.type = AUDIO_STREAM_READER;
 
     esp_audio_input_stream_add(player, raw_stream_init(&raw_reader));
     esp_audio_input_stream_add(player, fatfs_stream_init(&fs_reader));
@@ -330,9 +329,9 @@ static void cli_setup_player(void)
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
-    raw_stream_cfg_t raw_writer = {
-        .type = AUDIO_STREAM_READER,
-    };
+    raw_stream_cfg_t raw_writer = RAW_STREAM_CFG_DEFAULT();
+    raw_writer.type = AUDIO_STREAM_WRITER;
+
     esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
     esp_audio_output_stream_add(player, fatfs_stream_init(&fs_writer));
     esp_audio_output_stream_add(player, raw_stream_init(&raw_writer));

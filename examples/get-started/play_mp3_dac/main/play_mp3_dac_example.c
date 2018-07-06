@@ -85,7 +85,7 @@ void app_main(void)
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret); 
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
             continue;
         }
 

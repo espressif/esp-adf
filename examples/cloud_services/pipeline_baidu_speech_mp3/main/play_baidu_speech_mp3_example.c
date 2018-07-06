@@ -103,10 +103,9 @@ void app_main(void)
     mem_assert(pipeline);
 
     ESP_LOGI(TAG, "[2.1] Create http stream to read data");
-    http_stream_cfg_t http_cfg = {
-        .event_handle = _http_stream_event_handle,
-        .type = AUDIO_STREAM_READER,
-    };
+    http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
+    http_cfg.event_handle = _http_stream_event_handle;
+    http_cfg.type = AUDIO_STREAM_READER;
     http_stream_reader = http_stream_init(&http_cfg);
 
     ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");
@@ -149,7 +148,7 @@ void app_main(void)
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret); 
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
             continue;
         }
 
@@ -170,7 +169,7 @@ void app_main(void)
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
                 && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
-            ESP_LOGW(TAG, "[ * ] Stop event received"); 
+            ESP_LOGW(TAG, "[ * ] Stop event received");
             break;
         }
     }
