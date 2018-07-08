@@ -9,4 +9,4 @@ For details please refer to descriptions listed below.
     :maxdepth: 1
 
     Bluetooth <bluetooth_service>
-    HTTP Client <esp_http_client>
+

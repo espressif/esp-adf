@@ -57,7 +57,6 @@ INPUT = \
     ../../components/audio_sal/include/audio_mutex.h \
     ../../components/audio_sal/include/audio_mem.h \
     ## Services
-    ../../components/esp_http_client/include/esp_http_client.h \
     ../../components/audio_service/include/bluetooth_service.h \
     ## Cloud Services
     ##
