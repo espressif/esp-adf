@@ -3,7 +3,7 @@ Bluetooth Service
 
 This service is dedicated to interface with Bluetooth devices and provides:
 
-* A2DP (Advanced Audio Distribution Profile), that implements streaming of multimedia audio using a Bluetooth connection,
+* A2DP (Advanced Audio Distribution Profile), that implements streaming of multimedia audio using a Bluetooth connection;
 * AVRCP (Audio/Video Remote Control Profile) used together with A2DP for remote control of devices such as headphones, car audio systems, or speakers. 
 
 
