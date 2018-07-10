@@ -65,9 +65,8 @@ void app_main(void)
     mem_assert(pipeline);
 
     ESP_LOGI(TAG, "[3.1] Create fatfs stream to write data to sdcard");
-    fatfs_stream_cfg_t fatfs_cfg = {
-        .type = AUDIO_STREAM_WRITER,
-    };
+    fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
+    fatfs_cfg.type = AUDIO_STREAM_WRITER;
     fatfs_stream_writer = fatfs_stream_init(&fatfs_cfg);
 
     ESP_LOGI(TAG, "[3.2] Create i2s stream to read audio data from codec chip");
@@ -126,7 +125,7 @@ void app_main(void)
         /* Stop when the last pipeline element (i2s_stream_reader in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_reader
                 && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
-            ESP_LOGW(TAG, "[ * ] Stop event received"); 
+            ESP_LOGW(TAG, "[ * ] Stop event received");
             break;
         }
     }

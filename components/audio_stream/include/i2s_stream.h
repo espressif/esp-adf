@@ -83,6 +83,10 @@ typedef struct {
 
 #define I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT() {                                     \
     .type = AUDIO_STREAM_WRITER,                                                    \
+    .task_prio = I2S_STREAM_TASK_PRIO,                                              \
+    .task_core = I2S_STREAM_TASK_CORE,                                              \
+    .task_stack = I2S_STREAM_TASK_STACK,                                            \
+    .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                      \
     .i2s_config = {                                                                 \
         .mode = I2S_MODE_MASTER | I2S_MODE_DAC_BUILT_IN | I2S_MODE_TX,              \
         .sample_rate = 44100,                                                       \
