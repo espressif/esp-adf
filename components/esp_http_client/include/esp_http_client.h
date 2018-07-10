@@ -85,7 +85,7 @@ typedef enum {
 typedef enum {
     HTTP_AUTH_TYPE_NONE = 0,    /*!< No authention */
     HTTP_AUTH_TYPE_BASIC,       /*!< HTTP Basic authentication */
-    HTTP_AUTH_TYPE_DIGEST,      /*!< HTTP Disgest authentication */
+    HTTP_AUTH_TYPE_DIGEST,      /*!< HTTP Digest authentication */
 } esp_http_client_auth_type_t;
 
 /**

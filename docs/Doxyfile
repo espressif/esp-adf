@@ -37,6 +37,7 @@ INPUT = \
     ../../components/esp-adf-libs/esp_codec/include/mp3_decoder.h \
     ../../components/esp-adf-libs/esp_codec/include/wav_decoder.h \
     ../../components/esp-adf-libs/esp_codec/include/wav_encoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/aac_decoder.h \
     ## ESP Audio
      ../../components/esp-adf-libs/esp_audio/include/audio_def.h \
      ../../components/esp-adf-libs/esp_audio/include/esp_audio.h \
@@ -50,13 +51,14 @@ INPUT = \
     ## Audio HAL
     ../../components/audio_hal/board/board.h \
     ../../components/audio_hal/driver/es8388/es8388.h \
+    ../../components/audio_hal/driver/es8374/es8374.h \
     ../../components/audio_hal/include/audio_hal.h \
     ## Audio SAL
     ../../components/audio_sal/include/audio_mutex.h \
     ../../components/audio_sal/include/audio_mem.h \
-    ## HTTP Client
-    ##
-    ## Audio Service
+    ## Services
+    ../../components/audio_service/include/bluetooth_service.h \
+    ## Cloud Services
     ##
     ## Audio Player
     ##

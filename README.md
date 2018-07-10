@@ -1,6 +1,6 @@
 # Espressif Audio Development Framework
 
-[![alt text](https://readthedocs.org/projects/docs/badge/?version=latest "Documentation Status")](https://esp-adf.readthedocs.io/en/latest/?badge=latest)
+[![alt text](https://readthedocs.org/projects/docs/badge/?version=latest "Documentation Status")](https://docs.espressif.com/projects/esp-adf/en/latest/?badge=latest)
 
 Espressif Systems Audio Development Framework (ESP-ADF) is the official audio development framework for the [ESP32](https://espressif.com/en/products/hardware/esp32/overview) chip.
 
@@ -47,7 +47,7 @@ Espressif Systems has released a number of support boards for ESP-ADF to develop
 
 #### ESP-IDF
 
-ESP-**A**DF is based on the application layer of ESP-**I**DF ([Espressif IoT Development Framework](https://github.com/espressif/esp-idf)). So you need to first install the ESP-IDF and then use the ESP-ADF. Please take a look at [Get Started](https://esp-adf.readthedocs.io/en/latest/get-started/index.html)
+ESP-**A**DF is based on the application layer of ESP-**I**DF ([Espressif IoT Development Framework](https://github.com/espressif/esp-idf)). So you need to first install the ESP-IDF and then use the ESP-ADF. Please take a look at [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html)
 
 #### Examples
 
@@ -55,11 +55,10 @@ Check folder [examples](examples) that contains sample applications to demonstra
 
 # Resources
 
-* Documentation for the latest version: https://esp-adf.readthedocs.io/. This documentation is built from the [docs directory](docs) of this repository.
+* Documentation for the latest version: https://docs.espressif.com/projects/esp-adf/. This documentation is built from the [docs directory](docs) of this repository.
 
-* The [esp32.com forum](https://esp32.com/) is a place to ask questions and find community resources.
+* The [esp32.com forum](https://esp32.com/) is a place to ask questions and find community resources. On the forum there is a [section dedicated to ESP-ADF](https://esp32.com/viewforum.php?f=20) users. 
 
 * [Check the Issues section on github](https://github.com/espressif/esp-adf/issues) if you find a bug or have a feature request. Please check existing Issues before opening a new one.
 
 * If you're interested in contributing to ESP-ADF, please check the [Contributions Guide](https://esp-idf.readthedocs.io/en/latest/contribute/index.html).
-

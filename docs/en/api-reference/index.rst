@@ -70,6 +70,7 @@ See a table of contents below with links to description of all the above compone
     Framework <framework/index>
     Streams <streams/index>
     Codecs <codecs/index>
+    Services <services/index>
     Peripherals <peripherals/index>
     Abstraction Layer <abstraction/index>
     Configuration Options <kconfig>
