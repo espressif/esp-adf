@@ -1,4 +1,4 @@
-/* Play mp3 file by audio pipeline
+/* Play mp3 files of different sample rates
 
    This example code is in the Public Domain (or CC0 licensed, at your option.)
 
@@ -21,25 +21,63 @@
 #include "mp3_decoder.h"
 #include "audio_hal.h"
 
-static const char *TAG = "PLAY_MP3_FLASH";
-/*
-   To embed it in the app binary, the mp3 file is named
-   in the component.mk COMPONENT_EMBED_TXTFILES variable.
-*/
-extern const uint8_t adf_music_mp3_start[] asm("_binary_adf_music_mp3_start");
-extern const uint8_t adf_music_mp3_end[]   asm("_binary_adf_music_mp3_end");
+static const char *TAG = "PLAY_MP3_RATES";
+
+static struct marker
+{
+    int pos;
+    const uint8_t *start;
+    const uint8_t *end;
+} file_marker;
+
+// low rate mp3 audio
+extern const uint8_t lr_mp3_start[] asm("_binary_16b_2c_8000hz_mp3_start");
+extern const uint8_t lr_mp3_end[]   asm("_binary_16b_2c_8000hz_mp3_end");
+
+// medium rate mp3 audio
+extern const uint8_t mr_mp3_start[] asm("_binary_16b_2c_22050hz_mp3_start");
+extern const uint8_t mr_mp3_end[]   asm("_binary_16b_2c_22050hz_mp3_end");
+
+// high rate mp3 audio
+extern const uint8_t hr_mp3_start[] asm("_binary_16b_2c_44100hz_mp3_start");
+extern const uint8_t hr_mp3_end[]   asm("_binary_16b_2c_44100hz_mp3_end");
+
+static void set_next_file_marker()
+{
+    static int idx = 0;
+
+    switch (idx) {
+        case 0:
+            file_marker.start = lr_mp3_start;
+            file_marker.end   = lr_mp3_end;
+            break;
+        case 1:
+            file_marker.start = mr_mp3_start;
+            file_marker.end   = mr_mp3_end;
+            break;
+        case 2:
+            file_marker.start = hr_mp3_start;
+            file_marker.end   = hr_mp3_end;
+            break;
+        default:
+            ESP_LOGE(TAG, "[ * ] Not supported index = %d", idx);
+    }
+    if (++idx > 2) {
+        idx = 0;
+    }
+    file_marker.pos = 0;
+}
 
 int mp3_music_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
-    static int mp3_pos;
-    int read_size = adf_music_mp3_end - adf_music_mp3_start - mp3_pos;
+    int read_size = file_marker.end - file_marker.start - file_marker.pos;
     if (read_size == 0) {
         return AEL_IO_DONE;
     } else if (len < read_size) {
         read_size = len;
     }
-    memcpy(buf, adf_music_mp3_start + mp3_pos, read_size);
-    mp3_pos += read_size;
+    memcpy(buf, file_marker.start + file_marker.pos, read_size);
+    file_marker.pos += read_size;
     return read_size;
 }
 
@@ -86,6 +124,7 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline, evt);
 
     ESP_LOGI(TAG, "[ 4 ] Start audio_pipeline");
+    set_next_file_marker();
     audio_pipeline_run(pipeline);
 
     while (1) {
@@ -111,7 +150,9 @@ void app_main(void)
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
                 && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
-            break;
+            audio_pipeline_stop(pipeline);
+            set_next_file_marker();
+            audio_pipeline_resume(pipeline);
         }
     }
 
