@@ -276,6 +276,8 @@ esp_err_t audio_pipeline_terminate(audio_pipeline_handle_t pipeline)
 {
     audio_element_item_t *el_item;
     ESP_LOGD(TAG, "Destroy audio_pipeline elements");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
             audio_element_terminate(el_item->el);
