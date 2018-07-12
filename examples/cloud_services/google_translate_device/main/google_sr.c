@@ -277,6 +277,7 @@ esp_err_t google_sr_start(google_sr_handle_t sr)
     snprintf(sr->buffer, sr->buffer_size, GOOGLE_SR_ENDPOINT, sr->api_key);
     audio_element_set_uri(sr->http_stream_writer, sr->buffer);
     audio_pipeline_reset_items_state(sr->pipeline);
+    audio_pipeline_reset_ringbuffer(sr->pipeline);
     audio_pipeline_run(sr->pipeline);
     return ESP_OK;
 }
