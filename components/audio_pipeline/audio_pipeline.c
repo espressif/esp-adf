@@ -531,3 +531,15 @@ esp_err_t audio_pipeline_reset_items_state(audio_pipeline_handle_t pipeline)
     }
     return ESP_OK;
 }
+
+esp_err_t audio_pipeline_reset_ringbuffer(audio_pipeline_handle_t pipeline)
+{
+    audio_element_item_t *el_item;
+    STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
+        if (el_item->linked) {
+            audio_element_reset_input_ringbuf(el_item->el);
+            audio_element_reset_output_ringbuf(el_item->el);
+        }
+    }
+    return ESP_OK;
+}

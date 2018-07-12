@@ -327,6 +327,17 @@ esp_err_t audio_pipeline_check_items_state(audio_pipeline_handle_t pipeline, aud
  */
 esp_err_t audio_pipeline_reset_items_state(audio_pipeline_handle_t pipeline);
 
+/**
+ * @brief      Reset pipeline element ringbuffer
+ *
+ * @param[in]  pipeline   The Audio Pipeline Handle
+ *
+ * @return
+ *     - ESP_OK on success
+ *     - ESP_FAIL when any errors
+ */
+esp_err_t audio_pipeline_reset_ringbuffer(audio_pipeline_handle_t pipeline);
+
 #ifdef __cplusplus
 }
 #endif

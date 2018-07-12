@@ -251,6 +251,7 @@ esp_err_t google_tts_start(google_tts_handle_t tts, const char *text, const char
     }
     snprintf(tts->buffer, tts->buffer_size, GOOGLE_TTS_ENDPOINT, tts->api_key);
     audio_pipeline_reset_items_state(tts->pipeline);
+    audio_pipeline_reset_ringbuffer(tts->pipeline);
     audio_element_set_uri(tts->http_stream_reader, tts->buffer);
     audio_pipeline_run(tts->pipeline);
     return ESP_OK;
