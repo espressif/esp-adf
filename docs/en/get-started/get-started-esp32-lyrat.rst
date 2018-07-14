@@ -71,7 +71,7 @@ Left Speaker Output
 Right Speaker Output
     Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
 Boot/Reset Press Keys
-    Boot button: holding down the **Boot** button and momentarily pressing the **Reset** button to initiate the firmware upload mode. Then you can upload firmware through the serial port. Reset button: pressing this button alone resets the system.
+    Boot: holding down the **Boot** button and momentarily pressing the **Reset** button initiates the firmware upload mode. Then user can upload firmware through the serial port. Reset: pressing this button alone resets the system.
 Audio Codec Chip
     The Audio Codec Chip, `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_, is a low power stereo audio codec with a headphone amplifier. It consists of 2-channel ADC, 2-channel DAC, microphone amplifier, headphone amplifier, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER Module** over I2S and I2S buses to provide audio processing in hardware independently from the audio application.
 USB-UART Port
