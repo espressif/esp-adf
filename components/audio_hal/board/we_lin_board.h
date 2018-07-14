@@ -22,26 +22,41 @@
  *
  */
 
-#ifndef _AUDIO_BOARD_H_
-#define _AUDIO_BOARD_H_
-
-#include "sdkconfig.h"
+#ifndef _WHYENGINEER_BOARD_H_
+#define _WHYENGINEER_BOARD_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-#include "lyrat_v4_3_board.h"
-#endif
+#define SD_CARD_OPEN_FILE_NUM_MAX   5
 
-#ifdef CONFIG_ESP_LYRAT_V4_2_BOARD
-#include "lyrat_v4_2_board.h"
-#endif
+#define IIC_PORT 0
+#define IIC_DATA 19
+#define IIC_CLK 18
 
-#ifdef CONFIG_WHYENGINEER_LIN_BOARD
-#include "we_lin_board.h"
-#endif
+
+/* I2S gpios */
+#define IIS_SCLK                    33
+#define IIS_LCLK                    25
+#define IIS_DSIN                    26
+#define IIS_DOUT                    27
+
+
+#define LED_R 5
+#define LED_G 21
+#define LED_B 22
+
+#define KEY_1_SEL GPIO_SEL_34
+#define KEY_2_SEL GPIO_SEL_35
+#define KEY_3_SEL GPIO_SEL_32
+
+#define KEY_1_NUM GPIO_NUM_34
+#define KEY_2_NUM GPIO_NUM_35
+#define KEY_3_NUM GPIO_NUM_32
+
+#define SD_CARD_INTR_GPIO           23
+#define SD_CARD_INTR_SEL            23
 
 
 #ifdef __cplusplus
