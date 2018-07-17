@@ -33,42 +33,45 @@
 
 static const char *TAG = "HTTP_AUTH";
 
-#ifndef mem_check
-#define mem_check(x) assert(x)
-#endif
-
+/**
+ * @brief      This function hash a formatted string with MD5 and format the result as ascii characters
+ *
+ * @param      md         The buffer will hold the ascii result
+ * @param[in]  fmt        The format
+ *
+ * @return     Length of the result
+ */
 static int md5_printf(char *md, const char *fmt, ...)
 {
-    unsigned char *buf = calloc(1, HTTP_AUTH_BUF_LEN);
-    mem_check(buf);
-    unsigned char *digest = calloc(1, MD5_MAX_LEN);
-    mem_check(digest);
+    unsigned char *buf;
+    unsigned char digest[MD5_MAX_LEN];
     int len, i;
-    struct MD5Context *md5_ctx = calloc(1, sizeof(struct MD5Context));
-    mem_check(md5_ctx);
+    struct MD5Context md5_ctx;
     va_list ap;
     va_start(ap, fmt);
-    len = vsnprintf((char *)buf, HTTP_AUTH_BUF_LEN, fmt, ap);
+    len = vasprintf((char **)&buf, fmt, ap);
+    if (buf == NULL) {
+        return ESP_FAIL;
+    }
 
-    MD5Init(md5_ctx);
-    MD5Update(md5_ctx, buf, len);
-    MD5Final(digest, md5_ctx);
+    MD5Init(&md5_ctx);
+    MD5Update(&md5_ctx, buf, len);
+    MD5Final(digest, &md5_ctx);
 
     for (i = 0; i < 16; ++i) {
         sprintf(&md[i * 2], "%02x", (unsigned int)digest[i]);
     }
-
     va_end(ap);
-    free(digest);
+
     free(buf);
-    free(md5_ctx);
-    return 32;
+    return MD5_MAX_LEN;
 }
+
 char *http_auth_digest(const char *username, const char *password, esp_http_auth_data_t *auth_data)
 {
-    char *ha1, *ha2;
-    char *digest;
-    char *auth_str;
+    char *ha1, *ha2 = NULL;
+    char *digest = NULL;
+    char *auth_str = NULL;
 
     if (username == NULL ||
         password == NULL ||
@@ -79,42 +82,52 @@ char *http_auth_digest(const char *username, const char *password, esp_http_auth
     }
 
     ha1 = calloc(1, MD5_MAX_LEN);
-    mem_check(ha1);
+    HTTP_MEM_CHECK(TAG, ha1, goto _digest_exit);
 
     ha2 = calloc(1, MD5_MAX_LEN);
-    mem_check(ha2);
+    HTTP_MEM_CHECK(TAG, ha2, goto _digest_exit);
 
     digest = calloc(1, MD5_MAX_LEN);
-    mem_check(digest);
+    HTTP_MEM_CHECK(TAG, digest, goto _digest_exit);
 
-    auth_str = calloc(1, 512);
-    mem_check(auth_str);
-
-    md5_printf(ha1, "%s:%s:%s", username, auth_data->realm, password);
+    if (md5_printf(ha1, "%s:%s:%s", username, auth_data->realm, password) <= 0) {
+        goto _digest_exit;
+    }
 
     ESP_LOGD(TAG, "%s %s %s %s\r\n", "Digest", username, auth_data->realm, password);
     if (strcasecmp(auth_data->algorithm, "md5-sess") == 0) {
-        md5_printf(ha1, "%s:%s:%016llx", ha1, auth_data->nonce, auth_data->cnonce);
+        if (md5_printf(ha1, "%s:%s:%016llx", ha1, auth_data->nonce, auth_data->cnonce) <= 0) {
+            goto _digest_exit;
+        }
     }
-    md5_printf(ha2, "%s:%s", auth_data->method, auth_data->uri);
+    if (md5_printf(ha2, "%s:%s", auth_data->method, auth_data->uri) <= 0) {
+        goto _digest_exit;
+    }
 
     //support qop = auth
     if (auth_data->qop && strcasecmp(auth_data->qop, "auth-int") == 0) {
-        md5_printf(ha2, "%s:%s", ha2, "entity");
+        if (md5_printf(ha2, "%s:%s", ha2, "entity") <= 0) {
+            goto _digest_exit;
+        }
     }
 
     if (auth_data->qop) {
-        //response=MD5(HA1:nonce:nonceCount:cnonce:qop:HA2)
-        md5_printf(digest, "%s:%s:%08x:%016llx:%s:%s", ha1, auth_data->nonce, auth_data->nc, auth_data->cnonce, auth_data->qop, ha2);
+        // response=MD5(HA1:nonce:nonceCount:cnonce:qop:HA2)
+        if (md5_printf(digest, "%s:%s:%08x:%016llx:%s:%s", ha1, auth_data->nonce, auth_data->nc, auth_data->cnonce, auth_data->qop, ha2) <= 0) {
+            goto _digest_exit;
+        }
     } else {
-        //response=MD5(HA1:nonce:HA2)
-        md5_printf(digest, "%s:%s:%s", ha1, auth_data->nonce, ha2);
+        // response=MD5(HA1:nonce:HA2)
+        if (md5_printf(digest, "%s:%s:%s", ha1, auth_data->nonce, ha2) <= 0) {
+            goto _digest_exit;
+        }
     }
-    free(ha1);
-    free(ha2);
-    snprintf(auth_str, 512, "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", algorithm=\"MD5\", "
+    asprintf(&auth_str, "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", algorithm=\"MD5\", "
              "response=\"%s\", opaque=\"%s\", qop=%s, nc=%08x, cnonce=\"%016llx\"",
              username, auth_data->realm, auth_data->nonce, auth_data->uri, digest, auth_data->opaque, auth_data->qop, auth_data->nc, auth_data->cnonce);
+_digest_exit:
+    free(ha1);
+    free(ha2);
     free(digest);
     return auth_str;
 }
@@ -122,13 +135,17 @@ char *http_auth_digest(const char *username, const char *password, esp_http_auth
 char *http_auth_basic(const char *username, const char *password)
 {
     int out;
-    char *digest = calloc(1, MD5_MAX_LEN + 6);
-    mem_check(digest);
-    char *user_info = calloc(1, strlen(username) + strlen(password) + 1);
-    mem_check(user_info);
-    sprintf(user_info, "%s:%s", username, password);
+    char *user_info = NULL;
+    char *digest = calloc(1, MD5_MAX_LEN + 7);
+    HTTP_MEM_CHECK(TAG, digest, goto _basic_exit);
+    asprintf(&user_info, "%s:%s", username, password);
+    HTTP_MEM_CHECK(TAG, user_info, goto _basic_exit);
+    if (user_info == NULL) {
+        goto _basic_exit;
+    }
     strcpy(digest, "Basic ");
     mbedtls_base64_encode((unsigned char *)digest + 6, MD5_MAX_LEN, (size_t *)&out, (const unsigned char *)user_info, strlen(user_info));
+_basic_exit:
     free(user_info);
     return digest;
 }

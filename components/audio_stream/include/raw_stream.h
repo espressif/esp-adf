@@ -33,6 +33,7 @@
 extern "C" {
 #endif
 
+
 /**
  * @brief Raw stream provide APIs to obtain the pipeline data without output stream or
  *        fill the pipeline data without input stream.
@@ -45,8 +46,15 @@ extern "C" {
  * Raw Stream configurations
  */
 typedef struct {
-    audio_stream_type_t type;   /*!< Type of stream */
+    audio_stream_type_t     type;               /*!< Type of stream */
+    int                     out_rb_size;        /*!< Size of output ringbuffer */
 } raw_stream_cfg_t;
+
+#define RAW_STREAM_RINGBUFFER_SIZE     (8 * 1024)
+
+#define RAW_STREAM_CFG_DEFAULT() {\
+    .out_rb_size = RAW_STREAM_RINGBUFFER_SIZE, \
+}
 
 /**
  * @brief      Initialize RAW stream

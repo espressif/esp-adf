@@ -35,10 +35,25 @@
 #include "periph_wifi.h"
 #include "periph_button.h"
 #include "periph_console.h"
+#include "aac_decoder.h"
 
 static const char *TAG = "CONSOLE_EXAMPLE";
 static esp_audio_handle_t player;
 
+int _http_stream_event_handle(http_stream_event_msg_t *msg)
+{
+    if (msg->event_id == HTTP_STREAM_RESOLVE_ALL_TRACKS) {
+        return ESP_OK;
+    }
+
+    if (msg->event_id == HTTP_STREAM_FINISH_TRACK) {
+        return http_stream_next_track(msg->el);
+    }
+    if (msg->event_id == HTTP_STREAM_FINISH_PLAYLIST) {
+        return http_stream_restart(msg->el);
+    }
+    return ESP_OK;
+}
 
 static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
 {
@@ -46,6 +61,9 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
     const char *uri[] = {
         "file://sdcard/test.mp3",
         "file://sdcard/test.wav",
+        "file://sdcard/test.aac",
+        "file://sdcard/test.m4a",
+        "file://sdcard/test.ts",
         "http://dl.espressif.com/dl/audio/adf_music.mp3",
     };
 
@@ -64,7 +82,7 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
             str = argv[0];
         }
     }
-    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, str);
+    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, str, 0);
     return ESP_OK;
 }
 
@@ -84,7 +102,7 @@ static esp_err_t cli_resume(esp_periph_handle_t periph, int argc, char *argv[])
 
 static esp_err_t cli_stop(esp_periph_handle_t periph, int argc, char *argv[])
 {
-    esp_audio_stop(player, 1);
+    esp_audio_stop(player, 0);
     ESP_LOGI(TAG, "app_audio stop");
     return ESP_OK;
 }
@@ -116,7 +134,7 @@ static esp_err_t cli_get_vol(esp_periph_handle_t periph, int argc, char *argv[])
 static esp_err_t get_pos(esp_periph_handle_t periph, int argc, char *argv[])
 {
     int pos = 0;
-    esp_audio_pos_get(player, &pos);
+    esp_audio_time_get(player, &pos);
     ESP_LOGI(TAG, "Current time position is %d second", pos / 1000);
     return ESP_OK;
 }
@@ -273,8 +291,8 @@ static void cli_setup_player(void)
         return ;
     }
     esp_audio_cfg_t cfg = {
-        .in_stream_buf_size = 5120,
-        .out_stream_buf_size = 4096,
+        .in_stream_buf_size = 10 * 1024,
+        .out_stream_buf_size = 6 * 1024,
         .evt_que = NULL,
         .resample_rate = 0,
         .hal = NULL,
@@ -287,32 +305,33 @@ static void cli_setup_player(void)
     xTaskCreate(esp_audio_state_task, "player_task", 4096, cfg.evt_que, 1, NULL);
 
     // Create readers and add to esp_audio
-    fatfs_stream_cfg_t fs_reader = {
-        .type = AUDIO_STREAM_READER,
-    };
+    fatfs_stream_cfg_t fs_reader = FATFS_STREAM_CFG_DEFAULT();
+    fs_reader.type = AUDIO_STREAM_READER;
     i2s_stream_cfg_t i2s_reader = I2S_STREAM_CFG_DEFAULT();
     i2s_reader.type = AUDIO_STREAM_READER;
-    raw_stream_cfg_t raw_reader = {
-        .type = AUDIO_STREAM_READER,
-    };
+    raw_stream_cfg_t raw_reader = RAW_STREAM_CFG_DEFAULT();
+    raw_reader.type = AUDIO_STREAM_READER;
 
     esp_audio_input_stream_add(player, raw_stream_init(&raw_reader));
     esp_audio_input_stream_add(player, fatfs_stream_init(&fs_reader));
     esp_audio_input_stream_add(player, i2s_stream_init(&i2s_reader));
     http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
+    http_cfg.event_handle = _http_stream_event_handle;
+    http_cfg.type = AUDIO_STREAM_READER;
+    http_cfg.enable_playlist_parser = true;
     audio_element_handle_t http_stream_reader = http_stream_init(&http_cfg);
     esp_audio_input_stream_add(player, http_stream_reader);
 
     // Create writers and add to esp_audio
-    fatfs_stream_cfg_t fs_writer = {
-        .type = AUDIO_STREAM_WRITER,
-    };
+    fatfs_stream_cfg_t fs_writer = FATFS_STREAM_CFG_DEFAULT();
+    fs_writer.type = AUDIO_STREAM_WRITER;
+
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
-    raw_stream_cfg_t raw_writer = {
-        .type = AUDIO_STREAM_READER,
-    };
+    raw_stream_cfg_t raw_writer = RAW_STREAM_CFG_DEFAULT();
+    raw_writer.type = AUDIO_STREAM_WRITER;
+
     esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
     esp_audio_output_stream_add(player, fatfs_stream_init(&fs_writer));
     esp_audio_output_stream_add(player, raw_stream_init(&raw_writer));
@@ -320,8 +339,17 @@ static void cli_setup_player(void)
     // Add decoders and encoders to esp_audio
     wav_decoder_cfg_t wav_dec_cfg = DEFAULT_WAV_DECODER_CONFIG();
     mp3_decoder_cfg_t mp3_dec_cfg = DEFAULT_MP3_DECODER_CONFIG();
+    aac_decoder_cfg_t aac_dec_cfg = DEFAULT_AAC_DECODER_CONFIG();
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, aac_decoder_init(&aac_dec_cfg));
+    audio_element_handle_t m4a_dec_cfg = aac_decoder_init(&aac_dec_cfg);
+    audio_element_set_tag(m4a_dec_cfg, "m4a");
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, m4a_dec_cfg);
+
+    audio_element_handle_t ts_dec_cfg = aac_decoder_init(&aac_dec_cfg);
+    audio_element_set_tag(ts_dec_cfg, "ts");
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, ts_dec_cfg);
 
     wav_encoder_cfg_t wav_enc_cfg = DEFAULT_WAV_ENCODER_CONFIG();
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_ENCODER, wav_encoder_init(&wav_enc_cfg));
@@ -334,6 +362,7 @@ static void cli_setup_player(void)
 
 void app_main(void)
 {
+    esp_log_level_set("*", ESP_LOG_INFO);
     ESP_ERROR_CHECK(nvs_flash_init());
     tcpip_adapter_init();
     esp_periph_config_t periph_cfg = { 0 };

@@ -22,7 +22,7 @@
 #include "transport.h"
 #include "http_utils.h"
 
-// static const char *TAG = "TRANSPORT";
+static const char *TAG = "TRANSPORT";
 
 /**
  * Transport layer structure, which will provide functions, basic properties for transport types
@@ -53,7 +53,7 @@ STAILQ_HEAD(transport_list_t, transport_item_t);
 transport_list_handle_t transport_list_init()
 {
     transport_list_handle_t list = calloc(1, sizeof(struct transport_list_t));
-    assert(list);
+    HTTP_MEM_CHECK(TAG, list, return NULL);
     STAILQ_INIT(list);
     return list;
 }
@@ -64,7 +64,7 @@ esp_err_t transport_list_add(transport_list_handle_t list, transport_handle_t t,
         return ESP_ERR_INVALID_ARG;
     }
     t->scheme = calloc(1, strlen(scheme) + 1);
-    assert(t->scheme);
+    HTTP_MEM_CHECK(TAG, t->scheme, return ESP_ERR_NO_MEM);
     strcpy(t->scheme, scheme);
     STAILQ_INSERT_TAIL(list, t, next);
     return ESP_OK;
@@ -113,7 +113,7 @@ esp_err_t transport_list_clean(transport_list_handle_t list)
 transport_handle_t transport_init()
 {
     transport_handle_t t = calloc(1, sizeof(struct transport_item_t));
-    assert(t);
+    HTTP_MEM_CHECK(TAG, t, return NULL);
     return t;
 }
 

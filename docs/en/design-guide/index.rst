@@ -10,4 +10,4 @@ The ESP32 is a powerful chip well positioned as a MCU of the audio projects. Thi
     Project Design <project-design>
     Design Considerations <design-considerations>
     Software Design <software-design>
-
+    Developement Boards <dev-boards>

@@ -182,4 +182,5 @@ Related Documents
     :maxdepth: 1
 
     get-started-esp32-lyrat
+    get-started-esp32-lyrat-v4.2
     get-started-esp32-lyrat-v4

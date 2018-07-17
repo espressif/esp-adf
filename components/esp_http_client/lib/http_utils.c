@@ -24,7 +24,7 @@
 #define mem_check(x) assert(x)
 #endif
 
-char *join_string(const char *first_str, int len_first, const char *second_str, int len_second)
+char *http_utils_join_string(const char *first_str, int len_first, const char *second_str, int len_second)
 {
     int first_str_len = len_first > 0 ? len_first : strlen(first_str);
     int second_str_len = len_second > 0 ? len_second : strlen(second_str);
@@ -38,7 +38,7 @@ char *join_string(const char *first_str, int len_first, const char *second_str, 
     return ret;
 }
 
-char *assign_string(char **str, const char *new_str, int len)
+char *http_utils_assign_string(char **str, const char *new_str, int len)
 {
     int l = len;
     if (new_str == NULL) {
@@ -61,7 +61,7 @@ char *assign_string(char **str, const char *new_str, int len)
     return old_str;
 }
 
-void trimwhitespace(char **str)
+void http_utils_trim_whitespace(char **str)
 {
     char *end;
     char *start = *str;
@@ -84,7 +84,7 @@ void trimwhitespace(char **str)
     memmove(*str, start, strlen(start) + 1);
 }
 
-char *get_string_between(const char *str, const char *begin, const char *end)
+char *http_utils_get_string_between(const char *str, const char *begin, const char *end)
 {
     char *found = strstr(str, begin);
     char *ret = NULL;
@@ -101,9 +101,12 @@ char *get_string_between(const char *str, const char *begin, const char *end)
     return NULL;
 }
 
-int str_starts_with(const char *str, const char *start)
+int http_utils_str_starts_with(const char *str, const char *start)
 {
-    int match_str_len = strlen(str), start_len = strlen(start), i;
+    int i;
+    int match_str_len = strlen(str);
+    int start_len = strlen(start);
+
     if (start_len > match_str_len) {
         return -1;
     }
@@ -115,7 +118,7 @@ int str_starts_with(const char *str, const char *start)
     return 0;
 }
 
-void ms_to_timeval(int timeout_ms, struct timeval *tv)
+void http_utils_ms_to_timeval(int timeout_ms, struct timeval *tv)
 {
     tv->tv_sec = timeout_ms / 1000;
     tv->tv_usec = (timeout_ms - (tv->tv_sec * 1000)) * 1000;

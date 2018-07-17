@@ -37,14 +37,33 @@ extern "C" {
  * @brief   FATFS Stream configurations, if any entry is zero then the configuration will be set to default values
  */
 typedef struct {
-    audio_stream_type_t type;   /*!< Stream type */
-    int buf_sz;                 /*!< Audio Element Buffer size*/
+    audio_stream_type_t     type;           /*!< Stream type */
+    int                     buf_sz;         /*!< Audio Element Buffer size */
+    int                     out_rb_size;    /*!< Size of output ringbuffer */
+    int                     task_stack;     /*!< Task stack size */
+    int                     task_core;      /*!< Task running in core (0 or 1) */
+    int                     task_prio;      /*!< Task priority (based on freeRTOS priority) */
 } fatfs_stream_cfg_t;
+
+
+#define FATFS_STREAM_BUF_SIZE            (2048)
+#define FATFS_STREAM_TASK_STACK          (3072)
+#define FATFS_STREAM_TASK_CORE           (0)
+#define FATFS_STREAM_TASK_PRIO           (4)
+#define FATFS_STREAM_RINGBUFFER_SIZE     (8 * 1024)
+
+#define FATFS_STREAM_CFG_DEFAULT() {\
+    .task_prio = FATFS_STREAM_TASK_PRIO, \
+    .task_core = FATFS_STREAM_TASK_CORE, \
+    .task_stack = FATFS_STREAM_TASK_STACK, \
+    .out_rb_size = FATFS_STREAM_RINGBUFFER_SIZE, \
+    .buf_sz = FATFS_STREAM_BUF_SIZE, \
+}
 
 /**
  * @brief      Create a handle to an Audio Element to stream data from FatFs to another Element
- *             or get data from other elements written to FatFs, depend on the configuration of stream type
- *             is AUDIO_STREAM_READER or AUDIO_STREAM_WRITER
+ *             or get data from other elements written to FatFs, depending on the configuration
+ *             the stream type, either AUDIO_STREAM_READER or AUDIO_STREAM_WRITER.
  *
  * @param      config  The configuration
  *

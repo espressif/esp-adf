@@ -1,0 +1,10 @@
+ES8374 Driver
+=============
+
+Driver for `ES8374 <http://www.everest-semi.com/pdf/ES8374%20PB.pdf>`_ codec chip.
+
+
+API Reference
+-------------
+
+.. include:: /_build/inc/es8374.inc

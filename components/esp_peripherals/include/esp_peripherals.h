@@ -47,6 +47,7 @@ typedef enum {
     PERIPH_ID_ADC       = AUDIO_ELEMENT_TYPE_PERIPH + 7,
     PERIPH_ID_CONSOLE   = AUDIO_ELEMENT_TYPE_PERIPH + 8,
     PERIPH_ID_BLUETOOTH = AUDIO_ELEMENT_TYPE_PERIPH + 9,
+    PERIPH_ID_LED       = AUDIO_ELEMENT_TYPE_PERIPH + 10,
 } esp_periph_id_t;
 
 /**
@@ -327,6 +328,16 @@ esp_err_t esp_periph_set_function(esp_periph_handle_t periph,
  * @return     Tick in milliseconds
  */
 long long esp_periph_tick_get();
+
+
+/**
+ * @brief      Set event callback function.
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t esp_periph_set_callback(esp_periph_event_handle_t cb);
 
 #define periph_tick_get esp_periph_tick_get
 

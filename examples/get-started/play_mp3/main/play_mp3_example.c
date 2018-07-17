@@ -12,7 +12,6 @@
 #include "freertos/task.h"
 
 #include "esp_log.h"
-#include "sdkconfig.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"
 #include "audio_event_iface.h"
@@ -119,7 +118,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[ 5 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
 
-    /* Terminal the pipeline before removing the listener */
+    /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);
 
     /* Make sure audio_pipeline_remove_listener is called before destroying event_iface */

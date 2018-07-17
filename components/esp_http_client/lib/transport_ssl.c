@@ -119,7 +119,7 @@ static int ssl_connect(transport_handle_t t, const char *host, int port, int tim
 
     mbedtls_net_init(&ssl->client_fd);
 
-    ms_to_timeval(timeout_ms, &tv);
+    http_utils_ms_to_timeval(timeout_ms, &tv);
 
     setsockopt(ssl->client_fd.fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
     ESP_LOGD(TAG, "Connect to %s:%d", host, port);
@@ -131,6 +131,11 @@ static int ssl_connect(transport_handle_t t, const char *host, int port, int tim
     }
 
     mbedtls_ssl_set_bio(&ssl->ctx, &ssl->client_fd, mbedtls_net_send, mbedtls_net_recv, NULL);
+
+    if((ret = mbedtls_ssl_set_hostname(&ssl->ctx, host)) != 0) {
+        ESP_LOGE(TAG, " failed\n  ! mbedtls_ssl_set_hostname returned %d\n\n", ret);
+        goto exit;
+    }
 
     ESP_LOGD(TAG, "Performing the SSL/TLS handshake...");
 
@@ -167,7 +172,7 @@ static int ssl_poll_read(transport_handle_t t, int timeout_ms)
     FD_ZERO(&readset);
     FD_SET(ssl->client_fd.fd, &readset);
     struct timeval timeout;
-    ms_to_timeval(timeout_ms, &timeout);
+    http_utils_ms_to_timeval(timeout_ms, &timeout);
 
     return select(ssl->client_fd.fd + 1, &readset, NULL, NULL, &timeout);
 }
@@ -179,7 +184,7 @@ static int ssl_poll_write(transport_handle_t t, int timeout_ms)
     FD_ZERO(&writeset);
     FD_SET(ssl->client_fd.fd, &writeset);
     struct timeval timeout;
-    ms_to_timeval(timeout_ms, &timeout);
+    http_utils_ms_to_timeval(timeout_ms, &timeout);
     return select(ssl->client_fd.fd + 1, NULL, &writeset, NULL, &timeout);
 }
 
@@ -201,12 +206,14 @@ static int ssl_write(transport_handle_t t, const char *buffer, int len, int time
 
 static int ssl_read(transport_handle_t t, char *buffer, int len, int timeout_ms)
 {
-    int ret;
+    int poll = -1, ret;
     transport_ssl_t *ssl = transport_get_context_data(t);
-    ret = mbedtls_ssl_read(&ssl->ctx, (unsigned char *)buffer, len);
-    if (ret == 0) {
-        return -1;
+    if (mbedtls_ssl_get_bytes_avail(&ssl->ctx) <= 0) {
+        if ((poll = transport_poll_read(t, timeout_ms)) <= 0) {
+            return poll;
+        }
     }
+    ret = mbedtls_ssl_read(&ssl->ctx, (unsigned char *)buffer, len);
     return ret;
 }
 
@@ -253,7 +260,7 @@ transport_handle_t transport_ssl_init()
 {
     transport_handle_t t = transport_init();
     transport_ssl_t *ssl = calloc(1, sizeof(transport_ssl_t));
-    assert(ssl);
+    HTTP_MEM_CHECK(TAG, ssl, return NULL);
     mbedtls_net_init(&ssl->client_fd);
     transport_set_context_data(t, ssl);
     transport_set_func(t, ssl_connect, ssl_read, ssl_write, ssl_close, ssl_poll_read, ssl_poll_write, ssl_destroy);

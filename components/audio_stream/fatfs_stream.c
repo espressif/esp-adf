@@ -44,9 +44,6 @@
 #define FILE_OPUS_SUFFIX_TYPE "opus"
 #define FILE_AMR_SUFFIX_TYPE "amr"
 
-#define FATFS_STREAM_TASK_STACK (3072)
-#define FATFS_STREAM_BUF_SIZE (2048)
-
 static const char *TAG = "FATFS_STREAM";
 
 typedef enum {
@@ -242,7 +239,10 @@ audio_element_handle_t fatfs_stream_init(fatfs_stream_cfg_t *config)
     cfg.close = _fatfs_close;
     cfg.process = _fatfs_process;
     cfg.destroy = _fatfs_destroy;
-    cfg.task_stack = FATFS_STREAM_TASK_STACK;
+    cfg.task_stack = config->task_stack;
+    cfg.task_prio = config->task_prio;
+    cfg.task_core = config->task_core;
+    cfg.out_rb_size = config->out_rb_size;
     cfg.buffer_len = config->buf_sz;
     if (cfg.buffer_len == 0) {
         cfg.buffer_len = FATFS_STREAM_BUF_SIZE;

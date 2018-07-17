@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 menu "BOARD"
 choice BOARD
     prompt "BOARD"
@@ -16,4 +17,20 @@ config AUDIO_KIT
         ESPRESSIF LYRAT BOARD
         
 endchoice
+=======
+menu "Audio HAL"
+
+choice AUDIO_BOARD
+    prompt "Audio board"
+    default ESP_LYRAT_V4_3_BOARD
+    help
+        Select an audio board to use with the ESP-ADF
+
+config ESP_LYRAT_V4_3_BOARD
+    bool "ESP32-Lyrat V4.3"
+config ESP_LYRAT_V4_2_BOARD
+    bool "ESP32-Lyrat V4.2"
+endchoice
+
+>>>>>>> upstream/master
 endmenu

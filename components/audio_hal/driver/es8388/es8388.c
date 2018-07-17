@@ -35,7 +35,7 @@ static const char *ES_TAG = "ES8388_DRIVER";
         return b;\
     }
 
-const i2c_config_t es_i2c_cfg = {
+static const i2c_config_t es_i2c_cfg = {
     .mode = I2C_MODE_MASTER,
     .sda_io_num = IIC_DATA,
     .scl_io_num = IIC_CLK,
@@ -259,7 +259,13 @@ esp_err_t es8388_deinit(void)
 esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
 {
     int res = 0;
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    #include "headphone_detect.h"
+    headphone_detect_init();
+#endif
+
     res = i2c_init(); // ESP32 in master mode
+
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL3, 0x04);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
     /* Chip Control and Power Management */
     res |= es_write_reg(ES8388_ADDR, ES8388_CONTROL2, 0x50);
@@ -289,7 +295,7 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     res |= es_write_reg(ES8388_ADDR, ES8388_DACPOWER, tmp);  //0x3c Enable DAC and Enable Lout/Rout/1/2
     /* adc */
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0xFF);
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, 0x88); //0x88 MIC PGA =24DB
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, 0xbb); // MIC Left and Right channel PGA gain
     tmp = 0;
     if (AUDIO_HAL_ADC_INPUT_LINE1 == cfg->adc_input) {
         tmp = ADC_INPUT_LINPUT1_RINPUT1;
@@ -300,7 +306,7 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     }
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL2, tmp);  //0x00 LINSEL & RINSEL, LIN1/RIN1 as ADC Input; DSSEL,use one DS Reg11; DSR, LINPUT1-RINPUT1
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL3, 0x02);
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL4, 0x0c); //0d 0x0c I2S-16BIT, LEFT ADC DATA = LIN1 , RIGHT ADC DATA =RIN1
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL4, 0x0d); // Left/Right data, Left/Right justified mode, Bits length, I2S format
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL5, 0x02);  //ADCFsMode,singel SPEED,RATIO=256
     //ALC for Microphone
     res |= es8388_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);      // 0db
@@ -354,9 +360,9 @@ int es8388_set_voice_volume(int volume)
         volume = 100;
     volume /= 3;
     res = es_write_reg(ES8388_ADDR, ES8388_DACCONTROL24, volume);
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, volume);  //ADC Right Volume=0db
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, volume);
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, volume);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, volume);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, 0);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, 0);
     return res;
 }
 /**
