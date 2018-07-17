@@ -26,25 +26,12 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "audio_hal.h"
-#include "board.h"
+
 #include "audio_mem.h"
 #include "audio_mutex.h"
-<<<<<<< HEAD
-<<<<<<< HEAD
-#include "sdkconfig.h"
-
-#ifdef CONFIG_ESP32_LYRAT
-=======
 #include "es8374.h"
->>>>>>> upstream/master
-=======
-#include "es8374.h"
->>>>>>> test
 #include "es8388.h"
-#endif
-#ifdef CONFIG_AUDIO_KIT
 #include "AC101.h"
-#endif
 
 static const char *TAG = "AUDIO_HAL";
 
@@ -63,27 +50,8 @@ struct audio_hal {
     esp_err_t (*audio_codec_get_volume)(int *volume);
     xSemaphoreHandle audio_hal_lock;
     void *handle;
-<<<<<<< HEAD
 };
 
-
-
-#ifdef CONFIG_AUDIO_KIT
-static struct audio_hal audio_hal_codecs_default[] = {
-    {
-        .audio_codec_initialize = AC101_init,
-        .audio_codec_deinitialize = AC101_deinit,
-        .audio_codec_ctrl = AC101_ctrl_state,
-        .audio_codec_config_iface = AC101_config_i2s,
-        .audio_codec_set_volume = AC101_set_voice_volume,
-        .audio_codec_get_volume = AC101_get_voice_volume,
-    }
-=======
->>>>>>> test
-};
-#endif
-
-#ifdef CONFIG_ESP32_LYRAT
 static struct audio_hal audio_hal_codecs_default[] = {
     {
         .audio_codec_initialize = es8388_init,
@@ -100,11 +68,16 @@ static struct audio_hal audio_hal_codecs_default[] = {
         .audio_codec_config_iface = es8374_config_i2s,
         .audio_codec_set_volume = es8374_set_voice_volume,
         .audio_codec_get_volume = es8374_get_voice_volume,
+    },
+    {
+        .audio_codec_initialize = AC101_init,
+        .audio_codec_deinitialize = AC101_deinit,
+        .audio_codec_ctrl = AC101_ctrl_state,
+        .audio_codec_config_iface = AC101_config_i2s,
+        .audio_codec_set_volume = AC101_set_voice_volume,
+        .audio_codec_get_volume = AC101_get_voice_volume,
     }
 };
-#endif
-
-
 
 audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, int index)
 {
@@ -112,14 +85,7 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, int 
     if (NULL != audio_hal_codecs_default[index].handle) {
         return audio_hal_codecs_default[index].handle;
     }
-<<<<<<< HEAD
-    audio_hal_handle_t audio_hal =(audio_hal_handle_t) audio_calloc(1, sizeof(struct audio_hal));
-=======
     audio_hal_handle_t audio_hal = (audio_hal_handle_t) audio_calloc(1, sizeof(struct audio_hal));
-<<<<<<< HEAD
->>>>>>> upstream/master
-=======
->>>>>>> test
     AUDIO_MEM_CHECK(TAG, audio_hal, return NULL);
     memcpy(audio_hal, &audio_hal_codecs_default[index], sizeof(struct audio_hal));
     audio_hal->audio_hal_lock = mutex_create();
@@ -129,14 +95,6 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, int 
         return NULL;
     });
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-
-=======
->>>>>>> upstream/master
-=======
->>>>>>> test
     mutex_lock(audio_hal->audio_hal_lock);
     ret  = audio_hal->audio_codec_initialize(audio_hal_conf);
     ret |= audio_hal->audio_codec_config_iface(AUDIO_HAL_CODEC_MODE_BOTH, &audio_hal_conf->i2s_iface);
@@ -144,9 +102,7 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, int 
     audio_hal->handle = audio_hal;
     audio_hal_codecs_default[index].handle = audio_hal;
     mutex_unlock(audio_hal->audio_hal_lock);
-#ifdef CONFIG_ESP32_LYRAT
     es8388_pa_power(true);
-#endif
     return audio_hal;
 }
 

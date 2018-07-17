@@ -188,13 +188,6 @@ esp_err_t audio_pipeline_register(audio_pipeline_handle_t pipeline, audio_elemen
     audio_element_item_t *el_item = audio_calloc(1, sizeof(audio_element_item_t));
 
     AUDIO_MEM_CHECK(TAG, el_item, return ESP_ERR_NO_MEM);
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/master
-=======
->>>>>>> test
     el_item->el = el;
     el_item->linked = false;
     STAILQ_INSERT_TAIL(&pipeline->el_list, el_item, next);
@@ -257,10 +250,10 @@ esp_err_t audio_pipeline_run(audio_pipeline_handle_t pipeline)
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         ESP_LOGD(TAG, "start el, linked:%d,state:%d,[%p]", el_item->linked,  audio_element_get_state(el_item->el), el_item->el);
         if (el_item->linked
-                && ((AEL_STATE_INIT == audio_element_get_state(el_item->el))
-                    || (AEL_STATE_STOPPED == audio_element_get_state(el_item->el))
-                    || (AEL_STATE_FINISHED == audio_element_get_state(el_item->el))
-                    || (AEL_STATE_ERROR == audio_element_get_state(el_item->el)))) {
+            && ((AEL_STATE_INIT == audio_element_get_state(el_item->el))
+                || (AEL_STATE_STOPPED == audio_element_get_state(el_item->el))
+                || (AEL_STATE_FINISHED == audio_element_get_state(el_item->el))
+                || (AEL_STATE_ERROR == audio_element_get_state(el_item->el)))) {
             audio_element_run(el_item->el);
         }
     }
@@ -283,8 +276,6 @@ esp_err_t audio_pipeline_terminate(audio_pipeline_handle_t pipeline)
 {
     audio_element_item_t *el_item;
     ESP_LOGD(TAG, "Destroy audio_pipeline elements");
-    audio_pipeline_stop(pipeline);
-    audio_pipeline_wait_for_stop(pipeline);
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
             audio_element_terminate(el_item->el);
@@ -315,8 +306,6 @@ esp_err_t audio_pipeline_wait_for_stop(audio_pipeline_handle_t pipeline)
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
             audio_element_wait_for_stop(el_item->el);
-            audio_element_reset_input_ringbuf(el_item->el);
-            audio_element_reset_output_ringbuf(el_item->el);
         }
     }
     audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
@@ -354,15 +343,7 @@ esp_err_t audio_pipeline_link(audio_pipeline_handle_t pipeline, const char *link
             }
             bool _success = (
                                 (rb_item = audio_calloc(1, sizeof(ringbuf_item_t))) &&
-<<<<<<< HEAD
-<<<<<<< HEAD
-                                (rb = rb_create(pipeline->rb_size, 1))
-=======
                                 (rb = rb_create(audio_element_get_output_ringbuf_size(el), 1))
->>>>>>> upstream/master
-=======
-                                (rb = rb_create(audio_element_get_output_ringbuf_size(el), 1))
->>>>>>> test
                             );
 
             AUDIO_MEM_CHECK(TAG, _success, {
@@ -461,15 +442,7 @@ esp_err_t audio_pipeline_link_more(audio_pipeline_handle_t pipeline, audio_eleme
             if (!first) {
                 audio_element_set_input_ringbuf(el, rb);
             }
-<<<<<<< HEAD
-<<<<<<< HEAD
-            rb = rb_create(pipeline->rb_size, 1);
-=======
             rb = rb_create(audio_element_get_output_ringbuf_size(el), 1);
->>>>>>> upstream/master
-=======
-            rb = rb_create(audio_element_get_output_ringbuf_size(el), 1);
->>>>>>> test
             AUDIO_MEM_CHECK(TAG, rb, return ESP_ERR_NO_MEM);
             add_rb_to_audio_pipeline(pipeline, rb);
             audio_element_set_output_ringbuf(el, rb);
@@ -548,18 +521,6 @@ esp_err_t audio_pipeline_reset_items_state(audio_pipeline_handle_t pipeline)
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
             el_item->el_state = AEL_STATUS_NONE;
-        }
-    }
-    return ESP_OK;
-}
-
-esp_err_t audio_pipeline_reset_ringbuffer(audio_pipeline_handle_t pipeline)
-{
-    audio_element_item_t *el_item;
-    STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
-        if (el_item->linked) {
-            audio_element_reset_input_ringbuf(el_item->el);
-            audio_element_reset_output_ringbuf(el_item->el);
         }
     }
     return ESP_OK;

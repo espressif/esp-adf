@@ -189,8 +189,8 @@ static esp_err_t _fatfs_close(audio_element_handle_t self)
     fatfs_stream_t *fatfs = (fatfs_stream_t *)audio_element_getdata(self);
 
     if (AUDIO_STREAM_WRITER == fatfs->type
-            && fatfs->file
-            && STREAM_TYPE_WAV == fatfs->w_type) {
+        && fatfs->file
+        && STREAM_TYPE_WAV == fatfs->w_type) {
         wav_header_t *wav_info = (wav_header_t *) audio_malloc(sizeof(wav_header_t));
 
         AUDIO_MEM_CHECK(TAG, wav_info, return ESP_ERR_NO_MEM);

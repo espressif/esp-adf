@@ -1,8 +1,10 @@
 #ifndef __AC101_H__
 #define __AC101_H__
-#include "sdkconfig.h"
+
+//#include "sdkconfig.h"
+#include "esp_types.h"
 #include "audio_hal.h"
-#ifdef CONFIG_AUDIO_KIT
+
 #define AC101_ADDR			0x1a				/*!< Device address*/
 
 #define WRITE_BIT  			I2C_MASTER_WRITE 	/*!< I2C master write */
@@ -106,10 +108,10 @@ typedef enum{
 }ac_i2s1_lrck_div_t;
 
 typedef enum {
-    BIT_LENGTH_8BITS = 0x00,
-    BIT_LENGTH_16BITS = 0x01,
-    BIT_LENGTH_20BITS = 0x02,
-    BIT_LENGTH_24BITS = 0x03,
+    BIT_LENGTH_8_BITS = 0x00,
+    BIT_LENGTH_16_BITS = 0x01,
+    BIT_LENGTH_20_BITS = 0x02,
+    BIT_LENGTH_24_BITS = 0x03,
 } ac_bits_length_t;
 
 typedef enum {
@@ -160,6 +162,6 @@ esp_err_t AC101_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_st
 esp_err_t AC101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t* iface);
 esp_err_t AC101_set_voice_volume(int volume);
 esp_err_t AC101_get_voice_volume(int* volume);
+void AC101_pa_power(bool enable);
 
-#endif
 #endif

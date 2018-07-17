@@ -1,26 +1,3 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-menu "BOARD"
-choice BOARD
-    prompt "BOARD"
-    default AUDIO_KIT
-    help
-       CHOOSE MODULE
-
-config ESP32_LYRAT
-    bool "ESP32_LYRAT"
-    help
-        ESPRESSIF LYRAT BOARD
-        
-config AUDIO_KIT
-    bool "AUDIO_KIT"
-    help
-        ESPRESSIF LYRAT BOARD
-        
-endchoice
-=======
-=======
->>>>>>> test
 menu "Audio HAL"
 
 choice AUDIO_BOARD
@@ -33,10 +10,8 @@ config ESP_LYRAT_V4_3_BOARD
     bool "ESP32-Lyrat V4.3"
 config ESP_LYRAT_V4_2_BOARD
     bool "ESP32-Lyrat V4.2"
+config ESP_AI_AUDIO_V1_0_BOARD
+    bool "AI-ESP32-A1S-V1.0"   
 endchoice
 
-<<<<<<< HEAD
->>>>>>> upstream/master
-=======
->>>>>>> test
 endmenu

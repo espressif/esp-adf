@@ -219,7 +219,7 @@ esp_err_t periph_led_blink(esp_periph_handle_t periph, int gpio_num, int time_on
     ch->time_off_ms = time_off_ms;
     ch->loop = loop;
     ch->fade = fade;
-    esp_periph_start_timer(periph, portTICK_RATE_MS, led_timer_handler);
+    esp_periph_start_timer(periph, 1 / portTICK_RATE_MS, led_timer_handler);
     return ESP_OK;
 }
 

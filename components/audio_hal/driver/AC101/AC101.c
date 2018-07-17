@@ -1,6 +1,5 @@
 
 #include "AC101.h"
-#ifdef CONFIG_AUDIO_KIT
 #include <string.h>
 #include "esp_log.h"
 #include "driver/i2c.h"
@@ -8,6 +7,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "audio_hal.h"
+#include "esp_system.h"
+#include "board.h"
 
 #define AC101_TAG  "AC101_DRIVER"
 #define IIC_PORT	I2C_NUM_1
@@ -32,7 +33,6 @@ static int i2c_init()
     int res;
     res = i2c_param_config(IIC_PORT, &es_i2c_cfg);
     res |= i2c_driver_install(IIC_PORT, es_i2c_cfg.mode, 0, 0, 0);
-    printf("IIC init %d\r\n", res);
     AC_ASSERT(res, "i2c_init error", -1);
     return res;
 }
@@ -52,7 +52,6 @@ static esp_err_t i2c_example_master_read_slave(uint8_t DevAddr, uint8_t reg,uint
     i2c_master_stop(cmd);
     esp_err_t ret = i2c_master_cmd_begin(IIC_PORT, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
-    //printf("read:%x %x\r\n",data_rd[0],data_rd[1]);
     return ret;
 }
 
@@ -82,7 +81,6 @@ static uint16_t AC101_read_Reg(uint8_t reg) {
 }
 
 esp_err_t AC101_init(audio_hal_codec_config_t* codec_cfg) {
-	ESP_LOGI(AC101_TAG, "AC101_init");
 	if(i2c_init()) return -1;
 	esp_err_t res;
 	res = AC101_Write_Reg(CHIP_AUDIO_RS, 0x123);
@@ -94,14 +92,11 @@ esp_err_t AC101_init(audio_hal_codec_config_t* codec_cfg) {
 		ESP_LOGI(AC101_TAG, "reset succeed");
 	}
 	res |= AC101_Write_Reg(SPKOUT_CTRL, 0xe880);
-	//printf("AC101_Write_Reg----->%x\r\n",0xe880);
-	//printf("%x\r\n\r\n", AC101_read_Reg(SPKOUT_CTRL));
 
 	//Enable the PLL from 256*44.1KHz MCLK source
 	res |= AC101_Write_Reg(PLL_CTRL1, 0x014f);
-	//printf("AC101_Write_Reg----->%x\r\n",0x014f);
-	//printf("%x\r\n\r\n", AC101_read_Reg(PLL_CTRL1));
-	res |= AC101_Write_Reg(PLL_CTRL2, 0x83c0);
+	//res |= AC101_Write_Reg(PLL_CTRL2, 0x83c0);
+	res |= AC101_Write_Reg(PLL_CTRL2, 0x8600);
 
 	//Clocking system
 	res |= AC101_Write_Reg(SYSCLK_CTRL, 0x8b08);
@@ -124,6 +119,10 @@ esp_err_t AC101_init(audio_hal_codec_config_t* codec_cfg) {
 	res |= AC101_Write_Reg(DAC_DIG_CTRL, 0x8000);
 	res |= AC101_Write_Reg(OMIXER_SR, 0x0081);
 	res |= AC101_Write_Reg(OMIXER_DACA_CTRL, 0xf080);//}
+
+		//* Enable Speaker output
+	res |= AC101_Write_Reg(0x58, 0xeabd);
+
 	return res;
 }
 
@@ -196,24 +195,34 @@ esp_err_t ac101_set_output_mixer_gain(ac_output_mixer_gain_t gain,ac_output_mixe
 
 esp_err_t AC101_start(ac_module_t mode)
 {
+
 	esp_err_t res = 0;
     if (mode == AC_MODULE_LINE) {
+		res |= AC101_Write_Reg(0x51, 0x0408);
+		res |= AC101_Write_Reg(0x40, 0x8000);
+		res |= AC101_Write_Reg(0x50, 0x3bc0);
     }
     if (mode == AC_MODULE_ADC || mode == AC_MODULE_ADC_DAC || mode == AC_MODULE_LINE) {
-    	res |= AC101_Write_Reg(ADC_SRCBST_CTRL, 0xc444);		//erji mic1
-    	res |= AC101_Write_Reg(ADC_APC_CTRL, 0x33c0);
-    	res |= AC101_Write_Reg(OMIXER_SR, 0x2040);
-    	res |= AC101_Write_Reg(OMIXER_DACA_CTRL, 0x3080);
+		//I2S1_SDOUT_CTRL
+		res |= AC101_Write_Reg(PLL_CTRL2, 0x8120);
+    	res |= AC101_Write_Reg(0x04, 0x800c);
+    	res |= AC101_Write_Reg(0x05, 0x800c);
+		res |= AC101_Write_Reg(0x06, 0x3000);
     }
     if (mode == AC_MODULE_DAC || mode == AC_MODULE_ADC_DAC || mode == AC_MODULE_LINE) {
     	//* Enable Headphoe output   注意使用耳机时，最后开以下寄存器
-    	res |= AC101_Write_Reg(OMIXER_DACA_CTRL, 0xff80);	//out hp & spk
-//    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xc3c1);
-//    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xcb00);
-//    	vTaskDelay(100 / portTICK_PERIOD_MS);
-    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xF8C0);
+		res |= AC101_Write_Reg(OMIXER_DACA_CTRL, 0xff80);
+    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xc3c1);
+    	res |= AC101_Write_Reg(HPOUT_CTRL, 0xcb00);
+    	vTaskDelay(100 / portTICK_PERIOD_MS);
+		res |= AC101_Write_Reg(HPOUT_CTRL, 0xfbc0);
+		
     	//* Enable Speaker output
-    	res |= AC101_Write_Reg(SPKOUT_CTRL, 0xeabd);
+		res |= AC101_Write_Reg(SPKOUT_CTRL, 0xeabd);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		AC101_set_voice_volume(30);
+		
+
     }
 
     return res;
@@ -229,12 +238,12 @@ esp_err_t AC101_stop(ac_module_t mode)
 
 esp_err_t AC101_deinit(void)
 {
+
 	return	AC101_Write_Reg(CHIP_AUDIO_RS, 0x123);		//soft reset
 }
 
 esp_err_t AC101_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state)
 {
-	printf("AC101_ctrl_state\r\n");
 	int res = 0;
 	int es_mode_t = 0;
 
@@ -266,30 +275,26 @@ esp_err_t AC101_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_st
 
 esp_err_t AC101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t* iface)
 {
-
 	esp_err_t res = 0;
 	int bits = 0;
 	int fmat = 0;
 	int sample = 0;
 	uint16_t regval;
-	//res |= es8388_config_fmt(ES_MODULE_ADC_DAC, iface->fmt);
 	switch(iface->bits)						//0x10
 	{
-	case AUDIO_HAL_BIT_LENGTH_8BITS:
-		bits = BIT_LENGTH_8BITS;
-		break;
+	// case AUDIO_HAL_BIT_LENGTH_8BITS:
+	// 	bits = BIT_LENGTH_8_BITS;
+	// 	break;
 	case AUDIO_HAL_BIT_LENGTH_16BITS:
-		bits = BIT_LENGTH_16BITS;
-		break;
-	case AUDIO_HAL_BIT_LENGTH_20BITS:
-		bits = BIT_LENGTH_20BITS;
+		bits = BIT_LENGTH_16_BITS;
 		break;
 	case AUDIO_HAL_BIT_LENGTH_24BITS:
-		bits = BIT_LENGTH_24BITS;
+		bits = BIT_LENGTH_24_BITS;
 		break;
 	default:
-		bits = BIT_LENGTH_16BITS;
+		bits = BIT_LENGTH_16_BITS;
 	}
+
 	switch(iface->fmt)						//0x10
 	{
 	case AUDIO_HAL_I2S_NORMAL:
@@ -308,6 +313,7 @@ esp_err_t AC101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_ifac
 		fmat = 0x00;
 		break;
 	}
+
 	switch(iface->samples)
 	{
 	case AUDIO_HAL_08K_SAMPLES:
@@ -315,9 +321,6 @@ esp_err_t AC101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_ifac
 		break;
 	case AUDIO_HAL_11K_SAMPLES:
 		sample = SIMPLE_RATE_11052;
-		break;
-	case AUDIO_HAL_12K_SAMPLES:
-		sample = SIMPLE_RATE_12000;
 		break;
 	case AUDIO_HAL_16K_SAMPLES:
 		sample = SIMPLE_RATE_16000;
@@ -347,7 +350,7 @@ esp_err_t AC101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_ifac
 		sample = SIMPLE_RATE_44100;
 	}
 	regval = AC101_read_Reg(I2S1LCK_CTRL);
-	regval &= 0x7fc3;
+	regval &= 0xffc3;
 	regval |= (iface->mode << 15);
 	regval |= (bits << 4);
 	regval |= (fmat << 2);
@@ -371,7 +374,7 @@ esp_err_t AC101_i2s_config_clock(ac_i2s_clock_t *cfg)
 esp_err_t AC101_set_voice_volume(int volume)
 {
 	esp_err_t res;
-	res = ac101_set_spk_volume(volume);
+	res = ac101_set_earph_volume(volume);
 	res |= ac101_set_spk_volume(volume);
 	return res;
 }
@@ -381,7 +384,23 @@ esp_err_t AC101_get_voice_volume(int* volume)
 	*volume = ac101_get_spk_volume();
 	return 0;
 }
-#endif
+
+void AC101_pa_power(bool enable)
+{
+    gpio_config_t  io_conf;
+    memset(&io_conf, 0, sizeof(io_conf));
+    io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = BIT(GPIO_PA_EN);
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+    if (enable) {
+        gpio_set_level(GPIO_PA_EN, 1);
+    } else {
+        gpio_set_level(GPIO_PA_EN, 0);
+    }
+}
 
 
 
