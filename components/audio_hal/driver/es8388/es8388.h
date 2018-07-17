@@ -24,6 +24,7 @@
 
 #ifndef __ES8388_H__
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 #include "sdkconfig.h"
 #ifdef CONFIG_ESP32_LYRAT
@@ -31,6 +32,10 @@
 #define __ES8388_H__
 
 >>>>>>> upstream/master
+=======
+#define __ES8388_H__
+
+>>>>>>> test
 #include "esp_types.h"
 #include "audio_hal.h"
 #include "driver/i2c.h"

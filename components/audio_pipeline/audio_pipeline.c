@@ -189,9 +189,12 @@ esp_err_t audio_pipeline_register(audio_pipeline_handle_t pipeline, audio_elemen
 
     AUDIO_MEM_CHECK(TAG, el_item, return ESP_ERR_NO_MEM);
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> upstream/master
+=======
+>>>>>>> test
     el_item->el = el;
     el_item->linked = false;
     STAILQ_INSERT_TAIL(&pipeline->el_list, el_item, next);
@@ -352,10 +355,14 @@ esp_err_t audio_pipeline_link(audio_pipeline_handle_t pipeline, const char *link
             bool _success = (
                                 (rb_item = audio_calloc(1, sizeof(ringbuf_item_t))) &&
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 (rb = rb_create(pipeline->rb_size, 1))
 =======
                                 (rb = rb_create(audio_element_get_output_ringbuf_size(el), 1))
 >>>>>>> upstream/master
+=======
+                                (rb = rb_create(audio_element_get_output_ringbuf_size(el), 1))
+>>>>>>> test
                             );
 
             AUDIO_MEM_CHECK(TAG, _success, {
@@ -455,10 +462,14 @@ esp_err_t audio_pipeline_link_more(audio_pipeline_handle_t pipeline, audio_eleme
                 audio_element_set_input_ringbuf(el, rb);
             }
 <<<<<<< HEAD
+<<<<<<< HEAD
             rb = rb_create(pipeline->rb_size, 1);
 =======
             rb = rb_create(audio_element_get_output_ringbuf_size(el), 1);
 >>>>>>> upstream/master
+=======
+            rb = rb_create(audio_element_get_output_ringbuf_size(el), 1);
+>>>>>>> test
             AUDIO_MEM_CHECK(TAG, rb, return ESP_ERR_NO_MEM);
             add_rb_to_audio_pipeline(pipeline, rb);
             audio_element_set_output_ringbuf(el, rb);

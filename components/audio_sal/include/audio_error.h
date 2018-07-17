@@ -45,10 +45,15 @@ extern "C" {
 #define AUDIO_ERROR(TAG, str) ESP_LOGE(TAG, "%s:%d (%s): %s", __FILENAME__, __LINE__, __FUNCTION__, str)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 #define ESP_EXISTS   (ESP_OK + 1)
 
 >>>>>>> upstream/master
+=======
+#define ESP_EXISTS   (ESP_OK + 1)
+
+>>>>>>> test
 #ifdef __cplusplus
 }
 #endif

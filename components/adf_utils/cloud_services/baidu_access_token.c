@@ -38,18 +38,24 @@ char *baidu_get_access_token(const char *access_key, const char *access_secret)
 {
     char *token = NULL;
 <<<<<<< HEAD
+<<<<<<< HEAD
     char *uri = calloc(1, BAIDU_URI_LENGTH);
 
     AUDIO_MEM_CHECK(TAG, uri, return NULL);
 
     snprintf(uri, BAIDU_URI_LENGTH, BAIDU_AUTH_ENDPOINT"&client_id=%s&client_secret=%s", access_key, access_secret);
 =======
+=======
+>>>>>>> test
     char *url = calloc(1, BAIDU_URI_LENGTH);
 
     AUDIO_MEM_CHECK(TAG, url, return NULL);
 
     snprintf(url, BAIDU_URI_LENGTH, BAIDU_AUTH_ENDPOINT"&client_id=%s&client_secret=%s", access_key, access_secret);
+<<<<<<< HEAD
 >>>>>>> upstream/master
+=======
+>>>>>>> test
 
     esp_http_client_config_t config = {
         .url = url,

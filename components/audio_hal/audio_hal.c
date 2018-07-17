@@ -30,12 +30,16 @@
 #include "audio_mem.h"
 #include "audio_mutex.h"
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include "sdkconfig.h"
 
 #ifdef CONFIG_ESP32_LYRAT
 =======
 #include "es8374.h"
 >>>>>>> upstream/master
+=======
+#include "es8374.h"
+>>>>>>> test
 #include "es8388.h"
 #endif
 #ifdef CONFIG_AUDIO_KIT
@@ -59,6 +63,7 @@ struct audio_hal {
     esp_err_t (*audio_codec_get_volume)(int *volume);
     xSemaphoreHandle audio_hal_lock;
     void *handle;
+<<<<<<< HEAD
 };
 
 
@@ -73,6 +78,8 @@ static struct audio_hal audio_hal_codecs_default[] = {
         .audio_codec_set_volume = AC101_set_voice_volume,
         .audio_codec_get_volume = AC101_get_voice_volume,
     }
+=======
+>>>>>>> test
 };
 #endif
 
@@ -109,7 +116,10 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, int 
     audio_hal_handle_t audio_hal =(audio_hal_handle_t) audio_calloc(1, sizeof(struct audio_hal));
 =======
     audio_hal_handle_t audio_hal = (audio_hal_handle_t) audio_calloc(1, sizeof(struct audio_hal));
+<<<<<<< HEAD
 >>>>>>> upstream/master
+=======
+>>>>>>> test
     AUDIO_MEM_CHECK(TAG, audio_hal, return NULL);
     memcpy(audio_hal, &audio_hal_codecs_default[index], sizeof(struct audio_hal));
     audio_hal->audio_hal_lock = mutex_create();
@@ -120,10 +130,13 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, int 
     });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 
 =======
 >>>>>>> upstream/master
+=======
+>>>>>>> test
     mutex_lock(audio_hal->audio_hal_lock);
     ret  = audio_hal->audio_codec_initialize(audio_hal_conf);
     ret |= audio_hal->audio_codec_config_iface(AUDIO_HAL_CODEC_MODE_BOTH, &audio_hal_conf->i2s_iface);

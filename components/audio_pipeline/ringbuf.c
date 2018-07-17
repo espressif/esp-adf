@@ -113,6 +113,7 @@ esp_err_t rb_destroy(ringbuf_handle_t rb)
         xQueueRemoveFromSet(rb->abort_write, rb->write_set);
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     if (rb->can_read && rb->read_set) {
         xQueueRemoveFromSet(rb->can_read, rb->read_set);
@@ -120,11 +121,17 @@ esp_err_t rb_destroy(ringbuf_handle_t rb)
 
 =======
 
+=======
+
+>>>>>>> test
     if (rb->can_read && rb->read_set) {
         xQueueRemoveFromSet(rb->can_read, rb->read_set);
     }
 
+<<<<<<< HEAD
 >>>>>>> upstream/master
+=======
+>>>>>>> test
     if (rb->can_write && rb->write_set) {
         xQueueRemoveFromSet(rb->can_write, rb->write_set);
     }

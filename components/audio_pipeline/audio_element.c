@@ -929,6 +929,7 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
         return ESP_FAIL;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (!el->is_running) {
         ESP_LOGD(TAG, "[%s] RESUME:Element has not running,state:%d,task_run:%d", el->tag, el->state, el->task_run);
         if ((el->state == AEL_STATE_ERROR) && el->task_stack > 0) {
@@ -942,6 +943,10 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
     if ((el->is_running) || (el->state == AEL_STATE_RUNNING)) {
         ESP_LOGD(TAG, "[%s] RESUME: Element is already running, state:%d, task_run:%d", el->tag, el->state, el->task_run);
 >>>>>>> upstream/master
+=======
+    if ((el->is_running) || (el->state == AEL_STATE_RUNNING)) {
+        ESP_LOGD(TAG, "[%s] RESUME: Element is already running, state:%d, task_run:%d", el->tag, el->state, el->task_run);
+>>>>>>> test
         return ESP_OK;
     }
     if (el->task_stack <= 0) {
@@ -979,11 +984,15 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
         return ESP_OK;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     if ((el->state != AEL_STATE_PAUSED)
             && (el->state != AEL_STATE_RUNNING)) {
 =======
     if (el->state == AEL_STATE_STOPPED) {
 >>>>>>> upstream/master
+=======
+    if (el->state == AEL_STATE_STOPPED) {
+>>>>>>> test
         ESP_LOGD(TAG, "[%s] Element already stoped", el->tag);
         return ESP_OK;
     }

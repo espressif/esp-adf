@@ -35,10 +35,14 @@
 #include "esp_peripherals.h"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 static const char* TAG = "ESP_PERIPH";
 =======
 static const char *TAG = "ESP_PERIPH";
 >>>>>>> upstream/master
+=======
+static const char *TAG = "ESP_PERIPH";
+>>>>>>> test
 
 #define DEFAULT_ESP_PERIPH_STACK_SIZE      (4*1024)
 #define DEFAULT_ESP_PERIPH_TASK_PRIO       (5)
@@ -94,7 +98,10 @@ static esp_err_t process_peripheral_event(audio_event_iface_msg_t *msg, void *co
             && periph_evt->state == PERIPH_STATE_RUNNING
             && periph_evt->run
             && !periph_evt->disabled) {
+<<<<<<< HEAD
 >>>>>>> upstream/master
+=======
+>>>>>>> test
             return periph_evt->run(periph_evt, msg);
         }
     }
@@ -105,12 +112,17 @@ esp_err_t esp_periph_init(esp_periph_config_t *config)
 {
     if (g_esp_periph_obj != NULL) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         AUDIO_ERROR(TAG, "Peripherals have been initialized already");
         return ESP_FAIL;
 =======
         ESP_LOGW(TAG, "Peripherals have been initialized already");
         return ESP_EXISTS;
 >>>>>>> upstream/master
+=======
+        ESP_LOGW(TAG, "Peripherals have been initialized already");
+        return ESP_EXISTS;
+>>>>>>> test
     }
     int _err_step = 1;
     bool _success =

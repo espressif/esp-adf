@@ -28,11 +28,14 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 <<<<<<< HEAD
+<<<<<<< HEAD
 //<<<<<<< HEAD
 //#include "sdkconfig.h"
 //=======
 =======
 >>>>>>> upstream/master
+=======
+>>>>>>> test
 #include "audio_error.h"
 
 //>>>>>>> 3c90c734af8f1e1065a79b555dc4ee5798a83e61
@@ -85,7 +88,22 @@ typedef struct audio_hal* audio_hal_handle_t;
         },                                              \
 };
 
+<<<<<<< HEAD
 >>>>>>> upstream/master
+=======
+#define AUDIO_HAL_ES8374_DEFAULT(){                     \
+        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
+        .dac_output = AUDIO_HAL_DAC_OUTPUT_LINE1,       \
+        .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
+        .i2s_iface = {                                  \
+            .mode = AUDIO_HAL_MODE_SLAVE,               \
+            .fmt = AUDIO_HAL_I2S_NORMAL,                \
+            .samples = AUDIO_HAL_48K_SAMPLES,           \
+            .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
+        },                                              \
+};
+
+>>>>>>> test
 /**
  * @brief Select media hal codec mode
  */
