@@ -102,6 +102,14 @@ typedef enum {
 typedef struct audio_element *audio_element_handle_t;
 
 /**
+ * @brief Audio Element user reserved data
+ */
+typedef struct {
+    int user_data_0;     /*!< user data 0 */
+    int user_data_1;     /*!< user data 1 */
+} audio_element_reserve_data_t;
+
+/**
  * @brief Audio Element informations
  */
 typedef struct {
@@ -114,6 +122,7 @@ typedef struct {
     int64_t total_bytes;    /*!< The total bytes for an element */
     char *uri;              /*!< URI (optional) */
     audio_codec_t codec_fmt;/*!< Music format (optional) */
+    audio_element_reserve_data_t reserve_data;/*!< This value is reserved for user use */
 } audio_element_info_t;
 
 #define AUDIO_ELEMENT_INFO_DEFAULT()    {   \
@@ -562,7 +571,7 @@ audio_element_err_t audio_element_input(audio_element_handle_t el, char *buffer,
 /**
  * @brief      Call this function to sendout Element output data.
  *
- * @param[in]  el          Depend on setup using ringbuffer or function callback, Element will invokes write tơ ringbuffer, or call write callback funtion
+ * @param[in]  el          Depending on setup using ringbuffer or function callback, Element will invoke write to ringbuffer, or call write callback funtion
  * @param      buffer      The buffer pointer
  * @param[in]  write_size  The write size
  *
