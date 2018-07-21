@@ -171,7 +171,6 @@ esp_err_t wm8978_init(audio_hal_codec_config_t *cfg){
     val&=~BIT0;
     res|=wm8978_write_reg(57,val);
     wm8979_eq_dir(0);
-    wm8978_read_all();
     return res;
 
 }
