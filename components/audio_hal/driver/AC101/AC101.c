@@ -109,10 +109,10 @@ esp_err_t AC101_init(audio_hal_codec_config_t* codec_cfg) {
 	res |= AC101_Write_Reg(I2S1_SDIN_CTRL, 0xc000);
 	res |= AC101_Write_Reg(I2S1_MXR_SRC, 0x2200);			//
 
-	res |= AC101_Write_Reg(ADC_SRCBST_CTRL, 0xc444);
-	res |= AC101_Write_Reg(ADC_SRC, 0x2040);
+	res |= AC101_Write_Reg(ADC_SRCBST_CTRL, 0xccc4);
+	res |= AC101_Write_Reg(ADC_SRC, 0x2020);
 	res |= AC101_Write_Reg(ADC_DIG_CTRL, 0x8000);
-	res |= AC101_Write_Reg(ADC_APC_CTRL, 0x3bc0);
+	res |= AC101_Write_Reg(ADC_APC_CTRL, 0xbbc0);
 
 	//Path Configuration
 	res |= AC101_Write_Reg(DAC_MXR_SRC, 0xcc00);
