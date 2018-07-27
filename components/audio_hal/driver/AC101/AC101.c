@@ -112,7 +112,7 @@ esp_err_t AC101_init(audio_hal_codec_config_t* codec_cfg) {
 	res |= AC101_Write_Reg(ADC_SRCBST_CTRL, 0xccc4);
 	res |= AC101_Write_Reg(ADC_SRC, 0x2020);
 	res |= AC101_Write_Reg(ADC_DIG_CTRL, 0x8000);
-	res |= AC101_Write_Reg(ADC_APC_CTRL, 0xbbc0);
+	res |= AC101_Write_Reg(ADC_APC_CTRL, 0xbbc3);
 
 	//Path Configuration
 	res |= AC101_Write_Reg(DAC_MXR_SRC, 0xcc00);
@@ -204,10 +204,10 @@ esp_err_t AC101_start(ac_module_t mode)
     }
     if (mode == AC_MODULE_ADC || mode == AC_MODULE_ADC_DAC || mode == AC_MODULE_LINE) {
 		//I2S1_SDOUT_CTRL
-		res |= AC101_Write_Reg(PLL_CTRL2, 0x8120);
+		//res |= AC101_Write_Reg(PLL_CTRL2, 0x8120);
     	res |= AC101_Write_Reg(0x04, 0x800c);
     	res |= AC101_Write_Reg(0x05, 0x800c);
-		res |= AC101_Write_Reg(0x06, 0x3000);
+		//res |= AC101_Write_Reg(0x06, 0x3000);
     }
     if (mode == AC_MODULE_DAC || mode == AC_MODULE_ADC_DAC || mode == AC_MODULE_LINE) {
     	//* Enable Headphoe output   注意使用耳机时，最后开以下寄存器
@@ -221,8 +221,6 @@ esp_err_t AC101_start(ac_module_t mode)
 		res |= AC101_Write_Reg(SPKOUT_CTRL, 0xeabd);
 		vTaskDelay(10 / portTICK_PERIOD_MS);
 		AC101_set_voice_volume(30);
-		
-
     }
 
     return res;
