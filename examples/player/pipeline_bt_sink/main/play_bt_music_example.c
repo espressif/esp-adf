@@ -113,7 +113,7 @@ void app_main(void)
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret); 
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
             continue;
         }
 
@@ -140,16 +140,16 @@ void app_main(void)
                 && msg.source == (void *)touch_periph) {
 
             if ((int) msg.data == TOUCH_PLAY) {
-                ESP_LOGI(TAG, "[ * ] [Play] touch tap event"); 
+                ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
                 periph_bluetooth_play(bt_periph);
             } else if ((int) msg.data == TOUCH_SET) {
-                ESP_LOGI(TAG, "[ * ] [Set] touch tap event"); 
-                periph_bluetooth_stop(bt_periph);
+                ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
+                periph_bluetooth_pause(bt_periph);
             } else if ((int) msg.data == TOUCH_VOLUP) {
-                ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event"); 
+                ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event");
                 periph_bluetooth_next(bt_periph);
             } else if ((int) msg.data == TOUCH_VOLDWN) {
-                ESP_LOGI(TAG, "[ * ] [Vol-] touch tap event"); 
+                ESP_LOGI(TAG, "[ * ] [Vol-] touch tap event");
                 periph_bluetooth_prev(bt_periph);
             }
         }
@@ -157,15 +157,15 @@ void app_main(void)
         /* Stop when the Bluetooth is disconnected or suspended */
         if (msg.source_type == PERIPH_ID_BLUETOOTH
                 && msg.source == (void *)bt_periph) {
-            if (msg.cmd == PERIPH_BLUETOOTH_DISCONNECTED || msg.cmd == PERIPH_BLUETOOTH_AUDIO_SUSPENDED) {
-                ESP_LOGW(TAG, "[ * ] Bluetooth disconnected or suspended"); 
+            if (msg.cmd == PERIPH_BLUETOOTH_DISCONNECTED) {
+                ESP_LOGW(TAG, "[ * ] Bluetooth disconnected");
                 break;
             }
         }
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
                 && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
-            ESP_LOGW(TAG, "[ * ] Stop event received"); 
+            ESP_LOGW(TAG, "[ * ] Stop event received");
             break;
         }
     }
