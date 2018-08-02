@@ -32,7 +32,7 @@
 #include "aws_sig_v4_signing.h"
 
 #define AWS_POLLY_ENDPOINT "https://polly."CONFIG_AWS_POLLY_REGION".amazonaws.com/v1/speech"
-#define TTS_TEXT  "Espressif Systems is a fabless semiconductor company, with headquarter in Shanghai Zhangjiang High-Tech Park, providing low power Wi-Fi and Bluetooth SoCs and wireless solutions for Internet of Things applications"
+#define TTS_TEXT  "Espressif Systems is a multinational, fabless semiconductor company, with headquarters in Shanghai, China. We specialize in producing highly-integrated, low-power, WiFi-and-Bluetooth IoT solutions. Among our most popular chips are ESP8266 and ESP32. We are committed to creating IoT solutions that are power-efficient, robust and secure."
 static const char *polly_payload = "{\"OutputFormat\":\"mp3\",\"SampleRate\":\"22050\",\"Text\":\""TTS_TEXT"\",\"TextType\":\"text\",\"VoiceId\":\"Joanna\"}";
 
 static const char *TAG = "AWS_POLLY_EXAMPLE";
@@ -74,11 +74,17 @@ aws_sig_v4_config_t polly_sigv4_config = {
 
 int _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
+    static int total_len = 0;
     esp_http_client_handle_t http_client = (esp_http_client_handle_t)msg->http_client;
-    ESP_LOGI(TAG, "http event_id = %d", msg->event_id);
+    if (msg->event_id == HTTP_STREAM_ON_RESPONSE) {
+        total_len += msg->buffer_len;
+        printf("\033[A\33[2K\rTotal bytes read: %d bytes\n", total_len);
+        return ESP_OK;
+    }
     if (msg->event_id != HTTP_STREAM_PRE_REQUEST) {
         return ESP_OK;
     }
+    total_len = 0;
     struct timeval tv;
     time_t nowtime;
     struct tm *nowtm = NULL;
@@ -224,7 +230,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
 
-    /* Terminal the pipeline before removing the listener */
+    /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);
 
     /* Stop all periph before removing the listener */
