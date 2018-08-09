@@ -16,3 +16,4 @@ Implementation of this API is demonstrated in the following example:
 
 
 .. include:: /_build/inc/bluetooth_service.inc
+.. include:: /_build/inc/bt_keycontrol.inc
