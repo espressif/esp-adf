@@ -1,9 +1,11 @@
 stages:
   - build
+  - assign_test
+  - example_test
   - deploy
 
 variables:
-# System environment
+  # System environment
 
   # Common parameters for the 'make' during CI tests
   MAKEFLAGS: "-j5 --no-keep-going"
@@ -37,6 +39,19 @@ before_script:
 
   # fetch the submodules (& if necessary re-fetch repo) from gitlab
   - time ./esp-idf/tools/ci/get-full-sources.sh
+
+
+.add_gitlab_key_before:
+  before_script: &add_gitlab_key_before
+    - echo "Not fetching submodules"
+    - source $IDF_PATH/tools/ci/configure_ci_environment.sh
+    # add gitlab ssh key
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo -n $AUTO_KEY > ~/.ssh/id_rsa_base64
+    - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 
 .build_template: &build_template
   stage: build
@@ -74,7 +89,7 @@ before_script:
 
 build_examples_00:
   <<: *build_examples_template
-  
+
 build_adf_test:
   <<: *build_template
   artifacts:
@@ -85,6 +100,9 @@ build_adf_test:
       - adf-cli/build/*.map
       - adf-cli/build/download.config
       - adf-cli/build/bootloader/*.bin
+      - $IDF_PATH/tools/ci
+      - $IDF_PATH/components/esptool_py
+      - $IDF_PATH/components/partition_table
     expire_in: 1 month
   script:
     - git clone ${ADF_TEST_CLI_REPO}
@@ -112,6 +130,65 @@ build_docs:
     - make gh-linkcheck
     - make html
     - ../check_doc_warnings.sh
+
+assign_test:
+  tags:
+    - assign_test
+  image: $CI_DOCKER_REGISTRY/audio_test_env$BOT_DOCKER_IMAGE_TAG
+  stage: assign_test
+  # gitlab ci do not support match job with RegEx or wildcard now in dependencies.
+  # we have a lot build example jobs. now we don't use dependencies, just download all artificats of build stage.
+  dependencies:
+    - build_adf_test
+    - build_examples_00
+  variables:
+    TEST_FW_PATH: "$CI_PROJECT_DIR/general_test_framework"
+    EXAMPLE_CONFIG_OUTPUT_PATH: "$CI_PROJECT_DIR/examples/test_configs"
+    AUTO_TEST_PATH: "$CI_PROJECT_DIR/audio_auto_test"
+  artifacts:
+    paths:
+      - $TEST_FW_PATH
+      - $EXAMPLE_CONFIG_OUTPUT_PATH
+      - $AUTO_TEST_PATH
+    expire_in: 1 mos
+  before_script: *add_gitlab_key_before
+  script:
+    - git clone ${AUDIO_AUTO_REPO}
+    - git clone ${TEST_FW_REPO}
+    # assign example tests
+    - python $TEST_FW_PATH/CIAssignExampleTest.py $CI_PROJECT_DIR/examples $CI_PROJECT_DIR/.gitlab-ci.yml $EXAMPLE_CONFIG_OUTPUT_PATH
+
+.example_test_template: &example_test_template
+  stage: example_test
+  when: on_success
+  dependencies:
+    - assign_test
+    - build_examples_00
+    - build_adf_test
+  artifacts:
+    when: always
+    paths:
+      - $LOG_PATH
+    expire_in: 1 mos
+  variables:
+    TEST_FW_PATH: "$CI_PROJECT_DIR/general_test_framework"
+    TEST_CASE_PATH: "$CI_PROJECT_DIR/examples"
+    CONFIG_FILE: "$CI_PROJECT_DIR/examples/test_configs/$CI_JOB_NAME.yml"
+    LOG_PATH: "$CI_PROJECT_DIR/log_examples"
+    ENV_FILE: "$IDF_PATH/ci-test-runner-configs/$CI_RUNNER_DESCRIPTION/EnvConfig.yml"
+    AUTO_TEST_PATH: "$CI_PROJECT_DIR/audio_auto_test"
+  before_script: *add_gitlab_key_before
+  script:
+    # first test if config file exists, if not exist, exit 0
+    - test -e $CONFIG_FILE || exit 0
+    # run test
+    - python $TEST_FW_PATH/Runner.py $TEST_CASE_PATH -c $CONFIG_FILE -e $ENV_FILE
+
+example_test_play_mp3:
+  <<: *example_test_template
+  tags:
+    - ESP32
+    - Example_AUDIO_PLAY
 
 push_master_to_github:
   stage: deploy
