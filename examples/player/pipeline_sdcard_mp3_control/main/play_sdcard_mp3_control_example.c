@@ -55,6 +55,7 @@ static FILE *get_file(int next_file)
             fclose(file);
             file = NULL;
         }
+        ESP_LOGI(TAG, "[ * ] File index %d", file_index);
     }
     // return a handle to the current file
     if (file == NULL) {
@@ -189,8 +190,9 @@ void app_main(void)
                 if (el_state == AEL_STATE_FINISHED) {
                     ESP_LOGI(TAG, "[ * ] Finished, advancing to the next song");
                     audio_pipeline_stop(pipeline);
+                    audio_pipeline_wait_for_stop(pipeline);
                     get_file(NEXT);
-                    audio_pipeline_resume(pipeline);
+                    audio_pipeline_run(pipeline);
                 }
                 continue;
             }
@@ -222,13 +224,10 @@ void app_main(void)
                 }
             } else if ((int) msg.data == TOUCH_SET) {
                 ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
-                ESP_LOGI(TAG, "[ * ] Finishing current song");
-                // Stop the current song playing
-                audio_pipeline_stop(pipeline);
-                audio_pipeline_wait_for_stop(pipeline);
-                // Run the pipeline again so 'AEL_STATE_FINISHED' state is reported
+                audio_pipeline_terminate(pipeline);
+                ESP_LOGI(TAG, "[ * ] Stopped, advancing to the next song");
+                get_file(NEXT);
                 audio_pipeline_run(pipeline);
-                // Application seeing 'AEL_STATE_FINISHED' should then advance to the next song
             } else if ((int) msg.data == TOUCH_VOLUP) {
                 ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event");
                 player_volume += 10;
