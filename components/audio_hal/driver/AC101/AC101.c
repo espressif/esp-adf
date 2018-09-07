@@ -80,6 +80,47 @@ static uint16_t AC101_read_Reg(uint8_t reg) {
 	return val;
 }
 
+void set_codec_clk(audio_hal_iface_samples_t sampledata)
+{
+	uint16_t sample;
+	switch(sampledata)
+	{
+	case AUDIO_HAL_08K_SAMPLES:
+		sample = SIMPLE_RATE_8000;
+		break;
+	case AUDIO_HAL_11K_SAMPLES:
+		sample = SIMPLE_RATE_11052;
+		break;
+	case AUDIO_HAL_16K_SAMPLES:
+		sample = SIMPLE_RATE_16000;
+		break;
+	case AUDIO_HAL_22K_SAMPLES:
+		sample = SIMPLE_RATE_22050;
+		break;
+	case AUDIO_HAL_24K_SAMPLES:
+		sample = SIMPLE_RATE_24000;
+		break;
+	case AUDIO_HAL_32K_SAMPLES:
+		sample = SIMPLE_RATE_32000;
+		break;
+	case AUDIO_HAL_44K_SAMPLES:
+		sample = SIMPLE_RATE_44100;
+		break;
+	case AUDIO_HAL_48K_SAMPLES:
+		sample = SIMPLE_RATE_48000;
+		break;
+	case AUDIO_HAL_96K_SAMPLES:
+		sample = SIMPLE_RATE_96000;
+		break;
+	case AUDIO_HAL_192K_SAMPLES:
+		sample = SIMPLE_RATE_192000;
+		break;
+	default:
+		sample = SIMPLE_RATE_44100;
+	}
+	AC101_Write_Reg(I2S_SR_CTRL, sample);
+}
+
 esp_err_t AC101_init(audio_hal_codec_config_t* codec_cfg) {
 	if(i2c_init()) return -1;
 	esp_err_t res;
@@ -131,13 +172,14 @@ int ac101_get_spk_volume(void)
     int res;
     res = AC101_read_Reg(SPKOUT_CTRL);
     res &= 0x1f;
-    return res;
+    return res*2;
 }
 
 esp_err_t ac101_set_spk_volume(uint8_t volume)
 {
 	uint16_t res;
 	esp_err_t ret;
+	volume = volume/2;
 	res = AC101_read_Reg(SPKOUT_CTRL);
 	res &= (~0x1f);
 	volume &= 0x1f;
@@ -379,7 +421,7 @@ esp_err_t AC101_set_voice_volume(int volume)
 
 esp_err_t AC101_get_voice_volume(int* volume)
 {
-	*volume = ac101_get_spk_volume();
+	*volume = ac101_get_earph_volume();
 	return 0;
 }
 

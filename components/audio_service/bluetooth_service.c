@@ -42,6 +42,7 @@
 #include "esp_a2dp_api.h"
 #include "esp_avrc_api.h"
 
+#include "bt_keycontrol.h"
 #include "bluetooth_service.h"
 
 static const char *TAG = "BLUETOOTH_SERVICE";
@@ -59,6 +60,8 @@ typedef struct bluetooth_service {
     esp_a2d_connection_state_t connection_state;
     esp_a2d_audio_state_t audio_state;
     uint64_t pos;
+    uint8_t tl;
+    bool avrc_connected;
 } bluetooth_service_t;
 
 bluetooth_service_t *g_bt_service = NULL;
@@ -244,13 +247,11 @@ esp_err_t bluetooth_service_destroy()
     return ESP_OK;
 }
 
-
 static esp_err_t _bt_stream_destroy(audio_element_handle_t self)
 {
     g_bt_service->stream = NULL;
     return ESP_OK;
 }
-
 
 audio_element_handle_t bluetooth_service_create_stream()
 {
@@ -278,16 +279,29 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
     switch (event) {
         case ESP_AVRC_CT_CONNECTION_STATE_EVT: {
                 uint8_t *bda = rc->conn_stat.remote_bda;
-                ESP_LOGD(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
-                         rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
-
+                g_bt_service->avrc_connected = rc->conn_stat.connected;
                 if (rc->conn_stat.connected) {
                     ESP_LOGD(TAG, "ESP_AVRC_CT_CONNECTION_STATE_EVT");
+                    bt_key_act_sm_init();
+                } else if (0 == rc->conn_stat.connected){
+                    bt_key_act_sm_deinit();
                 }
+
+                ESP_LOGD(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
+                                         rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
                 break;
             }
         case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT: {
-                ESP_LOGD(TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
+                if(g_bt_service->avrc_connected) {
+                    ESP_LOGD(TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
+                    bt_key_act_param_t param;
+                    memset(&param, 0, sizeof(bt_key_act_param_t));
+                    param.evt = event;
+                    param.tl = rc->psth_rsp.tl;
+                    param.key_code = rc->psth_rsp.key_code;
+                    param.key_state = rc->psth_rsp.key_state;
+                    bt_key_act_state_machine(&param);
+                }
                 break;
             }
         case ESP_AVRC_CT_METADATA_RSP_EVT: {
@@ -345,11 +359,21 @@ static esp_err_t periph_bluetooth_passthrough_cmd(esp_periph_handle_t periph, ui
 {
     VALIDATE_BT(periph, ESP_FAIL);
     if (g_bt_service->audio_state != ESP_A2D_AUDIO_STATE_STARTED) {
-        return ESP_FAIL;
+        //return ESP_FAIL;
     }
     esp_err_t err = ESP_OK;
-    err |= esp_avrc_ct_send_passthrough_cmd(1, cmd, ESP_AVRC_PT_CMD_STATE_PRESSED);
-    // err |= esp_avrc_ct_send_passthrough_cmd(1, cmd, ESP_AVRC_PT_CMD_STATE_RELEASED);
+
+    if (g_bt_service->avrc_connected) {
+        bt_key_act_param_t param;
+        memset(&param, 0, sizeof(bt_key_act_param_t));
+        param.evt = ESP_AVRC_CT_KEY_STATE_CHG_EVT;
+        param.key_code = cmd;
+        param.key_state = 0;
+        param.tl = (g_bt_service->tl) & 0x0F;
+        g_bt_service->tl = (g_bt_service->tl + 2) & 0x0f;
+        bt_key_act_state_machine(&param);
+    }
+
     return err;
 }
 
