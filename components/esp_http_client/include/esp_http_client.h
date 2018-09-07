@@ -334,6 +334,18 @@ esp_err_t esp_http_client_close(esp_http_client_handle_t client);
  */
 esp_err_t esp_http_client_cleanup(esp_http_client_handle_t client);
 
+/**
+ * @brief      Set redirection URL, When receiving the 30x code from the server,
+ *             the client will store the URL provided by the server,
+ *             This function will set the current URL to make the client able to execute the redirection request.
+ *
+ * @param[in]  client  The client
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t esp_http_client_set_redirection(esp_http_client_handle_t client);
 
 
 #ifdef __cplusplus
