@@ -424,7 +424,7 @@ _stream_open_begin:
 
     char *buffer = NULL;
     int post_len = esp_http_client_get_post_field(http->client, &buffer);
-
+_stream_redirect:
     if ((err = esp_http_client_open(http->client, post_len)) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to open http stream");
         return err;
@@ -451,7 +451,12 @@ _stream_open_begin:
 
     info.total_bytes = esp_http_client_fetch_headers(http->client);
     ESP_LOGD(TAG, "total_bytes=%d", (int)info.total_bytes);
-    if ((esp_http_client_get_status_code(http->client) != 200)
+    int status_code = esp_http_client_get_status_code(http->client);
+    if (status_code == 301 || status_code == 302) {
+        esp_http_client_set_redirection(http->client);
+        goto _stream_redirect;
+    }
+    if (status_code != 200
         && (esp_http_client_get_status_code(http->client) != 206)) {
         ESP_LOGE(TAG, "Invalid HTTP stream");
         if (http->enable_playlist_parser) {
