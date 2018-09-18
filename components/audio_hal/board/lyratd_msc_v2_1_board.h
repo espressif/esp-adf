@@ -22,53 +22,58 @@
  *
  */
 
-#ifndef _AUDIO_LYRAT_V4_2_BOARD_H_
-#define _AUDIO_LYRAT_V4_2_BOARD_H_
+#ifndef _AUDIO_LYRATD_MSC_V2_1_BOARD_H_
+#define _AUDIO_LYRATD_MSC_V2_1_BOARD_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+	
+/* Board functions related */
+#define ENABLE_ADC_BUTTON
+#define BOARD_INFO                  "ESP_LYRATD_MSC_V2_1"
 
 /* SD card related */
-#define SD_CARD_INTR_GPIO           GPIO_NUM_34
+#define SD_CARD_INTR_GPIO           34
 #define SD_CARD_INTR_SEL            GPIO_SEL_34
+
+/* Open files max num */
 #define SD_CARD_OPEN_FILE_NUM_MAX   5
 
-#define GPIO_AUXIN_DETECT           12
+/* Adc button pin */
+#ifdef ENABLE_ADC_BUTTON
+#define BUTTON_ADC_PIN              39
+#endif
 
-/* LED indicators */
-#define GPIO_LED_GREEN              22
-#define GPIO_LED_RED                19
+/* Battery detect pin */
+#ifdef ENABLE_BATTERY_ADC_BUTTON
+#define BATTERY_ADC_PIN_DETECT      36
+#endif
+
+/* LED indicator */
 
 /* I2C gpios */
 #define IIC_CLK                     23
 #define IIC_DATA                    18
 
+/* DSP Chip Microsemi zl38063 */
+#define BOARD_RESET_CTRL            21
+#define MICRO_SEMI_RESET_CTRL       19
+
+#define MICRO_SEMI_SPI_CS           0
+#define MICRO_SEMI_SPI_CLK          32
+#define MICRO_SEMI_SPI_MOSI         33
+#define MICRO_SEMI_SPI_MISO         27
+
 /* PA */
-#define GPIO_PA_EN                  GPIO_NUM_21
-#define GPIO_SEL_PA_EN              GPIO_SEL_21
-
-/* Press button related */ 
-#define GPIO_SEL_REC                GPIO_SEL_36    //SENSOR_VP
-#define GPIO_SEL_MODE               GPIO_SEL_39    //SENSOR_VN
-#define GPIO_REC                    GPIO_NUM_36
-#define GPIO_MODE                   GPIO_NUM_39
-
-/* Touch pad related */
-#define TOUCH_SEL_SET               TOUCH_PAD_SEL9
-#define TOUCH_SEL_PLAY              TOUCH_PAD_SEL8
-#define TOUCH_SEL_VOLUP             TOUCH_PAD_SEL7
-#define TOUCH_SEL_VOLDWN            TOUCH_PAD_SEL4
-#define TOUCH_SET                   TOUCH_PAD_NUM9
-#define TOUCH_PLAY                  TOUCH_PAD_NUM8
-#define TOUCH_VOLUP                 TOUCH_PAD_NUM7
-#define TOUCH_VOLDWN                TOUCH_PAD_NUM4
+#define GPIO_PA_EN                  22
 
 /* I2S gpios */
 #define IIS_SCLK                    5
 #define IIS_LCLK                    25
 #define IIS_DSIN                    26
 #define IIS_DOUT                    35
+
 
 #ifdef __cplusplus
 }
