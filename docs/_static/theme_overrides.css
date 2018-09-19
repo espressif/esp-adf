@@ -13,7 +13,7 @@
 }
 
 .wy-side-nav-search {
-  background-color: #e3e3e3 !important;
+  background-color: #424242 !important;
 }
 
 .wy-side-nav-search input[type=text] {
@@ -22,7 +22,7 @@
 }
 
 .icon-home {
-  color: #333333 !important;
+  color: #ffffff !important;
 }
 
 .icon-home:hover {
@@ -30,7 +30,7 @@
 }
 
 .version {
-  color: #000000 !important;
+  color: #ffffff !important;
 }
 
 a:hover {
