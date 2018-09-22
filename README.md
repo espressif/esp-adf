@@ -1,6 +1,6 @@
 # Espressif Audio Development Framework
 
-[![alt text](https://readthedocs.org/projects/docs/badge/?version=latest "Documentation Status")](https://docs.espressif.com/projects/esp-adf/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.com/projects/espressif-esp-adf/badge/?version=latest)](https://docs.espressif.com/projects/esp-adf/en/latest/?badge=latest)
 
 Espressif Systems Audio Development Framework (ESP-ADF) is the official audio development framework for the [ESP32](https://espressif.com/en/products/hardware/esp32/overview) chip.
 
