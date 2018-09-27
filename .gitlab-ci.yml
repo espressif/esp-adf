@@ -1,7 +1,7 @@
 stages:
   - build
   - assign_test
-  - example_test
+#  - example_test
   - deploy
 
 variables:
@@ -184,7 +184,7 @@ assign_test:
     # run test
     - python $TEST_FW_PATH/Runner.py $TEST_CASE_PATH -c $CONFIG_FILE -e $ENV_FILE
 
-example_test_play_mp3:
+.example_test_play_mp3: &example_test_play_mp3
   <<: *example_test_template
   tags:
     - ESP32
