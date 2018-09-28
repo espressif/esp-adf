@@ -22,7 +22,7 @@ from BasicUtility.RecordAudioFile import AudioRecord
 import ADFExampleTest
 
 
-@NormalProject.example_test(env_tag="Example_AUDIO_PLAY")
+@NormalProject.example_test(env_tag="Example_AUDIO_PLAY", ignore=True)
 @ADFExampleTest.play_test(os.path.join(os.getenv("ADF_PATH"), "examples/get-started/play_mp3/main/adf_music.mp3"),
 os.path.join(os.getenv("ADF_PATH"), "examples/get-started/play_mp3/main/dest.wav"))
 def example_test_play_mp3(env, extra_data):
