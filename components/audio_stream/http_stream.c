@@ -42,6 +42,7 @@
 #include <strings.h>
 
 static const char *TAG = "HTTP_STREAM";
+#define HTTP_STREAM_TASK_STACK (6 * 1024)
 #define MAX_PLAYLIST_LINE_SIZE (128)
 #define MAX_PLAYLIST_TRACK (20)
 #define MAX_PLAYLIST_KEEP_TRACK (18)
@@ -495,8 +496,6 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
             ESP_LOGE(TAG, "Failed to process user callback");
             return ESP_FAIL;
         }
-        return ESP_OK;
-
     } else {
         info.byte_pos += rlen;
         audio_element_setinfo(self, &info);

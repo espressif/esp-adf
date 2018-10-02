@@ -1,0 +1,36 @@
+menu "Example Configuration"
+
+config WIFI_SSID
+    string "WiFi SSID"
+	default "myssid"
+	help
+		SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+	default "mypassword"
+	help
+		WiFi password (WPA or WPA2) for the example to use.
+
+		Can be left blank if the network has no security set.
+
+config AWS_ACCESS_KEY
+    string "Amazon service access key ID"
+    default ""
+    help
+        Amazon service Access key ID
+
+
+config AWS_SECRET_KEY
+    string "Amazon service access secret"
+    default ""
+    help
+        Amazon service Access secret
+
+config AWS_POLLY_REGION
+    string "Amazon service region"
+    default "us-east-1"
+    help
+        Amazon service region
+
+endmenu

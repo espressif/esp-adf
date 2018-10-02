@@ -31,6 +31,7 @@
 #include "audio_mutex.h"
 #include "es8374.h"
 #include "es8388.h"
+#include "AC101.h"
 
 static const char *TAG = "AUDIO_HAL";
 
@@ -67,6 +68,14 @@ static struct audio_hal audio_hal_codecs_default[] = {
         .audio_codec_config_iface = es8374_config_i2s,
         .audio_codec_set_volume = es8374_set_voice_volume,
         .audio_codec_get_volume = es8374_get_voice_volume,
+    },
+    {
+        .audio_codec_initialize = AC101_init,
+        .audio_codec_deinitialize = AC101_deinit,
+        .audio_codec_ctrl = AC101_ctrl_state,
+        .audio_codec_config_iface = AC101_config_i2s,
+        .audio_codec_set_volume = AC101_set_voice_volume,
+        .audio_codec_get_volume = AC101_get_voice_volume,
     }
 };
 

@@ -24,6 +24,7 @@
 
 #ifndef _AUDIO_HAL_H_
 #define _AUDIO_HAL_H_
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -33,7 +34,7 @@
 extern "C" {
 #endif
 
-#define AUDIO_HAL_VOL_DEFAULT 70
+#define AUDIO_HAL_VOL_DEFAULT 30
 
 typedef struct audio_hal* audio_hal_handle_t;
 
@@ -59,6 +60,18 @@ typedef struct audio_hal* audio_hal_handle_t;
             .samples = AUDIO_HAL_48K_SAMPLES,           \
             .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
         },                                              \
+};
+
+#define AUDIO_HAL_AC101_DEFAULT(){                     \
+    .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
+    .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
+    .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
+    .i2s_iface = {                                  \
+        .mode = AUDIO_HAL_MODE_SLAVE,               \
+        .fmt = AUDIO_HAL_I2S_NORMAL,                \
+        .samples = AUDIO_HAL_48K_SAMPLES,           \
+        .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
+    },                                              \
 };
 
 /**
@@ -118,6 +131,8 @@ typedef enum {
     AUDIO_HAL_32K_SAMPLES,   /*!< set to 32k samples in per second */
     AUDIO_HAL_44K_SAMPLES,   /*!< set to 44.1k samples per second */
     AUDIO_HAL_48K_SAMPLES,   /*!< set to 48k samples per second */
+    AUDIO_HAL_96K_SAMPLES,
+    AUDIO_HAL_192K_SAMPLES
 } audio_hal_iface_samples_t;
 
 /**

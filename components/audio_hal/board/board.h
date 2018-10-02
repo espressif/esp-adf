@@ -31,13 +31,23 @@
 extern "C" {
 #endif
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-#include "lyrat_v4_3_board.h"
-#endif
-
 #ifdef CONFIG_ESP_LYRAT_V4_2_BOARD
 #include "lyrat_v4_2_board.h"
+#define BOARD	0
 #endif
+
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+#include "lyrat_v4_3_board.h"
+#define BOARD	1
+#endif
+
+
+
+#ifdef CONFIG_ESP_AI_AUDIO_V1_0_BOARD
+#include "ai_audio_v1_0_board.h"
+#define BOARD	2
+#endif
+
 
 
 #ifdef __cplusplus

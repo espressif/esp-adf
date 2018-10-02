@@ -113,8 +113,6 @@ const static int TASK_CREATED_BIT = BIT3;
 const static int TASK_DESTROYED_BIT = BIT4;
 const static int PAUSED_BIT = BIT5;
 
-#define DEFAULT_MAX_WAIT_TIME (2000/portTICK_RATE_MS)
-
 static esp_err_t audio_element_force_set_state(audio_element_handle_t el, audio_element_state_t new_state)
 {
     el->state = new_state;
@@ -712,12 +710,8 @@ esp_err_t audio_element_set_write_cb(audio_element_handle_t el, stream_func fn, 
 
 esp_err_t audio_element_wait_for_stop(audio_element_handle_t el)
 {
-    EventBits_t uxBits = xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
-    esp_err_t ret = ESP_FAIL;
-    if (uxBits & STOPPED_BIT) {
-        ret = ESP_OK;
-    }
-    return ret;
+    xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, portMAX_DELAY);
+    return ESP_OK;
 }
 
 esp_err_t audio_element_wait_for_buffer(audio_element_handle_t el, int size_expect, TickType_t timeout)
@@ -842,7 +836,6 @@ esp_err_t audio_element_deinit(audio_element_handle_t el)
 esp_err_t audio_element_run(audio_element_handle_t el)
 {
     char task_name[32];
-    esp_err_t ret = ESP_FAIL;
     if (el->task_run) {
         ESP_LOGD(TAG, "[%s] Element already started", el->tag);
         return ESP_OK;
@@ -851,23 +844,19 @@ esp_err_t audio_element_run(audio_element_handle_t el)
     snprintf(task_name, 32, "el-%s", el->tag);
     audio_event_iface_discard(el->event);
     xEventGroupClearBits(el->state_event, TASK_CREATED_BIT);
-    xEventGroupClearBits(el->state_event, STOPPED_BIT);
     if (el->task_stack > 0) {
         if (xTaskCreatePinnedToCore(audio_element_task, task_name, el->task_stack, el, el->task_prio, NULL, el->task_core) != pdPASS) {
             ESP_LOGE(TAG, "[%s] Error create element task", el->tag);
             return ESP_FAIL;
         }
-        EventBits_t uxBits = xEventGroupWaitBits(el->state_event, TASK_CREATED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
-        if (uxBits & TASK_CREATED_BIT) {
-            ret = ESP_OK;
-        }
+        xEventGroupWaitBits(el->state_event, TASK_CREATED_BIT, false, true, portMAX_DELAY);
     } else {
         el->task_run = true;
         el->is_running = true;
         audio_element_force_set_state(el, AEL_STATE_RUNNING);
     }
     ESP_LOGI(TAG, "[%s] Element task created", el->tag);
-    return ret;
+    return ESP_OK;
 }
 
 esp_err_t audio_element_terminate(audio_element_handle_t el)
@@ -886,13 +875,9 @@ esp_err_t audio_element_terminate(audio_element_handle_t el)
         ESP_LOGE(TAG, "[%s] Element destroy CMD failed", el->tag);
         return ESP_FAIL;
     }
-    EventBits_t uxBits = xEventGroupWaitBits(el->state_event, TASK_DESTROYED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
-    esp_err_t ret = ESP_FAIL;
-    if (uxBits & TASK_DESTROYED_BIT) {
-        ret = ESP_OK;
-    }
+    xEventGroupWaitBits(el->state_event, TASK_DESTROYED_BIT, false, true, portMAX_DELAY);
     ESP_LOGD(TAG, "[%s] Element task destroyed", el->tag);
-    return ret;
+    return ESP_OK;
 }
 
 esp_err_t audio_element_pause(audio_element_handle_t el)
@@ -914,12 +899,8 @@ esp_err_t audio_element_pause(audio_element_handle_t el)
         ESP_LOGE(TAG, "[%s] Element send cmd error when AUDIO_ELEMENT_PAUSE", el->tag);
         return ESP_FAIL;
     }
-    EventBits_t uxBits = xEventGroupWaitBits(el->state_event, PAUSED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
-    esp_err_t ret = ESP_FAIL;
-    if (uxBits & PAUSED_BIT) {
-        ret = ESP_OK;
-    }
-    return ret;
+    xEventGroupWaitBits(el->state_event, PAUSED_BIT, false, true, portMAX_DELAY);
+    return ESP_OK;
 }
 
 esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_threshold, TickType_t timeout)
