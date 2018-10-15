@@ -46,7 +46,7 @@ static FILE *get_file(int next_file)
     static FILE *file;
     static int file_index = 0;
 
-    if (next_file != CURRENT){
+    if (next_file != CURRENT) {
         // advance to the next file
         if (++file_index > MP3_FILE_COUNT - 1) {
             file_index = 0;
@@ -168,17 +168,17 @@ void app_main(void)
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret); 
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
             continue;
         }
-        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT){
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT) {
             // Set music info for a new song to be played
             if (msg.source == (void *) mp3_decoder
                 && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
                 audio_element_info_t music_info = {0};
                 audio_element_getinfo(mp3_decoder, &music_info);
                 ESP_LOGI(TAG, "[ * ] Received music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
-                    music_info.sample_rates, music_info.bits, music_info.channels);
+                         music_info.sample_rates, music_info.bits, music_info.channels);
                 audio_element_setinfo(i2s_stream_writer, &music_info);
                 i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
                 continue;
@@ -201,26 +201,26 @@ void app_main(void)
            to start, pause, resume, finish current song and adjust volume
         */
         if (msg.source_type == PERIPH_ID_TOUCH
-                && msg.cmd == PERIPH_TOUCH_TAP
-                && msg.source == (void *)touch_periph) {
+            && msg.cmd == PERIPH_TOUCH_TAP
+            && msg.source == (void *)touch_periph) {
             if ((int) msg.data == TOUCH_PLAY) {
                 ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
                 audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
                 switch (el_state) {
-                   case AEL_STATE_INIT :
-                       ESP_LOGI(TAG, "[ * ] Starting audio pipeline");
-                       audio_pipeline_run(pipeline);
-                       break;
-                   case AEL_STATE_RUNNING :
-                       ESP_LOGI(TAG, "[ * ] Pausing audio pipeline");
-                       audio_pipeline_pause(pipeline);
-                       break;
-                   case AEL_STATE_PAUSED :
-                       ESP_LOGI(TAG, "[ * ] Resuming audio pipeline");
-                       audio_pipeline_resume(pipeline);
-                       break;
-                   default :
-                       ESP_LOGI(TAG, "[ * ] Not supported state %d", el_state);
+                    case AEL_STATE_INIT :
+                        ESP_LOGI(TAG, "[ * ] Starting audio pipeline");
+                        audio_pipeline_run(pipeline);
+                        break;
+                    case AEL_STATE_RUNNING :
+                        ESP_LOGI(TAG, "[ * ] Pausing audio pipeline");
+                        audio_pipeline_pause(pipeline);
+                        break;
+                    case AEL_STATE_PAUSED :
+                        ESP_LOGI(TAG, "[ * ] Resuming audio pipeline");
+                        audio_pipeline_resume(pipeline);
+                        break;
+                    default :
+                        ESP_LOGI(TAG, "[ * ] Not supported state %d", el_state);
                 }
             } else if ((int) msg.data == TOUCH_SET) {
                 ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
@@ -250,6 +250,9 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
+
+    audio_pipeline_unregister(pipeline, mp3_decoder);
+    audio_pipeline_unregister(pipeline, i2s_stream_writer);
 
     /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);

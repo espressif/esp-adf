@@ -118,7 +118,7 @@ void app_main(void)
             audio_element_getinfo(wav_decoder, &music_info);
 
             ESP_LOGI(TAG, "[ * ] Receive music info from wav decoder, sample_rates=%d, bits=%d, ch=%d",
-                music_info.sample_rates, music_info.bits, music_info.channels);
+                     music_info.sample_rates, music_info.bits, music_info.channels);
 
             audio_element_setinfo(i2s_stream_writer, &music_info);
             i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
@@ -126,7 +126,7 @@ void app_main(void)
         }
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
-                && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
+            && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
             ESP_LOGW(TAG, "[ * ] Stop event received");
             break;
         }
@@ -134,6 +134,10 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
+
+    audio_pipeline_unregister(pipeline, fatfs_stream_reader);
+    audio_pipeline_unregister(pipeline, i2s_stream_writer);
+    audio_pipeline_unregister(pipeline, wav_decoder);
 
     /* Terminal the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);
