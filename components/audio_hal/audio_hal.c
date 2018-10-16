@@ -31,6 +31,7 @@
 #include "audio_mutex.h"
 #include "es8374.h"
 #include "es8388.h"
+#include "zl38063.h"
 
 static const char *TAG = "AUDIO_HAL";
 
@@ -67,6 +68,14 @@ static struct audio_hal audio_hal_codecs_default[] = {
         .audio_codec_config_iface = es8374_config_i2s,
         .audio_codec_set_volume = es8374_set_voice_volume,
         .audio_codec_get_volume = es8374_get_voice_volume,
+    },
+    {
+        .audio_codec_initialize = zl38063_init,
+        .audio_codec_deinitialize = zl38063_deinit,
+        .audio_codec_ctrl = zl38063_ctrl_state,
+        .audio_codec_config_iface = zl38063_config_i2s,
+        .audio_codec_set_volume = zl38063_set_voice_volume,
+        .audio_codec_get_volume = zl38063_get_voice_volume,
     }
 };
 
@@ -74,6 +83,7 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, int 
 {
     esp_err_t ret  = 0;
     if (NULL != audio_hal_codecs_default[index].handle) {
+        ESP_LOGW(TAG,"The hal has been already initialized!");
         return audio_hal_codecs_default[index].handle;
     }
     audio_hal_handle_t audio_hal = (audio_hal_handle_t) audio_calloc(1, sizeof(struct audio_hal));
@@ -83,9 +93,8 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, int 
 
     AUDIO_MEM_CHECK(TAG, audio_hal->audio_hal_lock, {
         free(audio_hal);
-        return NULL;
-    });
-
+        return NULL; 
+    }); 
     mutex_lock(audio_hal->audio_hal_lock);
     ret  = audio_hal->audio_codec_initialize(audio_hal_conf);
     ret |= audio_hal->audio_codec_config_iface(AUDIO_HAL_CODEC_MODE_BOTH, &audio_hal_conf->i2s_iface);
@@ -93,7 +102,6 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, int 
     audio_hal->handle = audio_hal;
     audio_hal_codecs_default[index].handle = audio_hal;
     mutex_unlock(audio_hal->audio_hal_lock);
-    es8388_pa_power(true);
     return audio_hal;
 }
 

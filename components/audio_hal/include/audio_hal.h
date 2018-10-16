@@ -125,8 +125,8 @@ typedef enum {
  */
 typedef enum {
     AUDIO_HAL_BIT_LENGTH_16BITS = 1,   /*!< set 16 bits per sample */
-    AUDIO_HAL_BIT_LENGTH_24BITS,   /*!< set 24 bits per sample */
-    AUDIO_HAL_BIT_LENGTH_32BITS,  /*!< set 32 bits per sample */
+    AUDIO_HAL_BIT_LENGTH_24BITS,       /*!< set 24 bits per sample */
+    AUDIO_HAL_BIT_LENGTH_32BITS,       /*!< set 32 bits per sample */
 } audio_hal_iface_bits_t;
 
 /**
@@ -153,9 +153,9 @@ typedef struct {
  * @brief Configure media hal for initialization of audio codec chip
  */
 typedef struct {
-    audio_hal_adc_input_t adc_input;    /*!< set adc channel */
-    audio_hal_dac_output_t dac_output;  /*!< set dac channel */
-    audio_hal_codec_mode_t codec_mode;  /*!< select codec mode: adc, dac or both */
+    audio_hal_adc_input_t adc_input;       /*!< set adc channel */
+    audio_hal_dac_output_t dac_output;     /*!< set dac channel */
+    audio_hal_codec_mode_t codec_mode;     /*!< select codec mode: adc, dac or both */
     audio_hal_codec_i2s_iface_t i2s_iface; /*!< set I2S interface configuration */
 } audio_hal_codec_config_t;
 

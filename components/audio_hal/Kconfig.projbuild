@@ -10,6 +10,11 @@ config ESP_LYRAT_V4_3_BOARD
     bool "ESP32-Lyrat V4.3"
 config ESP_LYRAT_V4_2_BOARD
     bool "ESP32-Lyrat V4.2"
+config ESP_LYRATD_MSC_V2_1_BOARD
+    bool "ESP32-LyraTD-MSC V2.1"
+config ESP_LYRATD_MSC_V2_2_BOARD
+    bool "ESP32-LyraTD-MSC V2.2"
 endchoice
 
 endmenu
+

@@ -33,7 +33,7 @@ extern "C" {
 #define SD_CARD_INTR_GPIO           GPIO_NUM_34
 #define SD_CARD_INTR_SEL            GPIO_SEL_34
 #define SD_CARD_OPEN_FILE_NUM_MAX   5
-
+/* headphone detect */
 #define GPIO_AUXIN_DETECT           12
 
 #define GPIO_HEADPHONE_DETECT       19

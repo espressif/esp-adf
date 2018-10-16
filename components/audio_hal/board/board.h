@@ -25,7 +25,7 @@
 #ifndef _AUDIO_BOARD_H_
 #define _AUDIO_BOARD_H_
 
-#include "sdkconfig.h"
+#include "sdkconfig.h" 
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,6 +39,13 @@ extern "C" {
 #include "lyrat_v4_2_board.h"
 #endif
 
+#ifdef CONFIG_ESP_LYRATD_MSC_V2_1_BOARD
+#include "lyratd_msc_v2_1_board.h"
+#endif
+
+#ifdef CONFIG_ESP_LYRATD_MSC_V2_2_BOARD
+#include "lyratd_msc_v2_2_board.h"
+#endif
 
 #ifdef __cplusplus
 }
