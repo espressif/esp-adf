@@ -26,7 +26,7 @@ You need the ESP32 LyraT board and headphone connected, make sure you clone the 
 
 ```
 git clone --recursive https://github.com/espressif/esp-adf.git 
-cd esp-adf/examples/get-started 
+cd esp-adf/examples/get-started/play_mp3
 make menuconfig
 make flash monitor
 ```
@@ -39,15 +39,15 @@ Espressif Systems has released a number of support boards for ESP-ADF to develop
 
 #### ESP32-Lyrat
 
-[ESP32 LyraT V4 Getting Started Guide](./docs/en/get-started/get-started-esp32-lyrat-v4.rst)
+[ESP32 LyraT Getting Started Guide](./docs/en/get-started/get-started-esp32-lyrat.rst)
 
-![Block diagram](./docs/_static/esp32-lyrat-block-diagram.jpg)
+![Block diagram](./docs/_static/esp32-lyrat-v4.3-block-diagram.jpg)
 
-![ESP32-Lyrat-V4.2](./docs/_static/esp32-lyrat-v4.2-layout.jpg)
+![ESP32-Lyrat-V4.2](./docs/_static/esp32-lyrat-v4.3-layout.jpg)
 
 #### ESP-IDF
 
-ESP-**A**DF is based on the application layer of ESP-**I**DF ([Espressif IoT Development Framework](https://github.com/espressif/esp-idf)). So you need to first install the ESP-IDF and then use the ESP-ADF. Please take a look at [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html)
+ESP-**A**DF is based on the application layer of ESP-**I**DF ([Espressif IoT Development Framework](https://github.com/espressif/esp-idf)). The `git clone` command, described under [Quick Start](#quick-start) above, automatically downloads specific version of the ESP-IDF alongside with ESP-ADF. Please take a look at [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html)
 
 #### Examples
 
