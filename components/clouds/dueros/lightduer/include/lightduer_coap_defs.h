@@ -22,12 +22,13 @@
 
 #include "lightduer_types.h"
 #include "lightduer_network_defs.h"
+#include "lightduer_net_transport.h"
 
 /*
  * The message codes.
  */
 typedef enum {
-
+    DUER_MSG_EMPTY_MESSAGE                       = 0,
     // Request message code
     DUER_MSG_REQ_GET                             = 1,
     DUER_MSG_REQ_POST                            = 2,
@@ -132,6 +133,11 @@ typedef struct _duer_message_s {
 typedef duer_status_t (*duer_notify_f)(duer_context ctx,
                                        duer_msg_t* msg,
                                        duer_addr_t* addr);
+
+/*
+ * The transmit coap data callback.
+ */
+typedef duer_status_t (*duer_transmit_f)(duer_trans_handler hdlr, const void *data, duer_size_t size, duer_addr_t *addr);
 
 /*
  * The resource for user

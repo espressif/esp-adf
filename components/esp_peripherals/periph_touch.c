@@ -41,7 +41,7 @@
 #include "esp_peripherals.h"
 #include "board.h"
 
-static const char* TAG = "PERIPH_TOUCH";
+static const char *TAG = "PERIPH_TOUCH";
 
 #define VALIDATE_TOUCH(periph, ret) if (!(periph && esp_periph_get_id(periph) == PERIPH_ID_TOUCH)) { \
     ESP_LOGE(TAG, "Invalid TOUCH periph, at line %d", __LINE__);\
@@ -61,7 +61,7 @@ static void touch_send_event(esp_periph_handle_t self, int event_id, int mask)
     int touch_num = 0;
     while (mask) {
         if (mask & 0x01) {
-            esp_periph_send_event(self, event_id, (void*)touch_num, 0);
+            esp_periph_send_event(self, event_id, (void *)touch_num, 0);
         }
         mask >>= 1;
         touch_num ++;
@@ -104,7 +104,8 @@ static esp_err_t _touch_init(esp_periph_handle_t self)
     };
     periph_touch->touch = esp_touch_init(&touch_config);
 
-    esp_periph_start_timer(self, 20/portTICK_RATE_MS, touch_timer_handler);
+    esp_periph_start_timer(self, 150 / portTICK_PERIOD_MS, touch_timer_handler);
+    ESP_LOGW(TAG, "_touch_init");
     return ESP_OK;
 }
 
@@ -116,7 +117,7 @@ static esp_err_t _touch_destroy(esp_periph_handle_t self)
     return ESP_OK;
 }
 
-esp_periph_handle_t periph_touch_init(periph_touch_cfg_t* config)
+esp_periph_handle_t periph_touch_init(periph_touch_cfg_t *config)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_TOUCH, "periph_touch");
     AUDIO_MEM_CHECK(TAG, periph, return NULL);

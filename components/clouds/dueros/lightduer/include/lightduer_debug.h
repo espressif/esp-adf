@@ -22,6 +22,14 @@
 
 #include "lightduer_types.h"
 
+#ifndef DUER_DEBUG_BUF_SIZE
+#ifdef DUER_RELEASE_VERSION
+#define DUER_DEBUG_BUF_SIZE (64)
+#else
+#define DUER_DEBUG_BUF_SIZE  (512)
+#endif
+#endif // DUER_DEBUG_BUF_SIZE
+
 #ifdef __cplusplus
 extern "C" {
 #endif

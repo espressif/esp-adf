@@ -22,7 +22,6 @@
 #ifndef BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_DCS_ALERT_H
 #define BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_DCS_ALERT_H
 
-#include <stdbool.h>
 #include "baidu_json.h"
 #include "lightduer_types.h"
 
@@ -67,7 +66,6 @@ void duer_dcs_alert_init(void);
  */
 int duer_dcs_report_alert_event(const char *token, duer_dcs_alert_event_type type);
 
-#ifdef ENABLE_ALERT_TONE
 /**
  * DESC:
  * Developer needs to implement this interface to set alert.
@@ -80,18 +78,6 @@ int duer_dcs_report_alert_event(const char *token, duer_dcs_alert_event_type typ
  *          DUER_ERR_FAILED if other error happened.
  */
 duer_status_t duer_dcs_tone_alert_set_handler(const baidu_json *directive);
-#else
-/**
- * DESC:
- * Developer needs to implement this interface to set alert.
- *
- * PARAM:
- * @param[in] alert_info: the info about the alert, such as token, schedule time.
- *
- * @RETURN: none.
- */
-void duer_dcs_alert_set_handler(const duer_dcs_alert_info_type *alert_info);
-#endif
 
 /**
  * DESC:
@@ -118,7 +104,7 @@ void duer_dcs_alert_delete_handler(const char *token);
  */
 int duer_insert_alert_list(baidu_json *alert_list,
                             duer_dcs_alert_info_type *alert_info,
-                            bool is_active);
+                            duer_bool is_active);
 
 /**
  * DESC:

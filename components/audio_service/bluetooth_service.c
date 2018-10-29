@@ -218,7 +218,7 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
 
     /* initialize AVRCP controller */
     esp_a2d_register_callback(bt_a2d_cb);
-    esp_a2d_register_data_callback(bt_a2d_data_cb);
+    esp_a2d_sink_register_data_callback(bt_a2d_data_cb);
     // TODO: Use this function for IDF version higher 3.0
     // esp_a2d_sink_register_data_callback(bt_a2d_data_cb);
     /* set discoverable and connectable mode, wait to be connected */

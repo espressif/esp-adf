@@ -43,19 +43,29 @@ typedef enum _duer_ota_state {
 } duer_ota_state;
 
 typedef enum _duer_ota_event {
-    OTA_EVENT_BEGIN,
-    OTA_EVENT_CONNECT_FAIL,
-    OTA_EVENT_CONNECTION_LOST,
-    OTA_EVENT_TIMEOUT,
-    OTA_EVENT_DOWNLOADING,
-    OTA_EVENT_DOWNLOAD_COMPLETE,
-    OTA_EVENT_DOWNLOAD_FAIL,
-    OTA_EVENT_INSTALLING,
-    OTA_EVENT_IMAGE_INVALID,
-    OTA_EVENT_WRITE_ERROR,
-    OTA_EVENT_INSTALLED,
-    OTA_EVENT_DELETED,
-    OTA_EVENT_REJECT,
+    OTA_EVENT_BEGIN                       = 0,
+    OTA_EVENT_CONNECT_FAIL                = 1,
+    OTA_EVENT_CONNECTION_LOST             = 2,
+    OTA_EVENT_TIMEOUT                     = 3,
+    OTA_EVENT_DOWNLOADING                 = 4,
+    OTA_EVENT_DOWNLOAD_COMPLETE           = 5,
+    OTA_EVENT_DOWNLOAD_FAIL               = 6,
+    OTA_EVENT_INSTALLING                  = 7,
+    OTA_EVENT_IMAGE_INVALID               = 8,
+    OTA_EVENT_WRITE_ERROR                 = 9,
+    OTA_EVENT_INSTALLED                   = 10,
+    OTA_EVENT_DELETED                     = 11,
+    OTA_EVENT_REJECT                      = 12,
+    OTA_EVENT_UNPACK_FAIL                 = 30,
+    OTA_EVENT_CHECKSUM_FAIL               = 31,
+    OTA_EVENT_ERASE_FLASH_FAIL            = 32,
+    OTA_EVENT_BOOTLOADER_WRITE_ERROR      = 33,
+    OTA_EVENT_BOOTLOADER_CHECKSUM_FAIL    = 34,
+    OTA_EVENT_BOOTLOADER_IMAGE_INVALID    = 35,
+    OTA_EVENT_BOOTLOADER_VERSION_INVALID  = 36,
+    OTA_EVENT_BOOTLOADER_UNPACK_FAIL      = 37,
+    OTA_EVENT_BOOTLOADER_ERASE_FLASH_FAIL = 38,
+    OTA_EVENT_MAX,
 } duer_ota_event;
 
 typedef struct _duer_os_info_s {
@@ -130,7 +140,11 @@ extern int duer_ota_notifier_state(duer_ota_updater_t *updater, duer_ota_state s
  * @return int: Success: DUER_OK
  *              Failed:  Other
  */
-extern int duer_ota_notifier_event(duer_ota_updater_t *updater, duer_ota_event event, double progress);
+extern int duer_ota_notifier_event(
+        duer_ota_updater_t *updater,
+        duer_ota_event event,
+        double progress,
+        const char *desc);
 
 #ifdef __cplusplus
 }

@@ -60,10 +60,9 @@
 #include "raw_stream.h"
 #include "filter_resample.h"
 
-#define DUEROS_TASK_PRIORITY        8
+#define DUEROS_TASK_PRIORITY        5
 #define DUEROS_TASK_SIZE            6*1024
 #define RECORD_SAMPLE_RATE          (16000)
-#define ONE_FRAM_SIZE               3200
 
 #define FRACTION_BITS               (8)
 #define CLAMPS_MAX_SHORT            (32767)
@@ -125,30 +124,28 @@ static void duer_que_send(void *que, duer_task_cmd_t type, void *data, int index
     }
 }
 
-void rec_engine_cb(rec_event_type_t type)
+void rec_engine_cb(rec_event_type_t type, void *user_data)
 {
     if (REC_EVENT_WAKEUP_START == type) {
         ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_WAKEUP_START");
-        // if (DUER_AUDIO_TYPE_SPEECH == duer_dcs_get_player_type()) { // speak
-        //     duer_dcs_set_player_type(DUER_AUDIO_TYPE_UNKOWN);
-        // }
         if (duer_state == DUER_STATE_START) {
             return;
         }
-        duer_que_send(duer_que, DUER_CMD_START, NULL, 0, 0, 0);
+        led_indicator_set(0, led_work_mode_turn_on);
     } else if (REC_EVENT_VAD_START == type) {
-        ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_VAD_START")
+        ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_VAD_START");
+        duer_que_send(duer_que, DUER_CMD_START, NULL, 0, 0, 0);
     } else if (REC_EVENT_VAD_STOP == type) {
         if (duer_state == DUER_STATE_START) {
             duer_que_send(duer_que, DUER_CMD_STOP, NULL, 0, 0, 0);
-            rec_engine_detect_suspend(REC_VOICE_SUSPEND_ON);
+            led_indicator_set(0, led_work_mode_turn_off);
         }
-        ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_VAD_STOP");
+        ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_VAD_STOP, state:%d", duer_state);
     } else if (REC_EVENT_WAKEUP_END == type) {
         if (duer_state == DUER_STATE_START) {
             duer_que_send(duer_que, DUER_CMD_STOP, NULL, 0, 0, 0);
-            rec_engine_detect_suspend(REC_VOICE_SUSPEND_ON);
         }
+        led_indicator_set(0, led_work_mode_turn_off);
         ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_WAKEUP_END");
     } else {
 
@@ -240,7 +237,7 @@ static esp_err_t recorder_pipeline_open(void **handle)
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
-    raw_cfg .type = AUDIO_STREAM_READER;
+    raw_cfg.type = AUDIO_STREAM_READER;
     audio_element_handle_t raw_read = raw_stream_init(&raw_cfg);
 
     audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
@@ -271,7 +268,7 @@ static void dueros_task(void *pvParameters)
     duer_set_event_callback(duer_event_hook);
     duer_init_device_info();
 
-    uint8_t *voiceData = audio_calloc(1, ONE_FRAM_SIZE);
+    uint8_t *voiceData = audio_calloc(1, REC_ONE_BLOCK_SIZE);
     if (NULL == voiceData) {
         ESP_LOGE(TAG, "Func:%s, Line:%d, Malloc failed", __func__, __LINE__);
         return;
@@ -280,20 +277,26 @@ static void dueros_task(void *pvParameters)
     // xEventGroupWaitBits(duer_task_evts, WIFI_CONNECT_BIT, false, true, 5000 / portTICK_PERIOD_MS);
 
     rec_config_t eng = DEFAULT_REC_ENGINE_CONFIG();
+    eng.vad_off_delay_ms = 800;
+    eng.wakeup_time_ms = 10 * 1000;
     eng.evt_cb = rec_engine_cb;
     eng.open = recorder_pipeline_open;
     eng.close = recorder_pipeline_close;
     eng.fetch = recorder_pipeline_read;
+    eng.extension = NULL;
+    eng.support_encoding = false;
+    eng.user_data = NULL;
     rec_engine_create(&eng);
+
     int retry_time = 1000 / portTICK_PERIOD_MS;
     int retry_num = 1;
     retry_login_timer = xTimerCreate("tm_duer_login", retry_time,
                                      pdFALSE, NULL, retry_login_timer_cb);
     FILE *file = NULL;
 #if RECORD_DEBUG
-    file = fopen("/sdcard/rec_debug_1.wav", "w+");
+    file = fopen("/sdcard/rec_adf_1.wav", "w+");
     if (NULL == file) {
-        ESP_AUDIO_LOGW(TAG, "open rec_debug_1.wav failed,[%d]", __LINE__);
+        ESP_LOGW(TAG, "open rec_adf_1.wav failed,[%d]", __LINE__);
     }
 #endif
     int task_run = 1;
@@ -321,15 +324,19 @@ static void dueros_task(void *pvParameters)
                 duer_dcs_on_listen_started();
                 duer_state = DUER_STATE_START;
                 while (1) {
-                    int ret = rec_engine_data_read(voiceData, ONE_FRAM_SIZE, 110 / portTICK_PERIOD_MS);
+                    int ret = rec_engine_data_read(voiceData, REC_ONE_BLOCK_SIZE, 110 / portTICK_PERIOD_MS);
                     ESP_LOGD(TAG, "index = %d", ret);
-                    if (ret == 0) {
+                    if ((ret == 0) || (ret == -1)) {
                         break;
                     }
                     if (file) {
-                        fwrite(voiceData, 1, ONE_FRAM_SIZE, file);
+                        fwrite(voiceData, 1, REC_ONE_BLOCK_SIZE, file);
                     }
-                    ret  = duer_voice_send(voiceData, ONE_FRAM_SIZE);
+                    ret  = duer_voice_send(voiceData, REC_ONE_BLOCK_SIZE);
+                    if (ret < 0) {
+                        ESP_LOGE(TAG, "duer_voice_send failed ret:%d", ret);
+                        break;
+                    }
                 }
             } else if (duer_msg.type == DUER_CMD_STOP)  {
                 ESP_LOGI(TAG, "Dueros DUER_CMD_STOP");
@@ -385,7 +392,7 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
                 if ((int)event->data == GPIO_REC && event->cmd == PERIPH_BUTTON_PRESSED) {
                     ESP_LOGI(TAG, "PERIPH_NOTIFY_KEY_REC");
                     rec_engine_trigger_start();
-                } else if ((int)event->data == GPIO_REC &&
+                } else if ((int)event->data == GPIO_MODE &&
                            ((event->cmd == PERIPH_BUTTON_RELEASE) || (event->cmd == PERIPH_BUTTON_LONG_RELEASE))) {
                     ESP_LOGI(TAG, "PERIPH_NOTIFY_KEY_REC_QUIT");
                 }

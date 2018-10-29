@@ -32,7 +32,8 @@
 typedef enum _duer_downloader_Protocol {
     HTTP = 0,
     COAP = 1,
-    MAX_PROTOCOL_COUNT = 2,
+    LOCAL = 2,
+    MAX_PROTOCOL_COUNT = 3,
 } duer_downloader_protocol;
 
 typedef struct _duer_ota_downloader_s {

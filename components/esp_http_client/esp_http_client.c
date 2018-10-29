@@ -33,13 +33,17 @@
 
 static const char *TAG = "HTTP_CLIENT";
 
+/**
+ * HTTP Buffer
+ */
 typedef struct {
-    char *data;
-    int len;
-    char *raw_data;
-    int raw_len;
-    char *output_ptr;
+    char *data;         /*!< The HTTP data received from the server */
+    int len;            /*!< The HTTP data len received from the server */
+    char *raw_data;     /*!< The HTTP data after decoding */
+    int raw_len;        /*!< The HTTP data len after decoding */
+    char *output_ptr;   /*!< The destination address of the data to be copied to after decoding */
 } esp_http_buffer_t;
+
 /**
  * private HTTP Data structure
  */
@@ -269,7 +273,7 @@ esp_err_t esp_http_client_delete_header(esp_http_client_handle_t client, const c
     return http_header_delete(client->request->headers, key);
 }
 
-static esp_err_t _set_config(esp_http_client_handle_t client, esp_http_client_config_t *config)
+static esp_err_t _set_config(esp_http_client_handle_t client, const esp_http_client_config_t *config)
 {
     client->connection_info.method = config->method;
     client->connection_info.port = config->port;
@@ -407,7 +411,7 @@ static esp_err_t esp_http_client_prepare(esp_http_client_handle_t client)
     return ESP_OK;
 }
 
-esp_http_client_handle_t esp_http_client_init(esp_http_client_config_t *config)
+esp_http_client_handle_t esp_http_client_init(const esp_http_client_config_t *config)
 {
 
     esp_http_client_handle_t client;
@@ -576,7 +580,7 @@ static esp_err_t esp_http_check_response(esp_http_client_handle_t client)
                     client->connection_info.auth_type = HTTP_AUTH_TYPE_BASIC;
                 } else {
                     client->connection_info.auth_type = HTTP_AUTH_TYPE_NONE;
-                    ESP_LOGE(TAG, "Unsupport Auth Type");
+                    ESP_LOGE(TAG, "This authentication method is not supported: %s", auth_header);
                     break;
                 }
 
@@ -591,6 +595,9 @@ static esp_err_t esp_http_check_response(esp_http_client_handle_t client)
                 client->auth_data->nonce = http_utils_get_string_between(auth_header, "nonce=\"", "\"");
                 client->auth_data->opaque = http_utils_get_string_between(auth_header, "opaque=\"", "\"");
                 client->process_again = 1;
+            } else {
+                client->connection_info.auth_type = HTTP_AUTH_TYPE_NONE;
+                ESP_LOGW(TAG, "This request requires authentication, but does not provide header information for that");
             }
     }
     return ESP_OK;
@@ -998,4 +1005,15 @@ int esp_http_client_get_content_length(esp_http_client_handle_t client)
 bool esp_http_client_is_chunked_response(esp_http_client_handle_t client)
 {
     return client->response->is_chunked;
+}
+
+esp_http_client_transport_t esp_http_client_get_transport_type(esp_http_client_handle_t client)
+{
+    if (!strcmp(client->connection_info.scheme, "https") ) {
+        return HTTP_TRANSPORT_OVER_SSL;
+    } else if (!strcmp(client->connection_info.scheme, "http")) {
+        return HTTP_TRANSPORT_OVER_TCP;
+    } else {
+        return HTTP_TRANSPORT_UNKNOWN;
+    }
 }

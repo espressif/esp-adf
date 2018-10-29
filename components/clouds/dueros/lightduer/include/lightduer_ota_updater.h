@@ -24,11 +24,12 @@
 
 #include "lightduer_ota_unpack.h"
 #include "lightduer_ota_downloader.h"
+#include "mbedtls/md5.h"
 
-#define TRANSACTION_LEN   65
-#define VERSION_LEN       16
-#define URL_LEN           301
-#define SIGNATURE_LEN     129
+#define TRANSACTION_LEN   (65)
+#define VERSION_LEN       (16)
+#define SIGNATURE_LEN     (129)
+#define MD5_LEN           (16)
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,6 +60,7 @@ typedef struct _duer_ota_updater_s {
     duer_ota_downloader_t *downloader;
     duer_ota_update_command_t *update_cmd;
     size_t received_data_size;
+    mbedtls_md5_context md5_ctx;
 } duer_ota_updater_t;
 
 typedef struct _duer_ota_init_ops_s {
@@ -130,6 +132,26 @@ extern int duer_ota_set_reboot(duer_ota_reboot reboot);
  *              Disable -1
  */
 extern int duer_ota_get_reboot(void);
+
+/*
+ * get the OTA update command
+ *
+ * @param void: duer_ota_updater_t *
+ *
+ * @return Success: duer_ota_update_command_t*
+ *         Failed:  NULL
+ */
+extern duer_ota_update_command_t *duer_ota_get_update_cmd(const duer_ota_updater_t *updater);
+
+/*
+ * Create a OTA updater to update the firmware
+ *
+ * @param update_cmd: Update command
+ *
+ * @return int: Success: DUER_OK
+ *              Failed:  Other
+ */
+extern int duer_ota_update_firmware(duer_ota_update_command_t *update_cmd);
 
 #ifdef __cplusplus
 }

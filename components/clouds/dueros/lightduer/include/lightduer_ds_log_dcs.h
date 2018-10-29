@@ -30,6 +30,7 @@ extern "C" {
 
 typedef enum {
     DUER_DS_LOG_DCS_DIRECTIVE_DROPPED     =  0x201,
+    DUER_DS_LOG_DCS_OLD_DIRECTIVE_DROPPED =  0x202,
 
     DUER_DS_LOG_DCS_MEMORY_ERROR          =  0x301,
     DUER_DS_LOG_DCS_HANDLER_UNREALIZED    =  0x302,
@@ -57,12 +58,14 @@ duer_status_t duer_ds_log_dcs_report_with_dir(duer_ds_log_dcs_code_t log_code,
 /**
  * Report ds log when directive is dropped:
  *        {
- *            "current_dialog_id" : 2,       // current dialogId
- *            "directive_dialog_id" : 1,     // dialogId of this directive
- *            "directive" : "play"           // directive name
+ *            "current_dialog_id" :   "aaaaaaabbbbbbbbb",      // current dialogId
+ *            "directive_dialog_id" : "bbbbbbbbbaaaaaaa",      // dialogId of this directive
+ *            "directive" : "play"                             // directive name
  *        }
  */
-duer_status_t duer_ds_log_dcs_directive_drop(int current_id, int directive_id, const char *name);
+duer_status_t duer_ds_log_dcs_directive_drop(const char *current_id,
+                                             const char *directive_id,
+                                             const char *name);
 /**
  * Report ds log if the handler is not realized:
  *        {

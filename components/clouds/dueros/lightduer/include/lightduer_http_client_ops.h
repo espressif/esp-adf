@@ -24,6 +24,6 @@
 
 #include "lightduer_http_client.h"
 
-extern http_client_c *duer_create_http_client(void);
+extern duer_http_client_t *duer_create_http_client(void);
 
 #endif // BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_HTTP_CLIENT_OPS_H

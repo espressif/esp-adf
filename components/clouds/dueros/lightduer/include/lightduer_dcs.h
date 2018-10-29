@@ -21,7 +21,6 @@
 #ifndef BAIDU_DUER_LIGHTDUER_DCS_H
 #define BAIDU_DUER_LIGHTDUER_DCS_H
 
-#include <stdbool.h>
 #include "baidu_json.h"
 #include "lightduer_types.h"
 
@@ -46,12 +45,30 @@ typedef enum {
     DCS_MEDIA_ERROR_INTERNAL_DEVICE_ERROR, // device internal error
 } duer_dcs_audio_error_t;
 
+typedef struct {
+    const char *url;
+    int offset;
+    const char *audio_item_id;
+} duer_dcs_audio_info_t;
+
+enum duer_dcs_device_capability {
+    DCS_TTS_HTTPS_PROTOCAL_SUPPORTED = 0x01, // the device support https protocal to playing tts
+    DCS_WECHAT_SUPPORTED             = 0x02, // the device support wechat
+};
+
 /**
  * Initialize the dcs framework.
  *
  * @return none.
  */
 void duer_dcs_framework_init(void);
+
+/**
+ * Uninitialize the DCS module.
+ *
+ * @return none.
+ */
+void duer_dcs_uninitialize(void);
 
 /**
  * DESC:
@@ -186,7 +203,7 @@ int duer_dcs_on_mute(void);
  *
  * @RETURN: none.
  */
-void duer_dcs_get_speaker_state(int *volume, bool *is_mute);
+void duer_dcs_get_speaker_state(int *volume, duer_bool *is_mute);
 
 /**
  * DESC:
@@ -219,7 +236,7 @@ void duer_dcs_volume_adjust_handler(int volume);
  *
  * @RETURN: none.
  */
-void duer_dcs_mute_handler(bool is_mute);
+void duer_dcs_mute_handler(duer_bool is_mute);
 
 /**
  * DESC:
@@ -282,22 +299,21 @@ int duer_dcs_audio_report_metadata(baidu_json *metadata);
  * DESC:
  * Notify DCS when audio is stuttered.
  *
- * PARAM[in] is_stuttuered: true when stutter started(download speed lower than play speed),
- *                          false when stutter finished(the audio resume play).
+ * PARAM[in] is_stuttuered: DUER_TRUE when stutter started(download speed lower than play speed),
+ *                          DUER_FALSE when stutter finished(the audio resume play).
  */
-int duer_dcs_audio_on_stuttered(bool is_stuttered);
+int duer_dcs_audio_on_stuttered(duer_bool is_stuttered);
 
 /**
  * DESC:
  * Developer needs to implement this interface to play audio.
  *
  * PARAM:
- * @param[in] url: the url of the audio need to play
- * @param[in] offset: start playing the audio from this offset(unit: ms)
+ * @param[in] audio_info: the info of the audio need to play
  *
  * @RETURN: none.
  */
-void duer_dcs_audio_play_handler(const char *url, const int offset);
+void duer_dcs_audio_play_handler(const duer_dcs_audio_info_t *audio_info);
 
 /**
  * DESC:
@@ -311,15 +327,24 @@ void duer_dcs_audio_stop_handler(void);
 
 /**
  * DESC:
- * Developer needs to implement this interface to resume audio play.
+ * Notify DCS when an audio is stopped not by DCS API.
  *
- * PARAM:
- * @param[in] url: the url of the audio need to resume
- * @param[in] offset: the last play position of the audio, unit: ms
+ * PARAM: none
  *
  * @RETURN: none.
  */
-void duer_dcs_audio_resume_handler(const char* url, const int offset);
+void duer_dcs_audio_on_stopped(void);
+
+/**
+ * DESC:
+ * Developer needs to implement this interface to resume audio play.
+ *
+ * PARAM:
+ * @param[in] audio_info: the info of the audio need to resumed
+ *
+ * @RETURN: none.
+ */
+void duer_dcs_audio_resume_handler(const duer_dcs_audio_info_t *audio_info);
 
 /**
  * DESC:
@@ -408,23 +433,23 @@ duer_status_t duer_dcs_render_card_handler(baidu_json *payload);
  * DESC:
  * Developer needs to implement this interface to open/close bluetooth.
  *
- * PARAM[in] is_switch: open bluetooth if is_switch is true, otherwise close bluetooth.
+ * PARAM[in] is_switch: open bluetooth if is_switch is DUER_TRUE, otherwise close bluetooth.
  * PARAM[in] target: Reserved parameter, currently its value is "default".
  *
  * @RETURN: None
  */
-void duer_dcs_bluetooth_set_handler(bool is_switch, const char *target);
+void duer_dcs_bluetooth_set_handler(duer_bool is_switch, const char *target);
 
 /**
  * DESC:
  * Developer needs to implement this interface to connect/disconnect bluetooth to device.
  *
- * PARAM[in] is_connect: connect bluetooth if is_connect is true, otherwise disconnect bluetooth.
+ * PARAM[in] is_connect: connect bluetooth if is_connect is DUER_TRUE, otherwise disconnect bluetooth.
  * PARAM[in] target: Reserved parameter, currently its value is "default".
  *
  * @RETURN: None
  */
-void duer_dcs_bluetooth_connect_handler(bool is_connect, const char *target);
+void duer_dcs_bluetooth_connect_handler(duer_bool is_connect, const char *target);
 
 /**
  * DESC:
@@ -435,6 +460,16 @@ void duer_dcs_bluetooth_connect_handler(bool is_connect, const char *target);
  * @RETURN: none
  */
 void duer_dcs_device_control_init(void);
+
+/**
+ * DESC:
+ * Used to declare the device capability, such as: whether https or wechat are supported.
+ * It is unnecessary if the device don't have the capability defined in duer_dcs_device_capability.
+ * @PARAM[in] capability: the device capability, it's the or value of the member in
+ *                        duer_dcs_device_capability.
+ * @RETURN:   DUER_OK if success, negative if failed.
+ */
+duer_status_t duer_dcs_capability_declare(duer_u32_t capability);
 
 #ifdef __cplusplus
 }

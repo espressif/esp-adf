@@ -54,6 +54,15 @@ DUER_INT duer_coap_handler duer_coap_acquire(duer_coap_result_f f_result,
                                              const void *key_info);
 
 /*
+ * Set tx function callback
+ *
+ * @Param hdlr, in, the CoAP context
+ * @Param tx, in, the tx function callback
+ * @Return duer_status_t, the connect status
+ */
+DUER_INT duer_status_t duer_coap_set_tx_callback(duer_coap_handler hdlr, duer_transmit_f tx);
+
+/*
  * Connect to remote CoAP server
  *
  * @Param hdlr, in, the CoAP context
@@ -132,6 +141,16 @@ DUER_INT duer_status_t duer_coap_update_registration(duer_coap_handler coap,
  * @Return duer_status_t, the result
  */
 DUER_INT duer_status_t duer_coap_send(duer_coap_handler coap, const duer_msg_t* msg);
+
+/*
+ * Send the data directly
+ *
+ * @Param hdlr, in, the CoAP context
+ * @Param data, in, the user data
+ * @Param size, in, the data size
+ * @Return duer_status_t, the result
+ */
+DUER_INT duer_status_t duer_coap_send_data(duer_coap_handler hdlr, const void *data, duer_size_t size);
 
 /*
  * Receive the CoAP message

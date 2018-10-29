@@ -56,10 +56,16 @@ void led_indicator_set(int num, led_work_mode_t mode)
             periph_led_blink(led_handle, GPIO_LED_GREEN, 200, 500, false, -1);
             break;
         case led_work_mode_connectok:
-            periph_led_blink(led_handle, GPIO_LED_GREEN, 1000, 0, false, -1);
+            periph_led_blink(led_handle, GPIO_LED_GREEN, 1000, 200, true, 10);
             break;
         case led_work_mode_disconnect:
             periph_led_blink(led_handle, GPIO_LED_GREEN, 500, 500, false, -1);
+            break;
+        case led_work_mode_turn_off:
+            periph_led_blink(led_handle, GPIO_LED_GREEN, 0, 1000, false, -1);
+            break;
+         case led_work_mode_turn_on:
+            periph_led_blink(led_handle, GPIO_LED_GREEN, 1000, 0, false, -1);
             break;
         default:
             break;

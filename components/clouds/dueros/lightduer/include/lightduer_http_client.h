@@ -19,88 +19,89 @@
  * Desc: HTTP Client Head File
  */
 
-#ifndef BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_HTTP_CLIENT_H
-#define BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_HTTP_CLIENT_H
+#ifndef BAIDU_DUER_LIGHTDUER_HTTP_CLIENT_H
+#define BAIDU_DUER_LIGHTDUER_HTTP_CLIENT_H
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "lightduer_timers.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#define DUER_HTTP_CONTENT_TYPE_LEN_MAX  (32)  // the max length of "content type" section
+
 //http client results
-typedef enum http_result {
-    HTTP_OK = 0,        // Success
-    HTTP_PROCESSING,    // Processing
-    HTTP_PARSE,         // url Parse error
-    HTTP_DNS,           // Could not resolve name
-    HTTP_PRTCL,         // Protocol error
-    HTTP_NOTFOUND,      // HTTP 404 Error
-    HTTP_REFUSED,       // HTTP 403 Error
-    HTTP_ERROR,         // HTTP xxx error
-    HTTP_TIMEOUT,       // Connection timeout
-    HTTP_CONN,          // Connection error
-    HTTP_CLOSED,        // Connection was closed by remote host
-    HTTP_NOT_SUPPORT,   // not supported feature
-    HTTP_REDIRECTTION,  //take a redirection when http header contains 'Location'
-    HTTP_FAILED = -1,
-} e_http_result;
+typedef enum {
+    DUER_HTTP_ERR_FAILED = -1,
+    DUER_HTTP_OK,                // Success
+    DUER_HTTP_PROCESSING,        // Processing
+    DUER_HTTP_ERR_PARSE,         // url Parse error
+    DUER_HTTP_ERR_DNS,           // Could not resolve name
+    DUER_HTTP_ERR_PRTCL,         // Protocol error
+    DUER_HTTP_ERR_NOT_FOUND,     // HTTP 404 Error
+    DUER_HTTP_ERR_REFUSED,       // HTTP 403 Error
+    DUER_HTTP_ERR_TIMEOUT,       // Connection timeout
+    DUER_HTTP_ERR_CONNECT,       // Connection error
+    DUER_HTTP_CLOSED,            // Connection was closed by remote host
+    DUER_HTTP_ERR_NOT_SUPPORT,   // not supported feature
+    DUER_HTTP_REDIRECTTION,      //take a redirection when http header contains 'Location'
+} duer_http_result_t;
 
-typedef enum http_meth {
-    HTTP_GET,
-    HTTP_POST,
-    HTTP_PUT,
-    HTTP_DELETE,
-    HTTP_HEAD
-} e_http_meth;
+typedef enum {
+    DUER_HTTP_GET,     // Just 'GET' is supported, other methods are reserved
+    DUER_HTTP_POST,    // reserved
+    DUER_HTTP_PUT,     // reserved
+    DUER_HTTP_DELETE,  // reserved
+    DUER_HTTP_HEAD     // reserved
+} duer_http_method_t;
 
-typedef struct http_client_socket_ops {
+typedef struct {
     int  n_handle;
-    int  (*init)(void* socket_args);
+    int  (*init)(void *socket_args);
     int  (*open)(int socket_handle);
-    int  (*connect)(int socket_handle, const char* host, const int port);
+    int  (*connect)(int socket_handle, const char *host, const int port);
     void (*set_blocking)(int socket_handle, int blocking);
     void (*set_timeout)(int socket_handle, int timeout);
-    int  (*recv)(int socket_handle, void* data, unsigned size);
-    int  (*send)(int socket_handle, const void* data, unsigned size);
+    int  (*recv)(int socket_handle, void *data, unsigned size);
+    int  (*send)(int socket_handle, const void *data, unsigned size);
     int  (*close)(int socket_handle);
     void (*destroy)(int socket_handle);
-} socket_ops;
+} duer_http_socket_ops_t;
 
 //to tell data output callback user that if the current data block is first block or last block
-typedef enum data_pos {
-    DATA_FIRST  = 0x1,
-    DATA_MID    = 0x2,
-    DATA_LAST   = 0x4
-} e_data_pos;
+typedef enum {
+    DUER_HTTP_DATA_FIRST  = 0x1,
+    DUER_HTTP_DATA_MID    = 0x2,
+    DUER_HTTP_DATA_LAST   = 0x4
+} duer_http_data_pos_t;
 
 /**
  *
  * DESC:
- * the callback to handler the media data download by http
+ * the callback to handler the data download by http
  *
  * PARAM:
  * @param[in] p_user_ctx: usr ctx registed by user
- * @param[in] pos:  to identify if it is data stream's start, or middle , or end of data stream
+ * @param[in] pos:   to identify if it is data stream's start, or middle , or end of data stream
  * @param[in] buf:   buffer stored media data
  * @param[in] len:   data length in 'buf'
- * @param[in] type: data type to identify media or others
+ * @param[in] type:  data type to identify media or others
  *
  * @RETURN: negative number when failed
  */
-typedef int (*data_out_handler_cb)(void* p_user_ctx, e_data_pos pos,
-                                   const char* buf, size_t len, const char* type);
+typedef int (*duer_http_data_handler)(void *p_user_ctx, duer_http_data_pos_t pos,
+                                      const char *buf, size_t len, const char *type);
 /**
  * DESC:
  * callback to check whether need to stop getting data
  *
  * PARAM: none
  *
- * @RETURN
- * 1: to stop; 0: no stop
+ * @RETURN 1: to stop; 0: no stop
  */
-typedef int (*check_stop_notify_cb_t)();
+typedef int (*duer_http_stop_notify_cb_t)();
 
 /**
  * DESC:
@@ -112,97 +113,185 @@ typedef int (*check_stop_notify_cb_t)();
  *
  * RETURN: none
  */
-typedef void (*get_url_cb_t)(const char *url);
+typedef void (*duer_http_get_url_cb_t)(const char *url);
 
-#define HC_CONTENT_TYPE_LEN_MAX 32 // the max length of "content type" section
-
-typedef struct http_client_c {
-    const char**           pps_custom_headers;
-    size_t                 sz_headers_count;
-    int                    n_http_response_code; // http response code
-    socket_ops             ops;                  // socket operations
-    data_out_handler_cb    data_hdlr_cb;         // callback for output data
-    void*                  p_data_hdlr_ctx;      // users args for data_hdlr_cb
-    int                    n_http_content_len;   // http content length
-    char                   p_http_content_type[HC_CONTENT_TYPE_LEN_MAX]; // http content type
-    char*                  p_location;           // http header "Location"
+typedef struct {
+    const char               **pps_custom_headers;
+    size_t                     sz_headers_count;
+    int                        n_http_response_code; // http response code
+    duer_http_socket_ops_t     ops;                  // socket operations
+    duer_http_data_handler     data_hdlr_cb;         // callback for output data
+    void                      *p_data_hdlr_ctx;      // users args for data_hdlr_cb
+    int                        n_http_content_len;   // http content length
+    // http content type
+    char                       p_http_content_type[DUER_HTTP_CONTENT_TYPE_LEN_MAX];
+    char                      *p_location;           // http header "Location"
     // a callback to check that stopping http client getting data or not
-    check_stop_notify_cb_t check_stop_notify_cb;
-    get_url_cb_t           get_url_cb;           // get the url which is used by http to get data
-    int                    n_is_chunked;
-    size_t                 sz_chunk_size;
-    char*                  p_chunk_buf;
-    size_t                 recv_size;             // size of the data have been dwonload
+    duer_http_stop_notify_cb_t check_stop_notify_cb;
+    // to get the url used to download, the last url will be returned if 302 location happen
+    duer_http_get_url_cb_t     get_url_cb;
+    int                        n_is_chunked;
+    size_t                     sz_chunk_size;
+    char                      *p_chunk_buf;
+    size_t                     recv_size;            // size of the data have been dwonload
     // the count of http continuously try to resume from break-point
-    int                    resume_retry_count;
-    char*                  buf;                   // buf used to receive data
-    e_data_pos             data_pos;              // play position
-} http_client_c;
-
-typedef struct _http_client_statistic_s {
-    size_t download_data_size;
-    size_t upload_data_size;
-    int    error_count;
-    int    last_error_code;
-    size_t recv_packet_longest_time;
-} http_client_statistic_t;
-
-int duer_http_client_init(http_client_c* p_client);
-
-void duer_http_client_destroy(http_client_c* p_client);
-
-int duer_http_client_init_socket_ops(
-        http_client_c* p_client,
-        socket_ops* p_ops,
-        void* socket_args);
-
-void duer_http_client_reg_data_hdlr_cb(
-        http_client_c* p_client,
-        data_out_handler_cb data_hdlr_cb,
-        void* p_usr_ctx);
-void duer_http_client_reg_cb_to_get_url(http_client_c* p_client, get_url_cb_t cb);
-
-void duer_http_client_set_cust_headers(
-        http_client_c* p_client,
-        const char** headers,
-        size_t pairs);
-
-e_http_result duer_http_client_get(http_client_c* p_client, const char* url, const size_t pos);
-
-int duer_http_client_get_resp_code(http_client_c* p_client);
-
-void duer_http_client_reg_stop_notify_cb(
-        http_client_c* p_client,
-        check_stop_notify_cb_t chk_stp_cb);
+    int                        resume_retry_count;
+    char                      *buf;                  // buf used to receive data
+    duer_http_data_pos_t       data_pos;             // play position
+    char                      *last_host;            // the lastest connected host
+    unsigned short             last_port;            // the lastest connected port
+    duer_timer_handler         connect_keep_timer;   // used to close persistent connect
+    size_t                     upload_size;          // size of the data have been upload
+} duer_http_client_t;
 
 /**
- * FUNC:
- * int duer_get_http_statistic(http_client_c *p_client, socket_ops *p_ops, void *socket_args)
- *
  * DESC:
- * used to get statistic info of http module
+ * init the http client
  *
  * PARAM:
- * @param[out] statistic_result: buffer to accept the statistic info
+ * @param[in] p_client: pointer of the http client
  *
+ * RETURN: DUER_HTTP_OK if success, DUER_HTTP_ERR_FAILED if failed
  */
-void duer_get_http_statistic(http_client_statistic_t* statistic_result);
+duer_http_result_t duer_http_init(duer_http_client_t *p_client);
+
+/**
+ * DESC:
+ * destroy the http client
+ *
+ * PARAM:
+ * @param[in] p_client: pointer of the http client
+ *
+ * RETURN: none
+ */
+void duer_http_destroy(duer_http_client_t *p_client);
+
+/**
+ * DESC:
+ * to init http client socket operations
+ *
+ * PARAM:
+ * @param[in] p_client: pointer of the http client
+ * @param[in] p_ops: socket operations set
+ * @param[in] socket_args: args for ops "get_inst"
+ *
+ * RETURN: DUER_HTTP_OK if success, DUER_HTTP_ERR_FAILED if failed
+ */
+duer_http_result_t duer_http_init_socket_ops(duer_http_client_t *p_client,
+        duer_http_socket_ops_t *p_ops,
+        void *socket_args);
+
+/**
+ * DESC:
+ * register data output handler callback to handle data block
+ *
+ * @param[in] p_client: pointer of the http client
+ * @param[in] data_hdlr_cb: data output handler callback to be registered
+ * @param[in] p_usr_ctx: user context for data output handler
+ *
+ * @RETURN    none
+ */
+void duer_http_reg_data_hdlr(duer_http_client_t *p_client,
+                             duer_http_data_handler data_hdlr_cb,
+                             void *p_usr_ctx);
+
+/**
+ *
+ * DESC:
+ * register callback to get the url which is used by http to get data
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ * @param[in] cb:       the callback to be registered
+ *
+ * @RETURN    none
+ */
+void duer_http_reg_url_get_cb(duer_http_client_t *p_client, duer_http_get_url_cb_t cb);
+
+/**
+ * DESC:
+ * Set custom headers for request.
+ * Pass NULL, 0 to turn off custom headers.
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ * @param[in] headers: an array (size multiple of two) key-value pairs,
+ *                     must remain valid during the whole HTTP session
+ *                     const char * hdrs[] =
+ *                     {
+ *                         "Connection", "keep-alive",
+ *                         "Accept", "text/html",
+ *                         "User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64)",
+ *                         "Accept-Encoding", "gzip,deflate,sdch",
+ *                         "Accept-Language", "en-US,en;q=0.8",
+ *                     };
+ *
+ *                     duer_http_set_cust_headers(hdrs, 5);
+ * @param[in] pairs:   number of key-value pairs
+ *
+ * @RETURN    none
+ */
+void duer_http_set_cust_headers(duer_http_client_t *p_client, const char **headers, size_t pairs);
+
+/**
+ * DESC:
+ * get data by http client
+ *
+ * PARAM:
+ * @param[in] p_client:          pointer point to the duer_http_client_t
+ * @param[in] url:               url resource
+ * @param[in] pos:               the position to receive the http data,
+ *                               sometimes user only want to get part of the data
+ * @param[in] connect_keep_time: how long time the connection should be kept after download finish
+ *
+ * RETURN     DUER_HTTP_OK if success, other duer_http_result_t type code if failed
+ */
+duer_http_result_t duer_http_get(duer_http_client_t *p_client,
+                                 const char *url,
+                                 const size_t pos,
+                                 const int connect_keep_time);
+
+/**
+ * DESC:
+ * get http response code
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ *
+ * @RETURN    none
+ */
+int duer_http_get_rsp_code(duer_http_client_t *p_client);
+
+/**
+ * DESC:
+ * register callback to check stop flag
+ *
+ * @param[in] p_client:   pointer of the http client
+ * @param[in] chk_stp_cb: to notify httpclient to stop
+ *
+ * @RETURN    none
+ */
+void duer_http_reg_stop_notify_cb(duer_http_client_t *p_client,
+                                  duer_http_stop_notify_cb_t chk_stp_cb);
 
 /**
  * DESC:
  * get http download progress
  *
  * PARAM:
- * @param[in] p_client: pointer point to the http_client_c
- * @param[out] total_size: pointer point to a varirable to receive the total size to be download
- * @param[out] recv_size: pointer point to a varirable to receive the data size have been download
+ * @param[in]  p_client:   pointer point to the duer_http_client_t
+ * @param[out] total_size: pointer point to a varirable to receive the total size to be download,
+ *                         0 will be returned if it's chunk transfer
+ * @param[out] recv_size:  pointer point to a varirable to receive the data size have been download
+ *
+ * RETURN      none
  */
-void duer_http_client_get_download_progress(http_client_c* p_client,
-                                       size_t* total_size,
-                                       size_t* recv_size);
+void duer_http_get_download_progress(duer_http_client_t *p_client,
+                                     size_t *total_size,
+                                     size_t *recv_size);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_HTTP_CLIENT_H
+#endif // BAIDU_DUER_LIGHTDUER_HTTP_CLIENT_H

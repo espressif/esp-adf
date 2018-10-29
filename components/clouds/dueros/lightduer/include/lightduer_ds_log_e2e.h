@@ -30,23 +30,43 @@ extern "C" {
 
 typedef enum {
     DUER_E2E_REQUEST,
-    DUER_E2E_SENT,
+    DUER_E2E_RECORD_FINISH,
+    DUER_E2E_SEND,
     DUER_E2E_RESPONSE,
     DUER_E2E_PLAY,
+    DUER_E2E_CODEC,
     DUER_E2E_EVENT_TOTAL
 } duer_ds_e2e_event_t;
 
-#ifdef DUER_STATISTICS_E2E
+typedef char* (*duer_ds_e2e_get_dialog_id_cb)(void);
 
-void duer_ds_e2e_update_latest_request(duer_ds_e2e_event_t evt, duer_u32_t segment);
+#ifdef DUER_STATISTICS_E2E
 
 void duer_ds_e2e_event(duer_ds_e2e_event_t evt);
 
+void duer_ds_e2e_set_report_codec_timestamp(void);
+
+void duer_ds_e2e_set_not_report_codec_timestamp(void);
+
+void duer_ds_e2e_set_vad_silence_time(duer_u32_t silence_time);
+
+void duer_ds_e2e_set_dialog_id_cb(duer_ds_e2e_get_dialog_id_cb cb);
+
+duer_bool duer_ds_e2e_wait_response(void);
+
 #else
 
-#define duer_ds_e2e_update_latest_request(...)
+#define duer_ds_e2e_set_report_codec_timestamp(...)
+
+#define duer_ds_e2e_set_not_report_codec_timestamp(...)
+
+#define duer_ds_e2e_set_vad_silence_time(...)
 
 #define duer_ds_e2e_event(...)
+
+#define duer_ds_e2e_set_dialog_id_cb(...)
+
+#define duer_ds_e2e_wait_response(...)
 
 #endif
 

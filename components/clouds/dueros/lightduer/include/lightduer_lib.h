@@ -22,12 +22,20 @@
 
 #include <string.h>
 
-#define DUER_MEMCPY(...)     memcpy(__VA_ARGS__)
-#define DUER_MEMCMP(...)     memcmp(__VA_ARGS__)
-#define DUER_MEMSET(...)     memset(__VA_ARGS__)
-#define DUER_STRLEN(...)     strlen(__VA_ARGS__)
-#define DUER_STRNCMP(...)    strncmp(__VA_ARGS__)
-#define DUER_SNPRINTF(...)   snprintf(__VA_ARGS__)
+#define DUER_MEMCPY(...)         memcpy(__VA_ARGS__)
+#define DUER_MEMCMP(...)         memcmp(__VA_ARGS__)
+#define DUER_MEMSET(...)         memset(__VA_ARGS__)
+#define DUER_MEMMOVE(...)        memmove(__VA_ARGS__)
+#define DUER_STRLEN(...)         strlen(__VA_ARGS__)
+#define DUER_STRCMP(...)         strcmp(__VA_ARGS__)
+#define DUER_STRNCPY(...)        strncpy(__VA_ARGS__)
+#define DUER_STRNCMP(...)        strncmp(__VA_ARGS__)
+#define DUER_SNPRINTF(...)       snprintf(__VA_ARGS__)
+#define DUER_STRNCASECMP(...)    strncasecmp(__VA_ARGS__)
+#define DUER_SSCANF(...)         sscanf(__VA_ARGS__)
+#define DUER_STRSTR(...)         strstr(__VA_ARGS__)
+#define DUER_STRCHR(...)         strchr(__VA_ARGS__)
+#define DUER_STRNCAT(...)        strncat(__VA_ARGS__)
 
 // Suppress Compiler warning Function&Variable declared never referenced
 #define ALLOW_UNUSED_LOCAL(VAR_FUNC) (void)(VAR_FUNC)

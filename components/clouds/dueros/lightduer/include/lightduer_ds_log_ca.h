@@ -54,6 +54,8 @@ typedef enum _duer_ds_log_ca_enum {
     DUER_DS_LOG_CA_CALL_CONTROL_POINT     = 0x007,
     DUER_DS_LOG_CA_STOPPED                = 0x008,
     DUER_DS_LOG_CA_CLEAR_DATA             = 0x009,
+    DUER_DS_LOG_CA_HTTP_DNS               = 0x00A,
+    DUER_DS_LOG_CA_ERR                    = 0x300,
     DUER_DS_LOG_CA_START_PROFILE_ERR      = 0x301,
     DUER_DS_LOG_CA_CONNECT_DNS_ERR        = 0x302,
     DUER_DS_LOG_CA_CONNECT_IP_ERR         = 0x303,

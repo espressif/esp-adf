@@ -30,6 +30,8 @@ typedef enum {
     led_work_mode_setting,
     led_work_mode_connectok,
     led_work_mode_disconnect,
+    led_work_mode_turn_off,
+    led_work_mode_turn_on,
 } led_work_mode_t;
 
 /**

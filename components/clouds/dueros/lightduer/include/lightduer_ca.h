@@ -94,6 +94,15 @@ DUER_EXT duer_status_t baidu_ca_report_set_response_callback(duer_handler hdlr,
                                                              duer_context context);
 
 /*
+ * Set the transmit data callback.
+ *
+ * @Param hdlr, in, the handler will be operated
+ * @Param f_transmit, in, the callback for transmit encoded data.
+ * @Return duer_status_t, in, the operation result
+ */
+DUER_EXT duer_status_t baidu_ca_report_set_data_tx_callback(duer_handler hdlr, duer_transmit_f f_transmit);
+
+/*
  * Build the message body that will be reported.
  *
  * @Param hdlr, in, the handler will be operated
@@ -157,6 +166,20 @@ DUER_EXT duer_status_t baidu_ca_send_data(duer_handler hdlr,
                                           const duer_addr_t* addr);
 
 /*
+ * Send the user data
+ *
+ * @Param hdlr, in, the handler will be operated
+ * @Param data, in, the user data
+ * @Param size, in, the data size
+ * @Param addr, in, the remote addr
+ * @Return duer_status_t, in, the operation result
+ */
+DUER_EXT duer_status_t baidu_ca_send_data_directly(duer_handler hdlr,
+                                          const void *data,
+                                          duer_size_t szie,
+                                          const duer_addr_t* addr);
+
+/*
  * When the message data has ready to be received
  *
  * @Param hdlr, in, the handler will be operated
@@ -189,6 +212,22 @@ DUER_EXT duer_status_t baidu_ca_stop(duer_handler hdlr);
  * @Return duer_status_t, in, the operation result
  */
 DUER_EXT duer_status_t baidu_ca_release(duer_handler hdlr);
+
+/*
+ * Obtain the uuid
+ *
+ * @Param hdlr, in, the handler will be operated
+ * @Return const char *, The UUID string
+ */
+DUER_EXT const char *baidu_ca_get_uuid(duer_handler hdlr);
+
+/*
+ * Obtain the bindToken
+ *
+ * @Param hdlr, in, the handler will be operated
+ * @Return const char *, The bindToken string
+ */
+DUER_EXT const char *baidu_ca_get_bind_token(duer_handler hdlr);
 
 #ifdef __cplusplus
 }

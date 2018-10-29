@@ -22,10 +22,10 @@
 #define BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_OTA_INSTALLER_H
 
 #define PACKAGE_NAME_LENGTH_MAX (15)
-#define PACKAGE_TYPE_OS          1
-#define PACKAGE_TYPE_APP         2
-#define PACKAGE_NO_UPDATE        0
-#define PACKAGE_UPDATE           1
+#define PACKAGE_TYPE_OS         (1)
+#define PACKAGE_TYPE_APP        (2)
+#define PACKAGE_NO_UPDATE       (0)
+#define PACKAGE_UPDATE          (1)
 
 typedef struct _duer_meta_data_basic_info_s {
 	char package_name[PACKAGE_NAME_LENGTH_MAX + 1];
@@ -34,12 +34,12 @@ typedef struct _duer_meta_data_basic_info_s {
 } duer_ota_meta_data_basic_info_t;
 
 #define MODULE_NAME_LENGTH_MAX (PACKAGE_NAME_LENGTH_MAX)
-#define MODULE_VERSION_LENGTH_MAX   15
-#define HARDWARE_VERSION_LENGTH_MAX 15
-#define MODULE_SIGNATURE_LENGTH     16
-#define MODULE_TYPE_BIN             1
-#define MODULE_NO_UPDATE            0
-#define MODULE_UPDATE               1
+#define MODULE_VERSION_LENGTH_MAX   (15)
+#define HARDWARE_VERSION_LENGTH_MAX (15)
+#define MODULE_SIGNATURE_LENGTH     (33)
+#define MODULE_TYPE_BIN             (1)
+#define MODULE_NO_UPDATE            (0)
+#define MODULE_UPDATE               (1)
 
 typedef struct _duer_module_info_s {
 	char module_name[MODULE_NAME_LENGTH_MAX + 1];
@@ -51,7 +51,7 @@ typedef struct _duer_module_info_s {
 	unsigned char module_update;
 } duer_ota_module_info_t;
 
-#define PACKAGE_INSTALL_PATH_MAX  255
+#define PACKAGE_INSTALL_PATH_MAX  (255)
 typedef struct _duer_meta_data_install_info_s {
 	char package_install_path[PACKAGE_INSTALL_PATH_MAX + 1];
 	unsigned int module_count;
