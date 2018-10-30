@@ -10,3 +10,11 @@ CONFIG_BT_SPP_ENABLED=
 CONFIG_GATTS_ENABLE=
 CONFIG_GATTC_ENABLE=
 CONFIG_BLE_SMP_ENABLE=
+
+# Increase default app partition size to accommodate BT
+# by providing new partition table in "partitions_bt_sink_example.csv"
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_bt_sink_example.csv"
+CONFIG_PARTITION_TABLE_CUSTOM_APP_BIN_OFFSET=0x10000
+CONFIG_PARTITION_TABLE_FILENAME="partitions_bt_sink_example.csv"
+CONFIG_APP_OFFSET=0x10000
