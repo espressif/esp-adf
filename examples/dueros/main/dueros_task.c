@@ -239,9 +239,8 @@ static esp_err_t recorder_pipeline_open(void **handle)
     rsp_cfg.type = AUDIO_CODEC_TYPE_ENCODER;
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
 
-    raw_stream_cfg_t raw_cfg = {
-        .type = AUDIO_STREAM_READER,
-    };
+    raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
+    raw_cfg .type = AUDIO_STREAM_READER;
     audio_element_handle_t raw_read = raw_stream_init(&raw_cfg);
 
     audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
