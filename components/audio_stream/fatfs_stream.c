@@ -43,6 +43,7 @@
 #define FILE_WAV_SUFFIX_TYPE  "wav"
 #define FILE_OPUS_SUFFIX_TYPE "opus"
 #define FILE_AMR_SUFFIX_TYPE "amr"
+#define FILE_AMRWB_SUFFIX_TYPE "Wamr"
 
 static const char *TAG = "FATFS_STREAM";
 
@@ -51,6 +52,7 @@ typedef enum {
     STREAM_TYPE_WAV,
     STREAM_TYPE_OPUS,
     STREAM_TYPE_AMR,
+    STREAM_TYPE_AMRWB,
 } wr_stream_type_t;
 
 typedef struct fatfs_stream {
@@ -74,6 +76,8 @@ static wr_stream_type_t get_type(const char *str)
             return STREAM_TYPE_OPUS;
         } else if (strncasecmp(relt, FILE_AMR_SUFFIX_TYPE, 3) == 0) {
             return STREAM_TYPE_AMR;
+        } else if (strncasecmp(relt, FILE_AMRWB_SUFFIX_TYPE, 4) == 0) {
+            return STREAM_TYPE_AMRWB;
         } else {
             return STREAM_TYPE_UNKNOW;
         }
@@ -121,6 +125,9 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
             fsync(fileno(fatfs->file));
         } else if (fatfs->file && (STREAM_TYPE_AMR == fatfs->w_type)) {
             fwrite("#!AMR\n", 1, 6, fatfs->file);
+            fsync(fileno(fatfs->file));
+        }else if (fatfs->file && (STREAM_TYPE_AMRWB == fatfs->w_type)) {
+            fwrite("#!AMR-WB\n", 1, 9, fatfs->file);
             fsync(fileno(fatfs->file));
         }
     } else {
