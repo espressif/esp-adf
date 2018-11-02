@@ -338,6 +338,40 @@ esp_err_t audio_pipeline_reset_items_state(audio_pipeline_handle_t pipeline);
  */
 esp_err_t audio_pipeline_reset_ringbuffer(audio_pipeline_handle_t pipeline);
 
+/**
+ * @brief      Break up all the linked elements of specific `pipeline`.
+ *             The include and before `kept_ctx_el` elements and connected ringbuffer will be reserved.
+ *
+ * @note       There is no element reserved when `kept_ctx_el` is NULL.
+ *             This function will unsubscribe all element's events.
+ *
+ * @param[in]  pipeline         The audio pipeline handle
+ * @param[in]  kept_ctx_el      Destination keep elements
+ *
+ * @return
+ *     - ESP_OK                 All linked elements state are same.
+ *     - ESP_ERR_INVALID_ARG    Invalid parameters.
+ */
+esp_err_t audio_pipeline_breakup_elements(audio_pipeline_handle_t pipeline, audio_element_handle_t kept_ctx_el);
+
+/**
+ * @brief      Basing on element's `name` already registered by `audio_pipeline_register`,
+ *             relink the pipeline following the order of `names` in the `link_tag.
+ *
+ * @note       If the ringbuffer is not enough to connect the new pipeline will create new ringbuffer.
+ *
+ * @param[in]  pipeline   The Audio Pipeline Handle
+ * @param      link_tag   Array of elements `name` that was registered by `audio_pipeline_register`
+ * @param[in]  link_num   Total number of elements of the `link_tag` array
+ *
+ * @return
+ *     - ESP_OK                 All linked elements state are same.
+ *     - ESP_FAIL               Error.
+ *     - ESP_ERR_INVALID_ARG    Invalid parameters.
+ */
+esp_err_t audio_pipeline_relink(audio_pipeline_handle_t pipeline, const char *link_tag[], int link_num);
+
+
 #ifdef __cplusplus
 }
 #endif

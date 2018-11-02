@@ -93,7 +93,11 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
 
     audio_element_info_t info;
     char *uri = audio_element_get_uri(self);
-    ESP_LOGD(TAG, "_fatfs_open,   %s", uri);
+    if (uri == NULL) {
+        ESP_LOGE(TAG, "Error, uri is not set");
+        return ESP_FAIL;
+    }
+    ESP_LOGD(TAG, "_fatfs_open, uri:%s", uri);
     char *path = strstr(uri, "/sdcard");
     audio_element_getinfo(self, &info);
     if (path == NULL) {
@@ -126,7 +130,7 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
         } else if (fatfs->file && (STREAM_TYPE_AMR == fatfs->w_type)) {
             fwrite("#!AMR\n", 1, 6, fatfs->file);
             fsync(fileno(fatfs->file));
-        }else if (fatfs->file && (STREAM_TYPE_AMRWB == fatfs->w_type)) {
+        } else if (fatfs->file && (STREAM_TYPE_AMRWB == fatfs->w_type)) {
             fwrite("#!AMR-WB\n", 1, 9, fatfs->file);
             fsync(fileno(fatfs->file));
         }
