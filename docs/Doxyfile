@@ -38,6 +38,9 @@ INPUT = \
     ../../components/esp-adf-libs/esp_codec/include/wav_decoder.h \
     ../../components/esp-adf-libs/esp_codec/include/wav_encoder.h \
     ../../components/esp-adf-libs/esp_codec/include/aac_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/amr_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/amrnb_encoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/amrwb_encoder.h \
     ## ESP Audio
      ../../components/esp-adf-libs/esp_audio/include/audio_def.h \
      ../../components/esp-adf-libs/esp_audio/include/esp_audio.h \

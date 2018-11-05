@@ -13,13 +13,13 @@ This API provides a way to develop audio applications using :doc:`Elements <fram
         # global attributes
         default_shape = roundedbox;
         node_width = 110;
-        node_height = 80;
+        node_height = 160;
         span_width = 40;
         span_height = 15;
 
         # labels of diagram nodes
         STREAMS [label="I2S\n HTTP\n FatFs"];
-        CODECS [label="MP3 decoder\n WAV decoder\n WAV encoder"];
+        CODECS [label="Decoders:\n * AAC\n * AMR\n * MP3\n * WAV\n\n Encoders:\n * AMRNB\n * AMRWB\n * WAV"];
         FILTERS [label="Upsample\n Downsample\n Stereo -> Mono\n Mono -> Stereo"];
 
         # labels of description nodes
