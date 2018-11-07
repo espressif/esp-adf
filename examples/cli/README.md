@@ -3,7 +3,8 @@ This example shows how to use `periph_console` to control `esp_audio` APIs and s
 To run this example you need ESP32 LyraT or compatible board:
 
 - Setup Wi-Fi SSID and Password by console, refer to system commands join.
-- Insert a microSD card loaded with 'test.wav', 'test.mp3', 'test.aac', 'test.ts' and 'test.m4a' into board's slot.
+- Insert a microSD card loaded with 'test.amr', 'test.flac', 'test.ogg', 'test.opus', 'test.mp3', 'test.wav', 'test.aac', 'test.ts' and 'test.m4a' into board's slot.
+- if the `ESP_AUDIO_AUTO_PLAY` is opened, it can automatically recognize audio formats, which added in the `auto_decode` list. 
 - Connect speakers or headphones to the board. 
 
 ## Support Commands
