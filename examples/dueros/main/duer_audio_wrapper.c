@@ -230,7 +230,7 @@ void duer_dcs_volume_adjust_handler(int volume)
     }
 }
 
-void duer_dcs_mute_handler(bool is_mute)
+void duer_dcs_mute_handler(duer_bool is_mute)
 {
     ESP_LOGI(TAG, "set_mute to  %d", (int)is_mute);
     int ret = 0;
@@ -243,7 +243,7 @@ void duer_dcs_mute_handler(bool is_mute)
     }
 }
 
-void duer_dcs_get_speaker_state(int *volume, bool *is_mute)
+void duer_dcs_get_speaker_state(int *volume, duer_bool *is_mute)
 {
     ESP_LOGI(TAG, "duer_dcs_get_speaker_state");
     *volume = 60;
@@ -272,10 +272,10 @@ void duer_dcs_speak_handler(const char *url)
     xSemaphoreGive(s_mutex);
 }
 
-void duer_dcs_audio_play_handler(const char *url,  const int offset)
+void duer_dcs_audio_play_handler(const duer_dcs_audio_info_t *audio_info)
 {
-    ESP_LOGI(TAG, "Playing audio offset:%d url:%s", offset, url);
-    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, url, offset);
+    ESP_LOGI(TAG, "Playing audio offset:%d url:%s", audio_info->offset, audio_info->url);
+    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, audio_info->url, audio_info->offset);
     xSemaphoreTake(s_mutex, portMAX_DELAY);
     duer_playing_type = DUER_AUDIO_TYPE_MUSIC;
     player_pause = 0;
@@ -303,11 +303,11 @@ void duer_dcs_audio_pause_handler()
     esp_audio_stop(player, 0);
 }
 
-void duer_dcs_audio_resume_handler(const char *url, const int offset)
+void duer_dcs_audio_resume_handler(const duer_dcs_audio_info_t *audio_info)
 {
-    ESP_LOGI(TAG, "Resume audio play,offset:%d, url:%s,", offset, url);
+    ESP_LOGI(TAG, "Resume audio play,offset:%d, url:%s,", audio_info->offset, audio_info->url);
     player_pause = 0;
-    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, url, audio_pos);
+    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, audio_info->url, audio_pos);
 }
 
 int duer_dcs_audio_get_play_progress()

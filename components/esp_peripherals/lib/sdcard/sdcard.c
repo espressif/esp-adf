@@ -58,6 +58,7 @@ esp_err_t sdcard_mount(const char* base_path)
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
     // To use 1-line SD mode, uncomment the following line:
     host.flags = SDMMC_HOST_FLAG_1BIT;
+    host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
     slot_config.gpio_cd = g_gpio;
     slot_config.width = 1;

@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define DUER_OS_VERSION "release-v3.0.2"
+#define DUER_OS_VERSION "release-v3.0.7"
 
 #define OS_VERSION_LEN          20
 #define SW_VERSION_LEN          20
@@ -112,7 +112,7 @@ typedef struct _disk_info_t {
 } duer_disk_info_t;
 
 typedef struct _wireless_info_s {
-    char ssid[BSSID_LEN + 1];
+    char ssid[SSID_LEN + 1];
     char bssid[BSSID_LEN + 1];
 
     int8_t  link;                                       // General quality of the reception
@@ -186,6 +186,8 @@ extern void duer_system_info_show_memory_info(duer_memory_info_t const *memory_i
 extern void duer_system_info_show_disk_info(duer_disk_info_t const *disk_info);
 
 extern void duer_system_info_show_networkcard_info(duer_network_info_t const *network_info);
+
+extern int duer_uninit_system_info(void);
 
 #ifdef __cplusplus
 }

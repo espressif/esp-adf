@@ -108,6 +108,8 @@ int duer_data_report_async(duer_context_t *context, const baidu_json *data);
  * @param data, const void *, the payload data.
  * @param size, size_t, the payload size.
  * @return int, the send response result, success return DUER_OK, failed return DUER_ERR_FAILED.
+ * @Note: if response ACK without response data,
+ *        set msg_code = DUER_MSG_EMPTY_MESSAGE, and data = NULL, size = 0
  */
 int duer_response(const duer_msg_t *msg, int msg_code, const void *data, duer_size_t size);
 
@@ -116,7 +118,7 @@ int duer_response(const duer_msg_t *msg, int msg_code, const void *data, duer_si
  * @param token, const char* , the token got from the corresponding request
  * @param token_len, duer_size_t, the length of the token
  * @param msg_code, int, the message code, see in @{link duer_msg_code_e}
- * @param data, const baidu_json *, the payload of the message, the callee will release this
+ * @param data, const baidu_json *, the payload of the message
  * @return int, the send response result, success return DUER_OK, failed return DUER_ERR_FAILED.
  */
 int duer_seperate_response(const char *token,

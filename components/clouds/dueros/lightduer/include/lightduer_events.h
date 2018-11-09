@@ -41,6 +41,9 @@ typedef void *duer_events_handler;
 
 duer_events_handler duer_events_create(const char *name, size_t stack_size, size_t queue_length);
 
+duer_events_handler duer_events_create_with_priority(const char *name, size_t stack_size,
+                                                     size_t queue_length, int priority);
+
 int duer_events_call(duer_events_handler handler, duer_events_func func, int what, void *object);
 
 void duer_events_destroy(duer_events_handler handler);

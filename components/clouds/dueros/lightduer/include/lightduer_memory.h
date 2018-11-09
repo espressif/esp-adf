@@ -21,6 +21,7 @@
 #define BAIDU_IOT_TINYDU_IOT_OS_SRC_IOT_BAIDU_CA_SOURCE_BAIDU_CA_MEMORY_H
 
 #include "lightduer_types.h"
+#include "lightduer_lib.h"
 
 #ifdef DUER_MEMORY_USAGE
 DUER_INT void duer_memdbg_usage();

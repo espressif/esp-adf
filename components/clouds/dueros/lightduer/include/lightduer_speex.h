@@ -25,7 +25,7 @@
 #include <stdlib.h>
 
 #ifdef __cplusplus
-extern "C"
+extern "C" {
 #endif
 
 typedef void *duer_speex_handler;

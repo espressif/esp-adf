@@ -8,7 +8,7 @@
 #define BAIDU_DUER_LIGHTDUER_MODULES_VOICE_ENGINE_LIGHTDUER_SESSION_H
 
 #ifdef __cplusplus
-extern "C"
+extern "C" {
 #endif
 
 #include "lightduer_types.h"

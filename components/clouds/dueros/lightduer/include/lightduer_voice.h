@@ -32,8 +32,11 @@ typedef enum _duer_voice_mode_enum {
     DUER_VOICE_MODE_DEFAULT,
     DUER_VOICE_MODE_CHINESE_TO_ENGLISH,
     DUER_VOICE_MODE_ENGLISH_TO_CHINESE,
-    DUER_VOICE_MODE_WCHAT
-} duer_voice_mode;
+    DUER_VOICE_MODE_WCHAT,
+    DUER_VOICE_MODE_C2E_BOT,
+    DUER_VOICE_MODE_INTERACTIVE_CLASS,
+}
+duer_voice_mode;
 
 typedef void (*duer_voice_delay_func)(duer_u32_t);
 
@@ -46,6 +49,8 @@ duer_voice_mode duer_voice_get_mode(void);
 int duer_voice_start(int samplerate);
 
 int duer_voice_send(const void *data, size_t size);
+
+int duer_voice_cache(duer_bool cached);
 
 int duer_voice_stop(void);
 

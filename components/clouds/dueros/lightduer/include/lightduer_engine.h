@@ -24,6 +24,7 @@
 
 #include "baidu_json.h"
 #include "lightduer_types.h"
+#include "lightduer_coap_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,6 +68,10 @@ int duer_engine_qcache_length(void);
 duer_bool duer_engine_is_started(void);
 
 void duer_engine_clear_data(int what, void *object);
+
+const char *duer_engine_get_uuid(void);
+
+const char *duer_engine_get_bind_token(void);
 
 #ifdef __cplusplus
 }

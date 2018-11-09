@@ -69,6 +69,8 @@ typedef enum _duer_errcode_enum {
     DUER_OK,
     DUER_ERR_FAILED                  = -0x0001,
     DUER_ERR_CONNECT_TIMEOUT         = -0x0002,
+    DUER_CANCEL                      = -0x0003,
+    DUER_INF_TRANS_IP_BY_HTTP_DNS    = -0x0004, // IP got through http dns
 
     /* Generic Errors */
     DUER_ERR_INVALID_PARAMETER       = -0x0010,
