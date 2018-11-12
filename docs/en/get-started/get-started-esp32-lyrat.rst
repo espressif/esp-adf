@@ -141,8 +141,10 @@ Related Documents
 
 * :doc:`../design-guide/board-esp32-lyrat-v4.3`
 * `ESP32 LyraT V4.3 schematic`_ (PDF)
+* `ESP32-LyraT V4.3 Component Layout`_ (PDF)
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
 * `ESP32-WROVER Datasheet <https://espressif.com/sites/default/files/documentation/esp32-wrover_datasheet_en.pdf>`_ (PDF)
 
 
 .. _ESP32 LyraT V4.3 schematic: https://dl.espressif.com/dl/schematics/esp32-lyrat-v4.3-schematic.pdf
+.. _ESP32-LyraT V4.3 Component Layout: https://dl.espressif.com/dl/schematics/ESP32-LyraT_v4.3_component_layout.pdf
