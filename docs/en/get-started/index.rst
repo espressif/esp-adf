@@ -4,23 +4,28 @@ Get Started
 
 This document is intended to help users set up the software environment for the development of audio applications using hardware based on the ESP32 by Espressif. Through a simple example, we would like to illustrate how to use ESP-ADF (Espressif Audio Development Framework).
 
-To make the start with ESP-ADF quicker, Espressif designed :doc:`ESP32 LyraT <get-started-esp32-lyrat>`, a development board intended to build an audio application with the ESP32.
+To make the start with ESP-ADF quicker, Espressif designed development boards intended to build audio applications with the ESP32. Click the links below to get started.
 
-.. figure:: ../../_static/esp32-lyrat-v4.2-side.jpg
-    :alt: ESP32 LyraT audio development board
-    :figclass: align-center
-    :width: 60%
+==========================================  ==========================================
+|Getting Started with ESP32-LyraT|_         |Getting Started with ESP32-LyraTD-MSC|_
+==========================================  ==========================================
+`Getting Started with ESP32-LyraT`_         `Getting Started with ESP32-LyraTD-MSC`_
+==========================================  ==========================================
 
-    ESP32 LyraT audio development board
+.. |Getting Started with ESP32-LyraT| image:: ../../_static/esp32-lyrat-v4.2-side.jpg
+.. _Getting Started with ESP32-LyraT: get-started-esp32-lyrat.html
 
-Click the link below to get started with this board.
+.. |Getting Started with ESP32-LyraTD-MSC| image:: ../../_static/esp32-lyratd-msc-v2.2.jpg
+.. _Getting Started with ESP32-LyraTD-MSC: get-started-esp32-lyratd-msc.html
 
 .. toctree::
+    :hidden:
     :maxdepth: 1
 
-    Get Started with ESP32 LyraT <get-started-esp32-lyrat>
+    Guide for ESP32-LyraT <get-started-esp32-lyrat>
+    Guide for ESP32-LyraTD-MSC <get-started-esp32-lyratd-msc>
 
-If you do not have the :doc:`ESP32 LyraT <get-started-esp32-lyrat>` board, you can still use ESP-ADF for the ESP32 based audio applications. This is providing your board has a compatible audio codec chip, or you develop a driver to support communication with your specific audio codec chip.
+If you do not have one of the above boards, you can still use ESP-ADF for the ESP32 based audio applications. This is providing your board has a compatible audio codec or DSP chip, or you develop a driver to support communication with your specific chip.
 
 
 About ESP-ADF
