@@ -60,10 +60,10 @@ esp_err_t zl38063_init(audio_hal_codec_config_t *cfg);
 esp_err_t zl38063_deinit(void);
 /**
  * The functions zl38063_ctrl_state and zl38063_config_i2s are not used by this driver.
- * There are kept here to maintain the uniformity and convenience of the interface
+ * They are kept here to maintain the uniformity and convenience of the interface
  * of the ADF project.
  * These settings for zl38063 are burned in firmware and configuration files.
- * Default i2s configuration: 48000HZ, 16bit, Left-Right channels.
+ * Default i2s configuration: 48000Hz, 16bit, Left-Right channels.
  * Use resampling to be compatible with different file types.
  *
  * @brief Control ZL38063 chip

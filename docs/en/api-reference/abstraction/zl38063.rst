@@ -1,0 +1,10 @@
+ZL38063 Driver
+==============
+
+Driver for `ZL38063 <https://www.microsemi.com/document-portal/doc_download/136798-zl38063-datasheet>`_ codec chip used in :doc:`ESP32-LyraTD-MSC <../../get-started/get-started-esp32-lyratd-msc>` audio board.
+
+
+API Reference
+-------------
+
+.. include:: /_build/inc/zl38063.inc
