@@ -38,8 +38,8 @@ extern "C" {
  * brief      Bluetooth service working mode
  */
 typedef enum {
-    BLUETOOTH_A2DP_SINK,    /*!< A2DP Bluetooth sink audio, ESP32 will receive audio data from another bluetooth devices */
-    BLUETOOTH_A2DP_SOUCE,   /*!< A2DP Bluetooth source audio, ESP32 can send audio data to another bluetooth devices */
+    BLUETOOTH_A2DP_SINK,    /*!< A2DP Bluetooth sink audio, ESP32 will receive audio data from other bluetooth devices */
+    BLUETOOTH_A2DP_SOURCE,   /*!< A2DP Bluetooth source audio, ESP32 can send audio data to other bluetooth devices */
 } bluetooth_service_mode_t;
 
 /**
@@ -58,12 +58,23 @@ typedef enum {
  *brief      Bluetooth service configuration
  */
 typedef struct {
-    const char                  *device_name;   /*!< Bluetooth device name */
+    const char                  *device_name;   /*!< Bluetooth local device name */
+    const char                  *remote_name;   /*!< Bluetooth remote device name */
     bluetooth_service_mode_t    mode;           /*!< Bluetooth working mode */
 } bluetooth_service_cfg_t;
 
 /**
- * @brief      Initialize and start the Bluetooth service. This function can called only 1 time,
+ *brief      Bluetooth address length
+ */
+#define BLUETOOTH_ADDR_LEN     6
+
+/**
+ *brief      Bluetooth device address
+ */
+typedef uint8_t bluetooth_addr_t[BLUETOOTH_ADDR_LEN];
+
+/**
+ * @brief      Initialize and start the Bluetooth service. This function can only be called for one time,
  *             and `bluetooth_service_destroy` must be called after use.
  *
  * @param      config  The configuration
@@ -166,6 +177,43 @@ esp_err_t periph_bluetooth_rewind(esp_periph_handle_t periph);
  *     - ESP_FAIL
  */
 esp_err_t periph_bluetooth_fast_forward(esp_periph_handle_t periph);
+
+/**
+ * @brief      Start device discovery.
+ *
+ * @param[in]  periph  The periph
+ *
+ * @return
+ *     - ESP_OK : Succeed
+ *     - ESP_ERR_INVALID_STATE: if bluetooth stack is not yet enabled
+ *     - ESP_ERR_INVALID_ARG: if invalid parameters are provided
+ *     - ESP_FAIL: others
+ */
+esp_err_t periph_bluetooth_discover(esp_periph_handle_t periph);
+
+/**
+ * @brief      Cancel device discovery.
+ *
+ * @param[in]  periph  The periph
+ *
+ * @return
+ *     - ESP_OK : Succeed
+ *     - ESP_ERR_INVALID_STATE: if bluetooth stack is not yet enabled
+ *     - ESP_FAIL: others
+ */
+esp_err_t periph_bluetooth_cancel_discover(esp_periph_handle_t periph);
+
+/**
+ * @brief      Connect remote Device.
+ *
+ * @param[in]  periph       The periph
+ * @param[in]  remote_bda   remote Bluetooth device address
+ * @return
+ *     - ESP_OK : Succeed
+ *     - ESP_ERR_INVALID_STATE: if bluetooth stack is not yet enabled
+ *     - ESP_FAIL: others
+ */
+esp_err_t periph_bluetooth_connect(esp_periph_handle_t periph, bluetooth_addr_t remote_bda);
 
 /**
  * @brief      Destroy and cleanup bluetooth service, this function must be called after destroying
