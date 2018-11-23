@@ -33,17 +33,33 @@ INPUT = \
     ../../components/audio_stream/include/i2s_stream.h \
     ../../components/audio_stream/include/raw_stream.h \
     ## ESP Codec
-    ../../components/esp-adf-libs/esp_codec/include/filter_resample.h \
-    ../../components/esp-adf-libs/esp_codec/include/mp3_decoder.h \
-    ../../components/esp-adf-libs/esp_codec/include/wav_decoder.h \
-    ../../components/esp-adf-libs/esp_codec/include/wav_encoder.h \
-    ../../components/esp-adf-libs/esp_codec/include/aac_decoder.h \
-    ../../components/esp-adf-libs/esp_codec/include/amr_decoder.h \
-    ../../components/esp-adf-libs/esp_codec/include/amrnb_encoder.h \
-    ../../components/esp-adf-libs/esp_codec/include/amrwb_encoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/filter_resample.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/mp3_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/wav_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/wav_encoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/aac_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/amr_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/amrnb_encoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/amrwb_encoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/audio_type_def.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/auto_aac_dec.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/auto_amr_dec.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/auto_flac_dec.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/auto_mp3_dec.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/auto_ogg_dec.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/auto_opus_dec.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/auto_wav_dec.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/equalizer.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/esp_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/flac_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/ogg_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/opus_decoder.h \
+    ../../components/esp-adf-libs/esp_codec/include/processing/esp_equalizer.h \
+    ../../components/esp-adf-libs/esp_codec/include/processing/esp_resample.h \
+    ../../components/esp-adf-libs/esp_codec/include/processing/wav_head.h \
     ## ESP Audio
-     ../../components/esp-adf-libs/esp_audio/include/audio_def.h \
-     ../../components/esp-adf-libs/esp_audio/include/esp_audio.h \
+    ../../components/esp-adf-libs/esp_audio/include/audio_def.h \
+    ../../components/esp-adf-libs/esp_audio/include/esp_audio.h \
     ## Common Peripherals
     ../../components/esp_peripherals/include/esp_peripherals.h \
     ../../components/esp_peripherals/include/periph_sdcard.h \
