@@ -230,7 +230,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             audio_event_iface_set_cmd_waiting_timeout(el->event, portMAX_DELAY);
             audio_element_report_status(el, AEL_STATUS_STATE_PAUSED);
             el->is_running = false;
-            ESP_LOGD(TAG, "[%s] AEL_MSG_CMD_PAUSE", el->tag);
+            ESP_LOGI(TAG, "[%s] AEL_MSG_CMD_PAUSE", el->tag);
             xEventGroupSetBits(el->state_event, PAUSED_BIT);
             break;
         case AEL_MSG_CMD_RESUME:
