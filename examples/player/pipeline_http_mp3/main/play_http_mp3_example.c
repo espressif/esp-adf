@@ -1,4 +1,4 @@
-/* Play MP3 file from HTTP
+/* Play an MP3 file from HTTP
 
    This example code is in the Public Domain (or CC0 licensed, at your option.)
 
@@ -78,7 +78,7 @@ void app_main(void)
     audio_pipeline_link(pipeline, (const char *[]) {"http", "mp3", "i2s"}, 3);
 
     ESP_LOGI(TAG, "[2.6] Setup uri (http as http_stream, mp3 as mp3 decoder, and default output is i2s)");
-    audio_element_set_uri(http_stream_reader, "http://dl.espressif.com/dl/audio/adf_music.mp3");
+    audio_element_set_uri(http_stream_reader, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3");
 
     ESP_LOGI(TAG, "[ 3 ] Start and wait for Wi-Fi network");
     esp_periph_config_t periph_cfg = { 0 };
@@ -137,10 +137,10 @@ void app_main(void)
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
 
-    /* Terminal the pipeline before removing the listener */
+    /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);
 
-    /* Stop all periph before removing the listener */
+    /* Stop all peripherals before removing the listener */
     esp_periph_stop_all();
     audio_event_iface_remove_listener(esp_periph_get_event_iface(), evt);
 
