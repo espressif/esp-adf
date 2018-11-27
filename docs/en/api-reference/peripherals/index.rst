@@ -9,4 +9,5 @@ Peripherals
     Button <periph_button>
     Touch <periph_touch>
     Console <periph_console>
+    Spiffs <periph_spiffs>
     Common <esp_peripherals>

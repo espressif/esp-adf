@@ -32,6 +32,7 @@ INPUT = \
     ../../components/audio_stream/include/http_stream.h \
     ../../components/audio_stream/include/i2s_stream.h \
     ../../components/audio_stream/include/raw_stream.h \
+	../../components/audio_stream/include/spiffs_stream.h \
     ## ESP Codec
     ../../components/esp-adf-libs/esp_codec/include/codec/filter_resample.h \
     ../../components/esp-adf-libs/esp_codec/include/codec/mp3_decoder.h \
@@ -67,6 +68,7 @@ INPUT = \
     ../../components/esp_peripherals/include/periph_button.h \
     ../../components/esp_peripherals/include/periph_wifi.h \
     ../../components/esp_peripherals/include/periph_console.h \
+    ../../components/esp_peripherals/include/periph_spiffs.h \
     ## Audio HAL
     ../../components/audio_hal/board/board.h \
     ../../components/audio_hal/driver/es8388/es8388.h \
