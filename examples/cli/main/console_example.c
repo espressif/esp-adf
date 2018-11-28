@@ -15,27 +15,31 @@
 #include "nvs_flash.h"
 #include "esp_log.h"
 #include "sdkconfig.h"
-
 #include "audio_element.h"
 #include "audio_mem.h"
 #include "audio_hal.h"
 #include "audio_common.h"
-
 #include "fatfs_stream.h"
 #include "raw_stream.h"
 #include "i2s_stream.h"
-#include "wav_decoder.h"
-#include "wav_encoder.h"
-#include "mp3_decoder.h"
-#include "http_stream.h"
-
 #include "esp_audio.h"
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
 #include "periph_wifi.h"
 #include "periph_button.h"
 #include "periph_console.h"
+#include "esp_decoder.h"
+#include "amr_decoder.h"
+#include "flac_decoder.h"
+#include "ogg_decoder.h"
+#include "opus_decoder.h"
+#include "mp3_decoder.h"
+#include "wav_decoder.h"
 #include "aac_decoder.h"
+#include "http_stream.h"
+#include "wav_encoder.h"
+
+#define  ESP_AUDIO_AUTO_PLAY
 
 static const char *TAG = "CONSOLE_EXAMPLE";
 static esp_audio_handle_t player;
@@ -59,6 +63,10 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
 {
     ESP_LOGI(TAG, "app_audio play");
     const char *uri[] = {
+        "file://sdcard/test.amr",
+        "file://sdcard/test.flac",
+        "file://sdcard/test.ogg",
+        "file://sdcard/test.opus",
         "file://sdcard/test.mp3",
         "file://sdcard/test.wav",
         "file://sdcard/test.aac",
@@ -337,11 +345,36 @@ static void cli_setup_player(void)
     esp_audio_output_stream_add(player, raw_stream_init(&raw_writer));
 
     // Add decoders and encoders to esp_audio
-    wav_decoder_cfg_t wav_dec_cfg = DEFAULT_WAV_DECODER_CONFIG();
-    mp3_decoder_cfg_t mp3_dec_cfg = DEFAULT_MP3_DECODER_CONFIG();
-    aac_decoder_cfg_t aac_dec_cfg = DEFAULT_AAC_DECODER_CONFIG();
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
+#ifdef ESP_AUDIO_AUTO_PLAY
+    audio_decoder_t auto_decode[] = {
+        DEFAULT_ESP_AMRNB_DECODER_CONFIG(),
+        DEFAULT_ESP_AMRWB_DECODER_CONFIG(),
+        DEFAULT_ESP_FLAC_DECODER_CONFIG(),
+        DEFAULT_ESP_OGG_DECODER_CONFIG(),
+        DEFAULT_ESP_OPUS_DECODER_CONFIG(),
+        DEFAULT_ESP_MP3_DECODER_CONFIG(),
+        DEFAULT_ESP_WAV_DECODER_CONFIG(),   
+        DEFAULT_ESP_AAC_DECODER_CONFIG(),
+        DEFAULT_ESP_M4A_DECODER_CONFIG(),
+        DEFAULT_ESP_TS_DECODER_CONFIG(),         
+    };
+    esp_decoder_cfg_t auto_dec_cfg = DEFAULT_ESP_DECODER_CONFIG();
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, esp_decoder_init(&auto_dec_cfg, auto_decode, 10));
+#else
+    amr_decoder_cfg_t  amr_dec_cfg  = DEFAULT_AMR_DECODER_CONFIG();
+    flac_decoder_cfg_t flac_dec_cfg = DEFAULT_FLAC_DECODER_CONFIG();
+    ogg_decoder_cfg_t  ogg_dec_cfg  = DEFAULT_OGG_DECODER_CONFIG();
+    opus_decoder_cfg_t opus_dec_cfg = DEFAULT_OPUS_DECODER_CONFIG();
+    mp3_decoder_cfg_t  mp3_dec_cfg  = DEFAULT_MP3_DECODER_CONFIG();
+    wav_decoder_cfg_t  wav_dec_cfg  = DEFAULT_WAV_DECODER_CONFIG();
+    aac_decoder_cfg_t  aac_dec_cfg  = DEFAULT_AAC_DECODER_CONFIG();
+
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, amr_decoder_init(&amr_dec_cfg));
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, flac_decoder_init(&flac_dec_cfg));
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, ogg_decoder_init(&ogg_dec_cfg));
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, decoder_opus_init(&opus_dec_cfg));
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));   
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));    
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, aac_decoder_init(&aac_dec_cfg));
     audio_element_handle_t m4a_dec_cfg = aac_decoder_init(&aac_dec_cfg);
     audio_element_set_tag(m4a_dec_cfg, "m4a");
@@ -353,7 +386,7 @@ static void cli_setup_player(void)
 
     wav_encoder_cfg_t wav_enc_cfg = DEFAULT_WAV_ENCODER_CONFIG();
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_ENCODER, wav_encoder_init(&wav_enc_cfg));
-
+#endif
     // Set default volume
     esp_audio_vol_set(player, 45);
     AUDIO_MEM_SHOW(TAG);
