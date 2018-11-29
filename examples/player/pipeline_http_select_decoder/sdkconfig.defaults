@@ -1,0 +1,10 @@
+# Enable SPIRAM to accommodate AAC decoder
+CONFIG_SPIRAM_SUPPORT=y
+
+# Increase default app partition size to accommodate SPIRAM
+# by providing new partition table in "partitions_http_select_decoder_example.csv"
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_http_select_decoder_example.csv"
+CONFIG_PARTITION_TABLE_CUSTOM_APP_BIN_OFFSET=0x10000
+CONFIG_PARTITION_TABLE_FILENAME="partitions_http_select_decoder_example.csv"
+CONFIG_APP_OFFSET=0x10000

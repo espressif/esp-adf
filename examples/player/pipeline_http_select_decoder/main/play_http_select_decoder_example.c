@@ -1,4 +1,4 @@
-/* Play an MP3 file from HTTP
+/* Play an MP3, AAC or WAV file from HTTP
 
    This example code is in the Public Domain (or CC0 licensed, at your option.)
 
@@ -21,13 +21,31 @@
 #include "audio_common.h"
 #include "http_stream.h"
 #include "i2s_stream.h"
-#include "mp3_decoder.h"
 
 #include "esp_peripherals.h"
 #include "periph_wifi.h"
 #include "audio_hal.h"
 
-static const char *TAG = "HTTP_MP3_EXAMPLE";
+#define SELECT_AAC_DECODER 1
+
+#if defined SELECT_MP3_DECODER
+#include "mp3_decoder.h"
+    static const char *TAG = "HTTP_SELECT_MP3_EXAMPLE";
+    static const char *selected_decoder_name = "mp3";
+#elif defined SELECT_AAC_DECODER
+#include "aac_decoder.h"
+    static const char *TAG = "HTTP_SELECT_AAC_EXAMPLE";
+    static const char *selected_decoder_name = "aac";
+#elif defined SELECT_AMR_DECODER
+#include "amr_decoder.h"
+    static const char *TAG = "HTTP_SELECT_AMR_EXAMPLE";
+    static const char *selected_decoder_name = "amr";
+#else  
+#include "wav_decoder.h"
+    static const char *TAG = "HTTP_SELECT_WAV_EXAMPLE";
+    static const char *selected_decoder_name = "wav";
+#endif 
+
 
 void app_main(void)
 {
@@ -41,7 +59,7 @@ void app_main(void)
     tcpip_adapter_init();
 
     audio_pipeline_handle_t pipeline;
-    audio_element_handle_t http_stream_reader, i2s_stream_writer, mp3_decoder;
+    audio_element_handle_t http_stream_reader, i2s_stream_writer, selected_decoder;
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
@@ -60,25 +78,47 @@ void app_main(void)
     http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
     http_stream_reader = http_stream_init(&http_cfg);
 
-    ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");
+    ESP_LOGI(TAG, "[2.2] Create %s decoder to decode %s file", selected_decoder_name, selected_decoder_name);
+
+#if defined SELECT_MP3_DECODER
+    mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
+    selected_decoder = mp3_decoder_init(&mp3_cfg);
+#elif defined SELECT_AAC_DECODER
+    aac_decoder_cfg_t aac_cfg = DEFAULT_AAC_DECODER_CONFIG();
+    selected_decoder = aac_decoder_init(&aac_cfg);
+#elif defined SELECT_AMR_DECODER
+    amr_decoder_cfg_t amr_cfg = DEFAULT_AMR_DECODER_CONFIG();
+    selected_decoder = amr_decoder_init(&amr_cfg);
+#else  
+    wav_decoder_cfg_t wav_cfg = DEFAULT_WAV_DECODER_CONFIG();
+    selected_decoder = wav_decoder_init(&wav_cfg);
+#endif 
+
+    ESP_LOGI(TAG, "[2.3] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 
-    ESP_LOGI(TAG, "[2.3] Create mp3 decoder to decode mp3 file");
-    mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
-    mp3_decoder = mp3_decoder_init(&mp3_cfg);
-
     ESP_LOGI(TAG, "[2.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, http_stream_reader, "http");
-    audio_pipeline_register(pipeline, mp3_decoder,        "mp3");
+    audio_pipeline_register(pipeline, selected_decoder,    selected_decoder_name);
     audio_pipeline_register(pipeline, i2s_stream_writer,  "i2s");
 
-    ESP_LOGI(TAG, "[2.5] Link it together http_stream-->mp3_decoder-->i2s_stream-->[codec_chip]");
-    audio_pipeline_link(pipeline, (const char *[]) {"http", "mp3", "i2s"}, 3);
+    ESP_LOGI(TAG, "[2.5] Link it together http_stream-->%s_decoder-->i2s_stream-->[codec_chip]", selected_decoder_name);
+    audio_pipeline_link(pipeline, (const char *[]) {"http", selected_decoder_name, "i2s"}, 3);
 
-    ESP_LOGI(TAG, "[2.6] Setup uri (http as http_stream, mp3 as mp3 decoder, and default output is i2s)");
+    ESP_LOGI(TAG, "[2.6] Setup uri (http as http_stream, %s as %s_decoder, and default output is i2s)",
+            selected_decoder_name, selected_decoder_name);
+
+#if defined SELECT_MP3_DECODER
     audio_element_set_uri(http_stream_reader, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3");
+#elif defined SELECT_AAC_DECODER
+    audio_element_set_uri(http_stream_reader, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.aac");
+#elif defined SELECT_AMR_DECODER
+    audio_element_set_uri(http_stream_reader, "https://dl.espressif.com/dl/audio/ff-16b-1c-8000hz.amr");
+#else  
+    audio_element_set_uri(http_stream_reader, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wav");
+#endif 
 
     ESP_LOGI(TAG, "[ 3 ] Start and wait for Wi-Fi network");
     esp_periph_config_t periph_cfg = { 0 };
@@ -113,13 +153,13 @@ void app_main(void)
         }
 
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
-            && msg.source == (void *) mp3_decoder
+            && msg.source == (void *) selected_decoder
             && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
             audio_element_info_t music_info = {0};
-            audio_element_getinfo(mp3_decoder, &music_info);
+            audio_element_getinfo(selected_decoder, &music_info);
 
-            ESP_LOGI(TAG, "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
-                     music_info.sample_rates, music_info.bits, music_info.channels);
+            ESP_LOGI(TAG, "[ * ] Receive music info from %s decoder, sample_rates=%d, bits=%d, ch=%d",
+                     selected_decoder_name, music_info.sample_rates, music_info.bits, music_info.channels);
 
             audio_element_setinfo(i2s_stream_writer, &music_info);
             i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
@@ -134,8 +174,11 @@ void app_main(void)
         }
     }
 
-    ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
+    ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline and release all resources");
     audio_pipeline_terminate(pipeline);
+    audio_pipeline_unregister(pipeline, http_stream_reader);
+    audio_pipeline_unregister(pipeline, i2s_stream_writer);
+    audio_pipeline_unregister(pipeline, selected_decoder);
 
     /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);
@@ -151,6 +194,6 @@ void app_main(void)
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(http_stream_reader);
     audio_element_deinit(i2s_stream_writer);
-    audio_element_deinit(mp3_decoder);
+    audio_element_deinit(selected_decoder);
     esp_periph_destroy();
 }
