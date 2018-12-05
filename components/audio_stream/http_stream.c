@@ -529,6 +529,7 @@ static int _http_process(audio_element_handle_t self, char *in_buffer, int in_le
     int w_size = 0;
     if (r_size > 0) {
         w_size = audio_element_output(self, in_buffer, r_size);
+        audio_element_multi_output(self, in_buffer, r_size, 0);
     } else {
         w_size = r_size;
     }
@@ -598,6 +599,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     cfg.task_prio = config->task_prio;
     cfg.task_core = config->task_core;
     cfg.out_rb_size = config->out_rb_size;
+    cfg.enable_multi_io = true;
     cfg.tag = "http";
 
     http->type = config->type;

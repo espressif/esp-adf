@@ -252,7 +252,7 @@ static esp_err_t recorder_pipeline_open(void **handle)
 
 static esp_err_t recorder_pipeline_read(void *handle, char *data, int data_size)
 {
-    raw_stream_read(data, data_size);
+    raw_stream_read(audio_pipeline_get_el_by_tag((audio_pipeline_handle_t)handle, "raw"), data, data_size);
     return ESP_OK;
 }
 

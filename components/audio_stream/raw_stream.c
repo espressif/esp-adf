@@ -45,23 +45,20 @@ typedef struct raw_stream {
     audio_stream_type_t type;
 } raw_stream_t;
 
-static audio_element_handle_t read_raw_el;
-static audio_element_handle_t write_raw_el;
-
-int raw_stream_read(char *buffer, int len)
+int raw_stream_read(audio_element_handle_t pipeline, char *buffer, int len)
 {
-    int ret = audio_element_input(read_raw_el, buffer, len);
+    int ret = audio_element_input(pipeline, buffer, len);
     if (ret <= 0) {
-        audio_element_report_status(read_raw_el, AEL_STATUS_STATE_STOPPED);
+        audio_element_report_status(pipeline, AEL_STATUS_STATE_STOPPED);
     }
     return ret;
 
 }
-int raw_stream_write(char *buffer, int len)
+int raw_stream_write(audio_element_handle_t pipeline, char *buffer, int len)
 {
-    int ret = audio_element_output(write_raw_el, buffer, len);
+    int ret = audio_element_output(pipeline, buffer, len);
     if (ret <= 0) {
-        audio_element_report_status(write_raw_el, AEL_STATUS_STATE_STOPPED);
+        audio_element_report_status(pipeline, AEL_STATUS_STATE_STOPPED);
     }
     return ret;
 }
@@ -75,10 +72,6 @@ static esp_err_t _raw_destroy(audio_element_handle_t self)
 
 audio_element_handle_t raw_stream_init(raw_stream_cfg_t *config)
 {
-    if (read_raw_el && write_raw_el) {
-        ESP_LOGI(TAG, "stream init,failed,%p,%p", read_raw_el, write_raw_el);
-        return NULL;
-    }
     raw_stream_t *raw = audio_calloc(1, sizeof(raw_stream_t));
     AUDIO_MEM_CHECK(TAG, raw, return NULL);
 
@@ -93,11 +86,6 @@ audio_element_handle_t raw_stream_init(raw_stream_cfg_t *config)
         audio_free(raw);
         return NULL;
     });
-    if (config->type == AUDIO_STREAM_READER) {
-        read_raw_el = el;
-    } else if (config->type == AUDIO_STREAM_WRITER) {
-        write_raw_el = el;
-    }
     audio_element_setdata(el, raw);
     ESP_LOGD(TAG, "stream init,el:%p", el);
     return el;

@@ -42,12 +42,8 @@
 #include "audio_error.h"
 
 static const char *TAG = "AUDIO_ELEMENT";
-
-typedef struct {
-    char *data;
-    int processed;
-    int len;
-} audio_element_buffer_t;
+#define DEFAULT_MAX_WAIT_TIME       (2000/portTICK_RATE_MS)
+#define NUMBER_OF_MULTI_RINGBUF     1
 
 /**
  *  Audio Element Abstract
@@ -80,6 +76,9 @@ struct audio_element {
         audio_callback_t        write_cb;
     } out;
 
+    ringbuf_handle_t            multi_in_rb[NUMBER_OF_MULTI_RINGBUF];
+    ringbuf_handle_t            multi_out_rb[NUMBER_OF_MULTI_RINGBUF];
+
     /* Properties */
     bool                        is_open;
     audio_element_state_t       state;
@@ -104,6 +103,7 @@ struct audio_element {
     int                         out_rb_size;
     bool                        is_running;
     bool                        task_run;
+    bool                        enable_multi_io;
 };
 
 const static int STOPPED_BIT = BIT0;
@@ -112,8 +112,6 @@ const static int BUFFER_REACH_LEVEL_BIT = BIT2;
 const static int TASK_CREATED_BIT = BIT3;
 const static int TASK_DESTROYED_BIT = BIT4;
 const static int PAUSED_BIT = BIT5;
-
-#define DEFAULT_MAX_WAIT_TIME (2000/portTICK_RATE_MS)
 
 static esp_err_t audio_element_force_set_state(audio_element_handle_t el, audio_element_state_t new_state)
 {
@@ -575,10 +573,16 @@ esp_err_t audio_element_reset_input_ringbuf(audio_element_handle_t el)
     if (el->read_type != IO_TYPE_RB) {
         return ESP_FAIL;
     }
+    int ret = ESP_OK;
     if (el->in.input_rb) {
-        return rb_reset(el->in.input_rb);
+        ret |= rb_reset(el->in.input_rb);
+        for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
+            if (el->multi_in_rb[i]) {
+                ret |= rb_reset(el->multi_in_rb[i]);
+            }
+        }
     }
-    return ESP_OK;
+    return ret;
 }
 
 esp_err_t audio_element_reset_output_ringbuf(audio_element_handle_t el)
@@ -586,8 +590,17 @@ esp_err_t audio_element_reset_output_ringbuf(audio_element_handle_t el)
     if (el->write_type != IO_TYPE_RB) {
         return ESP_FAIL;
     }
+    int ret = ESP_OK;
     if (el->out.output_rb) {
-        return rb_reset(el->out.output_rb);
+        ret |= rb_reset(el->out.output_rb);
+        if (el->enable_multi_io) {
+            for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
+                if (el->multi_out_rb[i]) {
+                    ret |= rb_reset(el->multi_out_rb[i]);
+                }
+            }
+        }
+
     }
     return ESP_OK;
 }
@@ -597,8 +610,16 @@ esp_err_t audio_element_abort_input_ringbuf(audio_element_handle_t el)
     if (el->read_type != IO_TYPE_RB) {
         return ESP_FAIL;
     }
+    int ret = ESP_OK;
     if (el->in.input_rb) {
-        return rb_abort(el->in.input_rb);
+        ret |= rb_abort(el->in.input_rb);
+        if (el->enable_multi_io) {
+            for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
+                if (el->multi_in_rb[i]) {
+                    ret |= rb_abort(el->multi_in_rb[i]);
+                }
+            }
+        }
     }
     return ESP_OK;
 }
@@ -608,8 +629,16 @@ esp_err_t audio_element_abort_output_ringbuf(audio_element_handle_t el)
     if (el->write_type != IO_TYPE_RB) {
         return ESP_FAIL;
     }
+    int ret = ESP_OK;
     if (el->out.output_rb) {
-        return rb_abort(el->out.output_rb);
+        ret |= rb_abort(el->out.output_rb);
+        if (el->enable_multi_io) {
+            for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
+                if (el->multi_out_rb[i]) {
+                    ret |= rb_abort(el->multi_out_rb[i]);
+                }
+            }
+        }
     }
     return ESP_OK;
 }
@@ -622,6 +651,13 @@ esp_err_t audio_element_set_ringbuf_done(audio_element_handle_t el)
     }
     if (el->out.output_rb && el->write_type == IO_TYPE_RB) {
         ret |= rb_done_write(el->out.output_rb);
+        if (el->enable_multi_io) {
+            for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
+                if (el->multi_out_rb[i]) {
+                    ret |= rb_done_write(el->multi_out_rb[i]);
+                }
+            }
+        }
     }
     return ret;
 }
@@ -762,6 +798,7 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
     el->process = config->process;
     el->close = config->close;
     el->destroy = config->destroy;
+    el->enable_multi_io = config->enable_multi_io;
     if (config->task_stack > 0) {
         el->task_stack = config->task_stack;
     }
@@ -974,4 +1011,65 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
         return ESP_FAIL;
     }
     return ESP_OK;
+}
+
+esp_err_t audio_element_multi_input(audio_element_handle_t el, char *buffer, int wanted_size, int index, TickType_t ticks_to_wait)
+{
+    esp_err_t ret = ESP_OK;
+    if (index >= NUMBER_OF_MULTI_RINGBUF) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (el->enable_multi_io) {
+        if (el->multi_in_rb[index]) {
+            ret = rb_read(el->multi_in_rb[index], buffer, wanted_size, ticks_to_wait);
+        }
+    }
+    return ret;
+}
+
+esp_err_t audio_element_multi_output(audio_element_handle_t el, char *buffer, int wanted_size, TickType_t ticks_to_wait)
+{
+    esp_err_t ret = ESP_OK;
+    if (el->enable_multi_io) {
+        for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
+            if (el->multi_out_rb[i]) {
+                ret |= rb_write(el->multi_out_rb[i], buffer, wanted_size, ticks_to_wait);
+            }
+        }
+    }
+    return ret;
+}
+
+esp_err_t audio_element_set_multi_input_ringbuf(audio_element_handle_t el, ringbuf_handle_t rb, int index)
+{
+    if ((index < NUMBER_OF_MULTI_RINGBUF) && rb) {
+        el->multi_in_rb[index] = rb;
+        return ESP_OK;
+    }
+    return ESP_ERR_INVALID_ARG;
+}
+
+esp_err_t audio_element_set_multi_output_ringbuf(audio_element_handle_t el, ringbuf_handle_t rb, int index)
+{
+    if ((index < NUMBER_OF_MULTI_RINGBUF) && rb) {
+        el->multi_out_rb[index] = rb;
+        return ESP_OK;
+    }
+    return ESP_ERR_INVALID_ARG;
+}
+
+ringbuf_handle_t audio_element_get_multi_input_ringbuf(audio_element_handle_t el, int index)
+{
+    if (index < NUMBER_OF_MULTI_RINGBUF) {
+        return el->multi_in_rb[index];
+    }
+    return NULL;
+}
+
+ringbuf_handle_t audio_element_get_multi_output_ringbuf(audio_element_handle_t el, int index)
+{
+    if (index < NUMBER_OF_MULTI_RINGBUF) {
+        return el->multi_out_rb[index];
+    }
+    return NULL;
 }
