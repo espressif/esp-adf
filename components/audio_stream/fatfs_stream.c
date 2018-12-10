@@ -37,7 +37,6 @@
 #include "audio_mem.h"
 #include "audio_element.h"
 #include "wav_head.h"
-// #include "esp_system.h"
 #include "esp_log.h"
 
 #define FILE_WAV_SUFFIX_TYPE  "wav"

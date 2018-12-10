@@ -69,8 +69,7 @@ struct audio_pipeline {
     bool                        linked;
     audio_event_iface_handle_t  listener;
 };
-
-static audio_element_item_t *audio_pipeline_get_el_by_tag(audio_pipeline_handle_t pipeline, const char *tag)
+static audio_element_item_t *audio_pipeline_get_el_item_by_tag(audio_pipeline_handle_t pipeline, const char *tag)
 {
     audio_element_item_t *item;
     STAILQ_FOREACH(item, &pipeline->el_list, next) {
@@ -114,6 +113,22 @@ static void add_rb_to_audio_pipeline(audio_pipeline_handle_t pipeline, ringbuf_h
     AUDIO_MEM_CHECK(TAG, rb_item, return);
     rb_item->rb = rb;
     STAILQ_INSERT_TAIL(&pipeline->rb_list, rb_item, next);
+}
+
+audio_element_handle_t audio_pipeline_get_el_by_tag(audio_pipeline_handle_t pipeline, const char *tag)
+{
+    if (tag == NULL || pipeline == NULL) {
+        ESP_LOGE(TAG, "Invalid parameters, tag:%p, p:%p", tag, pipeline);
+        return NULL;
+    }
+    audio_element_item_t *item;
+    STAILQ_FOREACH(item, &pipeline->el_list, next) {
+        char *el_tag = audio_element_get_tag(item->el);
+        if (el_tag && strcasecmp(el_tag, tag) == 0) {
+            return item->el;
+        }
+    }
+    return NULL;
 }
 
 esp_err_t audio_pipeline_set_listener(audio_pipeline_handle_t pipeline, audio_event_iface_handle_t listener)
@@ -330,7 +345,7 @@ esp_err_t audio_pipeline_link(audio_pipeline_handle_t pipeline, const char *link
         audio_pipeline_unlink(pipeline);
     }
     for (i = 0; i < link_num; i++) {
-        audio_element_item_t *item = audio_pipeline_get_el_by_tag(pipeline, link_tag[i]);
+        audio_element_item_t *item = audio_pipeline_get_el_item_by_tag(pipeline, link_tag[i]);
         if (item == NULL) {
             ESP_LOGE(TAG, "There is 1 link_tag invalid: %s", link_tag[i]);
             return ESP_FAIL;
@@ -502,7 +517,7 @@ esp_err_t audio_pipeline_check_items_state(audio_pipeline_handle_t pipeline, aud
     audio_element_item_t *item;
     int el_cnt = 0;
     int el_sta_cnt = 0;
-    audio_element_item_t *it = audio_pipeline_get_el_by_tag(pipeline, audio_element_get_tag(el));
+    audio_element_item_t *it = audio_pipeline_get_el_item_by_tag(pipeline, audio_element_get_tag(el));
     it->el_state =  status;
     STAILQ_FOREACH(item, &pipeline->el_list, next) {
         if (false == item->linked) {
@@ -610,7 +625,7 @@ esp_err_t audio_pipeline_relink(audio_pipeline_handle_t pipeline, const char *li
 
     bool first = false, last = false;
     for (int i = 0; i < link_num; i++) {
-        audio_element_item_t *src_el_item = audio_pipeline_get_el_by_tag(pipeline, link_tag[i]);
+        audio_element_item_t *src_el_item = audio_pipeline_get_el_item_by_tag(pipeline, link_tag[i]);
         if (src_el_item == NULL) {
             ESP_LOGE(TAG, "There is link_tag invalid: %s", link_tag[i]);
             ret = ESP_FAIL;

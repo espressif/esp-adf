@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-typedef struct audio_pipeline* audio_pipeline_handle_t;
+typedef struct audio_pipeline *audio_pipeline_handle_t;
 
 /**
  * @brief Audio Pipeline configurations
@@ -102,9 +102,10 @@ esp_err_t audio_pipeline_register(audio_pipeline_handle_t pipeline, audio_elemen
 esp_err_t audio_pipeline_unregister(audio_pipeline_handle_t pipeline, audio_element_handle_t el);
 
 /**
- * @brief      Start Audio Pipeline, with this function, audio_pipeline will start all task elements,
- *             which have been registered using the `audio_pipeline_register` function.
- *             In addition this also puts all the task elements in the 'PAUSED' state.
+ * @brief    Start Audio Pipeline.
+ *
+ *           With this function audio_pipeline will create tasks for all elements,
+ *           that have been linked using the linking functions.
  *
  * @param[in]  pipeline   The Audio Pipeline Handle
  *
@@ -115,9 +116,10 @@ esp_err_t audio_pipeline_unregister(audio_pipeline_handle_t pipeline, audio_elem
 esp_err_t audio_pipeline_run(audio_pipeline_handle_t pipeline);
 
 /**
- * @brief      Start Audio Pipeline, with this function, audio_pipeline will start all task elements,
- *             which have been registered using the `audio_pipeline_register` function.
- *             In addition this also puts all the task elements in the 'PAUSED' state.
+ * @brief    Stop Audio Pipeline.
+ *
+ *           With this function audio_pipeline will destroy tasks of all elements,
+ *           that have been linked using the linking functions.
  *
  * @param[in]  pipeline   The Audio Pipeline Handle
  *
@@ -204,6 +206,18 @@ esp_err_t audio_pipeline_link(audio_pipeline_handle_t pipeline, const char *link
 esp_err_t audio_pipeline_unlink(audio_pipeline_handle_t pipeline);
 
 /**
+ * @brief      Find element from registered pipeline by tag
+ *
+ * @param[in]  pipeline     The Audio Pipeline Handle
+ * @param[in]  tag          A char pointer
+ *
+ * @return
+ *     - NULL when any errors
+ *     - Others on success
+ */
+audio_element_handle_t audio_pipeline_get_el_by_tag(audio_pipeline_handle_t pipeline, const char *tag);
+
+/**
  * @brief      Remove event listener from this audio_pipeline
  *
  * @param[in]  pipeline   The Audio Pipeline Handle
@@ -249,7 +263,7 @@ audio_event_iface_handle_t audio_pipeline_get_event_iface(audio_pipeline_handle_
  *     - ESP_FAIL
  */
 esp_err_t audio_pipeline_link_insert(audio_pipeline_handle_t pipeline, bool first, audio_element_handle_t prev,
-                                ringbuf_handle_t conect_rb, audio_element_handle_t next);
+                                     ringbuf_handle_t conect_rb, audio_element_handle_t next);
 
 /**
  * @brief      Register a NULL-terminated list of elements to audio_pipeline.

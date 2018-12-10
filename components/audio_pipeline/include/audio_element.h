@@ -145,20 +145,21 @@ typedef audio_element_err_t (*stream_func)(audio_element_handle_t self, char *bu
  *
  */
 typedef struct {
-    io_func     open;       /*!< Open callback function */
-    io_func     seek;       /*!< Seek callback function */
-    process_func process;   /*!< Process callback function */
-    io_func     close;      /*!< Close callback function */
-    io_func     destroy;    /*!< Destroy callback function */
-    stream_func read;       /*!< Read callback function */
-    stream_func write;      /*!< Write callback function */
-    int         buffer_len; /*!< Buffer length use for an Element */
-    int         task_stack; /*!< Element task stack */
-    int         task_prio;  /*!< Element task priority (based on freeRTOS priority) */
-    int         task_core;  /*!< Element task running in core (0 or 1) */
-    int         out_rb_size;/*!< Output ringbuffer size */
-    void        *data;      /*!< User context */
-    char        *tag;       /*!< Element tag */
+    io_func             open;             /*!< Open callback function */
+    io_func             seek;             /*!< Seek callback function */
+    process_func        process;          /*!< Process callback function */
+    io_func             close;            /*!< Close callback function */
+    io_func             destroy;          /*!< Destroy callback function */
+    stream_func         read;             /*!< Read callback function */
+    stream_func         write;            /*!< Write callback function */
+    int                 buffer_len;       /*!< Buffer length use for an Element */
+    int                 task_stack;       /*!< Element task stack */
+    int                 task_prio;        /*!< Element task priority (based on freeRTOS priority) */
+    int                 task_core;        /*!< Element task running in core (0 or 1) */
+    int                 out_rb_size;      /*!< Output ringbuffer size */
+    void                *data;            /*!< User context */
+    char                *tag;             /*!< Element tag */
+    bool                enable_multi_io;  /*!< Enable multi input and output ringbuffer */
 } audio_element_cfg_t;
 
 #define DEFAULT_ELEMENT_RINGBUF_SIZE    (8*1024)
@@ -169,9 +170,10 @@ typedef struct {
 
 #define DEFAULT_AUDIO_ELEMENT_CONFIG() {\
     .buffer_len         = DEFAULT_ELEMENT_BUFFER_LENGTH,\
-    .task_stack         = DEFAULT_ELEMENT_STACK_SIZE, \
-    .task_prio          = DEFAULT_ELEMENT_TASK_PRIO, \
-    .task_core          = DEFAULT_ELEMENT_TASK_CORE, \
+    .task_stack         = DEFAULT_ELEMENT_STACK_SIZE,   \
+    .task_prio          = DEFAULT_ELEMENT_TASK_PRIO,    \
+    .task_core          = DEFAULT_ELEMENT_TASK_CORE,    \
+    .enable_multi_io    = false,                        \
 }
 
 /**
@@ -560,7 +562,7 @@ esp_err_t audio_element_reset_output_ringbuf(audio_element_handle_t el);
  *
  * @param[in]  el            The audio element handle
  * @param      buffer        The buffer pointer
- * @param[in]  wanted_size  The wanted size
+ * @param[in]  wanted_size   The wanted size
  *
  * @return
  *        - > 0 number of bytes produced
@@ -570,8 +572,9 @@ audio_element_err_t audio_element_input(audio_element_handle_t el, char *buffer,
 
 /**
  * @brief      Call this function to sendout Element output data.
+ *             Depending on setup using ringbuffer or function callback, Element will invoke write to ringbuffer, or call write callback funtion
  *
- * @param[in]  el          Depending on setup using ringbuffer or function callback, Element will invoke write to ringbuffer, or call write callback funtion
+ * @param[in]  el          The audio element handle
  * @param      buffer      The buffer pointer
  * @param[in]  write_size  The write size
  *
@@ -656,6 +659,86 @@ esp_err_t audio_element_reset_state(audio_element_handle_t el);
  *     - >0: Size of ringbuffer
  */
 int audio_element_get_output_ringbuf_size(audio_element_handle_t el);
+
+/**
+ * @brief      Call this function to read data from multi input ringbuffer by given index.
+ *
+ * @param      el            The audio element handle
+ * @param      buffer        The buffer pointer
+ * @param      wanted_size   The wanted size
+ * @param      index         The index of multi input ringbuffer, start from `0`, should be less than `NUMBER_OF_MULTI_RINGBUF`
+ * @param      ticks_to_wait Timeout of ringbuffer
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_ERR_INVALID_ARG
+ */
+esp_err_t audio_element_multi_input(audio_element_handle_t el, char *buffer, int wanted_size, int index, TickType_t ticks_to_wait);
+
+/**
+ * @brief      Call this function write data by multi output ringbuffer.
+ *
+ * @param[in]  el            The audio element handle
+ * @param      buffer        The buffer pointer
+ * @param[in]  wanted_size   The wanted size
+ * @param      ticks_to_wait Timeout of ringbuffer
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_multi_output(audio_element_handle_t el, char *buffer, int wanted_size, TickType_t ticks_to_wait);
+
+/**
+ * @brief      Set multi input ringbuffer Element
+ *
+ * @param[in]  el    The audio element handle
+ * @param[in]  rb    The ringbuffer handle
+ * @param[in]  index Index of multi ringbuffer, starts from `0`, should be less than `NUMBER_OF_MULTI_RINGBUF`
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_multi_input_ringbuf(audio_element_handle_t el, ringbuf_handle_t rb, int index);
+
+/**
+ * @brief      Set multi output ringbuffer Element
+ *
+ * @param[in]  el    The audio element handle
+ * @param[in]  rb    The ringbuffer handle
+ * @param[in]  index Index of multi ringbuffer, starts from `0`, should be less than `NUMBER_OF_MULTI_RINGBUF`
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_ERR_INVALID_ARG
+ */
+esp_err_t audio_element_set_multi_output_ringbuf(audio_element_handle_t el, ringbuf_handle_t rb, int index);
+
+/**
+ * @brief       Get handle of multi input ringbuffer Element by index
+ *
+ * @param[in]  el    The audio element handle
+ * @param[in]  index Index of multi ringbuffer, starts from `0`, should be less than `NUMBER_OF_MULTI_RINGBUF`
+ *
+ * @return
+ *     - NULL   Error
+ *     - Others ringbuf_handle_t
+ */
+ringbuf_handle_t audio_element_get_multi_input_ringbuf(audio_element_handle_t el, int index);
+
+/**
+ * @brief       Get handle of multi output ringbuffer Element by index
+ *
+ * @param[in]  el    The audio element handle
+ * @param[in]  index Index of multi ringbuffer, starts from `0`, should be less than `NUMBER_OF_MULTI_RINGBUF`
+ *
+ * @return
+ *     - NULL   Error
+ *     - Others ringbuf_handle_t
+ */
+ringbuf_handle_t audio_element_get_multi_output_ringbuf(audio_element_handle_t el, int index);
+
 
 #ifdef __cplusplus
 }

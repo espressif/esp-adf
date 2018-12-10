@@ -68,22 +68,24 @@ audio_element_handle_t raw_stream_init(raw_stream_cfg_t *cfg);
 /**
  * @brief      Read data from Stream
  *
+ * @param      pipeline     The audio pipeline handle
  * @param      buffer       The buffer
- * @param[in]  buf_size     Maximum number of bytes to be read.
+ * @param      buf_size     Maximum number of bytes to be read.
  *
  * @return     Number of bytes actually read.
  */
-int raw_stream_read(char *buffer, int buf_size);
+int raw_stream_read(audio_element_handle_t pipeline, char *buffer, int buf_size);
 
 /**
  * @brief      Write data to Stream
  *
+ * @param      pipeline     The audio pipeline handle
  * @param      buffer       The buffer
- * @param[in]  buf_size     Number of bytes to write
+ * @param      buf_size     Number of bytes to write
  *
  * @return     Number of bytes written
  */
-int raw_stream_write(char *buffer, int buf_size);
+int raw_stream_write(audio_element_handle_t pipeline, char *buffer, int buf_size);
 
 #ifdef __cplusplus
 }

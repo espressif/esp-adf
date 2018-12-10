@@ -204,7 +204,6 @@ esp_err_t audio_event_iface_discard(audio_event_iface_handle_t evt);
  */
 esp_err_t audio_event_iface_listen(audio_event_iface_handle_t evt, audio_event_iface_msg_t *msg, TickType_t wait_time);
 
-
 /**
  * @brief      Get External queue handle of Emmitter
  *
