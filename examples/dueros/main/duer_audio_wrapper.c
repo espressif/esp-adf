@@ -195,6 +195,19 @@ void duer_dcs_init(void)
     }
 }
 
+void duer_audio_wrapper_pause()
+{
+    esp_audio_pause(player);
+    duer_dcs_audio_active_paused();
+}
+
+int duer_audio_wrapper_get_state()
+{
+    esp_audio_state_t st = {0};
+    esp_audio_state_get(player, &st);
+    return st.status;
+}
+
 void duer_dcs_listen_handler(void)
 {
     ESP_LOGI(TAG, "enable_listen_handler, open mic");

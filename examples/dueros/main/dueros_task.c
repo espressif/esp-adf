@@ -127,26 +127,29 @@ static void duer_que_send(void *que, duer_task_cmd_t type, void *data, int index
 void rec_engine_cb(rec_event_type_t type, void *user_data)
 {
     if (REC_EVENT_WAKEUP_START == type) {
-        ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_WAKEUP_START");
+        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_START");
         if (duer_state == DUER_STATE_START) {
             return;
         }
+        if (duer_audio_wrapper_get_state() == AUDIO_STATUS_RUNNING) {
+            duer_audio_wrapper_pause();
+        }
         led_indicator_set(0, led_work_mode_turn_on);
     } else if (REC_EVENT_VAD_START == type) {
-        ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_VAD_START");
+        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_START");
         duer_que_send(duer_que, DUER_CMD_START, NULL, 0, 0, 0);
     } else if (REC_EVENT_VAD_STOP == type) {
         if (duer_state == DUER_STATE_START) {
             duer_que_send(duer_que, DUER_CMD_STOP, NULL, 0, 0, 0);
             led_indicator_set(0, led_work_mode_turn_off);
         }
-        ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_VAD_STOP, state:%d", duer_state);
+        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_STOP, state:%d", duer_state);
     } else if (REC_EVENT_WAKEUP_END == type) {
         if (duer_state == DUER_STATE_START) {
             duer_que_send(duer_que, DUER_CMD_STOP, NULL, 0, 0, 0);
         }
         led_indicator_set(0, led_work_mode_turn_off);
-        ESP_LOGI(TAG, "--- rec_engine_cb --- REC_EVENT_WAKEUP_END");
+        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_END");
     } else {
 
     }
