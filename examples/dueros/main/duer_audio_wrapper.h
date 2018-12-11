@@ -35,39 +35,33 @@ typedef enum {
 } duer_audio_type_t;
 
 /*
- * DCS init function
+ * @brief DCS init function
  *
- * @param void:
- *
- * @return void:
  */
 void duer_dcs_init(void);
 
 /*
- * DCS audio on_started callback function
+ * @brief DCS audio on_started callback function
  *
  * @param flag: duer_audio_play_type_t
  *
  * @return success:0
- *             fail: others
+ *         fail: others
  */
 int duer_dcs_audio_on_started_cb(duer_audio_play_type_t flag);
 
 /*
- * DCS audio on_finished callback function
+ * @brief DCS audio on_finished callback function
  *
  * @param flag: duer_audio_play_type_t
  *
  * @return success:0
- *             fail: others
+ *         fail: others
  */
 int duer_dcs_audio_on_finished_cb(duer_audio_play_type_t flag);
 
-
 /*
- * Get DCS audio type
- *
- * @param none
+ * @brief Get DCS audio type
  *
  * @return duer_audio_type_t
  *
@@ -75,50 +69,50 @@ int duer_dcs_audio_on_finished_cb(duer_audio_play_type_t flag);
 duer_audio_type_t duer_dcs_get_player_type();
 
 /*
- * Set DCS audio type
+ * @brief Set DCS audio type
  *
  * @param num: duer_audio_type_t
  *
  * @return success:0
- *             fail: others
+ *         fail: others
  */
 int duer_dcs_set_player_type(duer_audio_type_t num);
 
 /*
- * Send DCS_PAUSE_CMD to DCS
+ * @brief Send DCS_PAUSE_CMD to DCS
  *
- * @param : none
- *
- * @return : none
  */
 void duer_dcs_audio_active_paused();
 
 /*
- * Send DCS_PLAY_CMD to DCS
+ * @brief Send DCS_PLAY_CMD to DCS
  *
- * @param : none
- *
- * @return : none
  */
 void duer_dcs_audio_active_play();
 
 /*
- * Send DCS_PREVIOUS_CMD to DCS
+ * @brief Send DCS_PREVIOUS_CMD to DCS
  *
- * @param : none
- *
- * @return : none
  */
 void duer_dcs_audio_active_previous();
 
 /*
- * Send DCS_NEXT_CMD to DCS
+ * @brief Send DCS_NEXT_CMD to DCS
  *
- * @param : none
- *
- * @return : none
  */
 void duer_dcs_audio_active_next();
 
+/*
+ * @brief Audio wrapper pause
+ *
+ */
+void duer_audio_wrapper_pause();
+
+/*
+ * @brief Get wrapper state
+ *
+ * @return : `esp_audio_status_t`
+ */
+int duer_audio_wrapper_get_state();
 
 #endif //
