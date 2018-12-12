@@ -52,13 +52,9 @@ void app_main(void)
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
     ESP_LOGI(TAG, "[ 1 ] Start audio codec chip");
-#if CONFIG_ESP_LYRAT_V4_3_BOARD
+#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
     audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ES8388_DEFAULT();
     audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-#endif
-#if CONFIG_ESP_LYRAT_V4_2_BOARD
-    audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ES8374_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 1);
 #endif
 #if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
     audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ZL38063_DEFAULT();
@@ -149,6 +145,9 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 5 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
+
+    audio_pipeline_unregister(pipeline, mp3_decoder);
+    audio_pipeline_unregister(pipeline, i2s_stream_writer);
 
     /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);

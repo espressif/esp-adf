@@ -123,7 +123,7 @@ void app_main(void)
         }
 
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) bt_stream_reader
-                && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
+            && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
             audio_element_info_t music_info = {0};
             audio_element_getinfo(bt_stream_reader, &music_info);
 
@@ -136,8 +136,8 @@ void app_main(void)
         }
 
         if (msg.source_type == PERIPH_ID_TOUCH
-                && msg.cmd == PERIPH_TOUCH_TAP
-                && msg.source == (void *)touch_periph) {
+            && msg.cmd == PERIPH_TOUCH_TAP
+            && msg.source == (void *)touch_periph) {
 
             if ((int) msg.data == TOUCH_PLAY) {
                 ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
@@ -156,7 +156,7 @@ void app_main(void)
 
         /* Stop when the Bluetooth is disconnected or suspended */
         if (msg.source_type == PERIPH_ID_BLUETOOTH
-                && msg.source == (void *)bt_periph) {
+            && msg.source == (void *)bt_periph) {
             if (msg.cmd == PERIPH_BLUETOOTH_DISCONNECTED) {
                 ESP_LOGW(TAG, "[ * ] Bluetooth disconnected");
                 break;
@@ -164,7 +164,7 @@ void app_main(void)
         }
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
-                && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
+            && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
             ESP_LOGW(TAG, "[ * ] Stop event received");
             break;
         }
@@ -172,6 +172,9 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 8 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
+
+    audio_pipeline_unregister(pipeline, bt_stream_reader);
+    audio_pipeline_unregister(pipeline, i2s_stream_writer);
 
     /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);

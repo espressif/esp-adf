@@ -138,6 +138,10 @@ void app_main(void)
     audio_pipeline_terminate(pipeline);
 
     /* Terminate the pipeline before removing the listener */
+    audio_pipeline_unregister(pipeline, http_stream_reader);
+    audio_pipeline_unregister(pipeline, i2s_stream_writer);
+    audio_pipeline_unregister(pipeline, mp3_decoder);
+
     audio_pipeline_remove_listener(pipeline);
 
     /* Stop all peripherals before removing the listener */

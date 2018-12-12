@@ -204,6 +204,16 @@ void record_playback_task()
     audio_pipeline_terminate(pipeline_rec);
     audio_pipeline_terminate(pipeline_play);
 
+    audio_pipeline_unregister(pipeline_play, fatfs_reader_el);
+    audio_pipeline_unregister(pipeline_play, wav_decoder_el);
+    audio_pipeline_unregister(pipeline_play, filter_upsample_el);
+    audio_pipeline_unregister(pipeline_play, i2s_writer_el);
+
+    audio_pipeline_unregister(pipeline_rec, i2s_reader_el);
+    audio_pipeline_unregister(pipeline_rec, filter_downsample_el);
+    audio_pipeline_unregister(pipeline_rec, wav_encoder_el);
+    audio_pipeline_unregister(pipeline_rec, fatfs_writer_el);
+
     /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline_rec);
     audio_pipeline_remove_listener(pipeline_play);
