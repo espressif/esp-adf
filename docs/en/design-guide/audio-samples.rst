@@ -6,50 +6,105 @@ Music files in this section are intended for testing of audio applications. The 
 Formats
 =======
 
-The table below provides an audio file converted from 'wav' format into several other audio formats.
+The tables below provides an audio file converted from 'wav' format into several other audio formats.
+
+Long Samples
+------------
+
+The audio track duration in this section is 3 minutes and 7 seconds.
 
 Two Channel Audio
------------------
+^^^^^^^^^^^^^^^^^
 
 .. csv-table::
-    :header: Format, Audio File, Size [kB]
-    :widths: 10, 25, 10
+    :header: No, Format, Audio File, Size [kB]
+    :widths: 5, 10, 25, 10
 
-    aac, `ff-16b-2c-44100hz.aac <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.aac>`_, "2,995"
-    ac3, `ff-16b-2c-44100hz.ac3 <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.ac3>`_, "2,994"
-    aiff, `ff-16b-2c-44100hz.aiff <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.aiff>`_, "33,002"
-    flac, `ff-16b-2c-44100hz.flac <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.flac>`_, "22,406"
-    m4a, `ff-16b-2c-44100hz.m4a <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.m4a>`_, "3,028"
-    mp3, `ff-16b-2c-44100hz.mp3 <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3>`_, "2,994"
-    mp4, `ff-16b-2c-44100hz.mp4 <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp4>`_, "3,079"
-    ogg, `ff-16b-2c-44100hz.ogg <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.ogg>`_, "2,612"
-    opus, `ff-16b-2c-44100hz.opus <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.opus>`_, "2,598"
-    wav, `ff-16b-2c-44100hz.wav <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wav>`_, "49,504"
-    wma, `ff-16b-2c-44100hz.wma <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wma>`_, "3,227"
+    1, aac, `ff-16b-2c-44100hz.aac <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.aac>`_, "2,995"
+    2, ac3, `ff-16b-2c-44100hz.ac3 <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.ac3>`_, "2,994"
+    3, aiff, `ff-16b-2c-44100hz.aiff <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.aiff>`_, "33,002"
+    4, flac, `ff-16b-2c-44100hz.flac <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.flac>`_, "22,406"
+    5, m4a, `ff-16b-2c-44100hz.m4a <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.m4a>`_, "3,028"
+    6, mp3, `ff-16b-2c-44100hz.mp3 <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3>`_, "2,994"
+    7, mp4, `ff-16b-2c-44100hz.mp4 <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp4>`_, "3,079"
+    8, ogg, `ff-16b-2c-44100hz.ogg <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.ogg>`_, "2,612"
+    9, opus, `ff-16b-2c-44100hz.opus <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.opus>`_, "2,598"
+    10, ts, `ff-16b-2c-44100hz.ts <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.ts>`_, "5,510"
+    11, wav, `ff-16b-2c-44100hz.wav <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wav>`_, "49,504"
+    12, wma, `ff-16b-2c-44100hz.wma <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wma>`_, "3,227"
 
 Playlist containing all above files: `ff-16b-2c-playlist.m3u <https://dl.espressif.com/dl/audio/ff-16b-2c-playlist.m3u>`_
 
 Single Channel Audio
---------------------
+^^^^^^^^^^^^^^^^^^^^
 
 .. csv-table::
-    :header: Format, Audio File, Size [kB]
-    :widths: 10, 25, 10
+    :header: No, Format, Audio File, Size [kB]
+    :widths: 5, 10, 25, 10
 
-    aac, `ff-16b-1c-44100hz.aac <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.aac>`_, "2,995"
-    ac3, `ff-16b-1c-44100hz.ac3 <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.ac3>`_, "2,994"
-    aiff, `ff-16b-1c-44100hz.aiff <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.aiff>`_, "33,002"
-    amr, `ff-16b-1c-8000hz.amr <https://dl.espressif.com/dl/audio/ff-16b-1c-8000hz.amr>`_, 299
-    flac, `ff-16b-1c-44100hz.flac <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.flac>`_, "22,406"
-    m4a, `ff-16b-1c-44100hz.m4a <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.m4a>`_, "3,028"
-    mp3, `ff-16b-1c-44100hz.mp3 <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.mp3>`_, "2,994"
-    mp4, `ff-16b-1c-44100hz.mp4 <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.mp4>`_, "3,079"
-    ogg, `ff-16b-1c-44100hz.ogg <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.ogg>`_, "2,612"
-    opus, `ff-16b-1c-44100hz.opus <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.opus>`_, "2,598"
-    wav, `ff-16b-1c-44100hz.wav <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.wav>`_, "49,504"
-    wma, `ff-16b-1c-44100hz.wma <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.wma>`_, "3,227"
+    1, aac, `ff-16b-1c-44100hz.aac <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.aac>`_, "1,650"
+    2, ac3, `ff-16b-1c-44100hz.ac3 <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.ac3>`_, "2,193"
+    3, aiff, `ff-16b-1c-44100hz.aiff <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.aiff>`_, "16,115"
+    4, amr, `ff-16b-1c-8000hz.amr <https://dl.espressif.com/dl/audio/ff-16b-1c-8000hz.amr>`_, 299
+    5, flac, `ff-16b-1c-44100hz.flac <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.flac>`_, "10,655"
+    6, m4a, `ff-16b-1c-44100hz.m4a <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.m4a>`_, "1,628"
+    7, mp3, `ff-16b-1c-44100hz.mp3 <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.mp3>`_, "1,463"
+    8, ogg, `ff-16b-1c-44100hz.ogg <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.ogg>`_, "1,558"
+    9, opus, `ff-16b-1c-44100hz.opus <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.opus>`_, "1,641"
+    10, wav, `ff-16b-1c-44100hz.wav <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.wav>`_, "16,115"
+    11, wma, `ff-16b-1c-44100hz.wma <https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.wma>`_, "3,151"
 
 Playlist containing all above files: `ff-16b-1c-playlist.m3u <https://dl.espressif.com/dl/audio/ff-16b-1c-playlist.m3u>`_
+
+
+Short Samples
+-------------
+
+If you need shorter audio files for testing, this section provides 16 seconds audio tracks.
+
+Two Channel Audio
+^^^^^^^^^^^^^^^^^
+
+.. csv-table::
+    :header: No, Format, Audio File, Size [kB]
+    :widths: 5, 10, 25, 10
+
+    1, aac, `gs-16b-2c-44100hz.aac <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.aac>`_, "241"
+    2, ac3, `gs-16b-2c-44100hz.ac3 <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.ac3>`_, "380"
+    3, aiff, `gs-16b-2c-44100hz.aiff <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.aiff>`_, "2,792"
+    4, flac, `gs-16b-2c-44100hz.flac <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.flac>`_, "1,336"
+    5, m4a, `gs-16b-2c-44100hz.m4a <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.m4a>`_, "1,367"
+    6, mp3, `gs-16b-2c-44100hz.mp3 <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.mp3>`_, "254"
+    7, mp4, `gs-16b-2c-44100hz.mp4 <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.mp4>`_, "259"
+    8, ogg, `gs-16b-2c-44100hz.ogg <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.ogg>`_, "229"
+    9, opus, `gs-16b-2c-44100hz.opus <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.opus>`_, "219"
+    10, ts, `gs-16b-2c-44100hz.ts <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.ts>`_, "286"
+    11, wav, `gs-16b-2c-44100hz.wav <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.wav>`_, "2,792"
+    12, wma, `gs-16b-2c-44100hz.wma <https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.wma>`_, "276"
+
+Playlist containing all above files: `gs-16b-2c-playlist.m3u <https://dl.espressif.com/dl/audio/gs-16b-2c-playlist.m3u>`_
+
+Single Channel Audio
+^^^^^^^^^^^^^^^^^^^^
+
+.. csv-table::
+    :header: No, Format, Audio File, Size [kB]
+    :widths: 5, 10, 25, 10
+
+    1, amr, `gs-16b-1c-8000hz.amr <https://dl.espressif.com/dl/audio/gs-16b-1c-8000hz.amr>`_, "25"
+    2, aac, `gs-16b-1c-44100hz.aac <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.aac>`_, "137"
+    3, ac3, `gs-16b-1c-44100hz.ac3 <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.ac3>`_, "190"
+    4, aiff, `gs-16b-1c-44100hz.aiff <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.aiff>`_, "1,397"
+    5, flac, `gs-16b-1c-44100hz.flac <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.flac>`_, "645"
+    6, m4a, `gs-16b-1c-44100hz.m4a <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.m4a>`_, "650"
+    7, mp3, `gs-16b-1c-44100hz.mp3 <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.mp3>`_, "127"
+    8, ogg, `gs-16b-1c-44100hz.ogg <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.ogg>`_, "144"
+    9, opus, `gs-16b-1c-44100hz.opus <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.opus>`_, "132"
+    10, wav, `gs-16b-1c-44100hz.wav <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.wav>`_, "1,497"
+    11, wma, `gs-16b-1c-44100hz.wma <https://dl.espressif.com/dl/audio/gs-16b-1c-44100hz.wma>`_, "276"
+
+Playlist containing all above files: `gs-16b-1c-playlist.m3u <https://dl.espressif.com/dl/audio/gs-16b-1c-playlist.m3u>`_
+
 
 Sample Rates
 ============
@@ -84,4 +139,4 @@ The files in this section have been prepared by converting a single audio file i
 
 Playlist containing all above files: `ff-16b-mp3-playlist.m3u <https://dl.espressif.com/dl/audio/ff-16b-mp3-playlist.m3u>`_
 
-Original music file: "Furious Freak", Kevin MacLeod (incompetech.com), Licensed under Creative Commons: By Attribution 3.0, http://creativecommons.org/licenses/by/3.0/
+Original music files: "Furious Freak" and "Galway", Kevin MacLeod (incompetech.com), Licensed under Creative Commons: By Attribution 3.0, http://creativecommons.org/licenses/by/3.0/
