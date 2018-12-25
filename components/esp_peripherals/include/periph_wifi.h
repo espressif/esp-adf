@@ -43,8 +43,8 @@ typedef enum {
     PERIPH_WIFI_CONNECTED,
     PERIPH_WIFI_DISCONNECTED,
     PERIPH_WIFI_SETTING,
-    PERIPH_WIFI_SMARTCONFIG_DONE,
-    PERIPH_WIFI_SMARTCONFIG_ERROR,
+    PERIPH_WIFI_CONFIG_DONE,
+    PERIPH_WIFI_CONFIG_ERROR,
     PERIPH_WIFI_ERROR,
 } periph_wifi_state_t;
 
@@ -56,7 +56,7 @@ typedef enum {
     WIFI_CONFIG_AIRKISS,            /*!< Using smartconfig with AIRKISS protocol */
     WIFI_CONFIG_ESPTOUCH_AIRKISS,   /*!< Using smartconfig with ESPTOUCH_AIRKISS protocol */
     WIFI_CONFIG_WPS,                /*!< Using WPS (not support) */
-    WIFI_CONFIG_BLUEFI,             /*!< Using BLUEFI (not support) */
+    WIFI_CONFIG_BLUEFI,             /*!< Using BLUEFI*/
     WIFI_CONFIG_WEB,                /*!< Using HTTP Server (not support) */
 } periph_wifi_config_mode_t;
 
