@@ -150,6 +150,10 @@ void app_main(void)
             ESP_LOGW(TAG, "[ * ] Restart stream");
             audio_pipeline_stop(pipeline);
             audio_pipeline_wait_for_stop(pipeline);
+            audio_element_reset_state(aac_decoder);
+            audio_element_reset_state(i2s_stream_writer);
+            audio_pipeline_reset_ringbuffer(pipeline);
+            audio_pipeline_reset_items_state(pipeline);
             audio_pipeline_run(pipeline);
             continue;
         }

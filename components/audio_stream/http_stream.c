@@ -45,6 +45,7 @@ static const char *TAG = "HTTP_STREAM";
 #define MAX_PLAYLIST_LINE_SIZE (128)
 #define MAX_PLAYLIST_TRACK (20)
 #define MAX_PLAYLIST_KEEP_TRACK (18)
+#define HTTP_STREAM_BUFFER_SIZE (1024)
 
 typedef struct track_ {
     char *uri;
@@ -395,6 +396,7 @@ _stream_open_begin:
             .event_handler = _http_event_handle,
             .user_data = &info,
             .timeout_ms = 30 * 1000,
+            .buffer_size = HTTP_STREAM_BUFFER_SIZE,
         };
         http->client = esp_http_client_init(&http_cfg);
         AUDIO_MEM_CHECK(TAG, http->client, return ESP_ERR_NO_MEM);
