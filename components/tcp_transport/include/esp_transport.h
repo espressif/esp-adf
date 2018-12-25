@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef _TRANSPORT_H_
-#define _TRANSPORT_H_
+#ifndef _ESP_TRANSPORT_H_
+#define _ESP_TRANSPORT_H_
 
 #include <esp_err.h>
 
@@ -22,25 +22,27 @@ extern "C" {
 #endif
 
 
-typedef struct transport_list_t* transport_list_handle_t;
-typedef struct transport_item_t* transport_handle_t;
+typedef struct esp_transport_list_t* esp_transport_list_handle_t;
+typedef struct esp_transport_item_t* esp_transport_handle_t;
 
-typedef int (*connect_func)(transport_handle_t t, const char *host, int port, int timeout_ms);
-typedef int (*io_func)(transport_handle_t t, const char *buffer, int len, int timeout_ms);
-typedef int (*io_read_func)(transport_handle_t t, char *buffer, int len, int timeout_ms);
-typedef int (*trans_func)(transport_handle_t t);
-typedef int (*poll_func)(transport_handle_t t, int timeout_ms);
+typedef int (*connect_func)(esp_transport_handle_t t, const char *host, int port, int timeout_ms);
+typedef int (*io_func)(esp_transport_handle_t t, const char *buffer, int len, int timeout_ms);
+typedef int (*io_read_func)(esp_transport_handle_t t, char *buffer, int len, int timeout_ms);
+typedef int (*trans_func)(esp_transport_handle_t t);
+typedef int (*poll_func)(esp_transport_handle_t t, int timeout_ms);
+typedef int (*connect_async_func)(esp_transport_handle_t t, const char *host, int port, int timeout_ms);
+typedef esp_transport_handle_t (*payload_transfer_func)(esp_transport_handle_t);
 
 /**
  * @brief      Create transport list
  *
  * @return     A handle can hold all transports
  */
-transport_list_handle_t transport_list_init();
+esp_transport_list_handle_t esp_transport_list_init();
 
 /**
  * @brief      Cleanup and free all transports, include itself,
- *             this function will invoke transport_destroy of every transport have added this the list
+ *             this function will invoke esp_transport_destroy of every transport have added this the list
  *
  * @param[in]  list  The list
  *
@@ -48,7 +50,7 @@ transport_list_handle_t transport_list_init();
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t transport_list_destroy(transport_list_handle_t list);
+esp_err_t esp_transport_list_destroy(esp_transport_list_handle_t list);
 
 /**
  * @brief      Add a transport to the list, and define a scheme to indentify this transport in the list
@@ -60,11 +62,11 @@ esp_err_t transport_list_destroy(transport_list_handle_t list);
  * @return
  *     - ESP_OK
  */
-esp_err_t transport_list_add(transport_list_handle_t list, transport_handle_t t, const char *scheme);
+esp_err_t esp_transport_list_add(esp_transport_list_handle_t list, esp_transport_handle_t t, const char *scheme);
 
 /**
  * @brief      This function will remove all transport from the list,
- *             invoke transport_destroy of every transport have added this the list
+ *             invoke esp_transport_destroy of every transport have added this the list
  *
  * @param[in]  list  The list
  *
@@ -72,24 +74,24 @@ esp_err_t transport_list_add(transport_list_handle_t list, transport_handle_t t,
  *     - ESP_OK
  *     - ESP_ERR_INVALID_ARG
  */
-esp_err_t transport_list_clean(transport_list_handle_t list);
+esp_err_t esp_transport_list_clean(esp_transport_list_handle_t list);
 
 /**
- * @brief      Get the transport by scheme, which has been defined when calling function `transport_list_add`
+ * @brief      Get the transport by scheme, which has been defined when calling function `esp_transport_list_add`
  *
  * @param[in]  list  The list
  * @param[in]  tag   The tag
  *
  * @return     The transport handle
  */
-transport_handle_t transport_list_get_transport(transport_list_handle_t list, const char *scheme);
+esp_transport_handle_t esp_transport_list_get_transport(esp_transport_list_handle_t list, const char *scheme);
 
 /**
  * @brief      Initialize a transport handle object
  *
  * @return     The transport handle
  */
-transport_handle_t transport_init();
+esp_transport_handle_t esp_transport_init();
 
 /**
  * @brief      Cleanup and free memory the transport
@@ -100,7 +102,7 @@ transport_handle_t transport_init();
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t transport_destroy(transport_handle_t t);
+esp_err_t esp_transport_destroy(esp_transport_handle_t t);
 
 /**
  * @brief      Get default port number used by this transport
@@ -109,7 +111,7 @@ esp_err_t transport_destroy(transport_handle_t t);
  *
  * @return     the port number
  */
-int transport_get_default_port(transport_handle_t t);
+int esp_transport_get_default_port(esp_transport_handle_t t);
 
 /**
  * @brief      Set default port number that can be used by this transport
@@ -121,7 +123,7 @@ int transport_get_default_port(transport_handle_t t);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t transport_set_default_port(transport_handle_t t, int port);
+esp_err_t esp_transport_set_default_port(esp_transport_handle_t t, int port);
 
 /**
  * @brief      Transport connection function, to make a connection to server
@@ -135,7 +137,21 @@ esp_err_t transport_set_default_port(transport_handle_t t, int port);
  * - socket for will use by this transport
  * - (-1) if there are any errors, should check errno
  */
-int transport_connect(transport_handle_t t, const char *host, int port, int timeout_ms);
+int esp_transport_connect(esp_transport_handle_t t, const char *host, int port, int timeout_ms);
+
+/**
+ * @brief      Non-blocking transport connection function, to make a connection to server
+ *
+ * @param      t           The transport handle
+ * @param[in]  host        Hostname
+ * @param[in]  port        Port
+ * @param[in]  timeout_ms  The timeout milliseconds
+ *
+ * @return
+ * - socket for will use by this transport
+ * - (-1) if there are any errors, should check errno
+ */
+int esp_transport_connect_async(esp_transport_handle_t t, const char *host, int port, int timeout_ms);
 
 /**
  * @brief      Transport read function
@@ -149,7 +165,7 @@ int transport_connect(transport_handle_t t, const char *host, int port, int time
  *  - Number of bytes was read
  *  - (-1) if there are any errors, should check errno
  */
-int transport_read(transport_handle_t t, char *buffer, int len, int timeout_ms);
+int esp_transport_read(esp_transport_handle_t t, char *buffer, int len, int timeout_ms);
 
 /**
  * @brief      Poll the transport until readable or timeout
@@ -162,7 +178,7 @@ int transport_read(transport_handle_t t, char *buffer, int len, int timeout_ms);
  *     - (-1)   If there are any errors, should check errno
  *     - other  The transport can read
  */
-int transport_poll_read(transport_handle_t t, int timeout_ms);
+int esp_transport_poll_read(esp_transport_handle_t t, int timeout_ms);
 
 /**
  * @brief      Transport write function
@@ -176,7 +192,7 @@ int transport_poll_read(transport_handle_t t, int timeout_ms);
  *  - Number of bytes was written
  *  - (-1) if there are any errors, should check errno
  */
-int transport_write(transport_handle_t t, const char *buffer, int len, int timeout_ms);
+int esp_transport_write(esp_transport_handle_t t, const char *buffer, int len, int timeout_ms);
 
 /**
  * @brief      Poll the transport until writeable or timeout
@@ -189,7 +205,7 @@ int transport_write(transport_handle_t t, const char *buffer, int len, int timeo
  *     - (-1)   If there are any errors, should check errno
  *     - other  The transport can write
  */
-int transport_poll_write(transport_handle_t t, int timeout_ms);
+int esp_transport_poll_write(esp_transport_handle_t t, int timeout_ms);
 
 /**
  * @brief      Transport close
@@ -200,7 +216,7 @@ int transport_poll_write(transport_handle_t t, int timeout_ms);
  * - 0 if ok
  * - (-1) if there are any errors, should check errno
  */
-int transport_close(transport_handle_t t);
+int esp_transport_close(esp_transport_handle_t t);
 
 /**
  * @brief      Get user data context of this transport
@@ -209,7 +225,18 @@ int transport_close(transport_handle_t t);
  *
  * @return     The user data context
  */
-void *transport_get_context_data(transport_handle_t t);
+void *esp_transport_get_context_data(esp_transport_handle_t t);
+
+/**
+ * @brief      Get transport handle of underlying protocol
+ *             which can access this protocol payload directly
+ *             (used for receiving longer msg multiple times)
+ *
+ * @param[in]  t        The transport handle
+ *
+ * @return     Payload transport handle
+ */
+esp_transport_handle_t esp_transport_get_payload_transport_handle(esp_transport_handle_t t);
 
 /**
  * @brief      Set the user context data for this transport
@@ -220,7 +247,7 @@ void *transport_get_context_data(transport_handle_t t);
  * @return
  *     - ESP_OK
  */
-esp_err_t transport_set_context_data(transport_handle_t t, void *data);
+esp_err_t esp_transport_set_context_data(esp_transport_handle_t t, void *data);
 
 /**
  * @brief      Set transport functions for the transport handle
@@ -237,7 +264,7 @@ esp_err_t transport_set_context_data(transport_handle_t t, void *data);
  * @return
  *     - ESP_OK
  */
-esp_err_t transport_set_func(transport_handle_t t,
+esp_err_t esp_transport_set_func(esp_transport_handle_t t,
                              connect_func _connect,
                              io_read_func _read,
                              io_func _write,
@@ -245,7 +272,33 @@ esp_err_t transport_set_func(transport_handle_t t,
                              poll_func _poll_read,
                              poll_func _poll_write,
                              trans_func _destroy);
+
+
+/**
+ * @brief      Set transport functions for the transport handle
+ *
+ * @param[in]  t                    The transport handle
+ * @param[in]  _connect_async_func  The connect_async function pointer
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t esp_transport_set_async_connect_func(esp_transport_handle_t t, connect_async_func _connect_async_func);
+
+/**
+ * @brief      Set parent transport function to the handle
+ *
+ * @param[in]  t                    The transport handle
+ * @param[in]  _parent_transport    The underlying transport getter pointer
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t esp_transport_set_parent_transport_func(esp_transport_handle_t t, payload_transfer_func _parent_transport);
+
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif /* _ESP_TRANSPORT_ */

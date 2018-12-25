@@ -12,25 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef _TRANSPORT_TCP_H_
-#define _TRANSPORT_TCP_H_
-
-#include "transport.h"
+#ifndef _ESP_TRANSPORT_UTILS_H_
+#define _ESP_TRANSPORT_UTILS_H_
+#include <sys/time.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * @brief      Create TCP transport, the transport handle must be release transport_destroy callback
+ * @brief      Convert milliseconds to timeval struct
  *
- * @return  the allocated transport_handle_t, or NULL if the handle can not be allocated
+ * @param[in]  timeout_ms  The timeout milliseconds
+ * @param[out] tv          Timeval struct
  */
-transport_handle_t transport_tcp_init();
+void esp_transport_utils_ms_to_timeval(int timeout_ms, struct timeval *tv);
 
+
+#define ESP_TRANSPORT_MEM_CHECK(TAG, a, action) if (!(a)) {                                                      \
+        ESP_LOGE(TAG,"%s:%d (%s): %s", __FILE__, __LINE__, __FUNCTION__, "Memory exhausted");       \
+        action;                                                                                         \
+        }
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif
+#endif /* _ESP_TRANSPORT_UTILS_H_ */

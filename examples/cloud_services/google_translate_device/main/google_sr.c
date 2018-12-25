@@ -107,6 +107,8 @@ static esp_err_t _http_stream_writer_event_handle(http_stream_event_msg_t *msg)
         sr->sr_total_write = 0;
         sr->is_begin = true;
         sr->remain_len = 0;
+        esp_http_client_set_method(http, HTTP_METHOD_POST);
+        esp_http_client_set_post_field(http, NULL, -1); // Chunk content
         esp_http_client_set_header(http, "Content-Type", "application/json");
         return ESP_OK;
     }
