@@ -25,10 +25,10 @@
 #ifndef _ESP_PERIPHERALS_H_
 #define _ESP_PERIPHERALS_H_
 
-#include "freertos/event_groups.h"
 #include "audio_error.h"
 #include "audio_event_iface.h"
 #include "audio_common.h"
+#include "freertos/event_groups.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,6 +49,7 @@ typedef enum {
     PERIPH_ID_BLUETOOTH = AUDIO_ELEMENT_TYPE_PERIPH + 9,
     PERIPH_ID_LED       = AUDIO_ELEMENT_TYPE_PERIPH + 10,
     PERIPH_ID_SPIFFS    = AUDIO_ELEMENT_TYPE_PERIPH + 11,
+    PERIPH_ID_ADC_BTN   = AUDIO_ELEMENT_TYPE_PERIPH + 12,
 } esp_periph_id_t;
 
 /**
