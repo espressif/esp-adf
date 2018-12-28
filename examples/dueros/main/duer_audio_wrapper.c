@@ -61,7 +61,7 @@ static void esp_audio_state_task (void *para)
     esp_audio_state_t esp_state = {0};
     while (1) {
         xQueueReceive(que, &esp_state, portMAX_DELAY);
-        ESP_LOGI(TAG, "esp_auido status:%x,err:%x", esp_state.status, esp_state.err_msg);
+        ESP_LOGI(TAG, "esp_auido status:%x,err:%x,state:%d", esp_state.status, esp_state.err_msg, duer_playing_type);
         if ((esp_state.status == AUDIO_STATUS_STOPED)
             || (esp_state.status == AUDIO_STATUS_ERROR)) {
             if (duer_playing_type == DUER_AUDIO_TYPE_SPEECH) {
@@ -197,8 +197,11 @@ void duer_dcs_init(void)
 
 void duer_audio_wrapper_pause()
 {
-    esp_audio_pause(player);
-    duer_dcs_audio_active_paused();
+    if (duer_playing_type == DUER_AUDIO_TYPE_SPEECH) {
+        esp_audio_stop(player, 0);
+    } else {
+        ESP_LOGW(TAG, "duer_audio_wrapper_pause, type is music");
+    }
 }
 
 int duer_audio_wrapper_get_state()

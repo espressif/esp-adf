@@ -385,7 +385,7 @@ esp_err_t esp_periph_send_event(esp_periph_handle_t periph, int event_id, void *
     msg.source_type = periph->periph_id;
     msg.cmd = event_id;
     msg.data = data;
-    msg.data_len = 0;
+    msg.data_len = data_len;
     msg.need_free_data = false;
     msg.source = periph;
 
