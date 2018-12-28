@@ -292,6 +292,11 @@ read_err:
     if (total_read_size > 0) {
         rb_release(rb->can_write);
     }
+    if ((ret_val == RB_FAIL)
+        || (ret_val == RB_ABORT)
+       ) {
+        total_read_size = ret_val;
+    }
     return total_read_size > 0 ? total_read_size : ret_val;
 }
 
@@ -362,6 +367,11 @@ int rb_write(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wa
 write_err:
     if (total_write_size > 0) {
         rb_release(rb->can_read);
+    }
+    if ((ret_val == RB_FAIL)
+        || (ret_val == RB_ABORT)
+       ) {
+        total_write_size = ret_val;
     }
     return total_write_size > 0 ? total_write_size : ret_val;
 }

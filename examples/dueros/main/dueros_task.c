@@ -399,7 +399,6 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
                            ((event->cmd == PERIPH_BUTTON_RELEASE) || (event->cmd == PERIPH_BUTTON_LONG_RELEASE))) {
                     ESP_LOGI(TAG, "PERIPH_NOTIFY_KEY_REC_QUIT");
                 }
-
                 break;
             }
         case PERIPH_ID_TOUCH: {
@@ -489,6 +488,7 @@ void duer_service_create(void)
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
     esp_periph_start(button_handle);
 
+    // If enable the touch will take a lot of cpu.
     periph_touch_cfg_t touch_cfg = {
         .touch_mask = TOUCH_PAD_SEL4 | TOUCH_PAD_SEL7 | TOUCH_PAD_SEL8 | TOUCH_PAD_SEL9,
         .tap_threshold_percent = 70,

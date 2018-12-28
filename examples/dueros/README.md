@@ -16,6 +16,17 @@ To run this example you need ESP32 LyraT or compatible board:
 - Adjust volume via [Vol-] or [Vol+]
 - Configure Wi-Fi by [Set] button
 
-### Note:
+### Note
 - DuerOS profile is device unique ID.
 - There are serial spcific configurations for DuerOS example, please refer to `ADF_APTH/examples/dueros/sdkconfig.defaults`.
+
+### Known Issues
+- There is a bug on touch driver which is take a lot of cpu. The phenomenon is can't wakeup by voice or play music with stutter. Workaround is not used follow codes at `duer_service_create`.
+```c
+    periph_touch_cfg_t touch_cfg = {
+        .touch_mask = TOUCH_PAD_SEL4 | TOUCH_PAD_SEL7 | TOUCH_PAD_SEL8 | TOUCH_PAD_SEL9,
+        .tap_threshold_percent = 70,
+    };
+    esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
+    esp_periph_start(touch_periph);
+```

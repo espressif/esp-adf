@@ -524,7 +524,8 @@ esp_err_t audio_pipeline_check_items_state(audio_pipeline_handle_t pipeline, aud
             continue;
         }
         el_cnt ++;
-        ESP_LOGD(TAG, "pipeline check state,pipeline:%p, el:%p, state:%d, status:%d", pipeline, item->el, item->el_state, status);
+        ESP_LOGD(TAG, "pipeline check state,pipeline:%p, el:%p, tag:%s, state:%d, status:%d", pipeline, item->el,
+                 audio_element_get_tag(item->el), item->el_state, status);
         if ((AEL_STATUS_NONE != item->el_state) && (status == item->el_state)) {
             el_sta_cnt++;
         }
