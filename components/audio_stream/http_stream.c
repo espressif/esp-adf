@@ -492,7 +492,7 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         rlen = esp_http_client_read(http->client, buffer, len);
     }
     if (rlen <= 0) {
-        ESP_LOGW(TAG, "No more data,errno:%d", errno);
+        ESP_LOGW(TAG, "No more data,errno:%d, total_bytes:%llu", errno, info.byte_pos);
         if (dispatch_hook(self, HTTP_STREAM_FINISH_TRACK, NULL, 0) != ESP_OK) {
             ESP_LOGE(TAG, "Failed to process user callback");
             return ESP_FAIL;

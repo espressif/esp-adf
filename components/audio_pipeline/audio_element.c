@@ -241,7 +241,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
                 audio_element_reset_output_ringbuf(el);
             }
             if (audio_element_process_state_init(el) != ESP_OK) {
-                break;
+                return ESP_FAIL;
             }
 
             audio_event_iface_set_cmd_waiting_timeout(el->event, 0);
