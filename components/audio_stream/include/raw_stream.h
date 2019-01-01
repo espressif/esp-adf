@@ -35,11 +35,12 @@ extern "C" {
 
 
 /**
- * @brief Raw stream provide APIs to obtain the pipeline data without output stream or
+ * @brief Raw stream provides APIs to obtain the pipeline data without output stream or
  *        fill the pipeline data without input stream.
- *        The have two type modes, one is AUDIO_STREAM_READER,e.g.
- *        [i2s]->[filter]->[raw],[i2s]->[codec-amr]->[raw].
- *        One is AUDIO_STREAM_WRITER,e.g. [raw]->[codec-mp3]->[i2s]
+ *        The stream has two types / modes, reader and writer:
+ *
+ *        - AUDIO_STREAM_READER, e.g. [i2s]->[filter]->[raw],[i2s]->[codec-amr]->[raw]
+ *        - AUDIO_STREAM_WRITER, e.g. [raw]->[codec-mp3]->[i2s]
  */
 
 /**

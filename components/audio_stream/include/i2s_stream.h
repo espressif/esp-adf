@@ -102,9 +102,9 @@ typedef struct {
 
 /**
  * @brief      Create a handle to an Audio Element to stream data from I2S to another Element
- *             or get data from other elements sent to I2S, depend on the configuration of stream type
+ *             or get data from other elements sent to I2S, depending on the configuration of stream type
  *             is AUDIO_STREAM_READER or AUDIO_STREAM_WRITER.
- * @note       If I2S stream is enabled with built-in DAC mode, please don't use I2S_NUM_1.The built-in
+ * @note       If I2S stream is enabled with built-in DAC mode, please don't use I2S_NUM_1. The built-in
  *             DAC functions are only supported on I2S0 for the current ESP32 chip.
  * @param      config  The configuration
  *
