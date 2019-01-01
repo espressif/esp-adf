@@ -10,4 +10,6 @@ Peripherals
     Touch <periph_touch>
     Console <periph_console>
     Spiffs <periph_spiffs>
+    Is31fl3216 <periph_is31fl3216>
     Common <esp_peripherals>
+

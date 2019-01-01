@@ -305,8 +305,6 @@ esp_err_t esp_periph_start(esp_periph_handle_t periph)
     } else {
         STAILQ_INSERT_TAIL(&g_esp_periph_obj->periph_list, periph, entries);
     }
-
-
     if (g_esp_periph_obj->run == false) {
         g_esp_periph_obj->run = true;
         if (xTaskCreatePinnedToCore(esp_periph_task,
