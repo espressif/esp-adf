@@ -33,9 +33,12 @@ extern "C" {
 #include "adc_button.h"
 #include "esp_peripherals.h"
 
+/**
+ * @brief      The configuration of ADC Button
+ */
 typedef struct {
-    adc_arr_t *arr;
-    int arr_size;
+    adc_arr_t *arr;  /*!< An array with configuration of buttons */
+    int arr_size;    /*!< The array size */
 } periph_adc_button_cfg_t;
 
 typedef enum {
