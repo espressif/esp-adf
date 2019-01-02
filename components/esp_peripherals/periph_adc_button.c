@@ -44,8 +44,8 @@ static void btn_cb(void *user_data, int adc, int id, btn_state state)
     } else if (state == BTN_STATE_RELEASE) {
         event_id = PERIPH_ADC_BUTTON_RELEASE;
     }
-    //Send ADC as data and ID as data_len
-    esp_periph_send_event(self, event_id, (void *)adc, id);
+    //Send ID as data and ADC as data_len
+    esp_periph_send_event(self, event_id, (void *)id, adc);
 }
 
 static esp_err_t _adc_button_destroy(esp_periph_handle_t self)

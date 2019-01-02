@@ -8,8 +8,8 @@ Espressif Systems Audio Development Framework (ESP-ADF) is the official audio de
 
 ESP-ADF supports development of audio applications for the Espressif Systems [ESP32](https://espressif.com/en/products/hardware/esp32/overview) chip in the most comprehensive way. With ESP-ADF, you can easily add features, develop audio applications from simple to complex:
 
-- Music player or recorder supports audio formats such as MP3, AAC, WAV, OGG, AMR, TS, SPEEX ...
-- Play music from sources: HTTP, HLS(HTTP Live Streaming), SDCARD, Bluetooth A2DP/HFP
+- Music player or recorder supports audio formats such as MP3, AAC, FLAC, WAV, OGG, AMR, TS, EQ, Downmixer, Sonic, G.711, SPEEX ...
+- Play music from sources: HTTP, HLS(HTTP Live Streaming), SPIFFS, SDCARD,  A2DP-Source, A2DP-Sink, HFP ...
 - Integrate Media services such as: DLNA, WeChat ...
 - Internet Radio
 - Voice recognition and integration with online services such as Alexa, DuerOS, ...
@@ -22,10 +22,10 @@ As a general, the ESP-ADF features will be supported as shown below:
 
 ### Quick Start
 
-You need the ESP32-LyraT board and headphone connected, make sure you clone the project recursive: 
+You need the ESP32-LyraT board and headphone connected, make sure you clone the project recursive:
 
 ```
-git clone --recursive https://github.com/espressif/esp-adf.git 
+git clone --recursive https://github.com/espressif/esp-adf.git
 cd esp-adf/examples/get-started/play_mp3
 make menuconfig
 make flash monitor
@@ -71,6 +71,6 @@ Check folder [examples](examples) that contains sample applications to demonstra
 # Resources
 
 * [Documentation](https://docs.espressif.com/projects/esp-adf/en/latest/index.html) for the latest version of https://docs.espressif.com/projects/esp-adf/. This documentation is built from the [docs directory](docs) of this repository.
-* The [esp32.com forum](https://esp32.com/) is a place to ask questions and find community resources. On the forum there is a [section dedicated to ESP-ADF](https://esp32.com/viewforum.php?f=20) users. 
+* The [esp32.com forum](https://esp32.com/) is a place to ask questions and find community resources. On the forum there is a [section dedicated to ESP-ADF](https://esp32.com/viewforum.php?f=20) users.
 * [Check the Issues section on github](https://github.com/espressif/esp-adf/issues) if you find a bug or have a feature request. Please check existing Issues before opening a new one.
 * If you're interested in contributing to ESP-ADF, please check the [Contributions Guide](https://esp-idf.readthedocs.io/en/latest/contribute/index.html).
