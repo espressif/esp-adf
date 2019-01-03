@@ -73,10 +73,12 @@ INPUT = \
     ../../components/esp_peripherals/include/periph_sdcard.h \
     ../../components/esp_peripherals/include/periph_touch.h \
     ../../components/esp_peripherals/include/periph_button.h \
+    ../../components/esp_peripherals/include/periph_led.h \
     ../../components/esp_peripherals/include/periph_wifi.h \
     ../../components/esp_peripherals/include/periph_console.h \
     ../../components/esp_peripherals/include/periph_spiffs.h \
     ../../components/esp_peripherals/include/periph_is31fl3216.h \
+    ../../components/esp_peripherals/include/periph_adc_button.h \
     ## Audio HAL
     ../../components/audio_hal/board/board.h \
     ../../components/audio_hal/driver/es8388/es8388.h \

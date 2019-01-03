@@ -1,7 +1,7 @@
 ESP Peripherals
 ===============
 
-There are several ESP32 peripherals to use in the ESP-ADF, from buttons, touchpads, SD Card to Wi-Fi. This library simplifies the management of peripherals, by pooling and monitoring in a single task, adding basic functions to send and receive events. And it also provides APIs to easily integrate new peripherals.
+This library simplifies the management of peripherals, by pooling and monitoring in a single task, adding basic functions to send and receive events. And it also provides APIs to easily integrate new peripherals.
 
 .. note::
 
