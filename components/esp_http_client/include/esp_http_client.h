@@ -309,6 +309,7 @@ bool esp_http_client_is_chunked_response(esp_http_client_handle_t client);
  * @param[in]  len     The length
  *
  * @return
+ *     - (0) receive timeout
  *     - (-1) if any errors
  *     - Length of data was read
  */

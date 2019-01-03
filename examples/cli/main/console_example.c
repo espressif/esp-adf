@@ -353,10 +353,10 @@ static void cli_setup_player(void)
         DEFAULT_ESP_OGG_DECODER_CONFIG(),
         DEFAULT_ESP_OPUS_DECODER_CONFIG(),
         DEFAULT_ESP_MP3_DECODER_CONFIG(),
-        DEFAULT_ESP_WAV_DECODER_CONFIG(),   
+        DEFAULT_ESP_WAV_DECODER_CONFIG(),
         DEFAULT_ESP_AAC_DECODER_CONFIG(),
         DEFAULT_ESP_M4A_DECODER_CONFIG(),
-        DEFAULT_ESP_TS_DECODER_CONFIG(),         
+        DEFAULT_ESP_TS_DECODER_CONFIG(),
     };
     esp_decoder_cfg_t auto_dec_cfg = DEFAULT_ESP_DECODER_CONFIG();
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, esp_decoder_init(&auto_dec_cfg, auto_decode, 10));
@@ -373,8 +373,8 @@ static void cli_setup_player(void)
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, flac_decoder_init(&flac_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, ogg_decoder_init(&ogg_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, decoder_opus_init(&opus_dec_cfg));
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));   
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));    
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, aac_decoder_init(&aac_dec_cfg));
     audio_element_handle_t m4a_dec_cfg = aac_decoder_init(&aac_dec_cfg);
     audio_element_set_tag(m4a_dec_cfg, "m4a");
