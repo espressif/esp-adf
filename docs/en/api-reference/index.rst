@@ -13,21 +13,23 @@ This API provides a way to develop audio applications using :doc:`Elements <fram
         # global attributes
         default_shape = roundedbox;
         node_width = 110;
-        node_height = 160;
+        node_height = 140;
         span_width = 40;
         span_height = 15;
 
         # labels of diagram nodes
-        STREAMS [label="I2S\n HTTP\n FatFs"];
-        CODECS [label="Decoders:\n * AAC\n * AMR\n * MP3\n * WAV\n\n Encoders:\n * AMRNB\n * AMRWB\n * WAV"];
+        STREAMS [label="I2S\n HTTP\n FatFs\n Raw\n Spifss"];
+        DECODERS [label="AAC\n AMR\n FLAC\n MP3\n OGG\n OPUS\n WAV"];
+        ENCODERS [label="AMRNB\n AMRWB\n WAV"];
         FILTERS [label="Upsample\n Downsample\n Stereo -> Mono\n Mono -> Stereo"];
 
         # labels of description nodes
         STREAMS_DESC [label=Streams, height=30, shape=note, color=yellow];
-        CODECS_DESC  [label=Codecs, height=30, shape=note, color=yellow];
+        DECODERS_DESC  [label=Decoders, height=30, shape=note, color=yellow];
+        ENCODERS_DESC  [label=Encoders, height=30, shape=note, color=yellow];
         FILTERS_DESC [label=Filters, height=30, shape=note, color=yellow];
-        STREAMS -- CODECS -- FILTERS  [style=none];
-        STREAMS_DESC -- CODECS_DESC -- FILTERS_DESC [style=none]
+        STREAMS -- DECODERS -- ENCODERS -- FILTERS  [style=none];
+        STREAMS_DESC -- DECODERS_DESC -- ENCODERS_DESC -- FILTERS_DESC [style=none]
     }
 
 The application is developed by combining the :doc:`Elements <framework/audio_element>` into a :doc:`Pipeline <framework/audio_pipeline>`. A diagram below presents organization of two elements, MP3 decoder and I2S stream, in the Audio Pipeline, that has been used in :example:`get-started/play_mp3` example.
