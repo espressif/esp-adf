@@ -33,7 +33,7 @@
 
 static const char *TAG = "HTTP_CLIENT";
 
-#define HTTP_STREAM_READ_TIMEOUT_MS (100)
+#define HTTP_STREAM_READ_TIMEOUT_MS (10000)
 /**
  * HTTP Buffer
  */
