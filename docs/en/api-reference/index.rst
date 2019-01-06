@@ -73,6 +73,7 @@ See a table of contents below with links to description of all the above compone
     Streams <streams/index>
     Codecs <codecs/index>
     Services <services/index>
+    Speech Recognition <speech-recognition/index>
     Peripherals <peripherals/index>
     Abstraction Layer <abstraction/index>
     Configuration Options <kconfig>

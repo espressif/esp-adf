@@ -65,6 +65,11 @@ INPUT = \
     ../../components/esp-adf-libs/esp_codec/include/processing/esp_resample.h \
     ../../components/esp-adf-libs/esp_codec/include/processing/esp_sonic.h \
     ../../components/esp-adf-libs/esp_codec/include/processing/wav_head.h \
+    ## Speech Recognitions
+    ../../components/esp-adf-libs/esp_sr/include/esp_sr_iface.h \
+    ../../components/esp-adf-libs/esp_sr/include/esp_sr_models.h \
+    ../../components/esp-adf-libs/esp_sr/include/esp_vad.h \
+    ../../components/esp-adf-libs/recorder_engine/include/recorder_engine.h \
     ## ESP Audio
     ../../components/esp-adf-libs/esp_audio/include/audio_def.h \
     ../../components/esp-adf-libs/esp_audio/include/esp_audio.h \
