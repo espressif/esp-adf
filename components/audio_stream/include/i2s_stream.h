@@ -55,22 +55,47 @@ typedef struct {
 #define I2S_STREAM_TASK_CORE            (0)
 #define I2S_STREAM_RINGBUFFER_SIZE      (8 * 1024)
 
+// #define I2S_STREAM_CFG_DEFAULT() {                                              \
+//     .type = AUDIO_STREAM_WRITER,                                                \
+//     .task_prio = I2S_STREAM_TASK_PRIO,                                          \
+//     .task_core = I2S_STREAM_TASK_CORE,                                          \
+//     .task_stack = I2S_STREAM_TASK_STACK,                                        \
+//     .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
+//     .i2s_config = {                                                             \
+//         .mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX,                    \
+//         .sample_rate = 44100,                                                   \
+//         .bits_per_sample = 16,                                                  \
+//         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           \
+//         .communication_format = I2S_COMM_FORMAT_I2S,                            \
+//         .dma_buf_count = 3,                                                     \
+//         .dma_buf_len = 300,                                                     \
+//         .use_apll = 1,                                                          \
+//         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                               \
+//     },                                                                          \
+//     .i2s_pin_config = {                                                         \
+//         .bck_io_num = IIS_SCLK,                                                 \
+//         .ws_io_num = IIS_LCLK,                                                  \
+//         .data_out_num = IIS_DSIN,                                               \
+//         .data_in_num = IIS_DOUT,                                                \
+//     },                                                                          \
+//     .i2s_port = 0,                                                              \
+// }
+
+// FIXME OK -> C++ / Arduino / Platformio -> a value of type "int" cannot be used to initialize an entity of type "i2s_mode_t" 
+// -> in .platformio\packages\framework-arduinoespressif32\tools\sdk\include\driver\driver\i2s.h - i2s_mode_t - I2S_MODE_MASTER_TX_RX = 13, 
+// FIXME OK -> C++ / Arduino / Platformio -> non-trivial-designated-initializers-not-supported -> the order of initialization needs to be in the exact order of declaration.
 #define I2S_STREAM_CFG_DEFAULT() {                                              \
     .type = AUDIO_STREAM_WRITER,                                                \
-    .task_prio = I2S_STREAM_TASK_PRIO,                                          \
-    .task_core = I2S_STREAM_TASK_CORE,                                          \
-    .task_stack = I2S_STREAM_TASK_STACK,                                        \
-    .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
     .i2s_config = {                                                             \
-        .mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX,                    \
+        .mode = I2S_MODE_MASTER_TX_RX,                                          \
         .sample_rate = 44100,                                                   \
-        .bits_per_sample = 16,                                                  \
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,                           \
         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           \
         .communication_format = I2S_COMM_FORMAT_I2S,                            \
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                               \
         .dma_buf_count = 3,                                                     \
         .dma_buf_len = 300,                                                     \
         .use_apll = 1,                                                          \
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                               \
     },                                                                          \
     .i2s_pin_config = {                                                         \
         .bck_io_num = IIS_SCLK,                                                 \
@@ -78,9 +103,14 @@ typedef struct {
         .data_out_num = IIS_DSIN,                                               \
         .data_in_num = IIS_DOUT,                                                \
     },                                                                          \
-    .i2s_port = 0,                                                              \
-}
-
+    .i2s_port = I2S_NUM_0,                                                      \
+    .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
+    .task_stack = I2S_STREAM_TASK_STACK,                                        \
+    .task_core = I2S_STREAM_TASK_CORE,                                          \
+    .task_prio = I2S_STREAM_TASK_PRIO,                                          \
+}    
+    
+    
 #define I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT() {                                     \
     .type = AUDIO_STREAM_WRITER,                                                    \
     .task_prio = I2S_STREAM_TASK_PRIO,                                              \
