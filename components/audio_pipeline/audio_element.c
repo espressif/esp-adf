@@ -241,6 +241,8 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
                 audio_element_reset_output_ringbuf(el);
             }
             if (audio_element_process_state_init(el) != ESP_OK) {
+                audio_element_abort_output_ringbuf(el);
+                audio_element_abort_input_ringbuf(el);
                 return ESP_FAIL;
             }
 
@@ -425,6 +427,7 @@ void audio_element_task(void *pv)
     audio_free(el->buf);
     ESP_LOGD(TAG, "[%s] el task deleted,%d", el->tag, uxTaskGetStackHighWaterMark(NULL));
     xEventGroupSetBits(el->state_event, TASK_DESTROYED_BIT);
+    el->task_run = false;
     vTaskDelete(NULL);
 }
 
