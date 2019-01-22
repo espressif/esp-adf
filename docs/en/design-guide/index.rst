@@ -10,5 +10,6 @@ The ESP32 is a powerful chip well positioned as a MCU of the audio projects. Thi
     Project Design <project-design>
     Design Considerations <design-considerations>
     Software Design <software-design>
+    Hardware Design (PDF) <https://www.espressif.com/sites/default/files/documentation/esp32_audio_design_guidelines__en.pdf>
     Development Boards <dev-boards>
     Audio Samples <audio-samples>

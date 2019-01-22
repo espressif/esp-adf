@@ -57,14 +57,16 @@ INPUT = \
     ../../components/esp-adf-libs/esp_codec/include/codec/auto_opus_dec.h \
     ../../components/esp-adf-libs/esp_codec/include/codec/auto_wav_dec.h \
     ## Audio Processing
-    ../../components/esp-adf-libs/esp_codec/include/codec/downmix.h \
-    ../../components/esp-adf-libs/esp_codec/include/codec/equalizer.h \
-    ../../components/esp-adf-libs/esp_codec/include/codec/filter_resample.h \
+    ../../components/esp-adf-libs/esp_codec/include/processing/wav_head.h \
     ../../components/esp-adf-libs/esp_codec/include/processing/esp_downmix.h \
     ../../components/esp-adf-libs/esp_codec/include/processing/esp_equalizer.h \
     ../../components/esp-adf-libs/esp_codec/include/processing/esp_resample.h \
     ../../components/esp-adf-libs/esp_codec/include/processing/esp_sonic.h \
-    ../../components/esp-adf-libs/esp_codec/include/processing/wav_head.h \
+    ## Audio Processing Wrappers
+    ../../components/esp-adf-libs/esp_codec/include/codec/downmix.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/equalizer.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/filter_resample.h \
+    ../../components/esp-adf-libs/esp_codec/include/codec/audio_sonic.h \
     ## Speech Recognitions
     ../../components/esp-adf-libs/esp_sr/include/esp_sr_iface.h \
     ../../components/esp-adf-libs/esp_sr/include/esp_sr_models.h \
