@@ -41,7 +41,7 @@
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t es8374_init(audio_hal_codec_config_t *cfg);
+esp_err_t es8374_codec_init(audio_hal_codec_config_t *cfg);
 
 /**
  * @brief Deinitialize ES8374 codec chip
@@ -50,7 +50,7 @@ esp_err_t es8374_init(audio_hal_codec_config_t *cfg);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t es8374_deinit(void);
+esp_err_t es8374_codec_deinit(void);
 
 /**
  * @brief Configure ES8374 I2S format
@@ -118,7 +118,7 @@ esp_err_t es8374_stop(es_module_t mode);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t es8374_set_voice_volume(int volume);
+esp_err_t es8374_codec_set_voice_volume(int volume);
 
 /**
  * @brief Get voice volume
@@ -129,7 +129,7 @@ esp_err_t es8374_set_voice_volume(int volume);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t es8374_get_voice_volume(int *volume);
+esp_err_t es8374_codec_get_voice_volume(int *volume);
 
 /**
  * @brief Mute or unmute ES8374 DAC. Basically you can use this function to mute or unmute the output
@@ -215,7 +215,7 @@ void es8374_read_all();
  *     - ESP_FAIL Parameter error
  *     - ESP_OK   Success
  */
-esp_err_t es8374_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
+esp_err_t es8374_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
 
 /**
  * @brief Control ES8374 codec chip
@@ -227,7 +227,7 @@ esp_err_t es8374_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_ifa
  *     - ESP_FAIL Parameter error
  *     - ESP_OK   Success
  */
-esp_err_t es8374_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);
+esp_err_t es8374_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);
 
 /**
  * @brief Set ES8374 PA power

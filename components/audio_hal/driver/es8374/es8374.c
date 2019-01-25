@@ -26,7 +26,7 @@
 #include "esp_log.h"
 #include "driver/i2c.h"
 #include "es8374.h"
-#include "board.h"
+#include "board_pins_config.h"
 
 
 #define ES8374_TAG "ES8374_DRIVER"
@@ -39,14 +39,28 @@
 
 #define LOG_8374(fmt, ...)   ESP_LOGW(ES8374_TAG, fmt, ##__VA_ARGS__)
 
+static int codec_init_flag = 0;
+
 static const i2c_config_t es_i2c_cfg = {
     .mode = I2C_MODE_MASTER,
-    .sda_io_num = IIC_DATA,
-    .scl_io_num = IIC_CLK,
     .sda_pullup_en = GPIO_PULLUP_ENABLE,
     .scl_pullup_en = GPIO_PULLUP_ENABLE,
     .master.clk_speed = 100000
 };
+
+audio_hal_func_t AUDIO_CODEC_DEFAULT_HANDLE = {
+    .audio_codec_initialize = es8374_codec_init,
+    .audio_codec_deinitialize = es8374_codec_deinit,
+    .audio_codec_ctrl = es8374_codec_ctrl_state,
+    .audio_codec_config_iface = es8374_codec_config_i2s,
+    .audio_codec_set_volume = es8374_codec_set_voice_volume,
+    .audio_codec_get_volume = es8374_codec_get_voice_volume,
+};
+
+static bool es8374_codec_initialized()
+{
+    return codec_init_flag;
+}
 
 int es_write_reg(uint8_t slaveAdd, uint8_t regAdd, uint8_t data)
 {
@@ -92,6 +106,7 @@ int es_read_reg(uint8_t slaveAdd, uint8_t regAdd, uint8_t *pData)
 static int i2c_init()
 {
     int res;
+    res = get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
     res = i2c_param_config(I2C_NUM_0, &es_i2c_cfg);
     res |= i2c_driver_install(I2C_NUM_0, es_i2c_cfg.mode, 0, 0, 0);
     ES_ASSERT(res, "i2c_init error", -1);
@@ -106,14 +121,12 @@ int es8374_write_reg(uint8_t regAdd, uint8_t data)
 int es8374_read_reg(uint8_t regAdd, uint8_t *regv)
 {
     uint8_t regdata = 0xFF;
-    uint8_t res =0;
+    uint8_t res = 0;
 
-    if(es_read_reg(ES8374_ADDR, regAdd, &regdata) == 0) {
+    if (es_read_reg(ES8374_ADDR, regAdd, &regdata) == 0) {
         *regv = regdata;
         return res;
-    }
-    else
-    {
+    } else {
         LOG_8374("Read Audio Codec Register Failed!");
         res = -1;
         return res;
@@ -135,7 +148,7 @@ int es8374_set_voice_mute(int enable)
     uint8_t reg = 0;
 
     res |= es8374_read_reg(0x36, &reg);
-    if(res == 0) {
+    if (res == 0) {
         reg = reg & 0xdf;
         res |= es8374_write_reg(0x36, reg | (((int)enable) << 5));
     }
@@ -164,14 +177,14 @@ int es8374_set_bits_per_sample(es_module_t mode, es_bits_length_t bit_per_sample
 
     if (mode == ES_MODULE_ADC || mode == ES_MODULE_ADC_DAC) {
         res |= es8374_read_reg(0x10, &reg);
-        if(res == 0) {
+        if (res == 0) {
             reg = reg & 0xe3;
             res |=  es8374_write_reg(0x10, reg | (bits << 2));
         }
     }
     if (mode == ES_MODULE_DAC || mode == ES_MODULE_ADC_DAC) {
         res |= es8374_read_reg(0x11, &reg);
-        if(res == 0) {
+        if (res == 0) {
             reg = reg & 0xe3;
             res |= es8374_write_reg(0x11, reg | (bits << 2));
         }
@@ -184,13 +197,13 @@ int es8374_config_fmt(es_module_t mode, es_i2s_fmt_t fmt)
 {
     int res = 0;
     uint8_t reg = 0;
-    int fmt_tmp,fmt_i2s;
+    int fmt_tmp, fmt_i2s;
 
     fmt_tmp = ((fmt & 0xf0) >> 4);
     fmt_i2s =  fmt & 0x0f;
     if (mode == ES_MODULE_ADC || mode == ES_MODULE_ADC_DAC) {
         res |= es8374_read_reg(0x10, &reg);
-        if(res == 0) {
+        if (res == 0) {
             reg = reg & 0xfc;
             res |= es8374_write_reg(0x10, reg | fmt_i2s);
             res |= es8374_set_bits_per_sample(mode, fmt_tmp);
@@ -198,7 +211,7 @@ int es8374_config_fmt(es_module_t mode, es_i2s_fmt_t fmt)
     }
     if (mode == ES_MODULE_DAC || mode == ES_MODULE_ADC_DAC) {
         res |= es8374_read_reg(0x11, &reg);
-        if(res == 0) {
+        if (res == 0) {
             reg = reg & 0xfc;
             res |= es8374_write_reg(0x11, reg | (fmt_i2s));
             res |= es8374_set_bits_per_sample(mode, fmt_tmp);
@@ -222,17 +235,17 @@ int es8374_start(es_module_t mode)
         res |= es8374_read_reg(0x1c, &reg);        // set spk mixer
         reg |= 0x40;
         res |= es8374_write_reg( 0x1c, reg);
-        res |= es8374_write_reg(0x1D,0x02);       // spk set
-        res |= es8374_write_reg(0x1F,0x00);       // spk set
-        res |= es8374_write_reg(0x1E,0xA0);       // spk on
+        res |= es8374_write_reg(0x1D, 0x02);      // spk set
+        res |= es8374_write_reg(0x1F, 0x00);      // spk set
+        res |= es8374_write_reg(0x1E, 0xA0);      // spk on
     }
     if (mode == ES_MODULE_ADC || mode == ES_MODULE_ADC_DAC || mode == ES_MODULE_LINE) {
         res |= es8374_read_reg(0x21, &reg);       //power up adc and input
         reg &= 0x3f;
-        res |= es8374_write_reg(0x21,reg);
+        res |= es8374_write_reg(0x21, reg);
         res |= es8374_read_reg(0x10, &reg);       //power up adc and input
         reg &= 0x3f;
-        res |= es8374_write_reg(0x10,reg);
+        res |= es8374_write_reg(0x10, reg);
     }
 
     if (mode == ES_MODULE_DAC || mode == ES_MODULE_ADC_DAC || mode == ES_MODULE_LINE) {
@@ -241,18 +254,18 @@ int es8374_start(es_module_t mode)
         res |= es8374_write_reg( 0x1a, reg);
         reg &= 0xdf;
         res |= es8374_write_reg( 0x1a, reg);
-        res |= es8374_write_reg(0x1D,0x12);       // mute speaker
-        res |= es8374_write_reg(0x1E,0x20);       // disable class d
+        res |= es8374_write_reg(0x1D, 0x12);      // mute speaker
+        res |= es8374_write_reg(0x1E, 0x20);      // disable class d
         res |= es8374_read_reg(0x15, &reg);        //power up dac
         reg &= 0xdf;
-        res |= es8374_write_reg(0x15,reg);
+        res |= es8374_write_reg(0x15, reg);
         res |= es8374_read_reg(0x1a, &reg);        //disable lout
         reg |= 0x20;
         res |= es8374_write_reg( 0x1a, reg);
         reg &= 0xf7;
         res |= es8374_write_reg( 0x1a, reg);
-        res |= es8374_write_reg(0x1D,0x02);       // mute speaker
-        res |= es8374_write_reg(0x1E,0xa0);       // disable class d
+        res |= es8374_write_reg(0x1D, 0x02);      // mute speaker
+        res |= es8374_write_reg(0x1E, 0xa0);      // disable class d
 
         res |= es8374_set_voice_mute(false);
     }
@@ -271,12 +284,12 @@ int es8374_stop(es_module_t mode)
         res |= es8374_write_reg( 0x1a, reg);
         reg &= 0x9f;
         res |= es8374_write_reg( 0x1a, reg);
-        res |= es8374_write_reg(0x1D,0x12);       // mute speaker
-        res |= es8374_write_reg(0x1E,0x20);       // disable class d
+        res |= es8374_write_reg(0x1D, 0x12);      // mute speaker
+        res |= es8374_write_reg(0x1E, 0x20);      // disable class d
         res |= es8374_read_reg(0x1c, &reg);        // disable spkmixer
         reg &= 0xbf;
         res |= es8374_write_reg( 0x1c, reg);
-        res |= es8374_write_reg(0x1F,0x00);       // spk set
+        res |= es8374_write_reg(0x1F, 0x00);      // spk set
     }
     if (mode == ES_MODULE_DAC || mode == ES_MODULE_ADC_DAC) {
         res |= es8374_set_voice_mute(true);
@@ -286,20 +299,20 @@ int es8374_stop(es_module_t mode)
         res |= es8374_write_reg( 0x1a, reg);
         reg &= 0xdf;
         res |= es8374_write_reg( 0x1a, reg);
-        res |= es8374_write_reg(0x1D,0x12);       // mute speaker
-        res |= es8374_write_reg(0x1E,0x20);       // disable class d
+        res |= es8374_write_reg(0x1D, 0x12);      // mute speaker
+        res |= es8374_write_reg(0x1E, 0x20);      // disable class d
         res |= es8374_read_reg(0x15, &reg);        //power up dac
         reg |= 0x20;
-        res |= es8374_write_reg(0x15,reg);
+        res |= es8374_write_reg(0x15, reg);
     }
     if (mode == ES_MODULE_ADC || mode == ES_MODULE_ADC_DAC) {
 
         res |= es8374_read_reg(0x10, &reg);       //power up adc and input
         reg |= 0xc0;
-        res |= es8374_write_reg(0x10,reg);
+        res |= es8374_write_reg(0x10, reg);
         res |= es8374_read_reg(0x21, &reg);       //power up adc and input
         reg |= 0xc0;
-        res |= es8374_write_reg(0x21,reg);
+        res |= es8374_write_reg(0x21, reg);
     }
 
     return res;
@@ -314,7 +327,7 @@ int es8374_i2s_config_clock(es_i2s_clock_t cfg)
     res |= es8374_read_reg(0x0f, &reg);       //power up adc and input
     reg &= 0xe0;
     int divratio = 0;
-    switch(cfg.sclk_div) {
+    switch (cfg.sclk_div) {
         case MCLK_DIV_1:
             divratio = 1;
             break;
@@ -412,13 +425,12 @@ int es8374_i2s_config_clock(es_i2s_clock_t cfg)
             break;
     }
     reg |= divratio;
-    res |= es8374_write_reg(0x0f,reg);
+    res |= es8374_write_reg(0x0f, reg);
 
     int dacratio_l = 0;
     int dacratio_h = 0;
 
-    switch(cfg.lclk_div)
-    {
+    switch (cfg.lclk_div) {
         case LCLK_DIV_128:
             dacratio_l = 128 % 256;
             dacratio_h = 128 / 256;
@@ -539,9 +551,9 @@ int es8374_config_dac_output(es_dac_output_t output)
     res |= es8374_read_reg(0x1c, &reg); // set spk mixer
     reg |= 0x80;
     res |= es8374_write_reg(0x1c, reg);
-    res |= es8374_write_reg(0x1D,0x02); // spk set
-    res |= es8374_write_reg(0x1F,0x00); // spk set
-    res |= es8374_write_reg(0x1E,0xA0); // spk on
+    res |= es8374_write_reg(0x1D, 0x02); // spk set
+    res |= es8374_write_reg(0x1F, 0x00); // spk set
+    res |= es8374_write_reg(0x1E, 0xA0); // spk on
 
     return res;
 }
@@ -552,7 +564,7 @@ int es8374_config_adc_input(es_adc_input_t input)
     uint8_t reg = 0;
 
     res |= es8374_read_reg(0x21, &reg);
-    if(res == 0) {
+    if (res == 0) {
         reg = (reg & 0xcf) | 0x14;
         res |= es8374_write_reg( 0x21, reg);
     }
@@ -564,13 +576,11 @@ int es8374_set_mic_gain(es_mic_gain_t gain)
 {
     int res = 0;
 
-    if(gain > MIC_GAIN_MIN && gain < MIC_GAIN_24DB) {
+    if (gain > MIC_GAIN_MIN && gain < MIC_GAIN_24DB) {
         int gain_n = 0;
         gain_n = (int)gain / 3;
         res = es8374_write_reg(0x22, gain_n | (gain_n << 4)); //MIC PGA
-    }
-    else
-    {
+    } else {
         res = -1;
         LOG_8374("invalid microphone gain!");
     }
@@ -578,16 +588,16 @@ int es8374_set_mic_gain(es_mic_gain_t gain)
     return res;
 }
 
-int es8374_set_voice_volume(int volume)
+int es8374_codec_set_voice_volume(int volume)
 {
     int res = 0;
 
     if (volume < 0) {
         volume = 192;
-    } else if(volume > 96) {
+    } else if (volume > 96) {
         volume = 0;
     } else {
-        volume = 192 - volume*2;
+        volume = 192 - volume * 2;
     }
 
     res = es8374_write_reg(0x38, volume);
@@ -595,7 +605,7 @@ int es8374_set_voice_volume(int volume)
     return res;
 }
 
-int es8374_get_voice_volume(int *volume)
+int es8374_codec_get_voice_volume(int *volume)
 {
     int res = 0;
     uint8_t reg = 0;
@@ -605,8 +615,8 @@ int es8374_get_voice_volume(int *volume)
     if (res == ESP_FAIL) {
         *volume = 0;
     } else {
-        *volume = (192 - reg)/2;
-        if(*volume > 96) {
+        *volume = (192 - reg) / 2;
+        if (*volume > 96) {
             *volume = 100;
         }
     }
@@ -643,14 +653,12 @@ static int es8374_set_d2se_pga(es_d2se_pga_t gain)
     int res = 0;
     uint8_t reg = 0;
 
-    if(gain > D2SE_PGA_GAIN_MIN && gain < D2SE_PGA_GAIN_MAX) {
+    if (gain > D2SE_PGA_GAIN_MIN && gain < D2SE_PGA_GAIN_MAX) {
         res = es8374_read_reg(0x21, &reg);
         reg &= 0xfb;
         reg |= gain << 2;
         res = es8374_write_reg(0x21, reg); //MIC PGA
-    }
-    else
-    {
+    } else {
         res = 0xff;
         LOG_8374("invalid microphone gain!");
     }
@@ -663,72 +671,76 @@ static int es8374_init_reg(audio_hal_codec_mode_t ms_mode, es_i2s_fmt_t fmt, es_
     int res = 0;
     uint8_t reg;
 
-    res |= es8374_write_reg(0x00,0x3F); //IC Rst start
-    res |= es8374_write_reg(0x00,0x03); //IC Rst stop
-    res |= es8374_write_reg(0x01,0x7F); //IC clk on
+    res |= es8374_write_reg(0x00, 0x3F); //IC Rst start
+    res |= es8374_write_reg(0x00, 0x03); //IC Rst stop
+    res |= es8374_write_reg(0x01, 0x7F); //IC clk on
 
     res |= es8374_read_reg(0x0F, &reg);
     reg &= 0x7f;
     reg |=  (ms_mode << 7);
     res |= es8374_write_reg( 0x0f, reg); //CODEC IN I2S SLAVE MODE
 
-    res |= es8374_write_reg(0x6F,0xA0); //pll set:mode enable
-    res |= es8374_write_reg(0x72,0x41); //pll set:mode set
-    res |= es8374_write_reg(0x09,0x01); //pll set:reset on ,set start
-    res |= es8374_write_reg(0x0C,0x22); //pll set:k
-    res |= es8374_write_reg(0x0D,0x2E); //pll set:k
-    res |= es8374_write_reg(0x0E,0xC6); //pll set:k
-    res |= es8374_write_reg(0x0A,0x3A); //pll set:
-    res |= es8374_write_reg(0x0B,0x07); //pll set:n
-    res |= es8374_write_reg(0x09,0x41); //pll set:reset off ,set stop
+    res |= es8374_write_reg(0x6F, 0xA0); //pll set:mode enable
+    res |= es8374_write_reg(0x72, 0x41); //pll set:mode set
+    res |= es8374_write_reg(0x09, 0x01); //pll set:reset on ,set start
+    res |= es8374_write_reg(0x0C, 0x22); //pll set:k
+    res |= es8374_write_reg(0x0D, 0x2E); //pll set:k
+    res |= es8374_write_reg(0x0E, 0xC6); //pll set:k
+    res |= es8374_write_reg(0x0A, 0x3A); //pll set:
+    res |= es8374_write_reg(0x0B, 0x07); //pll set:n
+    res |= es8374_write_reg(0x09, 0x41); //pll set:reset off ,set stop
 
     res |= es8374_i2s_config_clock(cfg);
 
-    res |= es8374_write_reg(0x24,0x08); //adc set
-    res |= es8374_write_reg(0x36,0x00); //dac set
-    res |= es8374_write_reg(0x12,0x30); //timming set
-    res |= es8374_write_reg(0x13,0x20); //timming set
+    res |= es8374_write_reg(0x24, 0x08); //adc set
+    res |= es8374_write_reg(0x36, 0x00); //dac set
+    res |= es8374_write_reg(0x12, 0x30); //timming set
+    res |= es8374_write_reg(0x13, 0x20); //timming set
 
     res |= es8374_config_fmt(ES_MODULE_ADC, fmt);
     res |= es8374_config_fmt(ES_MODULE_DAC, fmt);
 
-    res |= es8374_write_reg(0x21,0x50); //adc set: SEL LIN1 CH+PGAGAIN=0DB
-    res |= es8374_write_reg(0x22,0xFF); //adc set: PGA GAIN=0DB
-    res |= es8374_write_reg(0x21,0x14); //adc set: SEL LIN1 CH+PGAGAIN=18DB
-    res |= es8374_write_reg(0x22,0x55); //pga = +15db
-    res |= es8374_write_reg(0x08,0x21); //set class d divider = 33, to avoid the high frequency tone on laudspeaker
-    res |= es8374_write_reg(0x00,0x80); // IC START
+    res |= es8374_write_reg(0x21, 0x50); //adc set: SEL LIN1 CH+PGAGAIN=0DB
+    res |= es8374_write_reg(0x22, 0xFF); //adc set: PGA GAIN=0DB
+    res |= es8374_write_reg(0x21, 0x14); //adc set: SEL LIN1 CH+PGAGAIN=18DB
+    res |= es8374_write_reg(0x22, 0x55); //pga = +15db
+    res |= es8374_write_reg(0x08, 0x21); //set class d divider = 33, to avoid the high frequency tone on laudspeaker
+    res |= es8374_write_reg(0x00, 0x80); // IC START
 
     res |= es8374_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);      // 0db
     res |= es8374_set_adc_dac_volume(ES_MODULE_DAC, 0, 0);      // 0db
 
-    res |= es8374_write_reg(0x14,0x8A); // IC START
-    res |= es8374_write_reg(0x15,0x40); // IC START
-    res |= es8374_write_reg(0x1A,0xA0); // monoout set
-    res |= es8374_write_reg(0x1B,0x19); // monoout set
-    res |= es8374_write_reg(0x1C,0x90); // spk set
-    res |= es8374_write_reg(0x1D,0x01); // spk set
-    res |= es8374_write_reg(0x1F,0x00); // spk set
-    res |= es8374_write_reg(0x1E,0x20); // spk on
-    res |= es8374_write_reg(0x28,0x00); // alc set
-    res |= es8374_write_reg(0x25,0x00); // ADCVOLUME on
-    res |= es8374_write_reg(0x38,0x00); // DACVOLUME on
-    res |= es8374_write_reg(0x37,0x30); // dac set
-    res |= es8374_write_reg(0x6D,0x60); //SEL:GPIO1=DMIC CLK OUT+SEL:GPIO2=PLL CLK OUT
-    res |= es8374_write_reg(0x71,0x05); //for automute setting
-    res |= es8374_write_reg(0x73,0x70);
+    res |= es8374_write_reg(0x14, 0x8A); // IC START
+    res |= es8374_write_reg(0x15, 0x40); // IC START
+    res |= es8374_write_reg(0x1A, 0xA0); // monoout set
+    res |= es8374_write_reg(0x1B, 0x19); // monoout set
+    res |= es8374_write_reg(0x1C, 0x90); // spk set
+    res |= es8374_write_reg(0x1D, 0x01); // spk set
+    res |= es8374_write_reg(0x1F, 0x00); // spk set
+    res |= es8374_write_reg(0x1E, 0x20); // spk on
+    res |= es8374_write_reg(0x28, 0x00); // alc set
+    res |= es8374_write_reg(0x25, 0x00); // ADCVOLUME on
+    res |= es8374_write_reg(0x38, 0x00); // DACVOLUME on
+    res |= es8374_write_reg(0x37, 0x30); // dac set
+    res |= es8374_write_reg(0x6D, 0x60); //SEL:GPIO1=DMIC CLK OUT+SEL:GPIO2=PLL CLK OUT
+    res |= es8374_write_reg(0x71, 0x05); //for automute setting
+    res |= es8374_write_reg(0x73, 0x70);
 
     res |= es8374_config_dac_output(out_channel);  //0x3c Enable DAC and Enable Lout/Rout/1/2
     res |= es8374_config_adc_input(in_channel);  //0x00 LINSEL & RINSEL, LIN1/RIN1 as ADC Input; DSSEL,use one DS Reg11; DSR, LINPUT1-RINPUT1
     res |= es8374_set_voice_volume(0);
 
-    res |= es8374_write_reg(0x37,0x00); // dac set
+    res |= es8374_write_reg(0x37, 0x00); // dac set
 
     return res;
 }
 
-int es8374_init(audio_hal_codec_config_t *cfg)
+int es8374_codec_init(audio_hal_codec_config_t *cfg)
 {
+    if (es8374_codec_initialized()) {
+        ESP_LOGW(ES8374_TAG, "The es8374 codec has already been initialized!");
+        return ESP_FAIL;
+    }
     int res = 0;
     es_i2s_clock_t clkdiv;
 
@@ -739,21 +751,22 @@ int es8374_init(audio_hal_codec_config_t *cfg)
 
     res |= es8374_stop(cfg->codec_mode);
     res |= es8374_init_reg(cfg->i2s_iface.mode, (BIT_LENGTH_16BITS << 4) | cfg->i2s_iface.fmt, clkdiv,
-                            cfg->dac_output, cfg->adc_input);
+                           cfg->dac_output, cfg->adc_input);
     res |= es8374_set_mic_gain(MIC_GAIN_15DB);
     res |= es8374_set_d2se_pga(D2SE_PGA_GAIN_EN);
     res |= es8374_config_fmt(cfg->codec_mode, cfg->i2s_iface.fmt);
     res |= es8374_config_i2s(cfg->codec_mode, &(cfg->i2s_iface));
-
+    codec_init_flag = 1;
     return res;
 }
 
-int es8374_deinit(void)
+int es8374_codec_deinit(void)
 {
-    return es8374_write_reg(0x00,0x7F); // IC Rest and STOP
+    codec_init_flag = 0;
+    return es8374_write_reg(0x00, 0x7F); // IC Reset and STOP
 }
 
-int es8374_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
+int es8374_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
 {
     int res = 0;
     int tmp = 0;
@@ -769,7 +782,7 @@ int es8374_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *
     return res;
 }
 
-int es8374_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state)
+int es8374_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state)
 {
     int res = 0;
     int es_mode_t = 0;
@@ -799,4 +812,6 @@ int es8374_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state)
     }
     return res;
 }
+
+
 

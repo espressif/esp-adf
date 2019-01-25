@@ -21,7 +21,7 @@
 #include "i2s_stream.h"
 #include "wav_encoder.h"
 #include "wav_decoder.h"
-#include "audio_hal.h"
+#include "board.h"
 #include "audio_sonic.h"
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
@@ -117,7 +117,7 @@ void record_playback_task()
     /**
      * For the Playback:
      * We will read the recorded file processed by sonic.
-     */    
+     */
     ESP_LOGI(TAG, "[2.2] Create audio elements for playback pipeline");
     audio_element_handle_t fatfs_reader_el = create_fatfs_stream(SAMPLE_RATE, BITS, CHANNEL, AUDIO_STREAM_READER);
     audio_element_handle_t wav_decoder_el = create_wav_decoder();
@@ -147,7 +147,7 @@ void record_playback_task()
         if (msg.source_type != PERIPH_ID_BUTTON) {
             continue;
         }
-        if ((int)msg.data == GPIO_MODE) {
+        if ((int)msg.data == get_input_mode_id()) {
             if ((msg.cmd == PERIPH_BUTTON_LONG_PRESSED)
                 || (msg.cmd == PERIPH_BUTTON_PRESSED)) {
                 is_modify_speed = !is_modify_speed;
@@ -159,9 +159,9 @@ void record_playback_task()
             }
             continue;
         }
-        if ((int)msg.data == GPIO_REC) {
+        if ((int)msg.data == get_input_rec_id()) {
             if (msg.cmd == PERIPH_BUTTON_PRESSED) {
-                 //using LOGE to make the log color different
+                //using LOGE to make the log color different
                 ESP_LOGE(TAG, "Now recording, release [Rec] to STOP");
                 audio_pipeline_stop(pipeline_play);
                 audio_pipeline_wait_for_stop(pipeline_play);
@@ -190,7 +190,7 @@ void record_playback_task()
                     sonic_set_pitch_and_speed_info(sonic_el, 1.0f, SONIC_SPEED);
                 } else {
                     sonic_set_pitch_and_speed_info(sonic_el, SONIC_PITCH, 1.0f);
-                }            
+                }
                 audio_pipeline_run(pipeline_play);
             }
         }
@@ -227,7 +227,7 @@ void record_playback_task()
     audio_element_deinit(fatfs_reader_el);
     audio_element_deinit(wav_decoder_el);
     audio_element_deinit(i2s_writer_el);
-    
+
     audio_element_deinit(i2s_reader_el);
     audio_element_deinit(sonic_el);
     audio_element_deinit(wav_encoder_el);
@@ -246,13 +246,13 @@ void app_main(void)
     // Initialize SD Card peripheral
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
-        .card_detect_pin = SD_CARD_INTR_GPIO, //GPIO_NUM_34
+        .card_detect_pin = get_sdcard_intr_gpio(), //GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
 
     // Initialize Button peripheral
     periph_button_cfg_t btn_cfg = {
-        .gpio_mask = GPIO_SEL_REC | GPIO_SEL_MODE, //REC BTN & MODE BTN
+        .gpio_mask = (1ULL << get_input_rec_id()) | (1ULL << get_input_mode_id()), //REC BTN & MODE BTN
     };
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
 
@@ -265,10 +265,9 @@ void app_main(void)
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
     // Setup audio codec
-    audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_ENCODE, AUDIO_HAL_CTRL_START);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+
     // Start record/playback task
     record_playback_task();
     esp_periph_destroy();

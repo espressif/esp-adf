@@ -19,7 +19,7 @@
 #include "audio_common.h"
 #include "i2s_stream.h"
 #include "mp3_decoder.h"
-#include "audio_hal.h"
+#include "board.h"
 
 static const char *TAG = "PLAY_MP3_RATES";
 
@@ -89,9 +89,8 @@ void app_main(void)
 
 
     ESP_LOGI(TAG, "[ 1 ] Start audio codec chip");
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     ESP_LOGI(TAG, "[ 2 ] Create audio pipeline, add all elements to pipeline, and subscribe pipeline event");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();

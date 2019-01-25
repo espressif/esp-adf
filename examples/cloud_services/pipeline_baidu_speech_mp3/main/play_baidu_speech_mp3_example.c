@@ -25,7 +25,7 @@
 
 #include "esp_peripherals.h"
 #include "periph_wifi.h"
-#include "audio_hal.h"
+#include "board.h"
 #include "esp_http_client.h"
 #include "baidu_access_token.h"
 
@@ -93,9 +93,8 @@ void app_main(void)
     audio_element_handle_t http_stream_reader, i2s_stream_writer, mp3_decoder;
 
     ESP_LOGI(TAG, "[ 1 ] Start audio codec chip");
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     ESP_LOGI(TAG, "[2.0] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -153,8 +152,8 @@ void app_main(void)
         }
 
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
-                && msg.source == (void *) mp3_decoder
-                && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
+            && msg.source == (void *) mp3_decoder
+            && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
             audio_element_info_t music_info = {0};
             audio_element_getinfo(mp3_decoder, &music_info);
 
@@ -168,7 +167,7 @@ void app_main(void)
 
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
-                && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
+            && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_STATE_STOPPED) {
             ESP_LOGW(TAG, "[ * ] Stop event received");
             break;
         }

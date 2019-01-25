@@ -18,7 +18,6 @@
 #include "i2s_stream.h"
 #include "esp_peripherals.h"
 #include "periph_touch.h"
-#include "audio_hal.h"
 #include "board.h"
 #include "bluetooth_service.h"
 
@@ -53,10 +52,8 @@ void app_main(void)
     bluetooth_service_start(&bt_cfg);
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_codec_cfg.i2s_iface.samples = AUDIO_HAL_44K_SAMPLES;
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
 
     ESP_LOGI(TAG, "[ 3 ] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -83,7 +80,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[4.1] Initialize Touch peripheral");
     periph_touch_cfg_t touch_cfg = {
-        .touch_mask = TOUCH_SEL_SET | TOUCH_SEL_PLAY | TOUCH_SEL_VOLUP | TOUCH_SEL_VOLDWN,
+        .touch_mask = BIT(get_input_set_id()) | BIT(get_input_play_id()) | BIT(get_input_volup_id()) | BIT(get_input_voldown_id()),
         .tap_threshold_percent = 70,
     };
     esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
@@ -139,16 +136,16 @@ void app_main(void)
             && msg.cmd == PERIPH_TOUCH_TAP
             && msg.source == (void *)touch_periph) {
 
-            if ((int) msg.data == TOUCH_PLAY) {
+            if ((int) msg.data == get_input_play_id()) {
                 ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
                 periph_bluetooth_play(bt_periph);
-            } else if ((int) msg.data == TOUCH_SET) {
+            } else if ((int) msg.data == get_input_set_id()) {
                 ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
                 periph_bluetooth_pause(bt_periph);
-            } else if ((int) msg.data == TOUCH_VOLUP) {
+            } else if ((int) msg.data == get_input_volup_id()) {
                 ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event");
                 periph_bluetooth_next(bt_periph);
-            } else if ((int) msg.data == TOUCH_VOLDWN) {
+            } else if ((int) msg.data == get_input_voldown_id()) {
                 ESP_LOGI(TAG, "[ * ] [Vol-] touch tap event");
                 periph_bluetooth_prev(bt_periph);
             }

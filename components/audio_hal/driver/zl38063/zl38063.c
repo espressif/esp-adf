@@ -29,52 +29,77 @@
 #include "vprocTwolf_access.h"
 #include "driver/gpio.h"
 #include "tw_spi_access.h"
-#include "lyratd_msc_v2_1_board.h"
+#include "board_pins_config.h"
+
+
+static const char *TAG = "zl38063";
 
 static int8_t tw_vol[15] = { -90, -45, -30, -23, -16, -10, -4, -1, 0, 1, 2, 3, 4, 5, 6};
 
-esp_err_t zl38063_init(audio_hal_codec_config_t *cfg)
+static int codec_init_flag = 0;
+
+audio_hal_func_t AUDIO_CODEC_DEFAULT_HANDLE = {
+    .audio_codec_initialize = zl38063_codec_init,
+    .audio_codec_deinitialize = zl38063_codec_deinit,
+    .audio_codec_ctrl = zl38063_codec_ctrl_state,
+    .audio_codec_config_iface = zl38063_codec_config_i2s,
+    .audio_codec_set_volume = zl38063_codec_set_voice_volume,
+    .audio_codec_get_volume = zl38063_codec_get_voice_volume,
+};
+
+static bool zl38063_codec_initialized()
 {
+    return codec_init_flag;
+}
+
+esp_err_t zl38063_codec_init(audio_hal_codec_config_t *cfg)
+{
+    if (zl38063_codec_initialized()) {
+        ESP_LOGW(TAG, "The zl38063 codec has been already initialized");
+        return ESP_OK;
+    }
     tw_upload_dsp_firmware(0);
     gpio_config_t BORAD_CONF = {
         .intr_type = GPIO_PIN_INTR_DISABLE,
         .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = 1UL << (BOARD_RESET_CTRL),
+        .pin_bit_mask = 1UL << (get_reset_board_gpio()),
         .pull_down_en = 0,
         .pull_up_en = 0,
     };
     gpio_config_t PA_CONF = {
         .intr_type = GPIO_PIN_INTR_DISABLE,
         .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = 1UL << (GPIO_PA_EN),
+        .pin_bit_mask = 1UL << (get_pa_enable_gpio()),
         .pull_down_en = 0,
         .pull_up_en = 0,
     };
     gpio_config(&PA_CONF);
     gpio_config(&BORAD_CONF);
-    gpio_set_level(GPIO_PA_EN, 1);            //enable PA
-    gpio_set_level(BOARD_RESET_CTRL, 0);      //enable DSP
+    gpio_set_level(get_pa_enable_gpio(), 1);            //enable PA
+    gpio_set_level(get_reset_board_gpio(), 0);      //enable DSP
+    codec_init_flag = 1;
     return ESP_OK;
 }
 
-esp_err_t zl38063_deinit(void)
+esp_err_t zl38063_codec_deinit(void)
 {
-    gpio_set_level(GPIO_PA_EN, 0);
-    gpio_set_level(BOARD_RESET_CTRL, 1);
+    gpio_set_level(get_pa_enable_gpio(), 0);
+    gpio_set_level(get_reset_board_gpio(), 1);
+    codec_init_flag = 0;
     return ESP_OK;
 }
 
-esp_err_t zl38063_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state)
-{
-    return ESP_OK;
-}
-
-esp_err_t zl38063_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
+esp_err_t zl38063_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state)
 {
     return ESP_OK;
 }
 
-esp_err_t zl38063_set_voice_volume(int volume)
+esp_err_t zl38063_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
+{
+    return ESP_OK;
+}
+
+esp_err_t zl38063_codec_set_voice_volume(int volume)
 {
     int ret = 0;
     if (volume < 0 ) {
@@ -87,7 +112,7 @@ esp_err_t zl38063_set_voice_volume(int volume)
     return ret;
 }
 
-esp_err_t zl38063_get_voice_volume(int *volume)
+esp_err_t zl38063_codec_get_voice_volume(int *volume)
 {
     int ret = 0;
     int8_t vol = 0;

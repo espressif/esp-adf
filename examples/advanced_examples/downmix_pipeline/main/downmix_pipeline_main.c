@@ -24,7 +24,7 @@
 #include "downmix.h"
 #include "raw_stream.h"
 
-#include "audio_hal.h"
+#include "board.h"
 #include "esp_peripherals.h"
 #include "periph_wifi.h"
 #include "periph_sdcard.h"
@@ -54,9 +54,8 @@ void app_main(void)
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
 
     ESP_LOGI(TAG, "[ 1 ] Start audio codec chip");
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
 
     ESP_LOGI(TAG, "[2.0] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -133,7 +132,7 @@ void app_main(void)
     esp_periph_init(&periph_cfg);
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
-        .card_detect_pin = SD_CARD_INTR_GPIO, // GPIO_NUM_34
+        .card_detect_pin = get_sdcard_intr_gpio(), // GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
     esp_periph_start(sdcard_handle);
@@ -142,7 +141,7 @@ void app_main(void)
     }
 
     periph_button_cfg_t btn_cfg = {
-        .gpio_mask = GPIO_SEL_MODE,
+        .gpio_mask = 1ULL << get_input_mode_id(),
     };
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
     esp_periph_start(button_handle);
@@ -197,7 +196,7 @@ void app_main(void)
             continue;
         }
         if ((msg.source_type == PERIPH_ID_BUTTON)
-            && ((int)msg.data == GPIO_MODE)
+            && ((int)msg.data == get_input_mode_id())
             && (msg.cmd == PERIPH_BUTTON_PRESSED)) {
             ESP_LOGE(TAG, "Enter downmixer mode");
             audio_pipeline_run(pipeline_tone);

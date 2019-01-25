@@ -36,7 +36,7 @@
 
 #include "audio_element.h"
 #include "audio_mem.h"
-#include "audio_hal.h"
+#include "board.h"
 #include "audio_common.h"
 
 #include "fatfs_stream.h"
@@ -107,8 +107,8 @@ static void setup_player(void)
         .hal = NULL,
         .task_prio = 5,
     };
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    cfg.hal = audio_hal_init(&audio_hal_codec_cfg, 0);
+    audio_board_handle_t board_handle = audio_board_init();
+    cfg.hal = board_handle->audio_hal;
     cfg.evt_que = xQueueCreate(3, sizeof(esp_audio_state_t));
     audio_hal_ctrl_codec(cfg.hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
     player = esp_audio_create(&cfg);

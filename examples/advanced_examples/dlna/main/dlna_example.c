@@ -26,6 +26,7 @@
 #include "esp_peripherals.h"
 #include "periph_wifi.h"
 #include "audio_player.h"
+#include "board.h"
 
 static const char *TAG = "DLNA_EXAMPLE";
 

@@ -87,7 +87,7 @@ INPUT = \
     ../../components/esp_peripherals/include/periph_is31fl3216.h \
     ../../components/esp_peripherals/include/periph_adc_button.h \
     ## Audio HAL
-    ../../components/audio_hal/board/board.h \
+    ../../components/audio_hal/board/include/board.h \
     ../../components/audio_hal/driver/es8388/es8388.h \
     ../../components/audio_hal/driver/es8374/es8374.h \
     ../../components/audio_hal/driver/zl38063/zl38063.h \

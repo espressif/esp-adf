@@ -41,7 +41,6 @@ extern "C" {
 typedef struct {
     audio_stream_type_t     type;               /*!< Type of stream */
     i2s_config_t            i2s_config;         /*!< I2S driver configurations */
-    i2s_pin_config_t        i2s_pin_config;     /*!< I2S driver hardware pin configurations */
     i2s_port_t              i2s_port;           /*!< I2S driver hardware port */
     int                     out_rb_size;        /*!< Size of output ringbuffer */
     int                     task_stack;         /*!< Task stack size */
@@ -72,14 +71,9 @@ typedef struct {
         .use_apll = 1,                                                          \
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                               \
     },                                                                          \
-    .i2s_pin_config = {                                                         \
-        .bck_io_num = IIS_SCLK,                                                 \
-        .ws_io_num = IIS_LCLK,                                                  \
-        .data_out_num = IIS_DSIN,                                               \
-        .data_in_num = IIS_DOUT,                                                \
-    },                                                                          \
     .i2s_port = 0,                                                              \
 }
+
 
 #define I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT() {                                     \
     .type = AUDIO_STREAM_WRITER,                                                    \

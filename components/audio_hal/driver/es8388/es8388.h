@@ -175,7 +175,7 @@ typedef enum {
     D2SE_PGA_GAIN_MIN = -1,
     D2SE_PGA_GAIN_DIS = 0,
     D2SE_PGA_GAIN_EN = 1,
-    D2SE_PGA_GAIN_MAX =2,
+    D2SE_PGA_GAIN_MAX = 2,
 } es_d2se_pga_t;
 
 typedef enum {

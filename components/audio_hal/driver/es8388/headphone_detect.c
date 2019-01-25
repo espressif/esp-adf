@@ -44,7 +44,7 @@ static xTimerHandle timer_headphone;
 static void hp_timer_cb(TimerHandle_t xTimer)
 {
     int res;
-    res = gpio_get_level(GPIO_HEADPHONE_DETECT);
+    res = gpio_get_level(get_headphone_detect_gpio());
     es8388_pa_power(res);
     ESP_LOGW(TAG, "Headphone jack %s", res ? "removed" : "inserted");
 }
@@ -76,7 +76,7 @@ void headphone_detect_deinit()
 
 int headphone_status_get()
 {
-    return gpio_get_level(GPIO_HEADPHONE_DETECT);
+    return gpio_get_level(get_headphone_detect_gpio());
 }
 
 void headphone_detect_init()
@@ -86,12 +86,12 @@ void headphone_detect_init()
     memset(&io_conf, 0, sizeof(io_conf));
     io_conf.intr_type = GPIO_INTR_ANYEDGE;
     io_conf.mode = GPIO_MODE_INPUT;
-    io_conf.pin_bit_mask = BIT(GPIO_HEADPHONE_DETECT);
+    io_conf.pin_bit_mask = BIT(get_headphone_detect_gpio());
     io_conf.pull_down_en = 0;
     io_conf.pull_up_en = 1;
     gpio_config(&io_conf);
 
     gpio_install_isr_service(0);
-    gpio_isr_handler_add(GPIO_HEADPHONE_DETECT, headphone_gpio_intr_handler, NULL);
+    gpio_isr_handler_add(get_headphone_detect_gpio(), headphone_gpio_intr_handler, NULL);
 }
 #endif /* CONFIG_ESP_LYRAT_V4_3_BOARD */

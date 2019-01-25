@@ -23,46 +23,46 @@
 
 #include "esp_peripherals.h"
 #include "periph_wifi.h"
-#include "audio_hal.h"
+#include "board.h"
 
 #define SELECT_AAC_DECODER 1
 
 #if defined SELECT_AAC_DECODER
 #include "aac_decoder.h"
-    static const char *TAG = "HTTP_SELECT_AAC_EXAMPLE";
-    static const char *selected_decoder_name = "aac";
-    static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.aac";
+static const char *TAG = "HTTP_SELECT_AAC_EXAMPLE";
+static const char *selected_decoder_name = "aac";
+static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.aac";
 #elif defined SELECT_AMR_DECODER
 #include "amr_decoder.h"
-    static const char *TAG = "HTTP_SELECT_AMR_EXAMPLE";
-    static const char *selected_decoder_name = "amr";
-    static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-1c-8000hz.amr";
+static const char *TAG = "HTTP_SELECT_AMR_EXAMPLE";
+static const char *selected_decoder_name = "amr";
+static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-1c-8000hz.amr";
 #elif defined SELECT_FLAC_DECODER
 #include "flac_decoder.h"
-    static const char *TAG = "HTTP_SELECT_FLAC_EXAMPLE";
-    static const char *selected_decoder_name = "flac";
-    static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.flac";
+static const char *TAG = "HTTP_SELECT_FLAC_EXAMPLE";
+static const char *selected_decoder_name = "flac";
+static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.flac";
 #elif defined SELECT_MP3_DECODER
 #include "mp3_decoder.h"
-    static const char *TAG = "HTTP_SELECT_MP3_EXAMPLE";
-    static const char *selected_decoder_name = "mp3";
-    static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3";
+static const char *TAG = "HTTP_SELECT_MP3_EXAMPLE";
+static const char *selected_decoder_name = "mp3";
+static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3";
 #elif defined SELECT_OGG_DECODER
 #include "ogg_decoder.h"
-    static const char *TAG = "HTTP_SELECT_OGG_EXAMPLE";
-    static const char *selected_decoder_name = "ogg";
-    static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.ogg";
+static const char *TAG = "HTTP_SELECT_OGG_EXAMPLE";
+static const char *selected_decoder_name = "ogg";
+static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.ogg";
 #elif defined SELECT_OPUS_DECODER
 #include "opus_decoder.h"
-    static const char *TAG = "HTTP_SELECT_OPUS_EXAMPLE";
-    static const char *selected_decoder_name = "opus";
-    static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.opus";
-#else  
+static const char *TAG = "HTTP_SELECT_OPUS_EXAMPLE";
+static const char *selected_decoder_name = "opus";
+static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.opus";
+#else
 #include "wav_decoder.h"
-    static const char *TAG = "HTTP_SELECT_WAV_EXAMPLE";
-    static const char *selected_decoder_name = "wav";
-    static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wav";
-#endif 
+static const char *TAG = "HTTP_SELECT_WAV_EXAMPLE";
+static const char *selected_decoder_name = "wav";
+static const char *selected_file_to_play = "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wav";
+#endif
 
 
 void app_main(void)
@@ -83,9 +83,8 @@ void app_main(void)
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
 
     ESP_LOGI(TAG, "[ 1 ] Start audio codec chip");
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
 
     ESP_LOGI(TAG, "[2.0] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -116,10 +115,10 @@ void app_main(void)
 #elif defined SELECT_OPUS_DECODER
     opus_decoder_cfg_t opus_cfg = DEFAULT_OPUS_DECODER_CONFIG();
     selected_decoder = decoder_opus_init(&opus_cfg);
-#else  
+#else
     wav_decoder_cfg_t wav_cfg = DEFAULT_WAV_DECODER_CONFIG();
     selected_decoder = wav_decoder_init(&wav_cfg);
-#endif 
+#endif
 
     ESP_LOGI(TAG, "[2.3] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
@@ -135,7 +134,7 @@ void app_main(void)
     audio_pipeline_link(pipeline, (const char *[]) {"http", selected_decoder_name, "i2s"}, 3);
 
     ESP_LOGI(TAG, "[2.6] Setup uri (http as http_stream, %s as %s_decoder, and default output is i2s)",
-            selected_decoder_name, selected_decoder_name);
+             selected_decoder_name, selected_decoder_name);
     audio_element_set_uri(http_stream_reader, selected_file_to_play);
 
     ESP_LOGI(TAG, "[ 3 ] Start and wait for Wi-Fi network");

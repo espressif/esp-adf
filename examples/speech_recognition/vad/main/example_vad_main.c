@@ -12,8 +12,7 @@
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "esp_log.h"
-#include "audio_hal.h"
-#include "zl38063.h"
+#include "board.h"
 #include "audio_common.h"
 #include "audio_pipeline.h"
 #include "i2s_stream.h"
@@ -27,34 +26,17 @@ static const char *TAG = "EXAMPLE-VAD";
 #define VAD_FRAME_LENGTH_MS 30
 #define VAD_BUFFER_LENGTH (VAD_FRAME_LENGTH_MS * VAD_SAMPLE_RATE_HZ / 1000)
 
-
-/* Initialize one of supported audio codecs 
- * basing on board selection in menuconfig
- */
-audio_hal_handle_t init_audio_codec()
-{
-#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
-    audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ES8388_DEFAULT();
-    return audio_hal_init(&audio_hal_codec_cfg, 0);
-#endif
-
-#if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
-    audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ZL38063_DEFAULT();
-    return audio_hal_init(&audio_hal_codec_cfg, 2);
-#endif
-}
-
-
 void app_main()
 {
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
-    ESP_LOGI(TAG, "[ 1 ] Start codec chip");
-    audio_hal_ctrl_codec(init_audio_codec(), AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
-
     audio_pipeline_handle_t pipeline;
     audio_element_handle_t i2s_stream_reader, filter, raw_read;
+
+    ESP_LOGI(TAG, "[ 1 ] Start codec chip");
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     ESP_LOGI(TAG, "[ 2 ] Create audio pipeline for recording");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();

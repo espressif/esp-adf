@@ -25,27 +25,52 @@
 #ifndef _AUDIO_BOARD_H_
 #define _AUDIO_BOARD_H_
 
-#include "sdkconfig.h" 
+#include "audio_hal.h"
+#include "board_pins_config.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-#include "lyrat_v4_3_board.h"
-#endif
+#define AUDIO_BOARD_DEFAULT_CONFIG(){                   \
+        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
+        .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
+        .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
+        .i2s_iface = {                                  \
+            .mode = AUDIO_HAL_MODE_SLAVE,               \
+            .fmt = AUDIO_HAL_I2S_NORMAL,                \
+            .samples = AUDIO_HAL_48K_SAMPLES,           \
+            .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
+        },                                              \
+};
 
-#ifdef CONFIG_ESP_LYRAT_V4_2_BOARD
-#include "lyrat_v4_2_board.h"
-#endif
+extern audio_hal_func_t AUDIO_CODEC_DEFAULT_HANDLE;
 
-#ifdef CONFIG_ESP_LYRATD_MSC_V2_1_BOARD
-#include "lyratd_msc_v2_1_board.h"
-#endif
+/**
+ * @brief Audio board handle
+ */
+struct audio_board_handle {
+    audio_hal_handle_t audio_hal; /*!< audio hardware abstract layer handle */
+};
 
-#ifdef CONFIG_ESP_LYRATD_MSC_V2_2_BOARD
-#include "lyratd_msc_v2_2_board.h"
-#endif
+typedef struct audio_board_handle *audio_board_handle_t;
+
+/**
+ * @brief Initialize audio board
+ *
+ * @return The audio board handle
+ */
+audio_board_handle_t audio_board_init(void);
+
+/**
+ * @brief Uninitialize the audio board
+ *
+ * @param audio_board The handle of audio board
+ *
+ * @return  0       success,
+ *          others  fail
+ */
+esp_err_t audio_borad_deinit(audio_board_handle_t audio_board);
 
 #ifdef __cplusplus
 }

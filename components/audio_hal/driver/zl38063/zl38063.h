@@ -27,19 +27,6 @@
 
 #include "audio_hal.h"
 
-/* default config for zl38063 */
-#define AUDIO_HAL_ZL38063_DEFAULT(){                    \
-    	.adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
-    	.dac_output = AUDIO_HAL_DAC_OUTPUT_LINE1,       \
-        .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
-        .i2s_iface = {                                  \
-            .mode = AUDIO_HAL_MODE_SLAVE,               \
-            .fmt = AUDIO_HAL_I2S_NORMAL,                \
-            .samples = AUDIO_HAL_48K_SAMPLES,           \
-            .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
-        },                                              \
-};
-
 /**
  * @brief Initialize ZL38063 chip
  *
@@ -49,7 +36,7 @@
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t zl38063_init(audio_hal_codec_config_t *cfg);
+esp_err_t zl38063_codec_init(audio_hal_codec_config_t *cfg);
 /**
  * @brief Deinitialize ZL38063 chip
  *
@@ -57,7 +44,7 @@ esp_err_t zl38063_init(audio_hal_codec_config_t *cfg);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t zl38063_deinit(void);
+esp_err_t zl38063_codec_deinit(void);
 /**
  * The functions zl38063_ctrl_state and zl38063_config_i2s are not used by this driver.
  * They are kept here to maintain the uniformity and convenience of the interface
@@ -75,7 +62,7 @@ esp_err_t zl38063_deinit(void);
  *     - ESP_FAIL Parameter error
  *     - ESP_OK   Success
  */
-esp_err_t zl38063_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);
+esp_err_t zl38063_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);
 /**
  * @brief Configure ZL38063 codec mode and I2S interface
  *
@@ -86,7 +73,7 @@ esp_err_t zl38063_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_
  *     - ESP_FAIL Parameter error
  *     - ESP_OK   Success
  */
-esp_err_t zl38063_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
+esp_err_t zl38063_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
 /**
  * @brief  Set voice volume
  *
@@ -96,7 +83,7 @@ esp_err_t zl38063_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_if
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t zl38063_set_voice_volume(int volume);
+esp_err_t zl38063_codec_set_voice_volume(int volume);
 /**
  * @brief Get voice volume
  *
@@ -106,6 +93,6 @@ esp_err_t zl38063_set_voice_volume(int volume);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t zl38063_get_voice_volume(int *volume);
+esp_err_t zl38063_codec_get_voice_volume(int *volume);
 
 #endif

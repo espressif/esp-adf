@@ -27,7 +27,7 @@
 #include "mp3_decoder.h"
 #include "aac_decoder.h"
 
-#include "audio_hal.h"
+#include "board.h"
 #include "filter_resample.h"
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
@@ -149,7 +149,7 @@ void flexible_pipeline_playback()
                      audio_element_get_tag(el), msg.source_type, msg.cmd, msg.data_len, msg.data);
             continue;
         }
-        if (((int)msg.data == GPIO_MODE) && (msg.cmd == PERIPH_BUTTON_PRESSED)) {
+        if (((int)msg.data == get_input_mode_id()) && (msg.cmd == PERIPH_BUTTON_PRESSED)) {
             source_is_mp3_format = !source_is_mp3_format;
             audio_pipeline_pause(pipeline_play);
             ESP_LOGE(TAG, "Changing music to %s", source_is_mp3_format ? "mp3 format" : "aac format");
@@ -208,13 +208,13 @@ void app_main(void)
     // Initialize SD Card peripheral
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
-        .card_detect_pin = SD_CARD_INTR_GPIO,   // GPIO_NUM_34
+        .card_detect_pin = get_sdcard_intr_gpio(),   // GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
 
     // Initialize Button peripheral
     periph_button_cfg_t btn_cfg = {
-        .gpio_mask = GPIO_SEL_36 | GPIO_SEL_39, // REC BTN & MODE BTN
+        .gpio_mask = (1ULL << get_input_rec_id()) | (1ULL << get_input_mode_id()), // REC BTN & MODE BTN
     };
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
 
@@ -228,9 +228,9 @@ void app_main(void)
     }
 
     // Setup audio codec
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+
 
     flexible_pipeline_playback();
     esp_periph_destroy();

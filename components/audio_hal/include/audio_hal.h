@@ -35,31 +35,7 @@ extern "C" {
 
 #define AUDIO_HAL_VOL_DEFAULT 70
 
-typedef struct audio_hal* audio_hal_handle_t;
-
-#define AUDIO_HAL_ES8388_DEFAULT(){                     \
-        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
-        .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
-        .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
-        .i2s_iface = {                                  \
-            .mode = AUDIO_HAL_MODE_SLAVE,               \
-            .fmt = AUDIO_HAL_I2S_NORMAL,                \
-            .samples = AUDIO_HAL_48K_SAMPLES,           \
-            .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
-        },                                              \
-};
-
-#define AUDIO_HAL_ES8374_DEFAULT(){                     \
-        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
-        .dac_output = AUDIO_HAL_DAC_OUTPUT_LINE1,       \
-        .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
-        .i2s_iface = {                                  \
-            .mode = AUDIO_HAL_MODE_SLAVE,               \
-            .fmt = AUDIO_HAL_I2S_NORMAL,                \
-            .samples = AUDIO_HAL_48K_SAMPLES,           \
-            .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
-        },                                              \
-};
+typedef struct audio_hal *audio_hal_handle_t;
 
 /**
  * @brief Select media hal codec mode
@@ -160,26 +136,40 @@ typedef struct {
 } audio_hal_codec_config_t;
 
 /**
+ * @brief Configuration of functions and variables used to operate audio codec chip
+ */
+typedef struct audio_hal {
+    esp_err_t (*audio_codec_initialize)(audio_hal_codec_config_t *codec_cfg);                                /*!< initialize codec */
+    esp_err_t (*audio_codec_deinitialize)(void);                                                             /*!< deinitialize codec */
+    esp_err_t (*audio_codec_ctrl)(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);                 /*!< control codec mode and state */
+    esp_err_t (*audio_codec_config_iface)(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);  /*!< configure i2s interface */
+    esp_err_t (*audio_codec_set_volume)(int volume);                                                         /*!< set codec volume */
+    esp_err_t (*audio_codec_get_volume)(int *volume);                                                        /*!< get codec volume */
+    xSemaphoreHandle audio_hal_lock;                                                                         /*!< semaphore of codec */
+    void *handle;                                                                                            /*!< handle of audio codec */
+} audio_hal_func_t;
+
+
+/**
  * @brief Initialize media codec driver
  *
  * @note If selected codec has already been installed, it'll return the audio_hal handle.
  *
  * @param audio_hal_conf Configure structure audio_hal_config_t
- * @param index Indicates which codec will be initialized
+ * @param audio_hal_func Structure containing functions used to operate audio the codec chip
  *
  * @return  int, 0--success, others--fail
  */
-audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t* audio_hal_conf, int index);
+audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, audio_hal_func_t *audio_hal_func);
 
 /**
  * @brief Uninitialize media codec driver
  *
  * @param audio_hal reference function pointer for selected audio codec
- * @param index Indicates which codec will be deinitialized
  *
  * @return  int, 0--success, others--fail
  */
-esp_err_t audio_hal_deinit(audio_hal_handle_t audio_hal, int index);
+esp_err_t audio_hal_deinit(audio_hal_handle_t audio_hal);
 
 /**
  * @brief Start/stop codec driver
@@ -203,7 +193,7 @@ esp_err_t audio_hal_ctrl_codec(audio_hal_handle_t audio_hal, audio_hal_codec_mod
  *     - 0   Success
  *     - -1  Error
  */
-esp_err_t audio_hal_codec_iface_config(audio_hal_handle_t audio_hal, audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t* iface);
+esp_err_t audio_hal_codec_iface_config(audio_hal_handle_t audio_hal, audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
 
 /**
  * @brief Set voice volume.
@@ -225,7 +215,7 @@ esp_err_t audio_hal_set_volume(audio_hal_handle_t audio_hal, int volume);
  *
  * @return     int, 0--success, others--fail
  */
-esp_err_t audio_hal_get_volume(audio_hal_handle_t audio_hal, int* volume);
+esp_err_t audio_hal_get_volume(audio_hal_handle_t audio_hal, int *volume);
 
 
 #ifdef __cplusplus
