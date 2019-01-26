@@ -17,9 +17,7 @@ For the `interpolation type` you may select either faster but less accurate line
 Application Example
 -------------------
 
-Implementation of this API is demonstrated in the following example:
-
-* :example:`filter/pipeline_sonic`
+Implementation of this API is demonstrated in :example:`audio_processing/pipeline_sonic` example.
 
 
 API Reference

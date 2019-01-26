@@ -19,7 +19,7 @@ Default gain of each band is -13 dB. To set the gains of all bands use structure
 Application Example
 -------------------
 
-Implementation of this API is demonstrated in the :example:`equalizer` example.
+Implementation of this API is demonstrated in the :example:`audio_processing/equalizer` example.
 
 
 API Reference
