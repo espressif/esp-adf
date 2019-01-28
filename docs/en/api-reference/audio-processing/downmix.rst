@@ -54,9 +54,9 @@ The downmix process has 3 states:
 
     * Switch on Downmixing -- The base audio file and the target audio file will first enter the transition period, during which the gains of these two files will be changed from the original level to the target level; then enter the stable period, sharing a same target gain;
 
-    * Switch off Downmixing -- The base audio file and the target audio file will first enter the transition period, during which the gains of these two files will be changed back to their original levels; then enter the stable period, with their original gains, respectively. After that, the dowmix process enters the bypass state.
+    * Switch off Downmixing -- The base audio file and the target audio file will first enter the transition period, during which the gains of these two files will be changed back to their original levels; then enter the stable period, with their original gains, respectively. After that, the downmix process enters the bypass state.
 
-Note that, the sample rates of the base audio file and the newcome audio file must be the same. Otherwise, an error occurs.
+Note that, the sample rates of the base audio file and the newcome audio file must be the same, otherwise an error occurs.
 
 
 Application Example
