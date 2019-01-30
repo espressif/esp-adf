@@ -12,7 +12,6 @@
 #include "freertos/task.h"
 #include "freertos/timers.h"
 #include "esp_log.h"
-#include "sdkconfig.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"
 #include "audio_event_iface.h"
@@ -35,7 +34,7 @@ static const char *TAG = "SONIC_EXAMPLE";
 #define BITS                16
 
 #define SONIC_PITCH         1.4f
-#define SONIC_SPEED         1.3f
+#define SONIC_SPEED         2.0f
 
 static audio_element_handle_t create_sonic()
 {
@@ -136,6 +135,7 @@ void record_playback_task()
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
     audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    ESP_LOGW(TAG, "Press [Rec] to start recording");
     bool is_modify_speed = true;
     while (1) {
         audio_event_iface_msg_t msg;
@@ -149,19 +149,20 @@ void record_playback_task()
         }
         if ((int)msg.data == GPIO_MODE) {
             if ((msg.cmd == PERIPH_BUTTON_LONG_PRESSED)
-                || (msg.cmd == PERIPH_BUTTON_PRESSED)){
+                || (msg.cmd == PERIPH_BUTTON_PRESSED)) {
                 is_modify_speed = !is_modify_speed;
-            } 
-            continue;        
+                if (is_modify_speed) {
+                    ESP_LOGI(TAG, "The speed of audio file is changed");
+                } else {
+                    ESP_LOGI(TAG, "The pitch of audio file is changed");
+                }
+            }
+            continue;
         }
-        if (is_modify_speed) {
-            ESP_LOGI(TAG, "The speed of audio file is changed");
-        } else {
-            ESP_LOGI(TAG, "The pitch of audio file is changed");
-        }  
         if ((int)msg.data == GPIO_REC) {
             if (msg.cmd == PERIPH_BUTTON_PRESSED) {
-                ESP_LOGE(TAG, "STOP Playback and START [Record]"); //using LOGE to make the log color different
+                 //using LOGE to make the log color different
+                ESP_LOGE(TAG, "Now recording, release [Rec] to STOP");
                 audio_pipeline_stop(pipeline_play);
                 audio_pipeline_wait_for_stop(pipeline_play);
 
@@ -174,7 +175,7 @@ void record_playback_task()
                 audio_element_set_uri(fatfs_writer_el, "/sdcard/rec.wav");
                 audio_pipeline_run(pipeline_rec);
             } else if (msg.cmd == PERIPH_BUTTON_RELEASE || msg.cmd == PERIPH_BUTTON_LONG_RELEASE) {
-                ESP_LOGI(TAG, "STOP [Record] and START Playback");
+                ESP_LOGI(TAG, "START Playback");
                 audio_pipeline_stop(pipeline_rec);
                 audio_pipeline_wait_for_stop(pipeline_rec);
 
