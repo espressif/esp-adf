@@ -9,8 +9,8 @@ Application Example
 
 Implementation of this API is demonstrated in the following examples:
 
-* :example:`filter/pipeline_resample`
-* :example:`filter/pipeline_spiffs_amr_resample`
+* :example:`audio_processing/pipeline_resample`
+* :example:`audio_processing/pipeline_spiffs_amr_resample`
 * :example:`get-started/play_mp3`
 
 

@@ -25,11 +25,7 @@ Setting up the speech recognition application to detect a wakeup word may be don
         SPEECH_RECOGNITION [label="Speech\n recognition", shape=box, height=60];
 
         # node connections
-        MICROPHONE -> CODEC_CHIP
-        group {
-            label = "Audio Pipeline";
-            CODEC_CHIP -> I2S_STREAM -> FILTER -> RAW_STREAM -> SPEECH_RECOGNITION;
-        }
+        MICROPHONE -> CODEC_CHIP -> I2S_STREAM -> FILTER -> RAW_STREAM -> SPEECH_RECOGNITION;
     }
 
 
@@ -68,7 +64,7 @@ A code snippet below demonstrates how to initialize the model, determine the num
 Application Example
 -------------------
 
-Implementation of the speech recognition API is demonstrated in :example:`asr` example.
+Implementation of the speech recognition API is demonstrated in :example:`speech_recognition/asr` example.
 
 
 API Reference
