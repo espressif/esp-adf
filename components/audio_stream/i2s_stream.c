@@ -136,20 +136,21 @@ static esp_err_t _i2s_destroy(audio_element_handle_t self)
 static esp_err_t _i2s_close(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
-    int index = i2s->config.i2s_config.dma_buf_count;
-    size_t bytes_written = 0;
-    uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
+    if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+        int index = i2s->config.i2s_config.dma_buf_count;
+        size_t bytes_written = 0;
+        uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
+        AUDIO_MEM_CHECK(TAG, buf, return ESP_ERR_NO_MEM);
 
-    AUDIO_MEM_CHECK(TAG, buf, return ESP_ERR_NO_MEM);
-
-    while (index--) {
-        if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
-            memset(buf, 0x80, i2s->config.i2s_config.dma_buf_len * 4);
+        memset(buf, 0x80, i2s->config.i2s_config.dma_buf_len * 4);
+        while (index--) {
+          i2s_write(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, &bytes_written, portMAX_DELAY);
         }
-        i2s_write(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, &bytes_written, portMAX_DELAY);
-    }
-    if (buf) {
-        free(buf);
+        if (buf) {
+          free(buf);
+        }
+    } else {
+        i2s_zero_dma_buffer(i2s->config.i2s_port);
     }
     i2s->is_open = false;
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
@@ -300,12 +301,12 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         i2s_set_pin(i2s->config.i2s_port, &i2s->config.i2s_pin_config);
     }
 
-#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)  
+#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
     if (i2s->config.i2s_port == 0) {
         SET_PERI_REG_BITS(PIN_CTRL, CLK_OUT1, 0, CLK_OUT1_S);
     }
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);  
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
 #endif
-    
+
     return el;
 }
