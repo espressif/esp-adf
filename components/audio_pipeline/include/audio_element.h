@@ -136,6 +136,7 @@ typedef esp_err_t (*io_func)(audio_element_handle_t self);
 typedef audio_element_err_t (*process_func)(audio_element_handle_t self, char *el_buffer, int el_buf_len);
 typedef audio_element_err_t (*stream_func)(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait,
         void *context);
+typedef esp_err_t (*event_cb_func)(audio_element_handle_t el, audio_event_iface_msg_t *event, void *ctx);
 
 /**
  * @brief Audio Element configurations
@@ -286,7 +287,7 @@ esp_err_t audio_element_set_uri(audio_element_handle_t el, const char *uri);
 char *audio_element_get_uri(audio_element_handle_t el);
 
 /**
- * @brief      Start Audio Element, with this function, audio_element will start as freeRTOS task,
+ * @brief      Start Audio Element. With this function, audio_element will start as freeRTOS task,
  *             And put the task into 'PAUSED' state.
  *             Note: Element does not actually start when this function returns
  *
@@ -299,9 +300,8 @@ char *audio_element_get_uri(audio_element_handle_t el);
 esp_err_t audio_element_run(audio_element_handle_t el);
 
 /**
- * @brief      Start Audio Element, with this function, audio_element will start as freeRTOS task,
- *             and put the task into 'PAUSED' state.
- *             Note: Element does not actually start when this function returns
+ * @brief      Terminate Audio Element. With this function, audio_element will exit the task function.
+ *             Note: this API only sends request. It does not actually terminate immediately when this function returns.
  *
  * @param[in]  el    The audio element handle
  *
@@ -377,7 +377,21 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
 esp_err_t audio_element_msg_set_listener(audio_element_handle_t el, audio_event_iface_handle_t listener);
 
 /**
- * @brief      Remove listener out of el, no new events will be sent to the listene
+ * @brief      This function will add a `callback` to be called from audio element `el`
+ *             Any event to caller will cause to call callback function.
+ *
+ * @param      el           The audio element handle
+ * @param      cb_func      The callback function
+ * @param      ctx          Caller context
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_event_callback(audio_element_handle_t el, event_cb_func cb_func, void *ctx);
+
+/**
+ * @brief      Remove listener out of el, no new events will be sent to the listener
  *
  * @param[in]  el        The audio element handle
  * @param      listener  The listener
