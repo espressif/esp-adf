@@ -119,7 +119,7 @@ void app_main(void)
 #elif defined CONFIG_CHOICE_AMR_NB
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.amr");
 #endif
-    ESP_LOGI(TAG, "[ 4 ] Setup event listener");
+    ESP_LOGI(TAG, "[4.0] Setup event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
@@ -152,7 +152,7 @@ void app_main(void)
             break;
         }
     }
-    ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
+    ESP_LOGI(TAG, "[7.0] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
 
     /* Terminate the pipeline before removing the listener */
