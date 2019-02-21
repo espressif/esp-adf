@@ -29,7 +29,7 @@
 #include "led.h"
 #include "nvs_flash.h"
 #include "tcpip_adapter.h"
-#include "dueros_task.h"
+#include "dueros_app.h"
 
 void app_main(void)
 {
@@ -42,5 +42,5 @@ void app_main(void)
     }
     tcpip_adapter_init();
     led_indicator_init();
-    duer_service_create();
+    duer_app_init();
 }
