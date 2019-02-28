@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -23,7 +23,6 @@
  */
 
 #include <string.h>
-#include <sys/time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -31,44 +30,38 @@
 #include "rom/queue.h"
 #include "esp_log.h"
 
-#include "audio_service.h"
+#include "periph_service.h"
 #include "audio_mutex.h"
 #include "audio_mem.h"
+#include "audio_error.h"
 
-static const char *TAG = "AUDIO_SERVICE";
+static const char *TAG = "PERIPH_SERVICE";
 
 /**
- * @brief Audio service configurations
+ * @brief Peripheral service configurations
  */
-typedef struct audio_service_impl {
-    service_ctrl                service_start;
-    service_ctrl                service_stop;
-    service_ctrl                service_connect;
-    service_ctrl                service_disconnect;
-    service_ctrl                service_destroy;
-    service_callback            callback_func;
-    void                        *user_ctx;
-    char                        *service_name;
-    TaskHandle_t                task_handle;
-    void                        *user_data;
-} audio_service_impl_t;
+typedef struct periph_service_impl {
+    periph_service_ctrl                 service_start;
+    periph_service_ctrl                 service_stop;
+    periph_service_ctrl                 service_destroy;
+    periph_service_io                   service_ioctl;
+    periph_service_cb                   callback_func;
+    void                                *user_cb_ctx;
+    char                                *service_name;
+    TaskHandle_t                        task_handle;
+    void                                *user_data;
+} periph_service_impl_t;
 
-audio_service_handle_t audio_service_create(audio_service_config_t *config)
+periph_service_handle_t periph_service_create(periph_service_config_t *config)
 {
     AUDIO_NULL_CHECK(TAG, config, return NULL);
-    if (config->task_func == NULL
-        || config->service_start == NULL
-        || config->service_stop == NULL) {
-        ESP_LOGE(TAG, "task_func, service_start, service_stop must be implemented");
-        return NULL;
-    }
-    audio_service_handle_t impl = audio_calloc(1, sizeof(audio_service_impl_t));
+    periph_service_handle_t impl = audio_calloc(1, sizeof(periph_service_impl_t));
     AUDIO_MEM_CHECK(TAG, impl, return NULL);
-    impl->service_start =  config->service_start;
-    impl->service_stop =  config->service_stop;
-    impl->service_connect =  config->service_connect;
-    impl->service_disconnect =  config->service_disconnect;
-    impl->service_destroy = config->service_destroy;
+    impl->service_start         = config->service_start;
+    impl->service_stop          = config->service_stop;
+    impl->service_destroy       = config->service_destroy;
+    impl->service_ioctl         = config->service_ioctl;
+    impl->user_data             = config->user_data;
     if (config->service_name) {
         impl->service_name = strdup(config->service_name);
         AUDIO_MEM_CHECK(TAG, impl, goto serv_failed);
@@ -94,10 +87,10 @@ serv_failed:
     return impl;
 }
 
-esp_err_t audio_service_destroy(audio_service_handle_t handle)
+esp_err_t periph_service_destroy(periph_service_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
-    audio_service_impl_t *impl = (audio_service_impl_t *) handle;
+    periph_service_impl_t *impl = (periph_service_impl_t *) handle;
     if (impl->service_destroy) {
         impl->service_destroy(handle);
     }
@@ -109,62 +102,53 @@ esp_err_t audio_service_destroy(audio_service_handle_t handle)
     return ESP_OK;
 }
 
-esp_err_t audio_service_start(audio_service_handle_t handle)
+esp_err_t periph_service_start(periph_service_handle_t handle)
 {
-    audio_service_impl_t *impl = (audio_service_impl_t *) handle;
+    periph_service_impl_t *impl = (periph_service_impl_t *) handle;
     AUDIO_NULL_CHECK(TAG, (handle && impl->service_start), return ESP_ERR_INVALID_ARG);
-
     return impl->service_start(handle);
 }
 
-esp_err_t audio_service_stop(audio_service_handle_t handle)
+esp_err_t periph_service_stop(periph_service_handle_t handle)
 {
-    audio_service_impl_t *impl = (audio_service_impl_t *) handle;
+    periph_service_impl_t *impl = (periph_service_impl_t *) handle;
     AUDIO_NULL_CHECK(TAG, (handle && impl->service_stop), return ESP_ERR_INVALID_ARG);
-
     return impl->service_stop(handle);
 }
 
-esp_err_t audio_service_set_callback(audio_service_handle_t handle, service_callback cb, void *ctx)
+esp_err_t periph_service_set_callback(periph_service_handle_t handle, periph_service_cb cb, void *ctx)
 {
-    audio_service_impl_t *impl = (audio_service_impl_t *) handle;
+    periph_service_impl_t *impl = (periph_service_impl_t *) handle;
     impl->callback_func = cb;
-    impl->user_ctx = ctx;
+    impl->user_cb_ctx = ctx;
     return ESP_OK;
 }
 
-esp_err_t audio_service_callback(audio_service_handle_t handle, service_event_t *evt)
+esp_err_t periph_service_callback(periph_service_handle_t handle, periph_service_event_t *evt)
 {
-    audio_service_impl_t *impl = (audio_service_impl_t *) handle;
+    periph_service_impl_t *impl = (periph_service_impl_t *) handle;
     AUDIO_NULL_CHECK(TAG, (handle && impl->callback_func), return ESP_ERR_INVALID_ARG);
-    return impl->callback_func(handle, evt, impl->user_ctx);
+    return impl->callback_func(handle, evt, impl->user_cb_ctx);
 }
 
-esp_err_t audio_service_connect(audio_service_handle_t handle)
-{
-    audio_service_impl_t *impl = (audio_service_impl_t *) handle;
-    AUDIO_NULL_CHECK(TAG, (handle && impl->service_connect), return ESP_ERR_INVALID_ARG);
-    return impl->service_connect(handle);
-}
-
-esp_err_t audio_service_disconnect(audio_service_handle_t handle)
-{
-    audio_service_impl_t *impl = (audio_service_impl_t *) handle;
-    AUDIO_NULL_CHECK(TAG, (handle && impl->service_disconnect), return ESP_ERR_INVALID_ARG);
-    return impl->service_disconnect(handle);
-}
-
-esp_err_t audio_service_set_data(audio_service_handle_t handle, void *data)
+esp_err_t periph_service_set_data(periph_service_handle_t handle, void *data)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
-    audio_service_impl_t *impl = (audio_service_impl_t *) handle;
+    periph_service_impl_t *impl = (periph_service_impl_t *) handle;
     impl->user_data = data;
     return ESP_OK;
 }
 
-void *audio_service_get_data(audio_service_handle_t handle)
+void *periph_service_get_data(periph_service_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return NULL);
-    audio_service_impl_t *impl = (audio_service_impl_t *) handle;
+    periph_service_impl_t *impl = (periph_service_impl_t *) handle;
     return impl->user_data;
+}
+
+esp_err_t periph_service_ioctl(periph_service_handle_t handle, void *ioctl_handle, int cmd, int value)
+{
+    periph_service_impl_t *impl = (periph_service_impl_t *) handle;
+    AUDIO_NULL_CHECK(TAG, (handle && impl->service_ioctl), return ESP_ERR_INVALID_ARG);
+    return impl->service_ioctl(ioctl_handle, cmd, value);
 }

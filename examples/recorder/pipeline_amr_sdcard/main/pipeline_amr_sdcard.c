@@ -112,13 +112,13 @@ void app_main(void)
         "i2s", "amr", "file"
     }, 3);
 #endif
-    ESP_LOGI(TAG, "[3.6] Setup uri (file as fatfs_stream, amr as amr encoder)");
+    ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, amr as amr encoder)");
 #ifdef CONFIG_CHOICE_AMR_WB
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.Wamr");
 #elif defined CONFIG_CHOICE_AMR_NB
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.amr");
 #endif
-    ESP_LOGI(TAG, "[4.0] Setup event listener");
+    ESP_LOGI(TAG, "[4.0] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 

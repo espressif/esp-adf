@@ -38,6 +38,8 @@
 #include "aac_decoder.h"
 #include "http_stream.h"
 #include "wav_encoder.h"
+#include "display_service.h"
+#include "led_bar_is31x.h"
 
 #define  ESP_AUDIO_AUTO_PLAY
 
@@ -186,6 +188,44 @@ static esp_err_t wifi_info(esp_periph_handle_t periph, int argc, char *argv[])
     return ESP_OK;
 }
 
+static esp_err_t led(esp_periph_handle_t periph, int argc, char *argv[])
+{
+    static display_service_handle_t disp_led_serv = NULL;
+    if (disp_led_serv == NULL) {
+        esp_periph_handle_t led_bar = led_bar_is31x_init();
+        if (led_bar == NULL) {
+            ESP_LOGE(TAG, "led_bar handle create failed, this command only support lyrat-msc board");
+            return ESP_FAIL;
+        }
+        display_service_config_t display = {
+            .based_cfg = {
+                .task_stack = 0,
+                .task_prio  = 0,
+                .task_core  = 0,
+                .task_func  = NULL,
+                .service_start = NULL,
+                .service_stop = NULL,
+                .service_destroy = NULL,
+                .service_ioctl = led_bar_is31x_pattern,
+                .service_name = "DISPLAY_LED_BAR",
+                .user_data = NULL,
+            },
+            .instance = led_bar,
+        };
+        disp_led_serv = display_service_create(&display);
+    }
+    int cur_vol = 0;
+    if (argc == 1) {
+        cur_vol = atoi(argv[0]);
+    } else {
+        ESP_LOGE(TAG, "Invalid volume parameter, %d", argc);
+        return ESP_ERR_INVALID_ARG;
+    }
+    ESP_LOGI(TAG, "Set display pattern %d", cur_vol);
+    display_service_set_pattern(disp_led_serv, cur_vol, 0);
+    return ESP_OK;
+}
+
 static esp_err_t sys_reset(esp_periph_handle_t periph, int argc, char *argv[])
 {
     esp_restart();
@@ -218,6 +258,7 @@ static esp_err_t task_list(esp_periph_handle_t periph, int argc, char *argv[])
 }
 #endif
 
+
 const periph_console_cmd_t cli_cmd[] = {
     /* ======================== Esp_audio ======================== */
     { .cmd = "play",        .id = 1, .help = "Play music",               .func = cli_play },
@@ -231,6 +272,9 @@ const periph_console_cmd_t cli_cmd[] = {
     /* ======================== Wi-Fi ======================== */
     { .cmd = "join",        .id = 20, .help = "Join WiFi AP as a station",      .func = wifi_set },
     { .cmd = "wifi",        .id = 21, .help = "Get connected AP information",   .func = wifi_info },
+
+    /* ======================== Led bar ======================== */
+    { .cmd = "led",         .id = 1,  .help = "Lyrat-MSC led bar pattern", .func = led },
 
     /* ======================== System ======================== */
     { .cmd = "reboot",      .id = 30, .help = "Reboot system",            .func = sys_reset },

@@ -22,34 +22,45 @@
  *
  */
 
-#include "esp_log.h"
-#include "board.h"
-#include "audio_mem.h"
+#ifndef _LED_BAR_IS31X_H_
+#define _LED_BAR_IS31X_H_
 
-static const char *TAG = "AUDIO_BOARD";
+#include "display_service.h"
+#include "esp_peripherals.h"
 
-static audio_board_handle_t board_handle = 0;
+/**
+ * @brief      Initialize esp_periph_handle_t instance
+ *
+ * @param      num  led gpio number
+ *
+ * @return
+ *     - NULL, Fail
+ *     - Others, Success
+ */
+esp_periph_handle_t led_bar_is31x_init();
 
-audio_board_handle_t audio_board_init(void)
-{
-    if (board_handle) {
-        ESP_LOGW(TAG, "The board has already been initialized!");
-        return board_handle;
-    }
-    audio_hal_codec_config_t audio_codec_cfg = AUDIO_BOARD_DEFAULT_CONFIG();
-    board_handle = (audio_board_handle_t) audio_calloc(1, sizeof(audio_hal_handle_t));
-    AUDIO_MEM_CHECK(TAG, board_handle, return NULL);
+/**
+ * @brief      Set led bar display pattern.
+ *
+ * @param      handle   led bar instance
+ * @param      pat      display pattern
+ * @param      value    value of pattern
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t led_bar_is31x_pattern(void *handle, int pat, int value);
 
-    board_handle->audio_hal = audio_hal_init(&audio_codec_cfg, &AUDIO_CODEC_DEFAULT_HANDLE);
+/**
+ * @brief      Destroy esp_periph_handle_t instance
+ *
+ * @param      handle  led bar instance
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+void led_bar_is31x_deinit(esp_periph_handle_t handle);
 
-    return board_handle;
-}
-
-esp_err_t audio_borad_deinit(audio_board_handle_t audio_board)
-{
-    esp_err_t ret = ESP_OK;
-    ret = audio_hal_deinit(audio_board->audio_hal);
-    free(audio_board);
-    board_handle = NULL;
-    return ret;
-}
+#endif

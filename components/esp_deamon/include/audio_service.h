@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -71,6 +71,7 @@ typedef struct {
     service_ctrl        service_disconnect;     /*!< Disconnect function */
     service_ctrl        service_destroy;        /*!< Destroy function */
     char                *service_name;          /*!< Name of audio service */
+    void                *user_data;             /*!< User context */
 } audio_service_config_t;
 
 /**
@@ -124,8 +125,8 @@ esp_err_t audio_service_stop(audio_service_handle_t handle);
  * brief      Set the specific audio service callback function.
  *
  * @param[in] handle   The audio service instance
- * @param[in] cb       A pointer to service_callback.
- * @param[in] ctx      A pointer to user context.
+ * @param[in] cb       A pointer to service_callback
+ * @param[in] ctx      A pointer to user context
  *
  * @return
  *     - ESP_OK
@@ -175,7 +176,7 @@ esp_err_t audio_service_disconnect(audio_service_handle_t handle);
  * brief      Set user data to specific audio service instance
  *
  * @param[in] handle   The audio service instance
- * @param[in] data     A pointer to user data.
+ * @param[in] data     A pointer to user data
  *
  * @return
  *     - ESP_OK
@@ -192,7 +193,6 @@ esp_err_t audio_service_set_data(audio_service_handle_t handle, void *data);
  * @return A pointer to user data
  */
 void *audio_service_get_data(audio_service_handle_t handle);
-
 
 #ifdef __cplusplus
 }

@@ -32,7 +32,7 @@ INPUT = \
     ../../components/audio_stream/include/http_stream.h \
     ../../components/audio_stream/include/i2s_stream.h \
     ../../components/audio_stream/include/raw_stream.h \
-	../../components/audio_stream/include/spiffs_stream.h \
+    ../../components/audio_stream/include/spiffs_stream.h \
     ## ESP Codec
     ../../components/esp-adf-libs/esp_codec/include/codec/esp_decoder.h \
     ../../components/esp-adf-libs/esp_codec/include/codec/audio_type_def.h \
@@ -98,6 +98,10 @@ INPUT = \
     ## Services
     ../../components/audio_service/include/bluetooth_service.h \
     ../../components/audio_service/include/bt_keycontrol.h \
+    ## Deamon framwork
+    ../../components/esp_deamon/include/periph_service.h \
+    ../../components/esp_deamon/include/audio_service.h \
+    ../../components/display_service/include/display_service.h \
     ## Cloud Services
     ##
     ## Audio Player

@@ -92,7 +92,7 @@ void app_main(void)
     esp_periph_start(set, touch_periph);
     esp_periph_start(set, bt_periph);
 
-    ESP_LOGI(TAG, "[ 5 ] Setup event listener");
+    ESP_LOGI(TAG, "[ 5 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
