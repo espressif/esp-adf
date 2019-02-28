@@ -31,13 +31,6 @@
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
 
-#include "esp_audio_device_info.h"
-#include "duer_audio_wrapper.h"
-#include "lightduer_ota_notifier.h"
-#include "lightduer_voice.h"
-#include "lightduer_connagent.h"
-#include "lightduer_dcs.h"
-
 #include "periph_touch.h"
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
@@ -47,12 +40,14 @@
 
 #include "sdkconfig.h"
 #include "audio_mem.h"
-#include "dueros_task.h"
+#include "dueros_app.h"
 #include "recorder_engine.h"
 #include "esp_audio.h"
 #include "esp_log.h"
 #include "led.h"
 
+#include "duer_audio_wrapper.h"
+#include "dueros_service.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"
 #include "audio_mem.h"
@@ -60,75 +55,18 @@
 #include "raw_stream.h"
 #include "filter_resample.h"
 
-#define DUEROS_TASK_PRIORITY        5
-#define DUEROS_TASK_SIZE            6*1024
-#define RECORD_SAMPLE_RATE          (16000)
-
-#define FRACTION_BITS               (8)
-#define CLAMPS_MAX_SHORT            (32767)
-#define CLAMPS_MIN_SHORT            (-32768)
-
-#define RECORD_DEBUG                0
-
 static const char *TAG              = "DUEROS";
-static TimerHandle_t                retry_login_timer;
 extern esp_audio_handle_t           player;
 static esp_periph_handle_t          wifi_periph_handle;
-static xQueueHandle                 duer_que;
 static TaskHandle_t                 wifi_set_tsk_handle;
-static bool                         duer_login_success;
 
-static EventGroupHandle_t           duer_task_evts;
-const static int WIFI_CONNECT_BIT   = BIT0;
-
-extern const uint8_t _duer_profile_start[] asm("_binary_duer_profile_start");
-extern const uint8_t _duer_profile_end[]   asm("_binary_duer_profile_end");
-
-typedef enum {
-    DUER_CMD_UNKNOWN,
-    DUER_CMD_LOGIN,
-    DUER_CMD_CONNECTED,
-    DUER_CMD_START,
-    DUER_CMD_STOP,
-    DUER_CMD_QUIT,
-} duer_task_cmd_t;
-
-typedef enum {
-    DUER_STATE_IDLE,
-    DUER_STATE_CONNECTING,
-    DUER_STATE_CONNECTED,
-    DUER_STATE_START,
-    DUER_STATE_STOP,
-} duer_task_state_t;
-
-typedef struct {
-    duer_task_cmd_t     type;
-    uint32_t            *pdata;
-    int                 index;
-    int                 len;
-} duer_task_msg_t;
-
-static duer_task_state_t duer_state = DUER_STATE_IDLE;
-
-static void duer_que_send(void *que, duer_task_cmd_t type, void *data, int index, int len, int dir)
-{
-    duer_task_msg_t evt = {0};
-    evt.type = type;
-    evt.pdata = data;
-    evt.index = index;
-    evt.len = len;
-    if (dir) {
-        xQueueSendToFront(que, &evt, 0) ;
-    } else {
-        xQueueSend(que, &evt, 0);
-    }
-}
+static audio_service_handle_t duer_serv_handle = NULL;
 
 void rec_engine_cb(rec_event_type_t type, void *user_data)
 {
     if (REC_EVENT_WAKEUP_START == type) {
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_START");
-        if (duer_state == DUER_STATE_START) {
+        if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             return;
         }
         if (duer_audio_wrapper_get_state() == AUDIO_STATUS_RUNNING) {
@@ -137,75 +75,21 @@ void rec_engine_cb(rec_event_type_t type, void *user_data)
         led_indicator_set(0, led_work_mode_turn_on);
     } else if (REC_EVENT_VAD_START == type) {
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_START");
-        duer_que_send(duer_que, DUER_CMD_START, NULL, 0, 0, 0);
+        audio_service_start(duer_serv_handle);
     } else if (REC_EVENT_VAD_STOP == type) {
-        if (duer_state == DUER_STATE_START) {
-            duer_que_send(duer_que, DUER_CMD_STOP, NULL, 0, 0, 0);
-            led_indicator_set(0, led_work_mode_turn_off);
+        if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
+            audio_service_stop(duer_serv_handle);
         }
-        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_STOP, state:%d", duer_state);
+        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_STOP, state:%d", dueros_service_state_get());
     } else if (REC_EVENT_WAKEUP_END == type) {
-        if (duer_state == DUER_STATE_START) {
-            duer_que_send(duer_que, DUER_CMD_STOP, NULL, 0, 0, 0);
+        if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
+            audio_service_stop(duer_serv_handle);
         }
         led_indicator_set(0, led_work_mode_turn_off);
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_END");
     } else {
 
     }
-}
-
-void retry_login_timer_cb(xTimerHandle tmr)
-{
-    ESP_LOGE(TAG, "Func:%s", __func__);
-    duer_que_send(duer_que, DUER_CMD_LOGIN, NULL, 0, 0, 0);
-    xTimerStop(tmr, 0);
-}
-
-static void report_info_task(void *pvParameters)
-{
-    int ret;
-    ret = duer_report_device_info();
-    if (ret != DUER_OK) {
-        ESP_LOGE(TAG, "Report device info failed ret:%d", ret);
-    }
-    vTaskDelete(NULL);
-}
-
-static void duer_event_hook(duer_event_t *event)
-{
-    if (!event) {
-        ESP_LOGE(TAG, "NULL event!!!");
-    }
-    ESP_LOGE(TAG, "event: %d", event->_event);
-    switch (event->_event) {
-        case DUER_EVENT_STARTED:
-            // Initialize the DCS API
-            duer_dcs_init();
-            duer_login_success = true;
-            duer_que_send(duer_que, DUER_CMD_CONNECTED, NULL, 0, 0, 0);
-            ESP_LOGE(TAG, "event: DUER_EVENT_STARTED");
-            xTaskCreate(&report_info_task, "report_info_task", 1024 * 2, NULL, 5, NULL);
-            break;
-        case DUER_EVENT_STOPPED:
-            ESP_LOGE(TAG, "event: DUER_EVENT_STOPPED");
-            duer_login_success = false;
-            duer_que_send(duer_que, DUER_CMD_QUIT, NULL, 0, 0, 0);
-            break;
-    }
-}
-
-static void duer_login(void)
-{
-    int sz = _duer_profile_end - _duer_profile_start;
-    char *data = audio_calloc_inner(1, sz);
-    if (NULL == data) {
-        ESP_LOGE(TAG, "audio_malloc failed");
-    }
-    memcpy(data, _duer_profile_start, sz);
-    ESP_LOGI(TAG, "duer_start, len:%d\n%s", sz, data);
-    duer_start(data, sz);
-    audio_free((void *)data);
 }
 
 static esp_err_t recorder_pipeline_open(void **handle)
@@ -265,116 +149,7 @@ static esp_err_t recorder_pipeline_close(void *handle)
     return ESP_OK;
 }
 
-static void dueros_task(void *pvParameters)
-{
-    duer_initialize();
-    duer_set_event_callback(duer_event_hook);
-    duer_init_device_info();
-
-    uint8_t *voiceData = audio_calloc(1, REC_ONE_BLOCK_SIZE);
-    if (NULL == voiceData) {
-        ESP_LOGE(TAG, "Func:%s, Line:%d, Malloc failed", __func__, __LINE__);
-        return;
-    }
-    static duer_task_msg_t duer_msg;
-    // xEventGroupWaitBits(duer_task_evts, WIFI_CONNECT_BIT, false, true, 5000 / portTICK_PERIOD_MS);
-
-    rec_config_t eng = DEFAULT_REC_ENGINE_CONFIG();
-    eng.vad_off_delay_ms = 800;
-    eng.wakeup_time_ms = 10 * 1000;
-    eng.evt_cb = rec_engine_cb;
-    eng.open = recorder_pipeline_open;
-    eng.close = recorder_pipeline_close;
-    eng.fetch = recorder_pipeline_read;
-    eng.extension = NULL;
-    eng.support_encoding = false;
-    eng.user_data = NULL;
-    rec_engine_create(&eng);
-
-    int retry_time = 1000 / portTICK_PERIOD_MS;
-    int retry_num = 1;
-    retry_login_timer = xTimerCreate("tm_duer_login", retry_time,
-                                     pdFALSE, NULL, retry_login_timer_cb);
-    FILE *file = NULL;
-#if RECORD_DEBUG
-    file = fopen("/sdcard/rec_adf_1.wav", "w+");
-    if (NULL == file) {
-        ESP_LOGW(TAG, "open rec_adf_1.wav failed,[%d]", __LINE__);
-    }
-#endif
-    int task_run = 1;
-    while (task_run) {
-        if (xQueueReceive(duer_que, &duer_msg, portMAX_DELAY)) {
-            if (duer_msg.type == DUER_CMD_LOGIN) {
-                ESP_LOGE(TAG, "Recv Que DUER_CMD_LOGIN");
-                if (duer_state == DUER_STATE_IDLE) {
-                    duer_login();
-                    duer_state = DUER_STATE_CONNECTING;
-                } else {
-                    ESP_LOGW(TAG, "DUER_CMD_LOGIN connecting,duer_state = %d", duer_state);
-                }
-            } else if (duer_msg.type == DUER_CMD_CONNECTED) {
-                ESP_LOGI(TAG, "Dueros DUER_CMD_CONNECTED, duer_state:%d", duer_state);
-                duer_state = DUER_STATE_CONNECTED;
-                retry_num = 1;
-            } else if (duer_msg.type == DUER_CMD_START) {
-                if (duer_state < DUER_STATE_CONNECTED) {
-                    ESP_LOGW(TAG, "Dueros has not connected, state:%d", duer_state);
-                    continue;
-                }
-                ESP_LOGI(TAG, "Recv Que DUER_CMD_START");
-                duer_voice_start(RECORD_SAMPLE_RATE);
-                duer_dcs_on_listen_started();
-                duer_state = DUER_STATE_START;
-                while (1) {
-                    int ret = rec_engine_data_read(voiceData, REC_ONE_BLOCK_SIZE, 110 / portTICK_PERIOD_MS);
-                    ESP_LOGD(TAG, "index = %d", ret);
-                    if ((ret == 0) || (ret == -1)) {
-                        break;
-                    }
-                    if (file) {
-                        fwrite(voiceData, 1, REC_ONE_BLOCK_SIZE, file);
-                    }
-                    ret  = duer_voice_send(voiceData, REC_ONE_BLOCK_SIZE);
-                    if (ret < 0) {
-                        ESP_LOGE(TAG, "duer_voice_send failed ret:%d", ret);
-                        break;
-                    }
-                }
-            } else if (duer_msg.type == DUER_CMD_STOP)  {
-                ESP_LOGI(TAG, "Dueros DUER_CMD_STOP");
-                if (file) {
-                    fclose(file);
-                }
-                duer_voice_stop();
-                duer_state = DUER_STATE_STOP;
-            } else if (duer_msg.type == DUER_CMD_QUIT && (duer_state != DUER_STATE_IDLE))  {
-                if (duer_login_success) {
-                    duer_stop();
-                }
-                duer_state = DUER_STATE_IDLE;
-                if (PERIPH_WIFI_SETTING == periph_wifi_is_connected(wifi_periph_handle)) {
-                    continue;
-                }
-                if (retry_num < 128) {
-                    retry_num *= 2;
-                    ESP_LOGI(TAG, "Dueros DUER_CMD_QUIT reconnect, retry_num:%d", retry_num);
-                } else {
-                    ESP_LOGE(TAG, "Dueros reconnect failed,time num:%d ", retry_num);
-                    xTimerStop(retry_login_timer, portMAX_DELAY);
-                    break;
-                }
-                xTimerStop(retry_login_timer, portMAX_DELAY);
-                xTimerChangePeriod(retry_login_timer, retry_time * retry_num, portMAX_DELAY);
-                xTimerStart(retry_login_timer, portMAX_DELAY);
-            }
-        }
-    }
-    free(voiceData);
-    vTaskDelete(NULL);
-}
-
-void wifi_set_task (void *para)
+static void wifi_set_task (void *para)
 {
     periph_wifi_config_start(wifi_periph_handle, WIFI_CONFIG_ESPTOUCH);
     if (ESP_OK == periph_wifi_config_wait_done(wifi_periph_handle, 30000 / portTICK_PERIOD_MS)) {
@@ -385,6 +160,51 @@ void wifi_set_task (void *para)
     wifi_set_tsk_handle = NULL;
     vTaskDelete(NULL);
 }
+
+
+static void retry_login_timer_cb(xTimerHandle tmr)
+{
+    ESP_LOGE(TAG, "Func:%s", __func__);
+    audio_service_connect(duer_serv_handle);
+    xTimerStop(tmr, 0);
+}
+
+static esp_err_t duer_callback(audio_service_handle_t handle, service_event_t *evt, void *ctx)
+{
+    static int retry_num = 1;
+    int state = *((int *)evt->data);
+    ESP_LOGW(TAG, "duer_callback: type:%x, source:%p data:%d, data_len:%d", evt->type, evt->source, state, evt->len);
+    switch (state) {
+        case SERVICE_STATE_IDLE: {
+                xTimerHandle retry_login_timer =  (xTimerHandle) ctx;
+                if (PERIPH_WIFI_SETTING == periph_wifi_is_connected(wifi_periph_handle)) {
+                    break;
+                }
+                if (retry_num < 128) {
+                    retry_num *= 2;
+                    ESP_LOGI(TAG, "Dueros DUER_CMD_QUIT reconnect, retry_num:%d", retry_num);
+                } else {
+                    ESP_LOGE(TAG, "Dueros reconnect failed,time num:%d ", retry_num);
+                    xTimerStop(retry_login_timer, portMAX_DELAY);
+                    break;
+                }
+                xTimerStop(retry_login_timer, portMAX_DELAY);
+                xTimerChangePeriod(retry_login_timer, (1000 / portTICK_PERIOD_MS) * retry_num, portMAX_DELAY);
+                xTimerStart(retry_login_timer, portMAX_DELAY);
+                break;
+            }
+        case SERVICE_STATE_CONNECTING: break;
+        case SERVICE_STATE_CONNECTED: break;
+            retry_num = 1;
+        case SERVICE_STATE_RUNNING: break;
+        case SERVICE_STATE_STOPED: break;
+        default:
+            break;
+    }
+
+    return ESP_OK;
+}
+
 
 esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
 {
@@ -436,8 +256,8 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
                 } else if ((int)event->data == TOUCH_PAD_NUM9 && event->cmd == PERIPH_BUTTON_PRESSED) {
                     ESP_LOGI(TAG, "AUDIO_USER_KEY_WIFI_SET [%d]", __LINE__);
                     if (NULL == wifi_set_tsk_handle) {
-                        if (xTaskCreate(wifi_set_task, "WifiSetTask", 3 * 1024, duer_que,
-                                        DUEROS_TASK_PRIORITY, &wifi_set_tsk_handle) != pdPASS) {
+                        if (xTaskCreate(wifi_set_task, "WifiSetTask", 3 * 1024, NULL,
+                                        5, &wifi_set_tsk_handle) != pdPASS) {
                             ESP_LOGE(TAG, "Error create WifiSetTask");
                         }
                         led_indicator_set(0, led_work_mode_setting);
@@ -452,7 +272,7 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
         case PERIPH_ID_WIFI: {
                 if (event->cmd == PERIPH_WIFI_CONNECTED) {
                     ESP_LOGI(TAG, "PERIPH_WIFI_CONNECTED [%d]", __LINE__);
-                    duer_que_send(duer_que, DUER_CMD_LOGIN, NULL, 0, 0, 0);
+                    audio_service_connect(duer_serv_handle);
                     led_indicator_set(0, led_work_mode_connectok);
                     // xEventGroupSetBits(duer_task_evts, WIFI_CONNECT_BIT);
                 } else if (event->cmd == PERIPH_WIFI_DISCONNECTED) {
@@ -467,14 +287,11 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
     return ESP_OK;
 }
 
-void duer_service_create(void)
+void duer_app_init(void)
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_LOGI(TAG, "ADF version is %s", ADF_VER);
 
-
-    duer_que = xQueueCreate(3, sizeof(duer_task_msg_t));
-    configASSERT(duer_que);
     esp_periph_config_t periph_cfg = {
         .user_context = NULL,
         .event_handle = periph_callback,
@@ -512,11 +329,22 @@ void duer_service_create(void)
     wifi_periph_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(wifi_periph_handle);
 
-    duer_task_evts = xEventGroupCreate();
+    rec_config_t eng = DEFAULT_REC_ENGINE_CONFIG();
+    eng.vad_off_delay_ms = 800;
+    eng.wakeup_time_ms = 10 * 1000;
+    eng.evt_cb = rec_engine_cb;
+    eng.open = recorder_pipeline_open;
+    eng.close = recorder_pipeline_close;
+    eng.fetch = recorder_pipeline_read;
+    eng.extension = NULL;
+    eng.support_encoding = false;
+    eng.user_data = NULL;
+    rec_engine_create(&eng);
 
-    if (xTaskCreatePinnedToCore(dueros_task, "duerosTask", DUEROS_TASK_SIZE, duer_que,
-                                DUEROS_TASK_PRIORITY, NULL, 0) != pdPASS) {
-        ESP_LOGE(TAG, "Error create duerosTask");
-        return;
-    }
+    xTimerHandle retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
+                                     pdFALSE, NULL, retry_login_timer_cb);
+    duer_serv_handle = dueros_service_create();
+
+    audio_service_set_callback(duer_serv_handle, duer_callback, retry_login_timer);
+
 }

@@ -22,36 +22,9 @@
  *
  */
 
+#ifndef _DUER_APP_H_
+#define _DUER_APP_H_
 
-#ifndef _AUDIO_ERROR_H_
-#define _AUDIO_ERROR_H_
-
-#include "esp_err.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-#ifndef __FILENAME__
-#define __FILENAME__ __FILE__
-#endif
-
-#define AUDIO_CHECK(TAG, a, action, msg) if (!(a)) {                                       \
-        ESP_LOGE(TAG,"%s:%d (%s): %s", __FILENAME__, __LINE__, __FUNCTION__, msg);       \
-        action;                                                                   \
-        }
-
-#define AUDIO_MEM_CHECK(TAG, a, action)  AUDIO_CHECK(TAG, a, action, "Memory exhausted")
-
-#define AUDIO_NULL_CHECK(TAG, a, action) AUDIO_CHECK(TAG, a, action, "Got NULL Pointer")
-
-#define AUDIO_ERROR(TAG, str) ESP_LOGE(TAG, "%s:%d (%s): %s", __FILENAME__, __LINE__, __FUNCTION__, str)
-
-#define ESP_EXISTS   (ESP_OK + 1)
-
-#ifdef __cplusplus
-}
-#endif
+void duer_app_init(void);
 
 #endif

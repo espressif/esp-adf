@@ -22,9 +22,25 @@
  *
  */
 
-#ifndef _DUER_TASK_H_
-#define _DUER_TASK_H_
+#ifndef _DUEROS_SERVICE_H_
+#define _DUEROS_SERVICE_H_
+#include "audio_service.h"
 
-void duer_service_create(void);
+/*
+ * @brief Create the dueros service
+ *
+ * @return
+ *     - NULL, Fail
+ *     - Others, Success
+ */
+audio_service_handle_t dueros_service_create(void);
+
+/*
+ * @brief Get dueros service state
+ *
+ * @return The state of service
+ *
+ */
+service_state_t dueros_service_state_get();
 
 #endif
