@@ -79,7 +79,7 @@ static int my_sdcard_read_cb(audio_element_handle_t el, char *buf, int len, Tick
     return read_len;
 }
 
-
+extern void Es8388ReadAll();
 void app_main(void)
 {
     audio_pipeline_handle_t pipeline;
@@ -89,24 +89,23 @@ void app_main(void)
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
     ESP_LOGI(TAG, "[1.0] Initialize peripherals management");
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
-    ESP_LOGI(TAG, "[1.1] Start SD card peripheral");
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
         .card_detect_pin = get_sdcard_intr_gpio(), //GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
-    ESP_LOGI(TAG, "[1.2] Start SD card peripheral");
-    esp_periph_start(sdcard_handle);
+    ESP_LOGI(TAG, "[1.1] Start SD card peripheral");
+    esp_periph_start(set, sdcard_handle);
 
-    // Wait until sdcard was mounted
+    // Wait until sdcard is mounted
     while (!periph_sdcard_is_mounted(sdcard_handle)) {
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
-    ESP_LOGI(TAG, "[1.3] Initialize Touch peripheral");
+    ESP_LOGI(TAG, "[1.2] Initialize Touch peripheral");
     periph_touch_cfg_t touch_cfg = {
         .touch_mask = BIT(get_input_set_id()) | BIT(get_input_play_id()) | BIT(get_input_volup_id()) | BIT(get_input_voldown_id()),
         .tap_threshold_percent = 70,
@@ -114,7 +113,7 @@ void app_main(void)
     esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
 
     ESP_LOGI(TAG, "[1.4] Start touch peripheral");
-    esp_periph_start(touch_periph);
+    esp_periph_start(set, touch_periph);
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
@@ -153,7 +152,7 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline, evt);
 
     ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
     ESP_LOGW(TAG, "[ 5 ] Tap touch buttons to control music player:");
     ESP_LOGW(TAG, "      [Play] to start, pause and resume, [Set] next song.");
@@ -256,8 +255,8 @@ void app_main(void)
     audio_pipeline_remove_listener(pipeline);
 
     /* Stop all peripherals before removing the listener */
-    esp_periph_stop_all();
-    audio_event_iface_remove_listener(esp_periph_get_event_iface(), evt);
+    esp_periph_set_stop_all(set);
+    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
 
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
@@ -266,5 +265,5 @@ void app_main(void)
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(mp3_decoder);
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
 }

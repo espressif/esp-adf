@@ -75,8 +75,8 @@ void app_main(void)
     audio_pipeline_link(pipeline, (const char *[]) {"bt", "i2s"}, 2);
 
     ESP_LOGI(TAG, "[ 4 ] Initialize peripherals");
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     ESP_LOGI(TAG, "[4.1] Initialize Touch peripheral");
     periph_touch_cfg_t touch_cfg = {
@@ -89,8 +89,8 @@ void app_main(void)
     esp_periph_handle_t bt_periph = bluetooth_service_create_periph();
 
     ESP_LOGI(TAG, "[4.2] Start all peripherals");
-    esp_periph_start(touch_periph);
-    esp_periph_start(bt_periph);
+    esp_periph_start(set, touch_periph);
+    esp_periph_start(set, bt_periph);
 
     ESP_LOGI(TAG, "[ 5 ] Setup event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -100,7 +100,7 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline, evt);
 
     ESP_LOGI(TAG, "[5.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
     ESP_LOGI(TAG, "[ 6 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
@@ -177,8 +177,8 @@ void app_main(void)
     audio_pipeline_remove_listener(pipeline);
 
     /* Stop all peripherals before removing the listener */
-    esp_periph_stop_all();
-    audio_event_iface_remove_listener(esp_periph_get_event_iface(), evt);
+    esp_periph_set_stop_all(set);
+    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
 
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
@@ -187,6 +187,6 @@ void app_main(void)
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(bt_stream_reader);
     audio_element_deinit(i2s_stream_writer);
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
     bluetooth_service_destroy();
 }

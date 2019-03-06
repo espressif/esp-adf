@@ -36,7 +36,7 @@
 #include "soc/sens_reg.h"
 #include "esp_log.h"
 #include "esp_system.h"
-
+#include "audio_mem.h"
 #include "periph_led.h"
 #include "esp_peripherals.h"
 
@@ -70,16 +70,13 @@ typedef struct periph_led {
 
 static esp_err_t _led_run(esp_periph_handle_t self, audio_event_iface_msg_t *msg)
 {
-
     return ESP_OK;
 }
-
 
 static esp_err_t _led_init(esp_periph_handle_t self)
 {
     VALIDATE_LED(self, ESP_FAIL);
     periph_led_t *periph_led = esp_periph_get_data(self);
-
     ledc_timer_config_t ledc_timer = {
         .duty_resolution = periph_led->led_duty_resolution, // resolution of PWM duty
         .freq_hz = periph_led->led_freq_hz,                      // frequency of PWM signal
@@ -89,7 +86,6 @@ static esp_err_t _led_init(esp_periph_handle_t self)
 
     // Set configuration of timer0 for high speed channels
     ledc_timer_config(&ledc_timer);
-
     ledc_fade_func_install(0);
     return ESP_OK;
 }
@@ -113,7 +109,7 @@ esp_periph_handle_t periph_led_init(periph_led_cfg_t *config)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_LED, "periph_led");
     //check periph
-    periph_led_t *periph_led = calloc(1, sizeof(periph_led_t));
+    periph_led_t *periph_led = audio_calloc(1, sizeof(periph_led_t));
     //check periph_led
     periph_led->led_speed_mode      = config->led_speed_mode;
     periph_led->led_duty_resolution = config->led_duty_resolution;
@@ -142,9 +138,7 @@ static periph_led_channel_t *_find_led_channel(periph_led_t *periph_led, int gpi
         }
     }
     return ch;
-
 }
-
 
 static void led_timer_handler(xTimerHandle tmr)
 {
@@ -197,7 +191,6 @@ static void led_timer_handler(xTimerHandle tmr)
             }
             ch->tick = esp_periph_tick_get();
         }
-
     }
 }
 

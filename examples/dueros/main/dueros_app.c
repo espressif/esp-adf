@@ -291,33 +291,32 @@ void duer_app_init(void)
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_LOGI(TAG, "ADF version is %s", ADF_VER);
 
-    esp_periph_config_t periph_cfg = {
-        .user_context = NULL,
-        .event_handle = periph_callback,
-    };
-    if (ESP_EXISTS == esp_periph_init(&periph_cfg)) {
-        esp_periph_set_callback(periph_callback);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
+    if (set != NULL) {
+        esp_periph_set_register_callback(set, periph_callback, NULL);
     }
+    led_indicator_init(set);
     periph_button_cfg_t btn_cfg = {
         .gpio_mask = (1ULL << get_input_rec_id()) | (1ULL << get_input_mode_id()), //REC BTN & MODE BTN
     };
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
-    esp_periph_start(button_handle);
+    esp_periph_start(set, button_handle);
 
-    // If enable the touch will take a lot of cpu.
+    // If enabled, the touch will consume a lot of CPU.
     periph_touch_cfg_t touch_cfg = {
         .touch_mask = TOUCH_PAD_SEL4 | TOUCH_PAD_SEL7 | TOUCH_PAD_SEL8 | TOUCH_PAD_SEL9,
         .tap_threshold_percent = 70,
     };
     esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
-    esp_periph_start(touch_periph);
+    esp_periph_start(set, touch_periph);
 
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
         .card_detect_pin = get_sdcard_intr_gpio(), //GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
-    esp_periph_start(sdcard_handle);
+    esp_periph_start(set, sdcard_handle);
     while (!periph_sdcard_is_mounted(sdcard_handle)) {
         vTaskDelay(300 / portTICK_PERIOD_MS);
     }
@@ -326,7 +325,7 @@ void duer_app_init(void)
         .password = CONFIG_WIFI_PASSWORD,
     };
     wifi_periph_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(wifi_periph_handle);
+    esp_periph_start(set, wifi_periph_handle);
 
     rec_config_t eng = DEFAULT_REC_ENGINE_CONFIG();
     eng.vad_off_delay_ms = 800;

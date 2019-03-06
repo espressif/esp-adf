@@ -127,15 +127,15 @@ void app_main(void)
     ringbuf_handle_t rb = audio_element_get_input_ringbuf(el_raw_write);
     downmix_set_second_input_rb(downmixer, rb);
 
-    ESP_LOGI(TAG, "[4.0] Start and wait for SDCARD mounted");
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    ESP_LOGI(TAG, "[4.0] Start and wait for SDCARD to mount");
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
         .card_detect_pin = get_sdcard_intr_gpio(), // GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
-    esp_periph_start(sdcard_handle);
+    esp_periph_start(set, sdcard_handle);
     while (!periph_sdcard_is_mounted(sdcard_handle)) {
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
@@ -144,7 +144,7 @@ void app_main(void)
         .gpio_mask = 1ULL << get_input_mode_id(),
     };
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
-    esp_periph_start(button_handle);
+    esp_periph_start(set, button_handle);
 
     ESP_LOGI(TAG, "[ 5 ] Setup event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -154,7 +154,7 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline, evt);
 
     ESP_LOGI(TAG, "[5.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
     ESP_LOGI(TAG, "[5.3] Listening event from pipeline_tone decoder");
     audio_element_msg_set_listener(mp3_tone_decoder, evt);
@@ -216,8 +216,8 @@ void app_main(void)
     audio_pipeline_remove_listener(pipeline);
 
     /* Stop all peripherals before removing the listener */
-    esp_periph_stop_all();
-    audio_event_iface_remove_listener(esp_periph_get_event_iface(), evt);
+    esp_periph_set_stop_all(set);
+    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
 
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
@@ -233,5 +233,5 @@ void app_main(void)
     audio_element_deinit(el_raw_write);
     audio_element_deinit(mp3_tone_decoder);
     audio_element_deinit(second_fatfs_rd_el);
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
 }

@@ -86,7 +86,7 @@ esp_err_t google_tts_stop(google_tts_handle_t tts);
  *  - ESP_OK
  *  - ESP_FAIL
  */
-esp_err_t googe_tts_set_listener(google_tts_handle_t tts, audio_event_iface_handle_t listener);
+esp_err_t google_tts_set_listener(google_tts_handle_t tts, audio_event_iface_handle_t listener);
 
 /**
  * @brief      Cleanup the Text-to-Speech object

@@ -44,12 +44,10 @@ Examples
     void app_main(void)
     {
         // Initialize Peripherals pool
-        esp_periph_config_t periph_cfg = {
-            .event_handle = _periph_event_handle,
-            .user_context = NULL,
-        };
-        esp_periph_init(&periph_cfg);
+        esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+        esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
+        esp_periph_set_register_callback(set, _periph_event_handle, NULL);
         // Setup SDCARD peripheral
         periph_sdcard_cfg_t sdcard_cfg = {
             .root = "/sdcard",
@@ -71,9 +69,9 @@ Examples
         esp_periph_handle_t touch_handle = periph_touch_init(&touch_cfg);
 
         // Start all peripheral
-        esp_periph_start(button_handle);
-        esp_periph_start(sdcard_handle);
-        esp_periph_start(touch_handle);
+        esp_periph_start(set, button_handle);
+        esp_periph_start(set, sdcard_handle);
+        esp_periph_start(set, touch_handle);
         vTaskDelay(10*1000/portTICK_RATE_MS);
 
         //Stop button peripheral
@@ -81,11 +79,11 @@ Examples
         vTaskDelay(10*1000/portTICK_RATE_MS);
 
         //Start button again
-        esp_periph_start(button_handle);
+        esp_periph_start(set, button_handle);
         vTaskDelay(10*1000/portTICK_RATE_MS);
 
         //Stop & destroy all peripherals
-        esp_periph_destroy();
+        esp_periph_set_destroy(set);
     }
 
 

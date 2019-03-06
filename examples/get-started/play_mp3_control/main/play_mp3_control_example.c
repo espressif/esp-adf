@@ -86,8 +86,8 @@ void app_main(void)
     audio_pipeline_link(pipeline, (const char *[]) {"mp3", "i2s"}, 2);
 
     ESP_LOGI(TAG, "[ 3 ] Initialize peripherals");
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     ESP_LOGI(TAG, "[3.1] Initialize Touch peripheral");
     periph_touch_cfg_t touch_cfg = {
@@ -97,7 +97,7 @@ void app_main(void)
     esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
 
     ESP_LOGI(TAG, "[3.2] Start all peripherals");
-    esp_periph_start(touch_periph);
+    esp_periph_start(set, touch_periph);
 
     ESP_LOGI(TAG, "[ 4 ] Setup event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -107,7 +107,7 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline, evt);
 
     ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
     ESP_LOGW(TAG, "[ 5 ] Tap touch buttons to control music player:");
     ESP_LOGW(TAG, "      [Play] to start, pause and resume, [Set] to stop.");

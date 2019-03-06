@@ -266,7 +266,7 @@ esp_err_t google_sr_destroy(google_sr_handle_t sr)
     return ESP_OK;
 }
 
-esp_err_t googe_sr_set_listener(google_sr_handle_t sr, audio_event_iface_handle_t listener)
+esp_err_t google_sr_set_listener(google_sr_handle_t sr, audio_event_iface_handle_t listener)
 {
     if (listener) {
         audio_pipeline_set_listener(sr->pipeline, listener);

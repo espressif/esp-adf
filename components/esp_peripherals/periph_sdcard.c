@@ -75,8 +75,6 @@ static void IRAM_ATTR sdcard_gpio_intr_handler(void* param)
     } else if(!sdcard_is_exist() && sdcard->is_mounted){
         esp_periph_send_cmd_from_isr(periph, SDCARD_STATUS_CARD_DETECT_CHANGE, NULL, 0);
     }
-
-
 }
 
 static esp_err_t _sdcard_run(esp_periph_handle_t self, audio_event_iface_msg_t *msg)
@@ -90,7 +88,6 @@ static esp_err_t _sdcard_run(esp_periph_handle_t self, audio_event_iface_msg_t *
     } else if(!sdcard_is_exist() && sdcard->is_mounted){
         periph_sdcard_unmount(self);
     }
-
     return ESP_OK;
 }
 
@@ -109,7 +106,6 @@ static esp_err_t _sdcard_init(esp_periph_handle_t self)
         ret |= periph_sdcard_mount(self);
     } else {
         ESP_LOGE(TAG, "no sdcard detect");
-
     }
     esp_periph_start_timer(self, 1000/portTICK_RATE_MS, sdcard_timer_handler);
     return ESP_OK;

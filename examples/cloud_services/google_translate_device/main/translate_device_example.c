@@ -59,8 +59,8 @@ void translate_task(void *pv)
 
     ESP_LOGI(TAG, "[ 1 ] Initialize Buttons & Connect to Wi-Fi network, ssid=%s", CONFIG_WIFI_SSID);
     // Initialize peripherals management
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     periph_wifi_cfg_t wifi_cfg = {
         .ssid = CONFIG_WIFI_SSID,
@@ -84,9 +84,9 @@ void translate_task(void *pv)
 
 
     // Start wifi & button peripheral
-    esp_periph_start(button_handle);
-    esp_periph_start(wifi_handle);
-    esp_periph_start(led_handle);
+    esp_periph_start(set, button_handle);
+    esp_periph_start(set, wifi_handle);
+    esp_periph_start(set, led_handle);
 
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 
@@ -114,11 +114,11 @@ void translate_task(void *pv)
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
     ESP_LOGI(TAG, "[4.1] Listening event from the pipeline");
-    googe_sr_set_listener(sr, evt);
-    googe_tts_set_listener(tts, evt);
+    google_sr_set_listener(sr, evt);
+    google_tts_set_listener(tts, evt);
 
     ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
     ESP_LOGI(TAG, "[ 5 ] Listen for all pipeline events");
     while (1) {
@@ -177,12 +177,12 @@ void translate_task(void *pv)
     google_sr_destroy(sr);
     google_tts_destroy(tts);
     /* Stop all periph before removing the listener */
-    esp_periph_stop_all();
-    audio_event_iface_remove_listener(esp_periph_get_event_iface(), evt);
+    esp_periph_set_stop_all(set);
+    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
 
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
     vTaskDelete(NULL);
 }
 

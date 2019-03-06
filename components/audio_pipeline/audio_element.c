@@ -887,6 +887,7 @@ _element_init_failed:
         audio_element_set_tag(el, NULL);
     }
     audio_element_set_uri(el, NULL);
+    free(el);
     return NULL;
 }
 

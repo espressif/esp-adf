@@ -23,8 +23,8 @@ void app_main(void)
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
     ESP_LOGI(TAG, "[ 1 ] Initialize peripherals");
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     ESP_LOGI(TAG, "[ 2 ] Initialize IS31fl3216 peripheral");
     periph_is31fl3216_cfg_t is31fl3216_cfg = { 0 };
@@ -32,7 +32,7 @@ void app_main(void)
     esp_periph_handle_t is31fl3216_periph = periph_is31fl3216_init(&is31fl3216_cfg);
 
     ESP_LOGI(TAG, "[ 3 ] Start peripherals");
-    esp_periph_start(is31fl3216_periph);
+    esp_periph_start(set, is31fl3216_periph);
 
     ESP_LOGI(TAG, "[ 4 ] Set duty for each LED index");
     for (int i = 0; i < 14; i++) {
@@ -55,6 +55,6 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[ 6 ] Destroy peripherals");
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
     ESP_LOGI(TAG, "[ 7 ] Finished");
 }

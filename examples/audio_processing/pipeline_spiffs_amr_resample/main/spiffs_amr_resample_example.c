@@ -29,6 +29,7 @@
 #include "periph_spiffs.h"
 
 static const char *TAG = "SPIFFS_AMR_RESAMPLE_EXAMPLE";
+static esp_periph_set_handle_t set;
 
 #define RECORD_RATE         48000
 #define RECORD_CHANNEL      2
@@ -146,7 +147,7 @@ void record_playback_task()
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
     while (1) {
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
@@ -207,8 +208,8 @@ void record_playback_task()
     audio_pipeline_remove_listener(pipeline_play);
 
     /* Stop all periph before removing the listener */
-    esp_periph_stop_all();
-    audio_event_iface_remove_listener(esp_periph_get_event_iface(), evt);
+    esp_periph_set_stop_all(set);
+    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
 
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
@@ -240,8 +241,8 @@ void app_main(void)
     esp_log_level_set("PERIPH_SPIFFS", ESP_LOG_INFO);
 
     // Initialize peripherals management
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    set = esp_periph_set_init(&periph_cfg);
 
     // Initialize Spiffs peripheral
     periph_spiffs_cfg_t spiffs_cfg = {
@@ -259,10 +260,10 @@ void app_main(void)
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
 
     // Start spiffs & button peripheral
-    esp_periph_start(spiffs_handle);
-    esp_periph_start(button_handle);
+    esp_periph_start(set, spiffs_handle);
+    esp_periph_start(set, button_handle);
 
-    // Wait until spiffs was mounted
+    // Wait until spiffs is mounted
     while (!periph_spiffs_is_mounted(spiffs_handle)) {
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
@@ -273,5 +274,5 @@ void app_main(void)
 
     // Start record/playback task
     record_playback_task();
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
 }
