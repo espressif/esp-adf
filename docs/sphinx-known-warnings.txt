@@ -8,5 +8,10 @@
 #
 
 #
-# Sphinx known issue https://github.com/sphinx-doc/sphinx/issues/2683\
+# Breathe known issue: https://github.com/michaeljones/breathe/issues/405
+# Sphinx known issue: https://github.com/sphinx-doc/sphinx/pull/5901
 #
+audio_def.inc:line: WARNING: Duplicate declaration, audio_err_t
+audio_def.inc:line: WARNING: Duplicate declaration, esp_audio_status_t
+esp_audio.inc:line: WARNING: Duplicate declaration, struct esp_audio_cfg_t  esp_audio_cfg_t
+esp_audio.inc:line: WARNING: Duplicate declaration, struct esp_audio_setup_t  esp_audio_setup_t
