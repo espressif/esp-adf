@@ -109,23 +109,23 @@ void app_main(void)
     audio_element_set_multi_output_ringbuf(http_stream_reader, rb, 0);
 
     ESP_LOGI(TAG, "[4.0] Start and wait for Wi-Fi network");
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_wifi_cfg_t wifi_cfg = {
         .ssid = CONFIG_WIFI_SSID,
         .password = CONFIG_WIFI_PASSWORD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(wifi_handle);
+    esp_periph_start(set, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 
-    ESP_LOGI(TAG, "[4.1] Start and wait for SDCARD mounted");
+    ESP_LOGI(TAG, "[4.1] Start and wait for SDCARD to mount");
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
         .card_detect_pin = get_sdcard_intr_gpio(), // GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
-    esp_periph_start(sdcard_handle);
+    esp_periph_start(set, sdcard_handle);
     while (!periph_sdcard_is_mounted(sdcard_handle)) {
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
@@ -138,7 +138,7 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline, evt);
 
     ESP_LOGI(TAG, "[5.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
     ESP_LOGI(TAG, "[ 6 ] Start pipelines");
     audio_pipeline_run(pipeline);
@@ -182,8 +182,8 @@ void app_main(void)
     audio_pipeline_remove_listener(pipeline);
 
     /* Stop all peripherals before removing the listener */
-    esp_periph_stop_all();
-    audio_event_iface_remove_listener(esp_periph_get_event_iface(), evt);
+    esp_periph_set_stop_all(set);
+    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
 
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
@@ -197,5 +197,5 @@ void app_main(void)
     audio_pipeline_deinit(pipeline_save);
     audio_element_deinit(el_raw_read);
     audio_element_deinit(el_fatfs_wr_stream);
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
 }

@@ -32,13 +32,8 @@
 
 static esp_periph_handle_t led_handle;
 
-void led_indicator_init()
+void led_indicator_init(esp_periph_set_handle_t set)
 {
-    esp_periph_config_t periph_cfg = {
-        .event_handle = NULL,
-        .user_context = NULL,
-    };
-    esp_periph_init(&periph_cfg);
     periph_led_cfg_t led_cfg = {
         .led_speed_mode = LEDC_LOW_SPEED_MODE,
         .led_duty_resolution = LEDC_TIMER_10_BIT,
@@ -46,11 +41,12 @@ void led_indicator_init()
         .led_freq_hz = 10000,
     };
     led_handle = periph_led_init(&led_cfg);
+    esp_periph_start(set, led_handle);
 }
 
 void led_indicator_set(int num, led_work_mode_t mode)
 {
-    esp_periph_start(led_handle);
+
     switch (mode) {
         case led_work_mode_setting:
             periph_led_blink(led_handle, get_green_led_gpio(), 200, 500, false, -1);
@@ -70,5 +66,5 @@ void led_indicator_set(int num, led_work_mode_t mode)
         default:
             break;
     }
-    // esp_periph_start(led_handle);
+    // esp_periph_start(set, led_handle);
 }

@@ -43,6 +43,7 @@
 
 static const char *TAG = "CONSOLE_EXAMPLE";
 static esp_audio_handle_t player;
+static esp_periph_set_handle_t set;
 
 int _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
@@ -256,15 +257,13 @@ static void esp_audio_state_task (void *para)
 static void cli_setup_wifi()
 {
     ESP_LOGI(TAG, "Start Wi-Fi");
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
     periph_wifi_cfg_t wifi_cfg = {
         .disable_auto_reconnect = true,
         .ssid = "",
         .password = "",
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(wifi_handle);
+    esp_periph_start(set, wifi_handle);
 }
 
 static void cli_setup_sdcard()
@@ -275,7 +274,7 @@ static void cli_setup_sdcard()
         .card_detect_pin = get_sdcard_intr_gpio(), // GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
-    esp_periph_start(sdcard_handle);
+    esp_periph_start(set, sdcard_handle);
 
     while (!periph_sdcard_is_mounted(sdcard_handle)) {
         vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -290,7 +289,7 @@ static void cli_setup_console()
         .commands = cli_cmd,
     };
     esp_periph_handle_t console_handle = periph_console_init(&console_cfg);
-    esp_periph_start(console_handle);
+    esp_periph_start(set, console_handle);
 }
 
 static void cli_setup_player(void)
@@ -400,8 +399,8 @@ void app_main(void)
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_ERROR_CHECK(nvs_flash_init());
     tcpip_adapter_init();
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    set = esp_periph_set_init(&periph_cfg);
 
     cli_setup_sdcard();
     cli_setup_wifi();

@@ -52,6 +52,7 @@ typedef struct {
     ledc_timer_bit_t led_duty_resolution;   /*!< LEDC channel duty resolution */
     ledc_timer_t     led_timer_num;         /*!< Select the timer source of channel (0 - 3) */
     uint32_t         led_freq_hz;           /*!< LEDC timer frequency (Hz) */
+    int              gpio_num;              /*!< Optional, < 0 invalid gpio number */
 } periph_led_cfg_t;
 
 /**

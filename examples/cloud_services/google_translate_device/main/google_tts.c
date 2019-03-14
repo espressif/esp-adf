@@ -216,7 +216,7 @@ esp_err_t google_tts_destroy(google_tts_handle_t tts)
     return ESP_OK;
 }
 
-esp_err_t googe_tts_set_listener(google_tts_handle_t tts, audio_event_iface_handle_t listener)
+esp_err_t google_tts_set_listener(google_tts_handle_t tts, audio_event_iface_handle_t listener)
 {
     if (listener) {
         audio_pipeline_set_listener(tts->pipeline, listener);

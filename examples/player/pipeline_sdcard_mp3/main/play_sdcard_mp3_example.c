@@ -36,8 +36,8 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 1 ] Mount sdcard");
     // Initialize peripherals management
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     // Initialize SD Card peripheral
     periph_sdcard_cfg_t sdcard_cfg = {
@@ -46,9 +46,9 @@ void app_main(void)
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
     // Start sdcard & button peripheral
-    esp_periph_start(sdcard_handle);
+    esp_periph_start(set, sdcard_handle);
 
-    // Wait until sdcard was mounted
+    // Wait until sdcard is mounted
     while (!periph_sdcard_is_mounted(sdcard_handle)) {
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
@@ -96,7 +96,7 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline, evt);
 
     ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
 
     ESP_LOGI(TAG, "[ 5 ] Start audio_pipeline");
@@ -143,8 +143,8 @@ void app_main(void)
     audio_pipeline_remove_listener(pipeline);
 
     /* Stop all periph before removing the listener */
-    esp_periph_stop_all();
-    audio_event_iface_remove_listener(esp_periph_get_event_iface(), evt);
+    esp_periph_set_stop_all(set);
+    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
 
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
@@ -154,5 +154,5 @@ void app_main(void)
     audio_element_deinit(fatfs_stream_reader);
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(mp3_decoder);
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
 }

@@ -172,14 +172,14 @@ void app_main()
     ESP_ERROR_CHECK(ret);
     tcpip_adapter_init();
 
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_wifi_cfg_t wifi_cfg = {
         .ssid = CONFIG_WIFI_SSID,
         .password = CONFIG_WIFI_PASSWORD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(wifi_handle);
+    esp_periph_start(set, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 
     audio_player_config_t audio_config = {

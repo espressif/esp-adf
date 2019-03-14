@@ -52,7 +52,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[ 1 ] Mount sdcard");
     // Initialize peripherals management
     esp_periph_config_t periph_cfg = {0};
-    esp_periph_init(&periph_cfg);
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     // Initialize SD Card peripheral
     periph_sdcard_cfg_t sdcard_cfg = {
@@ -61,7 +61,7 @@ void app_main(void)
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
     // Start sdcard & button peripheral
-    esp_periph_start(sdcard_handle);
+    esp_periph_start(set, sdcard_handle);
 
     // Wait until sdcard is mounted
     while (!periph_sdcard_is_mounted(sdcard_handle)) {

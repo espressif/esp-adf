@@ -20,8 +20,8 @@ static const char *TAG = "CHECK_MSC_ADC_BUTTON";
 void app_main(void)
 {
     ESP_LOGI(TAG, "[ 1 ] Initialize peripherals");
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     ESP_LOGI(TAG, "[1.1] Initialize ADC Button peripheral");
     periph_adc_button_cfg_t adc_button_cfg = { 0 };
@@ -31,19 +31,19 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[1.2] Start ADC Button peripheral");
     esp_periph_handle_t adc_button_periph = periph_adc_button_init(&adc_button_cfg);
-    esp_periph_start(adc_button_periph);
+    esp_periph_start(set, adc_button_periph);
 
     ESP_LOGI(TAG, "[ 2 ] Setup event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
-    ESP_LOGW(TAG, "[ 3 ] Waiting for a button pressed ...");
+    ESP_LOGW(TAG, "[ 3 ] Waiting for a button to be pressed ...");
 
 
     while (1) {
         char *btn_states[] = {"idle", "click", "pressed", "released"};
-    
+
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
@@ -80,6 +80,6 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[ 4 ] Stop & destroy all peripherals and event interface");
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
     audio_event_iface_destroy(evt);
 }

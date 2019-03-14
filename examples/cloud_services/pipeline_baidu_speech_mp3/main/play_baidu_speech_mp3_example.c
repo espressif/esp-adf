@@ -79,14 +79,14 @@ void app_main(void)
     tcpip_adapter_init();
 
     ESP_LOGI(TAG, "[ 0 ] Start and wait for Wi-Fi network");
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_wifi_cfg_t wifi_cfg = {
         .ssid = CONFIG_WIFI_SSID,
         .password = CONFIG_WIFI_PASSWORD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(wifi_handle);
+    esp_periph_start(set, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 
     audio_pipeline_handle_t pipeline;
@@ -136,7 +136,7 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline, evt);
 
     ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
     ESP_LOGI(TAG, "[ 5 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
@@ -181,5 +181,5 @@ void app_main(void)
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(mp3_decoder);
     audio_event_iface_destroy(evt);
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
 }

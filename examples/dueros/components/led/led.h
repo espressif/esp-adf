@@ -41,7 +41,7 @@ typedef enum {
  *
  * @return     None.
  */
-void led_indicator_init(void);
+void led_indicator_init(esp_periph_set_handle_t set);
 
 /**
  * @brief      Set led indicator work mode.

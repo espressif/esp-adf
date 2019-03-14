@@ -109,8 +109,8 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 1 ] Initialize Button Peripheral & Connect to wifi network");
     // Initialize peripherals management
-    esp_periph_config_t periph_cfg = { 0 };
-    esp_periph_init(&periph_cfg);
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     periph_wifi_cfg_t wifi_cfg = {
         .ssid = CONFIG_WIFI_SSID,
@@ -125,8 +125,8 @@ void app_main(void)
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
 
     // Start wifi & button peripheral
-    esp_periph_start(button_handle);
-    esp_periph_start(wifi_handle);
+    esp_periph_start(set, button_handle);
+    esp_periph_start(set, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 
 
@@ -166,7 +166,7 @@ void app_main(void)
     audio_pipeline_set_listener(pipeline, evt);
 
     ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_get_event_iface(), evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
     i2s_stream_set_clk(i2s_stream_reader, 16000, 16, 2);
 
@@ -216,8 +216,8 @@ void app_main(void)
     audio_pipeline_remove_listener(pipeline);
 
     /* Stop all periph before removing the listener */
-    esp_periph_stop_all();
-    audio_event_iface_remove_listener(esp_periph_get_event_iface(), evt);
+    esp_periph_set_stop_all(set);
+    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
 
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
@@ -226,5 +226,5 @@ void app_main(void)
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(http_stream_writer);
     audio_element_deinit(i2s_stream_reader);
-    esp_periph_destroy();
+    esp_periph_set_destroy(set);
 }

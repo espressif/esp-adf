@@ -89,7 +89,6 @@ static void touch_timer_handler(xTimerHandle tmr)
                  periph_touch->result.long_tap_mask, periph_touch->result.long_release_mask);
         esp_periph_send_cmd(periph, 0, NULL, 0);
     }
-
 }
 
 static esp_err_t _touch_init(esp_periph_handle_t self)
