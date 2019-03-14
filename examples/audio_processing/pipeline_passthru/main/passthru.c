@@ -13,7 +13,7 @@
 #include "esp_log.h"
 #include "audio_pipeline.h"
 #include "i2s_stream.h"
-#include "audio_hal.h"
+#include "board.h"
 
 static const char *TAG = "PASSTHRU";
 
@@ -26,11 +26,8 @@ void app_main(void)
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
 
     ESP_LOGI(TAG, "[ 1 ] Start codec chip");
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_codec_cfg.adc_input = AUDIO_HAL_ADC_INPUT_LINE2;
-    audio_hal_codec_cfg.i2s_iface.samples = AUDIO_HAL_44K_SAMPLES;
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     ESP_LOGI(TAG, "[ 2 ] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();

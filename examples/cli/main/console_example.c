@@ -17,7 +17,7 @@
 #include "sdkconfig.h"
 #include "audio_element.h"
 #include "audio_mem.h"
-#include "audio_hal.h"
+#include "board.h"
 #include "audio_common.h"
 #include "fatfs_stream.h"
 #include "raw_stream.h"
@@ -272,7 +272,7 @@ static void cli_setup_sdcard()
     ESP_LOGI(TAG, "Start SdCard");
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
-        .card_detect_pin = SD_CARD_INTR_GPIO, // GPIO_NUM_34
+        .card_detect_pin = get_sdcard_intr_gpio(), // GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
     esp_periph_start(sdcard_handle);
@@ -305,10 +305,12 @@ static void cli_setup_player(void)
         .resample_rate = 0,
         .hal = NULL,
     };
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    cfg.hal = audio_hal_init(&audio_hal_codec_cfg, 0);
+
+
+    audio_board_handle_t board_handle = audio_board_init();
+    cfg.hal = board_handle->audio_hal;
     cfg.evt_que = xQueueCreate(3, sizeof(esp_audio_state_t));
-    audio_hal_ctrl_codec(cfg.hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_hal_ctrl_codec(cfg.hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
     player = esp_audio_create(&cfg);
     xTaskCreate(esp_audio_state_task, "player_task", 4096, cfg.evt_que, 1, NULL);
 

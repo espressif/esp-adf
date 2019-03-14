@@ -18,7 +18,7 @@
 #include "sdkconfig.h"
 #include "audio_event_iface.h"
 #include "audio_common.h"
-#include "audio_hal.h"
+#include "board.h"
 #include "esp_peripherals.h"
 #include "periph_button.h"
 #include "periph_wifi.h"
@@ -41,7 +41,7 @@ esp_periph_handle_t led_handle = NULL;
 void google_sr_begin(google_sr_handle_t sr)
 {
     if (led_handle) {
-        periph_led_blink(led_handle, GPIO_LED_GREEN, 500, 500, true, -1);
+        periph_led_blink(led_handle, get_green_led_gpio(), 500, 500, true, -1);
     }
     ESP_LOGW(TAG, "Start speaking now");
 }
@@ -70,7 +70,7 @@ void translate_task(void *pv)
 
     // Initialize Button peripheral
     periph_button_cfg_t btn_cfg = {
-        .gpio_mask = GPIO_SEL_MODE | GPIO_SEL_REC,
+        .gpio_mask = (1ULL << get_input_mode_id()) | (1ULL << get_input_rec_id()),
     };
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
 
@@ -91,10 +91,8 @@ void translate_task(void *pv)
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_codec_cfg.i2s_iface.samples = AUDIO_HAL_16K_SAMPLES;
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     google_sr_config_t sr_config = {
         .api_key = CONFIG_GOOGLE_API_KEY,
@@ -127,7 +125,7 @@ void translate_task(void *pv)
         audio_event_iface_msg_t msg;
         if (audio_event_iface_listen(evt, &msg, portMAX_DELAY) != ESP_OK) {
             ESP_LOGW(TAG, "[ * ] Event process failed: src_type:%d, source:%p cmd:%d, data:%p, data_len:%d",
-                 msg.source_type, msg.source, msg.cmd, msg.data, msg.data_len);
+                     msg.source_type, msg.source, msg.cmd, msg.data, msg.data_len);
             continue;
         }
 
@@ -144,11 +142,11 @@ void translate_task(void *pv)
         }
 
         // It's MODE button
-        if ((int)msg.data == GPIO_MODE) {
+        if ((int)msg.data == get_input_mode_id()) {
             break;
         }
 
-        if ((int)msg.data != GPIO_REC) {
+        if ((int)msg.data != get_input_rec_id()) {
             continue;
         }
 
@@ -159,7 +157,7 @@ void translate_task(void *pv)
         } else if (msg.cmd == PERIPH_BUTTON_RELEASE || msg.cmd == PERIPH_BUTTON_LONG_RELEASE) {
             ESP_LOGI(TAG, "[ * ] Stop pipeline");
 
-            periph_led_stop(led_handle, GPIO_LED_GREEN);
+            periph_led_stop(led_handle, get_green_led_gpio());
 
             char *original_text = google_sr_stop(sr);
             if (original_text == NULL) {

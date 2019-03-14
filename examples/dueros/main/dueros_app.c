@@ -96,9 +96,8 @@ static esp_err_t recorder_pipeline_open(void **handle)
 {
     audio_element_handle_t i2s_stream_reader;
     audio_pipeline_handle_t recorder;
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_ENCODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     recorder = audio_pipeline_init(&pipeline_cfg);
@@ -212,10 +211,10 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
              event->source_type, event->source, event->cmd, event->data, event->data_len);
     switch (event->source_type) {
         case PERIPH_ID_BUTTON: {
-                if ((int)event->data == GPIO_REC && event->cmd == PERIPH_BUTTON_PRESSED) {
+                if ((int)event->data == get_input_rec_id() && event->cmd == PERIPH_BUTTON_PRESSED) {
                     ESP_LOGI(TAG, "PERIPH_NOTIFY_KEY_REC");
                     rec_engine_trigger_start();
-                } else if ((int)event->data == GPIO_MODE &&
+                } else if ((int)event->data == get_input_mode_id() &&
                            ((event->cmd == PERIPH_BUTTON_RELEASE) || (event->cmd == PERIPH_BUTTON_LONG_RELEASE))) {
                     ESP_LOGI(TAG, "PERIPH_NOTIFY_KEY_REC_QUIT");
                 }
@@ -300,7 +299,7 @@ void duer_app_init(void)
         esp_periph_set_callback(periph_callback);
     }
     periph_button_cfg_t btn_cfg = {
-        .gpio_mask = GPIO_SEL_36 | GPIO_SEL_39, //REC BTN & MODE BTN
+        .gpio_mask = (1ULL << get_input_rec_id()) | (1ULL << get_input_mode_id()), //REC BTN & MODE BTN
     };
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
     esp_periph_start(button_handle);
@@ -315,7 +314,7 @@ void duer_app_init(void)
 
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
-        .card_detect_pin = SD_CARD_INTR_GPIO, //GPIO_NUM_34
+        .card_detect_pin = get_sdcard_intr_gpio(), //GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
     esp_periph_start(sdcard_handle);

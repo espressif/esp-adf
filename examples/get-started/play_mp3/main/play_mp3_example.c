@@ -19,9 +19,8 @@
 #include "audio_common.h"
 #include "i2s_stream.h"
 #include "mp3_decoder.h"
-#include "audio_hal.h"
 #include "filter_resample.h"
-#include "zl38063.h"
+#include "board.h"
 
 static const char *TAG = "PLAY_MP3_FLASH";
 /*
@@ -52,15 +51,8 @@ void app_main(void)
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
     ESP_LOGI(TAG, "[ 1 ] Start audio codec chip");
-#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
-    audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-#endif
-#if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
-    audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ZL38063_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 2);
-#endif
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     ESP_LOGI(TAG, "[ 2 ] Create audio pipeline, add all elements to pipeline, and subscribe pipeline event");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -131,9 +123,9 @@ void app_main(void)
 
             /* Es8388 and es8374 use this function to set I2S and codec to the same frequency as the music file, and zl38063
              * does not need this step because the data has been resampled.*/
-        #if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
+#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
             i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates , music_info.bits, music_info.channels);
-        #endif
+#endif
             continue;
         }
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */

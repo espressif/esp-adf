@@ -20,7 +20,7 @@
 #include "audio_pipeline.h"
 #include "audio_event_iface.h"
 #include "audio_common.h"
-#include "audio_hal.h"
+#include "board.h"
 #include "http_stream.h"
 #include "i2s_stream.h"
 #include "wav_encoder.h"
@@ -131,10 +131,8 @@ void app_main(void)
 
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_codec_cfg.i2s_iface.samples = AUDIO_HAL_16K_SAMPLES;
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_ENCODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_ENCODE, AUDIO_HAL_CTRL_START);
 
     ESP_LOGI(TAG, "[3.0] Create audio pipeline for recording");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();

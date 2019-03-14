@@ -24,7 +24,6 @@
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
 #include "periph_touch.h"
-#include "audio_hal.h"
 #include "board.h"
 
 static const char *TAG = "SDCARD_MP3_CONTROL_EXAMPLE";
@@ -96,7 +95,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[1.1] Start SD card peripheral");
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
-        .card_detect_pin = SD_CARD_INTR_GPIO, //GPIO_NUM_34
+        .card_detect_pin = get_sdcard_intr_gpio(), //GPIO_NUM_34
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
     ESP_LOGI(TAG, "[1.2] Start SD card peripheral");
@@ -109,7 +108,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[1.3] Initialize Touch peripheral");
     periph_touch_cfg_t touch_cfg = {
-        .touch_mask = TOUCH_SEL_SET | TOUCH_SEL_PLAY | TOUCH_SEL_VOLUP | TOUCH_SEL_VOLDWN,
+        .touch_mask = BIT(get_input_set_id()) | BIT(get_input_play_id()) | BIT(get_input_volup_id()) | BIT(get_input_voldown_id()),
         .tap_threshold_percent = 70,
     };
     esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
@@ -118,12 +117,11 @@ void app_main(void)
     esp_periph_start(touch_periph);
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
-    audio_hal_codec_config_t audio_hal_codec_cfg =  AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_codec_cfg.i2s_iface.samples = AUDIO_HAL_44K_SAMPLES;
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
+
     int player_volume;
-    audio_hal_get_volume(hal, &player_volume);
+    audio_hal_get_volume(board_handle->audio_hal, &player_volume);
 
     ESP_LOGI(TAG, "[3.0] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -203,7 +201,7 @@ void app_main(void)
         if (msg.source_type == PERIPH_ID_TOUCH
             && msg.cmd == PERIPH_TOUCH_TAP
             && msg.source == (void *)touch_periph) {
-            if ((int) msg.data == TOUCH_PLAY) {
+            if ((int) msg.data == get_input_play_id()) {
                 ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
                 audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
                 switch (el_state) {
@@ -222,27 +220,27 @@ void app_main(void)
                     default :
                         ESP_LOGI(TAG, "[ * ] Not supported state %d", el_state);
                 }
-            } else if ((int) msg.data == TOUCH_SET) {
+            } else if ((int) msg.data == get_input_set_id()) {
                 ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
                 audio_pipeline_terminate(pipeline);
                 ESP_LOGI(TAG, "[ * ] Stopped, advancing to the next song");
                 get_file(NEXT);
                 audio_pipeline_run(pipeline);
-            } else if ((int) msg.data == TOUCH_VOLUP) {
+            } else if ((int) msg.data == get_input_volup_id()) {
                 ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event");
                 player_volume += 10;
                 if (player_volume > 100) {
                     player_volume = 100;
                 }
-                audio_hal_set_volume(hal, player_volume);
+                audio_hal_set_volume(board_handle->audio_hal, player_volume);
                 ESP_LOGI(TAG, "[ * ] Volume set to %d %%", player_volume);
-            } else if ((int) msg.data == TOUCH_VOLDWN) {
+            } else if ((int) msg.data == get_input_voldown_id()) {
                 ESP_LOGI(TAG, "[ * ] [Vol-] touch tap event");
                 player_volume -= 10;
                 if (player_volume < 0) {
                     player_volume = 0;
                 }
-                audio_hal_set_volume(hal, player_volume);
+                audio_hal_set_volume(board_handle->audio_hal, player_volume);
                 ESP_LOGI(TAG, "[ * ] Volume set to %d %%", player_volume);
             }
         }

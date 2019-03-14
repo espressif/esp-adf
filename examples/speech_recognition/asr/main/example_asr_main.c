@@ -17,9 +17,7 @@
 #include "driver/gpio.h"
 #include "esp_system.h"
 #include "esp_log.h"
-#include "audio_hal.h"
 #include "board.h"
-#include "zl38063.h"
 #include "audio_common.h"
 #include "audio_pipeline.h"
 #include "mp3_decoder.h"
@@ -49,7 +47,7 @@ void app_main()
 {
 #if defined CONFIG_ESP_LYRAT_V4_3_BOARD
     gpio_config_t gpio_conf = {
-        .pin_bit_mask = 1UL << GPIO_LED_GREEN,
+        .pin_bit_mask = 1UL << get_green_led_gpio(),
         .mode = GPIO_MODE_OUTPUT,
         .pull_up_en = 0,
         .pull_down_en = 0,
@@ -87,16 +85,8 @@ void app_main()
     }
 
     ESP_LOGI(EVENT_TAG, "[ 1 ] Start codec chip");
-#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
-    audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ES8388_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 0);
-#endif
-
-#if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
-    audio_hal_codec_config_t audio_hal_codec_cfg = AUDIO_HAL_ZL38063_DEFAULT();
-    audio_hal_handle_t hal = audio_hal_init(&audio_hal_codec_cfg, 2);
-#endif
-    audio_hal_ctrl_codec(hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     audio_pipeline_handle_t pipeline;
     audio_element_handle_t i2s_stream_reader, filter, raw_read;
@@ -148,13 +138,13 @@ void app_main()
             case OPEN_THE_LIGHT:
                 ESP_LOGI(TAG, "Turn on the light");
 #if defined CONFIG_ESP_LYRAT_V4_3_BOARD
-                gpio_set_level(GPIO_LED_GREEN, 1);
+                gpio_set_level(get_green_led_gpio(), 1);
 #endif
                 break;
             case CLOSE_THE_LIGHT:
                 ESP_LOGI(TAG, "Turn off the light");
 #if defined CONFIG_ESP_LYRAT_V4_3_BOARD
-                gpio_set_level(GPIO_LED_GREEN, 0);
+                gpio_set_level(get_green_led_gpio(), 0);
 #endif
                 break;
             case VOLUME_INCREASE:
