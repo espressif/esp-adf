@@ -23,11 +23,6 @@
 
 static const char *TAG = "BLUETOOTH_EXAMPLE";
 
-#define LYRAT_TOUCH_SET     TOUCH_PAD_NUM9
-#define LYRAT_TOUCH_PLAY    TOUCH_PAD_NUM8
-#define LYRAT_TOUCH_VOLUP   TOUCH_PAD_NUM7
-#define LYRAT_TOUCH_VOLDWN  TOUCH_PAD_NUM4
-
 void app_main(void)
 {
     audio_pipeline_handle_t pipeline;
