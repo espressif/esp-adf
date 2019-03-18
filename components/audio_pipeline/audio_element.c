@@ -975,6 +975,7 @@ esp_err_t audio_element_pause(audio_element_handle_t el)
     }
     xEventGroupClearBits(el->state_event, PAUSED_BIT);
     if (el->task_stack <= 0) {
+        el->is_running = false;
         audio_element_force_set_state(el, AEL_STATE_PAUSED);
         return ESP_OK;
     }
@@ -997,10 +998,12 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
         return ESP_FAIL;
     }
     if ((el->is_running) || (el->state == AEL_STATE_RUNNING)) {
-        ESP_LOGD(TAG, "[%s] RESUME: Element is already running, state:%d, task_run:%d", el->tag, el->state, el->task_run);
+        ESP_LOGD(TAG, "[%s] RESUME: Element is already running, state:%d, task_run:%d, is_running:%d",
+                 el->tag, el->state, el->task_run, el->is_running);
         return ESP_OK;
     }
     if (el->task_stack <= 0) {
+        el->is_running = true;
         audio_element_force_set_state(el, AEL_STATE_RUNNING);
         return ESP_OK;
     }
