@@ -146,7 +146,7 @@ void record_playback_task()
     audio_pipeline_register(pipeline_play, filter_upsample_el,   "filter_upsample");
     audio_pipeline_register(pipeline_play, i2s_writer_el,        "i2s_writer");
 
-    ESP_LOGI(TAG, "[ 3 ] Setup event listener");
+    ESP_LOGI(TAG, "[ 3 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 

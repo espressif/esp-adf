@@ -124,13 +124,13 @@ void flexible_pipeline_playback()
     p0_reader_tag = "file_aac_reader";
     audio_element_set_uri(fatfs_mp3_reader_el, "/sdcard/test.mp3");
 
-    ESP_LOGI(TAG, "[ 3 ] Setup event listener");
+    ESP_LOGI(TAG, "[ 3 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
-    ESP_LOGI(TAG, "[3.1] Setup i2s clock");
+    ESP_LOGI(TAG, "[3.1] Set up  i2s clock");
     i2s_stream_set_clk(i2s_writer_el, PLAYBACK_RATE, PLAYBACK_BITS, PLAYBACK_CHANNEL);
 
     ESP_LOGI(TAG, "[ 4 ] Start playback pipeline");

@@ -93,10 +93,10 @@ void app_main(void)
         "file_read", "wavdec", "equalizer", "i2s"
     }, 4);
 
-    ESP_LOGI(TAG, "[3.3] Setup uri (file as fatfs_stream, wav as wav decoder, and default output is i2s)");
+    ESP_LOGI(TAG, "[3.3] Set up  uri (file as fatfs_stream, wav as wav decoder, and default output is i2s)");
     audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.wav");
 
-    ESP_LOGI(TAG, "[4.0] Setup event listener");
+    ESP_LOGI(TAG, "[4.0] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 

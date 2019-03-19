@@ -44,7 +44,6 @@
 #include "recorder_engine.h"
 #include "esp_audio.h"
 #include "esp_log.h"
-#include "led.h"
 
 #include "duer_audio_wrapper.h"
 #include "dueros_service.h"
@@ -55,12 +54,16 @@
 #include "raw_stream.h"
 #include "filter_resample.h"
 
+#include "display_service.h"
+#include "led_indicator.h"
+
 static const char *TAG              = "DUEROS";
 extern esp_audio_handle_t           player;
 static esp_periph_handle_t          wifi_periph_handle;
 static TaskHandle_t                 wifi_set_tsk_handle;
 
 static audio_service_handle_t duer_serv_handle = NULL;
+static display_service_handle_t disp_serv = NULL;
 
 void rec_engine_cb(rec_event_type_t type, void *user_data)
 {
@@ -72,7 +75,7 @@ void rec_engine_cb(rec_event_type_t type, void *user_data)
         if (duer_audio_wrapper_get_state() == AUDIO_STATUS_RUNNING) {
             duer_audio_wrapper_pause();
         }
-        led_indicator_set(0, led_work_mode_turn_on);
+        display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_ON, 0);
     } else if (REC_EVENT_VAD_START == type) {
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_START");
         audio_service_start(duer_serv_handle);
@@ -85,7 +88,7 @@ void rec_engine_cb(rec_event_type_t type, void *user_data)
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(duer_serv_handle);
         }
-        led_indicator_set(0, led_work_mode_turn_off);
+        display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_OFF, 0);
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_END");
     } else {
 
@@ -259,7 +262,7 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
                                         5, &wifi_set_tsk_handle) != pdPASS) {
                             ESP_LOGE(TAG, "Error create WifiSetTask");
                         }
-                        led_indicator_set(0, led_work_mode_setting);
+                        display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_SETTING, 0);
                     } else {
                         ESP_LOGW(TAG, "WifiSetTask has already running");
                     }
@@ -272,11 +275,11 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
                 if (event->cmd == PERIPH_WIFI_CONNECTED) {
                     ESP_LOGI(TAG, "PERIPH_WIFI_CONNECTED [%d]", __LINE__);
                     audio_service_connect(duer_serv_handle);
-                    led_indicator_set(0, led_work_mode_connectok);
+                    display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_CONNECTED, 0);
                     // xEventGroupSetBits(duer_task_evts, WIFI_CONNECT_BIT);
                 } else if (event->cmd == PERIPH_WIFI_DISCONNECTED) {
                     ESP_LOGI(TAG, "PERIPH_WIFI_DISCONNECTED [%d]", __LINE__);
-                    led_indicator_set(0, led_work_mode_disconnect);
+                    display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_DISCONNECTED, 0);
                 }
                 break;
             }
@@ -296,7 +299,24 @@ void duer_app_init(void)
     if (set != NULL) {
         esp_periph_set_register_callback(set, periph_callback, NULL);
     }
-    led_indicator_init(set);
+    led_indicator_handle_t led = led_indicator_init((gpio_num_t)get_green_led_gpio());
+    display_service_config_t display = {
+        .based_cfg = {
+            .task_stack = 0,
+            .task_prio  = 0,
+            .task_core  = 0,
+            .task_func  = NULL,
+            .service_start = NULL,
+            .service_stop = NULL,
+            .service_destroy = NULL,
+            .service_ioctl = led_indicator_pattern,
+            .service_name = "DISPLAY_serv",
+            .user_data = NULL,
+        },
+        .instance = led,
+    };
+    disp_serv = display_service_create(&display);
+
     periph_button_cfg_t btn_cfg = {
         .gpio_mask = (1ULL << get_input_rec_id()) | (1ULL << get_input_mode_id()), //REC BTN & MODE BTN
     };

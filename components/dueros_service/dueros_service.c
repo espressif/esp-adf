@@ -299,6 +299,7 @@ audio_service_handle_t dueros_service_create(void)
         .service_disconnect = dueros_disconnect,
         .service_destroy = dueros_destroy,
         .service_name = "duer_serv",
+        .user_data = NULL,
     };
     audio_service_handle_t duer = audio_service_create(&duer_cfg);
     dueros_service_t *serv =  audio_calloc(1, sizeof(dueros_service_t));

@@ -132,7 +132,7 @@ void record_playback_task()
     audio_pipeline_register(pipeline_play, i2s_writer_el, "i2s_writer");
     audio_pipeline_link(pipeline_play, (const char *[]) {"file_reader", "wav_decoder", "sonic", "i2s_writer"}, 4);
 
-    ESP_LOGI(TAG, "[ 3 ] Setup event listener");
+    ESP_LOGI(TAG, "[ 3 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);

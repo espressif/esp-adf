@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,35 +22,47 @@
  *
  */
 
-#ifndef _LED_H_
-#define _LED_H_
+#ifndef _LED_INDICATOR_H_
+#define _LED_INDICATOR_H_
 
-typedef enum {
-    led_work_mode_unknown,
-    led_work_mode_setting,
-    led_work_mode_connectok,
-    led_work_mode_disconnect,
-    led_work_mode_turn_off,
-    led_work_mode_turn_on,
-} led_work_mode_t;
+#include "display_service.h"
+
+typedef struct led_indicator_impl *led_indicator_handle_t;
 
 /**
- * @brief      Call `periph_led_init`
+ * @brief      Initialize led_indicator_handle_t instance
  *
- * @param      None.
+ * @param      num  led gpio number
  *
- * @return     None.
+ * @return
+ *     - NULL, Fail
+ *     - Others, Success
  */
-void led_indicator_init(esp_periph_set_handle_t set);
+led_indicator_handle_t led_indicator_init(gpio_num_t num);
 
 /**
- * @brief      Set led indicator work mode.
+ * @brief      Set led indicator display pattern.
  *
- * @param      index  Led number
- * @param      mode   Indicator work mode.
+ * @param      handle   led indicator instance
+ * @param      pat      display pattern
+ * @param      value    value of pattern
  *
- * @return     None.
+* @return
+ *     - ESP_OK
+ *     - ESP_FAIL
  */
-void led_indicator_set(int index, led_work_mode_t mode);
+esp_err_t led_indicator_pattern(void *handle, int pat, int value);
+
+/**
+ * @brief      Destroy led_indicator_handle_t instance
+ *
+ * @param      handle  led indicator instance
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+void led_indicator_deinit(led_indicator_handle_t handle);
 
 #endif
+

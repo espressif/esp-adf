@@ -109,7 +109,7 @@ void translate_task(void *pv)
     };
     google_tts_handle_t tts = google_tts_init(&tts_config);
 
-    ESP_LOGI(TAG, "[ 4 ] Setup event listener");
+    ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 

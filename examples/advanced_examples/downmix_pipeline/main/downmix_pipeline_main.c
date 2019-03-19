@@ -90,7 +90,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[2.5] Link elements together fatfs_stream-->mp3_decoder-->downmixer-->i2s_stream-->[codec_chip]");
     audio_pipeline_link(pipeline, (const char *[]) {"file", "mp3", "mixer", "i2s"}, 4);
-    ESP_LOGI(TAG, "[2.6] Setup uri");
+    ESP_LOGI(TAG, "[2.6] Set up  uri");
     audio_element_set_uri(first_fatfs_rd_el, "/sdcard/test1.mp3");
 
 
@@ -112,7 +112,7 @@ void app_main(void)
     audio_pipeline_cfg_t pipeline_tone_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     audio_pipeline_handle_t pipeline_tone = audio_pipeline_init(&pipeline_tone_cfg);
 
-    ESP_LOGI(TAG, "[3.4] Setup uri for read file name");
+    ESP_LOGI(TAG, "[3.4] Set up  uri for read file name");
     audio_element_set_uri(second_fatfs_rd_el, "/sdcard/test2.mp3");
 
     ESP_LOGI(TAG, "[3.5] Register all elements to pipeline_tone");
@@ -146,7 +146,7 @@ void app_main(void)
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
     esp_periph_start(set, button_handle);
 
-    ESP_LOGI(TAG, "[ 5 ] Setup event listener");
+    ESP_LOGI(TAG, "[ 5 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 

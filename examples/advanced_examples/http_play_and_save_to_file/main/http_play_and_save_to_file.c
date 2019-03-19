@@ -77,7 +77,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[2.5] Link elements together http_stream-->mp3_decoder-->i2s_stream-->[codec_chip]");
     audio_pipeline_link(pipeline, (const char *[]) {"http", "mp3", "i2s"}, 3);
-    ESP_LOGI(TAG, "[2.6] Setup uri (http as http_stream, mp3 as mp3 decoder, and default output is i2s)");
+    ESP_LOGI(TAG, "[2.6] Set up  uri (http as http_stream, mp3 as mp3 decoder, and default output is i2s)");
     audio_element_set_uri(http_stream_reader, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3");
 
     ESP_LOGI(TAG, "[3.0] Create fatfs stream to save file");
@@ -94,7 +94,7 @@ void app_main(void)
     audio_pipeline_cfg_t pipeline_save_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     audio_pipeline_handle_t pipeline_save = audio_pipeline_init(&pipeline_save_cfg);
 
-    ESP_LOGI(TAG, "[3.3] Setup uri for save file name");
+    ESP_LOGI(TAG, "[3.3] Set up  uri for save file name");
     audio_element_set_uri(el_fatfs_wr_stream, "/sdcard/test_output.mp3");
 
     ESP_LOGI(TAG, "[3.4] Register all elements to pipeline_save");
@@ -130,7 +130,7 @@ void app_main(void)
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
-    ESP_LOGI(TAG, "[ 5 ] Setup event listener");
+    ESP_LOGI(TAG, "[ 5 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 

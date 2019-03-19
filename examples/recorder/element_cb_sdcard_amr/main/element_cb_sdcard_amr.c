@@ -110,7 +110,7 @@ void app_main(void)
     audio_element_set_output_ringbuf(amr_encoder, ringbuf2);
     audio_element_set_input_ringbuf(fatfs_stream_writer, ringbuf2);
 
-    ESP_LOGI(TAG, "[3.5] Setup uri (file as fatfs_stream, amr as amr encoder)");
+    ESP_LOGI(TAG, "[3.5] Set up  uri (file as fatfs_stream, amr as amr encoder)");
 #ifdef CONFIG_CHOICE_AMR_WB
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.Wamr");
 #elif defined CONFIG_CHOICE_AMR_NB

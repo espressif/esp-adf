@@ -168,7 +168,7 @@ audio_player_handle_t audio_player_init(audio_player_config_t *config)
     ESP_LOGI(TAG, "[2.5] Link elements together http_stream-->mp3_decoder-->i2s_stream-->[codec_chip]");
     audio_pipeline_link(ap->pipeline, (const char *[]) {"http", "mp3", "i2s"}, 3);
 
-    ESP_LOGI(TAG, "[ 3 ] Setup event listener");
+    ESP_LOGI(TAG, "[ 3 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     ap->evt = audio_event_iface_init(&evt_cfg);
 

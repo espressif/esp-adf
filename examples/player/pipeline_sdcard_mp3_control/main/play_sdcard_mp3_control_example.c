@@ -144,7 +144,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.4] Link it together [my_sdcard_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]");
     audio_pipeline_link(pipeline, (const char *[]) {"mp3", "i2s"}, 2);
 
-    ESP_LOGI(TAG, "[4.0] Setup event listener");
+    ESP_LOGI(TAG, "[4.0] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 

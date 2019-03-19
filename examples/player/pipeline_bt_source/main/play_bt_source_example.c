@@ -74,7 +74,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[4.2] Link it together http_stream-->mp3_decoder-->bt_stream_writer");
     audio_pipeline_link(pipeline, (const char *[]) {"http", "mp3", "bt"}, 3);
 
-    ESP_LOGI(TAG, "[4.3] Setup uri (http as http_stream, mp3 as mp3 decoder, and default output is i2s)");
+    ESP_LOGI(TAG, "[4.3] Set up  uri (http as http_stream, mp3 as mp3 decoder, and default output is i2s)");
     audio_element_set_uri(http_stream_reader, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3");
 
     ESP_LOGI(TAG, "[ 5 ] Start and wait for Wi-Fi network");
@@ -94,7 +94,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[5.2] Start Bluetooth peripheral");
     esp_periph_start(set, bt_periph);
 
-    ESP_LOGI(TAG, "[ 6 ] Setup event listener");
+    ESP_LOGI(TAG, "[ 6 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 

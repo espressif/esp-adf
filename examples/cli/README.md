@@ -4,8 +4,8 @@ To run this example you need ESP32 LyraT or compatible board:
 
 - Setup Wi-Fi SSID and Password by console, refer to system commands join.
 - Insert a microSD card loaded with 'test.amr', 'test.flac', 'test.ogg', 'test.opus', 'test.mp3', 'test.wav', 'test.aac', 'test.ts' and 'test.m4a' into board's slot.
-- if the `ESP_AUDIO_AUTO_PLAY` is opened, it can automatically recognize audio formats, which added in the `auto_decode` list. 
-- Connect speakers or headphones to the board. 
+- if the `ESP_AUDIO_AUTO_PLAY` is opened, it can automatically recognize audio formats, which added in the `auto_decode` list.
+- Connect speakers or headphones to the board.
 
 ## Support Commands
 ### Audio Commands
@@ -25,6 +25,7 @@ To run this example you need ESP32 LyraT or compatible board:
 - tasks: Get information about running tasks
 - join: Connect Wi-Fi with ssid and password
 - wifi: Get connected AP SSID
+- led: Show some led bar patterns with lyrat-msc board
 
 ### Note:
 - To run _stat_ command, CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS must be enabled by make menuconfig Component Config -> FreeRTOS ->Enable FreeRTOS to collect run time stats.
