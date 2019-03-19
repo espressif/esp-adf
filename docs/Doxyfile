@@ -103,6 +103,11 @@ INPUT = \
     ../../components/esp_deamon/include/audio_service.h \
     ../../components/display_service/include/display_service.h \
     ## Cloud Services
+    ../../components/wifi_service/include/airkiss_config.h \
+    ../../components/wifi_service/include/blufi_config.h \
+    ../../components/wifi_service/include/smart_config.h \
+    ../../components/wifi_service/include/esp_wifi_setting.h \
+    ../../components/wifi_service/include/wifi_service.h \
     ##
     ## Audio Player
     ##
