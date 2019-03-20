@@ -79,6 +79,9 @@ esp_err_t audio_pipeline_deinit(audio_pipeline_handle_t pipeline);
  *             but `name` (as String) must be unique in audio_pipeline,
  *             which is used to identify the element for link creation mentioned in the `audio_pipeline_link`
  *
+ * @note       Because of stop pipeline or pause pipeline depend much on register order.
+ *             Please register element strictly in the following order: input element first, process middle, output element last.
+ *
  * @param[in]  pipeline The Audio Pipeline Handle
  * @param[in]  el       The Audio Element Handle
  * @param[in]  name     The name identifier of the audio_element in this audio_pipeline

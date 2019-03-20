@@ -42,9 +42,12 @@
 
 static const char *TAG = "AUDIO_PIPELINE";
 
+#define PIPELINE_DEBUG(x) debug_pipeline_lists(x, __LINE__, __func__)
+
 typedef struct ringbuf_item {
     STAILQ_ENTRY(ringbuf_item)  next;
     ringbuf_handle_t            rb;
+    audio_element_handle_t      host_el;
     bool                        linked;
     bool                        kept_ctx;
 } ringbuf_item_t;
@@ -107,12 +110,34 @@ static void audio_pipeline_unregister_element(audio_pipeline_handle_t pipeline, 
     }
 }
 
-static void add_rb_to_audio_pipeline(audio_pipeline_handle_t pipeline, ringbuf_handle_t rb)
+static void add_rb_to_audio_pipeline(audio_pipeline_handle_t pipeline, ringbuf_handle_t rb, audio_element_handle_t host_el)
 {
     ringbuf_item_t *rb_item = (ringbuf_item_t *)audio_calloc(1, sizeof(ringbuf_item_t));
     AUDIO_MEM_CHECK(TAG, rb_item, return);
     rb_item->rb = rb;
+    rb_item->linked = true;
+    rb_item->kept_ctx = true;
+    rb_item->host_el = host_el;
     STAILQ_INSERT_TAIL(&pipeline->rb_list, rb_item, next);
+}
+
+static void debug_pipeline_lists(audio_pipeline_handle_t pipeline, int line, const char *func)
+{
+    audio_element_item_t *el_item, *el_tmp;
+    ringbuf_item_t *rb_item, *tmp;
+    ESP_LOGD(TAG, "func:%s", func);
+    STAILQ_FOREACH_SAFE(el_item, &pipeline->el_list, next, el_tmp) {
+        ESP_LOGD(TAG, "el-list:%d, el:%p, %s, in_rb:%p, out_rb:%p, linked:%d, el-kept:%d",
+                 line, el_item->el, audio_element_get_tag(el_item->el),
+                 audio_element_get_input_ringbuf(el_item->el),
+                 audio_element_get_output_ringbuf(el_item->el),
+                 el_item->linked,
+                 el_item->kept_ctx);
+    }
+    STAILQ_FOREACH_SAFE(rb_item, &pipeline->rb_list, next, tmp) {
+        ESP_LOGD(TAG, "rb-list:%d, rb:%p, host_el:%p, el-tag:%s", line, rb_item->rb,
+                 rb_item->host_el, rb_item->host_el != NULL ? audio_element_get_tag(rb_item->host_el) : NULL);
+    }
 }
 
 audio_element_handle_t audio_pipeline_get_el_by_tag(audio_pipeline_handle_t pipeline, const char *tag)
@@ -351,6 +376,7 @@ esp_err_t audio_pipeline_link(audio_pipeline_handle_t pipeline, const char *link
             return ESP_FAIL;
         }
         item->linked = true;
+        item->kept_ctx = true;
         audio_element_handle_t el = item->el;
 
         /* Create and Link ringubffer */
@@ -374,6 +400,8 @@ esp_err_t audio_pipeline_link(audio_pipeline_handle_t pipeline, const char *link
 
             rb_item->rb = rb;
             rb_item->linked = true;
+            rb_item->kept_ctx = true;
+            rb_item->host_el = el;
             STAILQ_INSERT_TAIL(&pipeline->rb_list, rb_item, next);
             audio_element_set_output_ringbuf(el, rb);
             ESP_LOGI(TAG, "audio_pipeline_link:%p, %s, %p", el, link_tag[i], rb);
@@ -396,6 +424,7 @@ esp_err_t audio_pipeline_unlink(audio_pipeline_handle_t pipeline)
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
             el_item->linked = false;
+            el_item->kept_ctx = false;
             audio_element_set_output_ringbuf(el_item->el, NULL);
             audio_element_set_input_ringbuf(el_item->el, NULL);
             ESP_LOGD(TAG, "audio_pipeline_unlink, %p, %s", el_item->el, audio_element_get_tag(el_item->el));
@@ -405,6 +434,8 @@ esp_err_t audio_pipeline_unlink(audio_pipeline_handle_t pipeline)
         STAILQ_REMOVE(&pipeline->rb_list, rb_item, ringbuf_item, next);
         rb_destroy(rb_item->rb);
         rb_item->linked = false;
+        rb_item->kept_ctx = false;
+        rb_item->host_el = NULL;
         audio_free(rb_item);
         ESP_LOGD(TAG, "audio_pipeline_unlink, RB, %p,", rb_item->rb);
     }
@@ -466,7 +497,7 @@ esp_err_t audio_pipeline_link_more(audio_pipeline_handle_t pipeline, audio_eleme
             }
             rb = rb_create(audio_element_get_output_ringbuf_size(el), 1);
             AUDIO_MEM_CHECK(TAG, rb, return ESP_ERR_NO_MEM);
-            add_rb_to_audio_pipeline(pipeline, rb);
+            add_rb_to_audio_pipeline(pipeline, rb, el);
             audio_element_set_output_ringbuf(el, rb);
         }
         ESP_LOGD(TAG, "element is %p, rb:%p", el, rb);
@@ -485,7 +516,7 @@ esp_err_t audio_pipeline_link_insert(audio_pipeline_handle_t pipeline, bool firs
     audio_pipeline_register_element(pipeline, next);
     audio_element_set_output_ringbuf(prev, conect_rb);
     audio_element_set_input_ringbuf(next, conect_rb);
-    add_rb_to_audio_pipeline(pipeline, conect_rb);
+    add_rb_to_audio_pipeline(pipeline, conect_rb, prev);
     pipeline->linked = true;
     return ESP_OK;
 }
@@ -570,38 +601,53 @@ esp_err_t audio_pipeline_breakup_elements(audio_pipeline_handle_t pipeline, audi
     audio_pipeline_remove_listener(pipeline);
     audio_element_item_t *el_item, *el_tmp;
     ringbuf_item_t *rb_item, *tmp;
-    bool kept = false;
+    bool kept = true;
+    ESP_LOGD(TAG, "audio_pipeline_breakup_elements IN,%p,%s", kept_ctx_el, kept_ctx_el != NULL ? audio_element_get_tag(kept_ctx_el) : "NULL");
     STAILQ_FOREACH_SAFE(el_item, &pipeline->el_list, next, el_tmp) {
+        ESP_LOGD(TAG, "%d, el:%p, %s, in_rb:%p, out_rb:%p, linked:%d, el-kept:%d", __LINE__, el_item->el, audio_element_get_tag(el_item->el),
+                 audio_element_get_input_ringbuf(el_item->el),
+                 audio_element_get_output_ringbuf(el_item->el),
+                 el_item->linked,
+                 el_item->kept_ctx);
         if (!el_item->linked) {
             continue;
         }
-        if (kept && el_item->el != kept_ctx_el) {
-            el_item->linked = false;
-            audio_element_set_input_ringbuf(el_item->el, NULL);
-            audio_element_set_output_ringbuf(el_item->el, NULL);
-            ESP_LOGD(TAG, "%d, el:%p, %s, in_rb:%p, out_rb:%p", __LINE__, el_item->el, audio_element_get_tag(el_item->el),
-                     audio_element_get_input_ringbuf(el_item->el), audio_element_get_output_ringbuf(el_item->el));
+        if ((!kept) && el_item->el != kept_ctx_el) {
+            STAILQ_FOREACH_SAFE(rb_item, &pipeline->rb_list, next, tmp) {
+                if (audio_element_get_output_ringbuf(el_item->el) == NULL) {
+                    el_item->linked = false;
+                    el_item->kept_ctx = false;
+                    ESP_LOGD(TAG, "output ringbuf is null");
+                    break;
+                } else if (rb_item->rb == audio_element_get_output_ringbuf(el_item->el)) {
+                    el_item->linked = false;
+                    el_item->kept_ctx = false;
+                    rb_item->kept_ctx = false;
+                    ESP_LOGD(TAG, "found output ringbuf ");
+                    break;
+                }
+            }
         } else {
             STAILQ_FOREACH_SAFE(rb_item, &pipeline->rb_list, next, tmp) {
-                ESP_LOGD(TAG, "%d, el:%p, %s, in_rb:%p, out_rb:%p", __LINE__, el_item->el, audio_element_get_tag(el_item->el),
-                         audio_element_get_input_ringbuf(el_item->el), audio_element_get_output_ringbuf(el_item->el));
                 if (rb_item->rb == audio_element_get_output_ringbuf(el_item->el)) {
                     el_item->linked = false;
                     el_item->kept_ctx = true;
                     rb_item->kept_ctx = true;
-                    kept = true;
+                    kept = false;
+                    ESP_LOGD(TAG, "found kept_ctx_el and ringbuf");
                     break;
                 }
-                rb_item->kept_ctx = true;
             }
         }
     }
+    // For Debug
+    PIPELINE_DEBUG(pipeline);
     STAILQ_FOREACH_SAFE(rb_item, &pipeline->rb_list, next, tmp) {
-        ESP_LOGD(TAG, "%d, reset rb:%p kept:%d,linked:%d", __LINE__, rb_item->rb, rb_item->kept_ctx, rb_item->linked );
         if (rb_item->kept_ctx == false) {
             rb_item->linked = false;
             rb_reset(rb_item->rb);
         }
+        ESP_LOGD(TAG, "%d, reset rb:%p kept:%d,linked:%d", __LINE__, rb_item->rb, rb_item->kept_ctx, rb_item->linked );
     }
     pipeline->linked = false;
     audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
@@ -623,7 +669,6 @@ esp_err_t audio_pipeline_relink(audio_pipeline_handle_t pipeline, const char *li
     audio_element_item_t *el_item, *el_tmp;
     ringbuf_item_t *rb_item, *rb_tmp;
     ringbuf_handle_t rb = NULL;
-
     bool first = false, last = false;
     for (int i = 0; i < link_num; i++) {
         audio_element_item_t *src_el_item = audio_pipeline_get_el_item_by_tag(pipeline, link_tag[i]);
@@ -635,12 +680,10 @@ esp_err_t audio_pipeline_relink(audio_pipeline_handle_t pipeline, const char *li
         audio_element_handle_t el = NULL;
         ringbuf_item_t *cur_rb_item = NULL;
         STAILQ_FOREACH_SAFE(el_item, &pipeline->el_list, next, el_tmp) {
-            ESP_LOGD(TAG, "%d, linked:%d, kept:%d, %s, %p, %s, %p", __LINE__, el_item->linked, el_item->kept_ctx,
+            ESP_LOGD(TAG, "%d, linked:%d, kept:%d, el:%s, el:%p, tag:%s, target-el:%p", __LINE__, el_item->linked, el_item->kept_ctx,
                      audio_element_get_tag(el_item->el), el_item->el, link_tag[i], src_el_item->el);
-            if ((el_item->linked == false)
-                && (src_el_item->el == el_item->el)) {
+            if (src_el_item->el == el_item->el) {
                 el = el_item->el;
-                audio_element_reset_state(el);
                 break;
             }
         }
@@ -651,27 +694,30 @@ esp_err_t audio_pipeline_relink(audio_pipeline_handle_t pipeline, const char *li
         }
         src_el_item->linked = true;
 
-        STAILQ_FOREACH_SAFE(rb_item, &pipeline->rb_list, next, rb_tmp) {
-            ESP_LOGD(TAG, "%d, rb:%p kept:%d,linked:%d", __LINE__, rb_item->rb, rb_item->kept_ctx, rb_item->linked );
-            if (rb_item->linked == false && rb_item->kept_ctx == false) {
-                cur_rb_item = rb_item;
-                cur_rb_item->linked = true;
-                break;
-            }
-            if (src_el_item->kept_ctx) {
-                ringbuf_handle_t tmp_rb = audio_element_get_output_ringbuf(src_el_item->el);
-                if (rb_item->rb == tmp_rb && rb_item->kept_ctx == true) {
+        // Found the kept ringbuffer if exist
+        if (src_el_item->kept_ctx) {
+            STAILQ_FOREACH_SAFE(rb_item, &pipeline->rb_list, next, rb_tmp) {
+                ESP_LOGD(TAG, "%d, rb:%p kept:%d,linked:%d", __LINE__, rb_item->rb, rb_item->kept_ctx, rb_item->linked);
+                if (rb_item->host_el == el) {
                     cur_rb_item = rb_item;
                     cur_rb_item->linked = true;
-                    src_el_item->kept_ctx = false;
-                    ESP_LOGI(TAG, "found kept rb:%p kept:%d,linked:%d, el:%p, name:%s", rb_item->rb, rb_item->kept_ctx,
+                    src_el_item->kept_ctx = true;
+                    ESP_LOGD(TAG, "found kept rb:%p kept:%d,linked:%d, el:%p, name:%s", rb_item->rb, rb_item->kept_ctx,
                              rb_item->linked, src_el_item->el, audio_element_get_tag(src_el_item->el));
                     break;
                 }
             }
+        } else {
+            STAILQ_FOREACH_SAFE(rb_item, &pipeline->rb_list, next, rb_tmp) {
+                ESP_LOGD(TAG, "%d, rb:%p kept:%d,linked:%d", __LINE__, rb_item->rb, rb_item->kept_ctx, rb_item->linked);
+                if (rb_item->linked == false && rb_item->kept_ctx == false) {
+                    cur_rb_item = rb_item;
+                    cur_rb_item->linked = true;
+                    ESP_LOGD(TAG, "%d, found not used rb:%p kept:%d,linked:%d", __LINE__, rb_item->rb, rb_item->kept_ctx, rb_item->linked);
+                    break;
+                }
+            }
         }
-        ESP_LOGD(TAG, "%d, el:%p, %s last:%d, rb_item:%p", __LINE__, el, audio_element_get_tag(el_item->el),
-                 last, cur_rb_item);
         first = (i == 0);
         last = (i == link_num - 1);
         if ((last == false) && (cur_rb_item == NULL)) {
@@ -687,11 +733,12 @@ esp_err_t audio_pipeline_relink(audio_pipeline_handle_t pipeline, const char *li
             });
             cur_rb_item->rb = tmp_rb;
             cur_rb_item->linked = true;
+            cur_rb_item->host_el = el;
             STAILQ_INSERT_TAIL(&pipeline->rb_list, cur_rb_item, next);
-            ESP_LOGW(TAG, "create new rb, linked:%d, rb:%p, cur_el:%s", el_item->linked, cur_rb_item->rb, audio_element_get_tag(el_item->el));
+            ESP_LOGI(TAG, "create new rb, linked:%d, rb:%p, cur_el:%s", el_item->linked, cur_rb_item->rb, audio_element_get_tag(el_item->el));
         }
-        ESP_LOGD(TAG, "%d, el:%p, %s, rb:%p, first:%d, last:%d", __LINE__, el,
-                 audio_element_get_tag(el), rb, first, last);
+        ESP_LOGD(TAG, "%d, el:%p, tag:%s, cur_rb_item:%p, rb:%p, first:%d, last:%d\r\n", __LINE__, el,
+                 audio_element_get_tag(el), cur_rb_item, cur_rb_item != NULL ? cur_rb_item->rb : NULL, first, last);
         if (last) {
             audio_element_set_input_ringbuf(el, rb);
         } else {
