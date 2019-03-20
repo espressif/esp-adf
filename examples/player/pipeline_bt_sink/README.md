@@ -1,8 +1,35 @@
 # Play music from Bluetooth 
 
-The demo plays music received by Bluetooth from any A2DP Bluetooth source. Also control the music on your phone, with Play (Play Music), Set (Stop Music), Vol+ (Next Song), Vol- (Prev Song) Touch on the lyraT board.
+The demo plays music received by Bluetooth from any A2DP Bluetooth source. 
 
-To run this example you need ESP32 LyraT or compatible board:
+## Compatibility
+
+| ESP32-LyraT | ESP32-LyraT-MSC |
+|:-----------:|:---------------:|
+| [![alt text](../../../docs/_static/esp32-lyrat-v4.2-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) |
+| ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/no-button.png "Not Compatible") |
+
+## Usage
+
+Prepare the audio board:
 
 - Connect speakers or headphones to the board. 
-- A device can play music and send the audio output to the headphones
+
+Configure the example:
+
+- Select compatible audio board in `menuconfig` > `Audio HAL`.
+
+Load and run the example:
+
+- Connect with Bluetooth on your smartphone to the audio board identified as "ESP-ADF-SPEAKER"
+- Play some audio from the smartphone and it will be transmitted over Bluetooth to the audio bard.
+- The audio playback may be controlled from the smartphone, as well as from the audio board. The following controls may be used:
+
+    |   Smartphone   | Audio Board |
+    |:--------------:|:-----------:|
+    |   Play Music   |    [Play]   |
+    |   Stop Music   |    [Set]    |
+    |   Next Song    |    [Vol+]   |
+    | Previous Song  |    [Vol-]   |
+    |   Volume Up    |    [n/a]    |
+    |  Volume Down   |    [n/a]    |

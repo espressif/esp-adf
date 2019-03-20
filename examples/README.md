@@ -1,6 +1,47 @@
 # Examples
 
-This directory contains a growing number of simple example projects for esp-adf. These are intended to show basic esp-adf functionality, and to provide code samples, you can use for your own projects.
+This directory contains a growing number of simple example projects for ESP-ADF. These are intended to show basic esp-adf functionality, and to provide code samples you can use for your own projects.
 
-If you are new to the esp-adf, see [Getting Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html) documentation for step-by-step instructions how to use examples.
+If you are new to the esp-adf, see [Getting Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html) documentation for step-by-step instructions on how to use examples.
 
+Compatibility of examples with Espressif audio boards is presented in table below. 
+
+| No. | Example Name / Board -->                                                                       |                        ESP32-LyraT                       |                      ESP32-LyraT-MSC                     |
+|:---:|------------------------------------------------------------------------------------------------|:--------------------------------------------------------:|:--------------------------------------------------------:|
+|     |                                                                                                | [![alt text](../docs/_static/esp32-lyrat-v4.2-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) |
+|  1  | [advanced_examples/dlna](advanced_examples/dlna)                                               | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+|  2  | [advanced_examples/downmix_pipeline](advanced_examples/downmix_pipeline)                       | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+|  3  | [advanced_examples/flexible_pipeline](advanced_examples/flexible_pipeline)                     | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+|  4  | [advanced_examples/http_play_and_save_to_file](advanced_examples/http_play_and_save_to_file)   | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+|  5  | [audio_processing/pipeline_equalizer](audio_processing/pipeline_equalizer)                     | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+|  6  | [audio_processing/pipeline_passthru](audio_processing/pipeline_passthru)                       | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+|  7  | [audio_processing/pipeline_resample](audio_processing/pipeline_resample)                       | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+|  8  | [audio_processing/pipeline_sonic](audio_processing/pipeline_sonic)                             | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+|  9  | [audio_processing/pipeline_spiffs_amr_resample](audio_processing/pipeline_spiffs_amr_resample) | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 10  | [checks/check_msc_adc_button](checks/check_msc_adc_button)                                     |                                                          | ![alt text](../docs/_static/yes-button.png "Compatible") |
+| 11  | [checks/check_msc_leds](checks/check_msc_leds)                                                 |                                                          | ![alt text](../docs/_static/yes-button.png "Compatible") |
+| 12  | [cli](cli)                                                                                     | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
+| 13  | [cloud_services/google_translate_device](cloud_services/google_translate_device)               | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 14  | [cloud_services/pipeline_aws_polly_mp3](cloud_services/pipeline_aws_polly_mp3)                 | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
+| 15  | [cloud_services/pipeline_baidu_speech_mp3](cloud_services/pipeline_baidu_speech_mp3)           | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
+| 16  | [dueros](dueros)                                                                               | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 17  | [get-started/play_mp3](get-started/play_mp3)                                                   | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
+| 18  | [get-started/play_mp3_control](get-started/play_mp3_control)                                   | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 19  | [get-started/play_mp3_dac](get-started/play_mp3_dac)                                           | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 20  | [get-started/play_mp3_rates](get-started/play_mp3_rates)                                       | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 21  | [player/element_sdcard_amr](player/element_sdcard_amr)                                         | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 22  | [player/element_sdcard_mp3](player/element_sdcard_mp3)                                         | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 23  | [player/pipeline_bt_sink](player/pipeline_bt_sink)                                             | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 24  | [player/pipeline_bt_source](player/pipeline_bt_source)                                         | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 25  | [player/pipeline_http_mp3](player/pipeline_http_mp3)                                           | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 26  | [player/pipeline_http_select_decoder](player/pipeline_http_select_decoder)                     | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 27  | [player/pipeline_living_stream](player/pipeline_living_stream)                                 | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 28  | [player/pipeline_sdcard_mp3](player/pipeline_sdcard_mp3)                                       | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 29  | [player/pipeline_sdcard_mp3_control](player/pipeline_sdcard_mp3_control)                       | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 30  | [player/pipeline_sdcard_wav](player/pipeline_sdcard_wav)                                       | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 31  | [recorder/element_cb_sdcard_amr](recorder/element_cb_sdcard_amr)                               | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 32  | [recorder/pipeline_amr_sdcard](recorder/pipeline_amr_sdcard)                                   | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 33  | [recorder/pipeline_raw_http](recorder/pipeline_raw_http)                                       | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 34  | [recorder/pipeline_wav_sdcard](recorder/pipeline_wav_sdcard)                                   | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 35  | [speech_recognition/asr](speech_recognition/asr)                                               | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
+| 36  | [speech_recognition/vad](speech_recognition/vad)                                               | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
