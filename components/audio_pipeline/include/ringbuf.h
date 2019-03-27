@@ -44,14 +44,14 @@ extern "C" {
 typedef struct ringbuf *ringbuf_handle_t;
 
 /**
- * @brief      Create ringbuffer with total size = size * block_size
+ * @brief      Create ringbuffer with total size = block_size * n_blocks
  *
- * @param[in]  size        The size
- * @param[in]  block_size  The block size
+ * @param[in]  block_size   Size of each block
+ * @param[in]  n_blocks     Number of blocks
  *
  * @return     ringbuf_handle_t
  */
-ringbuf_handle_t rb_create(int size, int block_size);
+ringbuf_handle_t rb_create(int block_size, int n_blocks);
 
 /**
  * @brief      Cleanup and free all memory created by ringbuf_handle_t
@@ -158,6 +158,18 @@ int rb_size_get(ringbuf_handle_t rb);
  *     - ESP_FAIL
  */
 esp_err_t rb_done_write(ringbuf_handle_t rb);
+
+/**
+ * @brief      Unblock from rb_read
+ *
+ * @param[in]  rb    The Ringbuffer handle
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t rb_unblock_reader(ringbuf_handle_t rb);
+
 #ifdef __cplusplus
 }
 #endif
