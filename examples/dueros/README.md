@@ -13,13 +13,13 @@ This example shows how to use ADF APIs to connect DuerOS3.0
 
 Prepare the audio board:
 
-- Connect speakers or headphones to the board. 
+- Connect speakers or headphones to the board.
 
 Configure the example:
 
 - Select compatible audio board in `menuconfig` > `Audio HAL`.
 - Set up the Wi-Fi connection by running `menuconfig` > `Example Configuration` and filling in `WiFi SSID` and `WiFi Password`.
-- Select your DuerOS device profile instead of `ADF_PATH/examples/dueros/main/duer_profile`. If you don't have a DuerOS device profile, please refer to [DuerOS Developer Certification Guide](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) and apply for a DuerOS Developer Account.
+- Select your DuerOS device profile instead of `ADF_PATH/components/dueros_service/duer_profile`. If you don't have a DuerOS device profile, please refer to [DuerOS Developer Certification Guide](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) and apply for a DuerOS Developer Account.
 
 Load and run the example.
 
