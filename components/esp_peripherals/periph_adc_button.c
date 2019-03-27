@@ -33,16 +33,18 @@ typedef struct {
     adc_btn_list *list;
 } periph_adc_btn_t;
 
-static void btn_cb(void *user_data, int adc, int id, btn_state state)
+static void btn_cb(void *user_data, int adc, int id, adc_btn_state_t state)
 {
     esp_periph_handle_t self = (esp_periph_handle_t)user_data;
     periph_adc_button_event_id_t event_id = PERIPH_ADC_BUTTON_IDLE;
-    if (state == BTN_STATE_CLICK) {
-        event_id = PERIPH_ADC_BUTTON_CLICK;
-    } else if (state == BTN_STATE_PRESS) {
-        event_id = PERIPH_ADC_BUTTON_PRESS;
-    } else if (state == BTN_STATE_RELEASE) {
+    if (state == ADC_BTN_STATE_PRESSED) {
+        event_id = PERIPH_ADC_BUTTON_PRESSED;
+    } else if (state == ADC_BTN_STATE_LONG_PRESSED) {
+        event_id = PERIPH_ADC_BUTTON_LONG_PRESSED;
+    } else if (state == ADC_BTN_STATE_RELEASE) {
         event_id = PERIPH_ADC_BUTTON_RELEASE;
+    } else if (state == ADC_BTN_STATE_LONG_RELEASE) {
+        event_id = PERIPH_ADC_BUTTON_LONG_RELEASE;
     }
     //Send ID as data and ADC as data_len
     esp_periph_send_event(self, event_id, (void *)id, adc);

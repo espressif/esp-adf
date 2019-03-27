@@ -20,10 +20,13 @@
 #include "fatfs_stream.h"
 #include "i2s_stream.h"
 #include "mp3_decoder.h"
+#include "filter_resample.h"
 
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
 #include "periph_touch.h"
+#include "input_key_service.h"
+#include "periph_adc_button.h"
 #include "board.h"
 
 static const char *TAG = "SDCARD_MP3_CONTROL_EXAMPLE";
@@ -36,9 +39,11 @@ static const char *mp3_file[] = {
 // more files may be added and `MP3_FILE_COUNT` will reflect the actual count
 #define MP3_FILE_COUNT sizeof(mp3_file)/sizeof(char*)
 
-
 #define CURRENT 0
 #define NEXT    1
+
+audio_pipeline_handle_t pipeline;
+audio_element_handle_t i2s_stream_writer, mp3_decoder;
 
 static FILE *get_file(int next_file)
 {
@@ -79,12 +84,71 @@ static int my_sdcard_read_cb(audio_element_handle_t el, char *buf, int len, Tick
     return read_len;
 }
 
+static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
+{
+    /* Handle touch pad events
+           to start, pause, resume, finish current song and adjust volume
+        */
+    audio_board_handle_t board_handle = (audio_board_handle_t) ctx;
+    int player_volume;
+    audio_hal_get_volume(board_handle->audio_hal, &player_volume);
+
+    if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE) {
+        switch ((int)evt->data) {
+            case USER_ID_PLAY:
+                ESP_LOGI(TAG, "[ * ] [Play] input key event");
+                audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
+                switch (el_state) {
+                    case AEL_STATE_INIT :
+                        ESP_LOGI(TAG, "[ * ] Starting audio pipeline");
+                        audio_pipeline_run(pipeline);
+                        break;
+                    case AEL_STATE_RUNNING :
+                        ESP_LOGI(TAG, "[ * ] Pausing audio pipeline");
+                        audio_pipeline_pause(pipeline);
+                        break;
+                    case AEL_STATE_PAUSED :
+                        ESP_LOGI(TAG, "[ * ] Resuming audio pipeline");
+                        audio_pipeline_resume(pipeline);
+                        break;
+                    default :
+                        ESP_LOGI(TAG, "[ * ] Not supported state %d", el_state);
+                }
+                break;
+            case USER_ID_SET:
+                ESP_LOGI(TAG, "[ * ] [Set] input key event");
+                audio_pipeline_terminate(pipeline);
+                ESP_LOGI(TAG, "[ * ] Stopped, advancing to the next song");
+                get_file(NEXT);
+                audio_pipeline_run(pipeline);
+                break;
+            case USER_ID_VOLUP:
+                ESP_LOGI(TAG, "[ * ] [Vol+] input key event");
+                player_volume += 10;
+                if (player_volume > 100) {
+                    player_volume = 100;
+                }
+                audio_hal_set_volume(board_handle->audio_hal, player_volume);
+                ESP_LOGI(TAG, "[ * ] Volume set to %d %%", player_volume);
+                break;
+            case USER_ID_VOLDOWN:
+                ESP_LOGI(TAG, "[ * ] [Vol-] input key event");
+                player_volume -= 10;
+                if (player_volume < 0) {
+                    player_volume = 0;
+                }
+                audio_hal_set_volume(board_handle->audio_hal, player_volume);
+                ESP_LOGI(TAG, "[ * ] Volume set to %d %%", player_volume);
+                break;
+        }
+    }
+
+    return ESP_OK;
+}
+
 extern void Es8388ReadAll();
 void app_main(void)
 {
-    audio_pipeline_handle_t pipeline;
-    audio_element_handle_t i2s_stream_writer, mp3_decoder;
-
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
@@ -105,56 +169,74 @@ void app_main(void)
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
-    ESP_LOGI(TAG, "[1.2] Initialize Touch peripheral");
+    ESP_LOGI(TAG, "[1.2] Initialize and start peripherals");
+#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
     periph_touch_cfg_t touch_cfg = {
         .touch_mask = BIT(get_input_set_id()) | BIT(get_input_play_id()) | BIT(get_input_volup_id()) | BIT(get_input_voldown_id()),
         .tap_threshold_percent = 70,
     };
     esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
-
-    ESP_LOGI(TAG, "[1.4] Start touch peripheral");
     esp_periph_start(set, touch_periph);
+
+#elif (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
+    periph_adc_button_cfg_t adc_btn_cfg = {0};
+    adc_arr_t adc_btn_tag = ADC_DEFAULT_ARR();
+    adc_btn_cfg.arr = &adc_btn_tag;
+    adc_btn_cfg.arr_size = 1;
+    esp_periph_handle_t adc_btn_handle = periph_adc_button_init(&adc_btn_cfg);
+    esp_periph_start(set, adc_btn_handle);
+#endif
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
 
-    int player_volume;
-    audio_hal_get_volume(board_handle->audio_hal, &player_volume);
+    ESP_LOGI(TAG, "[ 3 ] Create and start input key service");
+    input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
+    periph_service_handle_t input_ser = input_key_service_create(set);
+    input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
+    periph_service_set_callback(input_ser, input_key_service_cb, (void *)board_handle);
 
-    ESP_LOGI(TAG, "[3.0] Create audio pipeline for playback");
+    ESP_LOGI(TAG, "[4.0] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     pipeline = audio_pipeline_init(&pipeline_cfg);
     mem_assert(pipeline);
 
-    ESP_LOGI(TAG, "[3.1] Create i2s stream to write data to codec chip");
+    ESP_LOGI(TAG, "[4.1] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.i2s_config.sample_rate = 48000;
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 
-    ESP_LOGI(TAG, "[3.2] Create mp3 decoder to decode mp3 file");
+    ESP_LOGI(TAG, "[4.2] Create mp3 decoder to decode mp3 file");
     mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
     mp3_decoder = mp3_decoder_init(&mp3_cfg);
     audio_element_set_read_cb(mp3_decoder, my_sdcard_read_cb, NULL);
 
-    ESP_LOGI(TAG, "[3.3] Register all elements to audio pipeline");
+    /* ZL38063 audio chip on board of ESP32-LyraTD-MSC does not support 44.1 kHz sampling frequency,
+       so resample filter has been added to convert audio data to other rates accepted by the chip.
+       You can resample the data to 16 kHz or 48 kHz.
+    */
+    ESP_LOGI(TAG, "[4.3] Create resample filter");
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    audio_element_handle_t rsp_handle = rsp_filter_init(&rsp_cfg);
+
+    ESP_LOGI(TAG, "[4.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, mp3_decoder, "mp3");
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
+    audio_pipeline_register(pipeline, rsp_handle, "filter");
 
-    ESP_LOGI(TAG, "[3.4] Link it together [my_sdcard_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]");
-    audio_pipeline_link(pipeline, (const char *[]) {"mp3", "i2s"}, 2);
+    ESP_LOGI(TAG, "[4.5] Link it together [my_sdcard_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]");
+    audio_pipeline_link(pipeline, (const char *[]) {"mp3", "filter", "i2s"}, 3);
 
-    ESP_LOGI(TAG, "[4.0] Set up  event listener");
+    ESP_LOGI(TAG, "[5.0] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
-    ESP_LOGI(TAG, "[4.1] Listen for all pipeline events");
+    ESP_LOGI(TAG, "[5.1] Listen for all pipeline events");
     audio_pipeline_set_listener(pipeline, evt);
 
-    ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
-
-    ESP_LOGW(TAG, "[ 5 ] Tap touch buttons to control music player:");
+    ESP_LOGW(TAG, "[ 6 ] Press the keys to control music player:");
     ESP_LOGW(TAG, "      [Play] to start, pause and resume, [Set] next song.");
     ESP_LOGW(TAG, "      [Vol-] or [Vol+] to adjust volume.");
 
@@ -177,7 +259,7 @@ void app_main(void)
                 ESP_LOGI(TAG, "[ * ] Received music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
                          music_info.sample_rates, music_info.bits, music_info.channels);
                 audio_element_setinfo(i2s_stream_writer, &music_info);
-                i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
+                rsp_filter_set_src_info(rsp_handle, music_info.sample_rates, music_info.channels);
                 continue;
             }
             // Advance to the next song when previous finishes
@@ -194,62 +276,14 @@ void app_main(void)
                 continue;
             }
         }
-        /* Handle touch pad events
-           to start, pause, resume, finish current song and adjust volume
-        */
-        if (msg.source_type == PERIPH_ID_TOUCH
-            && msg.cmd == PERIPH_TOUCH_TAP
-            && msg.source == (void *)touch_periph) {
-            if ((int) msg.data == get_input_play_id()) {
-                ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
-                audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
-                switch (el_state) {
-                    case AEL_STATE_INIT :
-                        ESP_LOGI(TAG, "[ * ] Starting audio pipeline");
-                        audio_pipeline_run(pipeline);
-                        break;
-                    case AEL_STATE_RUNNING :
-                        ESP_LOGI(TAG, "[ * ] Pausing audio pipeline");
-                        audio_pipeline_pause(pipeline);
-                        break;
-                    case AEL_STATE_PAUSED :
-                        ESP_LOGI(TAG, "[ * ] Resuming audio pipeline");
-                        audio_pipeline_resume(pipeline);
-                        break;
-                    default :
-                        ESP_LOGI(TAG, "[ * ] Not supported state %d", el_state);
-                }
-            } else if ((int) msg.data == get_input_set_id()) {
-                ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
-                audio_pipeline_terminate(pipeline);
-                ESP_LOGI(TAG, "[ * ] Stopped, advancing to the next song");
-                get_file(NEXT);
-                audio_pipeline_run(pipeline);
-            } else if ((int) msg.data == get_input_volup_id()) {
-                ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event");
-                player_volume += 10;
-                if (player_volume > 100) {
-                    player_volume = 100;
-                }
-                audio_hal_set_volume(board_handle->audio_hal, player_volume);
-                ESP_LOGI(TAG, "[ * ] Volume set to %d %%", player_volume);
-            } else if ((int) msg.data == get_input_voldown_id()) {
-                ESP_LOGI(TAG, "[ * ] [Vol-] touch tap event");
-                player_volume -= 10;
-                if (player_volume < 0) {
-                    player_volume = 0;
-                }
-                audio_hal_set_volume(board_handle->audio_hal, player_volume);
-                ESP_LOGI(TAG, "[ * ] Volume set to %d %%", player_volume);
-            }
-        }
     }
 
-    ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
+    ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
 
     audio_pipeline_unregister(pipeline, mp3_decoder);
     audio_pipeline_unregister(pipeline, i2s_stream_writer);
+    audio_pipeline_unregister(pipeline, rsp_handle);
 
     /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);
@@ -265,5 +299,7 @@ void app_main(void)
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(mp3_decoder);
+    audio_element_deinit(rsp_handle);
     esp_periph_set_destroy(set);
+    periph_service_destroy(input_ser);
 }

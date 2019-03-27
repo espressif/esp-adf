@@ -50,11 +50,13 @@ typedef struct {
 } adc_arr_t;
 
 typedef enum {
-    BTN_STATE_IDLE,    // 0: idle
-    BTN_STATE_CLICK,   // 1: pressed
-    BTN_STATE_PRESS,   // 2: long pressed
-    BTN_STATE_RELEASE, // 3: released
-} btn_state;
+    ADC_BTN_STATE_IDLE,             // 0: idle
+    ADC_BTN_STATE_ADC,              // 1: detect
+    ADC_BTN_STATE_PRESSED,          // 2: pressed
+    ADC_BTN_STATE_RELEASE,          // 3: press released
+    ADC_BTN_STATE_LONG_PRESSED,     // 4: long pressed
+    ADC_BTN_STATE_LONG_RELEASE,     // 5: long Press released
+} adc_btn_state_t;
 
 typedef struct {
     int         active_id;
@@ -68,9 +70,9 @@ typedef struct adc_btn {
     struct adc_btn *next;
 } adc_btn_list;
 
-typedef void (*button_callback) (void *user_data, int adc, int id, btn_state state);
+typedef void (*adc_button_callback) (void *user_data, int adc, int id, adc_btn_state_t state);
 
-void adc_btn_init(void *user_data, button_callback cb, adc_btn_list *head);
+void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head);
 
 adc_btn_list *adc_btn_create_list(adc_arr_t *adc_conf, int channels);
 

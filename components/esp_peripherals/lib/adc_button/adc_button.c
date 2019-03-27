@@ -53,17 +53,8 @@
 
 static char *TAG = "ADC_BTN";
 
-typedef enum {
-    ADC_BTN_STATE_IDLE,             // 0: idle
-    ADC_BTN_STATE_ADC,              // 1: detect
-    ADC_BTN_STATE_CLICK,            // 2: pressed
-    ADC_BTN_STATE_PRESS,            // 3: long pressed
-    ADC_BTN_STATE_CLICK_RELEASE,    // 4: Click released
-    ADC_BTN_STATE_PRESS_RELEASE,    // 5: Press released
-} adc_btn_state_t;
-
 typedef struct {
-    button_callback btn_callback;
+    adc_button_callback btn_callback;
     adc_btn_list *head;
     void *user_data;
 } adc_btn_tag_t;
@@ -204,11 +195,11 @@ static adc_btn_state_t get_adc_btn_state(int adc_value, int act_id, adc_btn_list
         // Have old act ID, new id is invalid
         // Need to send release event
         if (btn_dscp[act_id].click_cnt < (info->press_judge_time / ADC_BTN_DETECT_TIME_MS)) {
-            ESP_LOGD(TAG, "Click: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
-            st = ADC_BTN_STATE_CLICK;
+            ESP_LOGD(TAG, "pressed: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
+            st = ADC_BTN_STATE_PRESSED;
         } else {
-            ESP_LOGD(TAG, "Press Release: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
-            st = ADC_BTN_STATE_PRESS_RELEASE;
+            ESP_LOGD(TAG, "long press release: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
+            st = ADC_BTN_STATE_LONG_RELEASE;
         }
         btn_dscp[act_id].active_id = -1;
         btn_dscp[act_id].long_click = 0;
@@ -240,8 +231,8 @@ static adc_btn_state_t get_adc_btn_state(int adc_value, int act_id, adc_btn_list
     }
     if (btn_dscp[act_id].click_cnt >= (info->press_judge_time / ADC_BTN_DETECT_TIME_MS)) {
         //Send long click event.
-        ESP_LOGD(TAG, "Press: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
-        st = ADC_BTN_STATE_PRESS;
+        ESP_LOGD(TAG, "long press: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
+        st = ADC_BTN_STATE_LONG_PRESSED;
         btn_dscp[act_id].long_click = 1;
     }
     return st;
@@ -324,19 +315,23 @@ static void button_task(void *parameters)
                         }
                         break;
                     }
-                case ADC_BTN_STATE_CLICK: {
-                        tag->btn_callback((void *)tag->user_data, info->adc_ch, cur_act_id, BTN_STATE_CLICK);
-                        cur_state = ADC_BTN_STATE_CLICK_RELEASE;
+                case ADC_BTN_STATE_PRESSED: {
+                        tag->btn_callback((void *)tag->user_data, info->adc_ch, cur_act_id, ADC_BTN_STATE_PRESSED);
+                        cur_state = ADC_BTN_STATE_RELEASE;
                         break;
                     }
-                case ADC_BTN_STATE_PRESS: {
-                        tag->btn_callback((void *)tag->user_data, info->adc_ch, cur_act_id, BTN_STATE_PRESS);
+                case ADC_BTN_STATE_LONG_PRESSED: {
+                        tag->btn_callback((void *)tag->user_data, info->adc_ch, cur_act_id, ADC_BTN_STATE_LONG_PRESSED);
                         cur_state = ADC_BTN_STATE_ADC;
                         break;
                     }
-                case ADC_BTN_STATE_PRESS_RELEASE:
-                case ADC_BTN_STATE_CLICK_RELEASE: {
-                        tag->btn_callback((void *)tag->user_data, info->adc_ch, cur_act_id, BTN_STATE_RELEASE);
+                case ADC_BTN_STATE_LONG_RELEASE: {
+                        tag->btn_callback((void *)tag->user_data, info->adc_ch, cur_act_id, ADC_BTN_STATE_LONG_RELEASE);
+                        cur_state = ADC_BTN_STATE_ADC;
+                        break;
+                    }
+                case ADC_BTN_STATE_RELEASE: {
+                        tag->btn_callback((void *)tag->user_data, info->adc_ch, cur_act_id, ADC_BTN_STATE_RELEASE);
                         cur_state = ADC_BTN_STATE_ADC;
                         break;
                     }
@@ -354,10 +349,10 @@ static void button_task(void *parameters)
     vTaskDelete(NULL);
 }
 
-void adc_btn_init(void *user_data, button_callback cb, adc_btn_list *head)
+void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head)
 {
     adc_btn_tag_t *tag = calloc(1, sizeof(adc_btn_tag_t));
-    if(NULL == tag) {
+    if (NULL == tag) {
         ESP_LOGE(TAG, "Memory allocation failed! Line: %d", __LINE__);
         return;
     }
