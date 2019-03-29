@@ -42,10 +42,11 @@ typedef struct {
 } periph_adc_button_cfg_t;
 
 typedef enum {
-    PERIPH_ADC_BUTTON_IDLE,
-    PERIPH_ADC_BUTTON_CLICK,
-    PERIPH_ADC_BUTTON_PRESS,
+    PERIPH_ADC_BUTTON_IDLE = 0,
+    PERIPH_ADC_BUTTON_PRESSED,
     PERIPH_ADC_BUTTON_RELEASE,
+    PERIPH_ADC_BUTTON_LONG_PRESSED,
+    PERIPH_ADC_BUTTON_LONG_RELEASE,
 } periph_adc_button_event_id_t;
 
 #define ADC_DEFAULT_ARR() {   \
