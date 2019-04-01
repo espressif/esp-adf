@@ -645,8 +645,8 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
         });
         http->playlist->data = calloc(1, MAX_PLAYLIST_LINE_SIZE + 1);
         AUDIO_MEM_CHECK(TAG, http->playlist->data, {
-            audio_free(http);
             audio_free(http->playlist);
+            audio_free(http);
             return NULL;
         });
         STAILQ_INIT(&http->playlist->tracks);
@@ -660,8 +660,8 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
 
     el = audio_element_init(&cfg);
     AUDIO_MEM_CHECK(TAG, el, {
-        audio_free(http);
         audio_free(http->playlist);
+        audio_free(http);
         return NULL;
     });
     audio_element_setdata(el, http);
