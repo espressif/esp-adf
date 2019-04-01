@@ -115,7 +115,7 @@ static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
         return ESP_OK;
     }
 
-    if (strcasecmp(evt->header_key, "Content-Disposition") == 0 || strcasecmp(evt->header_key, "Content-Type") == 0) {
+    if (strcasecmp(evt->header_key, "Content-Type") == 0) {
         ESP_LOGD(TAG, "%s = %s", evt->header_key, evt->header_value);
         info->codec_fmt = get_audio_type(evt->header_value);
     }
