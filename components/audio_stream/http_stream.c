@@ -80,13 +80,18 @@ typedef struct http_stream {
 
 static audio_codec_t get_audio_type(const char *content_type)
 {
-    if (strcasecmp(content_type, "audio/mp3") == 0) {
+    if (strcasecmp(content_type, "mp3") == 0 ||
+            strcasecmp(content_type, "audio/mp3") == 0 ||
+            strcasecmp(content_type, "audio/mpeg") == 0 ||
+            strcasecmp(content_type, "binary/octet-stream") == 0 ||
+            strcasecmp(content_type, "application/octet-stream") == 0) {
         return AUDIO_CODEC_MP3;
     }
-    if (strcasecmp(content_type, "audio/mpeg") == 0) {
-        return AUDIO_CODEC_MP3;
-    }
-    if (strcasecmp(content_type, "audio/aac") == 0) {
+    if (strcasecmp(content_type, "audio/aac") == 0 ||
+            strcasecmp(content_type, "audio/x-aac") == 0 ||
+            strcasecmp(content_type, "audio/mp4") == 0 ||
+            strcasecmp(content_type, "audio/aacp") == 0 ||
+            strcasecmp(content_type, "video/MP2T") == 0) {
         return AUDIO_CODEC_AAC;
     }
     if (strcasecmp(content_type, "audio/wav") == 0) {
@@ -95,10 +100,8 @@ static audio_codec_t get_audio_type(const char *content_type)
     if (strcasecmp(content_type, "audio/opus") == 0) {
         return AUDIO_CODEC_OPUS;
     }
-    if (strcasecmp(content_type, "application/vnd.apple.mpegurl") == 0) {
-        return AUDIO_PLAYLIST;
-    }
-    if (strcasecmp(content_type, "vnd.apple.mpegURL") == 0) {
+    if (strcasecmp(content_type, "application/vnd.apple.mpegurl") == 0 ||
+            strcasecmp(content_type, "vnd.apple.mpegURL") == 0) {
         return AUDIO_PLAYLIST;
     }
     return AUDIO_CODEC_NONE;
@@ -112,7 +115,7 @@ static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
         return ESP_OK;
     }
 
-    if (strcasecmp(evt->header_key, "Content-Disposition") == 0 || strcasecmp(evt->header_key, "Content-Type") == 0) {
+    if (strcasecmp(evt->header_key, "Content-Type") == 0) {
         ESP_LOGD(TAG, "%s = %s", evt->header_key, evt->header_value);
         info->codec_fmt = get_audio_type(evt->header_value);
     }
@@ -164,12 +167,14 @@ static bool _get_line_in_buffer(http_stream_t *http, char **out)
                 http->playlist->data[idx] = 0;
                 is_end_of_line = true;
             } else if (is_end_of_line) {
-                http->playlist->remain = MAX_PLAYLIST_LINE_SIZE - idx;
+                http->playlist->remain = idx - http->playlist->index;
                 http->playlist->index = idx;
                 return true;
             }
             idx ++;
         }
+        http->playlist->remain = 0;
+        return true; // This is the last remaining line
     }
     return false;
 }
@@ -180,12 +185,12 @@ static char *_client_read_line(http_stream_t *http)
     int rlen;
     char *line;
 
-    if (http->playlist->total_read >= http->playlist->content_length) {
-        return NULL;
-    }
-
     if (_get_line_in_buffer(http, &line)) {
         return line;
+    }
+
+    if (http->playlist->total_read >= http->playlist->content_length) {
+        return NULL;
     }
 
     need_read -= http->playlist->remain;
@@ -198,11 +203,10 @@ static char *_client_read_line(http_stream_t *http)
         if (rlen > 0) {
             http->playlist->remain += rlen;
             http->playlist->total_read += rlen;
+            http->playlist->data[http->playlist->remain] = '\0';
             if (_get_line_in_buffer(http, &line)) {
                 return line;
             }
-        } else {
-            http->playlist->remain = 0;
         }
     }
 
@@ -255,7 +259,18 @@ static void _insert_to_playlist(playlist_t *playlist, char *track_uri, const cha
         asprintf(&track->uri, "%s%s", url, track_uri);
         free(url);
     } else { // Relative URI
-        asprintf(&track->uri, "%s%s", uri, track_uri);
+        char *url = strdup(uri);
+        if (url == NULL) {
+            return;
+        }
+        char *pos = strrchr(url, '/'); // Search for last "/"
+        if (pos == NULL) {
+            free(url);
+            return;
+        }
+        pos[1] = '\0';
+        asprintf(&track->uri, "%s%s", url, track_uri);
+        free(url);
     }
     if (track->uri == NULL) {
         ESP_LOGE(TAG, "Error insert URI to playlist");
@@ -276,7 +291,6 @@ static void _insert_to_playlist(playlist_t *playlist, char *track_uri, const cha
     ESP_LOGD(TAG, "INSERT %s", track->uri);
     STAILQ_INSERT_TAIL(&playlist->tracks, track, next);
     playlist->total_tracks ++;
-
 }
 
 static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
@@ -316,6 +330,19 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         }
         if (!is_playlist_uri && strstr(line, "#EXTINF") == (void *)line) {
             is_playlist_uri = true;
+            continue;
+        } else if (!is_playlist_uri && strstr(line, "#EXT-X-STREAM-INF") == (void *)line) {
+            /**
+             * As these are stream URIs we need to fetch thse periodically to keep live streaming.
+             * For now we handle it same as normal uri and exit.
+             */
+            is_playlist_uri = true;
+            continue;
+        } else if (strncmp(line, "#", 1) == 0) {
+            /**
+             * Some other playlist field we don't support.
+             * Simply treat this as a comment and continue to find next line.
+             */
             continue;
         }
         if (!is_playlist_uri) {
@@ -618,8 +645,8 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
         });
         http->playlist->data = calloc(1, MAX_PLAYLIST_LINE_SIZE + 1);
         AUDIO_MEM_CHECK(TAG, http->playlist->data, {
-            audio_free(http);
             audio_free(http->playlist);
+            audio_free(http);
             return NULL;
         });
         STAILQ_INIT(&http->playlist->tracks);
@@ -633,8 +660,8 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
 
     el = audio_element_init(&cfg);
     AUDIO_MEM_CHECK(TAG, el, {
-        audio_free(http);
         audio_free(http->playlist);
+        audio_free(http);
         return NULL;
     });
     audio_element_setdata(el, http);
