@@ -56,14 +56,17 @@
 
 #include "display_service.h"
 #include "led_indicator.h"
+#include "wifi_service.h"
+#include "airkiss_config.h"
+#include "smart_config.h"
 
 static const char *TAG              = "DUEROS";
 extern esp_audio_handle_t           player;
-static esp_periph_handle_t          wifi_periph_handle;
-static TaskHandle_t                 wifi_set_tsk_handle;
 
 static audio_service_handle_t duer_serv_handle = NULL;
 static display_service_handle_t disp_serv = NULL;
+static periph_service_handle_t wifi_serv = NULL;
+static bool wifi_setting_flag;
 
 void rec_engine_cb(rec_event_type_t type, void *user_data)
 {
@@ -151,19 +154,25 @@ static esp_err_t recorder_pipeline_close(void *handle)
     return ESP_OK;
 }
 
-static void wifi_set_task (void *para)
+static esp_err_t wifi_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
 {
-    periph_wifi_config_start(wifi_periph_handle, WIFI_CONFIG_ESPTOUCH);
-    if (ESP_OK == periph_wifi_config_wait_done(wifi_periph_handle, 30000 / portTICK_PERIOD_MS)) {
-        ESP_LOGI(TAG, "Wi-Fi setting successfully");
-    } else {
-        ESP_LOGE(TAG, "Wi-Fi setting timeout");
+    ESP_LOGD(TAG, "event type:%d,source:%p, data:%p,len:%d,ctx:%p",
+             evt->type, evt->source, evt->data, evt->len, ctx);
+    if (evt->type == WIFI_SERV_EVENT_CONNECTED) {
+        ESP_LOGI(TAG, "PERIPH_WIFI_CONNECTED [%d]", __LINE__);
+        audio_service_connect(duer_serv_handle);
+        display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_CONNECTED, 0);
+        wifi_setting_flag = false;
+    } else if (evt->type == WIFI_SERV_EVENT_DISCONNECTED) {
+        ESP_LOGI(TAG, "PERIPH_WIFI_DISCONNECTED [%d]", __LINE__);
+        display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_DISCONNECTED, 0);
+
+    } else if (evt->type == WIFI_SERV_EVENT_SETTING_TIMEOUT) {
+        wifi_setting_flag = false;
     }
-    wifi_set_tsk_handle = NULL;
-    vTaskDelete(NULL);
+
+    return ESP_OK;
 }
-
-
 static void retry_login_timer_cb(xTimerHandle tmr)
 {
     ESP_LOGE(TAG, "Func:%s", __func__);
@@ -179,7 +188,9 @@ static esp_err_t duer_callback(audio_service_handle_t handle, service_event_t *e
     switch (state) {
         case SERVICE_STATE_IDLE: {
                 xTimerHandle retry_login_timer =  (xTimerHandle) ctx;
-                if (PERIPH_WIFI_SETTING == periph_wifi_is_connected(wifi_periph_handle)) {
+                ESP_LOGW(TAG, "reason:%d", wifi_service_disconnect_reason_get(wifi_serv));
+
+                if (WIFI_SERV_STA_BY_USER == wifi_service_disconnect_reason_get(wifi_serv)) {
                     break;
                 }
                 if (retry_num < 128) {
@@ -256,30 +267,19 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
 
 
                 } else if ((int)event->data == TOUCH_PAD_NUM9 && event->cmd == PERIPH_BUTTON_PRESSED) {
-                    ESP_LOGI(TAG, "AUDIO_USER_KEY_WIFI_SET [%d]", __LINE__);
-                    if (NULL == wifi_set_tsk_handle) {
-                        if (xTaskCreate(wifi_set_task, "WifiSetTask", 3 * 1024, NULL,
-                                        5, &wifi_set_tsk_handle) != pdPASS) {
-                            ESP_LOGE(TAG, "Error create WifiSetTask");
-                        }
+                    if (wifi_setting_flag == false) {
+                        wifi_service_setting_start(wifi_serv, 0);
+                        wifi_setting_flag = true;
                         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_SETTING, 0);
+                        ESP_LOGI(TAG, "AUDIO_USER_KEY_WIFI_SET, WiFi setting started.");
                     } else {
-                        ESP_LOGW(TAG, "WifiSetTask has already running");
+                        ESP_LOGW(TAG, "AUDIO_USER_KEY_WIFI_SET, WiFi setting will be stopped.");
+                        wifi_service_setting_stop(wifi_serv, 0);
+                        wifi_setting_flag = false;
+                        display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_OFF, 0);
                     }
                 } else if ((int)event->data == TOUCH_PAD_NUM9 && (event->cmd == PERIPH_BUTTON_RELEASE)) {
 
-                }
-                break;
-            }
-        case PERIPH_ID_WIFI: {
-                if (event->cmd == PERIPH_WIFI_CONNECTED) {
-                    ESP_LOGI(TAG, "PERIPH_WIFI_CONNECTED [%d]", __LINE__);
-                    audio_service_connect(duer_serv_handle);
-                    display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_CONNECTED, 0);
-                    // xEventGroupSetBits(duer_task_evts, WIFI_CONNECT_BIT);
-                } else if (event->cmd == PERIPH_WIFI_DISCONNECTED) {
-                    ESP_LOGI(TAG, "PERIPH_WIFI_DISCONNECTED [%d]", __LINE__);
-                    display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_DISCONNECTED, 0);
                 }
                 break;
             }
@@ -340,12 +340,33 @@ void duer_app_init(void)
     while (!periph_sdcard_is_mounted(sdcard_handle)) {
         vTaskDelay(300 / portTICK_PERIOD_MS);
     }
-    periph_wifi_cfg_t wifi_cfg = {
-        .ssid = CONFIG_WIFI_SSID,
-        .password = CONFIG_WIFI_PASSWORD,
-    };
-    wifi_periph_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(set, wifi_periph_handle);
+
+    wifi_config_t sta_cfg = {0};
+    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, strlen(CONFIG_WIFI_SSID));
+    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, strlen(CONFIG_WIFI_PASSWORD));
+
+    wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
+    cfg.evt_cb = wifi_service_cb;
+    cfg.cb_ctx = NULL;
+    cfg.setting_timeout_s = 60;
+    wifi_serv = wifi_service_create(&cfg);
+
+    int reg_idx = 0;
+    esp_wifi_setting_handle_t h = NULL;
+#ifdef CONFIG_AIRKISS_ENCRYPT
+    airkiss_config_info_t air_info = AIRKISS_CONFIG_INFO_DEFAULT();
+    air_info.lan_pack.appid = CONFIG_AIRKISS_APPID;
+    air_info.lan_pack.deviceid = CONFIG_AIRKISS_DEVICEID;
+    air_info.aes_key = CONFIG_DUER_AIRKISS_KEY;
+    h = airkiss_config_create(&air_info);
+#elif (defined CONFIG_ESP_SMARTCONFIG)
+    smart_config_info_t info = SMART_CONFIG_INFO_DEFAULT();
+    h = smart_config_create(&info);
+#endif
+    esp_wifi_setting_regitster_notify_handle(h, (void *)wifi_serv);
+    wifi_service_register_setting_handle(wifi_serv, h, &reg_idx);
+    wifi_service_set_sta_info(wifi_serv, &sta_cfg);
+    wifi_service_connect(wifi_serv);
 
     rec_config_t eng = DEFAULT_REC_ENGINE_CONFIG();
     eng.vad_off_delay_ms = 800;
