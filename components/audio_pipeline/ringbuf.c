@@ -145,8 +145,9 @@ int rb_read(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wai
     int read_size = 0;
     int total_read_size = 0;
     int ret_val = 0;
-    if (buf_len == 0) {
-        return ESP_FAIL;
+
+    if (rb == NULL) {
+        return RB_FAIL;
     }
 
     while (buf_len) {
@@ -176,11 +177,15 @@ int rb_read(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wai
                 ret_val = RB_DONE;
                 goto read_err;
             }
-            if (rb->unblock_reader_flag || rb->abort_read) {
+            if (rb->abort_read) {
                 ret_val = RB_ABORT;
                 goto read_err;
             }
-
+            if (rb->unblock_reader_flag) {
+                //reader_unblock is nothing but forced timeout
+                ret_val = RB_TIMEOUT;
+                goto read_err;
+            }
             //wait till some data available to read
             if (rb_block(rb->can_read, ticks_to_wait) != pdTRUE) {
                 ret_val = RB_TIMEOUT;
@@ -192,11 +197,15 @@ int rb_read(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wai
         if ((rb->p_r + read_size) > (rb->p_o + rb->size)) {
             int rlen1 = rb->p_o + rb->size - rb->p_r;
             int rlen2 = read_size - rlen1;
-            memcpy(buf, rb->p_r, rlen1);
-            memcpy(buf + rlen1, rb->p_o, rlen2);
+            if (buf) {
+                memcpy(buf, rb->p_r, rlen1);
+                memcpy(buf + rlen1, rb->p_o, rlen2);
+            }
             rb->p_r = rb->p_o + rlen2;
         } else {
-            memcpy(buf, rb->p_r, read_size);
+            if (buf) {
+                memcpy(buf, rb->p_r, read_size);
+            }
             rb->p_r = rb->p_r + read_size;
         }
 
@@ -213,9 +222,8 @@ read_err:
     if (total_read_size > 0) {
         rb_release(rb->can_write);
     }
-    if ((ret_val == RB_FAIL)
-        || (ret_val == RB_ABORT)
-       ) {
+    if ((ret_val == RB_FAIL) ||
+            (ret_val == RB_ABORT)) {
         total_read_size = ret_val;
     }
     rb->unblock_reader_flag = false; /* We are anyway unblocking the reader */
@@ -227,8 +235,9 @@ int rb_write(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wa
     int write_size;
     int total_write_size = 0;
     int ret_val = 0;
-    if (buf_len == 0) {
-        return -1;
+
+    if (rb == NULL || buf == NULL) {
+        return RB_FAIL;
     }
 
     while (buf_len) {
@@ -287,9 +296,8 @@ write_err:
     if (total_write_size > 0) {
         rb_release(rb->can_read);
     }
-    if ((ret_val == RB_FAIL)
-        || (ret_val == RB_ABORT)
-       ) {
+    if ((ret_val == RB_FAIL) ||
+            (ret_val == RB_ABORT)) {
         total_write_size = ret_val;
     }
     return total_write_size > 0 ? total_write_size : ret_val;
