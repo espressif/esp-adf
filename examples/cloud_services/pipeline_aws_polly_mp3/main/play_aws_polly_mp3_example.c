@@ -131,7 +131,7 @@ void app_main(void)
     tcpip_adapter_init();
 
     ESP_LOGI(TAG, "[ 0 ] Start and wait for Wi-Fi network");
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_wifi_cfg_t wifi_cfg = {
         .ssid = CONFIG_WIFI_SSID,

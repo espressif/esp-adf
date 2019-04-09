@@ -443,7 +443,7 @@ void app_main(void)
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_ERROR_CHECK(nvs_flash_init());
     tcpip_adapter_init();
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     set = esp_periph_set_init(&periph_cfg);
 
     cli_setup_sdcard();

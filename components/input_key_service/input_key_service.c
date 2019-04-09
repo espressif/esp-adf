@@ -14,14 +14,14 @@
 static const char *TAG = "INPUT_KEY_SERVICE";
 
 typedef struct input_key {
-    input_key_service_info_t  input_key_info;
-    STAILQ_ENTRY(input_key)  entries;
+    input_key_service_info_t    input_key_info;
+    STAILQ_ENTRY(input_key)     entries;
 } input_key_node_t;
 
 typedef struct {
-    periph_service_state_t ser_state;
-    esp_periph_set_handle_t periph_handle;
-    STAILQ_HEAD(key_list, input_key) input_info_list;
+    periph_service_state_t              ser_state;
+    esp_periph_set_handle_t             periph_set_handle;
+    STAILQ_HEAD(key_list, input_key)    input_info_list;
 } input_key_service_t;
 
 static esp_err_t input_key_service_event_send(periph_service_handle_t input_key_handle, periph_service_state_t state)
@@ -29,7 +29,7 @@ static esp_err_t input_key_service_event_send(periph_service_handle_t input_key_
     AUDIO_NULL_CHECK(TAG, input_key_handle, return ESP_ERR_INVALID_ARG);
 
     input_key_service_t *input_key_ser = (input_key_service_t *)periph_service_get_data(input_key_handle);
-    QueueHandle_t input_ser_queue = esp_periph_set_get_queue(input_key_ser->periph_handle);
+    QueueHandle_t input_ser_queue = esp_periph_set_get_queue(input_key_ser->periph_set_handle);
 
     audio_event_iface_msg_t msg = {0};
     msg.source = (void *)input_key_handle;
@@ -47,7 +47,7 @@ static esp_err_t input_key_service_event_receive(periph_service_handle_t handle,
     AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
 
     input_key_service_t *input_key_ser = periph_service_get_data(handle);
-    QueueHandle_t input_ser_queue = esp_periph_set_get_queue(input_key_ser->periph_handle);
+    QueueHandle_t input_ser_queue = esp_periph_set_get_queue(input_key_ser->periph_set_handle);
 
     if (xQueueReceive(input_ser_queue, msg, ticks) != pdTRUE) {
         return ESP_FAIL;
@@ -151,9 +151,9 @@ esp_err_t input_key_service_add_key(periph_service_handle_t input_key_handle, in
     return ESP_OK;
 }
 
-periph_service_handle_t input_key_service_create(esp_periph_set_handle_t periph_handle)
+periph_service_handle_t input_key_service_create(esp_periph_set_handle_t periph_set_handle)
 {
-    AUDIO_NULL_CHECK(TAG, periph_handle, return NULL);
+    AUDIO_NULL_CHECK(TAG, periph_set_handle, return NULL);
 
     periph_service_config_t input_cfg = {
         .task_stack = INPUT_KEY_SERVICE_TASK_STACK_SIZE,
@@ -173,7 +173,7 @@ periph_service_handle_t input_key_service_create(esp_periph_set_handle_t periph_
     input_key_ser = (input_key_service_t *)audio_calloc(1, sizeof(input_key_service_t));
     AUDIO_NULL_CHECK(TAG, input_key_ser, goto _create_service_failed);
 
-    input_key_ser->periph_handle = periph_handle;
+    input_key_ser->periph_set_handle = periph_set_handle;
     input_key_ser->ser_state = PERIPH_SERVICE_STATE_UNKNOWN;
 
     STAILQ_INIT(&input_key_ser->input_info_list);

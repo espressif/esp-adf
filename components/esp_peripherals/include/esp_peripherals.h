@@ -95,7 +95,7 @@ typedef struct esp_periph_event {
 #define DEFAULT_ESP_PERIPH_TASK_PRIO       (5)
 #define DEFAULT_ESP_PERIPH_TASK_CORE       (0)
 
-#define DEFAULT_ESP_PHERIPH_SET_CONFIG() {\
+#define DEFAULT_ESP_PERIPH_SET_CONFIG() {\
     .task_stack         = DEFAULT_ESP_PERIPH_STACK_SIZE,   \
     .task_prio          = DEFAULT_ESP_PERIPH_TASK_PRIO,    \
     .task_core          = DEFAULT_ESP_PERIPH_TASK_CORE,    \

@@ -70,7 +70,7 @@ void app_main(void)
     audio_pipeline_link(pipeline, (const char *[]) {"bt", "i2s"}, 2);
 
     ESP_LOGI(TAG, "[ 4 ] Initialize peripherals");
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     ESP_LOGI(TAG, "[4.1] Initialize Touch peripheral");

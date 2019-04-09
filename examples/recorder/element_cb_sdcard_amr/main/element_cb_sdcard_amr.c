@@ -55,7 +55,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[1.0] Mount sdcard");
     // Initialize peripherals management
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     // Initialize SD Card peripheral

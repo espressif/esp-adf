@@ -24,7 +24,7 @@ static esp_err_t test_input_key_service_callback(periph_service_handle_t handle,
 
 static periph_service_handle_t test_input_key_service_create()
 {
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     set = esp_periph_set_init(&periph_cfg);
     TEST_ASSERT_NOT_NULL(set);
 

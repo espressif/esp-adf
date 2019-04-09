@@ -203,7 +203,7 @@ void app_main(void)
     tcpip_adapter_init();
 
     // Initialize peripherals management
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     set = esp_periph_set_init(&periph_cfg);
 
     // Initialize SD Card peripheral

@@ -91,7 +91,7 @@ TEST_CASE("Test LED", "[esp-adf]")
     esp_log_level_set("ESP_PERIPH", ESP_LOG_DEBUG);
     esp_log_level_set("PERIPH_LED", ESP_LOG_DEBUG);
 
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_led_cfg_t led_cfg = {
         .led_speed_mode = LEDC_LOW_SPEED_MODE,
@@ -148,7 +148,7 @@ TEST_CASE("Test all peripherals", "[esp-adf]")
     ESP_ERROR_CHECK(heap_trace_start(HEAP_TRACE_LEAKS));
 #endif
 
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     periph_sdcard_cfg_t sdcard_cfg = {
