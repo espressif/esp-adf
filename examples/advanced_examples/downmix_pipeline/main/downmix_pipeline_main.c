@@ -128,7 +128,7 @@ void app_main(void)
     downmix_set_second_input_rb(downmixer, rb);
 
     ESP_LOGI(TAG, "[4.0] Start and wait for SDCARD to mount");
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PHERIPH_SET_CONFIG();
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",

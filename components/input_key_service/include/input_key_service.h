@@ -29,18 +29,18 @@ typedef struct {
 /**
  * @brief Initialize and start the input key service
  *
- * @param periph_handle The handler of peripherals
+ * @param periph_set_handle The handler of esp_peripheral set
  *
  * @return NULL    failed
  *         others  input key service handle
  */
 
-periph_service_handle_t input_key_service_create(esp_periph_set_handle_t periph_handle);
+periph_service_handle_t input_key_service_create(esp_periph_set_handle_t periph_set_handle);
 
 /**
  * @brief Get the state of input key service
  *
- * @param input_hanlde The handle of input key service
+ * @param input_handle The handle of input key service
  *
  * @return state of input key service
  */
@@ -51,7 +51,7 @@ periph_service_state_t get_input_key_service_state(periph_service_handle_t input
  *
  * @param input_key_handle  handle of service
  * @param input_key_info    input key's information
- * @param input_key_info    number of keys
+ * @param add_key_num       number of keys
  *
  * @return ESP_OK   success
  *         ESP_FAIL failed
