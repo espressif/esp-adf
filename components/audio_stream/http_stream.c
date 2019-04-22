@@ -156,7 +156,6 @@ static bool _get_line_in_buffer(http_stream_t *http, char **out)
 {
     *out = NULL;
     char c;
-    *out = NULL;
     if (http->playlist->remain > 0) {
         bool is_end_of_line = false;
         *out = http->playlist->data + http->playlist->index;
@@ -167,14 +166,16 @@ static bool _get_line_in_buffer(http_stream_t *http, char **out)
                 http->playlist->data[idx] = 0;
                 is_end_of_line = true;
             } else if (is_end_of_line) {
-                http->playlist->remain = idx - http->playlist->index;
+                http->playlist->remain -= idx - http->playlist->index;
                 http->playlist->index = idx;
                 return true;
             }
-            idx ++;
+            idx++;
         }
-        http->playlist->remain = 0;
-        return true; // This is the last remaining line
+        if (http->playlist->total_read >= http->playlist->content_length) {
+            http->playlist->remain = 0;
+            return true; // This is the last remaining line
+        }
     }
     return false;
 }
