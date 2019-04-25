@@ -42,6 +42,8 @@ typedef struct {
     audio_stream_type_t     type;               /*!< Type of stream */
     i2s_config_t            i2s_config;         /*!< I2S driver configurations */
     i2s_port_t              i2s_port;           /*!< I2S driver hardware port */
+    bool                    use_alc;            /*!< It is a flag for ALC. If use ALC, the value is true. Or the value is false */
+    int                     volume;             /*!< The volume of audio input data will be set. */
     int                     out_rb_size;        /*!< Size of output ringbuffer */
     int                     task_stack;         /*!< Task stack size */
     int                     task_core;          /*!< Task running in core (0 or 1) */
@@ -72,6 +74,8 @@ typedef struct {
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                               \
     },                                                                          \
     .i2s_port = 0,                                                              \
+    .use_alc = false,                                                   \
+    .volume = 0,                                                                \
 }
 
 
@@ -92,6 +96,8 @@ typedef struct {
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                                   \
     },                                                                              \
     .i2s_port = 0,                                                                  \
+    .use_alc = false,                                                       \
+    .volume = 0,                                                                    \
 }
 
 /**
@@ -119,6 +125,30 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config);
  *     - ESP_FAIL
  */
 esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bits, int ch);
+
+/**
+ * @brief      Setup volume of stream by using ALC
+ *
+ * @param[in]  i2s_stream   The i2s element handle
+ * @param[in]  volume       The volume of stream will be set.
+ * 
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t i2s_alc_volume_set(audio_element_handle_t i2s_stream, int volume);
+
+/**
+ * @brief      Get volume of stream
+ *
+ * @param[in]  i2s_stream   The i2s element handle
+ * @param[in]  volume       The volume of stream
+ *
+ * @return
+ *     - ESP_OK  
+ *     - ESP_FAIL  
+ */
+esp_err_t i2s_alc_volume_get(audio_element_handle_t i2s_stream, int* volume);
 
 #ifdef __cplusplus
 }
