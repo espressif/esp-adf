@@ -42,10 +42,10 @@
 #include <strings.h>
 
 static const char *TAG = "HTTP_STREAM";
-#define MAX_PLAYLIST_LINE_SIZE (128)
-#define MAX_PLAYLIST_TRACK (20)
+#define MAX_PLAYLIST_LINE_SIZE (512)
+#define MAX_PLAYLIST_TRACKS (128)
 #define MAX_PLAYLIST_KEEP_TRACK (18)
-#define HTTP_STREAM_BUFFER_SIZE (1024)
+#define HTTP_STREAM_BUFFER_SIZE (2048)
 
 typedef struct track_ {
     char *uri;
@@ -73,10 +73,14 @@ typedef struct http_stream {
     audio_stream_type_t             stream_type;
     void                            *user_data;
     bool                            enable_playlist_parser;
+    bool                            auto_connect_next_track; /* connect next track without open/close */
+    bool                            is_variant_playlist;
     bool                            is_playlist_resolved;
-    playlist_t                      *playlist;
+    playlist_t                      *variant_playlist; /* contains more playlists */
+    playlist_t                      *playlist; /* media playlist */
 } http_stream_t;
 
+static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
 
 static audio_codec_t get_audio_type(const char *content_type)
 {
@@ -217,7 +221,7 @@ static char *_client_read_line(http_stream_t *http)
 static void _insert_to_playlist(playlist_t *playlist, char *track_uri, const char *uri)
 {
     track_t *track;
-    while (playlist->total_tracks > MAX_PLAYLIST_TRACK) {
+    while (playlist->total_tracks > MAX_PLAYLIST_TRACKS) {
         track = STAILQ_FIRST(&playlist->tracks);
         if (track == NULL) {
             break;
@@ -303,8 +307,20 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
     if (!_is_playlist(&info, uri)) {
         return ESP_ERR_INVALID_STATE;
     }
-    if (http->is_playlist_resolved) {
+    if (http->is_playlist_resolved && http->is_variant_playlist) {
+        // We do not support more than 2 levels of redirection in m3u.
         return ESP_ERR_INVALID_STATE;
+    }
+    if (http->is_playlist_resolved) {
+        /**
+         * The one we resolved is variant playlist
+         * We need to move this playlist to variant_playlist and parse this one.
+         */
+        http->is_variant_playlist = true;
+        http->is_playlist_resolved = false;
+        playlist_t *tmp = http->variant_playlist;
+        http->variant_playlist = http->playlist;
+        http->playlist = tmp;
     }
 
     http->playlist->content_length = info.total_bytes;
@@ -370,12 +386,11 @@ static track_t *_playlist_get_next_track(audio_element_handle_t self)
     return NULL;
 }
 
-static void _playlist_clear(audio_element_handle_t self)
+static void _playlist_clear(playlist_t *playlist)
 {
-    http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     track_t *track, *tmp;
-    STAILQ_FOREACH_SAFE(track, &http->playlist->tracks, next, tmp) {
-        STAILQ_REMOVE(&http->playlist->tracks, track, track_, next);
+    STAILQ_FOREACH_SAFE(track, &playlist->tracks, next, tmp) {
+        STAILQ_REMOVE(&playlist->tracks, track, track_, next);
         free(track->uri);
         free(track);
     }
@@ -480,7 +495,7 @@ _stream_redirect:
     }
 
     info.total_bytes = esp_http_client_fetch_headers(http->client);
-    ESP_LOGD(TAG, "total_bytes=%d", (int)info.total_bytes);
+    ESP_LOGI(TAG, "total_bytes=%d", (int)info.total_bytes);
     int status_code = esp_http_client_get_status_code(http->client);
     if (status_code == 301 || status_code == 302) {
         esp_http_client_set_redirection(http->client);
@@ -488,14 +503,14 @@ _stream_redirect:
     }
     if (status_code != 200
         && (esp_http_client_get_status_code(http->client) != 206)) {
-        ESP_LOGE(TAG, "Invalid HTTP stream");
+        ESP_LOGE(TAG, "Invalid HTTP stream, status code = %d", status_code);
         if (http->enable_playlist_parser) {
-            _playlist_clear(self);
+            _playlist_clear(http->playlist);
             http->is_playlist_resolved = false;
-            return ESP_FAIL;
+            _playlist_clear(http->variant_playlist);
+            http->is_variant_playlist = false;
         }
-
-        // return ESP_FAIL;
+        return ESP_FAIL;
     }
     audio_element_setinfo(self, &info);
 
@@ -519,14 +534,25 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
     if (rlen == 0) {
         rlen = esp_http_client_read(http->client, buffer, len);
     }
+    if (rlen <= 0 && http->auto_connect_next_track) {
+        if (http_stream_auto_connect_next_track(self) == ESP_OK) {
+            rlen = esp_http_client_read(http->client, buffer, len);
+        }
+    }
     if (rlen <= 0) {
         ESP_LOGW(TAG, "No more data,errno:%d, total_bytes:%llu", errno, info.byte_pos);
-        if (dispatch_hook(self, HTTP_STREAM_FINISH_TRACK, NULL, 0) != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to process user callback");
-            return ESP_FAIL;
+        if (http->auto_connect_next_track) {
+            if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to process user callback");
+                return ESP_FAIL;
+            }
+        } else {
+            if (dispatch_hook(self, HTTP_STREAM_FINISH_TRACK, NULL, 0) != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to process user callback");
+                return ESP_FAIL;
+            }
         }
         return ESP_OK;
-
     } else {
         info.byte_pos += rlen;
         audio_element_setinfo(self, &info);
@@ -585,7 +611,9 @@ static esp_err_t _http_close(audio_element_handle_t self)
         }
     }
     if (http->enable_playlist_parser) {
-        _playlist_clear(self);
+        _playlist_clear(http->playlist);
+        _playlist_clear(http->variant_playlist);
+        http->is_variant_playlist = false;
         http->is_playlist_resolved = false;
     }
     if (http->client) {
@@ -608,6 +636,10 @@ static esp_err_t _http_destroy(audio_element_handle_t self)
     if (http->playlist) {
         free(http->playlist->data);
         free(http->playlist);
+    }
+    if (http->variant_playlist) {
+        free(http->variant_playlist->data);
+        free(http->variant_playlist);
     }
     audio_free(http);
     return ESP_OK;
@@ -634,6 +666,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
 
     http->type = config->type;
     http->enable_playlist_parser = config->enable_playlist_parser;
+    http->auto_connect_next_track = config->auto_connect_next_track;
     http->hook = config->event_handle;
     http->stream_type = config->type;
     http->user_data = config->user_data;
@@ -644,13 +677,28 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
             audio_free(http);
             return NULL;
         });
-        http->playlist->data = calloc(1, MAX_PLAYLIST_LINE_SIZE + 1);
+        http->playlist->data = audio_calloc(1, MAX_PLAYLIST_LINE_SIZE + 1);
         AUDIO_MEM_CHECK(TAG, http->playlist->data, {
             audio_free(http->playlist);
             audio_free(http);
             return NULL;
         });
         STAILQ_INIT(&http->playlist->tracks);
+
+        http->variant_playlist = calloc(1, sizeof(playlist_t));
+        AUDIO_MEM_CHECK(TAG, http->variant_playlist, {
+            audio_free(http->playlist);
+            audio_free(http);
+            return NULL;
+        });
+        http->variant_playlist->data = audio_calloc(1, MAX_PLAYLIST_LINE_SIZE + 1);
+        AUDIO_MEM_CHECK(TAG, http->variant_playlist->data, {
+            audio_free(http->playlist);
+            audio_free(http->variant_playlist);
+            audio_free(http);
+            return NULL;
+        });
+        STAILQ_INIT(&http->variant_playlist->tracks);
     }
 
     if (config->type == AUDIO_STREAM_READER) {
@@ -662,6 +710,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     el = audio_element_init(&cfg);
     AUDIO_MEM_CHECK(TAG, el, {
         audio_free(http->playlist);
+        audio_free(http->variant_playlist);
         audio_free(http);
         return NULL;
     });
@@ -682,7 +731,7 @@ esp_err_t http_stream_next_track(audio_element_handle_t el)
             ESP_LOGD(TAG, "Remove %s", track->uri);
             free(track->uri);
             free(track);
-            http->playlist->total_tracks --;
+            http->playlist->total_tracks--;
         }
 
     } else {
@@ -697,6 +746,52 @@ esp_err_t http_stream_next_track(audio_element_handle_t el)
     audio_element_setinfo(el, &info);
     http->is_open = false;
     return ESP_OK;
+}
+
+esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el)
+{
+    audio_element_info_t info;
+    audio_element_getinfo(el, &info);
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+    track_t * track = _playlist_get_next_track(el);
+    if (track) {
+        track->is_played = true;
+        ESP_LOGD(TAG, "Finish %s", track->uri);
+        if (http->playlist->total_tracks > MAX_PLAYLIST_KEEP_TRACK) {
+            STAILQ_REMOVE(&http->playlist->tracks, track, track_, next);
+            ESP_LOGD(TAG, "Remove %s", track->uri);
+            free(track->uri);
+            free(track);
+            http->playlist->total_tracks --;
+        }
+    } else {
+        return ESP_FAIL;
+    }
+    track = _playlist_get_next_track(el);
+
+    if (track) {
+        esp_http_client_set_url(http->client, track->uri);
+        char *buffer = NULL;
+        int post_len = esp_http_client_get_post_field(http->client, &buffer);
+redirection:
+        if ((esp_http_client_open(http->client, post_len)) != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to open http stream");
+            return ESP_FAIL;
+        }
+        if (dispatch_hook(el, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
+            esp_http_client_close(http->client);
+            return ESP_FAIL;
+        }
+        info.total_bytes = esp_http_client_fetch_headers(http->client);
+        ESP_LOGD(TAG, "total_bytes=%d", (int)info.total_bytes);
+        int status_code = esp_http_client_get_status_code(http->client);
+        if (status_code == 301 || status_code == 302) {
+            esp_http_client_set_redirection(http->client);
+            goto redirection;
+        }
+        return ESP_OK;
+    }
+    return ESP_FAIL;
 }
 
 esp_err_t http_stream_restart(audio_element_handle_t el)
