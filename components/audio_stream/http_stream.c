@@ -233,7 +233,7 @@ static void _insert_to_playlist(playlist_t *playlist, char *track_uri, const cha
         return;
     }
     if (strstr(track_uri, "http") == track_uri) { // Full URI
-        asprintf(&track->uri, "%s", track_uri);
+        track->uri = audio_strdup(track_uri);
     } else if (strstr(track_uri, "//") == track_uri) { // schemeless URI
         if (strstr(uri, "https") == uri) {
             asprintf(&track->uri, "https:%s", track_uri);
@@ -241,7 +241,7 @@ static void _insert_to_playlist(playlist_t *playlist, char *track_uri, const cha
             asprintf(&track->uri, "http:%s", track_uri);
         }
     } else if (strstr(track_uri, "/") == track_uri) { // Root uri
-        char *url = strdup(uri);
+        char *url = audio_strdup(uri);
         if (url == NULL) {
             return;
         }
@@ -260,7 +260,7 @@ static void _insert_to_playlist(playlist_t *playlist, char *track_uri, const cha
         asprintf(&track->uri, "%s%s", url, track_uri);
         free(url);
     } else { // Relative URI
-        char *url = strdup(uri);
+        char *url = audio_strdup(uri);
         if (url == NULL) {
             return;
         }

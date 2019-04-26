@@ -72,6 +72,19 @@ void *audio_realloc(void *ptr, size_t size)
     return p;
 }
 
+char *audio_strdup(const char *str)
+{
+#if CONFIG_SPIRAM_BOOT_INIT
+    char *copy = heap_caps_malloc(strlen(str) + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+#else
+    char *copy = malloc(strlen(str) + 1);
+#endif
+    if (copy) {
+        strcpy(copy, str);
+    }
+    return copy;
+}
+
 void *audio_calloc_inner(size_t n, size_t size)
 {
     void *data =  NULL;
