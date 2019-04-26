@@ -59,6 +59,9 @@ typedef enum {
     AUDIO_CODEC_MP3,
     AUDIO_CODEC_AAC,
     AUDIO_CODEC_OPUS,
+    AUDIO_CODEC_M4A,
+    AUDIO_CODEC_TS,
+    AUDIO_CODEC_AMR,
     AUDIO_PLAYLIST
 } audio_codec_t;
 
