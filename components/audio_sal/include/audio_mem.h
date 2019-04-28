@@ -100,6 +100,18 @@ void audio_mem_print(const char *tag, int line, const char *func);
  */
 void *audio_realloc(void *ptr, size_t size);
 
+/**
+ * @brief   Duplicate given string.
+ *
+ *          Allocate new memory, copy contents of given string into it and return the pointer
+ *
+ * @param[in]  str   String to be duplicated
+ *
+ * @return
+ *     - Pointer to new malloc'ed string
+ *     - NULL otherwise
+ */
+char *audio_strdup(const char *str);
 
 #define AUDIO_MEM_SHOW(x)  audio_mem_print(x, __LINE__, __func__)
 
