@@ -45,7 +45,12 @@ audio_board_handle_t audio_board_init(void)
     return board_handle;
 }
 
-esp_err_t audio_borad_deinit(audio_board_handle_t audio_board)
+audio_board_handle_t audio_board_get_handle(void)
+{
+    return board_handle;
+}
+
+esp_err_t audio_board_deinit(audio_board_handle_t audio_board)
 {
     esp_err_t ret = ESP_OK;
     ret = audio_hal_deinit(audio_board->audio_hal);
