@@ -27,7 +27,7 @@
 #include "periph_wifi.h"
 #include "board.h"
 #include "lwip/err.h"
-#include "apps/sntp/sntp.h"
+#include "lwip/apps/sntp.h"
 #include "esp_http_client.h"
 #include "aws_sig_v4_signing.h"
 
