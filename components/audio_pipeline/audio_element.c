@@ -753,6 +753,15 @@ int audio_element_get_output_ringbuf_size(audio_element_handle_t el)
     return 0;
 }
 
+esp_err_t audio_element_set_output_ringbuf_size(audio_element_handle_t el, int rb_size)
+{
+    if (el) {
+        el->out_rb_size = rb_size;
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
 esp_err_t audio_element_set_read_cb(audio_element_handle_t el, stream_func fn, void *context)
 {
     if (el) {
