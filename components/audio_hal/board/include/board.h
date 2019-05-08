@@ -63,6 +63,13 @@ typedef struct audio_board_handle *audio_board_handle_t;
 audio_board_handle_t audio_board_init(void);
 
 /**
+ * @brief Query audio_board_handle
+ *
+ * @return The audio board handle
+ */
+audio_board_handle_t audio_board_get_handle(void);
+
+/**
  * @brief Uninitialize the audio board
  *
  * @param audio_board The handle of audio board
@@ -70,7 +77,7 @@ audio_board_handle_t audio_board_init(void);
  * @return  0       success,
  *          others  fail
  */
-esp_err_t audio_borad_deinit(audio_board_handle_t audio_board);
+esp_err_t audio_board_deinit(audio_board_handle_t audio_board);
 
 #ifdef __cplusplus
 }
