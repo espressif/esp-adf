@@ -112,7 +112,7 @@ static void _audio_player_task(void *pv)
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
             && msg.source == (void *)ap->i2s_stream_writer
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
-            && (int)msg.data == AEL_STATUS_STATE_STOPPED
+            && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))
             && ap->playing) {
             ESP_LOGI(TAG, "Stop pipeline");
             audio_player_send_event(ap, PLAYER_EVENT_STOP);
