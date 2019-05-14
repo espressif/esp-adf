@@ -10,7 +10,7 @@
  * @brief input key action id
  */
 typedef enum {
-    INPUT_KEY_SERVICE_ACTION_UNKNOWN = -1,   /*!< unknown action id */
+    INPUT_KEY_SERVICE_ACTION_UNKNOWN = 0,    /*!< unknown action id */
     INPUT_KEY_SERVICE_ACTION_CLICK,          /*!< click action id */
     INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE,  /*!< click release action id */
     INPUT_KEY_SERVICE_ACTION_PRESS,          /*!< long press action id */
