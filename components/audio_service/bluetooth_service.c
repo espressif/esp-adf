@@ -456,9 +456,6 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
         }
     }
 
-    /* set discoverable and connectable mode */
-    esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
-
     if (config->mode == BLUETOOTH_A2DP_SINK) {
         esp_a2d_sink_init();
         esp_a2d_sink_register_data_callback(bt_a2d_sink_data_cb);
@@ -491,6 +488,9 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
         g_bt_service->stream_type = AUDIO_STREAM_WRITER;
         esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
     }
+
+    /* set discoverable and connectable mode */
+    esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
 
     return ESP_OK;
 }
