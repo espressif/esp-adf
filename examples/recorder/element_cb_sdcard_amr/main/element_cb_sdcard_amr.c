@@ -33,6 +33,9 @@ esp_err_t audio_element_event_handler(audio_element_handle_t self, audio_event_i
             case AEL_STATUS_STATE_STOPPED:
                 ESP_LOGI(TAG, "AEL_STATUS_STATE_STOPPED");
                 break;
+            case AEL_STATUS_STATE_FINISHED:
+                ESP_LOGI(TAG, "AEL_STATUS_STATE_FINISHED");
+                break;
             default:
                 ESP_LOGI(TAG, "Some other event = %d", (int) event->data);
         }

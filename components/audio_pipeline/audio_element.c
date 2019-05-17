@@ -209,7 +209,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             }
             el->state = AEL_STATE_FINISHED;
             audio_event_iface_set_cmd_waiting_timeout(el->iface_event, portMAX_DELAY);
-            audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
+            audio_element_report_status(el, AEL_STATUS_STATE_FINISHED);
             xEventGroupSetBits(el->state_event, STOPPED_BIT);
             el->is_running = false;
             ESP_LOGD(TAG, "[%s] AEL_MSG_CMD_FINISH", el->tag);

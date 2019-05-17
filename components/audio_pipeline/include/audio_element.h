@@ -95,8 +95,9 @@ typedef enum {
     AEL_STATUS_STATE_RUNNING            = 12,
     AEL_STATUS_STATE_PAUSED             = 13,
     AEL_STATUS_STATE_STOPPED            = 14,
-    AEL_STATUS_MOUNTED                  = 15,
-    AEL_STATUS_UNMOUNTED                = 16,
+    AEL_STATUS_STATE_FINISHED           = 15,
+    AEL_STATUS_MOUNTED                  = 16,
+    AEL_STATUS_UNMOUNTED                = 17,
 } audio_element_status_t;
 
 typedef struct audio_element *audio_element_handle_t;

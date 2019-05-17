@@ -132,7 +132,7 @@ void app_main(void)
             continue;
         }
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
-            && (int)msg.data == AEL_STATUS_STATE_STOPPED) {
+            && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
             ESP_LOGW(TAG, "[ * ] Stop event received");
             break;
         }
