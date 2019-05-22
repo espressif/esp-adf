@@ -341,20 +341,15 @@ static void cli_setup_player(void)
     if (player ) {
         return ;
     }
-    esp_audio_cfg_t cfg = {
-        .in_stream_buf_size = 10 * 1024,
-        .out_stream_buf_size = 6 * 1024,
-        .evt_que = NULL,
-        .resample_rate = 0,
-        .hal = NULL,
-    };
-
-
+    esp_audio_cfg_t cfg = DEFAULT_ESP_AUDIO_CONFIG();
     audio_board_handle_t board_handle = audio_board_init();
-    cfg.hal = board_handle->audio_hal;
+    cfg.vol_handle = board_handle->audio_hal;
+    cfg.vol_set = (audio_volume_set)audio_hal_set_volume;
+    cfg.vol_get = (audio_volume_get)audio_hal_get_volume;
+    cfg.prefer_type = ESP_AUDIO_PREFER_MEM;
     cfg.evt_que = xQueueCreate(3, sizeof(esp_audio_state_t));
-    audio_hal_ctrl_codec(cfg.hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
     player = esp_audio_create(&cfg);
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
     xTaskCreate(esp_audio_state_task, "player_task", 4096, cfg.evt_que, 1, NULL);
 
     // Create readers and add to esp_audio

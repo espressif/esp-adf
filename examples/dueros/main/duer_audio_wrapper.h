@@ -38,7 +38,7 @@ typedef enum {
  * @brief DCS init function
  *
  */
-void duer_dcs_init(void);
+void duer_audio_wrapper_init(void);
 
 /*
  * @brief DCS audio on_started callback function

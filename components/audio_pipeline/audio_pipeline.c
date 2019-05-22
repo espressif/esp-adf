@@ -96,7 +96,7 @@ static audio_element_item_t *audio_pipeline_get_el_item_by_handle(audio_pipeline
     return NULL;
 }
 
-static esp_err_t audio_pipeline_change_state(audio_pipeline_handle_t pipeline, audio_element_state_t new_state)
+esp_err_t audio_pipeline_change_state(audio_pipeline_handle_t pipeline, audio_element_state_t new_state)
 {
     pipeline->state = new_state;
     return ESP_OK;
@@ -308,7 +308,7 @@ esp_err_t audio_pipeline_run(audio_pipeline_handle_t pipeline)
 {
     audio_element_item_t *el_item;
     if (pipeline->state != AEL_STATE_INIT) {
-        ESP_LOGW(TAG, "Pipeline already started");
+        ESP_LOGW(TAG, "Pipeline already started, state:%d", pipeline->state);
         return ESP_OK;
     }
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
@@ -365,19 +365,22 @@ esp_err_t audio_pipeline_stop(audio_pipeline_handle_t pipeline)
 esp_err_t audio_pipeline_wait_for_stop(audio_pipeline_handle_t pipeline)
 {
     audio_element_item_t *el_item;
-    ESP_LOGD(TAG, "audio_pipeline_wait_for_stop");
+    ESP_LOGD(TAG, "audio_pipeline_wait_for_stop - IN");
     if (pipeline->state != AEL_STATE_RUNNING) {
+        ESP_LOGW(TAG, "audio_pipeline state is not running, %d", pipeline->state);
         return ESP_FAIL;
     }
+    esp_err_t ret = ESP_OK;
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
-            audio_element_wait_for_stop(el_item->el);
+            ret |= audio_element_wait_for_stop_ms(el_item->el, portMAX_DELAY);
             audio_element_reset_input_ringbuf(el_item->el);
             audio_element_reset_output_ringbuf(el_item->el);
         }
     }
     audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
-    return ESP_OK;
+    ESP_LOGD(TAG, "audio_pipeline_wait_for_stop - OUT");
+    return ret;
 }
 
 static esp_err_t _pipeline_rb_linked(audio_pipeline_handle_t pipeline, audio_element_handle_t el, bool first, bool last)

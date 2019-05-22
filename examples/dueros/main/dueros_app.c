@@ -97,14 +97,11 @@ void rec_engine_cb(rec_event_type_t type, void *user_data)
 
     }
 }
-
+static  audio_element_handle_t raw_read;
 static esp_err_t recorder_pipeline_open(void **handle)
 {
     audio_element_handle_t i2s_stream_reader;
     audio_pipeline_handle_t recorder;
-    audio_board_handle_t board_handle = audio_board_init();
-    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
-
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     recorder = audio_pipeline_init(&pipeline_cfg);
     if (NULL == recorder) {
@@ -130,7 +127,7 @@ static esp_err_t recorder_pipeline_open(void **handle)
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_READER;
-    audio_element_handle_t raw_read = raw_stream_init(&raw_cfg);
+    raw_read = raw_stream_init(&raw_cfg);
 
     audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
     audio_pipeline_register(recorder, filter, "filter");
@@ -144,7 +141,7 @@ static esp_err_t recorder_pipeline_open(void **handle)
 
 static esp_err_t recorder_pipeline_read(void *handle, char *data, int data_size)
 {
-    raw_stream_read(audio_pipeline_get_el_by_tag((audio_pipeline_handle_t)handle, "raw"), data, data_size);
+    raw_stream_read(raw_read, data, data_size);
     return ESP_OK;
 }
 
@@ -383,7 +380,7 @@ void duer_app_init(void)
     xTimerHandle retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
                                      pdFALSE, NULL, retry_login_timer_cb);
     duer_serv_handle = dueros_service_create();
-
+    duer_audio_wrapper_init();
     audio_service_set_callback(duer_serv_handle, duer_callback, retry_login_timer);
 
 }
