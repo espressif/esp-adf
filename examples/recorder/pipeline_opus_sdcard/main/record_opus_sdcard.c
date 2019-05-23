@@ -22,6 +22,7 @@
 #include "opus_encoder.h"
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
+#include "board.h"
 
 static const char *TAG = "REC_OPUS_SDCARD";
 
@@ -82,7 +83,7 @@ void app_main(void)
         i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
     } else {
         i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
-    }    
+    }
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
     ESP_LOGI(TAG, "[3.3] Create opus encoder to encode opus format");
@@ -138,12 +139,12 @@ void app_main(void)
             break;
         }
     }
-    
+
     ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
     audio_pipeline_unregister(pipeline, fatfs_stream_writer);
     audio_pipeline_unregister(pipeline, opus_encoder);
-    audio_pipeline_unregister(pipeline, i2s_stream_reader); 
+    audio_pipeline_unregister(pipeline, i2s_stream_reader);
 
     /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);

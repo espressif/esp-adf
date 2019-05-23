@@ -21,6 +21,7 @@
 #include "wav_decoder.h"
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
+#include "board.h"
 
 static const char *TAG = "SDCARD_WAV_EXAMPLE";
 

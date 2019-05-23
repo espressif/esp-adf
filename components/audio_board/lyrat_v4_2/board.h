@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -26,25 +26,14 @@
 #define _AUDIO_BOARD_H_
 
 #include "audio_hal.h"
+#include "board_def.h"
 #include "board_pins_config.h"
+#include "esp_peripherals.h"
+#include "display_service.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define AUDIO_BOARD_DEFAULT_CONFIG(){                   \
-        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
-        .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
-        .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
-        .i2s_iface = {                                  \
-            .mode = AUDIO_HAL_MODE_SLAVE,               \
-            .fmt = AUDIO_HAL_I2S_NORMAL,                \
-            .samples = AUDIO_HAL_48K_SAMPLES,           \
-            .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
-        },                                              \
-};
-
-extern audio_hal_func_t AUDIO_CODEC_DEFAULT_HANDLE;
 
 /**
  * @brief Audio board handle
@@ -61,6 +50,42 @@ typedef struct audio_board_handle *audio_board_handle_t;
  * @return The audio board handle
  */
 audio_board_handle_t audio_board_init(void);
+
+/**
+ * @brief Initialize codec chip
+ *
+ * @return The audio hal handle
+ */
+audio_hal_handle_t audio_board_codec_init(void);
+
+/**
+ * @brief Initialize led peripheral and display service
+ *
+ * @return The audio display service handle
+ */
+display_service_handle_t audio_board_led_init(void);
+
+/**
+ * @brief Initialize key peripheral
+ *
+ * @param set The handle of esp_periph_set_handle_t
+ *
+ * @return
+ *     - ESP_OK, success
+ *     - Others, fail
+ */
+esp_err_t audio_board_key_init(esp_periph_set_handle_t set);
+
+/**
+ * @brief Initialize sdcard peripheral
+ *
+ * @param set The handle of esp_periph_set_handle_t
+ *
+ * @return
+ *     - ESP_OK, success
+ *     - Others, fail
+ */
+esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set);
 
 /**
  * @brief Query audio_board_handle

@@ -43,15 +43,15 @@ static xTimerHandle timer_headphone;
 
 static void hp_timer_cb(TimerHandle_t xTimer)
 {
-    int res;
-    res = gpio_get_level(get_headphone_detect_gpio());
+    int num = (int)pvTimerGetTimerID(xTimer);
+    int res = gpio_get_level(num);
     es8388_pa_power(res);
     ESP_LOGW(TAG, "Headphone jack %s", res ? "removed" : "inserted");
 }
 
-static int hp_timer_init()
+static int hp_timer_init(int num)
 {
-    timer_headphone = xTimerCreate("hp_timer0", HP_DELAY_TIME_MS / portTICK_RATE_MS, pdFALSE, (void *) 0, hp_timer_cb);
+    timer_headphone = xTimerCreate("hp_timer0", HP_DELAY_TIME_MS / portTICK_RATE_MS, pdFALSE, (void *) num, hp_timer_cb);
     if (timer_headphone == NULL) {
         ESP_LOGE(TAG, "hp_timer create err");
         return ESP_FAIL;
@@ -76,22 +76,22 @@ void headphone_detect_deinit()
 
 int headphone_status_get()
 {
-    return gpio_get_level(get_headphone_detect_gpio());
+    return gpio_get_level(0);
 }
 
-void headphone_detect_init()
+void headphone_detect_init(int num)
 {
-    hp_timer_init();
+    hp_timer_init(num);
     gpio_config_t  io_conf;
     memset(&io_conf, 0, sizeof(io_conf));
     io_conf.intr_type = GPIO_INTR_ANYEDGE;
     io_conf.mode = GPIO_MODE_INPUT;
-    io_conf.pin_bit_mask = BIT(get_headphone_detect_gpio());
+    io_conf.pin_bit_mask = BIT(num);
     io_conf.pull_down_en = 0;
     io_conf.pull_up_en = 1;
     gpio_config(&io_conf);
 
     gpio_install_isr_service(0);
-    gpio_isr_handler_add(get_headphone_detect_gpio(), headphone_gpio_intr_handler, NULL);
+    gpio_isr_handler_add(num, headphone_gpio_intr_handler, (void *)num);
 }
 #endif /* CONFIG_ESP_LYRAT_V4_3_BOARD */

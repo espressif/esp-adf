@@ -31,9 +31,7 @@
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
 
-#include "periph_touch.h"
 #include "esp_peripherals.h"
-#include "periph_sdcard.h"
 #include "periph_wifi.h"
 #include "periph_button.h"
 #include "board.h"
@@ -55,7 +53,6 @@
 #include "filter_resample.h"
 
 #include "display_service.h"
-#include "led_indicator.h"
 #include "wifi_service.h"
 #include "airkiss_config.h"
 #include "smart_config.h"
@@ -296,47 +293,10 @@ void duer_app_init(void)
     if (set != NULL) {
         esp_periph_set_register_callback(set, periph_callback, NULL);
     }
-    led_indicator_handle_t led = led_indicator_init((gpio_num_t)get_green_led_gpio());
-    display_service_config_t display = {
-        .based_cfg = {
-            .task_stack = 0,
-            .task_prio  = 0,
-            .task_core  = 0,
-            .task_func  = NULL,
-            .service_start = NULL,
-            .service_stop = NULL,
-            .service_destroy = NULL,
-            .service_ioctl = led_indicator_pattern,
-            .service_name = "DISPLAY_serv",
-            .user_data = NULL,
-        },
-        .instance = led,
-    };
-    disp_serv = display_service_create(&display);
 
-    periph_button_cfg_t btn_cfg = {
-        .gpio_mask = (1ULL << get_input_rec_id()) | (1ULL << get_input_mode_id()), //REC BTN & MODE BTN
-    };
-    esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
-    esp_periph_start(set, button_handle);
-
-    // If enabled, the touch will consume a lot of CPU.
-    periph_touch_cfg_t touch_cfg = {
-        .touch_mask = TOUCH_PAD_SEL4 | TOUCH_PAD_SEL7 | TOUCH_PAD_SEL8 | TOUCH_PAD_SEL9,
-        .tap_threshold_percent = 70,
-    };
-    esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
-    esp_periph_start(set, touch_periph);
-
-    periph_sdcard_cfg_t sdcard_cfg = {
-        .root = "/sdcard",
-        .card_detect_pin = get_sdcard_intr_gpio(), //GPIO_NUM_34
-    };
-    esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
-    esp_periph_start(set, sdcard_handle);
-    while (!periph_sdcard_is_mounted(sdcard_handle)) {
-        vTaskDelay(300 / portTICK_PERIOD_MS);
-    }
+    audio_board_key_init(set);
+    audio_board_sdcard_init(set);
+    disp_serv = audio_board_led_init();
 
     wifi_config_t sta_cfg = {0};
     strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, strlen(CONFIG_WIFI_SSID));

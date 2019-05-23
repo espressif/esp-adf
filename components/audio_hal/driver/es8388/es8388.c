@@ -26,7 +26,7 @@
 #include "esp_log.h"
 #include "driver/i2c.h"
 #include "es8388.h"
-#include "board_pins_config.h"
+#include "board.h"
 
 static const char *ES_TAG = "ES8388_DRIVER";
 
@@ -43,7 +43,7 @@ static i2c_config_t es_i2c_cfg = {
     .master.clk_speed = 100000
 };
 
-audio_hal_func_t AUDIO_CODEC_DEFAULT_HANDLE = {
+audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE = {
     .audio_codec_initialize = es8388_init,
     .audio_codec_deinitialize = es8388_deinit,
     .audio_codec_ctrl = es8388_ctrl_state,
@@ -270,7 +270,7 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     int res = 0;
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 #include "headphone_detect.h"
-    headphone_detect_init();
+    headphone_detect_init(get_headphone_detect_gpio());
 #endif
 
     res = i2c_init(); // ESP32 in master mode

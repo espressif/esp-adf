@@ -25,6 +25,7 @@
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
 #include "periph_touch.h"
+#include "periph_button.h"
 #include "input_key_service.h"
 #include "periph_adc_button.h"
 #include "board.h"
@@ -94,8 +95,9 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
     audio_hal_get_volume(board_handle->audio_hal, &player_volume);
 
     if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE) {
+        ESP_LOGI(TAG, "[ * ] input key id is %d", (int)evt->data);
         switch ((int)evt->data) {
-            case USER_ID_PLAY:
+            case INPUT_KEY_USER_ID_PLAY:
                 ESP_LOGI(TAG, "[ * ] [Play] input key event");
                 audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
                 switch (el_state) {
@@ -115,14 +117,14 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                         ESP_LOGI(TAG, "[ * ] Not supported state %d", el_state);
                 }
                 break;
-            case USER_ID_SET:
+            case INPUT_KEY_USER_ID_SET:
                 ESP_LOGI(TAG, "[ * ] [Set] input key event");
                 audio_pipeline_terminate(pipeline);
                 ESP_LOGI(TAG, "[ * ] Stopped, advancing to the next song");
                 get_file(NEXT);
                 audio_pipeline_run(pipeline);
                 break;
-            case USER_ID_VOLUP:
+            case INPUT_KEY_USER_ID_VOLUP:
                 ESP_LOGI(TAG, "[ * ] [Vol+] input key event");
                 player_volume += 10;
                 if (player_volume > 100) {
@@ -131,7 +133,7 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 audio_hal_set_volume(board_handle->audio_hal, player_volume);
                 ESP_LOGI(TAG, "[ * ] Volume set to %d %%", player_volume);
                 break;
-            case USER_ID_VOLDOWN:
+            case INPUT_KEY_USER_ID_VOLDOWN:
                 ESP_LOGI(TAG, "[ * ] [Vol-] input key event");
                 player_volume -= 10;
                 if (player_volume < 0) {
@@ -170,22 +172,7 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[1.2] Initialize and start peripherals");
-#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
-    periph_touch_cfg_t touch_cfg = {
-        .touch_mask = BIT(get_input_set_id()) | BIT(get_input_play_id()) | BIT(get_input_volup_id()) | BIT(get_input_voldown_id()),
-        .tap_threshold_percent = 70,
-    };
-    esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
-    esp_periph_start(set, touch_periph);
-
-#elif (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
-    periph_adc_button_cfg_t adc_btn_cfg = {0};
-    adc_arr_t adc_btn_tag = ADC_DEFAULT_ARR();
-    adc_btn_cfg.arr = &adc_btn_tag;
-    adc_btn_cfg.arr_size = 1;
-    esp_periph_handle_t adc_btn_handle = periph_adc_button_init(&adc_btn_cfg);
-    esp_periph_start(set, adc_btn_handle);
-#endif
+    audio_board_key_init(set);
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
@@ -223,8 +210,8 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[4.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, mp3_decoder, "mp3");
-    audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
     audio_pipeline_register(pipeline, rsp_handle, "filter");
+    audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
 
     ESP_LOGI(TAG, "[4.5] Link it together [my_sdcard_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]");
     audio_pipeline_link(pipeline, (const char *[]) {"mp3", "filter", "i2s"}, 3);

@@ -29,7 +29,7 @@
 #include "vprocTwolf_access.h"
 #include "driver/gpio.h"
 #include "tw_spi_access.h"
-#include "board_pins_config.h"
+#include "board.h"
 
 
 static const char *TAG = "zl38063";
@@ -38,7 +38,7 @@ static int8_t tw_vol[15] = { -90, -45, -30, -23, -16, -10, -4, -1, 0, 1, 2, 3, 4
 
 static int codec_init_flag = 0;
 
-audio_hal_func_t AUDIO_CODEC_DEFAULT_HANDLE = {
+audio_hal_func_t AUDIO_CODEC_ZL38063_DEFAULT_HANDLE = {
     .audio_codec_initialize = zl38063_codec_init,
     .audio_codec_deinitialize = zl38063_codec_deinit,
     .audio_codec_ctrl = zl38063_codec_ctrl_state,
