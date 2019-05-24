@@ -39,6 +39,7 @@
 #include "audio_mem.h"
 #include "audio_element.h"
 #include "i2s_stream.h"
+#include "esp_alc.h"
 
 static const char *TAG = "I2S_STREAM";
 
@@ -46,6 +47,9 @@ typedef struct i2s_stream {
     audio_stream_type_t type;
     i2s_stream_cfg_t    config;
     bool                is_open;
+    bool                use_alc;
+    void                *volume_handle;
+    int                 volume;
 } i2s_stream_t;
 
 static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
@@ -123,6 +127,13 @@ static esp_err_t _i2s_open(audio_element_handle_t self)
         ESP_LOGI(TAG, "AUDIO_STREAM_WRITER");
     }
     i2s->is_open = true;
+    if (i2s->use_alc){
+        i2s->volume_handle = alc_volume_setup_open();
+        if (i2s->volume_handle == NULL) {
+            ESP_LOGE(TAG, "i2s create the handle for setting volume failed, in line(%d)", __LINE__);
+            return ESP_FAIL;
+        }
+    }
     return ESP_OK;
 }
 
@@ -157,6 +168,11 @@ static esp_err_t _i2s_close(audio_element_handle_t self)
         audio_element_getinfo(self, &info);
         info.byte_pos = 0;
         audio_element_setinfo(self, &info);
+    }
+    if (i2s->use_alc){
+        if (i2s->volume_handle != NULL) {
+            alc_volume_setup_close(i2s->volume_handle);
+        }
     }
     return ESP_OK;
 }
@@ -205,7 +221,12 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
         memset(in_buffer, 0, in_len);
         r_size = in_len;
     }
-
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    if (i2s->use_alc) {
+        audio_element_info_t i2s_info = {0};
+        audio_element_getinfo(self, &i2s_info);
+        alc_volume_setup_process(in_buffer, r_size, i2s_info.channels, i2s->volume_handle, i2s->volume);
+    }
     if ((r_size > 0)) {
         w_size = audio_element_output(self, in_buffer, r_size);
     } else {
@@ -251,6 +272,30 @@ esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bi
     return err;
 }
 
+int i2s_alc_volume_set(audio_element_handle_t i2s_stream, int volume)
+{
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(i2s_stream);
+    if (i2s->use_alc) {
+        i2s->volume = volume;
+        return ESP_OK;
+    } else {
+        ESP_LOGW(TAG, "The ALC don't be used. It can not be set.");
+        return ESP_FAIL;
+    }
+}
+
+int i2s_alc_volume_get(audio_element_handle_t i2s_stream, int* volume)
+{
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(i2s_stream);
+    if (i2s->use_alc) {
+        *volume = i2s->volume;
+        return ESP_OK;
+    } else {
+        ESP_LOGW(TAG, "The ALC don't be used");
+        return ESP_FAIL;
+    }
+}
+
 audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
 {
     audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
@@ -265,12 +310,14 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     cfg.out_rb_size = config->out_rb_size;
     cfg.tag = "iis";
     cfg.buffer_len = I2S_STREAM_BUF_SIZE;
+
     i2s_stream_t *i2s = audio_calloc(1, sizeof(i2s_stream_t));
-
     AUDIO_MEM_CHECK(TAG, i2s, return NULL);
-
     memcpy(&i2s->config, config, sizeof(i2s_stream_cfg_t));
+
     i2s->type = config->type;
+    i2s->use_alc = config->use_alc;
+    i2s->volume = config->volume;
 
     if (config->type == AUDIO_STREAM_READER) {
         cfg.read = _i2s_read;
