@@ -4,7 +4,7 @@ This directory contains a growing number of simple example projects for ESP-ADF.
 
 If you are new to the esp-adf, see [Getting Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html) documentation for step-by-step instructions on how to use examples.
 
-Compatibility of examples with Espressif audio boards is presented in table below. 
+Compatibility of examples with Espressif audio boards is presented in table below.
 
 | No. | Example Name / Board -->                                                                       |                        ESP32-LyraT                       |                      ESP32-LyraT-MSC                     |
 |:---:|------------------------------------------------------------------------------------------------|:--------------------------------------------------------:|:--------------------------------------------------------:|
@@ -24,7 +24,7 @@ Compatibility of examples with Espressif audio boards is presented in table belo
 | 13  | [cloud_services/google_translate_device](cloud_services/google_translate_device)               | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
 | 14  | [cloud_services/pipeline_aws_polly_mp3](cloud_services/pipeline_aws_polly_mp3)                 | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
 | 15  | [cloud_services/pipeline_baidu_speech_mp3](cloud_services/pipeline_baidu_speech_mp3)           | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
-| 16  | [dueros](dueros)                                                                               | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
+| 16  | [dueros](dueros)                                                                               | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible")|
 | 17  | [get-started/play_mp3](get-started/play_mp3)                                                   | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
 | 18  | [get-started/play_mp3_control](get-started/play_mp3_control)                                   | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
 | 19  | [get-started/play_mp3_dac](get-started/play_mp3_dac)                                           | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |

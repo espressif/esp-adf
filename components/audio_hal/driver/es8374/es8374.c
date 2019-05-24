@@ -41,14 +41,14 @@
 
 static int codec_init_flag = 0;
 
-static const i2c_config_t es_i2c_cfg = {
+static i2c_config_t es_i2c_cfg = {
     .mode = I2C_MODE_MASTER,
     .sda_pullup_en = GPIO_PULLUP_ENABLE,
     .scl_pullup_en = GPIO_PULLUP_ENABLE,
     .master.clk_speed = 100000
 };
 
-audio_hal_func_t AUDIO_CODEC_DEFAULT_HANDLE = {
+audio_hal_func_t AUDIO_CODEC_ES8374_DEFAULT_HANDLE = {
     .audio_codec_initialize = es8374_codec_init,
     .audio_codec_deinitialize = es8374_codec_deinit,
     .audio_codec_ctrl = es8374_codec_ctrl_state,
@@ -728,7 +728,7 @@ static int es8374_init_reg(audio_hal_codec_mode_t ms_mode, es_i2s_fmt_t fmt, es_
 
     res |= es8374_config_dac_output(out_channel);  //0x3c Enable DAC and Enable Lout/Rout/1/2
     res |= es8374_config_adc_input(in_channel);  //0x00 LINSEL & RINSEL, LIN1/RIN1 as ADC Input; DSSEL,use one DS Reg11; DSR, LINPUT1-RINPUT1
-    res |= es8374_set_voice_volume(0);
+    res |= es8374_codec_set_voice_volume(0);
 
     res |= es8374_write_reg(0x37, 0x00); // dac set
 
@@ -755,7 +755,7 @@ int es8374_codec_init(audio_hal_codec_config_t *cfg)
     res |= es8374_set_mic_gain(MIC_GAIN_15DB);
     res |= es8374_set_d2se_pga(D2SE_PGA_GAIN_EN);
     res |= es8374_config_fmt(cfg->codec_mode, cfg->i2s_iface.fmt);
-    res |= es8374_config_i2s(cfg->codec_mode, &(cfg->i2s_iface));
+    res |= es8374_codec_config_i2s(cfg->codec_mode, &(cfg->i2s_iface));
     codec_init_flag = 1;
     return res;
 }

@@ -17,6 +17,7 @@
 #include "periph_sdcard.h"
 #include "amrwb_encoder.h"
 #include "amrnb_encoder.h"
+#include "board.h"
 
 static const char *TAG = "REC_AMR_SDCARD";
 #define RECORD_TIME_SECONDS (10)

@@ -40,6 +40,7 @@
 #include "audio_element.h"
 #include "i2s_stream.h"
 #include "esp_alc.h"
+#include "board_pins_config.h"
 
 static const char *TAG = "I2S_STREAM";
 
@@ -348,13 +349,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         get_i2s_pins(i2s->config.i2s_port, &i2s_pin_cfg);
         i2s_set_pin(i2s->config.i2s_port, &i2s_pin_cfg);
     }
-
-#if (CONFIG_ESP_LYRAT_V4_3_BOARD || CONFIG_ESP_LYRAT_V4_2_BOARD)
-    if (i2s->config.i2s_port == 0) {
-        SET_PERI_REG_BITS(PIN_CTRL, CLK_OUT1, 0, CLK_OUT1_S);
-    }
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-#endif
+    i2s_mclk_gpio_select(i2s->config.i2s_port, GPIO_NUM_0);
 
     return el;
 }

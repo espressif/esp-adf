@@ -1,3 +1,27 @@
+/*
+ * ESPRESSIF MIT License
+ *
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ *
+ * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
+ * it is free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the Software is furnished
+ * to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #include <string.h>
 #include "esp_log.h"
 #include "audio_error.h"
@@ -57,7 +81,7 @@ static esp_err_t input_key_service_event_receive(periph_service_handle_t handle,
 
 static int get_input_key_user_id(input_key_service_t *input_key_ser, int source_type, int act_id)
 {
-    AUDIO_NULL_CHECK(TAG, input_key_ser, return USER_ID_UNKNOWN);
+    AUDIO_NULL_CHECK(TAG, input_key_ser, return INPUT_KEY_USER_ID_UNKNOWN);
 
     input_key_service_info_t *key_info = NULL;
     input_key_node_t *tmp_node = NULL;
@@ -69,7 +93,7 @@ static int get_input_key_user_id(input_key_service_t *input_key_ser, int source_
         }
     }
 
-    return USER_ID_UNKNOWN;
+    return INPUT_KEY_USER_ID_UNKNOWN;
 }
 
 static void input_key_service_task(void *parameters)

@@ -45,7 +45,7 @@ int headphone_status_get();
  *
  * @return None.
  */
-void headphone_detect_init();
+void headphone_detect_init(int num);
 
 /**
  * @brief Delete headphone detect timer.

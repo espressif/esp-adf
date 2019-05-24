@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -36,11 +36,11 @@ audio_board_handle_t audio_board_init(void)
         ESP_LOGW(TAG, "The board has already been initialized!");
         return board_handle;
     }
-    audio_hal_codec_config_t audio_codec_cfg = AUDIO_BOARD_DEFAULT_CONFIG();
+    audio_hal_codec_config_t audio_codec_cfg = AUDIO_CODEC_DEFAULT_CONFIG();
     board_handle = (audio_board_handle_t) audio_calloc(1, sizeof(audio_hal_handle_t));
     AUDIO_MEM_CHECK(TAG, board_handle, return NULL);
 
-    board_handle->audio_hal = audio_hal_init(&audio_codec_cfg, &AUDIO_CODEC_DEFAULT_HANDLE);
+    board_handle->audio_hal = audio_hal_init(&audio_codec_cfg, &AUDIO_CODEC_ES8388_DEFAULT_HANDLE);
 
     return board_handle;
 }

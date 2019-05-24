@@ -22,6 +22,7 @@
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
 #include "audio_alc.h"
+#include "board.h"
 
 // #define USE_ALONE_ALC
 #define ALC_VOLUME_SET (0)

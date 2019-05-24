@@ -16,7 +16,7 @@
 #include "driver/gpio.h"
 #include "mbedtls/net.h"
 #include "lwip/def.h"
-#include "board_pins_config.h"
+#include "board.h"
 
 static spi_device_handle_t g_spi = NULL;
 
