@@ -169,6 +169,7 @@ esp_err_t input_key_service_add_key(periph_service_handle_t input_key_handle, in
 
     for (int i = 0; i < add_key_num; i++) {
         input_key_node_t *input_key_node = (input_key_node_t *)audio_calloc(1, sizeof(input_key_node_t));
+        AUDIO_NULL_CHECK(TAG, input_key_node, return ESP_FAIL);
         memcpy(&input_key_node->input_key_info, &input_key_info[i], sizeof(input_key_service_info_t));
         STAILQ_INSERT_TAIL(&input_key_ser->input_info_list, input_key_node, entries);
     }
