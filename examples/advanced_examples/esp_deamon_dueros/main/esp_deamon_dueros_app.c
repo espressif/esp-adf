@@ -1,0 +1,341 @@
+/*
+ * ESPRESSIF MIT License
+ *
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ *
+ * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
+ * it is free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the Software is furnished
+ * to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+#include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "sdkconfig.h"
+#include "esp_peripherals.h"
+#include "audio_mem.h"
+#include "audio_setup.h"
+#include "recorder_engine.h"
+#include "esp_deamon_dueros_app.h"
+#include "esp_player_wrapper.h"
+#include "duer_audio_action.h"
+#include "esp_log.h"
+
+#include "display_service.h"
+#include "dueros_service.h"
+#include "wifi_service.h"
+#include "airkiss_config.h"
+#include "smart_config.h"
+
+#include "input_key_service.h"
+#include "input_key_com_user_id.h"
+#include "deamon_dispatcher.h"
+#include "esp_deamon_exe_type.h"
+#include "wifi_deamon_action.h"
+#include "display_deamon_action.h"
+#include "dueros_deamon_action.h"
+#include "recorder_deamon_action.h"
+#include "player_deamon_action.h"
+
+
+
+static const char *TAG              = "DEAMON_DUEROS";
+esp_deamon_dueros_speaker_t *dueros_speaker = NULL;
+
+static void esp_audio_callback_func(esp_audio_state_t *audio, void *ctx)
+{
+    ESP_LOGE(TAG, "ESP_AUDIO_CALLBACK_FUNC, st:%d,err:%d,src:%x",
+             audio->status, audio->err_msg, audio->media_src);
+    if (audio->status == AUDIO_STATUS_FINISHED) {
+        if (audio->media_src == MEDIA_SRC_TYPE_DUER_SPEAK) {
+            duer_dcs_audio_speech_finished();
+        } else if (audio->media_src == MEDIA_SRC_TYPE_DUER_MUSIC) {
+            duer_dcs_audio_music_finished();
+        }
+    }
+}
+
+void rec_engine_cb(rec_event_type_t type, void *user_data)
+{
+    esp_deamon_dueros_speaker_t *d = (esp_deamon_dueros_speaker_t *)user_data;
+    if (REC_EVENT_WAKEUP_START == type) {
+        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_START");
+        if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
+            return;
+        }
+        deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_AUDIO_PAUSE, NULL, NULL);
+        deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_DISPLAY_TURN_ON, NULL, NULL);
+    } else if (REC_EVENT_VAD_START == type) {
+        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_START");
+        audio_service_start(d->audio_serv);
+    } else if (REC_EVENT_VAD_STOP == type) {
+        if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
+            audio_service_stop(d->audio_serv);
+        }
+        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_STOP, state:%d", dueros_service_state_get());
+    } else if (REC_EVENT_WAKEUP_END == type) {
+        if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
+            audio_service_stop(d->audio_serv);
+        }
+        deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_DISPLAY_TURN_OFF, NULL, NULL);
+        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_END");
+    } else {
+
+    }
+}
+
+static esp_err_t wifi_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
+{
+    ESP_LOGD(TAG, "event type:%d,source:%p, data:%p,len:%d,ctx:%p",
+             evt->type, evt->source, evt->data, evt->len, ctx);
+    esp_deamon_dueros_speaker_t *d = (esp_deamon_dueros_speaker_t *)ctx;
+    if (evt->type == WIFI_SERV_EVENT_CONNECTED) {
+        d->wifi_setting_flag = false;
+        deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_DUER_CONNECT, NULL, NULL);
+        deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_DISPLAY_WIFI_CONNECTED, NULL, NULL);
+    } else if (evt->type == WIFI_SERV_EVENT_DISCONNECTED) {
+        deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_DUER_DISCONNECT, NULL, NULL);
+        deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_DISPLAY_WIFI_CONNECTED, NULL, NULL);
+    } else if (evt->type == WIFI_SERV_EVENT_SETTING_TIMEOUT) {
+        d->wifi_setting_flag = false;
+    }
+    return ESP_OK;
+}
+
+static void retry_login_timer_cb(xTimerHandle tmr)
+{
+    ESP_LOGE(TAG, "Func:%s", __func__);
+    esp_deamon_dueros_speaker_t *d = (esp_deamon_dueros_speaker_t *)pvTimerGetTimerID(tmr);
+    xTimerStop(tmr, 0);
+    deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_DUER_CONNECT, NULL, NULL);
+}
+
+static esp_err_t duer_callback(audio_service_handle_t handle, service_event_t *evt, void *ctx)
+{
+    static int retry_num = 1;
+    int state = *((int *)evt->data);
+    ESP_LOGW(TAG, "duer_callback: type:%x, source:%p data:%d, data_len:%d", evt->type, evt->source, state, evt->len);
+    switch (state) {
+        case SERVICE_STATE_IDLE: {
+                esp_deamon_dueros_speaker_t *d = (esp_deamon_dueros_speaker_t *)ctx;
+                ESP_LOGW(TAG, "reason:%d", wifi_service_disconnect_reason_get(d->wifi_serv));
+                if (WIFI_SERV_STA_BY_USER == wifi_service_disconnect_reason_get(d->wifi_serv)) {
+                    break;
+                }
+                if (retry_num < 128) {
+                    retry_num *= 2;
+                    ESP_LOGI(TAG, "Dueros DUER_CMD_QUIT reconnect, retry_num:%d", retry_num);
+                } else {
+                    ESP_LOGE(TAG, "Dueros reconnect failed,time num:%d ", retry_num);
+                    xTimerStop(d->retry_login_timer, portMAX_DELAY);
+                    break;
+                }
+                xTimerStop(d->retry_login_timer, portMAX_DELAY);
+                xTimerChangePeriod(d->retry_login_timer, (1000 / portTICK_PERIOD_MS) * retry_num, portMAX_DELAY);
+                xTimerStart(d->retry_login_timer, portMAX_DELAY);
+                break;
+            }
+        case SERVICE_STATE_CONNECTING: break;
+        case SERVICE_STATE_CONNECTED: break;
+            retry_num = 1;
+        case SERVICE_STATE_RUNNING: break;
+        case SERVICE_STATE_STOPED: break;
+        default:
+            break;
+    }
+
+    return ESP_OK;
+}
+
+static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
+{
+    esp_deamon_dueros_speaker_t *d = (esp_deamon_dueros_speaker_t *)ctx;
+    switch ((int)evt->data) {
+        case INPUT_KEY_USER_ID_REC:
+            if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE) {
+                ESP_LOGI(TAG, "PERIPH_NOTIFY_KEY_REC_QUIT");
+                // deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_REC_WAV_TURN_OFF, NULL, NULL);
+            } else if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK) {
+                ESP_LOGI(TAG, "PERIPH_NOTIFY_KEY_REC");
+                deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_REC_WAV_TURN_ON, NULL, NULL);
+            }
+            break;
+        case INPUT_KEY_USER_ID_MODE:
+            ESP_LOGI(TAG, "[ * ] [Mode]");
+            break;
+        case INPUT_KEY_USER_ID_PLAY:
+            if (d->is_palying) {
+                deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_AUDIO_PAUSE, NULL, NULL);
+                d->is_palying = false;
+            } else {
+                deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_AUDIO_PLAY, NULL, NULL);
+                d->is_palying = true;
+            }
+            break;
+        case INPUT_KEY_USER_ID_SET:
+            ESP_LOGI(TAG, "[ * ] [Set] input key event,%d", evt->type);
+            if (evt->type == INPUT_KEY_SERVICE_ACTION_PRESS) {
+                if (d->wifi_setting_flag == false) {
+                    deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_WIFI_SETTING_START, NULL, NULL);
+                    d->wifi_setting_flag = true;
+                } else {
+                    deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_WIFI_SETTING_STOP, NULL, NULL);
+                    d->wifi_setting_flag = false;
+                }
+            }
+            break;
+        case INPUT_KEY_USER_ID_VOLDOWN:
+            if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE) {
+                ESP_LOGI(TAG, "[ * ] [Vol-] input key event");
+                deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_AUDIO_VOLUME_DOWN, NULL, NULL);
+            }
+            break;
+        case INPUT_KEY_USER_ID_VOLUP:
+            if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE) {
+                ESP_LOGI(TAG, "[ * ] [Vol+] input key event");
+                deamon_dispatcher_execute(d->dispatcher, DEAMON_EXE_TYPE_AUDIO_VOLUME_UP, NULL, NULL);
+            }
+            break;
+    }
+    return ESP_OK;
+}
+
+void duer_app_init(void)
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    ESP_LOGI(TAG, "ADF version is %s", ADF_VER);
+
+    ESP_LOGI(TAG, "Step 1. Create dueros_speaker instance");
+    dueros_speaker = audio_calloc(1, sizeof(esp_deamon_dueros_speaker_t));
+    AUDIO_MEM_CHECK(TAG, dueros_speaker, return);
+    deamon_dispatcher_config_t d_cfg = DEAMON_DISPATCHER_CONFIG_DEFAULT();
+    deamon_dispatcher_handle_t dispatcher = deamon_dispatcher_create(&d_cfg);
+    dueros_speaker->dispatcher = dispatcher;
+
+    ESP_LOGI(TAG, "[Step 2.0] Create esp_periph_set_handle_t instance and initialize Touch, Button, SDcard");
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
+    audio_board_key_init(set);
+    audio_board_sdcard_init(set);
+
+    ESP_LOGI(TAG, "[Step 2.1] Initialize input key service");
+    input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
+    dueros_speaker->input_serv = input_key_service_create(set);
+    input_key_service_add_key(dueros_speaker->input_serv, input_key_info, INPUT_KEY_NUM);
+    periph_service_set_callback(dueros_speaker->input_serv, input_key_service_cb, (void *)dueros_speaker);
+
+    ESP_LOGI(TAG, "[Step 3.0] Create display service instance");
+    dueros_speaker->disp_serv = audio_board_led_init();
+
+    ESP_LOGI(TAG, "[Step 3.1] Register wanted display service execution type");
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
+                                   DEAMON_EXE_TYPE_DISPLAY_TURN_OFF, display_deamon_act_turn_off);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
+                                   DEAMON_EXE_TYPE_DISPLAY_TURN_ON, display_deamon_act_turn_on);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
+                                   DEAMON_EXE_TYPE_DISPLAY_WIFI_SETTING, display_deamon_act_wifi_setting);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
+                                   DEAMON_EXE_TYPE_DISPLAY_WIFI_CONNECTED, display_deamon_act_wifi_connected);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
+                                   DEAMON_EXE_TYPE_DISPLAY_WIFI_DISCONNECTED, display_deamon_act_wifi_disconnected);
+
+    ESP_LOGI(TAG, "[Step 4.0] Create Wi-Fi service instance");
+    wifi_config_t sta_cfg = {0};
+    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, strlen(CONFIG_WIFI_SSID));
+    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, strlen(CONFIG_WIFI_PASSWORD));
+    wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
+    cfg.evt_cb = wifi_service_cb;
+    cfg.cb_ctx = dueros_speaker;
+    cfg.setting_timeout_s = 60;
+    dueros_speaker->wifi_serv = wifi_service_create(&cfg);
+
+    ESP_LOGI(TAG, "[Step 4.1] Register wanted display service execution type");
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
+                                   DEAMON_EXE_TYPE_WIFI_CONNECT, wifi_deamon_act_connect);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
+                                   DEAMON_EXE_TYPE_WIFI_DISCONNECT, wifi_deamon_act_disconnect);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
+                                   DEAMON_EXE_TYPE_WIFI_SETTING_STOP, wifi_deamon_act_setting_stop);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
+                                   DEAMON_EXE_TYPE_WIFI_SETTING_START, wifi_deamon_act_setting_start);
+    ESP_LOGI(TAG, "[Step 4.2] Initialize Wi-Fi provisioning type(AIRKISS or SMARTCONFIG)");
+    int reg_idx = 0;
+    esp_wifi_setting_handle_t h = NULL;
+#ifdef CONFIG_AIRKISS_ENCRYPT
+    airkiss_config_info_t air_info = AIRKISS_CONFIG_INFO_DEFAULT();
+    air_info.lan_pack.appid = CONFIG_AIRKISS_APPID;
+    air_info.lan_pack.deviceid = CONFIG_AIRKISS_DEVICEID;
+    air_info.aes_key = CONFIG_DUER_AIRKISS_KEY;
+    h = airkiss_config_create(&air_info);
+#elif (defined CONFIG_ESP_SMARTCONFIG)
+    smart_config_info_t info = SMART_CONFIG_INFO_DEFAULT();
+    h = smart_config_create(&info);
+#endif
+    esp_wifi_setting_regitster_notify_handle(h, (void *)dueros_speaker->wifi_serv);
+    wifi_service_register_setting_handle(dueros_speaker->wifi_serv, h, &reg_idx);
+    wifi_service_set_sta_info(dueros_speaker->wifi_serv, &sta_cfg);
+    wifi_service_connect(dueros_speaker->wifi_serv);
+
+    ESP_LOGI(TAG, "[Step 5.0] Initialize esp player");
+    dueros_speaker->player = setup_player(esp_audio_callback_func, NULL);
+    esp_player_init(dueros_speaker->player);
+    ESP_LOGI(TAG, "[Step 5.1] Register wanted player execution type");
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, DEAMON_EXE_TYPE_AUDIO_PLAY, player_deamon_act_play);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, DEAMON_EXE_TYPE_AUDIO_PAUSE, player_deamon_act_pause);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, DEAMON_EXE_TYPE_AUDIO_VOLUME_UP, player_deamon_act_vol_up);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, DEAMON_EXE_TYPE_AUDIO_VOLUME_DOWN, player_deamon_act_vol_down);
+
+    ESP_LOGI(TAG, "[Step 6.0] Initialize recorder engine");
+    setup_recorder(rec_engine_cb, dueros_speaker);
+    ESP_LOGI(TAG, "[Step 6.1] Register wanted recorder execution type");
+    deamon_dispatcher_reg_exe_func(dispatcher, NULL,
+                                   DEAMON_EXE_TYPE_REC_WAV_TURN_OFF, rec_deamon_act_rec_wav_trun_off);
+    deamon_dispatcher_reg_exe_func(dispatcher, NULL,
+                                   DEAMON_EXE_TYPE_REC_WAV_TURN_ON, rec_deamon_act_rec_wav_trun_on);
+
+    ESP_LOGI(TAG, "[Step 7.0] Initialize dueros service");
+    dueros_speaker->retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
+                                        pdFALSE, (void *)dueros_speaker, retry_login_timer_cb);
+    dueros_speaker->audio_serv = dueros_service_create();
+
+    ESP_LOGI(TAG, "[Step 7.1] Register dueros service execution type");
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_DUER_VOLUME_ADJ, duer_dcs_deamon_act_vol_adj);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_DUER_AUDIO, duer_dcs_deamon_act_audio_play);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_DUER_SPEAK, duer_dcs_deamon_act_speak);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_AUDIO_GET_PROGRESS_BYTE, duer_dcs_deamon_act_get_progress);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_AUDIO_PAUSE, duer_dcs_deamon_act_audio_pause);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_AUDIO_RESUME, duer_dcs_deamon_act_audio_resume);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player,
+                                   DEAMON_EXE_TYPE_AUDIO_VOLUME_GET, duer_dcs_deamon_act_get_state);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_AUDIO_VOLUME_SET, duer_dcs_deamon_act_vol_set);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_AUDIO_STOP, duer_dcs_deamon_act_audio_stop);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_DUER_CONNECT, dueros_deamon_act_connect);
+    deamon_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
+                                   DEAMON_EXE_TYPE_DUER_DISCONNECT, dueros_deamon_act_disconnect);
+    audio_service_set_callback(dueros_speaker->audio_serv, duer_callback, dueros_speaker);
+    ESP_LOGI(TAG, "[Step 8.0] Initialize Done");
+}

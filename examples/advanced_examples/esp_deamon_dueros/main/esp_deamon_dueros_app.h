@@ -22,28 +22,27 @@
  *
  */
 
-#ifndef __BLUFI_CONFIG_H_
-#define __BLUFI_CONFIG_H_
+#ifndef _ESP_DEAMON_DUER_APP_H_
+#define _ESP_DEAMON_DUER_APP_H_
 
-#include "esp_wifi_setting.h"
+#include "esp_deamon_def.h"
+#include "audio_service.h"
+#include "periph_service.h"
+#include "display_service.h"
+#include "deamon_dispatcher.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef struct $ {
+    audio_service_handle_t          audio_serv;         /*!< Clouds service handle */
+    display_service_handle_t        disp_serv;          /*!< Display servce handle */
+    periph_service_handle_t         wifi_serv;          /*!< WiFi manager service handle */
+    periph_service_handle_t         input_serv;         /*!< Input event service handle */
+    deamon_dispatcher_handle_t      dispatcher;         /*!< Deamon dispatcher handle */
+    void                            *player;            /*!< The esp_audio handle */
+    xTimerHandle                    retry_login_timer;
+    bool                            wifi_setting_flag;
+    bool                            is_palying;
+} esp_deamon_dueros_speaker_t;
 
-/**
- * @brief      Create blufi setting handle instance
- *
- * @param[in]  info   A pointer to void
- *
- * @return
- *     - NULL, Fail
- *     - Others, Success
- */
-esp_wifi_setting_handle_t blufi_config_create(void *info);
-
-#ifdef __cplusplus
-}
-#endif
+void duer_app_init(void);
 
 #endif

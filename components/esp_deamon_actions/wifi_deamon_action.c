@@ -22,28 +22,42 @@
  *
  */
 
-#ifndef __BLUFI_CONFIG_H_
-#define __BLUFI_CONFIG_H_
+#include "audio_error.h"
+#include "esp_log.h"
+#include "wifi_deamon_action.h"
+#include "wifi_service.h"
 
-#include "esp_wifi_setting.h"
+static char *TAG = "WIFI_DEAMON";
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-/**
- * @brief      Create blufi setting handle instance
- *
- * @param[in]  info   A pointer to void
- *
- * @return
- *     - NULL, Fail
- *     - Others, Success
- */
-esp_wifi_setting_handle_t blufi_config_create(void *info);
-
-#ifdef __cplusplus
+esp_err_t wifi_deamon_act_connect(void *ctx, deamon_arg_t *arg, deamon_result_t *result)
+{
+    periph_service_handle_t wifi_serv = (periph_service_handle_t)ctx;
+    wifi_service_connect(wifi_serv);
+    ESP_LOGI(TAG, "%s", __func__);
+    return ESP_OK;
 }
-#endif
 
-#endif
+esp_err_t wifi_deamon_act_disconnect(void *ctx, deamon_arg_t *arg, deamon_result_t *result)
+{
+    periph_service_handle_t wifi_serv = (periph_service_handle_t)ctx;
+    wifi_service_disconnect(wifi_serv);
+    ESP_LOGI(TAG, "%s", __func__);
+    return ESP_OK;
+}
+
+esp_err_t wifi_deamon_act_setting_start(void *ctx, deamon_arg_t *arg, deamon_result_t *result)
+{
+    periph_service_handle_t wifi_serv = (periph_service_handle_t)ctx;
+    wifi_service_setting_start(wifi_serv, 0);
+    ESP_LOGI(TAG, "%s", __func__);
+    return ESP_OK;
+}
+
+esp_err_t wifi_deamon_act_setting_stop(void *ctx, deamon_arg_t *arg, deamon_result_t *result)
+{
+    periph_service_handle_t wifi_serv = (periph_service_handle_t)ctx;
+    ESP_LOGI(TAG, "%s", __func__);
+    wifi_service_setting_stop(wifi_serv, 0);
+    return ESP_OK;
+}

@@ -22,28 +22,10 @@
  *
  */
 
-#ifndef __BLUFI_CONFIG_H_
-#define __BLUFI_CONFIG_H_
+#ifndef __AUDIO_SETUP_H__
+#define __AUDIO_SETUP_H__
 
-#include "esp_wifi_setting.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * @brief      Create blufi setting handle instance
- *
- * @param[in]  info   A pointer to void
- *
- * @return
- *     - NULL, Fail
- *     - Others, Success
- */
-esp_wifi_setting_handle_t blufi_config_create(void *info);
-
-#ifdef __cplusplus
-}
-#endif
+void *setup_player(void* cb, void *ctx);
+void setup_recorder(void* cb, void *ctx);
 
 #endif

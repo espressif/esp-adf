@@ -22,28 +22,35 @@
  *
  */
 
-#ifndef __BLUFI_CONFIG_H_
-#define __BLUFI_CONFIG_H_
-
-#include "esp_wifi_setting.h"
+#ifndef __ESP_DEAMON_DEF_H__
+#define __ESP_DEAMON_DEF_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * @brief      Create blufi setting handle instance
- *
- * @param[in]  info   A pointer to void
- *
- * @return
- *     - NULL, Fail
- *     - Others, Success
+ * @brief The result of dispatcher execution
  */
-esp_wifi_setting_handle_t blufi_config_create(void *info);
+typedef struct {
+    esp_err_t                           err;        /*!< Error code */
+    void                                *data;      /*!< Pointer to result data */
+    int                                 len;        /*!< Length of the data */
+} deamon_result_t;
+
+/**
+ * @brief The dispatcher arguments
+ */
+typedef struct {
+    void                                *data;      /*!< Pointer to arguments data */
+    int                                 len;        /*!< Length of the data */
+} deamon_arg_t;
+
+typedef esp_err_t (*deamon_action_exe_func) (void *instance, deamon_arg_t *arg, deamon_result_t *result);
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif // __ESP_DEAMON_DEF_H__

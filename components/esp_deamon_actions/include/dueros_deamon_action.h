@@ -22,28 +22,35 @@
  *
  */
 
-#ifndef __BLUFI_CONFIG_H_
-#define __BLUFI_CONFIG_H_
-
-#include "esp_wifi_setting.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef __DUEROS_DEAMON_K_ACTION_H_
+#define __DUEROS_DEAMON_K_ACTION_H_
+#include "esp_deamon_def.h"
 
 /**
- * @brief      Create blufi setting handle instance
+ * brief      Dueros provides service of disconnection
  *
- * @param[in]  info   A pointer to void
+ * @param instance          The player instance
+ * @param arg               The arguments of execution function
+ * @param result            The result of execution function
  *
  * @return
- *     - NULL, Fail
- *     - Others, Success
+ *     - ESP_OK, success
+ *     - Others, error
  */
-esp_wifi_setting_handle_t blufi_config_create(void *info);
+esp_err_t dueros_deamon_act_disconnect(void *instance, deamon_arg_t *arg, deamon_result_t *result);
 
-#ifdef __cplusplus
-}
-#endif
+/**
+ * brief      DuerOS provides service of connection
+ *
+ * @param instance          The player instance
+ * @param arg               The arguments of execution function
+ * @param result            The result of execution function
+ *
+ * @return
+ *     - ESP_OK, success
+ *     - Others, error
+ */
+esp_err_t dueros_deamon_act_connect(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+
 
 #endif

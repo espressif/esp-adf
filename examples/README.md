@@ -45,3 +45,5 @@ Compatibility of examples with Espressif audio boards is presented in table belo
 | 34  | [recorder/pipeline_wav_sdcard](recorder/pipeline_wav_sdcard)                                   | ![alt text](../docs/_static/yes-button.png "Compatible") |                                                          |
 | 35  | [speech_recognition/asr](speech_recognition/asr)                                               | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
 | 36  | [speech_recognition/vad](speech_recognition/vad)                                               | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
+
+|  37  | [advanced_examples/esp_deamon_dueros](advanced_examples/esp_deamon_dueros)   | ![alt text](../docs/_static/yes-button.png "Compatible") | ![alt text](../docs/_static/yes-button.png "Compatible") |
