@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -26,6 +26,9 @@
 #define __AUDIO_SERVICE_H__
 
 #include "audio_error.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/timers.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,7 +67,7 @@ typedef struct {
     int                 task_stack;             /*!< >0 Service task stack; =0 with out task created */
     int                 task_prio;              /*!< Service task priority (based on freeRTOS priority) */
     int                 task_core;              /*!< Service task running in core (0 or 1) */
-    TaskFunction_t      task_func;              /*!< Service task function */
+    TaskFunction_t      task_func;              /*!< A pointer to TaskFunction_t for service task function */
     service_ctrl        service_start;          /*!< Start function */
     service_ctrl        service_stop;           /*!< Stop function */
     service_ctrl        service_connect;        /*!< Connect function */

@@ -49,7 +49,7 @@ typedef struct {
     int                     task_prio;          /*!< Task priority (based on freeRTOS priority) */
 } i2s_stream_cfg_t;
 
-#define I2S_STREAM_TASK_STACK           (3072)
+#define I2S_STREAM_TASK_STACK           (3072+512)
 #define I2S_STREAM_BUF_SIZE             (2048)
 #define I2S_STREAM_TASK_PRIO            (23)
 #define I2S_STREAM_TASK_CORE            (0)

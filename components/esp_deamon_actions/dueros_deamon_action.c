@@ -22,28 +22,23 @@
  *
  */
 
-#ifndef __BLUFI_CONFIG_H_
-#define __BLUFI_CONFIG_H_
+#include "audio_error.h"
+#include "esp_log.h"
+#include "dueros_deamon_action.h"
+#include "dueros_service.h"
 
-#include "esp_wifi_setting.h"
+static char *TAG = "DUER_DEAMON";
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * @brief      Create blufi setting handle instance
- *
- * @param[in]  info   A pointer to void
- *
- * @return
- *     - NULL, Fail
- *     - Others, Success
- */
-esp_wifi_setting_handle_t blufi_config_create(void *info);
-
-#ifdef __cplusplus
+esp_err_t dueros_deamon_act_disconnect(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+{
+    ESP_LOGI(TAG, "%s", __func__);
+    return ESP_OK;
 }
-#endif
 
-#endif
+esp_err_t dueros_deamon_act_connect(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+{
+    ESP_LOGI(TAG, "%s", __func__);
+    audio_service_handle_t handle = (audio_service_handle_t)instance;
+    int ret = audio_service_connect(handle);
+    return ret;
+}

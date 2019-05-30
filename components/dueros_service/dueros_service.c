@@ -150,6 +150,7 @@ static void duer_login(void)
     char *data = audio_calloc_inner(1, sz);
     if (NULL == data) {
         ESP_LOGE(TAG, "audio_malloc failed");
+        return;
     }
     memcpy(data, _duer_profile_start, sz);
     ESP_LOGI(TAG, "duer_start, len:%d\n%s", sz, data);

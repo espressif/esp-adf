@@ -58,7 +58,8 @@ static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
     if (bits == 16) {
         int16_t *temp_buf = (int16_t *)sbuff;
         int16_t temp_box;
-        for (int i = 0; i < len / 2; i += 2) {
+        int k = len >> 1;
+        for (int i = 0; i < k; i += 2) {
             temp_box = temp_buf[i];
             temp_buf[i] = temp_buf[i + 1];
             temp_buf[i + 1] = temp_box;
@@ -66,7 +67,8 @@ static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
     } else if (bits == 32) {
         int32_t *temp_buf = (int32_t *)sbuff;
         int32_t temp_box;
-        for (int i = 0; i < len / 4; i += 4) {
+        int k = len >> 2;
+        for (int i = 0; i < k; i += 4) {
             temp_box = temp_buf[i];
             temp_buf[i] = temp_buf[i + 1];
             temp_buf[i + 1] = temp_box;
@@ -87,13 +89,15 @@ static int i2s_dac_data_scale(int bits, uint8_t *sBuff, uint32_t len)
 {
     if (bits == 16) {
         short *buf16 = (short *)sBuff;
-        for (int i = 0; i < len / 2; i++) {
+        int k = len >> 1;
+        for (int i = 0; i < k; i++) {
             buf16[i] &= 0xff00;
             buf16[i] += 0x8000;//turn signed value into unsigned, expand negative value into positive range
         }
     } else if (bits == 32) {
         int *buf32 = (int *)sBuff;
-        for (int i = 0; i < len / 4; i++) {
+        int k = len >> 2;
+        for (int i = 0; i < k; i++) {
             buf32[i] &= 0xff000000;
             buf32[i] += 0x80000000;//turn signed value into unsigned
         }
