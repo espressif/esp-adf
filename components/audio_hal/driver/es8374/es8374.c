@@ -28,7 +28,6 @@
 #include "es8374.h"
 #include "board_pins_config.h"
 
-
 #define ES8374_TAG "ES8374_DRIVER"
 
 #define ES_ASSERT(a, format, b, ...) \

@@ -27,7 +27,7 @@
 
 #include "esp_types.h"
 #include "audio_hal.h"
-#include "es8388.h"
+#include "esxxx_common.h"
 
 /* ES8374 address */
 #define ES8374_ADDR 0x20  // 0x22:CE=1;0x20:CE=0
