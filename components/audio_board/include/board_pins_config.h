@@ -213,7 +213,7 @@ int8_t get_green_led_gpio(void);
  * @return -1       non-existent
  *         Others   gpio number
  */
-int8_t get_green_led_gpio(void);
+int8_t get_blue_led_gpio(void);
 
 #ifdef __cplusplus
 }

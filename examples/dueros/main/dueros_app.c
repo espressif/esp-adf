@@ -56,6 +56,7 @@
 #include "wifi_service.h"
 #include "airkiss_config.h"
 #include "smart_config.h"
+#include "periph_adc_button.h"
 
 static const char *TAG              = "DUEROS";
 extern esp_audio_handle_t           player;
@@ -94,7 +95,41 @@ void rec_engine_cb(rec_event_type_t type, void *user_data)
 
     }
 }
+
 static  audio_element_handle_t raw_read;
+
+#ifdef CONFIG_ESP_LYRATD_MINI_V1_1_BOARD
+static esp_err_t recorder_pipeline_open_for_mini(void **handle)
+{
+    audio_element_handle_t i2s_stream_reader;
+    audio_pipeline_handle_t recorder;
+    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    recorder = audio_pipeline_init(&pipeline_cfg);
+    if (NULL == recorder) {
+        return ESP_FAIL;
+    }
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.i2s_port = 1;
+    i2s_cfg.i2s_config.use_apll = 0;
+    i2s_cfg.i2s_config.sample_rate = 16000;
+    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+
+    raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
+    raw_cfg.type = AUDIO_STREAM_READER;
+    raw_read = raw_stream_init(&raw_cfg);
+
+    audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
+    audio_pipeline_register(recorder, raw_read, "raw");
+
+    audio_pipeline_link(recorder, (const char *[]) {"i2s", "raw"}, 2);
+    audio_pipeline_run(recorder);
+    ESP_LOGI(TAG, "Recorder has been created");
+    *handle = recorder;
+    return ESP_OK;
+}
+#else
 static esp_err_t recorder_pipeline_open(void **handle)
 {
     audio_element_handle_t i2s_stream_reader;
@@ -135,6 +170,7 @@ static esp_err_t recorder_pipeline_open(void **handle)
     *handle = recorder;
     return ESP_OK;
 }
+#endif
 
 static esp_err_t recorder_pipeline_read(void *handle, char *data, int data_size)
 {
@@ -277,6 +313,32 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
                 }
                 break;
             }
+        case PERIPH_ID_ADC_BTN:
+            if (((int)event->data == get_input_volup_id()) && (event->cmd == PERIPH_ADC_BUTTON_RELEASE)) {
+                int player_volume = 0;
+                esp_audio_vol_get(player, &player_volume);
+                player_volume += 10;
+                if (player_volume > 100) {
+                    player_volume = 100;
+                }
+                esp_audio_vol_set(player, player_volume);
+                ESP_LOGI(TAG, "AUDIO_USER_KEY_VOL_UP [%d]", player_volume);
+            } else if (((int)event->data == get_input_voldown_id()) && (event->cmd == PERIPH_ADC_BUTTON_RELEASE)) {
+                int player_volume = 0;
+                esp_audio_vol_get(player, &player_volume);
+                player_volume -= 10;
+                if (player_volume < 0) {
+                    player_volume = 0;
+                }
+                esp_audio_vol_set(player, player_volume);
+                ESP_LOGI(TAG, "AUDIO_USER_KEY_VOL_DOWN [%d]", player_volume);
+            } else if (((int)event->data == get_input_play_id()) && (event->cmd == PERIPH_ADC_BUTTON_RELEASE)) {
+
+            } else if (((int)event->data == get_input_set_id()) && (event->cmd == PERIPH_ADC_BUTTON_RELEASE)) {
+                esp_audio_vol_set(player, 0);
+                ESP_LOGI(TAG, "AUDIO_USER_KEY_VOL_MUTE [0]");
+            }
+            break;
         default:
             break;
     }
@@ -329,7 +391,11 @@ void duer_app_init(void)
     eng.vad_off_delay_ms = 800;
     eng.wakeup_time_ms = 10 * 1000;
     eng.evt_cb = rec_engine_cb;
+#ifdef CONFIG_ESP_LYRATD_MINI_V1_1_BOARD
+    eng.open = recorder_pipeline_open_for_mini;
+#else
     eng.open = recorder_pipeline_open;
+#endif
     eng.close = recorder_pipeline_close;
     eng.fetch = recorder_pipeline_read;
     eng.extension = NULL;
