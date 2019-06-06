@@ -1,4 +1,4 @@
-/* Play MP3 file from SD Card
+/* Play MP3 file from flash
 
    This example code is in the Public Domain (or CC0 licensed, at your option.)
 
@@ -6,92 +6,84 @@
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
 */
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include <stdio.h>
+
 #include "esp_log.h"
 #include "nvs_flash.h"
-#include "sdkconfig.h"
+
 #include "audio_element.h"
 #include "audio_pipeline.h"
 #include "audio_event_iface.h"
-#include "audio_common.h"
-#include "fatfs_stream.h"
+#include "audio_error.h"
+#include "tone_stream.h"
 #include "i2s_stream.h"
 #include "mp3_decoder.h"
 
-#include "esp_peripherals.h"
-#include "periph_sdcard.h"
 #include "board.h"
 
-static const char *TAG = "SDCARD_MP3_EXAMPLE";
+#if __has_include("audio_tone_uri.h")
+    #include "audio_tone_uri.h"
+#else
+    #error "please refer the README, and then make the tone file"
+#endif
+
+static const char *TAG = "TONE_MP3_EXAMPLE";
 
 void app_main(void)
 {
     audio_pipeline_handle_t pipeline;
-    audio_element_handle_t fatfs_stream_reader, i2s_stream_writer, mp3_decoder;
+    audio_element_handle_t tone_stream_reader, i2s_stream_writer, mp3_decoder;
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
-    ESP_LOGI(TAG, "[ 1 ] Mount sdcard");
-    // Initialize peripherals management
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
-    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
-
-    // Initialize SD Card peripheral
-    audio_board_sdcard_init(set);
-
-    ESP_LOGI(TAG, "[ 2 ] Start codec chip");
+    ESP_LOGI(TAG, "[ 1 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
 
-    ESP_LOGI(TAG, "[3.0] Create audio pipeline for playback");
+    ESP_LOGI(TAG, "[2.0] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     pipeline = audio_pipeline_init(&pipeline_cfg);
-    mem_assert(pipeline);
+    AUDIO_NULL_CHECK(TAG, pipeline, return);
 
-    ESP_LOGI(TAG, "[3.1] Create fatfs stream to read data from sdcard");
-    fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
-    fatfs_cfg.type = AUDIO_STREAM_READER;
-    fatfs_stream_reader = fatfs_stream_init(&fatfs_cfg);
+    ESP_LOGI(TAG, "[2.1] Create tone stream to read data from flash");
+    tone_stream_cfg_t tone_cfg = TONE_STREAM_CFG_DEFAULT();
+    tone_cfg.type = AUDIO_STREAM_READER;
+    tone_stream_reader = tone_stream_init(&tone_cfg);
 
-    ESP_LOGI(TAG, "[3.2] Create i2s stream to write data to codec chip");
+    ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 
-    ESP_LOGI(TAG, "[3.3] Create mp3 decoder to decode mp3 file");
+    ESP_LOGI(TAG, "[2.3] Create mp3 decoder to decode mp3 file");
     mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
     mp3_decoder = mp3_decoder_init(&mp3_cfg);
 
-    ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline");
-    audio_pipeline_register(pipeline, fatfs_stream_reader, "file");
+    ESP_LOGI(TAG, "[2.4] Register all elements to audio pipeline");
+    audio_pipeline_register(pipeline, tone_stream_reader, "tone");
     audio_pipeline_register(pipeline, mp3_decoder, "mp3");
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
 
-    ESP_LOGI(TAG, "[3.5] Link it together [sdcard]-->fatfs_stream-->mp3_decoder-->i2s_stream-->[codec_chip]");
-    audio_pipeline_link(pipeline, (const char *[]) {"file", "mp3", "i2s"}, 3);
+    ESP_LOGI(TAG, "[2.5] Link it together [flash]-->tone_stream-->mp3_decoder-->i2s_stream-->[codec_chip]");
+    audio_pipeline_link(pipeline, (const char *[]) {"tone", "mp3", "i2s"}, 3);
 
-    ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, mp3 as mp3 decoder, and default output is i2s)");
-    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.mp3");
+    ESP_LOGI(TAG, "[2.6] Set up  uri (file as tone_stream, mp3 as mp3 decoder, and default output is i2s)");
+    audio_element_set_uri(tone_stream_reader, tone_uri[TONE_TYPE_HELLO]);
 
-    ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
+    ESP_LOGI(TAG, "[ 3 ] Set up event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
-    ESP_LOGI(TAG, "[4.1] Listening event from all elements of pipeline");
+    ESP_LOGI(TAG, "[3.1] Listening event from all elements of pipeline");
     audio_pipeline_set_listener(pipeline, evt);
 
-    ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
-
-    ESP_LOGI(TAG, "[ 5 ] Start audio_pipeline");
+    ESP_LOGI(TAG, "[ 4 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
 
-    ESP_LOGI(TAG, "[ 6 ] Listen for all pipeline events");
+    ESP_LOGI(TAG, "[ 4 ] Listen for all pipeline events");
     while (1) {
-        audio_event_iface_msg_t msg;
+        audio_event_iface_msg_t msg = { 0 };
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
@@ -120,27 +112,22 @@ void app_main(void)
         }
     }
 
-    ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
+    ESP_LOGI(TAG, "[ 5 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
 
-    audio_pipeline_unregister(pipeline, fatfs_stream_reader);
+    audio_pipeline_unregister(pipeline, tone_stream_reader);
     audio_pipeline_unregister(pipeline, i2s_stream_writer);
     audio_pipeline_unregister(pipeline, mp3_decoder);
 
     /* Terminal the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);
 
-    /* Stop all periph before removing the listener */
-    esp_periph_set_stop_all(set);
-    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
-
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
 
     /* Release all resources */
     audio_pipeline_deinit(pipeline);
-    audio_element_deinit(fatfs_stream_reader);
+    audio_element_deinit(tone_stream_reader);
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(mp3_decoder);
-    esp_periph_set_destroy(set);
 }
