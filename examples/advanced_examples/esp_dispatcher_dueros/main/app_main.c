@@ -22,23 +22,23 @@
  *
  */
 
-#include "audio_error.h"
-#include "esp_log.h"
-#include "dueros_deamon_action.h"
-#include "dueros_service.h"
+#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "nvs_flash.h"
+#include "tcpip_adapter.h"
+#include "esp_dispatcher_dueros_app.h"
 
-static char *TAG = "DUER_DEAMON";
-
-esp_err_t dueros_deamon_act_disconnect(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+void app_main(void)
 {
-    ESP_LOGI(TAG, "%s", __func__);
-    return ESP_OK;
-}
-
-esp_err_t dueros_deamon_act_connect(void *instance, deamon_arg_t *arg, deamon_result_t *result)
-{
-    ESP_LOGI(TAG, "%s", __func__);
-    audio_service_handle_t handle = (audio_service_handle_t)instance;
-    int ret = audio_service_connect(handle);
-    return ret;
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
+        // NVS partition was truncated and needs to be erased
+        // Retry nvs_flash_init
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ESP_ERROR_CHECK(nvs_flash_init());
+    }
+    tcpip_adapter_init();
+    duer_app_init();
 }

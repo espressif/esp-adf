@@ -23,13 +23,13 @@
  */
 
 #include "audio_error.h"
-#include "esp_deamon_def.h"
+#include "esp_action_def.h"
 #include "esp_audio.h"
 #include "esp_log.h"
 
-static char *TAG = "PLAYER_DEAMON";
+static char *TAG = "PLAYER_ACTION";
 
-esp_err_t player_deamon_act_play(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t player_action_play(void *instance, action_arg_t *arg, action_result_t *result)
 {
     esp_audio_handle_t handle = (esp_audio_handle_t)instance;
     ESP_LOGI(TAG, "%s", __func__);
@@ -37,7 +37,7 @@ esp_err_t player_deamon_act_play(void *instance, deamon_arg_t *arg, deamon_resul
     return ret;
 }
 
-esp_err_t player_deamon_act_pause(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t player_action_pause(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
     esp_audio_handle_t handle = (esp_audio_handle_t)instance;
@@ -45,14 +45,14 @@ esp_err_t player_deamon_act_pause(void *instance, deamon_arg_t *arg, deamon_resu
     return ret;
 }
 
-esp_err_t player_deamon_act_next(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t player_action_next(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
 
     return ESP_OK;
 }
 
-esp_err_t player_deamon_act_prev(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t player_action_prev(void *instance, action_arg_t *arg, action_result_t *result)
 {
 
     ESP_LOGI(TAG, "%s", __func__);
@@ -60,7 +60,7 @@ esp_err_t player_deamon_act_prev(void *instance, deamon_arg_t *arg, deamon_resul
     return ESP_OK;
 }
 
-esp_err_t player_deamon_act_vol_up(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t player_action_vol_up(void *instance, action_arg_t *arg, action_result_t *result)
 {
     int player_volume = 0;
     esp_audio_handle_t handle = (esp_audio_handle_t)instance;
@@ -74,7 +74,7 @@ esp_err_t player_deamon_act_vol_up(void *instance, deamon_arg_t *arg, deamon_res
     return ESP_OK;
 }
 
-esp_err_t player_deamon_act_vol_down(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t player_action_vol_down(void *instance, action_arg_t *arg, action_result_t *result)
 {
     int player_volume = 0;
     esp_audio_handle_t handle = (esp_audio_handle_t)instance;
@@ -88,13 +88,13 @@ esp_err_t player_deamon_act_vol_down(void *instance, deamon_arg_t *arg, deamon_r
     return ESP_OK;
 }
 
-esp_err_t player_deamon_act_mute_on(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t player_action_mute_on(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
     return ESP_OK;
 }
 
-esp_err_t player_deamon_act_mute_off(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t player_action_mute_off(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
     return ESP_OK;

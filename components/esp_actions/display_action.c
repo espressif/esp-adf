@@ -23,13 +23,13 @@
  */
 
 #include "audio_error.h"
-#include "display_deamon_action.h"
+#include "display_action.h"
 #include "esp_log.h"
 #include "display_service.h"
 
-static char *TAG = "DIS_DEAMON";
+static char *TAG = "DIS_ACTION";
 
-esp_err_t display_deamon_act_wifi_disconnected(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t display_action_wifi_disconnected(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
     display_service_handle_t dis = (display_service_handle_t)instance;
@@ -37,7 +37,7 @@ esp_err_t display_deamon_act_wifi_disconnected(void *instance, deamon_arg_t *arg
     return ret;
 }
 
-esp_err_t display_deamon_act_wifi_connected(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t display_action_wifi_connected(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
     display_service_handle_t dis = (display_service_handle_t)instance;
@@ -45,7 +45,7 @@ esp_err_t display_deamon_act_wifi_connected(void *instance, deamon_arg_t *arg, d
     return ret;
 }
 
-esp_err_t display_deamon_act_wifi_setting(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t display_action_wifi_setting(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
     display_service_handle_t dis = (display_service_handle_t)instance;
@@ -53,7 +53,7 @@ esp_err_t display_deamon_act_wifi_setting(void *instance, deamon_arg_t *arg, dea
     return ret;
 }
 
-esp_err_t display_deamon_act_turn_off(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t display_action_turn_off(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
     display_service_handle_t dis = (display_service_handle_t)instance;
@@ -61,7 +61,7 @@ esp_err_t display_deamon_act_turn_off(void *instance, deamon_arg_t *arg, deamon_
     return ret;
 }
 
-esp_err_t display_deamon_act_turn_on(void *instance, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t display_action_turn_on(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
     display_service_handle_t dis = (display_service_handle_t)instance;

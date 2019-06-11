@@ -124,6 +124,7 @@ static void duer_event_hook(duer_event_t *event)
 {
     if (!event) {
         ESP_LOGE(TAG, "NULL event!!!");
+        return;
     }
     ESP_LOGE(TAG, "event: %d", event->_event);
     switch (event->_event) {

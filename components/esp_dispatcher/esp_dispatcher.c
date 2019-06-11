@@ -30,49 +30,49 @@
 #include "rom/queue.h"
 #include "esp_log.h"
 
-#include "deamon_dispatcher.h"
+#include "esp_dispatcher.h"
 #include "audio_mutex.h"
 #include "audio_mem.h"
 #include "audio_error.h"
 
 static const char *TAG = "DISPATCHER";
-#define  ESP_DEAMON_EVENT_SIZE                              3
+#define  ESP_DISPATCHER_EVENT_SIZE                              3
 
-#define DEAMON_DISPATCHER_TASK_DESTROY_BIT                 BIT(4)
-#define DEAMON_DISPATCHER_UPDATE_EXE_FUNC_RETURN_BIT       BIT(5)
+#define ESP_DISPATCHER_TASK_DESTROY_BIT                 BIT(4)
+#define ESP_DISPATCHER_UPDATE_EXE_FUNC_RETURN_BIT       BIT(5)
 
 typedef enum {
-    DEAMON_EVENT_TYPE_UNKNOWN,
-    DEAMON_EVENT_TYPE_CMD,
-    DEAMON_EVENT_TYPE_EXE,
-} deamon_dispatcher_event_type_t;
+    ESP_DISPCH_EVENT_TYPE_UNKNOWN,
+    ESP_DISPCH_EVENT_TYPE_CMD,
+    ESP_DISPCH_EVENT_TYPE_EXE,
+} esp_dispatcher_event_type_t;
 
 typedef struct {
-    deamon_dispatcher_event_type_t          type;
+    esp_dispatcher_event_type_t             type;
     int                                     sub_index;
-    deamon_arg_t                            arg;
-} deamon_dispatcher_info_t;
+    action_arg_t                            arg;
+} esp_dispatcher_info_t;
 
 typedef struct evt_exe_item {
     STAILQ_ENTRY(evt_exe_item)              entries;
     int                                     sub_index;
-    deamon_action_exe_func                  exe_func;
+    esp_action_exe                          exe_func;
     void*                                   exe_instance;
-} deamon_evt_exe_item_t;
+} esp_action_exe_item_t;
 
-typedef struct deamon_dispatcher {
+typedef struct esp_dispatcher {
     QueueHandle_t                                  exe_que;
     QueueHandle_t                                  result_que;
     SemaphoreHandle_t                              mutex;
     TaskHandle_t                                   task_handle;
-    STAILQ_HEAD(deamon_exe_list, evt_exe_item)     exe_list;
-} deamon_dispatcher_t;
+    STAILQ_HEAD(action_exe_list, evt_exe_item)     exe_list;
+} esp_dispatcher_t;
 
 
-static esp_err_t execute_index_exist(deamon_dispatcher_handle_t h, int idx)
+static esp_err_t execute_index_exist(esp_dispatcher_handle_t h, int idx)
 {
-    deamon_dispatcher_t *impl = (deamon_dispatcher_t *)h;
-    deamon_evt_exe_item_t *item;
+    esp_dispatcher_t *impl = (esp_dispatcher_t *)h;
+    esp_action_exe_item_t *item;
     STAILQ_FOREACH(item, &impl->exe_list, entries) {
         if (idx == item->sub_index) {
             return ESP_OK;
@@ -81,10 +81,10 @@ static esp_err_t execute_index_exist(deamon_dispatcher_handle_t h, int idx)
     return ESP_FAIL;
 }
 
-static deamon_evt_exe_item_t *found_exe_func(deamon_dispatcher_handle_t h, int idx)
+static esp_action_exe_item_t *found_exe_func(esp_dispatcher_handle_t h, int idx)
 {
-    deamon_dispatcher_t *impl = (deamon_dispatcher_t *)h;
-    deamon_evt_exe_item_t *item;
+    esp_dispatcher_t *impl = (esp_dispatcher_t *)h;
+    esp_action_exe_item_t *item;
     STAILQ_FOREACH(item, &impl->exe_list, entries) {
         if (idx == item->sub_index) {
             return item;
@@ -93,18 +93,18 @@ static deamon_evt_exe_item_t *found_exe_func(deamon_dispatcher_handle_t h, int i
     return NULL;
 }
 
-static void deamon_event_task(void *parameters)
+static void dispatcher_event_task(void *parameters)
 {
-    deamon_dispatcher_t *deam = (deamon_dispatcher_t *)parameters;
-    deamon_dispatcher_info_t msg = {0};
-    deamon_result_t result = {0};
-    deamon_evt_exe_item_t *exe_item = NULL;
+    esp_dispatcher_t *dispch = (esp_dispatcher_t *)parameters;
+    esp_dispatcher_info_t msg = {0};
+    action_result_t result = {0};
+    esp_action_exe_item_t *exe_item = NULL;
     bool task_run = true;
     ESP_LOGI(TAG, "%s is running...", __func__);
     while (task_run) {
-        if (xQueueReceive(deam->exe_que, &msg, portMAX_DELAY) == pdTRUE) {
-            if (msg.type == DEAMON_EVENT_TYPE_EXE) {
-                exe_item = found_exe_func(deam, msg.sub_index);
+        if (xQueueReceive(dispch->exe_que, &msg, portMAX_DELAY) == pdTRUE) {
+            if (msg.type == ESP_DISPCH_EVENT_TYPE_EXE) {
+                exe_item = found_exe_func(dispch, msg.sub_index);
                 if (exe_item) {
                     result.err = ESP_OK;
                     result.data = 0;
@@ -112,7 +112,7 @@ static void deamon_event_task(void *parameters)
                     ESP_LOGD(TAG, "EXE type:%d, index:%x,%p,%d",
                              msg.type, msg.sub_index, msg.arg.data, msg.arg.len);
                     result.err = exe_item->exe_func(exe_item->exe_instance, &msg.arg, &result);
-                    if (xQueueSend(deam->result_que, &result, 0 / portTICK_PERIOD_MS) == pdFALSE) {
+                    if (xQueueSend(dispch->result_que, &result, 0 / portTICK_PERIOD_MS) == pdFALSE) {
                         ESP_LOGW(TAG, "Sending result failed, index:%x", msg.sub_index);
                     }
                 } else {
@@ -120,11 +120,11 @@ static void deamon_event_task(void *parameters)
                     result.data = 0;
                     result.len = 0;
                     ESP_LOGW(TAG, "Not found index:%x", msg.sub_index);
-                    if (xQueueSend(deam->result_que, &result, 0 / portTICK_PERIOD_MS) == pdFALSE) {
+                    if (xQueueSend(dispch->result_que, &result, 0 / portTICK_PERIOD_MS) == pdFALSE) {
                         ESP_LOGW(TAG, "Send result failed, index:%x", msg.sub_index);
                     }
                 }
-            } else if (msg.type == DEAMON_EVENT_TYPE_CMD) {
+            } else if (msg.type == ESP_DISPCH_EVENT_TYPE_CMD) {
                 task_run = false;
             }
         }
@@ -132,19 +132,19 @@ static void deamon_event_task(void *parameters)
     result.err = ESP_OK;
     result.data = 0;
     result.len = 0;
-    xQueueSend(deam->result_que, &result, 0 / portTICK_PERIOD_MS);
+    xQueueSend(dispch->result_que, &result, 0 / portTICK_PERIOD_MS);
     vTaskDelete(NULL);
 }
 
-esp_err_t deamon_dispatcher_reg_exe_func(deamon_dispatcher_handle_t dh, void *exe_inst, int sub_event_index, deamon_action_exe_func func)
+esp_err_t esp_dispatcher_reg_exe_func(esp_dispatcher_handle_t dh, void *exe_inst, int sub_event_index, esp_action_exe func)
 {
-    deamon_dispatcher_t *impl = (deamon_dispatcher_t *)dh;
+    esp_dispatcher_t *impl = (esp_dispatcher_t *)dh;
     AUDIO_NULL_CHECK(TAG, impl, return ESP_ERR_INVALID_ARG);
     if (execute_index_exist(dh, sub_event_index) == ESP_OK) {
         ESP_LOGW(TAG, "The %x index of function already exists", sub_event_index);
         return ESP_ERR_ADF_ALREADY_EXISTS;
     }
-    deamon_evt_exe_item_t *item = audio_calloc(1, sizeof(deamon_evt_exe_item_t));
+    esp_action_exe_item_t *item = audio_calloc(1, sizeof(esp_action_exe_item_t));
     item->sub_index = sub_event_index;
     item->exe_func = func;
     item->exe_instance = exe_inst;
@@ -153,16 +153,16 @@ esp_err_t deamon_dispatcher_reg_exe_func(deamon_dispatcher_handle_t dh, void *ex
     return ESP_OK;
 }
 
-esp_err_t deamon_dispatcher_execute(deamon_dispatcher_handle_t dh, int sub_event_index,
-                                    deamon_arg_t *in_para, deamon_result_t *out_result)
+esp_err_t esp_dispatcher_execute(esp_dispatcher_handle_t dh, int sub_event_index,
+                                    action_arg_t *in_para, action_result_t *out_result)
 {
-    deamon_dispatcher_t *impl = (deamon_dispatcher_t *)dh;
+    esp_dispatcher_t *impl = (esp_dispatcher_t *)dh;
     AUDIO_NULL_CHECK(TAG, impl, return ESP_ERR_INVALID_ARG);
-    deamon_dispatcher_info_t info = {0};
-    info.type = DEAMON_EVENT_TYPE_EXE;
+    esp_dispatcher_info_t info = {0};
+    info.type = ESP_DISPCH_EVENT_TYPE_EXE;
     info.sub_index = sub_event_index;
     if (in_para) {
-        memcpy(&info.arg, in_para, sizeof(deamon_arg_t));
+        memcpy(&info.arg, in_para, sizeof(action_arg_t));
     }
     ESP_LOGI(TAG, "EXE IN, cmd type:%d, index:%x, data:%p, len:%d",
              info.type, info.sub_index, info.arg.data, info.arg.len);
@@ -173,32 +173,32 @@ esp_err_t deamon_dispatcher_execute(deamon_dispatcher_handle_t dh, int sub_event
         mutex_unlock(impl->mutex);
         return ESP_ERR_ADF_TIMEOUT;
     }
-    deamon_result_t ret = {0};
+    action_result_t ret = {0};
     xQueueReceive(impl->result_que, &ret, portMAX_DELAY);
     mutex_unlock(impl->mutex);
     if (out_result) {
-        memcpy(out_result, &ret, sizeof(deamon_result_t));
+        memcpy(out_result, &ret, sizeof(action_result_t));
     }
     ESP_LOGI(TAG, "EXE OUT,result type:%d, index:%x, ret:%x, data:%p, len:%d", info.type, info.sub_index, ret.err, ret.data, ret.len);
     return ret.err;
 }
 
-deamon_dispatcher_handle_t deamon_dispatcher_create(deamon_dispatcher_config_t *cfg)
+esp_dispatcher_handle_t esp_dispatcher_create(esp_dispatcher_config_t *cfg)
 {
     AUDIO_NULL_CHECK(TAG, cfg, return NULL);
-    deamon_dispatcher_handle_t impl = audio_calloc(1, sizeof(deamon_dispatcher_t));
+    esp_dispatcher_handle_t impl = audio_calloc(1, sizeof(esp_dispatcher_t));
     AUDIO_MEM_CHECK(TAG, impl, return NULL);
-    impl->result_que = xQueueCreate(1, sizeof(deamon_result_t));
+    impl->result_que = xQueueCreate(1, sizeof(action_result_t));
     AUDIO_MEM_CHECK(TAG, impl->result_que, goto _failed;);
-    impl->exe_que = xQueueCreate(ESP_DEAMON_EVENT_SIZE, sizeof(deamon_dispatcher_info_t));
+    impl->exe_que = xQueueCreate(ESP_DISPATCHER_EVENT_SIZE, sizeof(esp_dispatcher_info_t));
     AUDIO_MEM_CHECK(TAG, impl->exe_que, goto _failed;);
     impl->mutex = mutex_create();
     AUDIO_MEM_CHECK(TAG, impl->mutex, goto _failed;);
     STAILQ_INIT(&impl->exe_list);
     ESP_LOGE(TAG, "exe first list: %p", STAILQ_FIRST(&impl->exe_list));
 
-    if (pdPASS != xTaskCreatePinnedToCore(deamon_event_task,
-                                          "esp_deamon",
+    if (pdPASS != xTaskCreatePinnedToCore(dispatcher_event_task,
+                                          "esp_dispatcher",
                                           cfg->task_stack,
                                           impl,
                                           cfg->task_prio,
@@ -226,16 +226,16 @@ _failed:
     return impl;
 }
 
-esp_err_t deamon_dispatcher_destroy(deamon_dispatcher_handle_t dh)
+esp_err_t esp_dispatcher_destroy(esp_dispatcher_handle_t dh)
 {
-    deamon_dispatcher_t *impl = (deamon_dispatcher_t *)dh;
+    esp_dispatcher_t *impl = (esp_dispatcher_t *)dh;
     AUDIO_NULL_CHECK(TAG, impl, return ESP_ERR_INVALID_ARG);
-    deamon_dispatcher_info_t info = {0};
-    deamon_result_t ret = {0};
-    info.type = DEAMON_EVENT_TYPE_CMD;
+    esp_dispatcher_info_t info = {0};
+    action_result_t ret = {0};
+    info.type = ESP_DISPCH_EVENT_TYPE_CMD;
     xQueueSend(impl->exe_que, &info, portMAX_DELAY);
     xQueueReceive(impl->result_que, &ret, portMAX_DELAY);
-    deamon_evt_exe_item_t *item;
+    esp_action_exe_item_t *item;
     STAILQ_FOREACH(item, &impl->exe_list, entries) {
         STAILQ_REMOVE(&impl->exe_list, item, evt_exe_item, entries);
         free(item);

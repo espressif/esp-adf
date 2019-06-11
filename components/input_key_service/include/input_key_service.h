@@ -43,7 +43,7 @@ typedef enum {
 } input_key_service_action_id_t;
 
 /**
- *@breif input key's infomation
+ * @brief input key's infomation
  */
 typedef struct {
     esp_periph_id_t  type;             /*!< ID of peripherals */

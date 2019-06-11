@@ -264,7 +264,7 @@ void duer_dcs_speak_handler(const char *url)
 
 void duer_dcs_audio_play_handler(const duer_dcs_audio_info_t *audio_info)
 {
-    ESP_LOGI(TAG, "Playing audio offset:%d url:%s", audio_info->offset, audio_info->url);
+    ESP_LOGI(TAG, "Playing audio, offset:%d url:%s", audio_info->offset, audio_info->url);
     esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, audio_info->url, audio_info->offset);
     xSemaphoreTake(s_mutex, portMAX_DELAY);
     duer_playing_type = DUER_AUDIO_TYPE_MUSIC;
@@ -296,7 +296,7 @@ void duer_dcs_audio_pause_handler()
 
 void duer_dcs_audio_resume_handler(const duer_dcs_audio_info_t *audio_info)
 {
-    ESP_LOGI(TAG, "Resume audio play,offset:%d, url:%s,", audio_info->offset, audio_info->url);
+    ESP_LOGI(TAG, "Resume audio, offset:%d url:%s", audio_info->offset, audio_info->url);
     player_pause = 0;
     esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, audio_info->url, audio_pos);
 }

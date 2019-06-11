@@ -22,18 +22,18 @@
  *
  */
 
-#ifndef __DEAMON_DISPATCHER_H__
-#define __DEAMON_DISPATCHER_H__
+#ifndef __ESP_DISPATCHER_H__
+#define __ESP_DISPATCHER_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "esp_deamon_def.h"
+#include "esp_action_def.h"
 
-#define DEFAULT_DEAMON_DISPATCHER_STACK_SIZE      (4*1024)
-#define DEFAULT_DEAMON_DISPATCHER_TASK_PRIO       (10)
-#define DEFAULT_DEAMON_DISPATCHER_TASK_CORE       (0)
+#define DEFAULT_ESP_DISPATCHER_STACK_SIZE      (4*1024)
+#define DEFAULT_ESP_DISPATCHER_TASK_PRIO       (10)
+#define DEFAULT_ESP_DISPATCHER_TASK_CORE       (0)
 
 /**
  * @brief The dispatcher configuration
@@ -42,42 +42,42 @@ typedef struct {
     int                         task_stack;             /*!< >0 Task stack; =0 with out task created */
     int                         task_prio;              /*!< Task priority (based on freeRTOS priority) */
     int                         task_core;              /*!< Task running in core (0 or 1) */
-} deamon_dispatcher_config_t;
+} esp_dispatcher_config_t;
 
-typedef struct deamon_dispatcher *deamon_dispatcher_handle_t;
+typedef struct esp_dispatcher *esp_dispatcher_handle_t;
 
-#define DEAMON_DISPATCHER_CONFIG_DEFAULT() { \
-    .task_stack = DEFAULT_DEAMON_DISPATCHER_STACK_SIZE, \
-    .task_prio = DEFAULT_DEAMON_DISPATCHER_TASK_PRIO, \
-    .task_core = DEFAULT_DEAMON_DISPATCHER_TASK_CORE, \
+#define ESP_DISPATCHER_CONFIG_DEFAULT() { \
+    .task_stack = DEFAULT_ESP_DISPATCHER_STACK_SIZE, \
+    .task_prio = DEFAULT_ESP_DISPATCHER_TASK_PRIO, \
+    .task_core = DEFAULT_ESP_DISPATCHER_TASK_CORE, \
 }
 
 /**
- * brief      Create deamon dispatcher instance
+ * brief      Create ESP dispatcher instance
  *
- * @param cfg   Configuration of the deamon dispatcher instance
+ * @param cfg   Configuration of the ESP dispatcher instance
  *
  * @return
  *     - NULL,  Fail
  *     - Others, Success
  */
-deamon_dispatcher_handle_t deamon_dispatcher_create(deamon_dispatcher_config_t *cfg);
+esp_dispatcher_handle_t esp_dispatcher_create(esp_dispatcher_config_t *cfg);
 
 /**
- * brief      Destroy deamon dispatcher instance
+ * brief      Destroy ESP dispatcher instance
  *
- * @param handle   The deamon dispatcher instance
+ * @param handle   The ESP dispatcher instance
  *
  * @return
  *     - ESP_OK
  *     - ESP_ERR_INVALID_ARG
  */
-esp_err_t deamon_dispatcher_destroy(deamon_dispatcher_handle_t handle);
+esp_err_t esp_dispatcher_destroy(esp_dispatcher_handle_t handle);
 
 /**
- * brief      Register index of event and execution function to deamon dispatcher instance
+ * brief      Register index of event and execution function to ESP dispatcher instance
  *
- * @param handle            The deamon dispatcher instance
+ * @param handle            The ESP dispatcher instance
  * @param exe_inst          The execution instance
  * @param sub_event_index   The index of event
  * @param func              The execution function
@@ -87,13 +87,13 @@ esp_err_t deamon_dispatcher_destroy(deamon_dispatcher_handle_t handle);
  *     - ESP_ERR_ADF_ALREADY_EXISTS
  *     - ESP_ERR_INVALID_ARG
  */
-esp_err_t deamon_dispatcher_reg_exe_func(deamon_dispatcher_handle_t handle, void *exe_inst, int sub_event_index, deamon_action_exe_func func);
+esp_err_t esp_dispatcher_reg_exe_func(esp_dispatcher_handle_t handle, void *exe_inst, int sub_event_index, esp_action_exe func);
 
 /**
  * brief      Execution function with specific index of event.
  *            This is a synchronization interface.
  *
- * @param handle            The deamon dispatcher instance
+ * @param handle            The ESP dispatcher instance
  * @param sub_event_index   The index of event
  * @param arg               The arguments of execution function
  * @param result            The result of execution function
@@ -104,10 +104,10 @@ esp_err_t deamon_dispatcher_reg_exe_func(deamon_dispatcher_handle_t handle, void
  *     - ESP_ERR_ADF_TIMEOUT, send request command timeout.
  *     - Others, execute function result.
  */
-esp_err_t deamon_dispatcher_execute(deamon_dispatcher_handle_t handle, int sub_event_index,
-                                    deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t esp_dispatcher_execute(esp_dispatcher_handle_t handle, int sub_event_index,
+                                    action_arg_t *arg, action_result_t *result);
 #ifdef __cplusplus
 }
 #endif
 
-#endif // End of __DEAMON_DISPATCHER_H__
+#endif // End of __ESP_DISPATCHER_H__

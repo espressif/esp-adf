@@ -22,61 +22,74 @@
  *
  */
 
-#ifndef _RECORDER_DEAMON_ACTION_H
-#define _RECORDER_DEAMON_ACTION_H
+#ifndef __DISPLAY_ACTION_H__
+#define __DISPLAY_ACTION_H__
 
-#include "esp_deamon_def.h"
+#include "esp_action_def.h"
 
 /**
- * brief       Recorder provides service of turn on WAV recoding
+ * brief      Display provides pattern of Wi-Fi disconnection
  *
- * @param instance          The player instance
+ * @param instance          The display service instance
  * @param arg               The arguments of execution function
  * @param result            The result of execution function
  *
  * @return
  *     - ESP_OK, success
- *     - Others, error
+ *     - Others, errors
  */
-esp_err_t rec_deamon_act_rec_wav_trun_on(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t display_action_wifi_disconnected(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
- * brief      Recorder provides service of turn off WAV recoding
+ * brief      Display provides pattern of Wi-Fi connection
  *
- * @param instance          The player instance
+ * @param instance          The display service instance
  * @param arg               The arguments of execution function
  * @param result            The result of execution function
  *
  * @return
  *     - ESP_OK, success
- *     - Others, error
+ *     - Others, errors
  */
-esp_err_t rec_deamon_act_rec_wav_trun_off(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t display_action_wifi_connected(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
- * brief      Recorder provides service of turn on AMR recoding
+ * brief      Display provides pattern of wifi setting
  *
- * @param instance          The player instance
+ * @param instance          The display service instance
  * @param arg               The arguments of execution function
  * @param result            The result of execution function
  *
  * @return
  *     - ESP_OK, success
- *     - Others, error
+ *     - Others, errors
  */
-esp_err_t rec_deamon_act_rec_amr_trun_on(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t display_action_wifi_setting(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
- * brief      Recorder provides service of turn off AMR recoding
+ * brief      Display provides pattern of turn off
  *
- * @param instance          The player instance
+ * @param instance          The display service instance
  * @param arg               The arguments of execution function
  * @param result            The result of execution function
  *
  * @return
  *     - ESP_OK, success
- *     - Others, error
+ *     - Others, errors
  */
-esp_err_t rec_deamon_act_rec_amr_trun_off(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t display_action_turn_off(void *instance, action_arg_t *arg, action_result_t *result);
 
-#endif //
+/**
+ * brief      Display provides pattern of turn on
+ *
+ * @param instance          The display service instance
+ * @param arg               The arguments of execution function
+ * @param result            The result of execution function
+ *
+ * @return
+ *     - ESP_OK, success
+ *     - Others, errors
+ */
+esp_err_t display_action_turn_on(void *instance, action_arg_t *arg, action_result_t *result);
+
+#endif

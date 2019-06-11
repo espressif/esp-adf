@@ -22,10 +22,10 @@
  *
  */
 
-#ifndef _PLAYER_DEAMON_ACTION_H_
-#define _PLAYER_DEAMON_ACTION_H_
+#ifndef _PLAYER_ACTION_H__
+#define _PLAYER_ACTION_H__
 
-#include "esp_deamon_def.h"
+#include "esp_action_def.h"
 
 /**
  * brief      Player provides service of playing music
@@ -38,7 +38,7 @@
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t player_deamon_act_play(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t player_action_play(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Player provides service of pausing music playing
@@ -51,7 +51,7 @@ esp_err_t player_deamon_act_play(void *instance, deamon_arg_t *arg, deamon_resul
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t player_deamon_act_pause(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t player_action_pause(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Player provides service of playing the next audio file
@@ -64,7 +64,7 @@ esp_err_t player_deamon_act_pause(void *instance, deamon_arg_t *arg, deamon_resu
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t player_deamon_act_next(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t player_action_next(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Player provides service of playing the previous audio file
@@ -77,7 +77,7 @@ esp_err_t player_deamon_act_next(void *instance, deamon_arg_t *arg, deamon_resul
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t player_deamon_act_prev(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t player_action_prev(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Player provides service of increasing volume
@@ -90,7 +90,7 @@ esp_err_t player_deamon_act_prev(void *instance, deamon_arg_t *arg, deamon_resul
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t player_deamon_act_vol_up(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t player_action_vol_up(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Player provides service of decreasing volume
@@ -103,7 +103,7 @@ esp_err_t player_deamon_act_vol_up(void *instance, deamon_arg_t *arg, deamon_res
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t player_deamon_act_vol_down(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t player_action_vol_down(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Player provides service of mute on
@@ -116,7 +116,7 @@ esp_err_t player_deamon_act_vol_down(void *instance, deamon_arg_t *arg, deamon_r
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t player_deamon_act_mute_on(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t player_action_mute_on(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Player provides service of mute off
@@ -129,6 +129,6 @@ esp_err_t player_deamon_act_mute_on(void *instance, deamon_arg_t *arg, deamon_re
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t player_deamon_act_mute_off(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t player_action_mute_off(void *instance, action_arg_t *arg, action_result_t *result);
 
 #endif
