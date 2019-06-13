@@ -111,6 +111,13 @@ INPUT = \
     ../../components/wifi_service/include/smart_config.h \
     ../../components/wifi_service/include/esp_wifi_setting.h \
     ../../components/wifi_service/include/wifi_service.h \
+    ## Playlist
+    ../../components/playlist/include/dram_list.h \
+    ../../components/playlist/include/flash_list.h \
+    ../../components/playlist/include/partition_list.h \
+    ../../components/playlist/include/sdcard_list.h \
+    ../../components/playlist/include/playlist.h \
+    ../../components/playlist/include/sdcard_scan.h \
     ##
     ## Audio Player
     ##
