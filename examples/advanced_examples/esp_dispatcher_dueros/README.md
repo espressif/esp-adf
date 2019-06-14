@@ -1,6 +1,6 @@
-# ESP Deamon DuerOS Example
+# ESP Dispatcher DuerOS Example
 
-This example shows how to use ADF ESP Deamon action APIs to connect DuerOS.
+This example shows how to use ADF ESP Dispatcher action APIs to connect DuerOS.
 
 ## Compatibility
 

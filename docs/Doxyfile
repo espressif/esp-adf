@@ -96,11 +96,14 @@ INPUT = \
     ../../components/audio_sal/include/audio_mutex.h \
     ../../components/audio_sal/include/audio_mem.h \
     ## Services
-    ../../components/audio_service/include/bluetooth_service.h \
-    ../../components/audio_service/include/bt_keycontrol.h \
-    ## Deamon framwork
-    ../../components/esp_deamon/include/periph_service.h \
-    ../../components/esp_deamon/include/audio_service.h \
+    ../../components/bluetooth_service/include/bluetooth_service.h \
+    ../../components/bluetooth_service/include/bt_keycontrol.h \
+    ../../components/input_key_service/include/input_key_service.h \
+    ../../components/dueros_service/include/dueros_service.h \
+    ../../components/display_service/include/display_service.h \
+    ## Dispatcher framwork
+    ../../components/esp_dispatcher/include/periph_service.h \
+    ../../components/esp_dispatcher/include/audio_service.h \
     ../../components/display_service/include/display_service.h \
     ## Cloud Services
     ../../components/wifi_service/include/airkiss_config.h \

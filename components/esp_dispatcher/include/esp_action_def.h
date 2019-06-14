@@ -22,35 +22,35 @@
  *
  */
 
-#ifndef __DUEROS_DEAMON_K_ACTION_H_
-#define __DUEROS_DEAMON_K_ACTION_H_
-#include "esp_deamon_def.h"
+#ifndef __ESP_ACTION_DEF_H__
+#define __ESP_ACTION_DEF_H__
 
-/**
- * brief      Dueros provides service of disconnection
- *
- * @param instance          The player instance
- * @param arg               The arguments of execution function
- * @param result            The result of execution function
- *
- * @return
- *     - ESP_OK, success
- *     - Others, error
- */
-esp_err_t dueros_deamon_act_disconnect(void *instance, deamon_arg_t *arg, deamon_result_t *result);
-
-/**
- * brief      DuerOS provides service of connection
- *
- * @param instance          The player instance
- * @param arg               The arguments of execution function
- * @param result            The result of execution function
- *
- * @return
- *     - ESP_OK, success
- *     - Others, error
- */
-esp_err_t dueros_deamon_act_connect(void *instance, deamon_arg_t *arg, deamon_result_t *result);
-
-
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+/**
+ * @brief The result of action
+ */
+typedef struct {
+    esp_err_t                           err;        /*!< Error code */
+    void                                *data;      /*!< Pointer to result data */
+    int                                 len;        /*!< Length of the data */
+} action_result_t;
+
+/**
+ * @brief The action arguments
+ */
+typedef struct {
+    void                                *data;      /*!< Pointer to arguments data */
+    int                                 len;        /*!< Length of the data */
+} action_arg_t;
+
+typedef esp_err_t (*esp_action_exe) (void *instance, action_arg_t *arg, action_result_t *result);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // __ESP_ACTION_DEF_H__

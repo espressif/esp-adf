@@ -22,23 +22,35 @@
  *
  */
 
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "nvs_flash.h"
-#include "tcpip_adapter.h"
-#include "esp_deamon_dueros_app.h"
+#ifndef __DUEROS_SERVICE_ACTION_H__
+#define __DUEROS_SERVICE_ACTION_H__
+#include "esp_action_def.h"
 
-void app_main(void)
-{
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
-        // NVS partition was truncated and needs to be erased
-        // Retry nvs_flash_init
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
-    }
-    tcpip_adapter_init();
-    duer_app_init();
-}
+/**
+ * brief      Dueros provides service of disconnection
+ *
+ * @param instance          The player instance
+ * @param arg               The arguments of execution function
+ * @param result            The result of execution function
+ *
+ * @return
+ *     - ESP_OK, success
+ *     - Others, error
+ */
+esp_err_t dueros_action_disconnect(void *instance, action_arg_t *arg, action_result_t *result);
+
+/**
+ * brief      DuerOS provides service of connection
+ *
+ * @param instance          The player instance
+ * @param arg               The arguments of execution function
+ * @param result            The result of execution function
+ *
+ * @return
+ *     - ESP_OK, success
+ *     - Others, error
+ */
+esp_err_t dueros_action_connect(void *instance, action_arg_t *arg, action_result_t *result);
+
+
+#endif

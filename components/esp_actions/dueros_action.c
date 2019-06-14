@@ -22,27 +22,23 @@
  *
  */
 
-#ifndef _ESP_DEAMON_DUER_APP_H_
-#define _ESP_DEAMON_DUER_APP_H_
+#include "audio_error.h"
+#include "esp_log.h"
+#include "dueros_action.h"
+#include "dueros_service.h"
 
-#include "esp_deamon_def.h"
-#include "audio_service.h"
-#include "periph_service.h"
-#include "display_service.h"
-#include "deamon_dispatcher.h"
+static char *TAG = "DUER_ACTION";
 
-typedef struct $ {
-    audio_service_handle_t          audio_serv;         /*!< Clouds service handle */
-    display_service_handle_t        disp_serv;          /*!< Display servce handle */
-    periph_service_handle_t         wifi_serv;          /*!< WiFi manager service handle */
-    periph_service_handle_t         input_serv;         /*!< Input event service handle */
-    deamon_dispatcher_handle_t      dispatcher;         /*!< Deamon dispatcher handle */
-    void                            *player;            /*!< The esp_audio handle */
-    xTimerHandle                    retry_login_timer;
-    bool                            wifi_setting_flag;
-    bool                            is_palying;
-} esp_deamon_dueros_speaker_t;
+esp_err_t dueros_action_disconnect(void *instance, action_arg_t *arg, action_result_t *result)
+{
+    ESP_LOGI(TAG, "%s", __func__);
+    return ESP_OK;
+}
 
-void duer_app_init(void);
-
-#endif
+esp_err_t dueros_action_connect(void *instance, action_arg_t *arg, action_result_t *result)
+{
+    ESP_LOGI(TAG, "%s", __func__);
+    audio_service_handle_t handle = (audio_service_handle_t)instance;
+    int ret = audio_service_connect(handle);
+    return ret;
+}

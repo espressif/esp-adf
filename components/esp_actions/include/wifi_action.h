@@ -22,10 +22,10 @@
  *
  */
 
-#ifndef __WIFI_DEAMON_ACTION_H_
-#define __WIFI_DEAMON_ACTION_H_
+#ifndef __WIFI_ACTION_H__
+#define __WIFI_ACTION_H__
 
-#include "esp_deamon_def.h"
+#include "esp_action_def.h"
 
 /**
  * brief       Wi-Fi provides service of connection
@@ -38,7 +38,7 @@
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t wifi_deamon_act_connect(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t wifi_action_connect(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Wi-Fi provides service of disconnection
@@ -52,7 +52,7 @@ esp_err_t wifi_deamon_act_connect(void *instance, deamon_arg_t *arg, deamon_resu
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t wifi_deamon_act_disconnect(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t wifi_action_disconnect(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Wi-Fi provides service of start Wi-Fi setting
@@ -65,7 +65,7 @@ esp_err_t wifi_deamon_act_disconnect(void *instance, deamon_arg_t *arg, deamon_r
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t wifi_deamon_act_setting_start(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t wifi_action_setting_start(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      Wi-Fi provides service of stop Wi-Fi setting
@@ -78,6 +78,6 @@ esp_err_t wifi_deamon_act_setting_start(void *instance, deamon_arg_t *arg, deamo
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t wifi_deamon_act_setting_stop(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t wifi_action_setting_stop(void *instance, action_arg_t *arg, action_result_t *result);
 
 #endif

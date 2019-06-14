@@ -22,35 +22,27 @@
  *
  */
 
-#ifndef __ESP_DEAMON_DEF_H__
-#define __ESP_DEAMON_DEF_H__
+#ifndef _ESP_DISPATCHER_DUER_APP_H_
+#define _ESP_DISPATCHER_DUER_APP_H_
 
-#ifdef __cplusplus
-extern "C" {
+#include "esp_action_def.h"
+#include "audio_service.h"
+#include "periph_service.h"
+#include "display_service.h"
+#include "esp_dispatcher.h"
+
+typedef struct $ {
+    audio_service_handle_t          audio_serv;         /*!< Clouds service handle */
+    display_service_handle_t        disp_serv;          /*!< Display servce handle */
+    periph_service_handle_t         wifi_serv;          /*!< WiFi manager service handle */
+    periph_service_handle_t         input_serv;         /*!< Input event service handle */
+    esp_dispatcher_handle_t         dispatcher;         /*!< ESP dispatcher handle */
+    void                            *player;            /*!< The esp_audio handle */
+    xTimerHandle                    retry_login_timer;
+    bool                            wifi_setting_flag;
+    bool                            is_palying;
+} esp_dispatcher_dueros_speaker_t;
+
+void duer_app_init(void);
+
 #endif
-
-/**
- * @brief The result of dispatcher execution
- */
-typedef struct {
-    esp_err_t                           err;        /*!< Error code */
-    void                                *data;      /*!< Pointer to result data */
-    int                                 len;        /*!< Length of the data */
-} deamon_result_t;
-
-/**
- * @brief The dispatcher arguments
- */
-typedef struct {
-    void                                *data;      /*!< Pointer to arguments data */
-    int                                 len;        /*!< Length of the data */
-} deamon_arg_t;
-
-typedef esp_err_t (*deamon_action_exe_func) (void *instance, deamon_arg_t *arg, deamon_result_t *result);
-
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // __ESP_DEAMON_DEF_H__

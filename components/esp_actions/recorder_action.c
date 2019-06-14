@@ -24,40 +24,31 @@
 
 #include "audio_error.h"
 #include "esp_log.h"
-#include "wifi_deamon_action.h"
-#include "wifi_service.h"
+#include "recorder_action.h"
+#include "recorder_engine.h"
 
-static char *TAG = "WIFI_DEAMON";
+static const char *TAG = "REC_ACTION";
 
-
-esp_err_t wifi_deamon_act_connect(void *ctx, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t recorder_action_rec_wav_turn_on(void *instance, action_arg_t *arg, action_result_t *result)
 {
-    periph_service_handle_t wifi_serv = (periph_service_handle_t)ctx;
-    wifi_service_connect(wifi_serv);
+    ESP_LOGI(TAG, "%s", __func__);
+    int ret = rec_engine_trigger_start();
+    return ret;
+}
+esp_err_t recorder_action_rec_wav_turn_off(void *instance, action_arg_t *arg, action_result_t *result)
+{
+    ESP_LOGI(TAG, "%s", __func__);
+    int ret = rec_engine_trigger_stop();
+    return ret;
+}
+
+esp_err_t recorder_action_rec_amr_turn_on(void *instance, action_arg_t *arg, action_result_t *result)
+{
     ESP_LOGI(TAG, "%s", __func__);
     return ESP_OK;
 }
-
-esp_err_t wifi_deamon_act_disconnect(void *ctx, deamon_arg_t *arg, deamon_result_t *result)
+esp_err_t recorder_action_rec_amr_turn_off(void *instance, action_arg_t *arg, action_result_t *result)
 {
-    periph_service_handle_t wifi_serv = (periph_service_handle_t)ctx;
-    wifi_service_disconnect(wifi_serv);
     ESP_LOGI(TAG, "%s", __func__);
-    return ESP_OK;
-}
-
-esp_err_t wifi_deamon_act_setting_start(void *ctx, deamon_arg_t *arg, deamon_result_t *result)
-{
-    periph_service_handle_t wifi_serv = (periph_service_handle_t)ctx;
-    wifi_service_setting_start(wifi_serv, 0);
-    ESP_LOGI(TAG, "%s", __func__);
-    return ESP_OK;
-}
-
-esp_err_t wifi_deamon_act_setting_stop(void *ctx, deamon_arg_t *arg, deamon_result_t *result)
-{
-    periph_service_handle_t wifi_serv = (periph_service_handle_t)ctx;
-    ESP_LOGI(TAG, "%s", __func__);
-    wifi_service_setting_stop(wifi_serv, 0);
     return ESP_OK;
 }

@@ -26,7 +26,7 @@
 #define _DUER_AUDIO_ACTION_H_
 
 #include "audio_def.h"
-#include "esp_deamon_def.h"
+#include "esp_action_def.h"
 
 #define MEDIA_SRC_TYPE_DUER_MUSIC   (MEDIA_SRC_TYPE_RESERVE_BASE +1)
 #define MEDIA_SRC_TYPE_DUER_SPEAK   (MEDIA_SRC_TYPE_RESERVE_BASE +2)
@@ -78,7 +78,7 @@ void duer_dcs_audio_music_finished();
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_vol_set(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_vol_set(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of adjust volume
@@ -91,7 +91,7 @@ esp_err_t duer_dcs_deamon_act_vol_set(void *instance, deamon_arg_t *arg, deamon_
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_vol_adj(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_vol_adj(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of turn on the mute
@@ -104,7 +104,7 @@ esp_err_t duer_dcs_deamon_act_vol_adj(void *instance, deamon_arg_t *arg, deamon_
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_mute_on(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_mute_on(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of turn off the mute
@@ -117,7 +117,7 @@ esp_err_t duer_dcs_deamon_act_mute_on(void *instance, deamon_arg_t *arg, deamon_
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_mute_off(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_mute_off(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of get player state
@@ -130,7 +130,7 @@ esp_err_t duer_dcs_deamon_act_mute_off(void *instance, deamon_arg_t *arg, deamon
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_get_state(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_get_state(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of playing speak
@@ -143,7 +143,7 @@ esp_err_t duer_dcs_deamon_act_get_state(void *instance, deamon_arg_t *arg, deamo
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_speak(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_speak(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of playing music
@@ -156,7 +156,7 @@ esp_err_t duer_dcs_deamon_act_speak(void *instance, deamon_arg_t *arg, deamon_re
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_audio_play(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_audio_play(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of stop music playing
@@ -169,7 +169,7 @@ esp_err_t duer_dcs_deamon_act_audio_play(void *instance, deamon_arg_t *arg, deam
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_audio_stop(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_audio_stop(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of pause music playing
@@ -182,7 +182,7 @@ esp_err_t duer_dcs_deamon_act_audio_stop(void *instance, deamon_arg_t *arg, deam
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_audio_pause(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_audio_pause(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of resume music playing
@@ -195,7 +195,7 @@ esp_err_t duer_dcs_deamon_act_audio_pause(void *instance, deamon_arg_t *arg, dea
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_audio_resume(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_audio_resume(void *instance, action_arg_t *arg, action_result_t *result);
 
 /**
  * brief      DuerOS provides service of get the playing progress
@@ -208,6 +208,6 @@ esp_err_t duer_dcs_deamon_act_audio_resume(void *instance, deamon_arg_t *arg, de
  *     - ESP_OK, success
  *     - Others, error
  */
-esp_err_t duer_dcs_deamon_act_get_progress(void *instance, deamon_arg_t *arg, deamon_result_t *result);
+esp_err_t duer_dcs_action_get_progress(void *instance, action_arg_t *arg, action_result_t *result);
 
 #endif //
