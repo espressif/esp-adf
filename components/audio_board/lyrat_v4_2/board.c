@@ -37,7 +37,7 @@ audio_board_handle_t audio_board_init(void)
         return board_handle;
     }
     audio_hal_codec_config_t audio_codec_cfg = AUDIO_CODEC_DEFAULT_CONFIG();
-    board_handle = (audio_board_handle_t) audio_calloc(1, sizeof(audio_hal_handle_t));
+    board_handle = (audio_board_handle_t) audio_calloc(1, sizeof(struct audio_board_handle));
     AUDIO_MEM_CHECK(TAG, board_handle, return NULL);
 
     board_handle->audio_hal = audio_hal_init(&audio_codec_cfg, &AUDIO_CODEC_ES8388_DEFAULT_HANDLE);
