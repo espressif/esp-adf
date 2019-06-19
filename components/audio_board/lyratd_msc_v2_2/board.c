@@ -27,7 +27,7 @@
 #include "audio_mem.h"
 
 #include "periph_sdcard.h"
-#include "Periph_adc_button.h"
+#include "periph_adc_button.h"
 #include "led_bar_is31x.h"
 
 static const char *TAG = "AUDIO_BOARD";

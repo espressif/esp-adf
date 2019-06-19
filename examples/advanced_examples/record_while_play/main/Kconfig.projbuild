@@ -1,0 +1,41 @@
+menu "Example Configuration"
+
+config WIFI_SSID
+    string "WiFi SSID"
+	default "myssid"
+	help
+		SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+    default "mypassword"
+	help
+		WiFi password (WPA or WPA2) for the example to use.
+
+		Can be left blank if the network has no security set.
+
+
+choice INPUT_STREAM
+	prompt "Input stream selection"
+	default INPUT_STREAM_ASR
+	help 
+		Choose the input stream
+
+config INPUT_STREAM_ASR
+	bool "record for ASR"
+config INPUT_STREAM_FILE
+	bool "record and save to sdcard"
+endchoice
+
+choice OUTPUT_STREAM
+	prompt "Output stream selection"
+	default OUTPUT_STREAM_HTTP
+	help 
+		Choose the output stream
+config OUTPUT_STREAM_HTTP
+	bool "play music from http"
+config OUTPUT_STREAM_SDCARD
+	bool "play music from sdacrd"
+endchoice
+
+endmenu
