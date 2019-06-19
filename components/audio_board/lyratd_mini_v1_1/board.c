@@ -40,7 +40,7 @@ audio_board_handle_t audio_board_init(void)
         ESP_LOGW(TAG, "The board has already been initialized!");
         return board_handle;
     }
-    board_handle = (audio_board_handle_t) audio_calloc(1, sizeof(audio_board_handle_t));
+    board_handle = (audio_board_handle_t) audio_calloc(1, sizeof(struct audio_board_handle));
     AUDIO_MEM_CHECK(TAG, board_handle, return NULL);
     board_handle->audio_hal = audio_board_codec_init();
     board_handle->adc_hal = audio_board_adc_init();
