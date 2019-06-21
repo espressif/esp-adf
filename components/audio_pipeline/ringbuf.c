@@ -165,6 +165,9 @@ int rb_read(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wai
              * Note that, when we have buf_len bytes available in rb, we still read those irrespective of if it's multiple of 4.
              */
             read_size = read_size & 0xfffffffc;
+            if ((read_size == 0) && rb->is_done_write) {
+                read_size = rb->fill_cnt;
+            }
         } else {
             read_size = buf_len;
         }
