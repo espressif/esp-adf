@@ -98,7 +98,7 @@ void rec_engine_cb(rec_event_type_t type, void *user_data)
 
 static  audio_element_handle_t raw_read;
 
-#ifdef CONFIG_ESP_LYRATD_MINI_V1_1_BOARD
+#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
 static esp_err_t recorder_pipeline_open_for_mini(void **handle)
 {
     audio_element_handle_t i2s_stream_reader;
@@ -348,6 +348,7 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
 void duer_app_init(void)
 {
     esp_log_level_set("*", ESP_LOG_INFO);
+
     ESP_LOGI(TAG, "ADF version is %s", ADF_VER);
 
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
@@ -391,7 +392,7 @@ void duer_app_init(void)
     eng.vad_off_delay_ms = 800;
     eng.wakeup_time_ms = 10 * 1000;
     eng.evt_cb = rec_engine_cb;
-#ifdef CONFIG_ESP_LYRATD_MINI_V1_1_BOARD
+#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     eng.open = recorder_pipeline_open_for_mini;
 #else
     eng.open = recorder_pipeline_open;
