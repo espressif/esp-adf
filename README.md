@@ -22,7 +22,11 @@ As a general, the ESP-ADF features will be supported as shown below:
 
 ### Quick Start
 
-You need the ESP32-LyraT board and headphone connected, make sure you clone the project recursive:
+You need [stable version of ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/stable/versions.html) to provide the toolchain, the ESP32-LyraT board and headphone connected. 
+
+**Note:**  If this is your first exposure to ESP32 and ESP-IDF, proceed to [Getting Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html) documentation.
+
+Clone the ESP-ADF repository, set up `ADF_PATH`, and then compile, flash and monitor applications in the same way as when working with ESP-IDF.
 
 ```
 git clone --recursive https://github.com/espressif/esp-adf.git
