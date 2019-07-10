@@ -4,7 +4,7 @@ Resources
 
 * The `esp32.com forum <https://esp32.com>`_ is a place to ask questions and find community resources. The forum has a section dedicated to `ESP-ADF <https://esp32.com/viewforum.php?f=20>`_.
 
-* This `ESP Audio Development Framework <https://github.com/espressif/esp-adf>`_ inherits from `ESP IoT Development Framework <https://github.com/espressif/esp-idf>`_ and you can learn about it in `ESP-IDF Programming Guide <https://docs.espressif.com/projects/esp-idf/en/latest/>`_.
+* This `ESP Audio Development Framework <https://github.com/espressif/esp-adf>`_ inherits from `ESP IoT Development Framework <https://github.com/espressif/esp-idf>`_ and you can learn about it in `ESP-IDF Programming Guide <https://docs.espressif.com/projects/esp-idf/en/stable/>`_.
 
 * Check the `Issues <https://github.com/espressif/esp-adf/issues>`_  section on GitHub if you find a bug or have a feature request. Please check existing `Issues <https://github.com/espressif/esp-adf/issues>`_ before opening a new one.
 
