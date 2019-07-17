@@ -27,6 +27,8 @@
 #include "esp_peripherals.h"
 #include "periph_button.h"
 #include "periph_spiffs.h"
+#include "periph_adc_button.h"
+#include "periph_touch.h"
 
 static const char *TAG = "SPIFFS_AMR_RESAMPLE_EXAMPLE";
 static esp_periph_set_handle_t set;
@@ -164,7 +166,8 @@ void record_playback_task()
             ESP_LOGI(TAG, "STOP");
             break;
         }
-        if (msg.cmd == PERIPH_BUTTON_PRESSED) {
+
+        if (msg.cmd == PERIPH_BUTTON_PRESSED || msg.cmd == PERIPH_ADC_BUTTON_PRESSED || msg.cmd == PERIPH_TOUCH_TAP) {
             ESP_LOGE(TAG, "STOP playback and START recording");
             audio_pipeline_stop(pipeline_play);
             audio_pipeline_wait_for_stop(pipeline_play);

@@ -32,6 +32,8 @@
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
 #include "periph_button.h"
+#include "periph_adc_button.h"
+#include "periph_touch.h"
 
 static const char *TAG = "FLEXIBLE_PIPELINE";
 static esp_periph_set_handle_t set;
@@ -144,13 +146,9 @@ void flexible_pipeline_playback()
             ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
             continue;
         }
-        if (msg.source_type != PERIPH_ID_BUTTON) {
-            audio_element_handle_t el = (audio_element_handle_t)msg.source;
-            ESP_LOGI(TAG, "Element tag:[%s],src_type:%x, cmd:%d, data_len:%d, data:%p",
-                     audio_element_get_tag(el), msg.source_type, msg.cmd, msg.data_len, msg.data);
-            continue;
-        }
-        if (((int)msg.data == get_input_mode_id()) && (msg.cmd == PERIPH_BUTTON_PRESSED)) {
+
+        if (((int)msg.data == get_input_mode_id()) && (msg.cmd == PERIPH_BUTTON_PRESSED || msg.cmd == PERIPH_ADC_BUTTON_PRESSED
+                || msg.cmd == PERIPH_TOUCH_TAP)) {
             source_is_mp3_format = !source_is_mp3_format;
             audio_pipeline_pause(pipeline_play);
             ESP_LOGE(TAG, "Changing music to %s", source_is_mp3_format ? "mp3 format" : "aac format");
@@ -207,31 +205,14 @@ void app_main(void)
     set = esp_periph_set_init(&periph_cfg);
 
     // Initialize SD Card peripheral
-    periph_sdcard_cfg_t sdcard_cfg = {
-        .root = "/sdcard",
-        .card_detect_pin = get_sdcard_intr_gpio(),   // GPIO_NUM_34
-    };
-    esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
+    audio_board_sdcard_init(set);
 
     // Initialize Button peripheral
-    periph_button_cfg_t btn_cfg = {
-        .gpio_mask = (1ULL << get_input_rec_id()) | (1ULL << get_input_mode_id()), // REC BTN & MODE BTN
-    };
-    esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
-
-    // Start sdcard & button peripheral
-    esp_periph_start(set, sdcard_handle);
-    esp_periph_start(set, button_handle);
-
-    // Wait until sdcard is mounted
-    while (!periph_sdcard_is_mounted(sdcard_handle)) {
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-    }
+    audio_board_key_init(set);
 
     // Setup audio codec
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
-
 
     flexible_pipeline_playback();
     esp_periph_set_destroy(set);

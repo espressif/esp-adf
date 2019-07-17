@@ -150,8 +150,11 @@ void app_main(void)
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
             && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
             audio_pipeline_stop(pipeline);
+            audio_pipeline_wait_for_stop(pipeline);
+            audio_pipeline_terminate(pipeline);
+
             set_next_file_marker();
-            audio_pipeline_resume(pipeline);
+            audio_pipeline_run(pipeline);
         }
     }
 

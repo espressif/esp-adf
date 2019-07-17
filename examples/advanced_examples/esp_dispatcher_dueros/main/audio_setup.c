@@ -69,6 +69,8 @@ void *setup_player(void *cb, void *ctx)
 {
     esp_audio_cfg_t cfg = DEFAULT_ESP_AUDIO_CONFIG();
     audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+
     cfg.vol_handle = board_handle->audio_hal;
     cfg.vol_set = (audio_volume_set)audio_hal_set_volume;
     cfg.vol_get = (audio_volume_get)audio_hal_get_volume;
@@ -77,7 +79,6 @@ void *setup_player(void *cb, void *ctx)
     cfg.cb_func = cb;
     cfg.cb_ctx = ctx;
     esp_audio_handle_t handle = esp_audio_create(&cfg);
-    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     // Create readers and add to esp_audio
     fatfs_stream_cfg_t fs_reader = FATFS_STREAM_CFG_DEFAULT();
@@ -114,10 +115,11 @@ void *setup_player(void *cb, void *ctx)
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
+    i2s_writer.i2s_config.sample_rate = 48000;
     esp_audio_output_stream_add(handle, i2s_stream_init(&i2s_writer));
 
     // Set default volume
-    esp_audio_vol_set(handle, 45);
+    esp_audio_vol_set(handle, 60);
     AUDIO_MEM_SHOW(TAG);
     ESP_LOGI(TAG, "esp_audio instance is:%p", handle);
     return handle;
@@ -132,6 +134,16 @@ static esp_err_t recorder_pipeline_open(void **handle)
     if (NULL == recorder) {
         return ESP_FAIL;
     }
+
+#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.i2s_port = 1;
+    i2s_cfg.i2s_config.use_apll = 0;
+    i2s_cfg.i2s_config.sample_rate = 16000;
+    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+#else
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
@@ -149,15 +161,22 @@ static esp_err_t recorder_pipeline_open(void **handle)
     rsp_cfg.dest_ch = 1;
     rsp_cfg.type = AUDIO_CODEC_TYPE_ENCODER;
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+#endif
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_READER;
     raw_read = raw_stream_init(&raw_cfg);
 
     audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
-    audio_pipeline_register(recorder, filter, "filter");
     audio_pipeline_register(recorder, raw_read, "raw");
+
+#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    audio_pipeline_link(recorder, (const char *[]) {"i2s", "raw"}, 2);
+#else
+    audio_pipeline_register(recorder, filter, "filter");
     audio_pipeline_link(recorder, (const char *[]) {"i2s", "filter", "raw"}, 3);
+#endif
+
     audio_pipeline_run(recorder);
     ESP_LOGI(TAG, "Recorder has been created");
     *handle = recorder;

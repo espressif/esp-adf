@@ -161,6 +161,9 @@ static void duer_login(void)
 
 static void dueros_task(void *pvParameters)
 {
+    /** We get a delay here because of a known issue, or there will be a crash*/
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+
     audio_service_handle_t serv_handle = (audio_service_handle_t)pvParameters;
     dueros_service_t *serv = audio_service_get_data(serv_handle);
     duer_initialize();
