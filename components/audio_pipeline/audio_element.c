@@ -439,6 +439,7 @@ void audio_element_task(void *pv)
     xEventGroupClearBits(el->state_event, STOPPED_BIT);
     while (el->task_run) {
         if (audio_event_iface_waiting_cmd_msg(el->iface_event) != ESP_OK) {
+            xEventGroupSetBits(el->state_event, STOPPED_BIT);
             break;
         }
         if (audio_element_process_state_running(el) != ESP_OK) {
@@ -1049,7 +1050,9 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
         ESP_LOGD(TAG, "[%s] Element has not create when AUDIO_ELEMENT_STOP", el->tag);
         return ESP_FAIL;
     }
-    xEventGroupClearBits(el->state_event, STOPPED_BIT);
+    if (el->state == AEL_STATE_RUNNING) {
+        xEventGroupClearBits(el->state_event, STOPPED_BIT);
+    }
     if (el->task_stack <= 0) {
         el->is_running = false;
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
@@ -1058,7 +1061,7 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
     if (el->state == AEL_STATE_PAUSED) {
         audio_event_iface_set_cmd_waiting_timeout(el->iface_event, 0);
     }
-    if (el->state == AEL_STATE_STOPPED) {
+    if (el->is_running == false) {
         ESP_LOGD(TAG, "[%s] Element already stoped", el->tag);
         return ESP_OK;
     }

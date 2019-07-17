@@ -24,9 +24,6 @@
 #include "esp_peripherals.h"
 #include "periph_wifi.h"
 #include "board.h"
-#include "periph_touch.h"
-#include "periph_button.h"
-#include "periph_adc_button.h"
 #include "input_key_service.h"
 
 #include "audio_mem.h"
@@ -61,6 +58,9 @@ static esp_err_t g711enc_pipeline_open()
     }
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    i2s_cfg.i2s_port = 1;
+#endif
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
     audio_element_info_t i2s_info = {0};
     audio_element_getinfo(i2s_stream_reader, &i2s_info);
@@ -95,11 +95,11 @@ static int _g711_encode(char *data, int len)
 {
     int out_len_bytes;
 
-    char *enc_buffer = (char *)audio_malloc(2*AUDIO_FRAME_SIZE);
-    out_len_bytes = raw_stream_read(raw_read, enc_buffer, 2*AUDIO_FRAME_SIZE);
-    if(out_len_bytes > 0) {
+    char *enc_buffer = (char *)audio_malloc(2 * AUDIO_FRAME_SIZE);
+    out_len_bytes = raw_stream_read(raw_read, enc_buffer, 2 * AUDIO_FRAME_SIZE);
+    if (out_len_bytes > 0) {
         int16_t *enc_buffer_16 = (int16_t *)(enc_buffer);
-        for(int i = 0; i < AUDIO_FRAME_SIZE; i++) {
+        for (int i = 0; i < AUDIO_FRAME_SIZE; i++) {
 #ifdef CONFIG_SIP_CODEC_G711A
             data[i] = esp_g711a_encode(enc_buffer_16[i]);
 #else
@@ -157,19 +157,19 @@ static esp_err_t g711dec_pipeline_open()
 
 static int _g711_decode(char *data, int len)
 {
-    int16_t *dec_buffer = (int16_t *)audio_malloc(2*(len-RTP_HEADER_LEN));
+    int16_t *dec_buffer = (int16_t *)audio_malloc(2 * (len - RTP_HEADER_LEN));
 
-    for(int i = 0; i < (len-RTP_HEADER_LEN); i++){
+    for (int i = 0; i < (len - RTP_HEADER_LEN); i++) {
 #ifdef CONFIG_SIP_CODEC_G711A
-        dec_buffer[i] = esp_g711a_decode((unsigned char)data[RTP_HEADER_LEN+i]);
+        dec_buffer[i] = esp_g711a_decode((unsigned char)data[RTP_HEADER_LEN + i]);
 #else
-        dec_buffer[i] = esp_g711u_decode((unsigned char)data[RTP_HEADER_LEN+i]);
+        dec_buffer[i] = esp_g711u_decode((unsigned char)data[RTP_HEADER_LEN + i]);
 #endif
     }
 
-    raw_stream_write(raw_write, (char *)dec_buffer, 2*(len-RTP_HEADER_LEN));
+    raw_stream_write(raw_write, (char *)dec_buffer, 2 * (len - RTP_HEADER_LEN));
     free(dec_buffer);
-    return 2*(len-RTP_HEADER_LEN);
+    return 2 * (len - RTP_HEADER_LEN);
 }
 
 static ip4_addr_t _get_network_ip()
@@ -327,11 +327,11 @@ void app_main()
     sip_config_t sip_cfg = {
         .uri = CONFIG_SIP_URI,
         .event_handler = _sip_event_handler,
-        #ifdef CONFIG_SIP_CODEC_G711A
+#ifdef CONFIG_SIP_CODEC_G711A
         .acodec_type = SIP_ACODEC_G711A,
-        #else
+#else
         .acodec_type = SIP_ACODEC_G711U,
-        #endif
+#endif
     };
     sip = esp_sip_init(&sip_cfg);
     esp_sip_start(sip);

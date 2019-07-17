@@ -130,21 +130,9 @@ void app_main(void)
     ESP_LOGI(TAG, "[4.0] Start and wait for SDCARD to mount");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
-    periph_sdcard_cfg_t sdcard_cfg = {
-        .root = "/sdcard",
-        .card_detect_pin = get_sdcard_intr_gpio(), // GPIO_NUM_34
-    };
-    esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
-    esp_periph_start(set, sdcard_handle);
-    while (!periph_sdcard_is_mounted(sdcard_handle)) {
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-    }
 
-    periph_button_cfg_t btn_cfg = {
-        .gpio_mask = 1ULL << get_input_mode_id(),
-    };
-    esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
-    esp_periph_start(set, button_handle);
+    audio_board_sdcard_init(set);
+    audio_board_key_init(set);
 
     ESP_LOGI(TAG, "[ 5 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -195,8 +183,7 @@ void app_main(void)
             downmix_set_info(downmixer, base_music_rate, base_music_channel, music_info.sample_rates, music_info.channels);
             continue;
         }
-        if ((msg.source_type == PERIPH_ID_BUTTON)
-            && ((int)msg.data == get_input_mode_id())
+        if (((int)msg.data == get_input_mode_id())
             && (msg.cmd == PERIPH_BUTTON_PRESSED)) {
             ESP_LOGE(TAG, "Enter downmixer mode");
             audio_pipeline_run(pipeline_tone);

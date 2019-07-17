@@ -310,22 +310,6 @@ static void cli_setup_wifi()
     esp_periph_start(set, wifi_handle);
 }
 
-static void cli_setup_sdcard()
-{
-    ESP_LOGI(TAG, "Start SdCard");
-    periph_sdcard_cfg_t sdcard_cfg = {
-        .root = "/sdcard",
-        .card_detect_pin = get_sdcard_intr_gpio(), // GPIO_NUM_34
-    };
-    esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
-    esp_periph_start(set, sdcard_handle);
-
-    while (!periph_sdcard_is_mounted(sdcard_handle)) {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        ESP_LOGI(TAG, "sdcard mounting...");
-    }
-}
-
 static void cli_setup_console()
 {
     periph_console_cfg_t console_cfg = {
@@ -441,7 +425,7 @@ void app_main(void)
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     set = esp_periph_set_init(&periph_cfg);
 
-    cli_setup_sdcard();
+    audio_board_sdcard_init(set);
     cli_setup_wifi();
     cli_setup_player();
 

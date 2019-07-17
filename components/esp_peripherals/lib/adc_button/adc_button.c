@@ -160,7 +160,7 @@ static int get_button_id(adc_btn_list *node, int adc)
     int m = ADC_BTN_INVALID_ID;
     adc_arr_t *info = &(node->adc_info);
     for (int i = 0; i < info->total_steps; i++) {
-        ESP_LOGD(TAG, "max:%d, adc:%d, i:%d, %d, %d", info->total_steps, adc, i, info->adc_level_step[i], info->adc_level_step[i + 1]);
+        ESP_LOGV(TAG, "max:%d, adc:%d, i:%d, %d, %d", info->total_steps, adc, i, info->adc_level_step[i], info->adc_level_step[i + 1]);
         if ((adc > info->adc_level_step[i])
             && (adc <= info->adc_level_step[i + 1])) {
             m = i;
@@ -196,7 +196,7 @@ static adc_btn_state_t get_adc_btn_state(int adc_value, int act_id, adc_btn_list
         // Need to send release event
         if (btn_dscp[act_id].click_cnt < (info->press_judge_time / ADC_BTN_DETECT_TIME_MS)) {
             ESP_LOGD(TAG, "pressed: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
-            st = ADC_BTN_STATE_PRESSED;
+            st = ADC_BTN_STATE_RELEASE;
         } else {
             ESP_LOGD(TAG, "long press release: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
             st = ADC_BTN_STATE_LONG_RELEASE;
@@ -226,7 +226,11 @@ static adc_btn_state_t get_adc_btn_state(int adc_value, int act_id, adc_btn_list
     }
     // 3.ID and act ID are valid, and equal.
     btn_dscp[act_id].click_cnt++;
-    if (btn_dscp[act_id].long_click ) {
+    if (btn_dscp[act_id].click_cnt == 3) {
+        return ADC_BTN_STATE_PRESSED;
+    }
+
+    if (btn_dscp[act_id].long_click) {
         return ADC_BTN_STATE_IDLE;
     }
     if (btn_dscp[act_id].click_cnt >= (info->press_judge_time / ADC_BTN_DETECT_TIME_MS)) {
@@ -317,7 +321,7 @@ static void button_task(void *parameters)
                     }
                 case ADC_BTN_STATE_PRESSED: {
                         tag->btn_callback((void *)tag->user_data, info->adc_ch, cur_act_id, ADC_BTN_STATE_PRESSED);
-                        cur_state = ADC_BTN_STATE_RELEASE;
+                        cur_state = ADC_BTN_STATE_ADC;
                         break;
                     }
                 case ADC_BTN_STATE_LONG_PRESSED: {
