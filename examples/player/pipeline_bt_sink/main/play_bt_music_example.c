@@ -74,17 +74,12 @@ void app_main(void)
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     ESP_LOGI(TAG, "[4.1] Initialize Touch peripheral");
-    periph_touch_cfg_t touch_cfg = {
-        .touch_mask = BIT(get_input_set_id()) | BIT(get_input_play_id()) | BIT(get_input_volup_id()) | BIT(get_input_voldown_id()),
-        .tap_threshold_percent = 70,
-    };
-    esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
+    audio_board_key_init(set);
 
     ESP_LOGI(TAG, "[4.2] Create Bluetooth peripheral");
     esp_periph_handle_t bt_periph = bluetooth_service_create_periph();
 
     ESP_LOGI(TAG, "[4.2] Start all peripherals");
-    esp_periph_start(set, touch_periph);
     esp_periph_start(set, bt_periph);
 
     ESP_LOGI(TAG, "[ 5 ] Set up  event listener");
@@ -129,7 +124,7 @@ void app_main(void)
 
         if (msg.source_type == PERIPH_ID_TOUCH
             && msg.cmd == PERIPH_TOUCH_TAP
-            && msg.source == (void *)touch_periph) {
+            && msg.source == (void *)esp_periph_set_get_by_id(set, PERIPH_ID_TOUCH)) {
 
             if ((int) msg.data == get_input_play_id()) {
                 ESP_LOGI(TAG, "[ * ] [Play] touch tap event");

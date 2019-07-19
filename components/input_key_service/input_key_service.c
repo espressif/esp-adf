@@ -1,3 +1,4 @@
+
 /*
  * ESPRESSIF MIT License
  *
@@ -31,7 +32,7 @@
 #include "input_key_service.h"
 #include "audio_event_iface.h"
 
-#define INPUT_KEY_SERVICE_TASK_STACK_SIZE (2 * 1024)
+#define INPUT_KEY_SERVICE_TASK_STACK_SIZE (3 * 1024)
 #define INPUT_KEY_SERVICE_TASK_PRIORITY   (5)
 #define INPUT_KEY_SERVICE_TASK_ON_CORE    (1)
 

@@ -78,7 +78,9 @@ static FILE *get_file(int next_file)
  */
 static int my_sdcard_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
-    int read_len = fread(buf, 1, len, get_file(CURRENT));
+    FILE *f = get_file(CURRENT);
+    AUDIO_NULL_CHECK(TAG, f, return AEL_IO_FAIL);
+    int read_len = fread(buf, 1, len, f);
     if (read_len == 0) {
         read_len = AEL_IO_DONE;
     }
@@ -158,18 +160,7 @@ void app_main(void)
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
-    periph_sdcard_cfg_t sdcard_cfg = {
-        .root = "/sdcard",
-        .card_detect_pin = get_sdcard_intr_gpio(), //GPIO_NUM_34
-    };
-    esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
-    ESP_LOGI(TAG, "[1.1] Start SD card peripheral");
-    esp_periph_start(set, sdcard_handle);
-
-    // Wait until sdcard is mounted
-    while (!periph_sdcard_is_mounted(sdcard_handle)) {
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-    }
+    audio_board_sdcard_init(set);
 
     ESP_LOGI(TAG, "[1.2] Initialize and start peripherals");
     audio_board_key_init(set);

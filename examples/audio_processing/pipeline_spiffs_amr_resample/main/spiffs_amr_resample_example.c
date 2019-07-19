@@ -73,6 +73,11 @@ static audio_element_handle_t create_i2s_stream(int sample_rates, int bits, int 
 {
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = type;
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    if (i2s_cfg.type == AUDIO_STREAM_READER) {
+        i2s_cfg.i2s_port = 1;
+    }
+#endif
     audio_element_handle_t i2s_stream = i2s_stream_init(&i2s_cfg);
     mem_assert(i2s_stream);
     audio_element_info_t i2s_info = {0};
@@ -155,15 +160,10 @@ void record_playback_task()
             ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
             continue;
         }
-
-        if (msg.source_type != PERIPH_ID_BUTTON) {
-            continue;
-        }
         if ((int)msg.data == get_input_mode_id()) {
             ESP_LOGI(TAG, "STOP");
             break;
         }
-
         if (msg.cmd == PERIPH_BUTTON_PRESSED) {
             ESP_LOGE(TAG, "STOP playback and START recording");
             audio_pipeline_stop(pipeline_play);
@@ -252,21 +252,14 @@ void app_main(void)
         .format_if_mount_failed = true
     };
     esp_periph_handle_t spiffs_handle = periph_spiffs_init(&spiffs_cfg);
-
-    // Initialize Button peripheral
-    periph_button_cfg_t btn_cfg = {
-        .gpio_mask = (1ULL << get_input_rec_id()) | (1ULL << get_input_mode_id()), //REC BTN & MODE BTN
-    };
-    esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
-
     // Start spiffs & button peripheral
     esp_periph_start(set, spiffs_handle);
-    esp_periph_start(set, button_handle);
-
     // Wait until spiffs is mounted
     while (!periph_spiffs_is_mounted(spiffs_handle)) {
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
+
+    audio_board_key_init(set);
 
     // Setup audio codec
     audio_board_handle_t board_handle = audio_board_init();
