@@ -80,6 +80,7 @@ typedef struct bluetooth_service {
 } bluetooth_service_t;
 
 bluetooth_service_t *g_bt_service = NULL;
+int a2dp_sample_rate = 44100;
 
 static const char *conn_state_str[] = { "Disconnected", "Connecting", "Connected", "Disconnecting" };
 static const char *audio_state_str[] = { "Suspended", "Stopped", "Started" };
@@ -152,10 +153,12 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
                 } else if (oct0 & (0x01 << 4)) {
                     sample_rate = 48000;
                 }
+                a2dp_sample_rate = sample_rate;
                 ESP_LOGD(TAG, "Bluetooth configured, sample rate=%d", sample_rate);
                 if (g_bt_service->stream == NULL) {
                     break;
                 }
+
                 audio_element_info_t bt_info = {0};
                 audio_element_getinfo(g_bt_service->stream, &bt_info);
                 bt_info.sample_rates = sample_rate;
