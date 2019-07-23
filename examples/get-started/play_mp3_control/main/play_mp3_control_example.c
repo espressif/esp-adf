@@ -23,6 +23,8 @@
 #include "mp3_decoder.h"
 #include "esp_peripherals.h"
 #include "periph_touch.h"
+#include "periph_adc_button.h"
+#include "periph_button.h"
 #include "board.h"
 
 static const char *TAG = "PLAY_MP3_FLASH";
@@ -89,15 +91,8 @@ void app_main(void)
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
-    ESP_LOGI(TAG, "[3.1] Initialize Touch peripheral");
-    periph_touch_cfg_t touch_cfg = {
-        .touch_mask = BIT(get_input_set_id()) | BIT(get_input_play_id()) | BIT(get_input_volup_id()) | BIT(get_input_voldown_id()),
-        .tap_threshold_percent = 70,
-    };
-    esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
-
-    ESP_LOGI(TAG, "[3.2] Start all peripherals");
-    esp_periph_start(set, touch_periph);
+    ESP_LOGI(TAG, "[3.1] Initialize keys on board");
+    audio_board_key_init(set);
 
     ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -134,9 +129,8 @@ void app_main(void)
             continue;
         }
 
-        if (msg.source_type == PERIPH_ID_TOUCH
-            && msg.cmd == PERIPH_TOUCH_TAP
-            && msg.source == (void *)touch_periph) {
+        if ((msg.source_type == PERIPH_ID_TOUCH || msg.source_type == PERIPH_ID_BUTTON || msg.source_type == PERIPH_ID_ADC_BTN)
+            && (msg.cmd == PERIPH_TOUCH_TAP || msg.cmd == PERIPH_BUTTON_PRESSED || msg.cmd == PERIPH_ADC_BUTTON_PRESSED)) {
 
             if ((int) msg.data == get_input_play_id()) {
                 ESP_LOGI(TAG, "[ * ] [Play] touch tap event");

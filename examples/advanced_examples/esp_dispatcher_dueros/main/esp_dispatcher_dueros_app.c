@@ -243,15 +243,15 @@ void duer_app_init(void)
 
     ESP_LOGI(TAG, "[Step 3.1] Register display service execution type");
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
-                                   ACTION_EXE_TYPE_DISPLAY_TURN_OFF, display_action_turn_off);
+                                ACTION_EXE_TYPE_DISPLAY_TURN_OFF, display_action_turn_off);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
-                                   ACTION_EXE_TYPE_DISPLAY_TURN_ON, display_action_turn_on);
+                                ACTION_EXE_TYPE_DISPLAY_TURN_ON, display_action_turn_on);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
-                                   ACTION_EXE_TYPE_DISPLAY_WIFI_SETTING, display_action_wifi_setting);
+                                ACTION_EXE_TYPE_DISPLAY_WIFI_SETTING, display_action_wifi_setting);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
-                                   ACTION_EXE_TYPE_DISPLAY_WIFI_CONNECTED, display_action_wifi_connected);
+                                ACTION_EXE_TYPE_DISPLAY_WIFI_CONNECTED, display_action_wifi_connected);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
-                                   ACTION_EXE_TYPE_DISPLAY_WIFI_DISCONNECTED, display_action_wifi_disconnected);
+                                ACTION_EXE_TYPE_DISPLAY_WIFI_DISCONNECTED, display_action_wifi_disconnected);
 
     ESP_LOGI(TAG, "[Step 4.0] Create Wi-Fi service instance");
     wifi_config_t sta_cfg = {0};
@@ -265,13 +265,13 @@ void duer_app_init(void)
 
     ESP_LOGI(TAG, "[Step 4.1] Register wanted display service execution type");
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
-                                   ACTION_EXE_TYPE_WIFI_CONNECT, wifi_action_connect);
+                                ACTION_EXE_TYPE_WIFI_CONNECT, wifi_action_connect);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
-                                   ACTION_EXE_TYPE_WIFI_DISCONNECT, wifi_action_disconnect);
+                                ACTION_EXE_TYPE_WIFI_DISCONNECT, wifi_action_disconnect);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
-                                   ACTION_EXE_TYPE_WIFI_SETTING_STOP, wifi_action_setting_stop);
+                                ACTION_EXE_TYPE_WIFI_SETTING_STOP, wifi_action_setting_stop);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
-                                   ACTION_EXE_TYPE_WIFI_SETTING_START, wifi_action_setting_start);
+                                ACTION_EXE_TYPE_WIFI_SETTING_START, wifi_action_setting_start);
     ESP_LOGI(TAG, "[Step 4.2] Initialize Wi-Fi provisioning type(AIRKISS or SMARTCONFIG)");
     int reg_idx = 0;
     esp_wifi_setting_handle_t h = NULL;
@@ -290,22 +290,22 @@ void duer_app_init(void)
     wifi_service_set_sta_info(dueros_speaker->wifi_serv, &sta_cfg);
     wifi_service_connect(dueros_speaker->wifi_serv);
 
-    ESP_LOGI(TAG, "[Step 5.0] Initialize esp player");
+    ESP_LOGI(TAG, "[Step 5.0] Initialize recorder engine");
+    setup_recorder(rec_engine_cb, dueros_speaker);
+    ESP_LOGI(TAG, "[Step 5.1] Register wanted recorder execution type");
+    esp_dispatcher_reg_exe_func(dispatcher, NULL,
+                                ACTION_EXE_TYPE_REC_WAV_TURN_OFF, recorder_action_rec_wav_turn_off);
+    esp_dispatcher_reg_exe_func(dispatcher, NULL,
+                                ACTION_EXE_TYPE_REC_WAV_TURN_ON, recorder_action_rec_wav_turn_on);
+
+    ESP_LOGI(TAG, "[Step 6.0] Initialize esp player");
     dueros_speaker->player = setup_player(esp_audio_callback_func, NULL);
     esp_player_init(dueros_speaker->player);
-    ESP_LOGI(TAG, "[Step 5.1] Register wanted player execution type");
+    ESP_LOGI(TAG, "[Step 6.1] Register wanted player execution type");
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, ACTION_EXE_TYPE_AUDIO_PLAY, player_action_play);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, ACTION_EXE_TYPE_AUDIO_PAUSE, player_action_pause);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, ACTION_EXE_TYPE_AUDIO_VOLUME_UP, player_action_vol_up);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, ACTION_EXE_TYPE_AUDIO_VOLUME_DOWN, player_action_vol_down);
-
-    ESP_LOGI(TAG, "[Step 6.0] Initialize recorder engine");
-    setup_recorder(rec_engine_cb, dueros_speaker);
-    ESP_LOGI(TAG, "[Step 6.1] Register wanted recorder execution type");
-    esp_dispatcher_reg_exe_func(dispatcher, NULL,
-                                   ACTION_EXE_TYPE_REC_WAV_TURN_OFF, recorder_action_rec_wav_turn_off);
-    esp_dispatcher_reg_exe_func(dispatcher, NULL,
-                                   ACTION_EXE_TYPE_REC_WAV_TURN_ON, recorder_action_rec_wav_turn_on);
 
     ESP_LOGI(TAG, "[Step 7.0] Initialize dueros service");
     dueros_speaker->retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
@@ -314,27 +314,27 @@ void duer_app_init(void)
 
     ESP_LOGI(TAG, "[Step 7.1] Register dueros service execution type");
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_DUER_VOLUME_ADJ, duer_dcs_action_vol_adj);
+                                ACTION_EXE_TYPE_DUER_VOLUME_ADJ, duer_dcs_action_vol_adj);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_DUER_AUDIO, duer_dcs_action_audio_play);
+                                ACTION_EXE_TYPE_DUER_AUDIO, duer_dcs_action_audio_play);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_DUER_SPEAK, duer_dcs_action_speak);
+                                ACTION_EXE_TYPE_DUER_SPEAK, duer_dcs_action_speak);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_AUDIO_GET_PROGRESS_BYTE, duer_dcs_action_get_progress);
+                                ACTION_EXE_TYPE_AUDIO_GET_PROGRESS_BYTE, duer_dcs_action_get_progress);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_AUDIO_PAUSE, duer_dcs_action_audio_pause);
+                                ACTION_EXE_TYPE_AUDIO_PAUSE, duer_dcs_action_audio_pause);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_AUDIO_RESUME, duer_dcs_action_audio_resume);
+                                ACTION_EXE_TYPE_AUDIO_RESUME, duer_dcs_action_audio_resume);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player,
-                                   ACTION_EXE_TYPE_AUDIO_VOLUME_GET, duer_dcs_action_get_state);
+                                ACTION_EXE_TYPE_AUDIO_VOLUME_GET, duer_dcs_action_get_state);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_AUDIO_VOLUME_SET, duer_dcs_action_vol_set);
+                                ACTION_EXE_TYPE_AUDIO_VOLUME_SET, duer_dcs_action_vol_set);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_AUDIO_STOP, duer_dcs_action_audio_stop);
+                                ACTION_EXE_TYPE_AUDIO_STOP, duer_dcs_action_audio_stop);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_DUER_CONNECT, dueros_action_connect);
+                                ACTION_EXE_TYPE_DUER_CONNECT, dueros_action_connect);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
-                                   ACTION_EXE_TYPE_DUER_DISCONNECT, dueros_action_disconnect);
+                                ACTION_EXE_TYPE_DUER_DISCONNECT, dueros_action_disconnect);
     audio_service_set_callback(dueros_speaker->audio_serv, duer_callback, dueros_speaker);
     ESP_LOGI(TAG, "[Step 8.0] Initialize Done");
 }
