@@ -137,6 +137,11 @@ If the ESP32-LyraTD-MSC is initially set up and checked, you can proceed with pr
 * :ref:`get-started-connect-configure` to prepare the application for loading;
 * :ref:`get-started-build-flash-monitor` this will finally run the application and play some music.
 
+Other Boards from LyraT Family
+------------------------------
+
+* :doc:`get-started-esp32-lyrat`
+* :doc:`get-started-esp32-lyrat-mini`
 
 Related Documents
 -----------------

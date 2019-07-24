@@ -3,7 +3,9 @@ ESP32-LyraT V4.3 Getting Started Guide
 
 This guide provides users with functional descriptions, configuration options for ESP32-LyraT V4.3 audio development board, as well as how to get started with the ESP32-LyraT board. Check section `Other Versions of LyraT`_, if you have different version of this board.
 
-The ESP32-LyraT is a hardware platform designed for the dual-core ESP32 audio applications, e.g., Wi-Fi or BT audio speakers, speech-based remote controllers, smart-home appliances with audio functionality(ies), etc.
+The ESP32-LyraT is a hardware platform designed for the dual-core ESP32 audio applications, e.g., Wi-Fi or BT audio speakers, speech-based remote controllers, connected smart-home appliances with one or more audio functionality, etc. 
+
+The ESP32-LyraT is a stereo audio board. If you are looking for a mono audio board, intended for lower end applications, check :doc:`get-started-esp32-lyrat-mini`.
 
 
 What You Need
@@ -135,6 +137,11 @@ Other Versions of LyraT
 * :doc:`get-started-esp32-lyrat-v4.2`
 * :doc:`get-started-esp32-lyrat-v4`
 
+Other Boards from LyraT Family
+------------------------------
+
+* :doc:`get-started-esp32-lyrat-mini`
+* :doc:`get-started-esp32-lyratd-msc`
 
 Related Documents
 -----------------
