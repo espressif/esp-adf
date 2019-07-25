@@ -144,8 +144,8 @@ esp_err_t i2c_bus_delete(i2c_bus_handle_t bus)
     I2C_BUS_CHECK(bus != NULL, "Handle error", ESP_FAIL);
     i2c_bus_t *p_bus = (i2c_bus_t *) bus;
     i2c_driver_delete(p_bus->i2c_port);
-    free(p_bus);
     i2c_bus[p_bus->i2c_port] = NULL;
+    free(p_bus);
     mutex_destroy(_busLock);
 
     _busLock = NULL;
