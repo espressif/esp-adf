@@ -52,6 +52,7 @@ int main (int argc, char** argv)
     status = VprocTwolfHbiInit();
     if (status < 0) {
         perror("tw_spi_access open");
+        fclose(BOOT_FD);
         return -1;
     }
 
