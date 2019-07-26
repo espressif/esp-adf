@@ -354,9 +354,22 @@ esp_err_t audio_pipeline_stop(audio_pipeline_handle_t pipeline)
 {
     audio_element_item_t *el_item;
     ESP_LOGD(TAG, "audio_element_stop");
+    bool type = false;
+    STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
+        if (el_item->linked
+            && el_item->el_state == AEL_STATUS_STATE_FINISHED) {
+            type = true;
+            ESP_LOGW(TAG, "audio_element_stop type is finished");
+            break;
+        }
+    }
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
-            audio_element_stop(el_item->el);
+            if (type) {
+                audio_element_set_ringbuf_done(el_item->el);
+            } else {
+                audio_element_stop(el_item->el);
+            }
         }
     }
     return ESP_OK;
