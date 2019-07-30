@@ -580,6 +580,17 @@ esp_err_t audio_element_set_output_timeout(audio_element_handle_t el, TickType_t
 esp_err_t audio_element_reset_input_ringbuf(audio_element_handle_t el);
 
 /**
+ * @brief      Set element finish state
+ *
+ * @param[in]  el    The audio element handle
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_finish_state(audio_element_handle_t el);
+
+/**
  * @brief      Reset outputbuffer.
  *
  * @param[in]  el    The audio element handle

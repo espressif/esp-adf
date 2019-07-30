@@ -218,7 +218,6 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             audio_element_report_status(el, AEL_STATUS_STATE_FINISHED);
             el->is_running = false;
             xEventGroupSetBits(el->state_event, STOPPED_BIT);
-            audio_element_finish_state(el);
             ESP_LOGD(TAG, "[%s] AEL_MSG_CMD_FINISH", el->tag);
             break;
         case AEL_MSG_CMD_STOP:
