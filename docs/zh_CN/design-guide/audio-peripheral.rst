@@ -1,0 +1,1 @@
+.. include:: ../../en/design-guide/audio-peripheral.rst

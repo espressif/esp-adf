@@ -1,0 +1,1 @@
+.. include:: ../../en/design-guide/board-esp32-lyrat-v4.3.rst

@@ -1,0 +1,1 @@
+.. include:: ../../../en/api-reference/services/bluetooth_service.rst

@@ -1,0 +1,1 @@
+.. include:: ../../../en/api-reference/codecs/aac_decoder.rst

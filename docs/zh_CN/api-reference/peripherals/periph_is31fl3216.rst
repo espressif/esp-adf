@@ -1,0 +1,1 @@
+.. include:: ../../../en/api-reference/peripherals/periph_is31fl3216.rst

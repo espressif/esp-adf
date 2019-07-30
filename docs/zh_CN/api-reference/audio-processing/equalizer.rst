@@ -1,0 +1,1 @@
+.. include:: ../../../en/api-reference/audio-processing/equalizer.rst
