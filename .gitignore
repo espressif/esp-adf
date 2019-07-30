@@ -33,6 +33,10 @@ docs/*/xml_in/
 docs/*/man/
 docs/*/doxygen_sqlite3.db
 
+# Downloaded font files
+docs/_static/DejaVuSans.ttf
+docs/_static/NotoSansSC-Regular.otf
+
 # gcov coverage reports
 *.gcda
 *.gcno

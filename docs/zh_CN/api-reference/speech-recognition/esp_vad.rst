@@ -1,0 +1,1 @@
+.. include:: ../../../en/api-reference/speech-recognition/esp_vad.rst

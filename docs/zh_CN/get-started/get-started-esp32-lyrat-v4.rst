@@ -1,0 +1,1 @@
+.. include:: ../../en/get-started/get-started-esp32-lyrat-v4.rst

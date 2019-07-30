@@ -1,8 +1,8 @@
-Espressif Audio Development Guide
-=================================
-:link_to_translation:`zh_CN:[中文]`
+乐鑫音频应用开发指南
+===========================
+:link_to_translation:`en:[English]`
 
-This is the documentation for Espressif Audio Development Framework (ADF).
+这里是乐鑫音频开发框架（ADF）的文档中心。
 
 
 +------------------+------------------+------------------+

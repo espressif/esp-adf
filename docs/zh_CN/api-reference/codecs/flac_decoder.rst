@@ -1,0 +1,1 @@
+.. include:: ../../../en/api-reference/codecs/flac_decoder.rst
