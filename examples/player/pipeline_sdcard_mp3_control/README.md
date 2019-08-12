@@ -1,6 +1,6 @@
 # Play MP3 files from microSD with control 
 
-The example plays MP3 files stored on the SD card using audio pipeline API. User can start, stop, pause, resume playback and advance to the next song as well as adjust volume. When playing, the application automatically advances to the next song once previous finishes.
+The demo plays MP3 files stored on the SD card using audio pipeline API, it will scan the sdcard and save mp3 urls into sdcard playlist. Users can start, stop, pause, resume playback and advance to the next song as well as adjust volume. When playing, the App automatically advances to the next song once the previous music file finishes.
 
 ## Compatibility
 
@@ -14,7 +14,7 @@ The example plays MP3 files stored on the SD card using audio pipeline API. User
 Prepare the audio board:
 
 - Connect speakers or headphones to the board. 
-- Insert a microSD card loaded with a MP3 files 'test.mp3', 'test1.mp3' and 'test2.mp3' into board's slot.
+- Insert a microSD card loaded with some MP3 files in the root directory 
 
 Configure the example:
 

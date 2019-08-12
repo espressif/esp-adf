@@ -30,62 +30,14 @@
 #include "periph_adc_button.h"
 #include "board.h"
 
+#include "sdcard_list.h"
+#include "sdcard_scan.h"
+
 static const char *TAG = "SDCARD_MP3_CONTROL_EXAMPLE";
 
-static const char *mp3_file[] = {
-    "/sdcard/test.mp3",
-    "/sdcard/test1.mp3",
-    "/sdcard/test2.mp3",
-};
-// more files may be added and `MP3_FILE_COUNT` will reflect the actual count
-#define MP3_FILE_COUNT sizeof(mp3_file)/sizeof(char*)
-
-#define CURRENT 0
-#define NEXT    1
-
 audio_pipeline_handle_t pipeline;
-audio_element_handle_t i2s_stream_writer, mp3_decoder;
-
-static FILE *get_file(int next_file)
-{
-    static FILE *file;
-    static int file_index = 0;
-
-    if (next_file != CURRENT) {
-        // advance to the next file
-        if (++file_index > MP3_FILE_COUNT - 1) {
-            file_index = 0;
-        }
-        if (file != NULL) {
-            fclose(file);
-            file = NULL;
-        }
-        ESP_LOGI(TAG, "[ * ] File index %d", file_index);
-    }
-    // return a handle to the current file
-    if (file == NULL) {
-        file = fopen(mp3_file[file_index], "r");
-        if (!file) {
-            ESP_LOGE(TAG, "Error opening file");
-            return NULL;
-        }
-    }
-    return file;
-}
-
-/*
- * Callback function to feed audio data stream from sdcard to mp3 decoder element
- */
-static int my_sdcard_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
-{
-    FILE *f = get_file(CURRENT);
-    AUDIO_NULL_CHECK(TAG, f, return AEL_IO_FAIL);
-    int read_len = fread(buf, 1, len, f);
-    if (read_len == 0) {
-        read_len = AEL_IO_DONE;
-    }
-    return read_len;
-}
+audio_element_handle_t i2s_stream_writer, mp3_decoder, fatfs_stream_reader, rsp_handle;
+playlist_operator_handle_t sdcard_list_handle = NULL;
 
 static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
 {
@@ -121,9 +73,14 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 break;
             case INPUT_KEY_USER_ID_SET:
                 ESP_LOGI(TAG, "[ * ] [Set] input key event");
-                audio_pipeline_terminate(pipeline);
                 ESP_LOGI(TAG, "[ * ] Stopped, advancing to the next song");
-                get_file(NEXT);
+                char *url = NULL;
+                audio_pipeline_terminate(pipeline);
+                sdcard_list_next(sdcard_list_handle, 1, &url);
+                ESP_LOGW(TAG, "URL: %s", url);
+                audio_element_set_uri(fatfs_stream_reader, url);
+                audio_pipeline_reset_ringbuffer(pipeline);
+                audio_pipeline_reset_elements(pipeline);
                 audio_pipeline_run(pipeline);
                 break;
             case INPUT_KEY_USER_ID_VOLUP:
@@ -150,7 +107,15 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
     return ESP_OK;
 }
 
-extern void Es8388ReadAll();
+void sdcard_url_save_cb(void *user_data, char *url)
+{
+    playlist_operator_handle_t sdcard_handle = (playlist_operator_handle_t)user_data;
+    esp_err_t ret = sdcard_list_save(sdcard_handle, url);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Fail to save sdcard url to sdcard playlist");
+    }
+}
+
 void app_main(void)
 {
     esp_log_level_set("*", ESP_LOG_WARN);
@@ -160,10 +125,14 @@ void app_main(void)
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
+    ESP_LOGI(TAG, "[1.1] Initialize and start peripherals");
+    audio_board_key_init(set);
     audio_board_sdcard_init(set);
 
-    ESP_LOGI(TAG, "[1.2] Initialize and start peripherals");
-    audio_board_key_init(set);
+    ESP_LOGI(TAG, "[1.2] Set up a sdcard playlist and scan sdcard music save to it");
+    sdcard_list_create(&sdcard_list_handle);
+    sdcard_scan(sdcard_url_save_cb, "/sdcard", 0, (const char *[]) {"mp3"}, 1, sdcard_list_handle);
+    sdcard_list_show(sdcard_list_handle);
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
@@ -189,7 +158,6 @@ void app_main(void)
     ESP_LOGI(TAG, "[4.2] Create mp3 decoder to decode mp3 file");
     mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
     mp3_decoder = mp3_decoder_init(&mp3_cfg);
-    audio_element_set_read_cb(mp3_decoder, my_sdcard_read_cb, NULL);
 
     /* ZL38063 audio chip on board of ESP32-LyraTD-MSC does not support 44.1 kHz sampling frequency,
        so resample filter has been added to convert audio data to other rates accepted by the chip.
@@ -197,15 +165,24 @@ void app_main(void)
     */
     ESP_LOGI(TAG, "[4.3] Create resample filter");
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    audio_element_handle_t rsp_handle = rsp_filter_init(&rsp_cfg);
+    rsp_handle = rsp_filter_init(&rsp_cfg);
 
-    ESP_LOGI(TAG, "[4.4] Register all elements to audio pipeline");
+    ESP_LOGI(TAG, "[4.4] Create fatfs stream to read data from sdcard");
+    char *url = NULL;
+    sdcard_list_current(sdcard_list_handle, &url);
+    fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
+    fatfs_cfg.type = AUDIO_STREAM_READER;
+    fatfs_stream_reader = fatfs_stream_init(&fatfs_cfg);
+    audio_element_set_uri(fatfs_stream_reader, url);
+
+    ESP_LOGI(TAG, "[4.5] Register all elements to audio pipeline");
+    audio_pipeline_register(pipeline, fatfs_stream_reader, "file");
     audio_pipeline_register(pipeline, mp3_decoder, "mp3");
     audio_pipeline_register(pipeline, rsp_handle, "filter");
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
 
-    ESP_LOGI(TAG, "[4.5] Link it together [my_sdcard_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]");
-    audio_pipeline_link(pipeline, (const char *[]) {"mp3", "filter", "i2s"}, 3);
+    ESP_LOGI(TAG, "[4.6] Link it together [sdcard]-->fatfs_stream-->mp3_decoder-->resample-->i2s_stream-->[codec_chip]");
+    audio_pipeline_link(pipeline, (const char *[]) {"file", "mp3", "filter", "i2s"}, 4);
 
     ESP_LOGI(TAG, "[5.0] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -246,9 +223,16 @@ void app_main(void)
                 audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
                 if (el_state == AEL_STATE_FINISHED) {
                     ESP_LOGI(TAG, "[ * ] Finished, advancing to the next song");
-                    audio_pipeline_stop(pipeline);
-                    audio_pipeline_wait_for_stop(pipeline);
-                    get_file(NEXT);
+                    sdcard_list_next(sdcard_list_handle, 1, &url);
+                    ESP_LOGW(TAG, "URL: %s", url);
+                    /* In previous versions, audio_pipeline_terminal() was called here. It will close all the elememnt task and when use
+                     * the pipeline next time, all the tasks should be restart again. It speed too much time when we switch to another music.
+                     * So we use another method to acheive this as below.
+                     */
+                    audio_element_set_uri(fatfs_stream_reader, url);
+                    audio_pipeline_reset_ringbuffer(pipeline);
+                    audio_pipeline_reset_elements(pipeline);
+                    audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
                     audio_pipeline_run(pipeline);
                 }
                 continue;
