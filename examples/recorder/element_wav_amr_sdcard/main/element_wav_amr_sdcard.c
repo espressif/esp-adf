@@ -70,7 +70,7 @@ void app_main()
     ESP_LOGI(TAG, "[3.0] Create i2s stream to read audio data from codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_cfg.task_core =1;
+    i2s_cfg.task_core = 1;
     i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_cfg.i2s_port = 1;
@@ -97,13 +97,13 @@ void app_main()
 
     ESP_LOGI(TAG, "[3.3] Create a ringbuffer and insert it between i2s_stream_reader and wav_encoder");
     ringbuf01 = rb_create(RING_BUFFER_SIZE, 1);
-    audio_element_set_output_ringbuf(i2s_stream_reader,ringbuf01);
-    audio_element_set_input_ringbuf(wav_encoder,ringbuf01);
+    audio_element_set_output_ringbuf(i2s_stream_reader, ringbuf01);
+    audio_element_set_input_ringbuf(wav_encoder, ringbuf01);
     
     ESP_LOGI(TAG, "[3.4] Create a ringbuffer and insert it between wav_encoder and wav_fatfs_stream_writer");
     ringbuf02 = rb_create(RING_BUFFER_SIZE, 1);
-    audio_element_set_output_ringbuf(wav_encoder,ringbuf02);
-    audio_element_set_input_ringbuf(wav_fatfs_stream_writer,ringbuf02);
+    audio_element_set_output_ringbuf(wav_encoder, ringbuf02);
+    audio_element_set_input_ringbuf(wav_fatfs_stream_writer, ringbuf02);
 
     ESP_LOGI(TAG, "[3.5] Set up uri (file as fatfs_stream, wav as wav encoder)");
     audio_element_set_uri(wav_fatfs_stream_writer, "/sdcard/rec_out.wav");
@@ -131,7 +131,7 @@ void app_main()
     ESP_LOGI(TAG, "[4.3] Create a ringbuffer and insert it between wav_encoder and wav_fatfs_stream_writer");
     ringbuf12 = rb_create(RING_BUFFER_SIZE, 1);
     audio_element_set_output_ringbuf(amr_encoder,ringbuf12);
-    audio_element_set_input_ringbuf(amr_fatfs_stream_writer,ringbuf12);
+    audio_element_set_input_ringbuf(amr_fatfs_stream_writer, ringbuf12);
 
     ESP_LOGI(TAG, "[4.4] Set up uri (file as fatfs_stream, wav as wav encoder)");
 #ifdef CONFIG_CHOICE_AMR_WB

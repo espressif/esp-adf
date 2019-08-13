@@ -47,7 +47,7 @@ void app_main()
     ESP_LOGI(TAG, "[3.1] Create i2s stream to read audio data from codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_cfg.task_core =1;
+    i2s_cfg.task_core = 1;
     i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_cfg.i2s_port = 1;
@@ -73,9 +73,9 @@ void app_main()
     audio_element_setinfo(wav_fatfs_stream_writer, &info);
 
     ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline");
-    audio_pipeline_register(pipeline_wav, i2s_stream_reader,  "i2s");
-    audio_pipeline_register(pipeline_wav, wav_encoder,        "wav");
-    audio_pipeline_register(pipeline_wav, wav_fatfs_stream_writer,  "wav_file");
+    audio_pipeline_register(pipeline_wav, i2s_stream_reader, "i2s");
+    audio_pipeline_register(pipeline_wav, wav_encoder, "wav");
+    audio_pipeline_register(pipeline_wav, wav_fatfs_stream_writer, "wav_file");
 
     ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->i2s_stream-->wav_encoder-->fatfs_stream-->[sdcard]");
     audio_pipeline_link(pipeline_wav, (const char *[]) {"i2s", "wav", "wav_file"}, 3);
@@ -116,7 +116,7 @@ void app_main()
     audio_pipeline_register(pipeline_amr, amr_fatfs_stream_writer, "amr_file");
  
     ESP_LOGI(TAG, "[4.5] Link it together [codec_chip]-->i2s_stream-->wav_encoder-->fatfs_stream-->[sdcard]");
-    audio_pipeline_link(pipeline_amr, (const char *[]) {"amr_raw","amr","amr_file"}, 3);
+    audio_pipeline_link(pipeline_amr, (const char *[]) {"amr_raw", "amr", "amr_file"}, 3);
 #ifdef CONFIG_CHOICE_AMR_WB
     audio_pipeline_link(pipeline_amr, (const char *[]) {
         "amr_raw", "Wamr", "amr_file"
@@ -157,7 +157,7 @@ void app_main()
             second_recorded++;
             ESP_LOGI(TAG, "[ * ] Recording ... %d", second_recorded);
             if (second_recorded >= RECORD_TIME_SECONDS) {
-                ESP_LOGI(TAG, "Finishing amr recording");
+                ESP_LOGI(TAG, "Finishing recording");
                 break;
             }
             continue;

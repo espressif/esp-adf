@@ -239,7 +239,7 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
             audio_element_getinfo(self, &i2s_info);
             alc_volume_setup_process(in_buffer, r_size, i2s_info.channels, i2s->volume_handle, i2s->volume);
         }
-        audio_element_multi_output(self, in_buffer, r_size,0);
+        audio_element_multi_output(self, in_buffer, r_size, 0);
         w_size = audio_element_output(self, in_buffer, r_size);
     } else {
         i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
