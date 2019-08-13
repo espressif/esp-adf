@@ -45,7 +45,7 @@ static void hp_timer_cb(TimerHandle_t xTimer)
 {
     int num = (int)pvTimerGetTimerID(xTimer);
     int res = gpio_get_level(num);
-    es8388_pa_power(res);
+    //es8388_pa_power(res);
     ESP_LOGW(TAG, "Headphone jack %s", res ? "removed" : "inserted");
 }
 

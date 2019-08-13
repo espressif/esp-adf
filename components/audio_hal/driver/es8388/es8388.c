@@ -270,7 +270,7 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     int res = 0;
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 #include "headphone_detect.h"
-    headphone_detect_init(get_headphone_detect_gpio());
+    //headphone_detect_init(get_headphone_detect_gpio());
 #endif
 
     res = i2c_init(); // ESP32 in master mode
@@ -370,8 +370,10 @@ int es8388_set_voice_volume(int volume)
     volume /= 3;
     res = es_write_reg(ES8388_ADDR, ES8388_DACCONTROL24, volume);
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, volume);
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, 0);
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, 0);
+    //res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, 0);
+    //res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, 0);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, volume);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, volume);
     return res;
 }
 /**
