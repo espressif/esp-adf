@@ -1,11 +1,11 @@
 /****************************************************************************
-* tw_spi_access.c - Demo apps demonstrating how to access registers of the 
+* tw_spi_access.c - Demo apps demonstrating how to access registers of the
 * device over spi or I2C. Loading a firmware and or config into the device
 *
 *
 ****************************************************************************
-* Copyright Microsemi Inc, 2018. All rights reserved. 
-* Licensed under the MIT License. See LICENSE.txt in the project 
+* Copyright Microsemi Inc, 2018. All rights reserved.
+* Licensed under the MIT License. See LICENSE.txt in the project
 * root for license information.
 *
 ***************************************************************************/
@@ -103,7 +103,7 @@ int tw_upload_dsp_firmware(int mode)
             return status;
         }
     }
-    
+
 #if 1
     if ((mode == 0) || (mode == 2)) {
         ESP_LOGI(TAG_SPI, "3- Loading the config file into the device RAM....");
@@ -135,7 +135,7 @@ int tw_upload_dsp_firmware(int mode)
         return status;
     }
 #endif
-   
+
     ESP_LOGI(TAG_SPI, "Device boot loading completed successfully...");
     return status;
 }
@@ -250,7 +250,7 @@ int zl38063_comm(int argc, char **argv)
         unsigned short  cmdword = (unsigned short)strtoul(argv[2], NULL, 0);
         unsigned char  numwords = 0;
 
-        memset(val, 0, 128);
+        memset(val, 0, sizeof(val));
 
         if  (strcmp(argv[1], "-wr") == 0) { /*for WRITING 1 or more ZL380xx registers*/
 
