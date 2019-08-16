@@ -56,9 +56,9 @@ display_service_handle_t display_service_create(display_service_config_t *config
     AUDIO_NULL_CHECK(TAG, config, return NULL);
     display_service_impl_t *disp =  audio_calloc(1, sizeof(display_service_impl_t));
     AUDIO_MEM_CHECK(TAG, disp, return NULL);
+    config->based_cfg.user_data = (void *)disp;
     disp->based = periph_service_create(&config->based_cfg);
     disp->instance = config->instance;
-    periph_service_set_data(disp->based, disp);
 
     return disp;
 }

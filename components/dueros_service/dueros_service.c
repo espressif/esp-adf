@@ -306,6 +306,9 @@ service_state_t dueros_service_state_get()
 
 audio_service_handle_t dueros_service_create(void)
 {
+    dueros_service_t *serv =  audio_calloc(1, sizeof(dueros_service_t));
+    serv->duer_que = xQueueCreate(3, sizeof(duer_task_msg_t));
+    serv->duer_state = SERVICE_STATE_UNKNOWN;
     audio_service_config_t duer_cfg = {
         .task_stack = DUEROS_TASK_STACK_SIZE,
         .task_prio  = DUEROS_TASK_PRIORITY,
@@ -317,14 +320,9 @@ audio_service_handle_t dueros_service_create(void)
         .service_disconnect = dueros_disconnect,
         .service_destroy = dueros_destroy,
         .service_name = "duer_serv",
-        .user_data = NULL,
+        .user_data = serv,
     };
     audio_service_handle_t duer = audio_service_create(&duer_cfg);
-    dueros_service_t *serv =  audio_calloc(1, sizeof(dueros_service_t));
-
-    serv->duer_que = xQueueCreate(3, sizeof(duer_task_msg_t));
-    serv->duer_state = SERVICE_STATE_UNKNOWN;
-    audio_service_set_data(duer, serv);
     duer_serv_handle = duer;
     return duer;
 }

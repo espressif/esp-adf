@@ -1,11 +1,11 @@
 /****************************************************************************
-* tw_hal_verify.c - Read/write registers of the device and verify whether the 
+* tw_hal_verify.c - Read/write registers of the device and verify whether the
 * device is accessed properly
 *
 *
 ****************************************************************************
-* Copyright Microsemi Inc, 2018. All rights reserved. 
-* Licensed under the MIT License. See LICENSE.txt in the project 
+* Copyright Microsemi Inc, 2018. All rights reserved.
+* Licensed under the MIT License. See LICENSE.txt in the project
 * root for license information.
 *
 ***************************************************************************/
@@ -165,8 +165,8 @@ int test_zl38063(void* arg)
 
         ESP_LOGD(TAG,"MAX_WORDS_FOR_MULTIWORD_ACCESS_TEST must between 2 and 126");
     }
-    memset(val, 0, MAX_WORDS_FOR_MULTIWORD_ACCESS_TEST);
-    memset(tempbuf, 0, MAX_WORDS_FOR_MULTIWORD_ACCESS_TEST);
+    memset(val, 0, sizeof(val));
+    memset(tempbuf, 0, sizeof(tempbuf));
 
     ESP_LOGD(TAG,"Test 1 - Verifying that the device is present and working ....");
     cmdword = 0x00C;
@@ -215,7 +215,7 @@ int test_zl38063(void* arg)
     }
     ESP_LOGD(TAG,"Device reset completed successfully...");
 
-    
+
     ESP_LOGD(TAG,"Test 2 - Verifying single word write/read access ....");
     cmdword = 0x0300;
     val[0] = 0x4008;
