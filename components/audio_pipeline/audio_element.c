@@ -320,6 +320,7 @@ static esp_err_t audio_element_process_state_running(audio_element_handle_t el)
                 ESP_LOGE(TAG, "[%s] ERROR_PROCESS, AEL_PROCESS_FAIL", el->tag);
                 audio_element_report_status(el, AEL_STATUS_ERROR_PROCESS);
                 audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
+                break;
             default:
                 ESP_LOGW(TAG, "[%s] Process return error,ret:%d", el->tag, process_len);
                 break;
@@ -607,7 +608,7 @@ esp_err_t audio_element_report_status(audio_element_handle_t el, audio_element_s
 
 esp_err_t audio_element_finish_state(audio_element_handle_t el)
 {
-    if (el->task_stack < 0) {
+    if (el->task_stack <= 0) {
         el->state = AEL_STATE_FINISHED;
         audio_element_report_status(el, AEL_STATUS_STATE_FINISHED);
         el->is_running = false;
@@ -806,6 +807,11 @@ esp_err_t audio_element_set_write_cb(audio_element_handle_t el, stream_func fn, 
 
 esp_err_t audio_element_wait_for_stop(audio_element_handle_t el)
 {
+    if (el->state == AEL_STATE_STOPPED
+        || el->state == AEL_STATE_INIT) {
+        ESP_LOGD(TAG, "[%s] Element already stoped, no need waiting", el->tag);
+        return ESP_OK;
+    }
     EventBits_t uxBits = xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
     esp_err_t ret = ESP_FAIL;
     if (uxBits & STOPPED_BIT) {

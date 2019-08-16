@@ -71,7 +71,7 @@ typedef struct {
     periph_service_ctrl         service_destroy;        /*!< Destroy function */
     periph_service_io           service_ioctl;          /*!< In out control function */
     char                        *service_name;          /*!< Name of peripheral service */
-    char                        *user_data;             /*!< User data */
+    void                        *user_data;             /*!< User data */
 } periph_service_config_t;
 
 /**

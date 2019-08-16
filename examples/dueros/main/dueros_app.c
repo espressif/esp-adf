@@ -237,8 +237,9 @@ static esp_err_t duer_callback(audio_service_handle_t handle, service_event_t *e
                 break;
             }
         case SERVICE_STATE_CONNECTING: break;
-        case SERVICE_STATE_CONNECTED: break;
+        case SERVICE_STATE_CONNECTED:
             retry_num = 1;
+            break;
         case SERVICE_STATE_RUNNING: break;
         case SERVICE_STATE_STOPED: break;
         default:
