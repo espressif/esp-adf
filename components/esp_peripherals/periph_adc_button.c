@@ -53,6 +53,7 @@ static void btn_cb(void *user_data, int adc, int id, adc_btn_state_t state)
 static esp_err_t _adc_button_destroy(esp_periph_handle_t self)
 {
     periph_adc_btn_t *periph_adc_btn = esp_periph_get_data(self);
+    adc_btn_delete_task();
     adc_btn_destroy_list(periph_adc_btn->list);
     free(periph_adc_btn);
     return ESP_OK;
