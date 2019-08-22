@@ -4,7 +4,7 @@ When [Rec] button on an audio board is pressed, this example will record, and wh
 
 For the Recorder:
 
-- We will set up I2S and get audio at sample rate 48000 Hz, 16-bits, 2 channel.
+- We will set up I2S and get audio at sample rate 48000 Hz, 16-bits, stereo.
 - Using resample-filter to convert to 16000 Hz, 16-bits, 1 channel. 
 - Encode with Wav encoder
 - Write to microSD
@@ -18,10 +18,10 @@ For the Playback:
 
 ## Compatibility
 
-| ESP32-LyraT | ESP32-LyraT-MSC |
-|:-----------:|:---------------:|
-| [![alt text](../../../docs/_static/esp32-lyrat-v4.2-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) |
-| ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/no-button.png "Not Compatible") |
+| ESP32-LyraT | ESP32-LyraTD-MSC | ESP32-LyraT-Mini |
+|:-----------:|:---------------:|:----------------:|
+| [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) |
+| ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/yes-button.png "Compatible") |![alt text](../../../docs/_static/yes-button.png "Compatible") |
 
 ## Usage
 
