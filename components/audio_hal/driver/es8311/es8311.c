@@ -68,6 +68,7 @@ audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE = {
     .audio_codec_deinitialize = es8311_codec_deinit,
     .audio_codec_ctrl = es8311_codec_ctrl_state,
     .audio_codec_config_iface = es8311_codec_config_i2s,
+    .audio_codec_set_mute = es8311_set_voice_mute,
     .audio_codec_set_volume = es8311_codec_set_voice_volume,
     .audio_codec_get_volume = es8311_codec_get_voice_volume,
 };
@@ -712,7 +713,7 @@ int es8311_codec_get_voice_volume(int *volume)
     return res;
 }
 
-int es8311_set_voice_mute(int enable)
+esp_err_t es8311_set_voice_mute(bool enable)
 {
     int res = 0;
     ESP_LOGD(TAG, "Es8311SetVoiceMute volume:%d", enable);

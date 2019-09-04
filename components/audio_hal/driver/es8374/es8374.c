@@ -52,6 +52,7 @@ audio_hal_func_t AUDIO_CODEC_ES8374_DEFAULT_HANDLE = {
     .audio_codec_deinitialize = es8374_codec_deinit,
     .audio_codec_ctrl = es8374_codec_ctrl_state,
     .audio_codec_config_iface = es8374_codec_config_i2s,
+    .audio_codec_set_mute = es8374_set_voice_mute,
     .audio_codec_set_volume = es8374_codec_set_voice_volume,
     .audio_codec_get_volume = es8374_codec_get_voice_volume,
 };
@@ -141,7 +142,7 @@ void es8374_read_all()
     }
 }
 
-int es8374_set_voice_mute(int enable)
+esp_err_t es8374_set_voice_mute(bool enable)
 {
     int res = 0;
     uint8_t reg = 0;
