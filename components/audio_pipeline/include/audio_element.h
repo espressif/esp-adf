@@ -160,7 +160,7 @@ typedef struct {
     int                 task_core;        /*!< Element task running in core (0 or 1) */
     int                 out_rb_size;      /*!< Output ringbuffer size */
     void                *data;            /*!< User context */
-    char                *tag;             /*!< Element tag */
+    const char          *tag;             /*!< Element tag */
     bool                enable_multi_io;  /*!< Enable multi input and output ringbuffer */
 } audio_element_cfg_t;
 
@@ -796,6 +796,28 @@ ringbuf_handle_t audio_element_get_multi_input_ringbuf(audio_element_handle_t el
  *     - Others ringbuf_handle_t
  */
 ringbuf_handle_t audio_element_get_multi_output_ringbuf(audio_element_handle_t el, int index);
+
+/**
+ * @brief      Provides a way to call element's `open`
+ *
+ * @param[in]  el    The audio element handle
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_process_init(audio_element_handle_t el);
+
+/**
+ * @brief      Provides a way to call elements's `close`
+ *
+ * @param[in]  el    The audio element handle
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_process_deinit(audio_element_handle_t el);
 
 #ifdef __cplusplus
 }

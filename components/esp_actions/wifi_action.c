@@ -27,7 +27,7 @@
 #include "wifi_action.h"
 #include "wifi_service.h"
 
-static char *TAG = "WIFI_ACTION";
+static const char *TAG = "WIFI_ACTION";
 
 
 esp_err_t wifi_action_connect(void *ctx, action_arg_t *arg, action_result_t *result)

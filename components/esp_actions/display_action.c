@@ -27,7 +27,7 @@
 #include "esp_log.h"
 #include "display_service.h"
 
-static char *TAG = "DIS_ACTION";
+static const char *TAG = "DIS_ACTION";
 
 esp_err_t display_action_wifi_disconnected(void *instance, action_arg_t *arg, action_result_t *result)
 {

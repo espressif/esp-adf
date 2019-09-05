@@ -27,7 +27,7 @@
 #include "esp_audio.h"
 #include "esp_log.h"
 
-static char *TAG = "PLAYER_ACTION";
+static const char *TAG = "PLAYER_ACTION";
 
 esp_err_t player_action_play(void *instance, action_arg_t *arg, action_result_t *result)
 {
