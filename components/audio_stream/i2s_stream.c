@@ -145,7 +145,7 @@ static esp_err_t _i2s_open(audio_element_handle_t self)
 static esp_err_t _i2s_destroy(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
-    i2s_driver_uninstall(I2S_NUM_0);
+    i2s_driver_uninstall(i2s->config.i2s_port);
     audio_free(i2s);
     return ESP_OK;
 }

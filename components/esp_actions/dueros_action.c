@@ -27,7 +27,7 @@
 #include "dueros_action.h"
 #include "dueros_service.h"
 
-static char *TAG = "DUER_ACTION";
+static const char *TAG = "DUER_ACTION";
 
 esp_err_t dueros_action_disconnect(void *instance, action_arg_t *arg, action_result_t *result)
 {

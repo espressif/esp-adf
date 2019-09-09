@@ -356,6 +356,17 @@ esp_err_t audio_pipeline_reset_items_state(audio_pipeline_handle_t pipeline);
 esp_err_t audio_pipeline_reset_ringbuffer(audio_pipeline_handle_t pipeline);
 
 /**
+ * @brief      Reset Pipeline linked elements state
+ *
+ * @param[in]  pipeline   The Audio Pipeline Handle
+ *
+ * @return
+ *     - ESP_OK on success
+ *     - ESP_FAIL when any errors
+ */
+esp_err_t audio_pipeline_reset_elements(audio_pipeline_handle_t pipeline);
+
+/**
  * @brief      Break up all the linked elements of specific `pipeline`.
  *             The include and before `kept_ctx_el` working (AEL_STATE_RUNNING or AEL_STATE_PAUSED) elements
  *             and connected ringbuffer will be reserved.

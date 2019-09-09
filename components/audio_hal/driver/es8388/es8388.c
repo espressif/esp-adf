@@ -28,6 +28,10 @@
 #include "es8388.h"
 #include "board_pins_config.h"
 
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+#include "headphone_detect.h"
+#endif
+
 static const char *ES_TAG = "ES8388_DRIVER";
 
 #define ES_ASSERT(a, format, b, ...) \
@@ -258,6 +262,11 @@ esp_err_t es8388_deinit(void)
 {
     int res = 0;
     res = es_write_reg(ES8388_ADDR, ES8388_CHIPPOWER, 0xFF);  //reset and stop es8388
+    i2c_driver_delete(I2C_NUM_0);
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    headphone_detect_deinit();
+#endif
+
     return res;
 }
 
@@ -270,7 +279,6 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
 {
     int res = 0;
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-#include "headphone_detect.h"
     headphone_detect_init(get_headphone_detect_gpio());
 #endif
 

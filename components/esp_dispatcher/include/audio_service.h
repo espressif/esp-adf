@@ -73,7 +73,7 @@ typedef struct {
     service_ctrl        service_connect;        /*!< Connect function */
     service_ctrl        service_disconnect;     /*!< Disconnect function */
     service_ctrl        service_destroy;        /*!< Destroy function */
-    char                *service_name;          /*!< Name of audio service */
+    const char          *service_name;          /*!< Name of audio service */
     void                *user_data;             /*!< User context */
 } audio_service_config_t;
 
