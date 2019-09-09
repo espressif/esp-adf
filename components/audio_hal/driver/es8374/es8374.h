@@ -140,7 +140,7 @@ esp_err_t es8374_codec_get_voice_volume(int *volume);
  *     - ESP_FAIL Parameter error
  *     - ESP_OK   Success
  */
-esp_err_t es8374_set_voice_mute(int enable);
+esp_err_t es8374_set_voice_mute(bool enable);
 
 /**
  * @brief Get ES8374 DAC mute status

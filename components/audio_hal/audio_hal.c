@@ -104,6 +104,16 @@ esp_err_t audio_hal_config_iface(audio_hal_handle_t audio_hal, audio_hal_codec_m
     return ret;
 }
 
+esp_err_t audio_hal_set_mute(audio_hal_handle_t audio_hal, bool mute)
+{
+    esp_err_t ret;
+    AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
+    mutex_lock(audio_hal->audio_hal_lock);
+    ret = audio_hal->audio_codec_set_mute(mute);
+    mutex_unlock(audio_hal->audio_hal_lock);
+    return ret;
+}
+
 esp_err_t audio_hal_set_volume(audio_hal_handle_t audio_hal, int volume)
 {
     esp_err_t ret;

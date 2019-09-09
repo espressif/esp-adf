@@ -73,6 +73,17 @@ esp_err_t es7243_adc_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ct
 esp_err_t es7243_adc_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
 
 /**
+ * @brief  Set mute
+ *
+ * @param mute  true, false
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t es7243_adc_set_voice_mute(bool mute);
+
+/**
  * @brief  Set adc gain
  *
  * @param volume  value of gain (0~100)

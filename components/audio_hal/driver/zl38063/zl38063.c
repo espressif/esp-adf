@@ -43,6 +43,7 @@ audio_hal_func_t AUDIO_CODEC_ZL38063_DEFAULT_HANDLE = {
     .audio_codec_deinitialize = zl38063_codec_deinit,
     .audio_codec_ctrl = zl38063_codec_ctrl_state,
     .audio_codec_config_iface = zl38063_codec_config_i2s,
+    .audio_codec_set_mute = zl38063_codec_set_voice_mute,
     .audio_codec_set_volume = zl38063_codec_set_voice_volume,
     .audio_codec_get_volume = zl38063_codec_get_voice_volume,
 };
@@ -96,6 +97,12 @@ esp_err_t zl38063_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t
 
 esp_err_t zl38063_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
 {
+    return ESP_OK;
+}
+
+esp_err_t zl38063_codec_set_voice_mute(bool mute)
+{
+    /* For now we do not have implementation for this */
     return ESP_OK;
 }
 
