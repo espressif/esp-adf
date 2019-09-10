@@ -1,6 +1,8 @@
 ESP32-LyraT-Mini V1.2 Getting Started Guide
 ===========================================
 
+:link_to_translation:`zh_CN:[中文]`
+
 This guide provides users with functional descriptions, configuration options for ESP32-LyraT-Mini V1.2 audio development board, as well as how to get started with the ESP32-LyraT board.
 
 The ESP32-LyraT is a hardware platform designed for the dual-core ESP32 audio applications, e.g., Wi-Fi or BT audio speakers, speech-based remote controllers, connected smart-home appliances with one or more audio functionality, etc. 
@@ -60,7 +62,7 @@ The following list and figure describe key components, interfaces and controls o
 Audio Codec Chip
 	The audio codec chip, `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_, is a low power mono audio codec. It consists of 1-channel ADC, 1-channel DAC, low noise pre-amplifier, headphone driver, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER-B Module** over I2S and I2C buses to provide audio processing in hardware independently from the audio application.
 Audio Output
-	Output socket to connect headphones with a 3.5 mm stereo jack.
+	Output socket to connect headphones with a 3.5 mm stereo jack. (Please note that the board outputs a mono signal)
 Speaker Output
 	Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
 
@@ -84,7 +86,7 @@ Power On Switch
 Power On LED
 	Red LED indicating that **Power On Switch** is turned on.
 ESP32-WROVER-B Module
-    The ESP32-WROVER-B module contains ESP32 chip to provide Wi-Fi / BT connectivity and data processing power as well as integrates 64 Mbit SPI flash and 64 Mbit PSRAM for flexible data storage.
+    The ESP32-WROVER-B module contains ESP32 chip to provide Wi-Fi / BT connectivity and data processing power as well as integrates 32 Mbit SPI flash and 64 Mbit PSRAM for flexible data storage.
 
 
 Start Application Development
