@@ -72,11 +72,11 @@ typedef enum {
 
 struct audio_element {
     /* Functions/RingBuffers */
-    io_func                     open;
+    el_io_func                  open;
     ctrl_func                   seek;
     process_func                process;
-    io_func                     close;
-    io_func                     destroy;
+    el_io_func                  close;
+    el_io_func                  destroy;
     io_type_t                   read_type;
     union {
         ringbuf_handle_t        input_rb;
@@ -437,7 +437,7 @@ void audio_element_task(void *pv)
     audio_element_force_set_state(el, AEL_STATE_INIT);
     audio_event_iface_set_cmd_waiting_timeout(el->iface_event, portMAX_DELAY);
     if (el->buf_size > 0) {
-        el->buf = audio_malloc(el->buf_size);
+        el->buf = audio_calloc(1, el->buf_size);
         AUDIO_MEM_CHECK(TAG, el->buf, {
             el->task_run = false;
             ESP_LOGE(TAG, "[%s] Error malloc element buffer", el->tag);
