@@ -65,6 +65,7 @@ display_service_handle_t display_service_create(display_service_config_t *config
 
 esp_err_t display_service_set_pattern(void *handle, int display_pattern, int value)
 {
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
     display_service_impl_t *dis = (display_service_impl_t *)handle;
     esp_err_t ret = periph_service_ioctl(dis->based, (void *)dis->instance, display_pattern, value);
     return ret;
@@ -72,6 +73,7 @@ esp_err_t display_service_set_pattern(void *handle, int display_pattern, int val
 
 esp_err_t display_destroy(display_service_handle_t handle)
 {
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
     periph_service_destroy(handle->based);
     free(handle);
     return ESP_OK;
