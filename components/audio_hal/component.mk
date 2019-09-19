@@ -3,7 +3,7 @@
 #
 # (Uses default behaviour of compiling all source files in directory, adding 'include' to include path.)
 
-COMPONENT_ADD_INCLUDEDIRS := ./include
+COMPONENT_ADD_INCLUDEDIRS := ./include ./driver/include
 COMPONENT_SRCDIRS := .
 COMPONENT_PRIV_INCLUDEDIRS := ./driver/include
 
