@@ -23,4 +23,4 @@ Configure the example:
 Load and run the example:
 
 - Speak to the board once prompted on the serial monitor.
-- After finish, you can open `/sdcard/wav_out.wav`and `/sdcard/rec_out.amr` (or `/sdcard/rec_out.Wamr`) to hear the recorded file.
+- After finish, you can open `/sdcard/rec_out.wav`and `/sdcard/rec_out.amr` (or `/sdcard/rec_out.Wamr`) to hear the recorded file.

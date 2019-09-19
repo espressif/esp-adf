@@ -123,7 +123,7 @@ static esp_err_t _spiffs_open(audio_element_handle_t self)
         } else if (spiffs->file && (STREAM_TYPE_AMR == spiffs->w_type)) {
             fwrite("#!AMR\n", 1, 6, spiffs->file);
             fsync(fileno(spiffs->file));
-        }else if (spiffs->file && (STREAM_TYPE_AMRWB == spiffs->w_type)) {
+        } else if (spiffs->file && (STREAM_TYPE_AMRWB == spiffs->w_type)) {
             fwrite("#!AMR-WB\n", 1, 9, spiffs->file);
             fsync(fileno(spiffs->file));
         }
@@ -216,6 +216,7 @@ static esp_err_t _spiffs_close(audio_element_handle_t self)
         spiffs->is_open = false;
     }
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
+        audio_element_report_pos(self);
         audio_element_info_t info = {0};
         audio_element_getinfo(self, &info);
         info.byte_pos = 0;

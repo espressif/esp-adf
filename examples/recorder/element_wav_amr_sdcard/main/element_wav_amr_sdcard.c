@@ -70,6 +70,7 @@ void app_main()
     ESP_LOGI(TAG, "[3.0] Create i2s stream to read audio data from codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_cfg.multi_out_num = 1;
     i2s_cfg.task_core = 1;
     i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD

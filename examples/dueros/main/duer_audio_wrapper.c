@@ -62,7 +62,7 @@ static void esp_audio_state_task (void *para)
     while (1) {
         xQueueReceive(que, &esp_state, portMAX_DELAY);
         ESP_LOGI(TAG, "esp_auido status:%x,err:%x,state:%d", esp_state.status, esp_state.err_msg, duer_playing_type);
-        if ((esp_state.status == AUDIO_STATUS_STOPED)
+        if ((esp_state.status == AUDIO_STATUS_STOPPED)
             || (esp_state.status == AUDIO_STATUS_FINISHED)
             || (esp_state.status == AUDIO_STATUS_ERROR)) {
             if (duer_playing_type == DUER_AUDIO_TYPE_SPEECH) {
