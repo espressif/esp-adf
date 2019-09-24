@@ -1,6 +1,6 @@
 # Downmix Pipeline Example
 
-This example shows how to use ESP-ADF multiple input pipeline to play back two files with downmixer.
+This example shows how to use ESP-ADF multiple input pipeline to play back multiple files with down-mixer.
 
 ## Compatibility
 
@@ -14,7 +14,7 @@ This example shows how to use ESP-ADF multiple input pipeline to play back two f
 Prepare the audio board:
 
 - Connect speakers or headphone to the board.
-- Insert a microSD card loaded with MP3 files 'test1.mp3' and 'test2.mp3' which are 44100 Hz sample rate into SD card slot.
+- Insert a microSD card loaded with WAV files. `NUMBER_SOURCE_FILE` is number of WAV files. The name of WAV files are like `test1.wav` `test2.wav` and so on. And the sample rate of those files are same as `SAMPLERATE`.
 
 Configure the example:
 

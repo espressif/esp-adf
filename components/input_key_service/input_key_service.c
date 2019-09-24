@@ -118,7 +118,7 @@ static void input_key_service_task(void *parameters)
             }
         }
 
-        if (msg.source == input_key_handle && msg.cmd == PERIPH_SERVICE_STATE_STOPED) {
+        if (msg.source == input_key_handle && msg.cmd == PERIPH_SERVICE_STATE_STOPPED) {
             ESP_LOGW(TAG, "The input key service will be destroyed");
             break;
         }
@@ -146,7 +146,7 @@ static esp_err_t input_key_service_stop(periph_service_handle_t input_key_handle
 static esp_err_t input_key_service_destroy(periph_service_handle_t input_key_handle)
 {
     AUDIO_NULL_CHECK(TAG, input_key_handle, return ESP_ERR_INVALID_ARG);
-    input_key_service_event_send(input_key_handle, PERIPH_SERVICE_STATE_STOPED);
+    input_key_service_event_send(input_key_handle, PERIPH_SERVICE_STATE_STOPPED);
     return ESP_OK;
 }
 

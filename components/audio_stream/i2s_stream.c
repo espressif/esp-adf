@@ -170,6 +170,7 @@ static esp_err_t _i2s_close(audio_element_handle_t self)
     }
     i2s->is_open = false;
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
+        audio_element_report_pos(self);
         audio_element_info_t info = {0};
         audio_element_getinfo(self, &info);
         info.byte_pos = 0;
@@ -322,7 +323,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     cfg.task_prio = config->task_prio;
     cfg.task_core = config->task_core;
     cfg.out_rb_size = config->out_rb_size;
-    cfg.enable_multi_io = true;
+    cfg.multi_out_rb_num = config->multi_out_num;
     cfg.tag = "iis";
     cfg.buffer_len = I2S_STREAM_BUF_SIZE;
 

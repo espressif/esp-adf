@@ -158,7 +158,8 @@ esp_err_t audio_pipeline_pause(audio_pipeline_handle_t pipeline);
  * @brief     Stop all elements and clear information of items. Free up memory for all task items.
  *            The link state of the elements in the pipeline is kept, events are still registered,
  *            but the `audio_pipeline_pause` and `audio_pipeline_resume`  functions have no effect.
- *            To restart audio_pipeline, use the `audio_pipeline_resume` function
+ *            To restart audio_pipeline, use the `audio_pipeline_resume` function.
+ *            It's better work with `audio_pipeline_wait_for_stop` for synchronization.
  *
  * @param[in]  pipeline   The Audio Pipeline Handle
  *
@@ -171,7 +172,7 @@ esp_err_t audio_pipeline_stop(audio_pipeline_handle_t pipeline);
 /**
  * @brief      The `audio_pipeline_stop` function sends requests to the elements and exits.
  *             But they need time to get rid of time-blocking tasks.
- *             This function will wait until all the Elements in the pipeline actually stop
+ *             This function will wait `portMAX_DELAY` until all the Elements in the pipeline actually stop
  *
  * @param[in]  pipeline   The Audio Pipeline Handle
  *
@@ -219,6 +220,19 @@ esp_err_t audio_pipeline_unlink(audio_pipeline_handle_t pipeline);
  *     - Others on success
  */
 audio_element_handle_t audio_pipeline_get_el_by_tag(audio_pipeline_handle_t pipeline, const char *tag);
+
+/**
+ * @brief      Based on beginning element to find un-kept element from registered pipeline by tag
+ *
+ * @param[in]  pipeline     The Audio Pipeline Handle
+ * @param[in]  start_el     Specific beginning element
+ * @param[in]  tag          A char pointer
+ *
+ * @return
+ *     - NULL when any errors
+ *     - Others on success
+ */
+audio_element_handle_t audio_pipeline_get_el_once(audio_pipeline_handle_t pipeline, const audio_element_handle_t start_el, const char *tag);
 
 /**
  * @brief      Remove event listener from this audio_pipeline
@@ -365,6 +379,18 @@ esp_err_t audio_pipeline_reset_ringbuffer(audio_pipeline_handle_t pipeline);
  *     - ESP_FAIL when any errors
  */
 esp_err_t audio_pipeline_reset_elements(audio_pipeline_handle_t pipeline);
+
+/**
+ * @brief      Reset the specific element kept state
+ *
+ * @param[in]  pipeline   The Audio Pipeline Handle
+ * @param[in]  el         The Audio element Handle
+ *
+ * @return
+ *     - ESP_OK on success
+ *     - ESP_FAIL when any errors
+ */
+esp_err_t audio_pipeline_reset_kept_state(audio_pipeline_handle_t pipeline, audio_element_handle_t el);
 
 /**
  * @brief      Break up all the linked elements of specific `pipeline`.

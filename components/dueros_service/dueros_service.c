@@ -237,7 +237,7 @@ static void dueros_task(void *pvParameters)
                     fclose(file);
                 }
                 duer_voice_stop();
-                serv->duer_state = SERVICE_STATE_STOPED;
+                serv->duer_state = SERVICE_STATE_STOPPED;
                 audio_service_callback(serv_handle, &serv_evt);
             } else if (duer_msg.type == DUER_CMD_QUIT && (serv->duer_state != SERVICE_STATE_IDLE))  {
                 if (duer_login_success) {
