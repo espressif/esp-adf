@@ -547,7 +547,6 @@ esp_err_t audio_element_report_codec_fmt(audio_element_handle_t el);
 
 /**
  * @brief      Element will sendout event with a duplicate information by this function.
- * @note       The event receiver must be free the message data.
  *
  * @param[in]  el    The audio element handle
  *

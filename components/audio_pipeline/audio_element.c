@@ -113,6 +113,7 @@ struct audio_element {
     int                         task_core;
     xSemaphoreHandle            lock;
     audio_element_info_t        info;
+    audio_element_info_t        *report_info;
 
     /* PrivateData */
     void                        *data;
@@ -608,10 +609,13 @@ esp_err_t audio_element_report_pos(audio_element_handle_t el)
     if (el) {
         audio_event_iface_msg_t msg = { 0 };
         msg.cmd = AEL_MSG_CMD_REPORT_POSITION;
-        audio_element_info_t *info = audio_calloc(1, sizeof(audio_element_info_t));
-        AUDIO_MEM_CHECK(TAG, info, return ESP_ERR_NO_MEM);
-        audio_element_getinfo(el, info);
-        msg.data = info;
+        if (el->report_info == NULL) {
+            el->report_info = audio_calloc(1, sizeof(audio_element_info_t));
+            AUDIO_MEM_CHECK(TAG, el->report_info, return ESP_ERR_NO_MEM);
+        }
+
+        audio_element_getinfo(el, el->report_info);
+        msg.data = el->report_info;
         msg.data_len = sizeof(audio_element_info_t);
         ESP_LOGD(TAG, "REPORT_POS,[%s]evt out cmd:%d,", el->tag, msg.cmd);
         audio_element_msg_sendout(el, &msg);
@@ -978,6 +982,9 @@ esp_err_t audio_element_deinit(audio_element_handle_t el)
     if (el->multi_out.rb) {
         audio_free(el->multi_out.rb);
         el->multi_out.rb = NULL;
+    }
+    if (el->report_info) {
+        audio_free(el->report_info);
     }
     audio_free(el);
     return ESP_OK;
