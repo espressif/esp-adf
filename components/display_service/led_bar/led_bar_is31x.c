@@ -171,6 +171,7 @@ esp_err_t led_bar_is31x_pattern(void *handle, int pat, int value)
             }
             break;
         default:
+            ESP_LOGW(TAG, "The mode is invalid");
             break;
     }
 
@@ -179,5 +180,6 @@ esp_err_t led_bar_is31x_pattern(void *handle, int pat, int value)
 
 void led_bar_is31x_deinit(esp_periph_handle_t handle)
 {
+    AUDIO_NULL_CHECK(TAG, handle, return);
     esp_periph_destroy(handle);
 }
