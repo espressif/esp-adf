@@ -35,30 +35,35 @@ A code snippet below demonstrates how to initialize the model, determine the num
 
 .. code-block:: c
 
-    #include "esp_sr_iface.h"
-    #include "esp_sr_models.h"
+    #include "esp_wn_iface.h"
+    #include "esp_wn_models.h"
+    #include "rec_eng_helper.h"
 
-    static const sr_model_iface_t *model = &sr_model_wakenet3_quantized;
+    esp_wn_iface_t *wakenet;
+    model_coeff_getter_t *model_coeff_getter;
+    model_iface_data_t *model_data;
 
     // Initialize wakeNet model data
-    static model_iface_data_t *model_data = model->create(DET_MODE_90);
+    get_wakenet_iface(&wakenet);
+    get_wakenet_coeff(&model_coeff_getter);
+    model_data = wakenet->create(model_coeff_getter, DET_MODE_90);
 
     // Set parameters of buffer
-    int audio_chunksize = model->get_samp_chunksize(model_data);
-    int frequency = model->get_samp_rate(model_data);
-    int16_t *buffer = malloc(audio_chunksize sizeof(int16_t));
+    int audio_chunksize = wakenet->get_samp_chunksize(model_data);
+    int frequency = wakenet->get_samp_rate(model_data);
+    int16_t *buffer = malloc(audio_chunksize * sizeof(int16_t));
 
     // Get voice data feed to buffer
     ...
 
     // Detect
-    int r = model->detect(model_data, buffer);
+    int r = wakenet->detect(model_data, buffer);
     if (r > 0) {
         printf("Detection triggered output %d.\n",  r);
     }
     
     // Destroy model
-    model->destroy(model_data)
+    wakenet->destroy(model_data)
 
 
 Application Example
@@ -70,5 +75,5 @@ Implementation of the speech recognition API is demonstrated in :example:`speech
 API Reference
 -------------
 
-.. include:: /_build/inc/esp_sr_iface.inc
+.. include:: /_build/inc/esp_wn_iface.inc
 

@@ -1,1 +1,0 @@
-.. include:: ../../../en/api-reference/speech-recognition/esp_sr_iface.rst
