@@ -514,6 +514,7 @@ esp_err_t bluetooth_service_destroy()
         }
         esp_bluedroid_disable();
         esp_bluedroid_deinit();
+        esp_bt_controller_disable();
         esp_bt_controller_deinit();
         esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
         free(g_bt_service);
