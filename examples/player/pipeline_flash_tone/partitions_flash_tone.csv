@@ -3,4 +3,4 @@
 nvs,      data, nvs,     ,        0x6000,
 phy_init, data, phy,     ,        0x1000,
 factory,  app,  factory, ,        1M,
-flashTone,data, 0x04,  0x110000 , 500K,
+flash_tone,data, 0xff,  0x110000 , 500K,

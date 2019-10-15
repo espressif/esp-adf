@@ -24,8 +24,8 @@ const char* tone_uri[] = {
    "flash://tone/20_server_disconnect.mp3",
 };
 
-int getToneUriMaxIndex()
+int get_tone_uri_num()
 {
-    return sizeof(tone_uri) / sizeof(char*) - 1;
+    return sizeof(tone_uri) / sizeof(char *) - 1;
 }
                 

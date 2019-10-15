@@ -92,9 +92,9 @@ if __name__=="__main__":
 
     _func_str = """
 
-int getToneUriMaxIndex()
+int get_tone_uri_num()
 {
-    return sizeof(tone_uri) / sizeof(char*) - 1;
+    return sizeof(tone_uri) / sizeof(char *) - 1;
 }
                 """
     source_file += _func_str
@@ -104,11 +104,11 @@ int getToneUriMaxIndex()
     f.close()
 
     _end_str = """    TONE_TYPE_MAX,
-} ToneType;
+} tone_type_t;
 
-int getToneUriMaxIndex();
+int get_tone_uri_num();
 
-#endif /* __AUDIO_TONEURI_H__ */
+#endif */
 """
 
     include_file += _end_str

@@ -74,14 +74,14 @@ typedef struct flash_tone_info
 typedef struct flash_stream
 {
     audio_stream_type_t type;  /*!< File operation type */
-    int write_addr;            /*!< Address to write to flash */
-    int read_addr;             /*!< Address to read to flash */
-    int cur_pos;               /*!< Record read or written bytes */
     bool is_open;              /*!< Flash stream status */
+    uint64_t write_addr;       /*!< Address to write to flash */
+    uint64_t read_addr;        /*!< Address to read to flash */
 } flash_stream_t;
 
 static const esp_partition_t *_flash_partition;
 static flash_tone_header_t _header;
+static const char *partition_label = "flash_tone";
 
 static esp_err_t _flash_tone_uninit(void)
 {
@@ -121,7 +121,7 @@ static esp_err_t _get_flash_tone_info(uint16_t index, flash_tone_info_t *info)
 
 static esp_err_t _flash_tone_init(void)
 {
-    _flash_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, 0x04, NULL);
+    _flash_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, partition_label);
     if (NULL == _flash_partition) {
         ESP_LOGE(TAG, "Can not found flash tone file partition");
         return ESP_FAIL;
@@ -166,17 +166,14 @@ static esp_err_t _flash_open(audio_element_handle_t self)
         ESP_LOGE(TAG, "already opened");
         return ESP_FAIL;
     }
-
     flash_tone_info_t flash_info = { 0 };
     _get_flash_tone_info(file_index, &flash_info);
-    ESP_LOGI(TAG, "Tone offset = %08x, Tone length = %d, total num: %d  pos:%d\n", flash_info.song_adr, flash_info.song_len, _get_flash_tone_num(), file_index);
+    ESP_LOGI(TAG, "Tone offset:%08x, Tone length:%d, total num:%d  pos:%d\n", flash_info.song_adr, flash_info.song_len, _get_flash_tone_num(), file_index);
     if (flash_info.song_len <= 0) {
         ESP_LOGE(TAG, "Mayebe the flash tone is empty, please ensure the flash's contex");
         return ESP_FAIL;
     }
-
     flash->is_open = true;
-    flash->cur_pos = 0;
     info.total_bytes = flash_info.song_len;
     flash->read_addr = flash_info.song_adr + info.byte_pos;
     audio_element_setdata(self, flash);
@@ -196,20 +193,19 @@ static int _flash_read(audio_element_handle_t self, char *buffer, int len, TickT
         ESP_LOGE(TAG, "flash partition pointer is null, line:%d", __LINE__);
         return ESP_FAIL;
     }
-    if (flash->cur_pos + len > info.total_bytes) {
-        len = info.total_bytes - flash->cur_pos;
+    if (info.byte_pos + len > info.total_bytes) {
+        len = info.total_bytes - info.byte_pos;
     }
-    if (ESP_OK != esp_partition_read(_flash_partition, flash->cur_pos + flash->read_addr, buffer, len)) {
-        ESP_LOGE(TAG, "get tone data error, line : %d", __LINE__);
+    if (ESP_OK != esp_partition_read(_flash_partition, info.byte_pos + flash->read_addr, buffer, len)) {
+        ESP_LOGE(TAG, "get tone data error, line:%d", __LINE__);
         return ESP_FAIL;
-    } 
+    }
 
-    flash->cur_pos += len;
+    info.byte_pos += len;
     if (len <= 0) {
-        ESP_LOGW(TAG, "No more data,ret:%d  flash->cur_pos = %d", len, flash->cur_pos);
+        ESP_LOGW(TAG, "No more data,ret:%d ,info.byte_pos:%llu", len, info.byte_pos);
         return ESP_OK;
     }
-    info.byte_pos += len;
     audio_element_setinfo(self, &info);
    
     return len;

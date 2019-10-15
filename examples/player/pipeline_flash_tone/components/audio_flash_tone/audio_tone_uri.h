@@ -26,8 +26,8 @@ typedef enum {
     TONE_TYPE_WIFI_RECONNECT,
     TONE_TYPE_SERVER_DISCONNECT,
     TONE_TYPE_MAX,
-} ToneType;
+} tone_type_t;
 
-int getToneUriMaxIndex();
+int get_tone_uri_num();
 
-#endif /* __AUDIO_TONEURI_H__ */
+#endif

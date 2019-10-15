@@ -59,6 +59,15 @@ typedef struct
         .buf_sz = TONE_STREAM_BUF_SIZE,             \
     }
 
+/**
+ * @brief      Create a handle to an Audio Element to stream data from flash to another Element
+ *             or get data from other elements written to flash, depending on the configuration
+ *             the stream type, either AUDIO_STREAM_READER or AUDIO_STREAM_WRITER.
+ *
+ * @param      config  The configuration
+ *
+ * @return     The Audio Element handle
+ */
 audio_element_handle_t tone_stream_init(tone_stream_cfg_t *config);
 
 #ifdef __cplusplus
