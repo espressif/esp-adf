@@ -95,6 +95,7 @@ INPUT = \
     ../../components/audio_sal/include/audio_mem.h \
     ## Services
     ../../components/bluetooth_service/include/bluetooth_service.h \
+    ../../components/bluetooth_service/include/hfp_stream.h \
     ../../components/bluetooth_service/include/bt_keycontrol.h \
     ../../components/bluetooth_service/include/a2dp_stream.h \
     ../../components/input_key_service/include/input_key_service.h \
