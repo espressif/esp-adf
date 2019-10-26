@@ -321,7 +321,7 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     res |= es8388_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);      // 0db
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0x09); //Power on ADC, Enable LIN&RIN, Power off MICBIAS, set int1lp to low power mode
     /* enable es8388 PA */
-    es8388_pa_power(true);
+    //es8388_pa_power(true);
     ESP_LOGI(ES_TAG, "init,out:%02x, in:%02x", cfg->dac_output, cfg->adc_input);
     return res;
 }
