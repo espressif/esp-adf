@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/adc.h"
@@ -52,6 +53,7 @@
 #endif
 
 static char *TAG = "ADC_BTN";
+static EventGroupHandle_t g_event_bit;
 
 typedef struct {
     adc_button_callback btn_callback;
@@ -60,6 +62,8 @@ typedef struct {
 } adc_btn_tag_t;
 
 static const int default_step_level[USER_KEY_MAX] = {0, 683, 1193, 1631, 2090, 2578, 3103};
+static const int DESTROY_BIT = BIT0;
+static bool _task_flag;
 
 adc_btn_list *adc_btn_create_list(adc_arr_t *adc_conf, int channels)
 {
@@ -244,9 +248,11 @@ static adc_btn_state_t get_adc_btn_state(int adc_value, int act_id, adc_btn_list
 
 static void button_task(void *parameters)
 {
+    _task_flag = true;
     adc_btn_tag_t *tag = (adc_btn_tag_t *)parameters;
     adc_btn_list *head = tag->head;
     adc_btn_list *find = head;
+    xEventGroupClearBits(g_event_bit, DESTROY_BIT);
     adc1_config_width(ADC_WIDTH_12Bit);
     while (find) {
         adc_arr_t *info = &(find->adc_info);
@@ -269,7 +275,7 @@ static void button_task(void *parameters)
     static adc_btn_state_t cur_state = ADC_BTN_STATE_ADC;
     adc_btn_state_t btn_st = ADC_BTN_STATE_IDLE;
     int cur_act_id = ADC_BTN_INVALID_ACT_ID;
-    while (1) {
+    while (_task_flag) {
 #if defined ENABLE_ADC_VOLUME
         if (internal_time_ms == 0) {
             adc_vol_cur = get_adc_voltage(DIAL_adc_ch);
@@ -349,8 +355,25 @@ static void button_task(void *parameters)
 
         vTaskDelay(ADC_SAMPLE_INTERVAL_TIME_MS / portTICK_PERIOD_MS);
     }
+
+    if (g_event_bit) {
+        xEventGroupSetBits(g_event_bit, DESTROY_BIT);
+    }
     free(tag);
     vTaskDelete(NULL);
+}
+
+void adc_btn_delete_task(void)
+{
+    if (_task_flag) {
+        _task_flag = false;
+    } 
+    
+    if (g_event_bit) {
+        xEventGroupWaitBits(g_event_bit, DESTROY_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
+        vEventGroupDelete(g_event_bit);
+        g_event_bit = NULL;
+    }
 }
 
 void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head)
@@ -363,6 +386,8 @@ void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head)
     tag->user_data = user_data;
     tag->head = head;
     tag->btn_callback = cb;
+
+    g_event_bit = xEventGroupCreate();
 
 #ifndef CONFIG_MEMMAP_SMP
     xTaskCreate(button_task, "button_task", ADC_BUTTON_STACK_SIZE, (void *)tag, ADC_BUTTON_TASK_PRIORITY, NULL);
