@@ -36,7 +36,7 @@
 #define BUTTON_MODE_ID            4
 #define BUTTON_REC_ID             5
 
-#define HEADPHONE_DETCET          GPIO_NUM_19
+#define HEADPHONE_DETECT          GPIO_NUM_19
 #define PA_ENABLE_GPIO            GPIO_NUM_21
 
 #define BLUE_LED_GPIO             GPIO_NUM_27

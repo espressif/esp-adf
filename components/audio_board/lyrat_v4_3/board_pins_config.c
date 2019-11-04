@@ -137,7 +137,7 @@ int8_t get_auxin_detect_gpio(void)
 
 int8_t get_headphone_detect_gpio(void)
 {
-    return HEADPHONE_DETCET;
+    return HEADPHONE_DETECT;
 }
 
 int8_t get_pa_enable_gpio(void)

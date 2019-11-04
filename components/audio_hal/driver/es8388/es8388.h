@@ -208,10 +208,9 @@ esp_err_t es8388_set_voice_mute(bool enable);
 /**
  * @brief Get ES8388 DAC mute status
  *
- * @return
- *     - -1 Parameter error
- *     - 0 voice mute disable
- *     - 1 voice mute enable
+ *  @return
+ *     - ESP_FAIL Parameter error
+ *     - ESP_OK   Success
  */
 esp_err_t es8388_get_voice_mute(void);
 
@@ -298,7 +297,7 @@ esp_err_t es8388_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_s
  * @param enable true for enable PA power, false for disable PA power
  *
  * @return
- *     - void
+ *      - void
  */
 void es8388_pa_power(bool enable);
 
