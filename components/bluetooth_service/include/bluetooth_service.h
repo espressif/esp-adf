@@ -29,6 +29,7 @@
 #include "audio_error.h"
 #include "audio_element.h"
 #include "esp_peripherals.h"
+#include "bt_keycontrol.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,18 +42,6 @@ typedef enum {
     BLUETOOTH_A2DP_SINK,    /*!< A2DP Bluetooth sink audio, ESP32 will receive audio data from other bluetooth devices */
     BLUETOOTH_A2DP_SOURCE,   /*!< A2DP Bluetooth source audio, ESP32 can send audio data to other bluetooth devices */
 } bluetooth_service_mode_t;
-
-/**
- * brief      Bluetooth peripheral event id
- */
-typedef enum {
-    PERIPH_BLUETOOTH_UNKNOWN = 0,       /*!< No event */
-    PERIPH_BLUETOOTH_CONNECTED,         /*!< A bluetooth device was connected */
-    PERIPH_BLUETOOTH_DISCONNECTED,      /*!< Last connection was disconnected */
-    PERIPH_BLUETOOTH_AUDIO_STARTED,     /*!< The audio session has been started */
-    PERIPH_BLUETOOTH_AUDIO_SUSPENDED,   /*!< The audio session has been suspended */
-    PERIPH_BLUETOOTH_AUDIO_STOPPED,     /*!< The audio session has been stopped */
-} periph_bluetooth_event_id_t;
 
 /**
  *brief      Bluetooth service configuration

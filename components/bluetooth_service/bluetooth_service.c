@@ -42,7 +42,6 @@
 #include "esp_a2dp_api.h"
 #include "esp_avrc_api.h"
 
-#include "bt_keycontrol.h"
 #include "bluetooth_service.h"
 
 static const char *TAG = "BLUETOOTH_SERVICE";

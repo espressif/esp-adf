@@ -1,0 +1,9 @@
+menu "Example Configuration"
+
+config BT_REMOTE_NAME
+    string "BT remote device name"
+	default "ESP_SINK_STREAM_DEMO"
+	help
+		BT_REMOTE_NAME (Bluetooth device name) for the example to connect to.
+
+endmenu
