@@ -1,6 +1,6 @@
 # Audio passthru
 
-This demo passes audio received at the "aux_in" port to the headphone and speaker outputs.
+This example passes audio received at the "aux_in" port to the headphone and speaker outputs.
 
 Typical use cases:
 
@@ -10,10 +10,10 @@ Typical use cases:
 
 ## Compatibility
 
-| ESP32-LyraT | ESP32-LyraT-MSC |
-|:-----------:|:---------------:|
-| [![alt text](../../../docs/_static/esp32-lyrat-v4.2-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) |
-| ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/no-button.png "Not Compatible") |
+| ESP32-LyraT | ESP32-LyraTD-MSC | ESP32-LyraT-Mini |
+|:-----------:|:---------------:|:----------------:|
+| [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) |
+| ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/yes-button.png "Compatible") |![alt text](../../../docs/_static/no-button.png "Not Compatible") |
 
 ## Usage
 

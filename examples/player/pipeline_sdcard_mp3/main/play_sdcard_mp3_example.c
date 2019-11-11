@@ -76,7 +76,6 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, mp3 as mp3 decoder, and default output is i2s)");
     audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.mp3");
 
-
     ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
@@ -86,7 +85,6 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
-
 
     ESP_LOGI(TAG, "[ 5 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);

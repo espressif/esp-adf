@@ -141,15 +141,6 @@ int rb_read(ringbuf_handle_t rb, char *buf, int len, TickType_t ticks_to_wait);
 int rb_write(ringbuf_handle_t rb, char *buf, int len, TickType_t ticks_to_wait);
 
 /**
- * @brief      Get total size of ringbuffer
- *
- * @param[in]  rb    The Ringbuffer handle
- *
- * @return     Total size of ringbuffer (in block byte(s))
- */
-int rb_size_get(ringbuf_handle_t rb);
-
-/**
  * @brief      Set status of writing to ringbuffer is done
  *
  * @param[in]  rb    The Ringbuffer handle
@@ -170,6 +161,7 @@ esp_err_t rb_done_write(ringbuf_handle_t rb);
  *     - ESP_FAIL
  */
 esp_err_t rb_unblock_reader(ringbuf_handle_t rb);
+
 
 #ifdef __cplusplus
 }

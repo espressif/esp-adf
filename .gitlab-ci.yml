@@ -92,6 +92,15 @@ before_script:
 build_examples_00:
   <<: *build_examples_template
 
+build_examples_01:
+  <<: *build_examples_template
+
+build_examples_02:
+  <<: *build_examples_template
+
+build_examples_03:
+  <<: *build_examples_template
+
 build_adf_test:
   <<: *build_template
   artifacts:

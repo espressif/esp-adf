@@ -199,7 +199,7 @@ static int _sip_event_handler(sip_event_msg_t *event)
             ESP_LOGI(TAG, "SIP_EVENT_REGISTERED");
             break;
         case SIP_EVENT_RINGING:
-            ESP_LOGI(TAG, "ringing...");
+            ESP_LOGI(TAG, "ringing... RemotePhoneNum %s", (char *)event->data);
             break;
         case SIP_EVENT_INVITING:
             ESP_LOGI(TAG, "SIP_EVENT_INVITING Remote Ring...");
@@ -220,6 +220,9 @@ static int _sip_event_handler(sip_event_msg_t *event)
             return _g711_encode(event->data, event->data_len);
         case SIP_EVENT_WRITE_AUDIO_DATA:
             return _g711_decode(event->data, event->data_len);
+        case SIP_EVENT_READ_DTMF:
+            ESP_LOGI(TAG, "SIP_EVENT_READ_DTMF ID : %d ", ((char *)event->data)[0]);
+            break;
     }
     return 0;
 }
@@ -253,7 +256,7 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                     esp_sip_uas_answer(sip, false);
                 } else if (sip_state & SIP_STATE_ON_CALL) {
                     esp_sip_uac_bye(sip);
-                } else if (sip_state & SIP_STATE_CALLING) {
+                } else if ((sip_state & SIP_STATE_CALLING) || (sip_state & SIP_STATE_SESS_PROGRESS)) {
                     esp_sip_uac_cancel(sip);
                 }
                 break;

@@ -57,7 +57,7 @@ static i2c_config_t es_i2c_cfg = {
     .mode = I2C_MODE_MASTER,
     .sda_pullup_en = GPIO_PULLUP_ENABLE,
     .scl_pullup_en = GPIO_PULLUP_ENABLE,
-    .master.clk_speed = 100000
+    .master.clk_speed = 100000,
 };
 
 /*
@@ -68,6 +68,7 @@ audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE = {
     .audio_codec_deinitialize = es8311_codec_deinit,
     .audio_codec_ctrl = es8311_codec_ctrl_state,
     .audio_codec_config_iface = es8311_codec_config_i2s,
+    .audio_codec_set_mute = es8311_set_voice_mute,
     .audio_codec_set_volume = es8311_codec_set_voice_volume,
     .audio_codec_get_volume = es8311_codec_get_voice_volume,
 };
@@ -683,9 +684,9 @@ esp_err_t es8311_stop(es_module_t mode)
     return ret;
 }
 
-int es8311_codec_set_voice_volume(int volume)
+esp_err_t es8311_codec_set_voice_volume(int volume)
 {
-    int res = 0;
+    esp_err_t res = ESP_OK;
     if (volume < 0) {
         volume = 0;
     } else if (volume > 100) {
@@ -697,9 +698,9 @@ int es8311_codec_set_voice_volume(int volume)
     return res;
 }
 
-int es8311_codec_get_voice_volume(int *volume)
+esp_err_t es8311_codec_get_voice_volume(int *volume)
 {
-    int res = ESP_OK;
+    esp_err_t res = ESP_OK;
     int regv = 0;
     regv = es8311_read_reg(ES8311_DAC_REG32);
     if (regv == ESP_FAIL) {
@@ -712,17 +713,16 @@ int es8311_codec_get_voice_volume(int *volume)
     return res;
 }
 
-int es8311_set_voice_mute(int enable)
+esp_err_t es8311_set_voice_mute(bool enable)
 {
-    int res = 0;
     ESP_LOGD(TAG, "Es8311SetVoiceMute volume:%d", enable);
     es8311_mute(enable);
-    return res;
+    return ESP_OK;
 }
 
-int es8311_get_voice_mute(int *mute)
+esp_err_t es8311_get_voice_mute(int *mute)
 {
-    int res = -1;
+    esp_err_t res = ESP_OK;
     uint8_t reg = 0;
     res = es8311_read_reg(ES8311_DAC_REG31);
     if (res != ESP_FAIL) {
@@ -734,7 +734,7 @@ int es8311_get_voice_mute(int *mute)
 
 esp_err_t es8311_set_mic_gain(es8311_mic_gain_t gain_db)
 {
-    int res = 0;
+    esp_err_t res = ESP_OK;
     res = es8311_write_reg(ES8311_ADC_REG16, gain_db); // MIC gain scale
     return res;
 }

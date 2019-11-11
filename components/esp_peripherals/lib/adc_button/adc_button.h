@@ -78,6 +78,8 @@ adc_btn_list *adc_btn_create_list(adc_arr_t *adc_conf, int channels);
 
 esp_err_t adc_btn_destroy_list(adc_btn_list *head);
 
+void adc_btn_delete_task(void);
+
 #ifdef __cplusplus
 }
 #endif

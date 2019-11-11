@@ -59,6 +59,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[2.1] Create http stream to read data");
     http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
+    http_cfg.multi_out_num = 1;
     http_stream_reader = http_stream_init(&http_cfg);
 
     ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");

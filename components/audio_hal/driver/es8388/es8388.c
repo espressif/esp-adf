@@ -28,6 +28,10 @@
 #include "es8388.h"
 #include "board_pins_config.h"
 
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+#include "headphone_detect.h"
+#endif
+
 static const char *ES_TAG = "ES8388_DRIVER";
 
 #define ES_ASSERT(a, format, b, ...) \
@@ -48,13 +52,14 @@ audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE = {
     .audio_codec_deinitialize = es8388_deinit,
     .audio_codec_ctrl = es8388_ctrl_state,
     .audio_codec_config_iface = es8388_config_i2s,
+    .audio_codec_set_mute = es8388_set_voice_mute,
     .audio_codec_set_volume = es8388_set_voice_volume,
     .audio_codec_get_volume = es8388_get_voice_volume,
 };
 
-static int es_write_reg(uint8_t slave_add, uint8_t reg_add, uint8_t data)
+static esp_err_t es_write_reg(uint8_t slave_add, uint8_t reg_add, uint8_t data)
 {
-    int res = 0;
+    esp_err_t res = ESP_OK;
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     res |= i2c_master_start(cmd);
     res |= i2c_master_write_byte(cmd, slave_add, 1 /*ACK_CHECK_EN*/);
@@ -67,10 +72,10 @@ static int es_write_reg(uint8_t slave_add, uint8_t reg_add, uint8_t data)
     return res;
 }
 
-static int es_read_reg(uint8_t reg_add, uint8_t *pData)
+static esp_err_t es_read_reg(uint8_t reg_add, uint8_t *pData)
 {
     uint8_t data;
-    int res = 0;
+    esp_err_t res = ESP_OK;
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
 
     res |= i2c_master_start(cmd);
@@ -112,7 +117,7 @@ void es8388_read_all()
     }
 }
 
-int es8388_write_reg(uint8_t reg_add, uint8_t data)
+esp_err_t es8388_write_reg(uint8_t reg_add, uint8_t data)
 {
     return es_write_reg(ES8388_ADDR, reg_add, data);
 }
@@ -162,9 +167,9 @@ static int es8388_set_adc_dac_volume(int mode, int volume, int dot)
  *     - (-1)  Error
  *     - (0)   Success
  */
-int es8388_start(es_module_t mode)
+esp_err_t es8388_start(es_module_t mode)
 {
-    int res = 0;
+    esp_err_t res = ESP_OK;
     uint8_t prev_data = 0, data = 0;
     es_read_reg(ES8388_DACCONTROL21, &prev_data);
     if (mode == ES_MODULE_LINE) {
@@ -204,9 +209,9 @@ int es8388_start(es_module_t mode)
  *     - (-1)  Error
  *     - (0)   Success
  */
-int es8388_stop(es_module_t mode)
+esp_err_t es8388_stop(es_module_t mode)
 {
-    int res = 0;
+    esp_err_t res = ESP_OK;
     if (mode == ES_MODULE_LINE) {
         res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //enable dac
         res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, 0x00); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
@@ -244,9 +249,9 @@ int es8388_stop(es_module_t mode)
  *     - (-1)  Error
  *     - (0)   Success
  */
-int es8388_i2s_config_clock(es_i2s_clock_t cfg)
+esp_err_t es8388_i2s_config_clock(es_i2s_clock_t cfg)
 {
-    int res = 0;
+    esp_err_t res = ESP_OK;
     res |= es_write_reg(ES8388_ADDR, ES8388_MASTERMODE, cfg.sclk_div);
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL5, cfg.lclk_div);  //ADCFsMode,singel SPEED,RATIO=256
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL2, cfg.lclk_div);  //ADCFsMode,singel SPEED,RATIO=256
@@ -257,6 +262,11 @@ esp_err_t es8388_deinit(void)
 {
     int res = 0;
     res = es_write_reg(ES8388_ADDR, ES8388_CHIPPOWER, 0xFF);  //reset and stop es8388
+    i2c_driver_delete(I2C_NUM_0);
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    headphone_detect_deinit();
+#endif
+
     return res;
 }
 
@@ -269,7 +279,6 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
 {
     int res = 0;
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-#include "headphone_detect.h"
     headphone_detect_init(get_headphone_detect_gpio());
 #endif
 
@@ -336,9 +345,9 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
  *     - (-1) Error
  *     - (0)  Success
  */
-int es8388_config_fmt(es_module_t mode, es_i2s_fmt_t fmt)
+esp_err_t es8388_config_fmt(es_module_t mode, es_i2s_fmt_t fmt)
 {
-    int res = 0;
+    esp_err_t res = ESP_OK;
     uint8_t reg = 0;
     if (mode == ES_MODULE_ADC || mode == ES_MODULE_ADC_DAC) {
         res = es_read_reg(ES8388_ADCCONTROL4, &reg);
@@ -360,9 +369,9 @@ int es8388_config_fmt(es_module_t mode, es_i2s_fmt_t fmt)
  *     - (-1)  Error
  *     - (0)   Success
  */
-int es8388_set_voice_volume(int volume)
+esp_err_t es8388_set_voice_volume(int volume)
 {
-    int res;
+    esp_err_t res = ESP_OK;
     if (volume < 0)
         volume = 0;
     else if (volume > 100)
@@ -374,14 +383,15 @@ int es8388_set_voice_volume(int volume)
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, 0);
     return res;
 }
+
 /**
  *
  * @return
  *           volume
  */
-int es8388_get_voice_volume(int *volume)
+esp_err_t es8388_get_voice_volume(int *volume)
 {
-    int res;
+    esp_err_t res = ESP_OK;
     uint8_t reg = 0;
     res = es_read_reg(ES8388_DACCONTROL24, &reg);
     if (res == ESP_FAIL) {
@@ -405,9 +415,9 @@ int es8388_get_voice_volume(int *volume)
  *     - (-1) Parameter error
  *     - (0)   Success
  */
-int es8388_set_bits_per_sample(es_module_t mode, es_bits_length_t bits_length)
+esp_err_t es8388_set_bits_per_sample(es_module_t mode, es_bits_length_t bits_length)
 {
-    int res = 0;
+    esp_err_t res = ESP_OK;
     uint8_t reg = 0;
     int bits = (int)bits_length;
 
@@ -425,7 +435,7 @@ int es8388_set_bits_per_sample(es_module_t mode, es_bits_length_t bits_length)
 }
 
 /**
- * @brief Configure ES8388 DAC mute or not. Basicly you can use this function to mute the output or don't
+ * @brief Configure ES8388 DAC mute or not. Basically you can use this function to mute the output or unmute
  *
  * @param enable: enable or disable
  *
@@ -433,9 +443,9 @@ int es8388_set_bits_per_sample(es_module_t mode, es_bits_length_t bits_length)
  *     - (-1) Parameter error
  *     - (0)   Success
  */
-int es8388_set_voice_mute(int enable)
+esp_err_t es8388_set_voice_mute(bool enable)
 {
-    int res;
+    esp_err_t res = ESP_OK;
     uint8_t reg = 0;
     res = es_read_reg(ES8388_DACCONTROL3, &reg);
     reg = reg & 0xFB;
@@ -443,9 +453,9 @@ int es8388_set_voice_mute(int enable)
     return res;
 }
 
-int es8388_get_voice_mute(void)
+esp_err_t es8388_get_voice_mute(void)
 {
-    int res = -1;
+    esp_err_t res = ESP_OK;
     uint8_t reg = 0;
     res = es_read_reg(ES8388_DACCONTROL3, &reg);
     if (res == ESP_OK) {
@@ -461,9 +471,9 @@ int es8388_get_voice_mute(void)
  *     - (-1) Parameter error
  *     - (0)   Success
  */
-int es8388_config_dac_output(int output)
+esp_err_t es8388_config_dac_output(int output)
 {
-    int res;
+    esp_err_t res;
     uint8_t reg = 0;
     res = es_read_reg(ES8388_DACPOWER, &reg);
     reg = reg & 0xc3;
@@ -478,9 +488,9 @@ int es8388_config_dac_output(int output)
  *     - (-1) Parameter error
  *     - (0)   Success
  */
-int es8388_config_adc_input(es_adc_input_t input)
+esp_err_t es8388_config_adc_input(es_adc_input_t input)
 {
-    int res;
+    esp_err_t res;
     uint8_t reg = 0;
     res = es_read_reg(ES8388_ADCCONTROL2, &reg);
     reg = reg & 0x0f;
@@ -495,9 +505,9 @@ int es8388_config_adc_input(es_adc_input_t input)
  *     - (-1) Parameter error
  *     - (0)   Success
  */
-int es8388_set_mic_gain(es_mic_gain_t gain)
+esp_err_t es8388_set_mic_gain(es_mic_gain_t gain)
 {
-    int res, gain_n;
+    esp_err_t res, gain_n;
     gain_n = (int)gain / 3;
     res = es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, gain_n); //MIC PGA
     return res;
@@ -534,9 +544,9 @@ int es8388_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state)
     return res;
 }
 
-int es8388_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
+esp_err_t es8388_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
 {
-    int res = 0;
+    esp_err_t res = ESP_OK;
     int tmp = 0;
     res |= es8388_config_fmt(ES_MODULE_ADC_DAC, iface->fmt);
     if (iface->bits == AUDIO_HAL_BIT_LENGTH_16BITS) {

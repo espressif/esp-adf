@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,70 +22,140 @@
  *
  */
 
-#include <pthread.h>
-#include "unity.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "audio_pipeline.h"
-#include "esp_log.h"
+
+#include "unity.h"
 #include "esp_err.h"
+#include "esp_log.h"
+
+#include "audio_pipeline.h"
+#include "audio_mem.h"
 #include "fatfs_stream.h"
-#include "sdcard_service.h"
+
+#include "esp_peripherals.h"
+#include "board.h"
 
 static const char *TAG = "FATFS_STREAM_TEST";
 
-esp_err_t evt_process(audio_event_iface_msg_t *msg, void *context)
+#define TEST_FATFS_READER  "/sdcard/test.mp3"
+#define TEST_FATFS_WRITER  "/sdcard/WRITER.MP3"
+
+
+static uint64_t get_file_size(const char *name)
 {
-    ESP_LOGI(TAG, "receive evt msg cmd = %d, source addr = %x, type = %d", msg->cmd, (int)msg->source, msg->source_type);
-    if (msg->cmd == AEL_MSG_CMD_STOP) {
-        return ESP_FAIL;
+    FILE *f;
+    uint64_t size = 0;
+
+    f = fopen(name, "rb");
+    if (f == NULL) {
+        perror("Error open file");
+        return -1;
     }
-    return ESP_OK;
+    fseek(f, 0, SEEK_END);
+    size = ftell(f);
+    fclose(f);
+    return size;
+}
+static void file_size_comparison(const char *file1, const char *file2)
+{
+    uint64_t size1 = get_file_size(file1);
+    uint64_t size2 = get_file_size(file2);
+    ESP_LOGI(TAG, "%s size is %llu, %s size is %llu", file1, size1, file2, size2);
+    if (size1 == size2) {
+        ESP_LOGI(TAG, "The two files are the same size");
+    } else {
+        ESP_LOGI(TAG, "The two files are not the same size");
+    }
 }
 
-TEST_CASE("fatfs_stream", "esp-adf")
+TEST_CASE("fatfs stream init memory", "[esp-adf-stream]")
 {
-    esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_EVENT", ESP_LOG_VERBOSE);
-    esp_log_level_set("FATFS_STREAM", ESP_LOG_VERBOSE);
-    esp_log_level_set("AUDIO_ELEMENT", ESP_LOG_VERBOSE);
-    esp_log_level_set("FATFS_STREAM_TEST", ESP_LOG_VERBOSE);
+    esp_log_level_set("AUDIO_ELEMENT", ESP_LOG_DEBUG);
+    audio_element_handle_t fatfs_stream_reader;
+    fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
+    fatfs_cfg.type = AUDIO_STREAM_READER;
+    int cnt = 2000;
+    AUDIO_MEM_SHOW("BEFORE FATFS_STREAM_INIT MEMORY TEST");
+    while (cnt--) {
+        fatfs_stream_reader = fatfs_stream_init(&fatfs_cfg);
+        audio_element_deinit(fatfs_stream_reader);
+    }
+    AUDIO_MEM_SHOW("AFTER FATFS_STREAM_INIT MEMORY TEST");
+}
 
-    sdcard_service_cfg_t sdcfg = SDCARD_DEFAULT_CONFIG();
-    audio_element_handle_t sdcard_serv = sdcard_service_init(&sdcfg);
-    TEST_ASSERT_NOT_NULL(sdcard_serv);
-    audio_element_run(sdcard_serv);
-    audio_element_resume(sdcard_serv, 0, 0);
+TEST_CASE("fatfs stream read write loop", "[esp-adf-stream]")
+{
+    audio_pipeline_handle_t pipeline;
+    audio_element_handle_t fatfs_stream_reader, fatfs_stream_writer;
+    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("AUDIO_ELEMENT", ESP_LOG_DEBUG);
+
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
+    TEST_ASSERT_NOT_NULL(set);
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set));
+
+    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    pipeline = audio_pipeline_init(&pipeline_cfg);
+    TEST_ASSERT_NOT_NULL(pipeline);
+
+    fatfs_stream_cfg_t fatfs_reader_cfg = FATFS_STREAM_CFG_DEFAULT();
+    fatfs_reader_cfg.type = AUDIO_STREAM_READER;
+    fatfs_stream_reader = fatfs_stream_init(&fatfs_reader_cfg);
+    TEST_ASSERT_NOT_NULL(fatfs_stream_reader);
+
+    fatfs_stream_cfg_t fatfs_writer_cfg = FATFS_STREAM_CFG_DEFAULT();
+    fatfs_writer_cfg.type = AUDIO_STREAM_WRITER;
+    fatfs_stream_writer = fatfs_stream_init(&fatfs_writer_cfg);
+    TEST_ASSERT_NOT_NULL(fatfs_stream_writer);
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_register(pipeline, fatfs_stream_reader, "file_reader"));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_register(pipeline, fatfs_stream_writer, "file_writer"));
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_link(pipeline, (const char *[]) {"file_reader", "file_writer"}, 2));
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_element_set_uri(fatfs_stream_reader, TEST_FATFS_READER));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_element_set_uri(fatfs_stream_writer, TEST_FATFS_WRITER));
+
+    audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
+    audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_set_listener(pipeline, evt));
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt));
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_run(pipeline));
+
+    while (1) {
+        audio_event_iface_msg_t msg;
+        esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
+            continue;
+        }
+
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) fatfs_stream_reader
+            && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
+            && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
+            ESP_LOGW(TAG, "[ * ] Stop event received");
+            break;
+        }
+    }
+
+    file_size_comparison(TEST_FATFS_READER, TEST_FATFS_WRITER);
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_terminate(pipeline));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_unregister(pipeline, fatfs_stream_reader));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_unregister(pipeline, fatfs_stream_writer));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_remove_listener(pipeline));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_stop_all(set));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_event_iface_destroy(evt));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_deinit(pipeline));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(fatfs_stream_reader));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(fatfs_stream_writer));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_destroy(set));
 
 
-    audio_element_handle_t fatfs_rd;
-    fatfs_stream_cfg_t fatfs_cfg = {
-        .type = AUDIO_STREAM_READER,
-        .root_path = "/sdcard",
-    };
-
-    fatfs_rd = fatfs_stream_init(&fatfs_cfg);
-    audio_element_set_uri(fatfs_rd, "/sdcard/test.wav");
-
-    audio_element_run(fatfs_rd);
-    audio_element_resume(fatfs_rd, 0, 0);
-    vTaskDelay(10000/portTICK_RATE_MS);
-    audio_element_pause(fatfs_rd);
-    vTaskDelay(1000/portTICK_RATE_MS);
-    audio_element_resume(fatfs_rd, 0, 0);
-    vTaskDelay(5000/portTICK_RATE_MS);
-    audio_element_stop(fatfs_rd);
-    vTaskDelay(1000/portTICK_RATE_MS);
-    audio_element_run(fatfs_rd);
-    audio_element_resume(fatfs_rd, 0, 0);
-    vTaskDelay(5000/portTICK_RATE_MS);
-    audio_element_stop(fatfs_rd);
-
-    audio_element_stop(sdcard_serv);
-
-    audio_element_wait_for_stop(fatfs_rd);
-    audio_element_wait_for_stop(fatfs_rd);
-
-    audio_element_deinit(fatfs_rd);
-    audio_element_deinit(sdcard_serv);
 }

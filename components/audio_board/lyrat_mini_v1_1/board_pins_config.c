@@ -143,7 +143,7 @@ int8_t get_sdcard_power_ctrl_gpio(void)
 
 int8_t get_headphone_detect_gpio(void)
 {
-    return HEADPHONE_DETCET;
+    return HEADPHONE_DETECT;
 }
 
 int8_t get_pa_enable_gpio(void)

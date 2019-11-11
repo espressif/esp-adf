@@ -115,7 +115,7 @@ typedef enum {
  * @brief Initialize ES8311 codec chip
  *
  * @param codec_cfg  configuration of ES8311
- * 
+ *
  * @return
  *      - ESP_OK
  *      - ESP_FAIL
@@ -154,6 +154,17 @@ esp_err_t es8311_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t 
  *     - ESP_OK   Success
  */
 esp_err_t es8311_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
+
+/**
+ * @brief Configure ES8311 DAC mute or not. Basically you can use this function to mute the output or unmute
+ *
+ * @param enable enable(1) or disable(0)
+ *
+ * @return
+ *     - ESP_FAIL Parameter error
+ *     - ESP_OK   Success
+ */
+esp_err_t es8311_set_voice_mute(bool enable);
 
 /**
  * @brief  Set voice volume
@@ -222,5 +233,33 @@ esp_err_t es8311_start(es_module_t mode);
  *     - ESP_FAIL
  */
 esp_err_t es8311_stop(es_module_t mode);
+
+/**
+ * @brief Get ES8311 DAC mute status
+ *
+ * @return
+ *     - ESP_FAIL
+ *     - ESP_OK
+ */
+esp_err_t es8311_get_voice_mute(int *mute);
+
+/**
+ * @brief Set ES8311 mic gain
+ *
+ * @param gain db of mic gain
+ *
+ * @return
+ *     - ESP_FAIL Parameter error
+ *     - ESP_OK   Success
+ */
+esp_err_t es8311_set_mic_gain(es8311_mic_gain_t gain_db);
+
+/**
+ * @brief Print all ES8311 registers
+ *
+ * @return
+ *     - void
+ */
+void es8311_read_all();
 
 #endif

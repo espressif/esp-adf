@@ -85,17 +85,17 @@ static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
 static audio_codec_t get_audio_type(const char *content_type)
 {
     if (strcasecmp(content_type, "mp3") == 0 ||
-            strcasecmp(content_type, "audio/mp3") == 0 ||
-            strcasecmp(content_type, "audio/mpeg") == 0 ||
-            strcasecmp(content_type, "binary/octet-stream") == 0 ||
-            strcasecmp(content_type, "application/octet-stream") == 0) {
+        strcasecmp(content_type, "audio/mp3") == 0 ||
+        strcasecmp(content_type, "audio/mpeg") == 0 ||
+        strcasecmp(content_type, "binary/octet-stream") == 0 ||
+        strcasecmp(content_type, "application/octet-stream") == 0) {
         return AUDIO_CODEC_MP3;
     }
     if (strcasecmp(content_type, "audio/aac") == 0 ||
-            strcasecmp(content_type, "audio/x-aac") == 0 ||
-            strcasecmp(content_type, "audio/mp4") == 0 ||
-            strcasecmp(content_type, "audio/aacp") == 0 ||
-            strcasecmp(content_type, "video/MP2T") == 0) {
+        strcasecmp(content_type, "audio/x-aac") == 0 ||
+        strcasecmp(content_type, "audio/mp4") == 0 ||
+        strcasecmp(content_type, "audio/aacp") == 0 ||
+        strcasecmp(content_type, "video/MP2T") == 0) {
         return AUDIO_CODEC_AAC;
     }
     if (strcasecmp(content_type, "audio/wav") == 0) {
@@ -105,7 +105,7 @@ static audio_codec_t get_audio_type(const char *content_type)
         return AUDIO_CODEC_OPUS;
     }
     if (strcasecmp(content_type, "application/vnd.apple.mpegurl") == 0 ||
-            strcasecmp(content_type, "vnd.apple.mpegURL") == 0) {
+        strcasecmp(content_type, "vnd.apple.mpegURL") == 0) {
         return AUDIO_PLAYLIST;
     }
     return AUDIO_CODEC_NONE;
@@ -622,6 +622,7 @@ static esp_err_t _http_close(audio_element_handle_t self)
         http->client = NULL;
     }
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
+        audio_element_report_pos(self);
         audio_element_info_t info = {0};
         audio_element_getinfo(self, &info);
         info.byte_pos = 0;
@@ -661,7 +662,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     cfg.task_prio = config->task_prio;
     cfg.task_core = config->task_core;
     cfg.out_rb_size = config->out_rb_size;
-    cfg.enable_multi_io = true;
+    cfg.multi_out_rb_num = config->multi_out_num;
     cfg.tag = "http";
 
     http->type = config->type;
@@ -753,7 +754,7 @@ esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el)
     audio_element_info_t info;
     audio_element_getinfo(el, &info);
     http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
-    track_t * track = _playlist_get_next_track(el);
+    track_t *track = _playlist_get_next_track(el);
     if (track) {
         track->is_played = true;
         ESP_LOGD(TAG, "Finish %s", track->uri);
