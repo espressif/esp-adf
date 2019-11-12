@@ -26,7 +26,8 @@
 #define _AUDIO_BOARD_DEFINITION_H_
 
 #define SDCARD_OPEN_FILE_NUM_MAX  5
-#define SDCARD_INTR_GPIO          GPIO_NUM_34
+//#define SDCARD_INTR_GPIO          GPIO_NUM_34
+#define SDCARD_INTR_GPIO          GPIO_NUM_39
 
 #define BUTTON_REC_ID             GPIO_NUM_36
 #define BUTTON_MODE_ID            GPIO_NUM_39
