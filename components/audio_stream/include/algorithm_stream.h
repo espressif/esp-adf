@@ -77,7 +77,7 @@
 
 */
 
-/*
+/**
  * @brief Two types of algorithm stream input method
  */
 typedef enum {
@@ -85,7 +85,7 @@ typedef enum {
     ALGORITHM_STREAM_INPUT_TYPE2 = 2, /*!< Type 2 read in record signal from I2S and when data be written, the data should be copy as a reference signal and input to the algorithm element by using multiple input buffer. */
 } algorithm_stream_input_type_t;      /*!< When use type2, you can combine arbitrarily the algorithm modules you want to use, use algo_mask parameters below to configure that. */
 
-/*
+/**
  * @brief Choose the algorithm to be used
  */
 typedef enum {
@@ -94,7 +94,7 @@ typedef enum {
     ALGORITHM_STREAM_USE_NS  = (0x1 << 2)  /*!< Use NS  */
 } algorithm_stream_mask_t;
 
-/*
+/**
  * @brief Algorithm stream configurations
  */
 typedef struct {

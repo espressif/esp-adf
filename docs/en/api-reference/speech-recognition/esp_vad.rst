@@ -15,4 +15,4 @@ Implementation of the voice activity detection API is demonstrated in :example:`
 API Reference
 -------------
 
-.. include:: /_build/inc/esp_vad.inc
+For the latest API reference please refer to `Espressif Speech recognition repository <https://github.com/espressif/esp-sr>`_.

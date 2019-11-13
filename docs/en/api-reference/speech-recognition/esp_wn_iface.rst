@@ -75,5 +75,4 @@ Implementation of the speech recognition API is demonstrated in :example:`speech
 API Reference
 -------------
 
-.. include:: /_build/inc/esp_wn_iface.inc
-
+For the latest API reference please refer to `Espressif Speech recognition repository <https://github.com/espressif/esp-sr>`_.
