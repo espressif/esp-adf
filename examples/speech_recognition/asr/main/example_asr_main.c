@@ -24,11 +24,11 @@
 #include "i2s_stream.h"
 #include "raw_stream.h"
 #include "filter_resample.h"
-#include "esp_sr_iface.h"
-#include "esp_sr_models.h"
+#include "esp_wn_iface.h"
+#include "esp_wn_models.h"
+#include "rec_eng_helper.h"
 
 static const char *TAG = "example_asr_keywords";
-
 static const char *EVENT_TAG = "asr_event";
 
 typedef enum {
@@ -55,32 +55,32 @@ void app_main()
     };
     gpio_config(&gpio_conf);
 #endif
-
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
     esp_log_level_set(EVENT_TAG, ESP_LOG_INFO);
 
     ESP_LOGI(TAG, "Initialize SR handle");
-#if CONFIG_SR_MODEL_WN4_QUANT
-    const esp_sr_iface_t *model = &esp_sr_wakenet4_quantized;
-#else
-    const esp_sr_iface_t *model = &esp_sr_wakenet3_quantized;
-#endif
-    model_iface_data_t *iface = model->create(DET_MODE_90);
-    int num = model->get_word_num(iface);
+    esp_wn_iface_t *wakenet;
+    model_coeff_getter_t *model_coeff_getter;
+    model_iface_data_t *model_data;
+
+    get_wakenet_iface(&wakenet);
+    get_wakenet_coeff(&model_coeff_getter);
+    model_data = wakenet->create(model_coeff_getter, DET_MODE_90);
+    int num = wakenet->get_word_num(model_data);
     for (int i = 1; i <= num; i++) {
-        char *name = model->get_word_name(iface, i);
+        char *name = wakenet->get_word_name(model_data, i);
         ESP_LOGI(TAG, "keywords: %s (index = %d)", name, i);
     }
-    float threshold = model->get_det_threshold_by_mode(iface, DET_MODE_90, 1);
-    int sample_rate = model->get_samp_rate(iface);
-    int audio_chunksize = model->get_samp_chunksize(iface);
+    float threshold = wakenet->get_det_threshold(model_data, 1);
+    int sample_rate = wakenet->get_samp_rate(model_data);
+    int audio_chunksize = wakenet->get_samp_chunksize(model_data);
     ESP_LOGI(EVENT_TAG, "keywords_num = %d, threshold = %f, sample_rate = %d, chunksize = %d, sizeof_uint16 = %d", num, threshold, sample_rate, audio_chunksize, sizeof(int16_t));
     int16_t *buff = (int16_t *)malloc(audio_chunksize * sizeof(short));
     if (NULL == buff) {
         ESP_LOGE(EVENT_TAG, "Memory allocation failed!");
-        model->destroy(iface);
-        model = NULL;
+        wakenet->destroy(model_data);
+        model_data = NULL;
         return;
     }
 
@@ -100,11 +100,15 @@ void app_main()
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.i2s_config.sample_rate = 48000;
     i2s_cfg.type = AUDIO_STREAM_READER;
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    i2s_cfg.i2s_port = 1;
-#endif
-    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
+    // Mini board record by I2S1 and play music by I2S0, no need to add resample element.
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    i2s_cfg.i2s_config.sample_rate = 16000;
+    i2s_cfg.i2s_port = 1;
+    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+#else
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
     ESP_LOGI(EVENT_TAG, "[ 2.2 ] Create filter to resample audio data");
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg.src_rate = 48000;
@@ -113,6 +117,7 @@ void app_main()
     rsp_cfg.dest_ch = 1;
     rsp_cfg.type = AUDIO_CODEC_TYPE_ENCODER;
     filter = rsp_filter_init(&rsp_cfg);
+#endif
 
     ESP_LOGI(EVENT_TAG, "[ 2.3 ] Create raw to receive data");
     raw_stream_cfg_t raw_cfg = {
@@ -123,17 +128,22 @@ void app_main()
 
     ESP_LOGI(EVENT_TAG, "[ 3 ] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
-    audio_pipeline_register(pipeline, filter, "filter");
     audio_pipeline_register(pipeline, raw_read, "raw");
 
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    ESP_LOGI(EVENT_TAG, "[ 4 ] Link elements together [codec_chip]-->i2s_stream-->raw-->[SR]");
+    audio_pipeline_link(pipeline, (const char *[]) {"i2s",  "raw"}, 2);
+#else
+    audio_pipeline_register(pipeline, filter, "filter");
     ESP_LOGI(EVENT_TAG, "[ 4 ] Link elements together [codec_chip]-->i2s_stream-->filter-->raw-->[SR]");
     audio_pipeline_link(pipeline, (const char *[]) {"i2s", "filter", "raw"}, 3);
+#endif
 
     ESP_LOGI(EVENT_TAG, "[ 5 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
     while (1) {
         raw_stream_read(raw_read, (char *)buff, audio_chunksize * sizeof(short));
-        int keyword = model->detect(iface, (int16_t *)buff);
+        int keyword = wakenet->detect(model_data, (int16_t *)buff);
         switch (keyword) {
             case WAKE_UP:
                 ESP_LOGI(TAG, "Wake up");
@@ -172,7 +182,6 @@ void app_main()
                 ESP_LOGD(TAG, "Not supported keyword");
                 break;
         }
-
     }
 
     ESP_LOGI(EVENT_TAG, "[ 6 ] Stop audio_pipeline");
@@ -193,8 +202,8 @@ void app_main()
     audio_element_deinit(filter);
 
     ESP_LOGI(EVENT_TAG, "[ 7 ] Destroy model");
-    model->destroy(iface);
-    model = NULL;
+    wakenet->destroy(model_data);
+    model_data = NULL;
     free(buff);
     buff = NULL;
 }

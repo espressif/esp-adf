@@ -57,6 +57,7 @@
 #include "airkiss_config.h"
 #include "smart_config.h"
 #include "periph_adc_button.h"
+#include "algorithm_stream.h"
 
 static const char *TAG              = "DUEROS";
 extern esp_audio_handle_t           player;
@@ -96,12 +97,18 @@ void rec_engine_cb(rec_event_type_t type, void *user_data)
     }
 }
 
+int duer_i2s_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
+{
+    audio_element_handle_t i2s_read_handle = (audio_element_handle_t)ctx;
+    return audio_element_input(i2s_read_handle, buf, len);
+}
+
 static  audio_element_handle_t raw_read;
 
 #ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
 static esp_err_t recorder_pipeline_open_for_mini(void **handle)
 {
-    audio_element_handle_t i2s_stream_reader;
+    audio_element_handle_t i2s_reader;
     audio_pipeline_handle_t recorder;
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     recorder = audio_pipeline_init(&pipeline_cfg);
@@ -112,18 +119,22 @@ static esp_err_t recorder_pipeline_open_for_mini(void **handle)
     i2s_cfg.i2s_port = 1;
     i2s_cfg.i2s_config.use_apll = 0;
     i2s_cfg.i2s_config.sample_rate = 16000;
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
     i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+    i2s_reader = i2s_stream_init(&i2s_cfg);
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_READER;
     raw_read = raw_stream_init(&raw_cfg);
 
-    audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
+    algorithm_stream_cfg_t algo_cfg = ALGORITHM_STREAM_CFG_DEFAULT();
+    audio_element_handle_t algo_handle = algo_stream_init(&algo_cfg);
+
+    audio_pipeline_register(recorder, algo_handle, "algo");
+    audio_element_set_read_cb(algo_handle, duer_i2s_read_cb, (void *)i2s_reader);
     audio_pipeline_register(recorder, raw_read, "raw");
 
-    audio_pipeline_link(recorder, (const char *[]) {"i2s", "raw"}, 2);
+    audio_pipeline_link(recorder, (const char *[]) {"algo", "raw"}, 2);
+
     audio_pipeline_run(recorder);
     ESP_LOGI(TAG, "Recorder has been created");
     *handle = recorder;
@@ -365,13 +376,12 @@ void duer_app_init(void)
     wifi_config_t sta_cfg = {0};
     strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, strlen(CONFIG_WIFI_SSID));
     strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, strlen(CONFIG_WIFI_PASSWORD));
-
     wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
     cfg.evt_cb = wifi_service_cb;
     cfg.cb_ctx = NULL;
     cfg.setting_timeout_s = 60;
     wifi_serv = wifi_service_create(&cfg);
-
+    vTaskDelay(1000);
     int reg_idx = 0;
     esp_wifi_setting_handle_t h = NULL;
 #ifdef CONFIG_AIRKISS_ENCRYPT
@@ -388,6 +398,7 @@ void duer_app_init(void)
     wifi_service_register_setting_handle(wifi_serv, h, &reg_idx);
     wifi_service_set_sta_info(wifi_serv, &sta_cfg);
     wifi_service_connect(wifi_serv);
+
 
     rec_config_t eng = DEFAULT_REC_ENGINE_CONFIG();
     eng.vad_off_delay_ms = 800;
@@ -410,5 +421,4 @@ void duer_app_init(void)
     duer_serv_handle = dueros_service_create();
     duer_audio_wrapper_init();
     audio_service_set_callback(duer_serv_handle, duer_callback, retry_login_timer);
-
 }
