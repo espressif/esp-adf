@@ -74,8 +74,12 @@ static void esp_audio_state_task (void *para)
                 }
                 ESP_LOGE(TAG, "duer_dcs_speech_on_finished,%d, wakeup:%d", duer_playing_type, wakeup);
             } else if ((duer_playing_type == DUER_AUDIO_TYPE_MUSIC) && (player_pause == 0)) {
-                duer_dcs_audio_on_finished();
-                ESP_LOGE(TAG, "duer_dcs_audio_on_finished, %d", duer_playing_type);
+                bool wakeup = false;
+                rec_engine_get_wakeup_stat(&wakeup);
+                if (wakeup == false) {
+                    duer_dcs_audio_on_finished();
+                }
+                ESP_LOGE(TAG, "duer_dcs_audio_on_finished,%d, wakeup:%d", duer_playing_type, wakeup);
             }
         }
     }
@@ -132,8 +136,6 @@ static void setup_player(void)
     i2s_writer.i2s_config.sample_rate = 48000;
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
-    esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
-
     // Add decoders and encoders to esp_audio
     wav_decoder_cfg_t wav_dec_cfg = DEFAULT_WAV_DECODER_CONFIG();
     mp3_decoder_cfg_t mp3_dec_cfg = DEFAULT_MP3_DECODER_CONFIG();
@@ -152,8 +154,10 @@ static void setup_player(void)
     audio_element_set_tag(ts_dec_cfg, "ts");
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, ts_dec_cfg);
 
+    esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
+
     // Set default volume
-    esp_audio_vol_set(player, 45);
+    esp_audio_vol_set(player, 60);
     AUDIO_MEM_SHOW(TAG);
     ESP_LOGI(TAG, "esp_audio instance is:%p", player);
 }
@@ -173,11 +177,8 @@ void duer_audio_wrapper_init(void)
 
 void duer_audio_wrapper_pause()
 {
-    if (duer_playing_type == DUER_AUDIO_TYPE_SPEECH) {
-        esp_audio_stop(player, 0);
-    } else {
-        ESP_LOGW(TAG, "duer_audio_wrapper_pause, type is music");
-    }
+    esp_audio_stop(player, 0);
+    ESP_LOGW(TAG, "duer_audio_wrapper_pause, playing type:%d", duer_playing_type);
 }
 
 int duer_audio_wrapper_get_state()
@@ -326,6 +327,12 @@ duer_audio_type_t duer_dcs_get_player_type()
 int duer_dcs_set_player_type(duer_audio_type_t num)
 {
     duer_playing_type = num;
+    return 0;
+}
+
+int duer_dcs_audio_sync_play_tone(const char *uri)
+{
+    esp_audio_sync_play(player, uri, 0);
     return 0;
 }
 

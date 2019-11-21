@@ -24,11 +24,11 @@
 
 #include "freertos/xtensa_api.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/ringbuf.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "freertos/FreeRTOSConfig.h"
 
+#include "rom/queue.h"
 #include "esp_log.h"
 #include "audio_event_iface.h"
 #include "audio_error.h"

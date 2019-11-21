@@ -71,6 +71,7 @@ static void IRAM_ATTR headphone_gpio_intr_handler(void *arg)
 void headphone_detect_deinit()
 {
     xTimerDelete(timer_headphone, HP_DELAY_TIME_MS / portTICK_RATE_MS);
+    gpio_uninstall_isr_service();
     timer_headphone = NULL;
 }
 

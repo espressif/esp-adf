@@ -41,7 +41,7 @@
 #include "display_service.h"
 #include "led_bar_is31x.h"
 
-#define  ESP_AUDIO_AUTO_PLAY
+// #define  ESP_AUDIO_AUTO_PLAY
 
 static const char *TAG = "CONSOLE_EXAMPLE";
 static esp_audio_handle_t player;
@@ -79,7 +79,11 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
     };
 
     char *str = NULL;
+    int byte_pos = 0;
     if (argv[0] && argc) {
+        if (argv[1]) {
+            byte_pos = atoi(argv[1]);
+        }
         if (isdigit((int)argv[0][0])) {
             int index = atoi(argv[0]);
             if (index >= sizeof(uri) / sizeof(char *)) {
@@ -87,13 +91,16 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
                 return ESP_ERR_INVALID_ARG;
             }
             str = (char *)uri[index];
-            ESP_LOGI(TAG, "play index= %d, URI:%s", index, str);
+            ESP_LOGI(TAG, "play index= %d, URI:%s, byte_pos:%d", index, str, byte_pos);
         } else {
-            ESP_LOGI(TAG, "play URI:%s", argv[0]);
+            ESP_LOGI(TAG, "play URI:%s, byte_pos:%d", argv[0], byte_pos);
             str = argv[0];
         }
+    } else {
+        ESP_LOGE(TAG, "No URI to play");
+        return ESP_ERR_INVALID_ARG;
     }
-    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, str, 0);
+    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, str, byte_pos);
     return ESP_OK;
 }
 
@@ -115,6 +122,28 @@ static esp_err_t cli_stop(esp_periph_handle_t periph, int argc, char *argv[])
 {
     esp_audio_stop(player, 0);
     ESP_LOGI(TAG, "app_audio stop");
+    return ESP_OK;
+}
+
+static esp_err_t cli_seek(esp_periph_handle_t periph, int argc, char *argv[])
+{
+    int pos = 0;
+    if (argc == 1) {
+        pos = atoi(argv[0]);
+    } else {
+        ESP_LOGE(TAG, "Invalid parameter");
+        return ESP_ERR_INVALID_ARG;
+    }
+    esp_audio_seek(player, pos);
+    ESP_LOGI(TAG, "Seek to %d s to play", pos);
+    return ESP_OK;
+}
+
+static esp_err_t cli_duration(esp_periph_handle_t periph, int argc, char *argv[])
+{
+    int t_ms = 0;
+    esp_audio_duration_get(player, &t_ms);
+    ESP_LOGI(TAG, "The music duration is %d ms", t_ms);
     return ESP_OK;
 }
 
@@ -146,7 +175,7 @@ static esp_err_t get_pos(esp_periph_handle_t periph, int argc, char *argv[])
 {
     int pos = 0;
     esp_audio_time_get(player, &pos);
-    ESP_LOGI(TAG, "Current time position is %d second", pos / 1000);
+    ESP_LOGI(TAG, "Current time position is %d ms", pos);
     return ESP_OK;
 }
 
@@ -261,13 +290,17 @@ static esp_err_t task_list(esp_periph_handle_t periph, int argc, char *argv[])
 
 const periph_console_cmd_t cli_cmd[] = {
     /* ======================== Esp_audio ======================== */
-    { .cmd = "play",        .id = 1, .help = "Play music",               .func = cli_play },
+    { .cmd = "play",        .id = 1, .help = "Play music, command:play [index or url] [byte_pos]",               .func = cli_play },
+
     { .cmd = "pause",       .id = 2, .help = "Pause",                    .func = cli_pause },
     { .cmd = "resume",      .id = 3, .help = "Resume",                   .func = cli_resume },
     { .cmd = "stop",        .id = 3, .help = "Stop player",              .func = cli_stop },
     { .cmd = "setvol",      .id = 4, .help = "Set volume",               .func = cli_set_vol },
     { .cmd = "getvol",      .id = 5, .help = "Get volume",               .func = cli_get_vol },
     { .cmd = "getpos",      .id = 6, .help = "Get position by seconds",  .func = get_pos },
+    { .cmd = "seek",        .id = 7, .help = "Seek position by second",  .func = cli_seek },
+    { .cmd = "duration",    .id = 8, .help = "Get music duration",       .func = cli_duration },
+
 
     /* ======================== Wi-Fi ======================== */
     { .cmd = "join",        .id = 20, .help = "Join WiFi AP as a station",      .func = wifi_set },
@@ -354,20 +387,6 @@ static void cli_setup_player(void)
     audio_element_handle_t http_stream_reader = http_stream_init(&http_cfg);
     esp_audio_input_stream_add(player, http_stream_reader);
 
-    // Create writers and add to esp_audio
-    fatfs_stream_cfg_t fs_writer = FATFS_STREAM_CFG_DEFAULT();
-    fs_writer.type = AUDIO_STREAM_WRITER;
-
-    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
-    i2s_writer.type = AUDIO_STREAM_WRITER;
-
-    raw_stream_cfg_t raw_writer = RAW_STREAM_CFG_DEFAULT();
-    raw_writer.type = AUDIO_STREAM_WRITER;
-
-    esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
-    esp_audio_output_stream_add(player, fatfs_stream_init(&fs_writer));
-    esp_audio_output_stream_add(player, raw_stream_init(&raw_writer));
-
     // Add decoders and encoders to esp_audio
 #ifdef ESP_AUDIO_AUTO_PLAY
     audio_decoder_t auto_decode[] = {
@@ -411,8 +430,23 @@ static void cli_setup_player(void)
     wav_encoder_cfg_t wav_enc_cfg = DEFAULT_WAV_ENCODER_CONFIG();
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_ENCODER, wav_encoder_init(&wav_enc_cfg));
 #endif
+
+    // Create writers and add to esp_audio
+    fatfs_stream_cfg_t fs_writer = FATFS_STREAM_CFG_DEFAULT();
+    fs_writer.type = AUDIO_STREAM_WRITER;
+
+    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
+    i2s_writer.type = AUDIO_STREAM_WRITER;
+
+    raw_stream_cfg_t raw_writer = RAW_STREAM_CFG_DEFAULT();
+    raw_writer.type = AUDIO_STREAM_WRITER;
+
+    esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
+    esp_audio_output_stream_add(player, fatfs_stream_init(&fs_writer));
+    esp_audio_output_stream_add(player, raw_stream_init(&raw_writer));
+
     // Set default volume
-    esp_audio_vol_set(player, 45);
+    esp_audio_vol_set(player, 35);
     AUDIO_MEM_SHOW(TAG);
     ESP_LOGI(TAG, "esp_audio instance is:%p\r\n", player);
 }
@@ -420,6 +454,7 @@ static void cli_setup_player(void)
 void app_main(void)
 {
     esp_log_level_set("*", ESP_LOG_INFO);
+
     ESP_ERROR_CHECK(nvs_flash_init());
     tcpip_adapter_init();
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();

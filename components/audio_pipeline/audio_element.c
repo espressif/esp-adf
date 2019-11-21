@@ -29,14 +29,9 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
-#include "freertos/ringbuf.h"
 
-#include "rom/queue.h"
 #include "esp_log.h"
-#include "audio_event_iface.h"
-
 #include "audio_element.h"
-#include "audio_common.h"
 #include "audio_mem.h"
 #include "audio_mutex.h"
 #include "audio_error.h"
@@ -78,7 +73,7 @@ typedef enum {
 struct audio_element {
     /* Functions/RingBuffers */
     io_func                     open;
-    io_func                     seek;
+    ctrl_func                   seek;
     process_func                process;
     io_func                     close;
     io_func                     destroy;
@@ -285,7 +280,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
 static esp_err_t audio_element_process_running(audio_element_handle_t el)
 {
     int process_len = -1;
-    if (el->state < AEL_STATE_RUNNING || !el->is_open) {
+    if (el->state < AEL_STATE_RUNNING || !el->is_running) {
         return ESP_ERR_INVALID_STATE;
     }
     process_len = el->process(el, el->buf, el->buf_size);
@@ -881,6 +876,7 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
     el->process = config->process;
     el->close = config->close;
     el->destroy = config->destroy;
+    el->seek = config->seek;
     el->multi_in.max_rb_num = config->multi_in_rb_num;
     el->multi_out.max_rb_num = config->multi_out_rb_num;
     if (el->multi_in.max_rb_num > 0) {
@@ -1053,6 +1049,7 @@ esp_err_t audio_element_pause(audio_element_handle_t el)
         return ESP_FAIL;
     }
     if ((el->state >= AEL_STATE_PAUSED)) {
+        audio_element_force_set_state(el, AEL_STATE_PAUSED);
         ESP_LOGD(TAG, "[%s] Element already paused, state:%d", el->tag, el->state);
         return ESP_OK;
     }
@@ -1132,6 +1129,7 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
     }
     if (el->is_running == false) {
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
+        audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
         ESP_LOGW(TAG, "[%s] Element already stopped", el->tag);
         return ESP_OK;
     }
@@ -1222,4 +1220,15 @@ ringbuf_handle_t audio_element_get_multi_output_ringbuf(audio_element_handle_t e
         return el->multi_out.rb[index];
     }
     return NULL;
+}
+
+esp_err_t audio_element_seek(audio_element_handle_t el, void *in_data, int in_size, void *out_data, int *out_size)
+{
+    esp_err_t ret = ESP_OK;
+    if (el && el->seek) {
+        ret = el->seek(el, in_data, in_size, out_data, out_size);
+    } else {
+        ret = ESP_ERR_NOT_SUPPORTED;
+    }
+    return ret;
 }

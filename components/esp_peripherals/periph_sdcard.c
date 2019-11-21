@@ -41,7 +41,7 @@
 #include "board.h"
 #include "periph_sdcard.h"
 
-static const char* TAG = "PERIPH_SDCARD";
+static const char *TAG = "PERIPH_SDCARD";
 
 #define SDCARD_CHECK_TIMEOUT_MS (20)
 
@@ -65,14 +65,14 @@ typedef struct {
 } periph_sdcard_t;
 
 
-static void IRAM_ATTR sdcard_gpio_intr_handler(void* param)
+static void IRAM_ATTR sdcard_gpio_intr_handler(void *param)
 {
     esp_periph_handle_t periph = (esp_periph_handle_t)param;
     periph_sdcard_t *sdcard = esp_periph_get_data(periph);
 
     if (sdcard_is_exist() && !sdcard->is_mounted) {
         esp_periph_send_cmd_from_isr(periph, SDCARD_STATUS_CARD_DETECT_CHANGE, NULL, 0);
-    } else if(!sdcard_is_exist() && sdcard->is_mounted){
+    } else if (!sdcard_is_exist() && sdcard->is_mounted) {
         esp_periph_send_cmd_from_isr(periph, SDCARD_STATUS_CARD_DETECT_CHANGE, NULL, 0);
     }
 }
@@ -85,7 +85,7 @@ static esp_err_t _sdcard_run(esp_periph_handle_t self, audio_event_iface_msg_t *
     periph_sdcard_t *sdcard = esp_periph_get_data(self);
     if (sdcard_is_exist() && !sdcard->is_mounted) {
         periph_sdcard_mount(self);
-    } else if(!sdcard_is_exist() && sdcard->is_mounted){
+    } else if (!sdcard_is_exist() && sdcard->is_mounted) {
         periph_sdcard_unmount(self);
     }
     return ESP_OK;
@@ -100,14 +100,13 @@ static void sdcard_timer_handler(xTimerHandle tmr)
 static esp_err_t _sdcard_init(esp_periph_handle_t self)
 {
     periph_sdcard_t *sdcard = esp_periph_get_data(self);
-
     esp_err_t ret = sdcard_init(sdcard->card_detect_pin, sdcard_gpio_intr_handler, self);
     if (sdcard_is_exist()) {
         ret |= periph_sdcard_mount(self);
     } else {
         ESP_LOGE(TAG, "no sdcard detect");
     }
-    esp_periph_start_timer(self, 1000/portTICK_RATE_MS, sdcard_timer_handler);
+    esp_periph_start_timer(self, 1000 / portTICK_RATE_MS, sdcard_timer_handler);
     return ESP_OK;
 }
 
@@ -118,7 +117,6 @@ static esp_err_t _sdcard_destroy(esp_periph_handle_t self)
 
     ret |= sdcard_unmount();
     ret |= sdcard_destroy();
-
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "stop sdcard error!");
     }
@@ -135,7 +133,6 @@ esp_err_t periph_sdcard_mount(esp_periph_handle_t periph)
     periph_sdcard_t *sdcard = esp_periph_get_data(periph);
 
     int ret = sdcard_mount(sdcard->root);
-
     if (ret == ESP_OK) {
         ESP_LOGD(TAG, "Mount SDCARD success");
         sdcard->is_mounted = true;
@@ -156,7 +153,6 @@ esp_err_t periph_sdcard_unmount(esp_periph_handle_t periph)
     VALIDATE_SDCARD(periph, ESP_FAIL);
     periph_sdcard_t *sdcard = esp_periph_get_data(periph);
     int ret = sdcard_unmount();
-
     if (ret == ESP_OK) {
         ESP_LOGD(TAG, "UnMount SDCARD success");
         sdcard->is_mounted = false;
@@ -170,7 +166,7 @@ esp_err_t periph_sdcard_unmount(esp_periph_handle_t periph)
     return ESP_OK;
 }
 
-esp_periph_handle_t periph_sdcard_init(periph_sdcard_cfg_t* sdcard_cfg)
+esp_periph_handle_t periph_sdcard_init(periph_sdcard_cfg_t *sdcard_cfg)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_SDCARD, "periph_sdcard");
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
