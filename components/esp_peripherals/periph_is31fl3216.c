@@ -38,6 +38,7 @@
 #define DEFAULT_FLASH_STEP          2
 
 static const char *TAG = "PERIPH_IS31";
+static const int DESTROY_BIT = BIT0;
 
 #define VALIDATE_IS31FL3216(periph, ret) if (!(periph && esp_periph_get_id(periph) == PERIPH_ID_IS31FL3216)) { \
     ESP_LOGE(TAG, "Invalid is31fl3216 periph, at line %d", __LINE__);\
@@ -76,6 +77,7 @@ typedef struct {
     is31fl3216_handle_t         handle;
     periph_is31fl3216_state_t   cur_state;
     QueueHandle_t               evt;
+    EventGroupHandle_t          g_event_bit;
 } periph_is31fl3216_t;
 
 typedef struct {
@@ -179,6 +181,7 @@ static void is31fl3216_run_task(void *Para)
     periph_is31_msg_t msg = {0};
     int wait_time_ms = portMAX_DELAY;
     bool task_run = true;
+    xEventGroupClearBits(is31->g_event_bit, DESTROY_BIT);
     int cur_duty = 0;
     int sig = 2;
     int cur_bits_mask = 0;
@@ -210,9 +213,16 @@ static void is31fl3216_run_task(void *Para)
 
                 case PERIPH_IS31_CMD_QUIT:
                     task_run = false;
+                    if (is31->g_event_bit) {
+                        xEventGroupSetBits(is31->g_event_bit, DESTROY_BIT);
+                    }
                     break;
                 default:
                     break;
+            }
+            if (task_run == false) {
+                ESP_LOGW(TAG, "Quit is31fl3216 task ...");
+                break;
             }
         }
         switch (is31->cur_state) {
@@ -353,9 +363,16 @@ static esp_err_t _is31fl3216_destroy(esp_periph_handle_t self)
     VALIDATE_IS31FL3216(self, ESP_FAIL);
     periph_is31fl3216_t *is31fl3216 = esp_periph_get_data(self);
     is31_evt_send(is31fl3216->evt, PERIPH_IS31_CMD_QUIT, 0, 0);
+    if (is31fl3216->g_event_bit) {
+        xEventGroupWaitBits(is31fl3216->g_event_bit, DESTROY_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
+        vEventGroupDelete(is31fl3216->g_event_bit);
+        is31fl3216->g_event_bit = NULL;
+    }
     esp_err_t ret = ESP_OK;
     ret |= is31fl3216_ch_disable(is31fl3216->handle, IS31FL3216_CH_ALL);
     ret |= is31fl3216_deinit(is31fl3216->handle);
+    free(is31fl3216->arg);
+    vQueueDelete(is31fl3216->evt);
     free(is31fl3216);
     if (ret) {
         ESP_LOGE(TAG, "Error occurred when stopping the is31fl3216");
@@ -374,15 +391,24 @@ esp_periph_handle_t periph_is31fl3216_init(periph_is31fl3216_cfg_t *is31fl3216_c
         free(periph);
         return NULL;
     });
+
+    is31fl3216->g_event_bit = xEventGroupCreate();
+    AUDIO_NULL_CHECK(TAG, is31fl3216->g_event_bit, {
+        free(periph);
+        free(is31fl3216);
+    });
+
     is31fl3216->evt = xQueueCreate(2, sizeof(periph_is31_msg_t));
     AUDIO_MEM_CHECK(TAG, is31fl3216->evt, {
         free(periph);
+        vEventGroupDelete(is31fl3216->g_event_bit);
         free(is31fl3216);
         return NULL;
     });
     is31fl3216->arg = audio_calloc(1, sizeof(periph_is31_arg_t));
     AUDIO_MEM_CHECK(TAG, is31fl3216->arg, {
         vQueueDelete(is31fl3216->evt);
+        vEventGroupDelete(is31fl3216->g_event_bit);
         free(periph);
         free(is31fl3216);
         return NULL;
@@ -407,6 +433,7 @@ esp_periph_handle_t periph_is31fl3216_init(periph_is31fl3216_cfg_t *is31fl3216_c
         free(is31fl3216->arg);
         vQueueDelete(is31fl3216->evt);
         free(periph);
+        vEventGroupDelete(is31fl3216->g_event_bit);
         free(is31fl3216);
         return NULL;
     });
