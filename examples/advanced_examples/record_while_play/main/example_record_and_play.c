@@ -26,8 +26,9 @@
 #include "filter_resample.h"
 #include "http_stream.h"
 #include "raw_stream.h"
-#include "esp_sr_iface.h"
-#include "esp_sr_models.h"
+#include "esp_wn_iface.h"
+#include "esp_wn_models.h"
+#include "rec_eng_helper.h"
 
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
@@ -52,6 +53,10 @@ typedef enum {
 
 static input_stream_t input_type_flag;
 static output_stream_t output_type_flag;
+
+esp_wn_iface_t *wakenet;
+model_coeff_getter_t *model_coeff_getter;
+model_iface_data_t *model_data;
 
 static audio_pipeline_handle_t example_create_play_pipeline(const char *url, output_stream_t output_type)
 {
@@ -233,6 +238,8 @@ static void example_stop_all_pipelines(void)
                 audio_element_deinit(i2s_stream_reader);
                 audio_element_deinit(raw_reader);
                 audio_element_deinit(resample_for_rec);
+                wakenet->destroy(model_data);
+                model_data = NULL;
                 break;
             }
         default:
@@ -329,8 +336,9 @@ void app_main(void)
 #endif
 
     ESP_LOGI(TAG, "[ * ] Create asr model");
-    const esp_sr_iface_t *model = &esp_sr_wakenet5_quantized;
-    model_iface_data_t *iface = model->create(DET_MODE_90);
+    get_wakenet_iface(&wakenet);
+    get_wakenet_coeff(&model_coeff_getter);
+    model_data = wakenet->create(model_coeff_getter, DET_MODE_90);
 
     ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -352,7 +360,7 @@ void app_main(void)
         if (input_type_flag == INPUT_STREAM_ASR) {
             audio_event_iface_listen(evt, &msg, 0);
             raw_stream_read(raw_reader, buff, 960);
-            int keyword = model->detect(iface, (int16_t *)buff);
+            int keyword = wakenet->detect(model_data, (int16_t *)buff);
             if (keyword) {
                 ESP_LOGW(TAG, "###spot keyword###");
             }
