@@ -34,6 +34,8 @@ static int my_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t 
     }
     int read_len = fread(buf, 1, len, file);
     if (read_len == 0) {
+        fclose(file);
+        file = NULL;
         read_len = AEL_IO_DONE;
     }
     return read_len;
@@ -111,24 +113,21 @@ void app_main(void)
             continue;
         }
 
-        if (queue_set_member == i2s_queue) {
-            continue;
-        }
-
-        if (queue_set_member == i2s_queue && msg.cmd != AEL_MSG_CMD_REPORT_STATUS && (int)msg.data == AEL_STATUS_ERROR_PROCESS) {
-            break;
-        }
-        if (amr_decoder == i2s_queue && msg.cmd != AEL_MSG_CMD_REPORT_STATUS && (int)msg.data == AEL_STATUS_OUTPUT_DONE) {
+        if ((int) msg.data == AEL_STATUS_STATE_FINISHED) {
+            ESP_LOGW(TAG, "Stop event recieved");
             break;
         }
     }
 
+    ESP_LOGW(TAG, "Release all resources");
     if (xQueueRemoveFromSet(i2s_queue, queue_set) != pdPASS) {
-        ESP_LOGE(TAG, "Error removing i2s_queue from queue_set");
+        ESP_LOGE(TAG, "Error remove i2s_queue from queue_set");
     }
     if (xQueueRemoveFromSet(amr_queue, queue_set) != pdPASS) {
-        ESP_LOGE(TAG, "Error removing amr_queue from queue_set");
+        ESP_LOGE(TAG, "Error remove amr_queue from queue_set");
     }
+    
+    vQueueDelete(queue_set);
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(amr_decoder);
     rb_destroy(ringbuf);
