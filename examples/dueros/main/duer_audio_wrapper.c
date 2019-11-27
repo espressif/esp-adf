@@ -67,11 +67,13 @@ static void esp_audio_state_task (void *para)
             || (esp_state.status == AUDIO_STATUS_ERROR)) {
             if (duer_playing_type == DUER_AUDIO_TYPE_SPEECH) {
                 duer_playing_type = DUER_AUDIO_TYPE_UNKOWN;
-                duer_dcs_speech_on_finished();
-
-                ESP_LOGE(TAG, "duer_dcs_speech_on_finished,%d", duer_playing_type);
+                bool wakeup = false;
+                rec_engine_get_wakeup_stat(&wakeup);
+                if (wakeup == false) {
+                    duer_dcs_speech_on_finished();
+                }
+                ESP_LOGE(TAG, "duer_dcs_speech_on_finished,%d, wakeup:%d", duer_playing_type, wakeup);
             } else if ((duer_playing_type == DUER_AUDIO_TYPE_MUSIC) && (player_pause == 0)) {
-                // duer_playing_type = 0;
                 duer_dcs_audio_on_finished();
                 ESP_LOGE(TAG, "duer_dcs_audio_on_finished, %d", duer_playing_type);
             }
@@ -270,7 +272,6 @@ void duer_dcs_audio_play_handler(const duer_dcs_audio_info_t *audio_info)
     duer_playing_type = DUER_AUDIO_TYPE_MUSIC;
     player_pause = 0;
     xSemaphoreGive(s_mutex);
-
 }
 
 void duer_dcs_audio_stop_handler()
@@ -298,6 +299,7 @@ void duer_dcs_audio_resume_handler(const duer_dcs_audio_info_t *audio_info)
 {
     ESP_LOGI(TAG, "Resume audio, offset:%d url:%s", audio_info->offset, audio_info->url);
     player_pause = 0;
+    duer_playing_type = DUER_AUDIO_TYPE_MUSIC;
     esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, audio_info->url, audio_pos);
 }
 
