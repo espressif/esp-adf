@@ -22,31 +22,39 @@
  *
  */
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "freertos/queue.h"
-#include "soc/soc.h"
+#include "freertos/task.h"
 #include "soc/rtc_cntl_reg.h"
 #include "soc/sens_reg.h"
-#include "esp_wifi.h"
+#include "soc/soc.h"
+
 #include "esp_event_loop.h"
 #include "esp_log.h"
 #include "esp_smartconfig.h"
 #include "esp_system.h"
+#include "esp_wifi.h"
+
 #include "board.h"
-#include "periph_wifi.h"
 #include "esp_peripherals.h"
+#include "periph_wifi.h"
 #include "wifibleconfig.h"
+
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#endif
 
 static const char *TAG = "PERIPH_WIFI";
 
-#define VALIDATE_WIFI(periph, ret) if (!(periph && esp_periph_get_id(periph) == PERIPH_ID_WIFI)) { \
-    ESP_LOGE(TAG, "Invalid WIFI periph, at line %d", __LINE__);\
-    return ret;\
-}
+#define VALIDATE_WIFI(periph, ret)                                  \
+    if (!(periph && esp_periph_get_id(periph) == PERIPH_ID_WIFI)) { \
+        ESP_LOGE(TAG, "Invalid WIFI periph, at line %d", __LINE__); \
+        return ret;                                                 \
+    }
 
 #define DEFAULT_RECONNECT_TIMEOUT_MS (1000)
 
@@ -85,7 +93,7 @@ esp_err_t periph_wifi_wait_for_connected(esp_periph_handle_t periph, TickType_t 
         return ESP_OK;
     }
 #ifdef CONFIG_BLUEDROID_ENABLED
-    if(periph_wifi->config_mode == WIFI_CONFIG_BLUEFI) {
+    if (periph_wifi->config_mode == WIFI_CONFIG_BLUEFI) {
         ble_config_stop();
     }
 #endif
@@ -99,6 +107,60 @@ periph_wifi_state_t periph_wifi_is_connected(esp_periph_handle_t periph)
     return wifi->wifi_state;
 }
 
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+static void _wifi_smartconfig_event_callback(void *arg, esp_event_base_t event_base,
+    int32_t event_id, void *event_data)
+{
+    wifi_config_t sta_conf;
+    periph_wifi_handle_t periph_wifi = (periph_wifi_handle_t)esp_periph_get_data(g_periph);
+    switch (event_id) {
+        case SC_EVENT_SCAN_DONE:
+            ESP_LOGD(TAG, "SC_EVENT_SCAN_DONE");
+            break;
+
+        case SC_EVENT_FOUND_CHANNEL:
+            ESP_LOGD(TAG, "SC_EVENT_FOUND_CHANNEL");
+            break;
+
+        case SC_EVENT_GOT_SSID_PSWD:
+            ESP_LOGE(TAG, "SC_EVENT_GOT_SSID_PSWD");
+            smartconfig_event_got_ssid_pswd_t *evt = (smartconfig_event_got_ssid_pswd_t *)event_data;
+            memset(&sta_conf, 0x00, sizeof(sta_conf));
+            memcpy(sta_conf.sta.ssid, evt->ssid, sizeof(sta_conf.sta.ssid));
+            memcpy(sta_conf.sta.password, evt->password, sizeof(sta_conf.sta.password));
+            sta_conf.sta.bssid_set = evt->bssid_set;
+            if (sta_conf.sta.bssid_set == true) {
+                memcpy(sta_conf.sta.bssid, evt->bssid, sizeof(sta_conf.sta.bssid));
+            }
+            ESP_LOGE(TAG, "SSID=%s, PASS=%s", sta_conf.sta.ssid, sta_conf.sta.password);
+
+            esp_wifi_disconnect();
+
+            if (esp_wifi_set_config(WIFI_IF_STA, &sta_conf) != ESP_OK) {
+                periph_wifi->wifi_state = PERIPH_WIFI_CONFIG_ERROR;
+                xEventGroupSetBits(periph_wifi->state_event, SMARTCONFIG_ERROR_BIT);
+            }
+            if (esp_wifi_connect() != ESP_OK) {
+                periph_wifi->wifi_state = PERIPH_WIFI_CONFIG_ERROR;
+                xEventGroupSetBits(periph_wifi->state_event, SMARTCONFIG_ERROR_BIT);
+                esp_periph_send_event(g_periph, PERIPH_WIFI_CONFIG_ERROR, NULL, 0);
+                break;
+            }
+            break;
+
+        case SC_EVENT_SEND_ACK_DONE:
+            ESP_LOGE(TAG, "SC_EVENT_SEND_ACK_DONE");
+
+            periph_wifi->wifi_state = PERIPH_WIFI_CONFIG_DONE;
+            esp_periph_send_event(g_periph, PERIPH_WIFI_CONFIG_DONE, NULL, 0);
+            xEventGroupSetBits(periph_wifi->state_event, SMARTCONFIG_DONE_BIT);
+            esp_smartconfig_stop();
+            break;
+    }
+}
+#endif
+#else
 static void _wifi_smartconfig_event_callback(smartconfig_status_t status, void *pdata)
 {
     wifi_config_t sta_conf;
@@ -141,7 +203,7 @@ static void _wifi_smartconfig_event_callback(smartconfig_status_t status, void *
             ESP_LOGE(TAG, "SC_STATUS_LINK_OVER");
 
             if (pdata != NULL) {
-                char phone_ip[4] = {0};
+                char phone_ip[4] = { 0 };
                 memcpy(phone_ip, (const void *)pdata, 4);
                 ESP_LOGD(TAG, "Phone ip: %d.%d.%d.%d", phone_ip[0], phone_ip[1], phone_ip[2], phone_ip[3]);
                 periph_wifi->wifi_state = PERIPH_WIFI_CONFIG_DONE;
@@ -156,6 +218,7 @@ static void _wifi_smartconfig_event_callback(smartconfig_status_t status, void *
             break;
     }
 }
+#endif
 
 esp_err_t periph_wifi_wait_for_disconnected(esp_periph_handle_t periph, TickType_t tick_to_wait)
 {
@@ -167,7 +230,6 @@ esp_err_t periph_wifi_wait_for_disconnected(esp_periph_handle_t periph, TickType
     }
     return ESP_FAIL;
 }
-
 
 esp_err_t periph_wifi_config_start(esp_periph_handle_t periph, periph_wifi_config_mode_t mode)
 {
@@ -187,7 +249,15 @@ esp_err_t periph_wifi_config_start(esp_periph_handle_t periph, periph_wifi_confi
         // esp_wifi_start();
         err |= esp_smartconfig_set_type(mode);
         err |= esp_smartconfig_fast_mode(true);
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+        smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
+        err |= esp_smartconfig_start(&cfg);
+        esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, &_wifi_smartconfig_event_callback, NULL);
+#endif
+#else
         err |= esp_smartconfig_start(_wifi_smartconfig_event_callback, 0);
+#endif
         xEventGroupClearBits(periph_wifi->state_event, SMARTCONFIG_DONE_BIT);
         xEventGroupClearBits(periph_wifi->state_event, SMARTCONFIG_ERROR_BIT);
 
@@ -209,7 +279,7 @@ esp_err_t periph_wifi_config_wait_done(esp_periph_handle_t periph, TickType_t ti
     VALIDATE_WIFI(periph, ESP_FAIL);
     periph_wifi_handle_t periph_wifi = (periph_wifi_handle_t)esp_periph_get_data(periph);
     EventBits_t wificonfig_bit = xEventGroupWaitBits(periph_wifi->state_event,
-                                  SMARTCONFIG_DONE_BIT | SMARTCONFIG_ERROR_BIT, false, true, tick_to_wait);
+        SMARTCONFIG_DONE_BIT | SMARTCONFIG_ERROR_BIT, false, true, tick_to_wait);
 
     if (wificonfig_bit & SMARTCONFIG_DONE_BIT) {
         return ESP_OK;
@@ -223,11 +293,55 @@ esp_err_t periph_wifi_config_wait_done(esp_periph_handle_t periph, TickType_t ti
 
 static void wifi_reconnect_timer(xTimerHandle tmr)
 {
-    esp_periph_handle_t periph = (esp_periph_handle_t) pvTimerGetTimerID(tmr);
+    esp_periph_handle_t periph = (esp_periph_handle_t)pvTimerGetTimerID(tmr);
     esp_periph_stop_timer(periph);
     esp_wifi_connect();
 }
 
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+static void _wifi_event_callback(void *arg, esp_event_base_t event_base,
+    int32_t event_id, void *event_data)
+{
+    esp_periph_handle_t self = (esp_periph_handle_t)arg;
+    periph_wifi_handle_t periph_wifi = (periph_wifi_handle_t)esp_periph_get_data(self);
+
+    switch (event_id) {
+        case WIFI_EVENT_STA_START:
+            periph_wifi->wifi_state = PERIPH_WIFI_CONNECTING;
+            esp_wifi_connect();
+            break;
+        case IP_EVENT_STA_GOT_IP:
+            periph_wifi->wifi_state = PERIPH_WIFI_CONNECTED;
+            xEventGroupClearBits(periph_wifi->state_event, DISCONNECTED_BIT);
+            esp_periph_send_event(self, PERIPH_WIFI_CONNECTED, NULL, 0);
+            xEventGroupSetBits(periph_wifi->state_event, CONNECTED_BIT);
+            wifi_config_t w_config;
+            memset(&w_config, 0x00, sizeof(wifi_config_t));
+            esp_wifi_get_config(WIFI_IF_STA, &w_config);
+            strcpy(periph_wifi->ssid, (char *)w_config.sta.ssid);
+            break;
+        case WIFI_EVENT_STA_DISCONNECTED:
+            periph_wifi->wifi_state = PERIPH_WIFI_DISCONNECTED;
+            xEventGroupClearBits(periph_wifi->state_event, CONNECTED_BIT);
+            xEventGroupSetBits(periph_wifi->state_event, DISCONNECTED_BIT);
+            esp_periph_send_event(self, PERIPH_WIFI_DISCONNECTED, NULL, 0);
+
+            ESP_LOGW(TAG, "Wi-Fi disconnected from SSID %s, auto-reconnect %s, reconnect after %d ms",
+                periph_wifi->ssid,
+                periph_wifi->disable_auto_reconnect == 0 ? "enabled" : "disabled",
+                periph_wifi->reconnect_timeout_ms);
+            if (periph_wifi->disable_auto_reconnect) {
+                break;
+            }
+            esp_periph_start_timer(self, periph_wifi->reconnect_timeout_ms / portTICK_RATE_MS, wifi_reconnect_timer);
+            break;
+        default:
+            break;
+    }
+}
+#endif
+#else
 static esp_err_t _wifi_event_callback(void *ctx, system_event_t *event)
 {
     esp_periph_handle_t self = (esp_periph_handle_t)ctx;
@@ -257,9 +371,9 @@ static esp_err_t _wifi_event_callback(void *ctx, system_event_t *event)
             esp_periph_send_event(self, PERIPH_WIFI_DISCONNECTED, NULL, 0);
 
             ESP_LOGW(TAG, "Wi-Fi disconnected from SSID %s, auto-reconnect %s, reconnect after %d ms",
-                     periph_wifi->ssid,
-                     periph_wifi->disable_auto_reconnect == 0 ? "enabled" : "disabled",
-                     periph_wifi->reconnect_timeout_ms);
+                periph_wifi->ssid,
+                periph_wifi->disable_auto_reconnect == 0 ? "enabled" : "disabled",
+                periph_wifi->reconnect_timeout_ms);
             if (periph_wifi->disable_auto_reconnect) {
                 break;
             }
@@ -270,6 +384,7 @@ static esp_err_t _wifi_event_callback(void *ctx, system_event_t *event)
     }
     return ESP_OK;
 }
+#endif
 
 static esp_err_t _wifi_run(esp_periph_handle_t self, audio_event_iface_msg_t *msg)
 {
@@ -287,14 +402,22 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         return ESP_FAIL;
     }
 
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_wifi_event_callback, self));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &_wifi_event_callback, self));
+#endif
+#else
     if (esp_event_loop_get_queue() == NULL) {
         ESP_ERROR_CHECK(esp_event_loop_init(_wifi_event_callback, self));
     } else {
         esp_event_loop_set_cb(_wifi_event_callback, self);
     }
+#endif
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     memset(&wifi_config, 0x00, sizeof(wifi_config_t));
     if (periph_wifi->ssid) {
@@ -338,14 +461,7 @@ esp_periph_handle_t periph_wifi_init(periph_wifi_cfg_t *config)
 {
     esp_periph_handle_t periph = NULL;
     periph_wifi_handle_t periph_wifi = NULL;
-    bool _success =
-        (
-            (periph = esp_periph_create(PERIPH_ID_WIFI, "periph_wifi")) &&
-            (periph_wifi = calloc(1, sizeof(struct periph_wifi))) &&
-            (periph_wifi->state_event = xEventGroupCreate()) &&
-            (config->ssid ? (bool)(periph_wifi->ssid = strdup(config->ssid)) : true) &&
-            (config->password ? (bool)(periph_wifi->password = strdup(config->password)) : true)
-        );
+    bool _success = ((periph = esp_periph_create(PERIPH_ID_WIFI, "periph_wifi")) && (periph_wifi = calloc(1, sizeof(struct periph_wifi))) && (periph_wifi->state_event = xEventGroupCreate()) && (config->ssid ? (bool)(periph_wifi->ssid = strdup(config->ssid)) : true) && (config->password ? (bool)(periph_wifi->password = strdup(config->password)) : true));
 
     AUDIO_MEM_CHECK(TAG, _success, goto _periph_wifi_init_failed);
 

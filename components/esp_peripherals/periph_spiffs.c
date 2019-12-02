@@ -38,7 +38,7 @@
 #include "board.h"
 #include "periph_spiffs.h"
 
-static const char* TAG = "PERIPH_SPIFFS";
+static const char *TAG = "PERIPH_SPIFFS";
 
 #define VALIDATE_SPIFFS(periph, ret) if (!(periph && esp_periph_get_id(periph) == PERIPH_ID_SPIFFS)) { \
     ESP_LOGE(TAG, "Invalid SPIFFS periph, at line %d", __LINE__);\
@@ -80,7 +80,7 @@ static esp_err_t _spiffs_destroy(esp_periph_handle_t self)
 
     periph_spiffs_t *spiffs = esp_periph_get_data(self);
     free(spiffs->root);
-    if(spiffs->partition_label != NULL) {
+    if (spiffs->partition_label != NULL) {
         free(spiffs->partition_label);
     }
     free(spiffs);
@@ -94,10 +94,10 @@ esp_err_t periph_spiffs_mount(esp_periph_handle_t periph)
     periph_spiffs_t *spiffs = esp_periph_get_data(periph);
 
     esp_vfs_spiffs_conf_t conf = {
-      .base_path = spiffs->root,
-      .partition_label = spiffs->partition_label,
-      .max_files = spiffs->max_files,
-      .format_if_mount_failed = spiffs->format_if_mount_failed
+        .base_path = spiffs->root,
+        .partition_label = spiffs->partition_label,
+        .max_files = spiffs->max_files,
+        .format_if_mount_failed = spiffs->format_if_mount_failed
     };
 
     // Use settings defined above to initialize and mount SPIFFS filesystem.
@@ -112,7 +112,7 @@ esp_err_t periph_spiffs_mount(esp_periph_handle_t periph)
         } else {
             ESP_LOGE(TAG, "Failed to initialize SPIFFS (%d)", ret);
         }
-        return NULL;
+        return ESP_FAIL;
     }
 
     if (ret == ESP_OK) {
@@ -141,7 +141,7 @@ esp_err_t periph_spiffs_unmount(esp_periph_handle_t periph)
 {
     VALIDATE_SPIFFS(periph, ESP_FAIL);
     periph_spiffs_t *spiffs = esp_periph_get_data(periph);
-    
+
     int ret = esp_vfs_spiffs_unregister(spiffs->partition_label);
     if (ret == ESP_OK) {
         ESP_LOGD(TAG, "Unmount SPIFFS success");
@@ -156,7 +156,7 @@ esp_err_t periph_spiffs_unmount(esp_periph_handle_t periph)
     return ESP_OK;
 }
 
-esp_periph_handle_t periph_spiffs_init(periph_spiffs_cfg_t* spiffs_cfg)
+esp_periph_handle_t periph_spiffs_init(periph_spiffs_cfg_t *spiffs_cfg)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_SPIFFS, "periph_spiffs");
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
