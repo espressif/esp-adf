@@ -146,9 +146,9 @@ void app_main(void)
     esp_periph_set_stop_all(set);
 
     /* Release all resources */
-    audio_element_deinit(fatfs_stream_writer);
     audio_element_deinit(i2s_stream_reader);
     audio_element_deinit(amr_encoder);
+    audio_element_deinit(fatfs_stream_writer);
     esp_periph_set_destroy(set);
     rb_destroy(ringbuf1);
     rb_destroy(ringbuf2);
