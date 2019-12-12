@@ -19,8 +19,8 @@ Prepare the audio board:
 flashTone,data,  0x04,  0x110000 , 500K,
 ```
 - Download audio-esp.bin
-```
-  python esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x110000 audio-esp.bin
+```  
+  python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x110000 ./tools/audio-esp.bin
 ```
 Configure the example:
 
