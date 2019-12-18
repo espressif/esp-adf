@@ -214,6 +214,7 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
         i2s_dac_data_scale(info.bits, (uint8_t *)buffer, len);
     }
     i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
+    audio_element_getinfo(self, &info);
     info.byte_pos += bytes_written;
     audio_element_setinfo(self, &info);
     return bytes_written;
@@ -348,8 +349,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     });
     audio_element_setdata(el, i2s);
 
-    audio_element_info_t info;
-    audio_element_getinfo(el, &info);
+    audio_element_info_t info = {0};
     info.sample_rates = config->i2s_config.sample_rate;
     info.channels = config->i2s_config.channel_format < I2S_CHANNEL_FMT_ONLY_RIGHT ? 2 : 1;
     info.bits = config->i2s_config.bits_per_sample;

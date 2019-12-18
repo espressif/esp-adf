@@ -6,6 +6,6 @@ set(COMPONENT_SRCS )
 
 register_component()
 
-target_link_libraries(${COMPONENT_NAME} INTERFACE "-L${CMAKE_CURRENT_LIST_DIR}/dueros/lightduer")
-target_link_libraries(${COMPONENT_NAME} INTERFACE duer-device)
+target_link_libraries(${COMPONENT_TARGET} INTERFACE "-L${CMAKE_CURRENT_LIST_DIR}/dueros/lightduer")
+target_link_libraries(${COMPONENT_TARGET} INTERFACE duer-device)
 

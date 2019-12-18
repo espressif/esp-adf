@@ -66,6 +66,7 @@ static audio_service_handle_t duer_serv_handle = NULL;
 static display_service_handle_t disp_serv = NULL;
 static periph_service_handle_t wifi_serv = NULL;
 static bool wifi_setting_flag;
+extern int duer_dcs_audio_sync_play_tone(const char *uri);
 
 void rec_engine_cb(rec_event_type_t type, void *user_data)
 {
@@ -78,6 +79,8 @@ void rec_engine_cb(rec_event_type_t type, void *user_data)
             duer_audio_wrapper_pause();
         }
         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_ON, 0);
+        ESP_LOGI(TAG, "rec_engine_cb - Play tone");
+        duer_dcs_audio_sync_play_tone("file://sdcard/dingding.wav");
     } else if (REC_EVENT_VAD_START == type) {
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_START");
         audio_service_start(duer_serv_handle);

@@ -115,4 +115,6 @@ void duer_audio_wrapper_pause();
  */
 int duer_audio_wrapper_get_state();
 
+int duer_dcs_audio_sync_play_tone(const char *uri);
+
 #endif //

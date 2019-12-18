@@ -30,5 +30,5 @@ set(COMPONENT_SRCS ./audio_hal.c
 
 register_component()
 
-target_link_libraries(${COMPONENT_NAME} INTERFACE "-L${CMAKE_CURRENT_LIST_DIR}/driver/zl38063/firmware")
-target_link_libraries(${COMPONENT_NAME} INTERFACE firmware)
+target_link_libraries(${COMPONENT_TARGET} INTERFACE "-L${CMAKE_CURRENT_LIST_DIR}/driver/zl38063/firmware")
+target_link_libraries(${COMPONENT_TARGET} INTERFACE firmware)
