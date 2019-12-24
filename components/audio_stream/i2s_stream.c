@@ -51,6 +51,7 @@ typedef struct i2s_stream {
     bool                use_alc;
     void                *volume_handle;
     int                 volume;
+    bool                uninstall_drv;
 } i2s_stream_t;
 
 static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
@@ -145,7 +146,9 @@ static esp_err_t _i2s_open(audio_element_handle_t self)
 static esp_err_t _i2s_destroy(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
-    i2s_driver_uninstall(i2s->config.i2s_port);
+    if (i2s->uninstall_drv) {
+        i2s_driver_uninstall(i2s->config.i2s_port);
+    }
     audio_free(i2s);
     return ESP_OK;
 }
@@ -335,6 +338,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     i2s->type = config->type;
     i2s->use_alc = config->use_alc;
     i2s->volume = config->volume;
+    i2s->uninstall_drv = config->uninstall_drv;
 
     if (config->type == AUDIO_STREAM_READER) {
         cfg.read = _i2s_read;

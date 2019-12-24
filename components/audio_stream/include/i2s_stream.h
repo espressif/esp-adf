@@ -48,6 +48,7 @@ typedef struct {
     int                     task_core;          /*!< Task running in core (0 or 1) */
     int                     task_prio;          /*!< Task priority (based on freeRTOS priority) */
     int                     multi_out_num;      /*!< The number of multiple output */
+    bool                    uninstall_drv;      /*!< whether uninstall the i2s driver when stream destroyed*/
 } i2s_stream_cfg_t;
 
 #define I2S_STREAM_TASK_STACK           (3072+512)
@@ -78,6 +79,7 @@ typedef struct {
     .use_alc = false,                                                           \
     .volume = 0,                                                                \
     .multi_out_num = 0,                                                         \
+    .uninstall_drv = true,                                                      \
 }
 
 
