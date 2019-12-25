@@ -32,7 +32,7 @@
 #include "audio_mem.h"
 #include "sdcard_scan.h"
 
-#define SDCARD_FILE_PREV_NAME           "file://"
+#define SDCARD_FILE_PREV_NAME           "file:/"
 #define SDCARD_SCAN_URL_MAX_LENGTH      (1024 * 2)
 
 static const char *TAG = "SDCARD_SCAN";
