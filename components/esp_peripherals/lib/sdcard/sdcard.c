@@ -109,6 +109,8 @@ bool sdcard_is_exist()
 {
     if (g_gpio >= 0) {
         return (gpio_get_level(g_gpio) == 0x00);
+    } else {
+        return true;
     }
     return false;
 }
@@ -117,6 +119,8 @@ int IRAM_ATTR sdcard_read_detect_pin(void)
 {
     if (g_gpio >= 0) {
         return gpio_get_level(g_gpio);
+    } else {
+        return -1;
     }
     return 0;
 }

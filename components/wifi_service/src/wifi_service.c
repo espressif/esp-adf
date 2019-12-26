@@ -202,21 +202,22 @@ static void retry_timer_callback(void *timer_arg)
 static void wifi_task(void *pvParameters)
 {
     periph_service_handle_t serv_handle = (periph_service_handle_t)pvParameters;
-    wifi_sta_setup(pvParameters);
     wifi_service_t *serv = periph_service_get_data(serv_handle);
-    wifi_task_msg_t wifi_msg = {0};
-    bool task_run = true;
-    periph_service_event_t cb_evt = {0};
-    wifi_setting_item_t *item;
-    memset(&serv->info, 0x00, sizeof(wifi_config_t));
-    if (ESP_OK == esp_wifi_get_config(WIFI_IF_STA, &serv->info)) {
-        if (serv->info.sta.ssid[0] != 0) {
-            ESP_LOGI(TAG, "Connect to stored Wi-Fi SSID:%s", serv->info.sta.ssid);
+    wifi_config_t wifi_cfg = {0};
+    if (ESP_OK == esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg)) {
+        if (wifi_cfg.sta.ssid[0] != 0) {
+            ESP_LOGI(TAG, "Connect to stored Wi-Fi SSID:%s", wifi_cfg.sta.ssid);
         }
     } else {
         ESP_LOGW(TAG, "No wifi SSID stored!");
     }
-    configure_wifi_sta_mode(&serv->info);
+    wifi_task_msg_t wifi_msg = {0};
+    bool task_run = true;
+    periph_service_event_t cb_evt = {0};
+    wifi_setting_item_t *item;
+
+    wifi_sta_setup(pvParameters);
+    configure_wifi_sta_mode(&wifi_cfg);
     ESP_ERROR_CHECK(esp_wifi_start());
 
     esp_timer_create_args_t tmr_args = {
@@ -285,7 +286,8 @@ static void wifi_task(void *pvParameters)
             } else if (wifi_msg.msg_type == WIFI_SERV_EVENT_TYPE_CMD) {
                 if (wifi_msg.type == WIFI_SERV_CMD_CONNECT) {
                     ESP_LOGI(TAG, "WIFI_SERV_CMD_CONNECT");
-                    configure_wifi_sta_mode(&serv->info);
+                    memcpy(&wifi_cfg, &serv->info, sizeof(wifi_config_t));
+                    configure_wifi_sta_mode(&wifi_cfg);
                     ESP_ERROR_CHECK(esp_wifi_connect());
                 } else if (wifi_msg.type == WIFI_SERV_CMD_DISCONNECT) {
                     serv->reason = WIFI_SERV_STA_BY_USER;
@@ -413,7 +415,6 @@ esp_err_t wifi_service_set_sta_info(periph_service_handle_t handle, wifi_config_
     AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
     wifi_service_t *serv = periph_service_get_data(handle);
     memcpy(&(serv->info.sta), &info->sta, sizeof(wifi_sta_config_t));
-    wifi_serv_cmd_send(serv->wifi_serv_que, WIFI_SERV_CMD_CONNECT, 0, 0, 0);
     return ESP_OK;
 }
 

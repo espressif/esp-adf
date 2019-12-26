@@ -47,6 +47,7 @@ typedef struct {
     int                     task_stack;         /*!< Task stack size */
     int                     task_core;          /*!< Task running in core (0 or 1) */
     int                     task_prio;          /*!< Task priority (based on freeRTOS priority) */
+    int                     multi_out_num;      /*!< The number of multiple output */
 } i2s_stream_cfg_t;
 
 #define I2S_STREAM_TASK_STACK           (3072+512)
@@ -73,8 +74,9 @@ typedef struct {
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                               \
     },                                                                          \
     .i2s_port = 0,                                                              \
-    .use_alc = false,                                                   \
+    .use_alc = false,                                                           \
     .volume = 0,                                                                \
+    .multi_out_num = 0,                                                         \
 }
 
 #define I2S_STREAM_CFG_ONLY_RIGHT() {                                              \
@@ -136,8 +138,9 @@ typedef struct {
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                                   \
     },                                                                              \
     .i2s_port = 0,                                                                  \
-    .use_alc = false,                                                       \
+    .use_alc = false,                                                               \
     .volume = 0,                                                                    \
+    .multi_out_num = 0,                                                             \
 }
 
 /**

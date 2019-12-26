@@ -145,7 +145,7 @@ static esp_err_t _i2s_open(audio_element_handle_t self)
 static esp_err_t _i2s_destroy(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
-    i2s_driver_uninstall(I2S_NUM_0);
+    i2s_driver_uninstall(i2s->config.i2s_port);
     audio_free(i2s);
     return ESP_OK;
 }
@@ -170,6 +170,7 @@ static esp_err_t _i2s_close(audio_element_handle_t self)
     }
     i2s->is_open = false;
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
+        audio_element_report_pos(self);
         audio_element_info_t info = {0};
         audio_element_getinfo(self, &info);
         info.byte_pos = 0;
@@ -239,6 +240,7 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
             audio_element_getinfo(self, &i2s_info);
             alc_volume_setup_process(in_buffer, r_size, i2s_info.channels, i2s->volume_handle, i2s->volume);
         }
+        audio_element_multi_output(self, in_buffer, r_size, 0);
         w_size = audio_element_output(self, in_buffer, r_size);
     } else {
         i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
@@ -321,6 +323,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     cfg.task_prio = config->task_prio;
     cfg.task_core = config->task_core;
     cfg.out_rb_size = config->out_rb_size;
+    cfg.multi_out_rb_num = config->multi_out_num;
     cfg.tag = "iis";
     cfg.buffer_len = I2S_STREAM_BUF_SIZE;
 

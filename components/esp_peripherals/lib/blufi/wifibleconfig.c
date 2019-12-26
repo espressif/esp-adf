@@ -29,10 +29,7 @@
 #include <math.h>
 
 #ifdef CONFIG_BLUEDROID_ENABLED
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "esp_system.h"
-#include "nvs_flash.h"
 #include "esp_bt.h"
 #include "esp_log.h"
 #include "audio_error.h"

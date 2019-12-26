@@ -1,0 +1,12 @@
+menu "Example configuration"
+choice AUDIO_TYPE
+    prompt "Audio encoder file type"
+    default CHOICE_AMR_NB
+    help
+        Select a file type to save recording
+config CHOICE_AMR_NB
+    bool "amrnb"
+config CHOICE_AMR_WB
+    bool "amrwb"
+endchoice
+endmenu

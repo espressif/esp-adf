@@ -37,7 +37,7 @@
 #define BUTTON_VOLDOWN_ID         TOUCH_PAD_NUM4
 
 #define AUXIN_DETECT_GPIO         GPIO_NUM_12
-#define HEADPHONE_DETCET          GPIO_NUM_19
+#define HEADPHONE_DETECT          GPIO_NUM_19
 #define PA_ENABLE_GPIO            GPIO_NUM_21
 
 #define GREEN_LED_GPIO            GPIO_NUM_22

@@ -2,7 +2,8 @@ set(COMPONENT_SRCS "fatfs_stream.c"
                     "i2s_stream.c"
                     "http_stream.c"
                     "raw_stream.c"
-                    "spiffs_stream.c")
+                    "spiffs_stream.c"
+                    "tone_stream.c")
 set(COMPONENT_ADD_INCLUDEDIRS "include")
 
 

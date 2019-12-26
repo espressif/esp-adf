@@ -8,14 +8,14 @@ Press [Rec] button, say something in Chinese and release the button. The device 
 - Google Translate - translate text in Chinese into English - [Language Support](https://cloud.google.com/translate/docs/languages)
 - Google TTS - convert translated text into an audio file - [Supported voices](https://cloud.google.com/text-to-speech/docs/voices)
 
-Finally device will playback received audio file containing the message now spoken in English. With this demo you can change the language used by defining the language code, refer to the languages used support above.
+Finally device will play back received audio file containing the message now spoken in English. With this demo you can change the language used by defining the language code, refer to the languages used support above.
 
 ## Compatibility
 
-| ESP32-LyraT | ESP32-LyraT-MSC |
-|:-----------:|:---------------:|
-| [![alt text](../../../docs/_static/esp32-lyrat-v4.2-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) |
-| ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/no-button.png "Not Compatible") |
+| ESP32-LyraT | ESP32-LyraTD-MSC | ESP32-LyraT-Mini |
+|:-----------:|:---------------:|:----------------:|
+| [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) |
+| ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/no-button.png "Not Compatible") |![alt text](../../../docs/_static/yes-button.png "Compatible") |
 
 ## Usage
 

@@ -140,15 +140,14 @@ esp_err_t es8374_codec_get_voice_volume(int *volume);
  *     - ESP_FAIL Parameter error
  *     - ESP_OK   Success
  */
-esp_err_t es8374_set_voice_mute(int enable);
+esp_err_t es8374_set_voice_mute(bool enable);
 
 /**
  * @brief Get ES8374 DAC mute status
  *
  * @return
- *     - -1: Parameter error
- *     -  0: Voice is unmuted
- *     -  1: Voice is muted
+ *     - ESP_FAIL
+ *     - ESP_OK
  */
 esp_err_t es8374_get_voice_mute(void);
 
@@ -201,7 +200,7 @@ esp_err_t es8374_write_reg(uint8_t reg_add, uint8_t data);
  * @brief Print all ES8374 registers
  *
  * @return
- *     - void
+ *    - void
  */
 void es8374_read_all();
 

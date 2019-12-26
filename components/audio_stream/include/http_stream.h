@@ -83,6 +83,7 @@ typedef struct {
     void                        *user_data;             /*!< User data context */
     bool                        auto_connect_next_track;/*!< connect next track without open/close */
     bool                        enable_playlist_parser; /*!< Enable playlist parser*/
+    int                         multi_out_num;          /*!< The number of multiple output */
 } http_stream_cfg_t;
 
 
@@ -97,6 +98,7 @@ typedef struct {
     .task_core = HTTP_STREAM_TASK_CORE, \
     .task_stack = HTTP_STREAM_TASK_STACK, \
     .out_rb_size = HTTP_STREAM_RINGBUFFER_SIZE, \
+    .multi_out_num = 0, \
 }
 
 /**

@@ -222,6 +222,7 @@ static esp_err_t _fatfs_close(audio_element_handle_t self)
         fatfs->is_open = false;
     }
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
+        audio_element_report_info(self);
         audio_element_info_t info = {0};
         audio_element_getinfo(self, &info);
         info.byte_pos = 0;

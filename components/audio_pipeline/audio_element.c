@@ -43,7 +43,6 @@
 
 static const char *TAG = "AUDIO_ELEMENT";
 #define DEFAULT_MAX_WAIT_TIME       (2000/portTICK_RATE_MS)
-#define NUMBER_OF_MULTI_RINGBUF     1
 
 /**
  *  I/O Element Abstract
@@ -60,6 +59,11 @@ typedef struct audio_callback {
     event_cb_func               cb;
     void                        *ctx;
 } audio_callback_t;
+
+typedef struct audio_multi_rb {
+    ringbuf_handle_t            *rb;
+    int                         max_rb_num;
+} audio_multi_rb_t;
 
 typedef enum {
     IO_TYPE_RB = 1, /* I/O through ringbuffer */
@@ -89,8 +93,8 @@ struct audio_element {
         io_callback_t           write_cb;
     } out;
 
-    ringbuf_handle_t            multi_in_rb[NUMBER_OF_MULTI_RINGBUF];
-    ringbuf_handle_t            multi_out_rb[NUMBER_OF_MULTI_RINGBUF];
+    audio_multi_rb_t            multi_in;
+    audio_multi_rb_t            multi_out;
 
     /* Properties */
     bool                        is_open;
@@ -109,6 +113,7 @@ struct audio_element {
     int                         task_core;
     xSemaphoreHandle            lock;
     audio_element_info_t        info;
+    audio_element_info_t        *report_info;
 
     /* PrivateData */
     void                        *data;
@@ -119,7 +124,6 @@ struct audio_element {
     int                         out_rb_size;
     bool                        is_running;
     bool                        task_run;
-    bool                        enable_multi_io;
     bool                        stopping;
 };
 
@@ -136,12 +140,12 @@ static esp_err_t audio_element_force_set_state(audio_element_handle_t el, audio_
     return ESP_OK;
 }
 
-static esp_err_t audio_element_cmd_send(audio_element_handle_t el, audio_element_state_t state)
+static esp_err_t audio_element_cmd_send(audio_element_handle_t el, audio_element_msg_cmd_t cmd)
 {
     audio_event_iface_msg_t msg = {
         .source = el,
         .source_type = AUDIO_ELEMENT_TYPE_ELEMENT,
-        .cmd = state,
+        .cmd = cmd,
     };
     ESP_LOGV(TAG, "[%s]evt internal cmd = %d", el->tag, msg.cmd);
     return audio_event_iface_cmd(el->iface_event, &msg);
@@ -157,7 +161,7 @@ static esp_err_t audio_element_msg_sendout(audio_element_handle_t el, audio_even
     return audio_event_iface_sendout(el->iface_event, msg);
 }
 
-static esp_err_t audio_element_process_state_init(audio_element_handle_t el)
+esp_err_t audio_element_process_init(audio_element_handle_t el)
 {
     if (el->open == NULL) {
         el->is_open = true;
@@ -178,6 +182,16 @@ static esp_err_t audio_element_process_state_init(audio_element_handle_t el)
     return ESP_FAIL;
 }
 
+esp_err_t audio_element_process_deinit(audio_element_handle_t el)
+{
+    if (el->is_open && el->close) {
+        ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
+        el->close(el);
+        el->is_open = false;
+    }
+    return ESP_OK;
+}
+
 static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *context)
 {
     audio_element_handle_t el = (audio_element_handle_t)context;
@@ -189,11 +203,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
     //process an event
     switch (msg->cmd) {
         case AEL_MSG_CMD_ERROR:
-            if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
-                el->close(el);
-                el->is_open = false;
-            }
+            audio_element_process_deinit(el);
             el->state = AEL_STATE_ERROR;
             audio_event_iface_set_cmd_waiting_timeout(el->iface_event, portMAX_DELAY);
             audio_element_abort_input_ringbuf(el);
@@ -208,11 +218,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
                 ESP_LOGD(TAG, "[%s] AEL_MSG_CMD_FINISH, state:%d", el->tag, el->state);
                 break;
             }
-            if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
-                el->close(el);
-                el->is_open = false;
-            }
+            audio_element_process_deinit(el);
             el->state = AEL_STATE_FINISHED;
             audio_event_iface_set_cmd_waiting_timeout(el->iface_event, portMAX_DELAY);
             audio_element_report_status(el, AEL_STATUS_STATE_FINISHED);
@@ -222,11 +228,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             break;
         case AEL_MSG_CMD_STOP:
             if ((el->state != AEL_STATE_FINISHED) && (el->state != AEL_STATE_STOPPED)) {
-                if (el->is_open && el->close) {
-                    ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
-                    el->close(el);
-                    el->is_open = false;
-                }
+                audio_element_process_deinit(el);
                 el->state = AEL_STATE_STOPPED;
                 audio_event_iface_set_cmd_waiting_timeout(el->iface_event, portMAX_DELAY);
                 audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
@@ -246,11 +248,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             break;
         case AEL_MSG_CMD_PAUSE:
             el->state = AEL_STATE_PAUSED;
-            if (el->is_open && el->close) {
-                ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
-                el->close(el);
-                el->is_open = false;
-            }
+            audio_element_process_deinit(el);
             audio_event_iface_set_cmd_waiting_timeout(el->iface_event, portMAX_DELAY);
             audio_element_report_status(el, AEL_STATUS_STATE_PAUSED);
             el->is_running = false;
@@ -266,7 +264,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             if (el->state != AEL_STATE_INIT && el->state != AEL_STATE_RUNNING && el->state != AEL_STATE_PAUSED) {
                 audio_element_reset_output_ringbuf(el);
             }
-            if (audio_element_process_state_init(el) != ESP_OK) {
+            if (audio_element_process_init(el) != ESP_OK) {
                 audio_element_abort_output_ringbuf(el);
                 audio_element_abort_input_ringbuf(el);
                 return ESP_FAIL;
@@ -284,7 +282,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
     return ESP_OK;
 }
 
-static esp_err_t audio_element_process_state_running(audio_element_handle_t el)
+static esp_err_t audio_element_process_running(audio_element_handle_t el)
 {
     int process_len = -1;
     if (el->state < AEL_STATE_RUNNING || !el->is_open) {
@@ -320,6 +318,7 @@ static esp_err_t audio_element_process_state_running(audio_element_handle_t el)
                 ESP_LOGE(TAG, "[%s] ERROR_PROCESS, AEL_PROCESS_FAIL", el->tag);
                 audio_element_report_status(el, AEL_STATUS_ERROR_PROCESS);
                 audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
+                break;
             default:
                 ESP_LOGW(TAG, "[%s] Process return error,ret:%d", el->tag, process_len);
                 break;
@@ -440,7 +439,7 @@ void audio_element_task(void *pv)
             xEventGroupSetBits(el->state_event, STOPPED_BIT);
             break;
         }
-        if (audio_element_process_state_running(el) != ESP_OK) {
+        if (audio_element_process_running(el) != ESP_OK) {
             // continue;
         }
     }
@@ -605,9 +604,29 @@ esp_err_t audio_element_report_status(audio_element_handle_t el, audio_element_s
     return audio_element_msg_sendout(el, &msg);
 }
 
+esp_err_t audio_element_report_pos(audio_element_handle_t el)
+{
+    if (el) {
+        audio_event_iface_msg_t msg = { 0 };
+        msg.cmd = AEL_MSG_CMD_REPORT_POSITION;
+        if (el->report_info == NULL) {
+            el->report_info = audio_calloc(1, sizeof(audio_element_info_t));
+            AUDIO_MEM_CHECK(TAG, el->report_info, return ESP_ERR_NO_MEM);
+        }
+
+        audio_element_getinfo(el, el->report_info);
+        msg.data = el->report_info;
+        msg.data_len = sizeof(audio_element_info_t);
+        ESP_LOGD(TAG, "REPORT_POS,[%s]evt out cmd:%d,", el->tag, msg.cmd);
+        audio_element_msg_sendout(el, &msg);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
 esp_err_t audio_element_finish_state(audio_element_handle_t el)
 {
-    if (el->task_stack < 0) {
+    if (el->task_stack <= 0) {
         el->state = AEL_STATE_FINISHED;
         audio_element_report_status(el, AEL_STATUS_STATE_FINISHED);
         el->is_running = false;
@@ -615,6 +634,12 @@ esp_err_t audio_element_finish_state(audio_element_handle_t el)
         return ESP_OK;
     }
     return ESP_FAIL;
+}
+
+esp_err_t audio_element_change_cmd(audio_element_handle_t el, audio_element_msg_cmd_t cmd)
+{
+    AUDIO_NULL_CHECK(TAG, el, return ESP_ERR_INVALID_ARG);
+    return audio_element_cmd_send(el, cmd);
 }
 
 esp_err_t audio_element_reset_input_ringbuf(audio_element_handle_t el)
@@ -625,9 +650,9 @@ esp_err_t audio_element_reset_input_ringbuf(audio_element_handle_t el)
     int ret = ESP_OK;
     if (el->in.input_rb) {
         ret |= rb_reset(el->in.input_rb);
-        for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
-            if (el->multi_in_rb[i]) {
-                ret |= rb_reset(el->multi_in_rb[i]);
+        for (int i = 0; i < el->multi_in.max_rb_num; ++i) {
+            if (el->multi_in.rb[i]) {
+                ret |= rb_reset(el->multi_in.rb[i]);
             }
         }
     }
@@ -642,14 +667,11 @@ esp_err_t audio_element_reset_output_ringbuf(audio_element_handle_t el)
     int ret = ESP_OK;
     if (el->out.output_rb) {
         ret |= rb_reset(el->out.output_rb);
-        if (el->enable_multi_io) {
-            for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
-                if (el->multi_out_rb[i]) {
-                    ret |= rb_reset(el->multi_out_rb[i]);
-                }
+        for (int i = 0; i < el->multi_out.max_rb_num; ++i) {
+            if (el->multi_out.rb[i]) {
+                ret |= rb_reset(el->multi_out.rb[i]);
             }
         }
-
     }
     return ESP_OK;
 }
@@ -662,11 +684,9 @@ esp_err_t audio_element_abort_input_ringbuf(audio_element_handle_t el)
     int ret = ESP_OK;
     if (el->in.input_rb) {
         ret |= rb_abort(el->in.input_rb);
-        if (el->enable_multi_io) {
-            for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
-                if (el->multi_in_rb[i]) {
-                    ret |= rb_abort(el->multi_in_rb[i]);
-                }
+        for (int i = 0; i < el->multi_in.max_rb_num; ++i) {
+            if (el->multi_in.rb[i]) {
+                ret |= rb_abort(el->multi_in.rb[i]);
             }
         }
     }
@@ -681,11 +701,9 @@ esp_err_t audio_element_abort_output_ringbuf(audio_element_handle_t el)
     int ret = ESP_OK;
     if (el->out.output_rb) {
         ret |= rb_abort(el->out.output_rb);
-        if (el->enable_multi_io) {
-            for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
-                if (el->multi_out_rb[i]) {
-                    ret |= rb_abort(el->multi_out_rb[i]);
-                }
+        for (int i = 0; i < el->multi_out.max_rb_num; ++i) {
+            if (el->multi_out.rb[i]) {
+                ret |= rb_abort(el->multi_out.rb[i]);
             }
         }
     }
@@ -700,11 +718,9 @@ esp_err_t audio_element_set_ringbuf_done(audio_element_handle_t el)
     }
     if (el->out.output_rb && el->write_type == IO_TYPE_RB) {
         ret |= rb_done_write(el->out.output_rb);
-        if (el->enable_multi_io) {
-            for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
-                if (el->multi_out_rb[i]) {
-                    ret |= rb_done_write(el->multi_out_rb[i]);
-                }
+        for (int i = 0; i < el->multi_out.max_rb_num; ++i) {
+            if (el->multi_out.rb[i]) {
+                ret |= rb_done_write(el->multi_out.rb[i]);
             }
         }
     }
@@ -716,6 +732,8 @@ esp_err_t audio_element_set_input_ringbuf(audio_element_handle_t el, ringbuf_han
     if (rb) {
         el->in.input_rb = rb;
         el->read_type = IO_TYPE_RB;
+    } else if (el->read_type == IO_TYPE_RB) {
+        el->in.input_rb = rb;
     }
     return ESP_OK;
 }
@@ -734,6 +752,8 @@ esp_err_t audio_element_set_output_ringbuf(audio_element_handle_t el, ringbuf_ha
     if (rb) {
         el->out.output_rb = rb;
         el->write_type = IO_TYPE_RB;
+    } else if (el->write_type == IO_TYPE_RB) {
+        el->out.output_rb = rb;
     }
     return ESP_OK;
 }
@@ -806,6 +826,11 @@ esp_err_t audio_element_set_write_cb(audio_element_handle_t el, stream_func fn, 
 
 esp_err_t audio_element_wait_for_stop(audio_element_handle_t el)
 {
+    if (el->state == AEL_STATE_STOPPED
+        || el->state == AEL_STATE_INIT) {
+        ESP_LOGD(TAG, "[%s] Element already stopped, no need waiting", el->tag);
+        return ESP_OK;
+    }
     EventBits_t uxBits = xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
     esp_err_t ret = ESP_FAIL;
     if (uxBits & STOPPED_BIT) {
@@ -856,7 +881,17 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
     el->process = config->process;
     el->close = config->close;
     el->destroy = config->destroy;
-    el->enable_multi_io = config->enable_multi_io;
+    el->multi_in.max_rb_num = config->multi_in_rb_num;
+    el->multi_out.max_rb_num = config->multi_out_rb_num;
+    if (el->multi_in.max_rb_num > 0) {
+        el->multi_in.rb = (ringbuf_handle_t *)audio_calloc(el->multi_in.max_rb_num, sizeof(ringbuf_handle_t));
+        AUDIO_MEM_CHECK(TAG, el->multi_in.rb, goto _element_init_failed);
+    }
+    if (el->multi_out.max_rb_num > 0) {
+        el->multi_out.rb = (ringbuf_handle_t *)audio_calloc(el->multi_out.max_rb_num, sizeof(ringbuf_handle_t));
+        AUDIO_MEM_CHECK(TAG, el->multi_out.rb, goto _element_init_failed);
+    }
+
     if (config->task_stack > 0) {
         el->task_stack = config->task_stack;
     }
@@ -914,6 +949,14 @@ _element_init_failed:
     if (el->tag) {
         audio_element_set_tag(el, NULL);
     }
+    if (el->multi_in.rb) {
+        audio_free(el->multi_in.rb);
+        el->multi_in.rb = NULL;
+    }
+    if (el->multi_out.rb) {
+        audio_free(el->multi_out.rb);
+        el->multi_out.rb = NULL;
+    }
     audio_element_set_uri(el, NULL);
     free(el);
     return NULL;
@@ -932,6 +975,17 @@ esp_err_t audio_element_deinit(audio_element_handle_t el)
     }
     audio_element_set_tag(el, NULL);
     audio_element_set_uri(el, NULL);
+    if (el->multi_in.rb) {
+        audio_free(el->multi_in.rb);
+        el->multi_in.rb = NULL;
+    }
+    if (el->multi_out.rb) {
+        audio_free(el->multi_out.rb);
+        el->multi_out.rb = NULL;
+    }
+    if (el->report_info) {
+        audio_free(el->report_info);
+    }
     audio_free(el);
     return ESP_OK;
 }
@@ -941,7 +995,7 @@ esp_err_t audio_element_run(audio_element_handle_t el)
     char task_name[32];
     esp_err_t ret = ESP_FAIL;
     if (el->task_run) {
-        ESP_LOGD(TAG, "[%s] Element already started", el->tag);
+        ESP_LOGD(TAG, "[%s] Element already created", el->tag);
         return ESP_OK;
     }
     ESP_LOGV(TAG, "[%s] Element starting...", el->tag);
@@ -970,7 +1024,7 @@ esp_err_t audio_element_run(audio_element_handle_t el)
 esp_err_t audio_element_terminate(audio_element_handle_t el)
 {
     if (!el->task_run) {
-        ESP_LOGD(TAG, "[%s] Element has not create when AUDIO_ELEMENT_TERMINATE", el->tag);
+        ESP_LOGW(TAG, "[%s] Element has not create when AUDIO_ELEMENT_TERMINATE", el->tag);
         return ESP_OK;
     }
     if (el->task_stack <= 0) {
@@ -988,7 +1042,7 @@ esp_err_t audio_element_terminate(audio_element_handle_t el)
     if (uxBits & TASK_DESTROYED_BIT) {
         ret = ESP_OK;
     }
-    ESP_LOGD(TAG, "[%s] Element task destroyed", el->tag);
+    ESP_LOGI(TAG, "[%s] Element task destroyed", el->tag);
     return ret;
 }
 
@@ -1026,7 +1080,7 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
         ESP_LOGW(TAG, "[%s] Element has not create when AUDIO_ELEMENT_RESUME", el->tag);
         return ESP_FAIL;
     }
-    if ((el->is_running) || (el->state == AEL_STATE_RUNNING)) {
+    if (el->state == AEL_STATE_RUNNING) {
         ESP_LOGD(TAG, "[%s] RESUME: Element is already running, state:%d, task_run:%d, is_running:%d",
                  el->tag, el->state, el->task_run, el->is_running);
         return ESP_OK;
@@ -1034,6 +1088,7 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
     if (el->task_stack <= 0) {
         el->is_running = true;
         audio_element_force_set_state(el, AEL_STATE_RUNNING);
+        audio_element_report_status(el, AEL_STATUS_STATE_RUNNING);
         return ESP_OK;
     }
     if (el->state == AEL_STATE_ERROR) {
@@ -1042,6 +1097,7 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
     }
     if (el->state == AEL_STATE_FINISHED) {
         ESP_LOGI(TAG, "[%s] RESUME: Element has finished, state:%d", el->tag, el->state);
+        audio_element_report_status(el, AEL_STATUS_STATE_FINISHED);
         return ESP_OK;
     }
     if (wait_for_rb_threshold > 1 || wait_for_rb_threshold < 0) {
@@ -1067,14 +1123,16 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
     if (el->task_stack <= 0) {
         el->is_running = false;
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
+        audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
         return ESP_OK;
     }
     if (el->state == AEL_STATE_PAUSED) {
+        el->is_running = true;
         audio_event_iface_set_cmd_waiting_timeout(el->iface_event, 0);
     }
     if (el->is_running == false) {
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
-        ESP_LOGD(TAG, "[%s] Element already stoped", el->tag);
+        ESP_LOGW(TAG, "[%s] Element already stopped", el->tag);
         return ESP_OK;
     }
     if (el->stopping) {
@@ -1095,8 +1153,9 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
 esp_err_t audio_element_wait_for_stop_ms(audio_element_handle_t el, TickType_t ticks_to_wait)
 {
     if (el->state == AEL_STATE_STOPPED
-        || el->state == AEL_STATE_INIT) {
-        ESP_LOGD(TAG, "[%s] Element already stoped, return without waiting", el->tag);
+        || el->state == AEL_STATE_INIT
+        || el->state == AEL_STATE_FINISHED) {
+        ESP_LOGD(TAG, "[%s] Element already stopped, return without waiting", el->tag);
         return ESP_OK;
     }
     EventBits_t uxBits = xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, ticks_to_wait);
@@ -1110,13 +1169,12 @@ esp_err_t audio_element_wait_for_stop_ms(audio_element_handle_t el, TickType_t t
 esp_err_t audio_element_multi_input(audio_element_handle_t el, char *buffer, int wanted_size, int index, TickType_t ticks_to_wait)
 {
     esp_err_t ret = ESP_OK;
-    if (index >= NUMBER_OF_MULTI_RINGBUF) {
-        return ESP_ERR_INVALID_ARG;
+    if (index >= el->multi_in.max_rb_num) {
+        ESP_LOGE(TAG, "The index of ringbuffer is gather than and equal to ringbuffer maximum (%d). line %d", el->multi_in.max_rb_num, __LINE__);
+        return ESP_FAIL;
     }
-    if (el->enable_multi_io) {
-        if (el->multi_in_rb[index]) {
-            ret = rb_read(el->multi_in_rb[index], buffer, wanted_size, ticks_to_wait);
-        }
+    if (el->multi_in.rb[index]) {
+        ret = rb_read(el->multi_in.rb[index], buffer, wanted_size, ticks_to_wait);
     }
     return ret;
 }
@@ -1124,11 +1182,9 @@ esp_err_t audio_element_multi_input(audio_element_handle_t el, char *buffer, int
 esp_err_t audio_element_multi_output(audio_element_handle_t el, char *buffer, int wanted_size, TickType_t ticks_to_wait)
 {
     esp_err_t ret = ESP_OK;
-    if (el->enable_multi_io) {
-        for (int i = 0; i < NUMBER_OF_MULTI_RINGBUF; ++i) {
-            if (el->multi_out_rb[i]) {
-                ret |= rb_write(el->multi_out_rb[i], buffer, wanted_size, ticks_to_wait);
-            }
+    for (int i = 0; i < el->multi_out.max_rb_num; ++i) {
+        if (el->multi_out.rb[i]) {
+            ret |= rb_write(el->multi_out.rb[i], buffer, wanted_size, ticks_to_wait);
         }
     }
     return ret;
@@ -1136,8 +1192,8 @@ esp_err_t audio_element_multi_output(audio_element_handle_t el, char *buffer, in
 
 esp_err_t audio_element_set_multi_input_ringbuf(audio_element_handle_t el, ringbuf_handle_t rb, int index)
 {
-    if ((index < NUMBER_OF_MULTI_RINGBUF) && rb) {
-        el->multi_in_rb[index] = rb;
+    if ((index < el->multi_in.max_rb_num) && rb) {
+        el->multi_in.rb[index] = rb;
         return ESP_OK;
     }
     return ESP_ERR_INVALID_ARG;
@@ -1145,8 +1201,8 @@ esp_err_t audio_element_set_multi_input_ringbuf(audio_element_handle_t el, ringb
 
 esp_err_t audio_element_set_multi_output_ringbuf(audio_element_handle_t el, ringbuf_handle_t rb, int index)
 {
-    if ((index < NUMBER_OF_MULTI_RINGBUF) && rb) {
-        el->multi_out_rb[index] = rb;
+    if ((index < el->multi_out.max_rb_num) && rb) {
+        el->multi_out.rb[index] = rb;
         return ESP_OK;
     }
     return ESP_ERR_INVALID_ARG;
@@ -1154,16 +1210,16 @@ esp_err_t audio_element_set_multi_output_ringbuf(audio_element_handle_t el, ring
 
 ringbuf_handle_t audio_element_get_multi_input_ringbuf(audio_element_handle_t el, int index)
 {
-    if (index < NUMBER_OF_MULTI_RINGBUF) {
-        return el->multi_in_rb[index];
+    if (index < el->multi_in.max_rb_num) {
+        return el->multi_in.rb[index];
     }
     return NULL;
 }
 
 ringbuf_handle_t audio_element_get_multi_output_ringbuf(audio_element_handle_t el, int index)
 {
-    if (index < NUMBER_OF_MULTI_RINGBUF) {
-        return el->multi_out_rb[index];
+    if (index < el->multi_out.max_rb_num) {
+        return el->multi_out.rb[index];
     }
     return NULL;
 }

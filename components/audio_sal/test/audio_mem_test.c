@@ -57,3 +57,33 @@ TEST_CASE("audio_mem", "esp-adf")
     audio_free(pdata);
     AUDIO_MEM_SHOW(TAG);
 }
+
+
+TEST_CASE("audio_strdup", "esp-adf")
+{
+    esp_log_level_set("AUDIO_STRDUP", ESP_LOG_VERBOSE);
+    ESP_LOGI(TAG, "[✓] audio_strdup");
+    AUDIO_MEM_SHOW(TAG);
+    char * strings = "audio string dump";
+    char* pdata = audio_strdup(strings);
+    TEST_ASSERT_NOT_NULL(pdata);
+    AUDIO_MEM_SHOW(TAG);
+    audio_free(pdata);
+    AUDIO_MEM_SHOW(TAG);
+}
+
+TEST_CASE("audio_realloc", "esp-adf")
+{
+    esp_log_level_set("AUDIO_REALLOC", ESP_LOG_VERBOSE);
+    ESP_LOGI(TAG, "[✓] audio_realloc");
+    AUDIO_MEM_SHOW(TAG);
+    uint8_t* pdata = audio_malloc(1024);
+    TEST_ASSERT_NOT_NULL(pdata);
+    AUDIO_MEM_SHOW(TAG);
+    pdata = audio_realloc(pdata, 2 * 1024);
+    TEST_ASSERT_NOT_NULL(pdata);
+    AUDIO_MEM_SHOW(TAG);
+    audio_free(pdata);
+    AUDIO_MEM_SHOW(TAG);
+}
+

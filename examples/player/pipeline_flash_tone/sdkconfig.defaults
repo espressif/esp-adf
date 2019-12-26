@@ -1,0 +1,12 @@
+# Override some Flash defaults
+
+
+# by providing new partition table in "partitions_flash_tone.csv"
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_BAUD=921600
+
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_flash_tone.csv"
+CONFIG_PARTITION_TABLE_CUSTOM_APP_BIN_OFFSET=0x10000
+CONFIG_PARTITION_TABLE_FILENAME="partitions_flash_tone.csv"
+CONFIG_APP_OFFSET=0x10000

@@ -346,14 +346,6 @@ bool rb_is_full(ringbuf_handle_t rb)
     return (rb->size == rb->fill_cnt);
 }
 
-int rb_size_get(ringbuf_handle_t rb)
-{
-    if (rb == NULL) {
-        return 0;
-    }
-    return (rb->size);
-}
-
 esp_err_t rb_done_write(ringbuf_handle_t rb)
 {
     if (rb == NULL) {

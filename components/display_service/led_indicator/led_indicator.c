@@ -53,6 +53,7 @@ led_indicator_handle_t led_indicator_init(gpio_num_t num)
 
 esp_err_t led_indicator_pattern(void *handle, int pat, int value)
 {
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
     led_indicator_handle_t h = (led_indicator_handle_t)handle;
     ESP_LOGD(TAG, "pat:%d, gpio:%d", pat, h->gpio_num);
     switch (pat) {
@@ -72,6 +73,7 @@ esp_err_t led_indicator_pattern(void *handle, int pat, int value)
             periph_led_blink(h->periph_handle, h->gpio_num, 0, 100, false, -1);
             break;
         default:
+            ESP_LOGW(TAG, "The led mode is invalid");
             break;
     }
     return ESP_OK;
@@ -79,5 +81,6 @@ esp_err_t led_indicator_pattern(void *handle, int pat, int value)
 
 void led_indicator_deinit(led_indicator_handle_t handle)
 {
+    AUDIO_NULL_CHECK(TAG, handle, return);
     esp_periph_destroy (handle->periph_handle);
 }

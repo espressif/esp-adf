@@ -143,6 +143,7 @@ typedef struct audio_hal {
     esp_err_t (*audio_codec_deinitialize)(void);                                                             /*!< deinitialize codec */
     esp_err_t (*audio_codec_ctrl)(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);                 /*!< control codec mode and state */
     esp_err_t (*audio_codec_config_iface)(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);  /*!< configure i2s interface */
+    esp_err_t (*audio_codec_set_mute) (bool mute);                                                           /*!< set codec mute */
     esp_err_t (*audio_codec_set_volume)(int volume);                                                         /*!< set codec volume */
     esp_err_t (*audio_codec_get_volume)(int *volume);                                                        /*!< get codec volume */
     xSemaphoreHandle audio_hal_lock;                                                                         /*!< semaphore of codec */
@@ -194,6 +195,17 @@ esp_err_t audio_hal_ctrl_codec(audio_hal_handle_t audio_hal, audio_hal_codec_mod
  *     - -1  Error
  */
 esp_err_t audio_hal_codec_iface_config(audio_hal_handle_t audio_hal, audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
+
+/**
+ * @brief Set voice mute. Enables or disables DAC mute of a codec.
+ *        @note `audio_hal_get_volume` will still give a non-zero number in mute state. It will be set to that number when speaker is unmuted.
+ *
+ * @param audio_hal reference function pointer for selected audio codec
+ * @param mute      true/false. If true speaker will be muted and if false speaker will be unmuted.
+ *
+ * @return     int, 0--success, others--fail
+ */
+esp_err_t audio_hal_set_mute(audio_hal_handle_t audio_hal, bool mute);
 
 /**
  * @brief Set voice volume.
