@@ -746,7 +746,7 @@ esp_err_t audio_pipeline_reset_kept_state(audio_pipeline_handle_t pipeline, audi
             rb_item->linked = false;
             rb_item->kept_ctx = false;
             rb_item->host_el = NULL;
-            ESP_LOGE(TAG, "kept_reset, rb:%p", rb);
+            ESP_LOGW(TAG, "kept_reset, rb:%p", rb);
             break;
         }
     }

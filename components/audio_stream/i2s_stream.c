@@ -345,8 +345,12 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     } else if (config->type == AUDIO_STREAM_WRITER) {
         cfg.write = _i2s_write;
     }
-    el = audio_element_init(&cfg);
+    if (i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL) != ESP_OK) {
+        audio_free(i2s);
+        return NULL;
+    }
 
+    el = audio_element_init(&cfg);
     AUDIO_MEM_CHECK(TAG, el, {
         audio_free(i2s);
         return NULL;
@@ -357,9 +361,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     info.sample_rates = config->i2s_config.sample_rate;
     info.channels = config->i2s_config.channel_format < I2S_CHANNEL_FMT_ONLY_RIGHT ? 2 : 1;
     info.bits = config->i2s_config.bits_per_sample;
-
     audio_element_setinfo(el, &info);
-    i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
 
     if ((config->i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
         i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);

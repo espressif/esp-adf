@@ -35,7 +35,6 @@
 #define SDCARD_DEFAULT_DIR_NAME         "/sdcard/__playlist"
 #define SDCARD_DEFAULT_URL_FILE_NAME    "/sdcard/__playlist/_playlist_url"
 #define SDCARD_DEFAULT_OFFSET_FILE_NAME "/sdcard/__playlist/_offset"
-#define SDCARD_FILE_PREV_NAME           "file://"
 
 #define SDCARD_URL_FILE_NAME_LENGTH     (strlen(SDCARD_DEFAULT_URL_FILE_NAME) + 10)
 #define SDCARD_OFFSET_FILE_NAME_LENGTH  (strlen(SDCARD_DEFAULT_OFFSET_FILE_NAME) + 10)
