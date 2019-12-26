@@ -25,9 +25,6 @@
 #ifndef _AUDIO_ELEMENT_H_
 #define _AUDIO_ELEMENT_H_
 
-#include "freertos/FreeRTOS.h"
-
-#include "rom/queue.h"
 #include "esp_err.h"
 #include "audio_event_iface.h"
 #include "ringbuf.h"
@@ -109,6 +106,9 @@ typedef struct audio_element *audio_element_handle_t;
 typedef struct {
     int user_data_0;     /*!< user data 0 */
     int user_data_1;     /*!< user data 1 */
+    int user_data_2;     /*!< user data 2 */
+    int user_data_3;     /*!< user data 3 */
+    int user_data_4;     /*!< user data 4 */
 } audio_element_reserve_data_t;
 
 /**
@@ -118,8 +118,10 @@ typedef struct {
     int sample_rates;                           /*!< Sample rates in Hz */
     int channels;                               /*!< Number of audio channel, mono is 1, stereo is 2 */
     int bits;                                   /*!< Bit wide (8, 16, 24, 32 bits) */
+    int bps;                                    /*!< Bit per second */
     int64_t byte_pos;                           /*!< The current position (in bytes) being processed for an element */
     int64_t total_bytes;                        /*!< The total bytes for an element */
+    int duration;                               /*!< The duration for an element (optional) */
     char *uri;                                  /*!< URI (optional) */
     audio_codec_t codec_fmt;                    /*!< Music format (optional) */
     audio_element_reserve_data_t reserve_data;  /*!< This value is reserved for user use (optional) */
@@ -137,6 +139,7 @@ typedef audio_element_err_t (*process_func)(audio_element_handle_t self, char *e
 typedef audio_element_err_t (*stream_func)(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait,
         void *context);
 typedef esp_err_t (*event_cb_func)(audio_element_handle_t el, audio_event_iface_msg_t *event, void *ctx);
+typedef esp_err_t (*ctrl_func)(audio_element_handle_t self, void *in_data, int in_size, void *out_data, int *out_size);
 
 /**
  * @brief Audio Element configurations.
@@ -147,7 +150,7 @@ typedef esp_err_t (*event_cb_func)(audio_element_handle_t el, audio_event_iface_
  */
 typedef struct {
     io_func             open;             /*!< Open callback function */
-    io_func             seek;             /*!< Seek callback function */
+    ctrl_func           seek;             /*!< Seek callback function */
     process_func        process;          /*!< Process callback function */
     io_func             close;            /*!< Close callback function */
     io_func             destroy;          /*!< Destroy callback function */
@@ -835,7 +838,7 @@ ringbuf_handle_t audio_element_get_multi_output_ringbuf(audio_element_handle_t e
 esp_err_t audio_element_process_init(audio_element_handle_t el);
 
 /**
- * @brief      Provides a way to call elements's `close`
+ * @brief      Provides a way to call element's `close`
  *
  * @param[in]  el    The audio element handle
  *
@@ -844,6 +847,22 @@ esp_err_t audio_element_process_init(audio_element_handle_t el);
  *     - ESP_FAIL
  */
 esp_err_t audio_element_process_deinit(audio_element_handle_t el);
+
+/**
+ * @brief      Call element's `seek`
+ *
+ * @param[in]  el           The audio element handle
+ * @param[in]  in_data      A pointer to in data
+ * @param[in]  in_size      The size of the `in_data`
+ * @param[out] out_data     A pointer to the out data
+ * @param[out] out_size     The size of the `out_data`
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ *     - ESP_ERR_NOT_SUPPORTED
+ */
+esp_err_t audio_element_seek(audio_element_handle_t el, void *in_data, int in_size, void *out_data, int *out_size);
 
 #ifdef __cplusplus
 }

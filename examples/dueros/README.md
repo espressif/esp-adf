@@ -14,6 +14,7 @@ This example shows how to use ADF APIs to connect DuerOS3.0
 Prepare the audio board:
 
 - Connect speakers or headphones to the board.
+- Insert a microSD card loaded with file `tone/DingDing.wav` into board's slot.
 
 Configure the example:
 
@@ -26,7 +27,7 @@ Load and run the example.
 
 ## Supported Features
 
-- Say "Hi Lexin" to trigger the DuerOS voice interaction, green LED will turn on for indicate wakeup.
+- Say "Hi Lexin" to trigger the DuerOS voice interaction, green LED will turn on for indicate wakeup, if the `DingDing.wav` exist in microSD, "Dingding" should be heard at same time.
 - Press [Rec] button to talk to DuerOS. The device will play back the DuerOS response. You can say anything you want, e.g."今天天气怎么样?" or "现在几点了?", which means "What's the weather today?" or " what time is it?".
 - The green LED indicates Wi-Fi status:
     - Green LED on if Wi-Fi connected

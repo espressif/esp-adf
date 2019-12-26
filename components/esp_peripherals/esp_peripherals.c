@@ -142,7 +142,7 @@ esp_periph_set_handle_t esp_periph_set_init(esp_periph_config_t *config)
 
     //TODO: Should we uninstall gpio isr service??
     //TODO: Because gpio need for sdcard and gpio, then install isr here
-    // gpio_uninstall_isr_service();
+
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);
 
     periph_sets->run = false;
@@ -185,7 +185,6 @@ esp_err_t esp_periph_set_destroy(esp_periph_set_handle_t periph_set_handle)
     }
     periph_set_handle->run = false;
     esp_periph_wait_for_stop(periph_set_handle, portMAX_DELAY);
-
     esp_periph_handle_t item, tmp;
     STAILQ_FOREACH_SAFE(item, &periph_set_handle->periph_list, entries, tmp) {
         STAILQ_REMOVE(&periph_set_handle->periph_list, item, esp_periph, entries);

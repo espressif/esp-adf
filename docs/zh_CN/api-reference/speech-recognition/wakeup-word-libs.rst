@@ -1,1 +1,0 @@
-.. include:: ../../../en/api-reference/speech-recognition/wakeup-word-libs.rst

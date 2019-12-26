@@ -19,6 +19,8 @@
 #include "esp_peripherals.h"
 #include "periph_touch.h"
 #include "board.h"
+#include "filter_resample.h"
+#include "audio_mem.h"
 #include "bluetooth_service.h"
 
 static const char *TAG = "BLUETOOTH_EXAMPLE";
@@ -67,8 +69,21 @@ void app_main(void)
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
 
     ESP_LOGI(TAG, "[3.3] Link it together [Bluetooth]-->bt_stream_reader-->i2s_stream_writer-->[codec_chip]");
-    audio_pipeline_link(pipeline, (const char *[]) {"bt", "i2s"}, 2);
 
+#if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_cfg.src_rate = 44100;
+    rsp_cfg.src_ch = 2;
+    rsp_cfg.dest_rate = 48000;
+    rsp_cfg.dest_ch = 2;
+    rsp_cfg.type = AUDIO_CODEC_TYPE_DECODER;
+    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+    audio_pipeline_register(pipeline, filter, "filter");
+    i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
+    audio_pipeline_link(pipeline, (const char *[]) {"bt", "filter", "i2s"}, 3);
+#else
+    audio_pipeline_link(pipeline, (const char *[]) {"bt", "i2s"}, 2);
+#endif
     ESP_LOGI(TAG, "[ 4 ] Initialize peripherals");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
@@ -118,7 +133,10 @@ void app_main(void)
                      music_info.sample_rates, music_info.bits, music_info.channels);
 
             audio_element_setinfo(i2s_stream_writer, &music_info);
+#if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
+#else
             i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
+#endif
             continue;
         }
 
@@ -175,6 +193,11 @@ void app_main(void)
     audio_event_iface_destroy(evt);
 
     /* Release all resources */
+
+#if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
+    audio_pipeline_unregister(pipeline, filter);
+    audio_element_deinit(filter);
+#endif
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(bt_stream_reader);
     audio_element_deinit(i2s_stream_writer);

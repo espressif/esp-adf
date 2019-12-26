@@ -169,8 +169,9 @@ void record_playback_task()
 
         if (msg.cmd == PERIPH_BUTTON_PRESSED || msg.cmd == PERIPH_ADC_BUTTON_PRESSED || msg.cmd == PERIPH_TOUCH_TAP) {
             ESP_LOGE(TAG, "STOP playback and START recording");
-            audio_pipeline_stop(pipeline_play);
-            audio_pipeline_wait_for_stop(pipeline_play);
+            audio_pipeline_terminate(pipeline_play);
+            audio_pipeline_reset_ringbuffer(pipeline_play);
+            audio_pipeline_reset_elements(pipeline_play);
 
             /**
              * Audio Recording Flow:
@@ -185,8 +186,9 @@ void record_playback_task()
             audio_pipeline_run(pipeline_rec);
         } else if (msg.cmd == PERIPH_BUTTON_RELEASE || msg.cmd == PERIPH_BUTTON_LONG_RELEASE) {
             ESP_LOGI(TAG, "STOP recording and START playback");
-            audio_pipeline_stop(pipeline_rec);
-            audio_pipeline_wait_for_stop(pipeline_rec);
+            audio_pipeline_terminate(pipeline_rec);
+            audio_pipeline_reset_ringbuffer(pipeline_rec);
+            audio_pipeline_reset_elements(pipeline_rec);
 
             /**
              * Audio Playback Flow:

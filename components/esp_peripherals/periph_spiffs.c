@@ -141,11 +141,7 @@ esp_err_t periph_spiffs_unmount(esp_periph_handle_t periph)
 {
     VALIDATE_SPIFFS(periph, ESP_FAIL);
     periph_spiffs_t *spiffs = esp_periph_get_data(periph);
-
-    if (spiffs->partition_label == NULL) {
-        spiffs->partition_label = strdup("/spiffs");
-    }
-
+    
     int ret = esp_vfs_spiffs_unregister(spiffs->partition_label);
     if (ret == ESP_OK) {
         ESP_LOGD(TAG, "Unmount SPIFFS success");

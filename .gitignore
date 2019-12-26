@@ -44,4 +44,5 @@ docs/_static/NotoSansSC-Regular.otf
 *.gcno
 coverage.info
 coverage_report/
-.vscode/settings.json
+
+.vscode

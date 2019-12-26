@@ -30,11 +30,11 @@
 #include "freertos/ringbuf.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "rom/queue.h"
 
 #include "esp_log.h"
 #include "errno.h"
 #include "http_stream.h"
-#include "audio_common.h"
 #include "audio_mem.h"
 #include "audio_element.h"
 #include "esp_system.h"

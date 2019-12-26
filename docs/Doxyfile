@@ -33,6 +33,7 @@ INPUT = \
     ../../components/audio_stream/include/i2s_stream.h \
     ../../components/audio_stream/include/raw_stream.h \
     ../../components/audio_stream/include/spiffs_stream.h \
+    ../../components/audio_stream/include/algorithm_stream.h \
     ## ESP Codec
     ../../components/esp-adf-libs/esp_codec/include/codec/esp_decoder.h \
     ../../components/esp-adf-libs/esp_codec/include/codec/audio_type_def.h \
@@ -67,10 +68,7 @@ INPUT = \
     ../../components/esp-adf-libs/esp_codec/include/codec/equalizer.h \
     ../../components/esp-adf-libs/esp_codec/include/codec/filter_resample.h \
     ../../components/esp-adf-libs/esp_codec/include/codec/audio_sonic.h \
-    ## Speech Recognitions
-    ../../components/esp-adf-libs/esp_sr/include/esp_sr_iface.h \
-    ../../components/esp-adf-libs/esp_sr/include/esp_sr_models.h \
-    ../../components/esp-adf-libs/esp_sr/include/esp_vad.h \
+    ## Speech Recognition
     ../../components/esp-adf-libs/recorder_engine/include/recorder_engine.h \
     ## ESP Audio
     ../../components/esp-adf-libs/esp_audio/include/audio_def.h \
