@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,48 +22,25 @@
  *
  */
 
-#ifndef _AUDIO_PLAYER_H_
-#define _AUDIO_PLAYER_H_
-
-#include "esp_err.h"
-#include "audio_event_iface.h"
-#include "audio_element.h"
+#ifndef _DLNA_AVT_H
+#define _DLNA_AVT_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef enum {
-    PLAYER_EVENT_NONE = 0,
-    PLAYER_EVENT_PLAY,
-    PLAYER_EVENT_STOP,
-    PLAYER_EVENT_PAUSE,
-    PLAYER_EVENT_RESUME,
-} player_event_t;
+#include "upnp.h"
 
-typedef struct audio_player* audio_player_handle_t;
-typedef esp_err_t (*player_event)(audio_player_handle_t ap, player_event_t event);
-
-typedef struct {
-    int task_stack;
-    int task_prio;
-    player_event event_handler;
-} audio_player_config_t;
-
-audio_player_handle_t audio_player_init(audio_player_config_t *config);
-esp_err_t audio_player_deinit(audio_player_handle_t ap);
-esp_err_t audio_player_play(audio_player_handle_t ap, const char *url);
-esp_err_t audio_player_stop(audio_player_handle_t ap);
-esp_err_t audio_player_pause(audio_player_handle_t ap);
-esp_err_t audio_player_resume(audio_player_handle_t ap);
-int audio_player_vol(audio_player_handle_t ap, int vol_set);
-
-int audio_player_time_played_seconds(audio_player_handle_t ap);
-int audio_player_time_totals_seconds(audio_player_handle_t ap);
-
+/**
+ * @brief      Register UPnP AVTransport service
+ *
+ * @param[in]  upnp  The upnp handle
+ */
+void esp_dlna_avt_register_service(upnp_handle_t upnp);
 
 #ifdef __cplusplus
 }
 #endif
+
 
 #endif
