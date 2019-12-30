@@ -30,6 +30,10 @@
 #include "driver/i2c.h"
 #include "esxxx_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ES8388 address */
 #define ES8388_ADDR 0x20  /*!< 0x22:CE=1;0x20:CE=0*/
 
@@ -300,5 +304,9 @@ esp_err_t es8388_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_s
  *      - void
  */
 void es8388_pa_power(bool enable);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //__ES8388_H__

@@ -27,7 +27,15 @@
 #ifndef _ZL38063_CONFIG_H_
 #define _ZL38063_CONFIG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern const unsigned short configStreamLen;
 extern const dataArr st_twConfig[];
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

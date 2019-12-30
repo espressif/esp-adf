@@ -24,9 +24,14 @@
 
 #ifndef _CONNECTIVITY_SERVICE_H_
 #define _CONNECTIVITY_SERVICE_H_
+
 #include "periph_service.h"
 #include "esp_wifi_setting.h"
 #include "esp_wifi_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief WiFi STA service status
@@ -187,5 +192,9 @@ periph_service_state_t wifi_service_state_get(periph_service_handle_t handle);
  *
  */
 wifi_service_disconnect_reason_t wifi_service_disconnect_reason_get(periph_service_handle_t handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

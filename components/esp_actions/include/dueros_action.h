@@ -24,7 +24,12 @@
 
 #ifndef __DUEROS_SERVICE_ACTION_H__
 #define __DUEROS_SERVICE_ACTION_H__
+
 #include "esp_action_def.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * brief      Dueros provides service of disconnection
@@ -52,5 +57,8 @@ esp_err_t dueros_action_disconnect(void *instance, action_arg_t *arg, action_res
  */
 esp_err_t dueros_action_connect(void *instance, action_arg_t *arg, action_result_t *result);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

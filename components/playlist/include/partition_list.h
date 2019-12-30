@@ -27,6 +27,10 @@
 
 #include "playlist.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Create a playlist in flash partition by list id
  *
@@ -78,10 +82,10 @@ esp_err_t partition_list_prev(playlist_operator_handle_t handle, int step, char 
  * @brief Get current URL in the partition playlist
  *
  * @param      handle         Playlist handle
- * @param[out] url_buff       A second rank pointer to get a address of URL   
+ * @param[out] url_buff       A second rank pointer to get a address of URL
  *
  * @return ESP_OK     success
- *         ESP_FAIL   failed  
+ *         ESP_FAIL   failed
  */
 esp_err_t partition_list_current(playlist_operator_handle_t handle, char **url_buff);
 
@@ -95,9 +99,9 @@ esp_err_t partition_list_current(playlist_operator_handle_t handle, char **url_b
  */
 int partition_list_get_url_num(playlist_operator_handle_t handle);
 
-/** 
+/**
  * @brief Show all the URLs in the partition playlist
- * 
+ *
  * @param handle     Playlist handle
  *
  * @return ESP_OK    success
@@ -114,5 +118,9 @@ esp_err_t partition_list_show(playlist_operator_handle_t handle);
  *         ESP_FAIL  failed
  */
 esp_err_t partition_list_destroy(playlist_operator_handle_t handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

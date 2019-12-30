@@ -27,6 +27,10 @@
 
 #include "esp_action_def.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * brief       Recorder provides service of turn on WAV recoding
  *
@@ -78,5 +82,9 @@ esp_err_t recorder_action_rec_amr_turn_on(void *instance, action_arg_t *arg, act
  *     - Others, error
  */
 esp_err_t recorder_action_rec_amr_turn_off(void *instance, action_arg_t *arg, action_result_t *result);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //

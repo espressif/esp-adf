@@ -3,8 +3,8 @@
 *
 *
 ****************************************************************************
-* Copyright Microsemi Inc, 2018. All rights reserved. 
-* Licensed under the MIT License. See LICENSE.txt in the project 
+* Copyright Microsemi Inc, 2018. All rights reserved.
+* Licensed under the MIT License. See LICENSE.txt in the project
 * root for license information.
 *
 ***************************************************************************/
@@ -16,6 +16,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "esp_log.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define DEBUG_LOGD ESP_LOGD
 #define DEBUG_LOGE ESP_LOGE
@@ -112,4 +116,9 @@ extern void Vproc_msDelay(unsigned short time);
 extern void VprocWait(unsigned long int time);
 extern int VprocHALWrite(unsigned short val);
 extern int VprocHALRead(unsigned short* pVal);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* VPROC_COMMON_H */

@@ -24,8 +24,13 @@
 
 #ifndef _SMART_CONFIG_H_
 #define _SMART_CONFIG_H_
+
 #include "esp_wifi_setting.h"
 #include "esp_smartconfig.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief   esp smartconfig configuration
@@ -48,5 +53,9 @@ typedef struct {
  *     - Others, Success
  */
 esp_wifi_setting_handle_t smart_config_create(smart_config_info_t *info);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

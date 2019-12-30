@@ -31,6 +31,10 @@
 #include "input_key_com_user_id.h"
 #include "board.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief input key action id
  */
@@ -82,5 +86,9 @@ periph_service_state_t get_input_key_service_state(periph_service_handle_t input
  *         ESP_FAIL failed
  */
 esp_err_t input_key_service_add_key(periph_service_handle_t input_key_handle, input_key_service_info_t *input_key_info, int add_key_num);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

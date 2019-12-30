@@ -30,6 +30,10 @@
 
 #include "vproc_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define TWOLF_MAILBOX_SPINWAIT  1000  /*at least a 1000 to avoid mailbox busy */
 
 
@@ -47,12 +51,12 @@ VprocStatusType VprocTwolfHbiInit(void); /*Use this function to initialize the H
 VprocStatusType VprocTwolfHbiRead(
     unsigned short cmd,       /*the 16-bit register to read from*/
     unsigned char numwords,   /* The number of 16-bit words to read*/
-    unsigned short* pData);   /* Pointer to the read data buffer*/
+    unsigned short *pData);   /* Pointer to the read data buffer*/
 
 VprocStatusType VprocTwolfHbiWrite(
     unsigned short cmd,     /*the 16-bit register to write to*/
     unsigned char numwords, /* The number of 16-bit words to write*/
-    unsigned short* pData); /*the words (0-255) to write*/
+    unsigned short *pData); /*the words (0-255) to write*/
 
 VprocStatusType TwolfHbiNoOp( /*send no-op command to the device*/
     unsigned char numWords);  /* The number of no-op (0-255) to write*/
@@ -62,14 +66,14 @@ VprocStatusType TwolfHbiNoOp( /*send no-op command to the device*/
 * c code that can be compiled with the application
 */
 VprocStatusType VprocTwolfHbiBoot_alt( /*use this function to boot load the firmware (*.c) from the host to the device RAM*/
-    twFirmware* st_firmware); /*Pointer to the firmware image in host RAM*/
+    twFirmware *st_firmware); /*Pointer to the firmware image in host RAM*/
 
 
-VprocStatusType VprocTwolfLoadConfig(dataArr* pCr2Buf, unsigned short numElements);
+VprocStatusType VprocTwolfLoadConfig(dataArr *pCr2Buf, unsigned short numElements);
 
 VprocStatusType VprocTwolfHbiCleanup(void);
 VprocStatusType VprocTwolfHbiBootPrepare(void);
-VprocStatusType VprocTwolfHbiBootMoreData(char* dataBlock);
+VprocStatusType VprocTwolfHbiBootMoreData(char *dataBlock);
 VprocStatusType VprocTwolfHbiBootConclude(void);
 VprocStatusType VprocTwolfFirmwareStop(void);   /*Use this function to halt the currently running firmware*/
 VprocStatusType VprocTwolfFirmwareStart(void);  /*Use this function to start/restart the firmware currently in RAM*/
@@ -79,6 +83,10 @@ VprocStatusType VprocTwolfReset(VprocResetMode mode);
 VprocStatusType VprocTwolfEraseFlash(void);
 VprocStatusType VprocTwolfLoadFwrCfgFromFlash(uint16 image_number);
 VprocStatusType VprocTwolfSetVolume(uint8 vol);
-VprocStatusType VprocTwolfGetVolume(int8_t* vol);
+VprocStatusType VprocTwolfGetVolume(int8_t *vol);
 VprocStatusType VprocTwolfGetAppStatus(uint16 *status);
+
+#ifdef __cplusplus
+}
+#endif
 #endif /* VPROCTWOLFACCESS_H */

@@ -4,8 +4,8 @@
 *  This file is the header for all standard types used in the API code.
 *
 ****************************************************************************
-* Copyright Microsemi Inc, 2018. All rights reserved. 
-* Licensed under the MIT License. See LICENSE.txt in the project 
+* Copyright Microsemi Inc, 2018. All rights reserved.
+* Licensed under the MIT License. See LICENSE.txt in the project
 * root for license information.
 *
 ***************************************************************************/
@@ -15,6 +15,10 @@
 /* For maximum that can be stored in an int - if file exists in library */
 #include "limits.h"
 #include "esp_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef NULL
 #define NULL (0)
@@ -109,6 +113,10 @@ typedef struct {
     uint16 reg;   /*the register */
     uint16 value; /*the value to write into reg */
 } dataArr;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* VP_API_TYPES_H */
 

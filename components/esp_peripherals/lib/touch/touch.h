@@ -27,7 +27,6 @@
 
 #include "audio_error.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif

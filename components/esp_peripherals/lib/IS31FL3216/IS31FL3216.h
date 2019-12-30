@@ -25,7 +25,11 @@
 #ifndef _IOT_IS31FL3216_H_
 #define _IOT_IS31FL3216_H_
 
-#include "driver/i2c.h" 
+#include "driver/i2c.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define IS31FL3216_CH_NUM_MAX 16
 #define IS31FL3216_DUTY_MAX   255
@@ -36,7 +40,7 @@ typedef enum {
     IS31FL3216_PWR_MAX,
 } is31fl3216_pwr_t;
 
-typedef enum { 
+typedef enum {
     IS31FL3216_MODE_PWM = 0,              /**< PWM control mode operation*/
     IS31FL3216_MODE_AUTO_FRAME,           /**< Auto frame play mode operation */
     IS31FL3216_MODE_FRAME,                /**< Audio frame mode operation */
@@ -46,7 +50,7 @@ typedef enum {
 typedef enum {
     IS31FL3216_CUR_MODE_REXT = 0,         /**< Output current is set by register */
     IS31FL3216_CUR_MODE_AUDIO,            /**< Output current is modulated by audio signal */
-    IS31FL3216_CUR_MODE_MAX, 
+    IS31FL3216_CUR_MODE_MAX,
 } is31fl3216_cur_mode_t;
 
 typedef enum {
@@ -145,7 +149,7 @@ typedef enum {
 
 typedef enum {
     IS31FL3216_CH_1   = 0x0001,         /**< channel by bit shit */
-    IS31FL3216_CH_2   = 0x0002, 
+    IS31FL3216_CH_2   = 0x0002,
     IS31FL3216_CH_3   = 0x0004,
     IS31FL3216_CH_4   = 0x0008,
     IS31FL3216_CH_5   = 0x0010,
@@ -182,7 +186,7 @@ esp_err_t is31fl3216_power(is31fl3216_handle_t handle, is31fl3216_pwr_t mode);
  * @brief set the duty for the channels
  *
  * @param handle  led dev handle
- * @param ch_bits the sequence num of channels  //e.g.: 1UL << the number of channel 
+ * @param ch_bits the sequence num of channels  //e.g.: 1UL << the number of channel
  * @param duty    set the duty between 0-255
  *
  * @return
@@ -207,7 +211,7 @@ esp_err_t is31fl3216_work_mode_set(is31fl3216_handle_t handle, is31fl3216_work_m
  * @brief enable the channels
  *
  * @param handle  led dev handle
- * @param ch_bits the sequence num of channels  //e.g.: ch_bits = 1UL << the number of channel 
+ * @param ch_bits the sequence num of channels  //e.g.: ch_bits = 1UL << the number of channel
  *
  * @return
  *     - ESP_OK Success
@@ -221,7 +225,7 @@ esp_err_t is31fl3216_ch_enable(is31fl3216_handle_t handle, is31_pwm_channel_t ch
  * @param handle  led dev handle
  * @param ch_bits the sequence num of channels  //e.g.: chbits = 1UL << the number of channel
  *
- * @return        
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
@@ -229,11 +233,11 @@ esp_err_t is31fl3216_ch_disable(is31fl3216_handle_t handle, is31_pwm_channel_t c
 
 /**
  * @brief set the mode of output current
- * 
+ *
  * @param handle  led dev handle
  * @param mode    output current mode
  *
- * @return       
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
@@ -241,11 +245,11 @@ esp_err_t is31fl3216_cur_mode_set(is31fl3216_handle_t handle, is31fl3216_cur_mod
 
 /**
  * @brief set the value of output current
- * 
+ *
  * @param handle  led dev handle
  * @param value   output current value
- * 
- * @return       
+ *
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
@@ -256,8 +260,8 @@ esp_err_t is31fl3216_cur_value_set(is31fl3216_handle_t handle, is31fl3216_cur_va
  *
  * @param handle  led dev handle
  * @param value   selection of audio gain
- * 
- * @return       
+ *
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
@@ -269,7 +273,7 @@ esp_err_t is31fl3216_ags_value_set(is31fl3216_handle_t handle, is31fl3216_ags_va
  * @param handle  led dev handle
  * @param en      0 or 1 to switch the audio gain
  *
- * @return       
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
@@ -279,44 +283,44 @@ esp_err_t is31fl3216_agc_cfg(is31fl3216_handle_t handle, uint32_t en);
  * @brief set the mode of chip cascade
  *
  * @param handle  led dev handle
- * @param mode    chip cascade mode 
+ * @param mode    chip cascade mode
  *
- * @return       
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
 esp_err_t is31fl3216_cascade_mode_set(is31fl3216_handle_t handle, is31fl3216_cascade_mode_t mode);
 
 /**
- * @brief update the register 
+ * @brief update the register
  *
- * @param handle  led dev handle  
+ * @param handle  led dev handle
  *
- * @return       
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
 esp_err_t is31fl3216_update_reg(is31fl3216_handle_t handle);
 
 /**
- * @brief set the sample rate 
+ * @brief set the sample rate
  *
- * @param handle  led dev handle 
- * @param value   set value 
+ * @param handle  led dev handle
+ * @param value   set value
  *
- * @return       
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
 esp_err_t is31fl3216_sample_rate_set(is31fl3216_handle_t handle, uint32_t value);
 
 /**
- * @brief set the frame time 
+ * @brief set the frame time
  *
- * @param handle  led dev handle 
- * @param time    time to set 
+ * @param handle  led dev handle
+ * @param time    time to set
  *
- * @return       
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
@@ -325,10 +329,10 @@ esp_err_t is31fl3216_frame_time_set(is31fl3216_handle_t handle, is31fl3216_delay
 /**
  * @brief choose the first frame to play
  *
- * @param handle  led dev handle 
+ * @param handle  led dev handle
  * @param frame   the seqence num of frame
  *
- * @return       
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
@@ -337,12 +341,12 @@ esp_err_t is31fl3216_first_frame_set(is31fl3216_handle_t handle, uint32_t frame)
 /**
  * @brief write frame data
  *
- * @param handle  led dev handle 
+ * @param handle  led dev handle
  * @param num     the seqence num of frame
  * @param data    data to write
  * @param len     the length of data
  *
- * @return       
+ * @return
  *     - ESP_OK Success
  *     - ESP_FAIL error
  */
@@ -382,5 +386,10 @@ is31fl3216_handle_t is31fl3216_init(void);
  *     - ESP_FAIL Fail
  */
 esp_err_t is31fl3216_deinit(is31fl3216_handle_t handle);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 

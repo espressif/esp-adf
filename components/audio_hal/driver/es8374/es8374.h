@@ -29,6 +29,10 @@
 #include "audio_hal.h"
 #include "esxxx_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ES8374 address */
 #define ES8374_ADDR 0x20  // 0x22:CE=1;0x20:CE=0
 
@@ -237,6 +241,10 @@ esp_err_t es8374_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t 
  *     - void
  */
 void es8374_pa_power(bool enable);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  //__ES8374_H__
 

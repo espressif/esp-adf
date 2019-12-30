@@ -32,6 +32,10 @@
 
 #include "esp_avrc_api.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  *brief      Bluetooth key action parameter
  */
@@ -69,6 +73,10 @@ void bt_key_act_sm_deinit(void);
  *
  */
 void bt_key_act_state_machine(bt_key_act_param_t *param);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

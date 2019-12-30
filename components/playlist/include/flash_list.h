@@ -27,6 +27,10 @@
 
 #include "playlist.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Create a playlist in nvs flash
  *
@@ -112,5 +116,9 @@ int flash_list_get_url_num(playlist_operator_handle_t handle);
  *         ESP_FAIL  failed
  */
 esp_err_t flash_list_destroy(playlist_operator_handle_t handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
