@@ -106,7 +106,10 @@ static audio_codec_t get_audio_type(const char *content_type)
     }
     if (strcasecmp(content_type, "application/vnd.apple.mpegurl") == 0 ||
         strcasecmp(content_type, "vnd.apple.mpegURL") == 0) {
-        return AUDIO_PLAYLIST;
+        return AUDIO_PLAYLIST_M3U8;
+    }
+    if (strncasecmp(content_type, "audio/x-scpls", strlen("audio/x-scpls")) == 0) {
+        return AUDIO_PLAYLIST_PLS;
     }
     return AUDIO_CODEC_NONE;
 }
@@ -146,7 +149,7 @@ static int dispatch_hook(audio_element_handle_t self, http_stream_event_id_t typ
 
 static bool _is_playlist(audio_element_info_t *info, const char *uri)
 {
-    if (info->codec_fmt == AUDIO_PLAYLIST) {
+    if (info->codec_fmt == AUDIO_PLAYLIST_M3U8 || info->codec_fmt == AUDIO_PLAYLIST_PLS) {
         return true;
     }
     char *dot = strrchr(uri, '.');
@@ -331,6 +334,22 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
     bool valid_playlist = false;
     bool is_playlist_uri = false;
 
+    if (info.codec_fmt == AUDIO_PLAYLIST_PLS) {
+        /* pls playlist */
+        while ((line = _client_read_line(http))) {
+            ESP_LOGD(TAG, "Playlist line = %s", line);
+            if (!strncmp(line, "File", sizeof("File") - 1)) { //this line contains url
+                int i = 4;
+                while (line[i++] != '='); //Skip till '='
+                _insert_to_playlist(http->playlist, line + i, uri);
+            } else {
+                /* Ignore all other lines */
+            }
+        }
+        return ESP_OK;
+    }
+
+    /* M3U8 playlist */
     while ((line = _client_read_line(http))) {
         ESP_LOGD(TAG, "Playlist line = %s", line);
         if (!valid_playlist && strcmp(line, "#EXTM3U") == 0) {
