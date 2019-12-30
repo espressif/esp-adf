@@ -23,7 +23,12 @@
   */
 #ifndef _IOT_I2C_BUS_H_
 #define _IOT_I2C_BUS_H_
+
 #include "driver/i2c.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef void *i2c_bus_handle_t;
 
@@ -57,7 +62,7 @@ esp_err_t i2c_bus_write_bytes(i2c_port_t port, int addr, uint8_t *reg, int regLe
 
 /**
  * @brief Write data to i2c bus
- * 
+ *
  * @param port       I2C port number
  * @param addr       The address of the device
  * @param data       The data pointer
@@ -71,7 +76,7 @@ esp_err_t i2c_bus_write_data(i2c_port_t port, int addr, uint8_t *data, int datal
 
 /**
  * @brief Write data to i2c bus
- * 
+ *
  * @param port       I2C port number
  * @param addr       The address of the device
  * @param data       The data pointer
@@ -106,4 +111,9 @@ esp_err_t i2c_bus_delete(i2c_bus_handle_t bus);
  *     - ESP_FAIL Fail
  */
 esp_err_t i2c_bus_cmd_begin(i2c_bus_handle_t bus, i2c_cmd_handle_t cmd, portBASE_TYPE ticks_to_wait);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

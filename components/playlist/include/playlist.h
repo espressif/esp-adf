@@ -27,6 +27,10 @@
 
 #include "esp_log.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Type of playlist
  */
@@ -192,5 +196,9 @@ esp_err_t playlist_show(playlist_handle_t handle);
  *         ESP_FAIL failed
  */
 esp_err_t playlist_destroy(playlist_handle_t handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -25,11 +25,11 @@
 #ifndef _TONE_STREAM_H_
 #define _TONE_STREAM_H_
 
+#include "audio_element.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "audio_element.h"
 
 /**
  * @brief   TONE Stream configurations, if any entry is zero then the configuration will be set to default values

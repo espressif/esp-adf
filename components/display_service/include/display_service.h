@@ -27,6 +27,10 @@
 
 #include "periph_service.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     DISPLAY_PATTERN_UNKNOWN                 = 0,
     DISPLAY_PATTERN_WIFI_SETTING            = 1,
@@ -104,5 +108,9 @@ esp_err_t display_service_set_pattern(void *handle, int disp_pattern, int value)
  *     - ESP_FAIL
  */
 esp_err_t display_destroy(display_service_handle_t handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

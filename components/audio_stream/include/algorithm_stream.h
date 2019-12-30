@@ -27,6 +27,10 @@
 
 #include "audio_element.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ALGORITHM_STREAM_PINNED_TO_CORE   0
 #define ALGORITHM_STREAM_TASK_PERIOD      5
 #define ALGORITHM_STREAM_TASK_STACK_SIZE (5 * 1024)
@@ -137,7 +141,7 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config);
 /**
  * @brief      Set reference signal input ringbuff
  *
- * @note       If input type2 is choosen, call this function to set ringbuffer to input reference data. 
+ * @note       If input type2 is choosen, call this function to set ringbuffer to input reference data.
  *
  * @param      algo_handle   Handle of algorithm stream
  * @param      input_rb      Ringbuffer handle to be set
@@ -147,4 +151,7 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config);
  */
 esp_err_t algo_stream_set_multi_input_rb(audio_element_handle_t algo_handle, ringbuf_handle_t input_rb);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -25,13 +25,13 @@
 #ifndef _PERIPH_ADC_BUTTON_H_
 #define _PERIPH_ADC_BUTTON_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "driver/adc.h"
 #include "adc_button.h"
 #include "esp_peripherals.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief      The configuration of ADC Button

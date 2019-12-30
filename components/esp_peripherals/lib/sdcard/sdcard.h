@@ -24,6 +24,7 @@
 
 #ifndef _ESP_SDCARD_H_
 #define _ESP_SDCARD_H_
+
 #include "audio_error.h"
 
 #ifdef __cplusplus

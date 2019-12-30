@@ -27,6 +27,10 @@
 
 #include "esp_action_def.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * brief      Player provides service of playing music
  *
@@ -130,5 +134,9 @@ esp_err_t player_action_mute_on(void *instance, action_arg_t *arg, action_result
  *     - Others, error
  */
 esp_err_t player_action_mute_off(void *instance, action_arg_t *arg, action_result_t *result);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

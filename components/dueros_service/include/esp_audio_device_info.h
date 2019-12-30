@@ -25,6 +25,9 @@
 #ifndef _ESP_ADUIO_DEVICE_INFO_H
 #define _ESP_ADUIO_DEVICE_INFO_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /*
  * Initialise Device Information
  *
@@ -34,5 +37,9 @@
  *              Failed:  Other
  */
 extern int duer_init_device_info(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _ESP_ADUIO_DEVICE_INFO_H

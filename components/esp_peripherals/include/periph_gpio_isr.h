@@ -29,26 +29,30 @@
 #include "driver/gpio.h"
 #include "gpio_isr.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @breif Set the gpio number and gpio interruption type
  */
 typedef struct {
-	int gpio_num;   		/*!< gpio number */
-	gpio_int_type_t type;   /*!< interruption type */
+    int gpio_num;           /*!< gpio number */
+    gpio_int_type_t type;   /*!< interruption type */
 } gpio_isr_info_t;
 
 /**
  * @brief The configuration of gpio isr
  */
 typedef struct {
-	int info_size;                    /*!< number of gpio to be register */
-	gpio_isr_info_t *gpio_isr_info;   /*!< an array of gpio's infomation */
+    int info_size;                    /*!< number of gpio to be register */
+    gpio_isr_info_t *gpio_isr_info;   /*!< an array of gpio's infomation */
 }periph_gpio_isr_cfg_t;
 
 /**
  * @brief     Create the gpio's interrupt service routines handle for esp_peripherals
  *
- * @param     isr_config  The gpio isr configuration 
+ * @param     isr_config  The gpio isr configuration
  *
  * @return    The esp peripheral handle
  */
@@ -57,7 +61,7 @@ esp_periph_handle_t periph_gpio_isr_init(periph_gpio_isr_cfg_t *isr_config);
 /**
  * @breif      Add a gpio to isr
  *
- * @param	   gpio_info  The gpio interruption type and gpio number
+ * @param      gpio_info  The gpio interruption type and gpio number
  *
  * @return
  *      - ESP_OK   success
@@ -75,5 +79,9 @@ esp_err_t periph_gpio_isr_add(gpio_isr_info_t *gpio_info);
  *     - ESP_FAIL  failed
  */
 esp_err_t periph_gpio_isr_delete(int gpio_num);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -27,6 +27,10 @@
 
 #include "display_service.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct led_indicator_impl *led_indicator_handle_t;
 
 /**
@@ -63,6 +67,10 @@ esp_err_t led_indicator_pattern(void *handle, int pat, int value);
  *     - ESP_FAIL
  */
 void led_indicator_deinit(led_indicator_handle_t handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

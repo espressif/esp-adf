@@ -25,6 +25,9 @@
 #ifndef _INPUT_KEY_COM_USER_ID_H_
 #define _INPUT_KEY_COM_USER_ID_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /**
  * @brief input key user user-defined id
  */
@@ -44,5 +47,9 @@ typedef enum {
 
     INPUT_KEY_USER_ID_MAX                       = 0x101,
 } input_KEY_user_id_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -25,13 +25,17 @@
 #ifndef _SDCARD_SCAN_H_
 #define _SDCARD_SCAN_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void (*sdcard_scan_cb_t)(void *user_data, char *url);
 
 /**
  * @brief Scan files in SD card and use callback function to save files that meet filtering conditions.
  *
  * @param cb              The callback function
- * @param path            The path to be scanned          
+ * @param path            The path to be scanned
  * @param depth           The depth of file scanning                             // .e.g. if you only want to save files in "/test" , depth = 0.
  *                                                                               //       if you want to save files in "/test/scan_test/", depth = 1
  * @param file_extension  File extension of files that are supposed to be saved  // .e.g. const char *[]{"mp3", "aac"}
@@ -45,5 +49,9 @@ typedef void (*sdcard_scan_cb_t)(void *user_data, char *url);
  * Scan 5 levels folder in sdcard and save mp3 files and aac files.
  */
 esp_err_t sdcard_scan(sdcard_scan_cb_t cb, const char *path, int depth, const char *file_extension[], int filter_num, void *user_data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

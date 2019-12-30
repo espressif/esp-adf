@@ -27,6 +27,10 @@
 
 #include "esp_action_def.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * brief       Wi-Fi provides service of connection
  *
@@ -79,5 +83,9 @@ esp_err_t wifi_action_setting_start(void *instance, action_arg_t *arg, action_re
  *     - Others, error
  */
 esp_err_t wifi_action_setting_stop(void *instance, action_arg_t *arg, action_result_t *result);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

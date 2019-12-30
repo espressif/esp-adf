@@ -24,7 +24,12 @@
 
 #ifndef _DUEROS_SERVICE_H_
 #define _DUEROS_SERVICE_H_
+
 #include "audio_service.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * @brief Create the dueros service
@@ -42,5 +47,9 @@ audio_service_handle_t dueros_service_create(void);
  *
  */
 service_state_t dueros_service_state_get();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

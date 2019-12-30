@@ -27,6 +27,10 @@
 
 #include "audio_hal.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Initialize ZL38063 chip
  *
@@ -107,5 +111,9 @@ esp_err_t zl38063_codec_set_voice_volume(int volume);
  *     - ESP_FAIL
  */
 esp_err_t zl38063_codec_get_voice_volume(int *volume);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

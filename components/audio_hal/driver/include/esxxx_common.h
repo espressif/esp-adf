@@ -25,6 +25,10 @@
 #ifndef _ESXXX_COMMON_H_
 #define _ESXXX_COMMON_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     BIT_LENGTH_MIN = -1,
     BIT_LENGTH_16BITS = 0x03,
@@ -176,5 +180,9 @@ typedef struct {
     es_sclk_div_t sclk_div;    /*!< bits clock divide */
     es_lclk_div_t lclk_div;    /*!< WS clock divide */
 } es_i2s_clock_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

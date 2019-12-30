@@ -29,6 +29,10 @@
 #include "esp_types.h"
 #include "esxxx_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  *   ES8311_REGISTER NAME_REG_REGISTER ADDRESS
  */
@@ -261,5 +265,9 @@ esp_err_t es8311_set_mic_gain(es8311_mic_gain_t gain_db);
  *     - void
  */
 void es8311_read_all();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

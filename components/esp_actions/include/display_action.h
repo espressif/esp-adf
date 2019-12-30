@@ -27,6 +27,10 @@
 
 #include "esp_action_def.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * brief      Display provides pattern of Wi-Fi disconnection
  *
@@ -91,5 +95,9 @@ esp_err_t display_action_turn_off(void *instance, action_arg_t *arg, action_resu
  *     - Others, errors
  */
 esp_err_t display_action_turn_on(void *instance, action_arg_t *arg, action_result_t *result);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

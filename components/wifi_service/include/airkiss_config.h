@@ -24,7 +24,12 @@
 
 #ifndef __AIRKISS_CONFIG_H__
 #define __AIRKISS_CONFIG_H__
+
 #include "esp_wifi_setting.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief airkiss lan data pack
@@ -62,5 +67,9 @@ typedef struct {
  *     - Others, Success
  */
 esp_wifi_setting_handle_t airkiss_config_create(airkiss_config_info_t *info);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
