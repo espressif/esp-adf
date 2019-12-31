@@ -23,7 +23,6 @@
  */
 
 #include <string.h>
-#include <sys/time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -461,14 +460,6 @@ esp_err_t esp_periph_set_id(esp_periph_handle_t periph, esp_periph_id_t periph_i
 {
     periph->periph_id = periph_id;
     return ESP_OK;
-}
-
-long long esp_periph_tick_get()
-{
-    struct timeval te;
-    gettimeofday(&te, NULL);
-    long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
-    return milliseconds;
 }
 
 esp_err_t esp_periph_init(esp_periph_handle_t periph)

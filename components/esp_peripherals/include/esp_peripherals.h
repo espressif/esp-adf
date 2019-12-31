@@ -406,13 +406,6 @@ esp_periph_id_t esp_periph_get_id(esp_periph_handle_t periph);
 esp_err_t esp_periph_set_id(esp_periph_handle_t periph, esp_periph_id_t periph_id);
 
 /**
- * @brief      Get tick in milliseconds (from ESP32 boot)
- *
- * @return     Tick in milliseconds
- */
-long long esp_periph_tick_get();
-
-/**
  * @brief      Call this to execute `init` function of peripheral instance
  *
  * @param      periph     The peripheral handle
