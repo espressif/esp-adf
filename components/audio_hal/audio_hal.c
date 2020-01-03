@@ -93,7 +93,7 @@ esp_err_t audio_hal_ctrl_codec(audio_hal_handle_t audio_hal, audio_hal_codec_mod
     return ret;
 }
 
-esp_err_t audio_hal_config_iface(audio_hal_handle_t audio_hal, audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
+esp_err_t audio_hal_codec_iface_config(audio_hal_handle_t audio_hal, audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
 {
     esp_err_t ret = 0;
     AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
