@@ -1,0 +1,7 @@
+<service>
+    <serviceType>urn:schemas-upnp-org:service:%s:%s</serviceType>
+    <serviceId>urn:schemas-upnp-org:service:%s</serviceId>
+    <SCPDURL>%s</SCPDURL>
+    <controlURL>%s</controlURL>
+    <eventSubURL>%s</eventSubURL>
+</service>

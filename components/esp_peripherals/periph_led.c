@@ -37,6 +37,7 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "audio_mem.h"
+#include "audio_sys.h"
 #include "periph_led.h"
 #include "esp_peripherals.h"
 
@@ -158,7 +159,7 @@ static void led_timer_handler(xTimerHandle tmr)
             continue;
         }
 
-        if (ch->is_off && esp_periph_tick_get() - ch->tick > ch->time_off_ms) {
+        if (ch->is_off && audio_sys_get_time_ms() - ch->tick > ch->time_off_ms) {
             if (ch->loop > 0) {
                 ch->loop --;
             }
@@ -173,8 +174,8 @@ static void led_timer_handler(xTimerHandle tmr)
             if (ch->time_off_ms > 0) {
                 ch->is_off = false;
             }
-            ch->tick = esp_periph_tick_get();
-        } else if (!ch->is_off && esp_periph_tick_get() - ch->tick > ch->time_on_ms) {
+            ch->tick = audio_sys_get_time_ms();
+        } else if (!ch->is_off && audio_sys_get_time_ms() - ch->tick > ch->time_on_ms) {
             if (ch->loop > 0) {
                 ch->loop --;
             }
@@ -189,7 +190,7 @@ static void led_timer_handler(xTimerHandle tmr)
             if (ch->time_on_ms > 0) {
                 ch->is_off = true;
             }
-            ch->tick = esp_periph_tick_get();
+            ch->tick = audio_sys_get_time_ms();
         }
     }
 }
@@ -210,7 +211,7 @@ esp_err_t periph_led_blink(esp_periph_handle_t periph, int gpio_num, int time_on
     };
     ledc_channel_config(&ledc_channel_cfg);
     ch->pin = gpio_num;
-    ch->tick = esp_periph_tick_get();
+    ch->tick = audio_sys_get_time_ms();
     ch->time_on_ms = time_on_ms;
     ch->time_off_ms = time_off_ms;
     ch->loop = loop;
