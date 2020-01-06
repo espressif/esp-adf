@@ -87,6 +87,18 @@ esp_err_t sdcard_list_prev(playlist_operator_handle_t handle, int step, char **u
 esp_err_t sdcard_list_current(playlist_operator_handle_t handle, char **url_buff);
 
 /**
+ * @brief Choose a url by url id
+ *
+ * @param      handle          Playlist handle
+ * @param      url_id          The id of url in sdcard list
+ * @param[out] url_buff        A second rank pointer to get a address of URL
+ *
+ * @return ESP_OK    success
+ * @return ESP_FAIL  failed
+ */
+esp_err_t sdcard_list_choose(playlist_operator_handle_t handle, int url_id, char **url_buff);
+
+/**
  * @brief Get URLs number in sdcard playlist
  *
  * @param handle        Playlist handle

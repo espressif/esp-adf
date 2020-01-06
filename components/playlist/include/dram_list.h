@@ -88,6 +88,18 @@ esp_err_t dram_list_prev(playlist_operator_handle_t handle, int step, char **url
 esp_err_t dram_list_current(playlist_operator_handle_t handle, char **url_buff);
 
 /**
+ * @brief Choose a url by url id
+ *
+ * @param      handle         Playlist handle
+ * @param      url_id         The id of url in dram list
+ * @param[out] url_buff       A second rank pointer to get a address of URL
+ *
+ * @return ESP_OK    success
+ *         ESP_FAIL  failed
+ */
+esp_err_t dram_list_choose(playlist_operator_handle_t handle, int url_id, char **url_buff);
+
+/**
  * @brief Get URLs number in the dram playlist
  *
  * @param handle        Playlist handle
