@@ -143,6 +143,99 @@ TEST_CASE("Create a playlist handle, add playlists to the handle and use it", "[
     TEST_ASSERT_FALSE(esp_periph_set_destroy(set));
 }
 
+TEST_CASE("Create different playlists and use choose function", "[playlist]")
+{
+    esp_periph_set_handle_t set;
+    TEST_ASSERT_FALSE(initialize_sdcard(&set));
+
+    ESP_LOGI(TAG, "Create a handle to manage playlists");
+    playlist_handle_t handle = playlist_create();
+    TEST_ASSERT_NOT_NULL(handle);
+
+    ESP_LOGI(TAG, "Create specific playlist");
+    playlist_operator_handle_t sdcard_handle = NULL;
+    TEST_ASSERT_FALSE(sdcard_list_create(&sdcard_handle));
+
+    playlist_operator_handle_t flash_handle = NULL;
+    TEST_ASSERT_FALSE(flash_list_create(&flash_handle));
+
+    playlist_operator_handle_t partition_handle = NULL;
+    TEST_ASSERT_FALSE(partition_list_create(&partition_handle));
+
+    playlist_operator_handle_t dram_handle = NULL;
+    TEST_ASSERT_FALSE(dram_list_create(&dram_handle));
+
+    ESP_LOGI(TAG, "add a dram playlist and save urls to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, dram_handle, 0));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to dram playlist ID0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to dram playlist ID1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to dram playlist ID2"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to dram playlist ID3"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a sdcard playlist and checkout to the playlist and then save urls to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, sdcard_handle, 1));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 1));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to sdcard playlist ID0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to sdcard playlist ID1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to sdcard playlist ID2"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to sdcard playlist ID3"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a nvs flash playlist and checkout to the playlist and then save urls to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, flash_handle, 2));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 2));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to flash playlist ID0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to flash playlist ID1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to flash playlist ID2"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to flash playlist ID3"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a partition playlist and checkout to the playlist and then save urls to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, partition_handle, 3));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 3));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to partition playlist ID0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to partition playlist ID1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to partition playlist ID2"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url to partition playlist ID3"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    char *url = NULL;
+    ESP_LOGI(TAG, "Checkout to dram playlist and choose id in the list");
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 0));
+    for (int i = 0; i < playlist_get_current_list_url_num(handle); i++) {
+        playlist_choose(handle, i, &url);
+        ESP_LOGW(TAG, "Choose ID: %d, URL: %s", i, url);
+    }
+
+    ESP_LOGI(TAG, "Checkout to sdcard playlist and choose id in the list");
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 1));
+    for (int i = 0; i < playlist_get_current_list_url_num(handle); i++) {
+        playlist_choose(handle, i, &url);
+        ESP_LOGW(TAG, "Choose sdcard ID: %d, URL: %s", i, url);
+    }
+
+    ESP_LOGI(TAG, "Checkout to flash playlist and choose id in the list");
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 2));
+    for (int i = 0; i < playlist_get_current_list_url_num(handle); i++) {
+        playlist_choose(handle, i, &url);
+        ESP_LOGW(TAG, "Choose sdcard ID: %d, URL: %s", i, url);
+    }
+
+    ESP_LOGI(TAG, "Checkout to partition playlist and choose id in the list");
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 3));
+    for (int i = 0; i < playlist_get_current_list_url_num(handle); i++) {
+        playlist_choose(handle, i, &url);
+        ESP_LOGW(TAG, "Choose sdcard ID: %d, URL: %s", i, url);
+    }
+
+    ESP_LOGI(TAG, "Test finish, destroy all playlists");
+    TEST_ASSERT_FALSE(playlist_destroy(handle));
+    handle = NULL;
+
+    TEST_ASSERT_FALSE(esp_periph_set_destroy(set));
+}
+
 TEST_CASE("Add same type to a handle use different list id", "[playlist]")
 {
     esp_periph_set_handle_t set;

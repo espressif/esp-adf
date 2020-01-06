@@ -92,7 +92,7 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
                 ESP_LOGE(TAG, "Out of range, index:%d", index);
                 return ESP_ERR_INVALID_ARG;
             }
-            sdcard_list_next(playlist, index, &str);
+            sdcard_list_choose(playlist, index, &str);
             ESP_LOGI(TAG, "play index= %d, URI:%s, byte_pos:%d", index, str, byte_pos);
         } else {
             ESP_LOGI(TAG, "play URI:%s, byte_pos:%d", argv[0], byte_pos);
@@ -184,8 +184,6 @@ static esp_err_t cli_duration(esp_periph_handle_t periph, int argc, char *argv[]
     return ESP_OK;
 }
 
-
-
 static esp_err_t cli_insert_tone(esp_periph_handle_t periph, int argc, char *argv[])
 {
     ESP_LOGI(TAG, "tone play");
@@ -197,7 +195,7 @@ static esp_err_t cli_insert_tone(esp_periph_handle_t periph, int argc, char *arg
                 ESP_LOGE(TAG, "Tone play out of range, index:%d", index);
                 return ESP_ERR_INVALID_ARG;
             }
-            sdcard_list_next(playlist, index, &str);
+            sdcard_list_choose(playlist, index, &str);
             ESP_LOGI(TAG, "Tone play index= %d, URI:%s", index, str);
         } else {
             ESP_LOGI(TAG, "Tone play URI:%s", argv[0]);
@@ -225,6 +223,7 @@ static void tone_stop_timer_cb(TimerHandle_t xTimer)
     ESP_LOGW(TAG, "Tone esp_audio_stop");
     esp_audio_stop(player, TERMINATION_TYPE_NOW);
 }
+
 static esp_err_t cli_stop_tone(esp_periph_handle_t periph, int argc, char *argv[])
 {
     ESP_LOGI(TAG, "Stop done");
@@ -408,7 +407,6 @@ static esp_err_t task_list(esp_periph_handle_t periph, int argc, char *argv[])
     return ESP_OK;
 }
 #endif
-
 
 const periph_console_cmd_t cli_cmd[] = {
     /* ======================== Esp_audio ======================== */

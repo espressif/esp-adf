@@ -173,6 +173,26 @@ esp_err_t dram_list_current(playlist_operator_handle_t handle, char **url_buff)
     return ESP_OK;
 }
 
+esp_err_t dram_list_choose(playlist_operator_handle_t handle, int url_id, char **url_buff)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, url_buff, return ESP_FAIL);
+    dram_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    if (playlist->url_num == 0) {
+        ESP_LOGE(TAG, "Please add urls tp playlist first");
+        return ESP_FAIL;
+    }
+    if ((url_id < 0) || (url_id >= playlist->url_num)) {
+        ESP_LOGE(TAG, "Invalid url id to be choosen");
+        return ESP_FAIL;
+    }
+    // rewind pointer
+    playlist->cur_node = TAILQ_FIRST(&playlist->url_info_list);
+    return dram_list_next(handle, url_id, url_buff);
+}
+
 esp_err_t dram_list_show(playlist_operator_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
@@ -224,6 +244,7 @@ esp_err_t dram_list_get_operation(playlist_operation_t *operation)
     operation->prev = (void *)dram_list_prev;
     operation->current = (void *)dram_list_current;
     operation->destroy = (void *)dram_list_destroy;
+    operation->choose  = (void *)dram_list_choose;
     operation->get_url_num = (void *)dram_list_get_url_num;
     operation->type = PLAYLIST_DRAM;
     return ESP_OK;

@@ -107,7 +107,7 @@ esp_err_t flash_list_create(playlist_operator_handle_t *handle)
     sprintf(flash_list->name_space, "%s%d", DEFAULT_NVS_NAME_SPACE, list_id++);
     ret |= nvs_open(flash_list->name_space, NVS_READWRITE, &flash_list->url_nvs_handle);
 
-    if(ret != ESP_OK) {
+    if (ret != ESP_OK) {
         free(flash_handle);
         free(flash_list->name_space);
         free(flash_list);
@@ -232,6 +232,25 @@ esp_err_t flash_list_current(playlist_operator_handle_t handle, char **url_buff)
     return flash_list_choose_id(playlist, playlist->cur_url_id, url_buff);
 }
 
+esp_err_t flash_list_choose(playlist_operator_handle_t handle, int url_id, char **url_buff)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, url_buff, return ESP_FAIL);
+    flash_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    if (playlist->url_num == 0) {
+        ESP_LOGE(TAG, "No url, please save urls to playlist first");
+        return ESP_FAIL;
+    }
+    if ((url_id < 0) || (url_id >= playlist->url_num)) {
+        ESP_LOGE(TAG, "Invalid url id to be choosen");
+        return ESP_FAIL;
+    }
+
+    return flash_list_choose_id(playlist, url_id, url_buff);
+}
+
 int flash_list_get_url_num(playlist_operator_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
@@ -269,6 +288,7 @@ esp_err_t flash_list_get_operation(playlist_operation_t *operation)
     operation->next = (void *)flash_list_next;
     operation->prev = (void *)flash_list_prev;
     operation->current = (void *)flash_list_current;
+    operation->choose  = (void *)flash_list_choose;
     operation->destroy = (void *)flash_list_destroy;
     operation->get_url_num = (void *)flash_list_get_url_num;
     operation->type = PLAYLIST_FLASH;

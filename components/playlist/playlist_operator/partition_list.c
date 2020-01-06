@@ -216,6 +216,25 @@ esp_err_t partition_list_current(playlist_operator_handle_t handle, char **url_b
     return partition_list_choose_id(playlist, playlist->cur_url_id, url_buff);
 }
 
+esp_err_t partition_list_choose(playlist_operator_handle_t handle, int url_id, char **url_buff)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, url_buff, return ESP_FAIL);
+    partition_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    if (playlist->url_num == 0) {
+        ESP_LOGE(TAG, "No url, please save urls to playlist first");
+        return ESP_FAIL;
+    }
+    if ((url_id < 0) || (url_id >= playlist->url_num)) {
+        ESP_LOGE(TAG, "Invalid url id to be choosen");
+        return ESP_FAIL;
+    }
+
+    return partition_list_choose_id(playlist, url_id, url_buff);
+}
+
 esp_err_t partition_list_show(playlist_operator_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
@@ -279,6 +298,7 @@ esp_err_t partition_list_get_operation(playlist_operation_t *operation)
     operation->save = (void *)partition_list_save;
     operation->next = (void *)partition_list_next;
     operation->prev = (void *)partition_list_prev;
+    operation->choose  = (void *)partition_list_choose;
     operation->current = (void *)partition_list_current;
     operation->destroy = (void *)partition_list_destroy;
     operation->get_url_num = (void *)partition_list_get_url_num;

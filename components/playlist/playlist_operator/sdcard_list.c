@@ -109,7 +109,7 @@ static esp_err_t sdcard_list_open(sdcard_list_t *playlist, uint8_t list_id)
     playlist->offset_file = fopen(playlist->offset_file_name, "w+");
 
     if (playlist->save_file == NULL || NULL == playlist->offset_file) {
-        ESP_LOGE(TAG, "open file error, line: %d, have you mounted sdcard and set the long file name configuration?", __LINE__);
+        ESP_LOGE(TAG, "open file error, line: %d, have you mounted sdcard, set the long file name and UTF-8 encoding configuration ?", __LINE__);
         free(playlist->save_file_name);
         free(playlist->offset_file_name);
         if (playlist->save_file) {
@@ -291,6 +291,25 @@ esp_err_t sdcard_list_current(playlist_operator_handle_t handle, char **url_buff
     return sdcard_list_choose_id(playlist, playlist->cur_url_id, url_buff);
 }
 
+esp_err_t sdcard_list_choose(playlist_operator_handle_t handle, int url_id, char **url_buff)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, url_buff, return ESP_FAIL);
+    sdcard_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    if (playlist->url_num == 0) {
+        ESP_LOGE(TAG, "No url, please save urls to playlist first");
+        return ESP_FAIL;
+    }
+    if ((url_id < 0) || (url_id >= playlist->url_num)) {
+        ESP_LOGE(TAG, "Invalid url id to be choosen");
+        return ESP_FAIL;
+    }
+
+    return sdcard_list_choose_id(playlist, url_id, url_buff);
+}
+
 esp_err_t sdcard_list_save(playlist_operator_handle_t handle, const char *url)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
@@ -345,6 +364,7 @@ esp_err_t sdcard_list_get_operation(playlist_operation_t *operation)
     operation->save = (void *)sdcard_list_save;
     operation->next = (void *)sdcard_list_next;
     operation->prev = (void *)sdcard_list_prev;
+    operation->choose  = (void *)sdcard_list_choose;
     operation->current = (void *)sdcard_list_current;
     operation->destroy = (void *)sdcard_list_destroy;
     operation->get_url_num = (void *)sdcard_list_get_url_num;

@@ -46,14 +46,15 @@ typedef enum {
  * @brief All types of Playlists' operation
  */
 typedef struct {
-    esp_err_t (*show)    (void *playlist);                            /*!< Show all the URLs in playlist */
-    esp_err_t (*save)    (void *playlist, const char *url);           /*!< Save URLs to playlist */
-    esp_err_t (*next)    (void *playlist, int step, char **url_buff); /*!< Get next URL in playlist */
-    esp_err_t (*prev)    (void *playlist, int step, char **url_buff); /*!< Get previous URL in playlist */
-    esp_err_t (*current) (void *playlist, char **url_buff);           /*!< Get current URL in playlist */
-    esp_err_t (*destroy) (void *playlist);                            /*!< Destroy playlist */
-    int   (*get_url_num) (void *playlist);                            /*!< Get number of URLS in current playlist */
-    playlist_type_t      type;                                        /*!< Type of playlist */
+    esp_err_t (*show)    (void *playlist);                              /*!< Show all the URLs in playlist */
+    esp_err_t (*save)    (void *playlist, const char *url);             /*!< Save URLs to playlist */
+    esp_err_t (*next)    (void *playlist, int step, char **url_buff);   /*!< Get next URL in playlist */
+    esp_err_t (*prev)    (void *playlist, int step, char **url_buff);   /*!< Get previous URL in playlist */
+    esp_err_t (*choose)  (void *playlist, int url_id, char **url_buff); /*!< Get url by url id */          
+    esp_err_t (*current) (void *playlist, char **url_buff);             /*!< Get current URL in playlist */
+    esp_err_t (*destroy) (void *playlist);                              /*!< Destroy playlist */
+    int   (*get_url_num) (void *playlist);                              /*!< Get number of URLS in current playlist */
+    playlist_type_t      type;                                          /*!< Type of playlist */
 } playlist_operation_t;
 
 /**
@@ -176,6 +177,18 @@ esp_err_t playlist_next(playlist_handle_t handle, int step, char **url_buff);
  *         ESP_FAIL failed
  */
 esp_err_t playlist_prev(playlist_handle_t handle, int step, char **url_buff);
+
+/**
+ * @brief Choose a url by url id
+ *
+ * @param      handle          Playlist handle
+ * @param      url_id          The id of url in current list
+ * @param[out] url_buff        A second rank pointer to get a address of URL
+ *
+ * @return ESP_OK    success
+ * @return ESP_FAIL  failed
+ */
+esp_err_t playlist_choose(playlist_handle_t handle, int url_id, char **url_buff);
 
 /**
  * @brief Show URLs in current playlist
