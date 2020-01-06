@@ -25,8 +25,6 @@
 #ifndef __BT_KEYCONTROL_H__
 #define __BT_KEYCONTROL_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/timers.h"
 
 #if CONFIG_BT_ENABLED
 
@@ -51,6 +49,18 @@ typedef struct {
  */
 #define ESP_AVRC_CT_KEY_STATE_CHG_EVT (ESP_AVRC_CT_REMOTE_FEATURES_EVT + 1) /*!< key-press action is triggered */
 #define ESP_AVRC_CT_PT_RSP_TO_EVT (ESP_AVRC_CT_REMOTE_FEATURES_EVT + 2)     /*!< passthrough-command response time-out */
+
+/**
+ * brief      Bluetooth peripheral event id
+ */
+typedef enum {
+    PERIPH_BLUETOOTH_UNKNOWN = 0,       /*!< No event */
+    PERIPH_BLUETOOTH_CONNECTED,         /*!< A bluetooth device was connected */
+    PERIPH_BLUETOOTH_DISCONNECTED,      /*!< Last connection was disconnected */
+    PERIPH_BLUETOOTH_AUDIO_STARTED,     /*!< The audio session has been started */
+    PERIPH_BLUETOOTH_AUDIO_SUSPENDED,   /*!< The audio session has been suspended */
+    PERIPH_BLUETOOTH_AUDIO_STOPPED,     /*!< The audio session has been stopped */
+} periph_bluetooth_event_id_t;
 
 /**
  * @brief      Initialize bluetooth key action state machine
