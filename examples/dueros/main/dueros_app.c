@@ -168,7 +168,6 @@ static esp_err_t recorder_pipeline_open(void **handle)
     rsp_cfg.src_ch = 2;
     rsp_cfg.dest_rate = 16000;
     rsp_cfg.dest_ch = 1;
-    rsp_cfg.type = AUDIO_CODEC_TYPE_ENCODER;
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
