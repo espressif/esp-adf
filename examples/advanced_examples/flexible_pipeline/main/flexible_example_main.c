@@ -46,14 +46,13 @@ static esp_periph_set_handle_t set;
 #define PLAYBACK_CHANNEL    2
 #define PLAYBACK_BITS       16
 
-static audio_element_handle_t create_filter(int source_rate, int source_channel, int dest_rate, int dest_channel, audio_codec_type_t type)
+static audio_element_handle_t create_filter(int source_rate, int source_channel, int dest_rate, int dest_channel)
 {
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg.src_rate = source_rate;
     rsp_cfg.src_ch = source_channel;
     rsp_cfg.dest_rate = dest_rate;
     rsp_cfg.dest_ch = dest_channel;
-    rsp_cfg.type = type;
     return rsp_filter_init(&rsp_cfg);
 }
 
@@ -110,7 +109,7 @@ void flexible_pipeline_playback()
     audio_element_handle_t fatfs_mp3_reader_el = create_fatfs_stream(SAVE_FILE_RATE, SAVE_FILE_BITS, SAVE_FILE_CHANNEL, AUDIO_STREAM_READER);
     audio_element_handle_t mp3_decoder_el = create_mp3_decoder();
     audio_element_handle_t aac_decoder_el = create_aac_decoder();
-    audio_element_handle_t filter_upsample_el = create_filter(SAVE_FILE_RATE, SAVE_FILE_CHANNEL, PLAYBACK_RATE, PLAYBACK_CHANNEL, AUDIO_CODEC_TYPE_DECODER);
+    audio_element_handle_t filter_upsample_el = create_filter(SAVE_FILE_RATE, SAVE_FILE_CHANNEL, PLAYBACK_RATE, PLAYBACK_CHANNEL);
     audio_element_handle_t i2s_writer_el = create_i2s_stream(PLAYBACK_RATE, PLAYBACK_BITS, PLAYBACK_CHANNEL, AUDIO_STREAM_WRITER);
 
     ESP_LOGI(TAG, "[ 2 ] Register all audio elements to playback pipeline");

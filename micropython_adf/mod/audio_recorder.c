@@ -76,7 +76,6 @@ STATIC audio_element_handle_t audio_recorder_create_filter(int encoder_type)
     rsp_cfg.src_rate = 48000;
     rsp_cfg.src_ch = 2;
     rsp_cfg.dest_ch = 1;
-    rsp_cfg.type = RESAMPLE_DECODE_MODE;
 
     switch (encoder_type) {
         case PCM: {

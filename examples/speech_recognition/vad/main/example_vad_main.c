@@ -58,7 +58,6 @@ void app_main()
     rsp_cfg.src_ch = 2;
     rsp_cfg.dest_rate = VAD_SAMPLE_RATE_HZ;
     rsp_cfg.dest_ch = 1;
-    rsp_cfg.type = AUDIO_CODEC_TYPE_ENCODER;
     filter = rsp_filter_init(&rsp_cfg);
 
     ESP_LOGI(TAG, "[2.3] Create raw to receive data");

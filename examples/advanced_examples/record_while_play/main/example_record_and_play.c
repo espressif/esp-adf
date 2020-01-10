@@ -154,7 +154,6 @@ static audio_pipeline_handle_t example_create_rec_pipeline(const char *url, int 
                 rsp_file_cfg.src_ch = 2;
                 rsp_file_cfg.dest_rate = sample_rates;
                 rsp_file_cfg.dest_ch = channels;
-                rsp_file_cfg.mode = RESAMPLE_DECODE_MODE;
                 resample_for_rec = rsp_filter_init(&rsp_file_cfg);
 
                 audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
@@ -184,7 +183,6 @@ static audio_pipeline_handle_t example_create_rec_pipeline(const char *url, int 
                 rsp_asr_cfg.src_ch = 2;
                 rsp_asr_cfg.dest_rate = sample_rates;
                 rsp_asr_cfg.dest_ch = channels;
-                rsp_asr_cfg.mode = RESAMPLE_ENCODE_MODE;
                 resample_for_rec = rsp_filter_init(&rsp_asr_cfg);
 
                 raw_stream_cfg_t raw_asr_cfg = RAW_STREAM_CFG_DEFAULT();

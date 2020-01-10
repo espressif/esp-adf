@@ -115,7 +115,6 @@ void app_main()
     rsp_cfg.src_ch = 2;
     rsp_cfg.dest_rate = 16000;
     rsp_cfg.dest_ch = 1;
-    rsp_cfg.type = AUDIO_CODEC_TYPE_ENCODER;
     filter = rsp_filter_init(&rsp_cfg);
 #endif
 
