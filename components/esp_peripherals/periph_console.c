@@ -38,8 +38,6 @@
 
 static const char *TAG = "PERIPH_CONSOLE";
 
-
-#define CONSOLE_BUFFER_SIZE (128)
 #define CONSOLE_MAX_ARGUMENTS (5)
 
 static const int STOPPED_BIT = BIT1;
@@ -55,6 +53,7 @@ typedef struct periph_console {
     EventGroupHandle_t          state_event_bits;
     int                         task_stack;
     int                         task_prio;
+    int                         buffer_size;
     char                        *prompt_string;
 } periph_console_t;
 
@@ -179,7 +178,7 @@ static void _console_task(void *pv)
     int n;
 
     periph_console_handle_t console = (periph_console_handle_t)esp_periph_get_data(self);
-    if (console->total_bytes >= CONSOLE_BUFFER_SIZE) {
+    if (console->total_bytes >= console->buffer_size) {
         console->total_bytes = 0;
     }
     console->run = true;
@@ -190,7 +189,7 @@ static void _console_task(void *pv)
     }
     printf("\r\n%s ", prompt_string);
     while (console->run) {
-        if (console_get_line(console, CONSOLE_BUFFER_SIZE, 10 / portTICK_RATE_MS)) {
+        if (console_get_line(console, console->buffer_size, 10 / portTICK_RATE_MS)) {
             if (console->total_bytes) {
                 ESP_LOGD(TAG, "Read line: %s", console->buffer);
             }
@@ -230,13 +229,13 @@ static esp_err_t _console_init(esp_periph_handle_t self)
     /* Move the caret to the beginning of the next line on '\n' */
     esp_vfs_dev_uart_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
 
-    uart_driver_install(CONFIG_CONSOLE_UART_NUM, CONSOLE_BUFFER_SIZE * 2, 0, 0, NULL, 0);
+    uart_driver_install(CONFIG_CONSOLE_UART_NUM, console->buffer_size * 2, 0, 0, NULL, 0);
 
     /* Tell VFS to use UART driver */
     esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART_NUM);
 
 
-    console->buffer = (char*) malloc(CONSOLE_BUFFER_SIZE);
+    console->buffer = (char *) malloc(console->buffer_size);
     AUDIO_MEM_CHECK(TAG, console->buffer, {
         return ESP_ERR_NO_MEM;
     });
@@ -259,6 +258,10 @@ esp_periph_handle_t periph_console_init(periph_console_cfg_t *config)
     console->command_num = config->command_num;
     console->task_stack = CONSOLE_DEFAULT_TASK_STACK;
     console->task_prio = CONSOLE_DEFAULT_TASK_PRIO;
+    console->buffer_size = CONSOLE_DEFAULT_BUFFER_SIZE;
+     if (config->buffer_size > 0) {
+        console->buffer_size = config->buffer_size;
+    }
     if (config->task_stack > 0) {
         console->task_stack = config->task_stack;
     }

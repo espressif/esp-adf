@@ -259,14 +259,15 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
             if (el->state != AEL_STATE_INIT && el->state != AEL_STATE_RUNNING && el->state != AEL_STATE_PAUSED) {
                 audio_element_reset_output_ringbuf(el);
             }
+            el->is_running = true;
             if (audio_element_process_init(el) != ESP_OK) {
                 audio_element_abort_output_ringbuf(el);
                 audio_element_abort_input_ringbuf(el);
+                el->is_running = false;
                 return ESP_FAIL;
             }
             audio_event_iface_set_cmd_waiting_timeout(el->iface_event, 0);
             xEventGroupClearBits(el->state_event, STOPPED_BIT);
-            el->is_running = true;
             break;
         case AEL_MSG_CMD_DESTROY:
             el->task_run = false;
@@ -446,6 +447,7 @@ void audio_element_task(void *pv)
     }
     audio_free(el->buf);
     ESP_LOGD(TAG, "[%s] el task deleted,%d", el->tag, uxTaskGetStackHighWaterMark(NULL));
+    el->stopping = false;
     el->task_run = false;
     xEventGroupSetBits(el->state_event, TASK_DESTROYED_BIT);
     vTaskDelete(NULL);
@@ -823,7 +825,7 @@ esp_err_t audio_element_wait_for_stop(audio_element_handle_t el)
 {
     if (el->state == AEL_STATE_STOPPED
         || el->state == AEL_STATE_INIT) {
-        ESP_LOGD(TAG, "[%s] Element already stopped, no need waiting", el->tag);
+        ESP_LOGD(TAG, "[%s] Element already stopped(%d), no need waiting", el->tag, el->state);
         return ESP_OK;
     }
     EventBits_t uxBits = xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);

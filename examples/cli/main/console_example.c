@@ -495,6 +495,7 @@ static void cli_setup_console()
     periph_console_cfg_t console_cfg = {
         .command_num = sizeof(cli_cmd) / sizeof(periph_console_cmd_t),
         .commands = cli_cmd,
+        .buffer_size = 384,
     };
     esp_periph_handle_t console_handle = periph_console_init(&console_cfg);
     esp_periph_start(set, console_handle);
