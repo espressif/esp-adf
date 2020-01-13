@@ -24,7 +24,7 @@
 
 #include <string.h>
 #include "es7243.h"
-#include "driver/i2c.h"
+#include "i2c_bus.h"
 #include "board.h"
 #include "esp_log.h"
 
@@ -40,6 +40,7 @@
     }
 
 static char *TAG = "DRV7243";
+static i2c_bus_handle_t i2c_handle;
 
 audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE = {
     .audio_codec_initialize = es7243_adc_init,
@@ -51,49 +52,30 @@ audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE = {
     .audio_codec_get_volume = es7243_adc_get_voice_volume,
 };
 
-static int es7243_write_reg(uint8_t reg_addr, uint8_t data)
+static esp_err_t es7243_write_reg(uint8_t reg_add, uint8_t data)
 {
-    int res = 0;
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, ES7243_ADDR, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, reg_addr, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, data, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-    ES_ASSERT(res, "Es7243 Write Reg error", -1);
-    return res;
+    return i2c_bus_write_bytes(i2c_handle, ES7243_ADDR, &reg_add, sizeof(reg_add), &data, sizeof(data));
 }
 
-int es7243_read_reg(uint8_t reg_addr)
+static int i2c_init()
 {
-    uint8_t data;
     int res = 0;
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, ES7243_ADDR, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, reg_addr, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-
-    cmd = i2c_cmd_link_create();
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, ES7243_ADDR | 0x01, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_read_byte(cmd, &data, 0x01 /*NACK_VAL*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-
-    ES_ASSERT(res, "Es7243 Read Reg error", -1);
-    return (int)data;
+    i2c_config_t es_i2c_cfg = {
+        .mode = I2C_MODE_MASTER,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = 100000,
+    };
+    res = get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
+    ES_ASSERT(res, "getting i2c pins error", -1);
+    i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
+    return res;
 }
 
 esp_err_t es7243_adc_init(audio_hal_codec_config_t *codec_cfg)
 {
     esp_err_t ret = ESP_OK;
+    i2c_init();
     ret |= es7243_write_reg(0x00, 0x01);
     ret |= es7243_write_reg(0x06, 0x00);
     ret |= es7243_write_reg(0x05, 0x1B);

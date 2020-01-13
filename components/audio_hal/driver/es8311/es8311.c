@@ -23,7 +23,7 @@
  */
 
 #include <string.h>
-#include "driver/i2c.h"
+#include "i2c_bus.h"
 #include "board.h"
 #include "esp_log.h"
 #include "es8311.h"
@@ -50,15 +50,7 @@
 
 #define MCLK_DIV_FRE        256
 
-/*
- * i2c default configuration
- */
-static i2c_config_t es_i2c_cfg = {
-    .mode = I2C_MODE_MASTER,
-    .sda_pullup_en = GPIO_PULLUP_ENABLE,
-    .scl_pullup_en = GPIO_PULLUP_ENABLE,
-    .master.clk_speed = 100000,
-};
+static i2c_bus_handle_t i2c_handle;
 
 /*
  * operate function of codec
@@ -202,53 +194,30 @@ static char *TAG = "DRV8311";
         return b;\
     }
 
-static int es8311_write_reg(uint8_t reg_addr, uint8_t data)
+static esp_err_t es8311_write_reg(uint8_t reg_addr, uint8_t data)
 {
-    int res = 0;
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, ES8311_ADDR, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, reg_addr, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, data, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-    ES_ASSERT(res, "Es8311 Write Reg error", -1);
-    return res;
+    return i2c_bus_write_bytes(i2c_handle, ES8311_ADDR, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
 }
 
 static int es8311_read_reg(uint8_t reg_addr)
 {
     uint8_t data;
-    int res = 0;
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, ES8311_ADDR, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, reg_addr, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-
-    cmd = i2c_cmd_link_create();
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, ES8311_ADDR | 0x01, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_read_byte(cmd, &data, 0x01 /*NACK_VAL*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-
-    ES_ASSERT(res, "Es8311 Read Reg error", -1);
+    i2c_bus_read_bytes(i2c_handle, ES8311_ADDR, reg_addr, &data, 1);
     return (int)data;
 }
 
 static int i2c_init()
 {
     int res = 0;
-    get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
-    res |= i2c_param_config(I2C_NUM_0, &es_i2c_cfg);
-    res |= i2c_driver_install(I2C_NUM_0, es_i2c_cfg.mode, 0, 0, 0);
-    ES_ASSERT(res, "i2c_init error", -1);
+    i2c_config_t es_i2c_cfg = {
+        .mode = I2C_MODE_MASTER,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = 100000,
+    };
+    res = get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
+    ES_ASSERT(res, "getting i2c pins error", -1);
+    i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
     return res;
 }
 
@@ -512,7 +481,7 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
 
 esp_err_t es8311_codec_deinit()
 {
-//TODO
+    i2c_bus_delete(i2c_handle);
     return ESP_OK;
 }
 
