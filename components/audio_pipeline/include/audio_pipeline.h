@@ -153,11 +153,9 @@ esp_err_t audio_pipeline_resume(audio_pipeline_handle_t pipeline);
 esp_err_t audio_pipeline_pause(audio_pipeline_handle_t pipeline);
 
 /**
- * @brief     Stop all elements and clear information of items. Free up memory for all task items.
- *            The link state of the elements in the pipeline is kept, events are still registered,
- *            but the `audio_pipeline_pause` and `audio_pipeline_resume`  functions have no effect.
- *            To restart audio_pipeline, use the `audio_pipeline_resume` function.
- *            It's better work with `audio_pipeline_wait_for_stop` for synchronization.
+ * @brief     Stop all of the linked elements. Used with `audio_pipeline_wait_for_stop` to keep in sync.
+ *            The link state of the elements in the pipeline is kept, events are still registered.
+ *            The stopped audio_pipeline restart by `audio_pipeline_resume`.
  *
  * @param[in]  pipeline   The Audio Pipeline Handle
  *

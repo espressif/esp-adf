@@ -37,7 +37,10 @@ typedef esp_err_t (*console_cmd_callback_t)(esp_periph_handle_t periph, int argc
 
 #define CONSOLE_DEFAULT_TASK_PRIO       (5)
 #define CONSOLE_DEFAULT_TASK_STACK      (1024*5)
+#define CONSOLE_DEFAULT_BUFFER_SIZE     (256)
 #define CONSOLE_DEFAULT_PROMPT_STRING   "esp32>"
+
+
 
 /**
  * @brief      Command structure
@@ -57,6 +60,7 @@ typedef struct {
     const periph_console_cmd_t  *commands;      /*!< Pointer to array of commands */
     int                         task_stack;     /*!< Console task stack, using default if the value is zero */
     int                         task_prio;      /*!< Console task priority (based on freeRTOS priority), using default if the value is zero */
+    int                         buffer_size;    /*!< Size of console input buffer */
     const char                  *prompt_string; /*!< Console prompt string, using default CONSOLE_PROMPT_STRING if the pointer is NULL */
 } periph_console_cfg_t;
 
