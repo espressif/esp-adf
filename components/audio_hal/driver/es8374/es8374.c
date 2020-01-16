@@ -25,7 +25,7 @@
 #include <string.h>
 #include "esp_system.h"
 #include "esp_log.h"
-#include "driver/i2c.h"
+#include "i2c_bus.h"
 #include "es8374.h"
 #include "board_pins_config.h"
 
@@ -40,13 +40,7 @@
 #define LOG_8374(fmt, ...)   ESP_LOGW(ES8374_TAG, fmt, ##__VA_ARGS__)
 
 static int codec_init_flag = 0;
-
-static i2c_config_t es_i2c_cfg = {
-    .mode = I2C_MODE_MASTER,
-    .sda_pullup_en = GPIO_PULLUP_ENABLE,
-    .scl_pullup_en = GPIO_PULLUP_ENABLE,
-    .master.clk_speed = 100000
-};
+static i2c_bus_handle_t i2c_handle;
 
 audio_hal_func_t AUDIO_CODEC_ES8374_DEFAULT_HANDLE = {
     .audio_codec_initialize = es8374_codec_init,
@@ -63,68 +57,42 @@ static bool es8374_codec_initialized()
     return codec_init_flag;
 }
 
-static esp_err_t es_write_reg(uint8_t slaveAdd, uint8_t regAdd, uint8_t data)
+static esp_err_t es_write_reg(uint8_t slave_addr, uint8_t reg_add, uint8_t data)
 {
-    esp_err_t res = ESP_OK;
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, slaveAdd, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, regAdd, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, data, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-    ES_ASSERT(res, "ESCodecWriteReg error", -1);
-    return res;
+    return i2c_bus_write_bytes(i2c_handle, slave_addr, &reg_add, sizeof(reg_add), &data, sizeof(data));
 }
 
-static esp_err_t es_read_reg(uint8_t slaveAdd, uint8_t regAdd, uint8_t *pData)
+static esp_err_t es_read_reg(uint8_t slave_addr, uint8_t reg_add, uint8_t *p_data)
 {
-    uint8_t data;
-    esp_err_t res = ESP_OK;
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, slaveAdd, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, regAdd, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-
-    cmd = i2c_cmd_link_create();
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, slaveAdd | 0x01, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_read_byte(cmd, &data, 0x01/*NACK_VAL*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-
-    ES_ASSERT(res, "Es8374ReadReg error", -1);
-    *pData = data;
-    return res;
+    return i2c_bus_read_bytes(i2c_handle, slave_addr, reg_add, p_data, 1);
 }
 
 static int i2c_init()
 {
     int res;
+    i2c_config_t es_i2c_cfg = {
+        .mode = I2C_MODE_MASTER,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = 100000
+    };
     res = get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
-    res = i2c_param_config(I2C_NUM_0, &es_i2c_cfg);
-    res |= i2c_driver_install(I2C_NUM_0, es_i2c_cfg.mode, 0, 0, 0);
-    ES_ASSERT(res, "i2c_init error", -1);
+    ES_ASSERT(res, "getting i2c pins error", -1);
+    i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
     return res;
 }
 
-esp_err_t es8374_write_reg(uint8_t regAdd, uint8_t data)
+esp_err_t es8374_write_reg(uint8_t reg_add, uint8_t data)
 {
-    return es_write_reg(ES8374_ADDR, regAdd, data);
+    return es_write_reg(ES8374_ADDR, reg_add, data);
 }
 
-int es8374_read_reg(uint8_t regAdd, uint8_t *regv)
+int es8374_read_reg(uint8_t reg_add, uint8_t *regv)
 {
     uint8_t regdata = 0xFF;
     uint8_t res = 0;
 
-    if (es_read_reg(ES8374_ADDR, regAdd, &regdata) == 0) {
+    if (es_read_reg(ES8374_ADDR, reg_add, &regdata) == 0) {
         *regv = regdata;
         return res;
     } else {
@@ -764,6 +732,7 @@ esp_err_t es8374_codec_init(audio_hal_codec_config_t *cfg)
 esp_err_t es8374_codec_deinit(void)
 {
     codec_init_flag = 0;
+    i2c_bus_delete(i2c_handle);
     return es8374_write_reg(0x00, 0x7F); // IC Reset and STOP
 }
 esp_err_t es8374_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)

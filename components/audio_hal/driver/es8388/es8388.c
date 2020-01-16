@@ -24,7 +24,7 @@
 
 #include <string.h>
 #include "esp_log.h"
-#include "driver/i2c.h"
+#include "i2c_bus.h"
 #include "es8388.h"
 #include "board_pins_config.h"
 
@@ -33,19 +33,13 @@
 #endif
 
 static const char *ES_TAG = "ES8388_DRIVER";
+static i2c_bus_handle_t i2c_handle;
 
 #define ES_ASSERT(a, format, b, ...) \
     if ((a) != 0) { \
         ESP_LOGE(ES_TAG, format, ##__VA_ARGS__); \
         return b;\
     }
-
-static i2c_config_t es_i2c_cfg = {
-    .mode = I2C_MODE_MASTER,
-    .sda_pullup_en = GPIO_PULLUP_ENABLE,
-    .scl_pullup_en = GPIO_PULLUP_ENABLE,
-    .master.clk_speed = 100000
-};
 
 audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE = {
     .audio_codec_initialize = es8388_init,
@@ -57,54 +51,28 @@ audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE = {
     .audio_codec_get_volume = es8388_get_voice_volume,
 };
 
-static esp_err_t es_write_reg(uint8_t slave_add, uint8_t reg_add, uint8_t data)
+static esp_err_t es_write_reg(uint8_t slave_addr, uint8_t reg_add, uint8_t data)
 {
-    esp_err_t res = ESP_OK;
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, slave_add, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, reg_add, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, data, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-    ES_ASSERT(res, "es_write_reg error", -1);
-    return res;
+    return i2c_bus_write_bytes(i2c_handle, slave_addr, &reg_add, sizeof(reg_add), &data, sizeof(data));
 }
 
-static esp_err_t es_read_reg(uint8_t reg_add, uint8_t *pData)
+static esp_err_t es_read_reg(uint8_t reg_add, uint8_t *p_data)
 {
-    uint8_t data;
-    esp_err_t res = ESP_OK;
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, ES8388_ADDR, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_write_byte(cmd, reg_add, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-
-    cmd = i2c_cmd_link_create();
-    res |= i2c_master_start(cmd);
-    res |= i2c_master_write_byte(cmd, ES8388_ADDR | 0x01, 1 /*ACK_CHECK_EN*/);
-    res |= i2c_master_read_byte(cmd, &data, 0x01/*NACK_VAL*/);
-    res |= i2c_master_stop(cmd);
-    res |= i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-
-    ES_ASSERT(res, "es_read_reg error", -1);
-    *pData = data;
-    return res;
+    return i2c_bus_read_bytes(i2c_handle, ES8388_ADDR, reg_add, p_data, 1);
 }
 
 static int i2c_init()
 {
     int res;
-    get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
-    res = i2c_param_config(I2C_NUM_0, &es_i2c_cfg);
-    res |= i2c_driver_install(I2C_NUM_0, es_i2c_cfg.mode, 0, 0, 0);
-    ES_ASSERT(res, "i2c_init error", -1);
+    i2c_config_t es_i2c_cfg = {
+        .mode = I2C_MODE_MASTER,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = 100000
+    };
+    res = get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
+    ES_ASSERT(res, "getting i2c pins error", -1);
+    i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
     return res;
 }
 
@@ -262,7 +230,7 @@ esp_err_t es8388_deinit(void)
 {
     int res = 0;
     res = es_write_reg(ES8388_ADDR, ES8388_CHIPPOWER, 0xFF);  //reset and stop es8388
-    i2c_driver_delete(I2C_NUM_0);
+    i2c_bus_delete(i2c_handle);
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     headphone_detect_deinit();
 #endif
