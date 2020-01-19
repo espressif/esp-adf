@@ -110,6 +110,24 @@ static int i2s_dac_data_scale(int bits, uint8_t *sBuff, uint32_t len)
     return 0;
 }
 
+static int i2s_stream_clear_dma_buffer(audio_element_handle_t self)
+{
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    int index = i2s->config.i2s_config.dma_buf_count;
+    uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
+    AUDIO_MEM_CHECK(TAG, buf, return ESP_ERR_NO_MEM);
+    if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+        memset(buf, 0x80, i2s->config.i2s_config.dma_buf_len * 4);
+    }
+    while (index--) {
+        audio_element_output(self, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4);
+    }
+    if (buf) {
+        free(buf);
+    }
+    return ESP_OK;
+}
+
 static esp_err_t _i2s_open(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
@@ -156,20 +174,9 @@ static esp_err_t _i2s_destroy(audio_element_handle_t self)
 static esp_err_t _i2s_close(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
-    int index = i2s->config.i2s_config.dma_buf_count;
-    size_t bytes_written = 0;
-    uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
-
-    AUDIO_MEM_CHECK(TAG, buf, return ESP_ERR_NO_MEM);
-    if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
-        memset(buf, 0x80, i2s->config.i2s_config.dma_buf_len * 4);
-    }
-
-    while (index--) {
-        i2s_write(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, &bytes_written, portMAX_DELAY);
-    }
-    if (buf) {
-        free(buf);
+    esp_err_t ret = i2s_stream_clear_dma_buffer(self);
+    if (ret != ESP_OK) {
+        return ret;
     }
     i2s->is_open = false;
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
@@ -207,19 +214,8 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
 static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
-    audio_element_info_t info;
     size_t bytes_written = 0;
-    audio_element_getinfo(self, &info);
-    if (info.channels == 1) {
-        i2s_mono_fix(info.bits, (uint8_t *)buffer, len);
-    }
-    if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
-        i2s_dac_data_scale(info.bits, (uint8_t *)buffer, len);
-    }
     i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
-    audio_element_getinfo(self, &info);
-    info.byte_pos += bytes_written;
-    audio_element_setinfo(self, &info);
     return bytes_written;
 }
 
@@ -227,7 +223,6 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
 {
     int r_size = audio_element_input(self, in_buffer, in_len);
     int w_size = 0;
-    size_t bytes_written = 0;
     if (r_size == AEL_IO_TIMEOUT) {
         i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
         if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
@@ -245,21 +240,24 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
             alc_volume_setup_process(in_buffer, r_size, i2s_info.channels, i2s->volume_handle, i2s->volume);
         }
         audio_element_multi_output(self, in_buffer, r_size, 0);
-        w_size = audio_element_output(self, in_buffer, r_size);
-    } else {
-        i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
-        int index = i2s->config.i2s_config.dma_buf_count;
-        uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
-        AUDIO_MEM_CHECK(TAG, buf, return ESP_FAIL);
-
+        // Fix output by I2S only
+        audio_element_info_t info;
+        audio_element_getinfo(self, &info);
+        if (info.channels == 1) {
+            i2s_mono_fix(info.bits, (uint8_t *)in_buffer, r_size);
+        }
         if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
-            memset(buf, 0x80, i2s->config.i2s_config.dma_buf_len * 4);
+            i2s_dac_data_scale(info.bits, (uint8_t *)in_buffer, r_size);
         }
-        while (index--) {
-            i2s_write(i2s->config.i2s_port, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4, &bytes_written, portMAX_DELAY);
-        }
-        if (buf) {
-            free(buf);
+        w_size = audio_element_output(self, in_buffer, r_size);
+
+        audio_element_getinfo(self, &info);
+        info.byte_pos += w_size;
+        audio_element_setinfo(self, &info);
+    } else {
+        esp_err_t ret = i2s_stream_clear_dma_buffer(self);
+        if (ret != ESP_OK) {
+            return ret;
         }
         w_size = r_size;
     }
