@@ -163,6 +163,7 @@ typedef struct {
     int                 out_rb_size;      /*!< Output ringbuffer size */
     void                *data;            /*!< User context */
     const char          *tag;             /*!< Element tag */
+    bool                stack_in_ext;     /*!< Try to allocate stack in external memory */
     int                 multi_in_rb_num;  /*!< The number of multiple input ringbuffer */
     int                 multi_out_rb_num; /*!< The number of multiple output ringbuffer */
 } audio_element_cfg_t;
