@@ -1,4 +1,5 @@
 set(COMPONENT_ADD_INCLUDEDIRS ./include
+                            ./driver/ac101
                             ./driver/es8388
                             ./driver/es8374
                             ./driver/es8311
@@ -19,6 +20,7 @@ set(COMPONENT_SRCS ./audio_hal.c
                     ./driver/es8374/es8374.c
                     ./driver/es8311/es8311.c
                     ./driver/es7243/es7243.c
+					./driver/ac101/ac101.c
                     ./driver/zl38063/zl38063.c
                     ./driver/zl38063/api_lib/vprocTwolf_access.c
                     ./driver/zl38063/api_lib/vproc_common.c
