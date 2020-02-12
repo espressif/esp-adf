@@ -1,0 +1,15 @@
+menu "My Audio Board"
+
+choice CUSTOMER_AUDIO_BOARD
+    prompt "My audio board"
+    default MY_BOARD_V1_0
+    help
+        Select an audio board to use with the ESP-ADF
+
+config MY_BOARD_V1_0
+    bool "My board v1.0"
+
+endchoice
+
+endmenu
+
