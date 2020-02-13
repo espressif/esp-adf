@@ -151,6 +151,7 @@ void app_main(void)
                     case AEL_STATE_FINISHED :
                         ESP_LOGI(TAG, "[ * ] Rewinding audio pipeline");
                         audio_pipeline_stop(pipeline);
+                        audio_pipeline_wait_for_stop(pipeline);
                         adf_music_mp3_pos = 0;
                         audio_pipeline_resume(pipeline);
                         break;
