@@ -7,6 +7,3 @@
 [submodule "components/esp-sr"]
 	path = components/esp-sr
 	url = https://github.com/espressif/esp-sr.git
-[submodule "micropython_adf/micropython"]
-	path = micropython_adf/micropython
-	url = https://github.com/micropython/micropython.git
