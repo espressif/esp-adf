@@ -57,7 +57,8 @@ static char *TAG = "IS31";
 static esp_err_t is31fl3216_write_reg(is31fl3216_handle_t handle, is31fl3216_reg_t regAddr, uint8_t *data, uint8_t data_num)
 {
     IS31_PARAM_CHECK(NULL != data);
-    esp_err_t ret = i2c_bus_write_bytes(I2C_MASTER_NUM, IS31FL3216_ADDRESS | IS31FL3216_WRITE_BIT, (uint8_t *)&regAddr, 1, data, data_num);
+    is31fl3216_dev_t *dev = (is31fl3216_dev_t *) handle;
+    esp_err_t ret = i2c_bus_write_bytes(dev->bus, IS31FL3216_ADDRESS | IS31FL3216_WRITE_BIT, (uint8_t *)&regAddr, 1, data, data_num);
     return ret;
 }
 
@@ -280,6 +281,7 @@ esp_err_t is31fl3216_reset(is31fl3216_handle_t handle)
     if (ret) {
         return ret;
     }
+
     ret = is31fl3216_write_reg(handle, IS31FL3216_REG_LED_EFFECT, &dat, 1);
     if (ret) {
         return ret;

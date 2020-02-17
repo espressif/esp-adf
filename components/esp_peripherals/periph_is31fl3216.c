@@ -349,7 +349,7 @@ static esp_err_t _is31fl3216_init(esp_periph_handle_t self)
     periph_is31fl3216_t *is31fl3216 = esp_periph_get_data(self);
     esp_err_t ret = ESP_OK;
     is31fl3216_ch_disable(is31fl3216->handle, IS31FL3216_CH_ALL);
-    is31_leds_duty((void *)is31fl3216, 0, IS31FL3216_CH_ALL);
+    is31_leds_duty(is31fl3216->handle, 0, IS31FL3216_CH_ALL);
     xTaskCreate(is31fl3216_run_task, "is31fl3216_run_task", IS31FL3216_TASK_STACK_SIZE, (void *)self, IS31FL3216_TASK_PRIORITY, NULL);
     if (ret) {
         ESP_LOGE(TAG, "Failed to initialize is31fl3216");
