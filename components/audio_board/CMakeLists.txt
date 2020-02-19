@@ -51,4 +51,13 @@ set(COMPONENT_SRCS
 )
 endif()
 
+if (CONFIG_ESP32_CORVO_DU1906_BOARD)
+message(STATUS "Current board name is " CONFIG_ESP32_CORVO_DU1906_BOARD)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_corvo_du1906)
+set(COMPONENT_SRCS
+./esp32_corvo_du1906/board.c
+./esp32_corvo_du1906/board_pins_config.c
+)
+endif()
+
 register_component()

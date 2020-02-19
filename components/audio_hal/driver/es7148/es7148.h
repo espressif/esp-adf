@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ * Copyright (c) 2020 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,10 +22,9 @@
  *
  */
 
-#ifndef _ES7243_H_
-#define _ES7243_H_
+#ifndef __ES7148_H__
+#define __ES7148_H__
 
-#include "esp_err.h"
 #include "audio_hal.h"
 
 #ifdef __cplusplus
@@ -33,39 +32,43 @@ extern "C" {
 #endif
 
 /**
- * @brief Initialize ES7243 adc chip
+ * @brief Initialize es7148 chip
  *
- * @param codec_cfg configuration of ES7243
- *
- * @return
- *     - ESP_OK
- *     - ESP_FAIL
- */
-esp_err_t es7243_adc_init(audio_hal_codec_config_t *codec_cfg);
-
-/**
- * @brief Deinitialize ES7243 adc chip
+ * @param cfg configuration of es7148
  *
  * @return
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t es7243_adc_deinit(void);
-
+esp_err_t es7148_codec_init(audio_hal_codec_config_t *cfg);
 /**
- * @brief Control ES7243 adc chip
+ * @brief Deinitialize es7148 chip
  *
- * @param mode adc mode
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t es7148_codec_deinit(void);
+/**
+ * The functions es7148_ctrl_state and es7148_config_i2s are not used by this driver.
+ * They are kept here to maintain the uniformity and convenience of the interface
+ * of the ADF project.
+ * These settings for es7148 are burned in firmware and configuration files.
+ * Default i2s configuration: 48000Hz, 16bit, Left-Right channels.
+ * Use resampling to be compatible with different file types.
+ *
+ * @brief Control es7148 chip
+ *
+ * @param mode codec mode
  * @param ctrl_state start or stop decode or encode progress
  *
  * @return
  *     - ESP_FAIL Parameter error
  *     - ESP_OK   Success
  */
-esp_err_t es7243_adc_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);
-
+esp_err_t es7148_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);
 /**
- * @brief Configure ES7243 adc mode and I2S interface
+ * @brief Configure es7148 codec mode and I2S interface
  *
  * @param mode codec mode
  * @param iface I2S config
@@ -74,51 +77,40 @@ esp_err_t es7243_adc_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ct
  *     - ESP_FAIL Parameter error
  *     - ESP_OK   Success
  */
-esp_err_t es7243_adc_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
+esp_err_t es7148_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
 
 /**
- * @brief  Set mute
+ * @brief mute or unmute the codec
  *
- * @param mute  true, false
+ * @param mute:  true, false
  *
  * @return
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t es7243_adc_set_voice_mute(bool mute);
+esp_err_t es7148_codec_set_voice_mute(bool mute);
 
 /**
- * @brief  Set adc gain
+ * @brief  Set voice volume
  *
- * @param volume  value of gain (0~100)
+ * @param volume:  voice volume (0~100)
  *
  * @return
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t es7243_adc_set_voice_volume(int volume);
+esp_err_t es7148_codec_set_voice_volume(int volume);
 
 /**
- * @brief Get adc gain
+ * @brief Get voice volume
  *
- * @param[out] *volume:  value of gain (0~100)
+ * @param[out] *volume:  voice volume (0~100)
  *
  * @return
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t es7243_adc_get_voice_volume(int *volume);
-
-/**
- * @brief Set adc I2C address
- *
- * @param[in] addr:  value of I2C address
- *
- * @return
- *     - ESP_OK
- *     - ESP_FAIL
- */
-esp_err_t es7243_adc_set_addr(int addr);
+esp_err_t es7148_codec_get_voice_volume(int *volume);
 
 #ifdef __cplusplus
 }

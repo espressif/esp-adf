@@ -50,6 +50,7 @@ typedef enum {
  */
 typedef enum {
     WIFI_SERV_STA_UNKNOWN,
+    WIFI_SERV_STA_COM_ERROR,
     WIFI_SERV_STA_AUTH_ERROR,
     WIFI_SERV_STA_AP_NOT_FOUND,
     WIFI_SERV_STA_BY_USER,
