@@ -64,7 +64,7 @@ static esp_err_t es_write_reg(uint8_t slave_addr, uint8_t reg_add, uint8_t data)
 
 static esp_err_t es_read_reg(uint8_t slave_addr, uint8_t reg_add, uint8_t *p_data)
 {
-    return i2c_bus_read_bytes(i2c_handle, slave_addr, reg_add, p_data, 1);
+    return i2c_bus_read_bytes(i2c_handle, slave_addr, &reg_add, sizeof(reg_add), p_data, 1);
 }
 
 static int i2c_init()
