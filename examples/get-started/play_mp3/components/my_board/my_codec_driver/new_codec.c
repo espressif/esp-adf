@@ -44,13 +44,14 @@ audio_hal_func_t AUDIO_NEW_CODEC_DEFAULT_HANDLE = {
     .audio_codec_get_volume = new_codec_get_voice_volume,
 };
 
-static bool new_codec_initialized()
+bool new_codec_initialized()
 {
     return codec_init_flag;
 }
 
 esp_err_t new_codec_init(audio_hal_codec_config_t *cfg)
 {
+    ESP_LOGI(TAG, "new_codec init");
     return ESP_OK;
 }
 
