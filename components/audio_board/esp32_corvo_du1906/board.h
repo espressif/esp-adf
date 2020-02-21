@@ -35,6 +35,10 @@
 extern "C" {
 #endif
 
+extern audio_hal_func_t AUDIO_CODEC_TAS5805M_DEFAULT_HANDLE;
+extern audio_hal_func_t AUDIO_CODEC_ES7148_DEFAULT_HANDLE;
+extern audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE;
+
 /**
  * @brief Audio board handle
  */
@@ -108,10 +112,24 @@ audio_board_handle_t audio_board_get_handle(void);
  *
  * @param audio_board The handle of audio board
  *
- * @return  0       success,
- *          others  fail
+ * @return  ESP_OK,      success
+ *          others,      fail
  */
 esp_err_t audio_board_deinit(audio_board_handle_t audio_board);
+
+/**
+ * @brief Get the ws2812 gpio pin
+ *
+ * @return  GPIO pin
+ */
+int8_t get_ws2812_gpio_pin(void);
+
+/**
+ * @brief Get the number of ws2812
+ *
+ * @return  number of ws2812
+ */
+int get_ws2812_num(void);
 
 #ifdef __cplusplus
 }

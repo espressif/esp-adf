@@ -44,6 +44,7 @@
 #include "periph_gpio_isr.h"
 #include "periph_is31fl3216.h"
 #include "periph_spiffs.h"
+#include "periph_ws2812.h"
 #include "board.h"
 
 static const char *TAG = "ESP_PERIPH_TEST";
@@ -535,6 +536,43 @@ static void periph_touch_pad_test(void)
     TEST_ASSERT_FALSE(esp_periph_set_destroy(set));
 }
 
+static void periph_ws2812_test(void)
+{
+    ESP_LOGI(TAG, "Set up peripherals handle");
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
+    TEST_ASSERT_NOT_NULL(set);
+
+    periph_ws2812_cfg_t cfg = {
+        .gpio_num = GPIO_NUM_3,
+        .led_num = 2,
+    };
+    esp_periph_handle_t handle = periph_ws2812_init(&cfg);
+    TEST_ASSERT_FALSE(esp_periph_start(set, handle));
+
+    periph_ws2812_ctrl_cfg_t *control_cfg = malloc(sizeof(periph_ws2812_ctrl_cfg_t) * cfg.led_num);
+
+    control_cfg[0].color = LED2812_COLOR_RED;
+    control_cfg[0].mode = PERIPH_WS2812_BLINK;
+    control_cfg[0].loop = 50;
+    control_cfg[0].time_off_ms = 100;
+    control_cfg[0].time_on_ms = 1000;
+
+    control_cfg[1].color = LED2812_COLOR_BLUE;
+    control_cfg[1].mode = PERIPH_WS2812_ONE;
+    control_cfg[1].loop = 50;
+    control_cfg[1].time_off_ms = 2000;
+    control_cfg[1].time_on_ms = 2000;
+
+    TEST_ASSERT_FALSE(periph_ws2812_control(handle, control_cfg, NULL));
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+
+    ESP_LOGI(TAG, "Quit test, release all resources");
+    TEST_ASSERT_FALSE(esp_periph_set_stop_all(set));
+    TEST_ASSERT_FALSE(esp_periph_set_destroy(set));
+    free(control_cfg);
+}
+
 TEST_CASE("touch pad test", "[peripherals]")
 {
     periph_touch_pad_test();
@@ -668,3 +706,11 @@ TEST_CASE("[memory leak test] [touch]", "[peripherals]")
     }
 }
 
+TEST_CASE("[memory leak test] [ws2812]", "[peripherals]")
+{
+    int test_count = TEST_PERIPHERALS_MEMORY_LEAK_TIMES;
+    while (test_count--) {
+        printf("-------Residual times: %d -------\n", test_count);
+        periph_ws2812_test();
+    }
+}

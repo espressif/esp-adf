@@ -29,11 +29,14 @@
 #include "periph_sdcard.h"
 #include "led_indicator.h"
 #include "periph_adc_button.h"
+#include "led_bar_ws2812.h"
+#include "display_service.h"
 #include "es7243.h"
 
 static const char *TAG = "AUDIO_BOARD";
 
-static audio_board_handle_t board_handle = 0;
+static audio_board_handle_t board_handle;
+
 
 audio_board_handle_t audio_board_init(void)
 {
@@ -79,8 +82,25 @@ audio_hal_handle_t audio_board_adc_init(void)
 
 display_service_handle_t audio_board_led_init(void)
 {
-    // TODO
-    return NULL;
+    led_bar_ws2812_handle_t led = led_bar_ws2812_init(get_ws2812_gpio_pin(),  get_ws2812_num());
+    AUDIO_NULL_CHECK(TAG, led, return NULL);
+    display_service_config_t display = {
+        .based_cfg = {
+            .task_stack = 0,
+            .task_prio  = 0,
+            .task_core  = 0,
+            .task_func  = NULL,
+            .service_start = NULL,
+            .service_stop = NULL,
+            .service_destroy = NULL,
+            .service_ioctl = led_bar_ws2812_pattern,
+            .service_name = "DISPLAY_serv",
+            .user_data = NULL,
+        },
+        .instance = led,
+    };
+
+    return display_service_create(&display);
 }
 
 esp_err_t audio_board_key_init(esp_periph_set_handle_t set)

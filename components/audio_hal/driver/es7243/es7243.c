@@ -36,7 +36,7 @@
 
 static char *TAG = "DRV7243";
 static i2c_bus_handle_t i2c_handle;
-static int es7243_addr = 0x22;
+static int es7243_addr = 0x26;
 
 audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE = {
     .audio_codec_initialize = es7243_adc_init,

@@ -38,9 +38,8 @@
 #define SDCARD_INTR_GPIO          GPIO_NUM_34
 
 
-extern audio_hal_func_t AUDIO_CODEC_TAS5805M_DEFAULT_HANDLE;
-extern audio_hal_func_t AUDIO_CODEC_ES7148_DEFAULT_HANDLE;
-extern audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE;
+#define WS2812_LED_GPIO_PIN       3
+#define WS2812_LED_BAR_NUMBERS    2
 
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
@@ -54,7 +53,7 @@ extern audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE;
         },                                              \
 };
 
-#define INPUT_KEY_NUM     4
+#define INPUT_KEY_NUM            4
 
 #define INPUT_KEY_DEFAULT_INFO() {                      \
     {                                                   \

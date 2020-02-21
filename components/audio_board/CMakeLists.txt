@@ -57,6 +57,7 @@ list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_corvo_du1906)
 set(COMPONENT_SRCS
 ./esp32_corvo_du1906/board.c
 ./esp32_corvo_du1906/board_pins_config.c
+./esp32_corvo_du1906/du1906_bar_pattern.c
 )
 endif()
 

@@ -22,7 +22,6 @@
  *
  */
 
-#include <string.h>
 #include "esp_log.h"
 #include "es7148.h"
 #include "driver/gpio.h"
