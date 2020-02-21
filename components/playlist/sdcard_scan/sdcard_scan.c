@@ -83,7 +83,7 @@ static void scan_dir(sdcard_scan_cb_t save_url_cb, const char *path, int cur_dep
             }
             detect ++;
             for (int i = 0; i < filter_num; i++) {
-                if (strncmp(detect, file_extension[i], strlen(file_extension[i])) == 0) {
+                if (strcasecmp(detect, file_extension[i]) == 0) {
                     save_url_cb(user_data, file_url);
                     break;
                 }
