@@ -292,7 +292,7 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
                 break;
             }
         case ESP_AVRC_CT_CHANGE_NOTIFY_EVT: {
-                ESP_LOGD(TAG, "AVRC event notification: %d, param: %d", rc->change_ntf.event_id, rc->change_ntf.event_parameter);
+                // ESP_LOGD(TAG, "AVRC event notification: %u, param: %u", rc->change_ntf.event_id, rc->change_ntf.event_parameter);
                 break;
             }
         case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {

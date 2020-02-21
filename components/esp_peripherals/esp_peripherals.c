@@ -28,6 +28,7 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "rom/queue.h"
+#include "driver/gpio.h"
 #include "esp_log.h"
 #include "audio_event_iface.h"
 #include "audio_mutex.h"

@@ -23,11 +23,17 @@
  */
 
 #include <string.h>
+
 #include "esp_log.h"
-#include "audio_mem.h"
 #include "esp_wifi.h"
-#include "smart_config.h"
 #include "esp_wifi_setting.h"
+
+#include "audio_mem.h"
+#include "smart_config.h"
+
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#endif
 
 static char *TAG = "SMART_CONFIG";
 static esp_wifi_setting_handle_t sm_setting_handle;
@@ -36,6 +42,44 @@ typedef struct {
     smartconfig_type_t type;
 } smart_config_info;
 
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+static void smartconfg_cb(void *arg, esp_event_base_t event_base,
+    int32_t event_id, void *event_data)
+{
+    wifi_config_t sta_conf;
+    switch (event_id) {
+        case SC_EVENT_SCAN_DONE:
+            ESP_LOGI(TAG, "SC_EVENT_SCAN_DONE");
+            break;
+        case SC_EVENT_FOUND_CHANNEL:
+            ESP_LOGI(TAG, "SC_EVENT_FOUND_CHANNEL");
+            break;
+        case SC_EVENT_GOT_SSID_PSWD:
+            ESP_LOGI(TAG, "SC_EVENT_GOT_SSID_PSWD");
+            esp_wifi_disconnect();
+            smartconfig_event_got_ssid_pswd_t *evt = (smartconfig_event_got_ssid_pswd_t *)event_data;
+            memset(&sta_conf, 0x00, sizeof(sta_conf));
+            memcpy(sta_conf.sta.ssid, evt->ssid, sizeof(sta_conf.sta.ssid));
+            memcpy(sta_conf.sta.password, evt->password, sizeof(sta_conf.sta.password));
+            sta_conf.sta.bssid_set = evt->bssid_set;
+            if (sta_conf.sta.bssid_set == true) {
+                memcpy(sta_conf.sta.bssid, evt->bssid, sizeof(sta_conf.sta.bssid));
+            }
+            ESP_LOGE(TAG, "SSID=%s, PASS=%s", sta_conf.sta.ssid, sta_conf.sta.password);
+
+            if (sm_setting_handle) {
+                esp_wifi_setting_info_notify(sm_setting_handle, &sta_conf);
+            }
+            break;
+        case SC_EVENT_SEND_ACK_DONE:
+            ESP_LOGI(TAG, "SC_EVENT_SEND_ACK_DONE");
+            esp_smartconfig_stop();
+            break;
+    }
+}
+#endif
+#else
 static void smartconfg_cb(smartconfig_status_t status, void *pdata)
 {
     wifi_config_t sta_conf;
@@ -70,7 +114,7 @@ static void smartconfg_cb(smartconfig_status_t status, void *pdata)
         case SC_STATUS_LINK_OVER:
             ESP_LOGI(TAG, "SC_STATUS_LINK_OVER");
             if (pdata != NULL) {
-                uint8_t phone_ip[4] = {0};
+                uint8_t phone_ip[4] = { 0 };
                 memcpy(phone_ip, (const void *)pdata, 4);
                 ESP_LOGI(TAG, "Phone ip: %d.%d.%d.%d\n", phone_ip[0], phone_ip[1], phone_ip[2], phone_ip[3]);
             }
@@ -78,6 +122,7 @@ static void smartconfg_cb(smartconfig_status_t status, void *pdata)
             break;
     }
 }
+#endif
 
 static esp_err_t _smart_config_start(esp_wifi_setting_handle_t self)
 {
@@ -93,7 +138,16 @@ static esp_err_t _smart_config_start(esp_wifi_setting_handle_t self)
         ESP_LOGE(TAG, "esp_smartconfig_fast_mode fail");
         return ESP_FAIL;
     }
+
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
+    ret = esp_smartconfig_start(&cfg);
+    esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, &smartconfg_cb, NULL);
+#endif
+#else
     ret = esp_smartconfig_start(smartconfg_cb, 1);
+#endif
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "esp_smartconfig_start fail");
         return ESP_FAIL;
