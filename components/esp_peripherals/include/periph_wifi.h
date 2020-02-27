@@ -61,13 +61,31 @@ typedef enum {
 } periph_wifi_config_mode_t;
 
 /**
+ * @brief   The WPA2 enterprise peripheral configuration
+ */
+typedef struct {
+    bool          diasble_wpa2_e;       /*!< Disable wpa2 enterprise */
+    int           eap_method;           /*!< TLS: 0, PEAP: 1, TTLS: 2 */
+    char          *ca_pem_start;        /*!< binary wpa2 ca pem start */
+    char          *ca_pem_end;          /*!< binary wpa2 ca pem end */
+    char          *wpa2_e_cert_start;   /*!< binary wpa2 cert start */
+    char          *wpa2_e_cert_end;     /*!< binary wpa2 cert end */
+    char          *wpa2_e_key_start;    /*!< binary wpa2 key start */
+    char          *wpa2_e_key_end;      /*!< binary wpa2 key end */
+    const char    *eap_id;              /*!< Identity in phase 1 of EAP procedure */
+    const char    *eap_username;        /*!< Username for EAP method (PEAP and TTLS)  */    
+    const char    *eap_password;        /*!< Password for EAP method (PEAP and TTLS) */
+} periph_wpa2_enterprise_cfg_t;
+
+/**
  * @brief The Wi-Fi peripheral configuration
  */
 typedef struct {
-    bool    disable_auto_reconnect;   /*!< Disable Wi-Fi auto reconnect */
-    int     reconnect_timeout_ms;     /*!< The reconnect timeout after disconnected from Wi-Fi network */
-    const   char *ssid;               /*!< SSID of target AP */
-    const   char *password;           /*!< password of target AP */
+    bool                              disable_auto_reconnect;   /*!< Disable Wi-Fi auto reconnect */
+    int                               reconnect_timeout_ms;     /*!< The reconnect timeout after disconnected from Wi-Fi network */
+    const char                        *ssid;                    /*!< SSID of target AP */
+    const char                        *password;                /*!< password of target AP */
+    periph_wpa2_enterprise_cfg_t      wpa2_e_cfg;               /*!< wpa2 enterprise config */
 } periph_wifi_cfg_t;
 
 /**
