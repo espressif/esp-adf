@@ -279,7 +279,7 @@ esp_err_t periph_wifi_config_wait_done(esp_periph_handle_t periph, TickType_t ti
     VALIDATE_WIFI(periph, ESP_FAIL);
     periph_wifi_handle_t periph_wifi = (periph_wifi_handle_t)esp_periph_get_data(periph);
     EventBits_t wificonfig_bit = xEventGroupWaitBits(periph_wifi->state_event,
-        SMARTCONFIG_DONE_BIT | SMARTCONFIG_ERROR_BIT, false, true, tick_to_wait);
+        SMARTCONFIG_DONE_BIT | SMARTCONFIG_ERROR_BIT, false, false, tick_to_wait);
 
     if (wificonfig_bit & SMARTCONFIG_DONE_BIT) {
         return ESP_OK;
