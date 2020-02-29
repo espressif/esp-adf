@@ -295,7 +295,9 @@ static void wifi_reconnect_timer(xTimerHandle tmr)
 {
     esp_periph_handle_t periph = (esp_periph_handle_t)pvTimerGetTimerID(tmr);
     esp_periph_stop_timer(periph);
-    esp_wifi_connect();
+    if (periph_wifi->disable_auto_reconnect != true) {
+        esp_wifi_connect();
+    }
 }
 
 #if defined(ESP_IDF_VERSION)
