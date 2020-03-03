@@ -202,7 +202,7 @@ static esp_err_t es8311_write_reg(uint8_t reg_addr, uint8_t data)
 static int es8311_read_reg(uint8_t reg_addr)
 {
     uint8_t data;
-    i2c_bus_read_bytes(i2c_handle, ES8311_ADDR, reg_addr, &data, 1);
+    i2c_bus_read_bytes(i2c_handle, ES8311_ADDR, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
     return (int)data;
 }
 

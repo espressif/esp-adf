@@ -74,19 +74,20 @@ esp_err_t i2c_bus_write_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int 
 esp_err_t i2c_bus_write_data(i2c_bus_handle_t bus, int addr, uint8_t *data, int datalen);
 
 /**
- * @brief Write data to I2C bus
+ * @brief Read bytes to I2C bus
  *
  * @param bus        I2C bus handle
  * @param addr       The address of the device
  * @param reg        The register of the device
+ * @param regLen     The length of register
  * @param outdata    The outdata pointer
- * @param len        The length of outdata
+ * @param datalen        The length of outdata
  *
  * @return
  *     - NULL Fail
  *     - Others Success
  */
-esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, int reg, uint8_t *outdata, int len);
+esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int reglen, uint8_t *outdata, int datalen);
 
 /**
  * @brief Delete and release the I2C bus object
