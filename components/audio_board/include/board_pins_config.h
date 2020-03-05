@@ -27,6 +27,8 @@
 
 #include "driver/i2c.h"
 #include "driver/i2s.h"
+#include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
 #include "driver/spi_slave.h"
@@ -72,12 +74,13 @@ esp_err_t get_i2s_pins(i2s_port_t port, i2s_pin_config_t *i2s_config);
 esp_err_t get_spi_pins(spi_bus_config_t *spi_config, spi_device_interface_config_t *spi_device_interface_config);
 
 /**
- * @brief Set i2s mclk output pin
+ * @brief Enables i2s mclk output pin
  *
  * @note GPIO1 and GPIO3 default are UART pins.
  *
- * @param i2s_num       i2s port index
- * @param gpio_num      gpio number index, only support GPIO0, GPIO1 and GPIO3.
+ * @param i2s_num           i2s port index
+ * @param i2s_config        i2s configuration
+ * @param mclk_gpio_num     mclk gpio number index (only support GPIO0, GPIO1 and GPIO3 with I2S peripheral, others are supported via ledc component)
 
  * @return
  *     - ESP_OK                     Success
@@ -85,7 +88,23 @@ esp_err_t get_spi_pins(spi_bus_config_t *spi_config, spi_device_interface_config
  *     - ESP_ERR_INVALID_STATE      Driver state error
  *     - ESP_ERR_ADF_NOT_SUPPORT    Not support
  */
-esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num);
+esp_err_t i2s_mclk_gpio_enable(i2s_port_t i2s_num, i2s_config_t i2s_config, gpio_num_t mclk_gpio_num);
+
+/**
+ * @brief Disables i2s mclk output pin
+ *
+ * @note GPIO1 and GPIO3 default are UART pins.
+ *
+ * @param i2s_num           i2s port index
+ * @param mclk_gpio_num     MCLK gpio number index
+
+ * @return
+ *     - ESP_OK                     Success
+ *     - ESP_ERR_INVALID_ARG        Parameter error
+ *     - ESP_ERR_INVALID_STATE      Driver state error
+ *     - ESP_ERR_ADF_NOT_SUPPORT    Not support
+ */
+esp_err_t i2s_mclk_gpio_disable(i2s_port_t i2s_num, gpio_num_t mclk_gpio_num);
 
 /**
  * @brief  Get the gpio number for sdcard interrupt

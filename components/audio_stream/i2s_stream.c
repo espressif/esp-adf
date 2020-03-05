@@ -164,6 +164,7 @@ static esp_err_t _i2s_open(audio_element_handle_t self)
 static esp_err_t _i2s_destroy(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    i2s_mclk_gpio_disable(i2s->config.i2s_port, i2s->config.mclk_gpio_num);
     if (i2s->uninstall_drv) {
         i2s_driver_uninstall(i2s->config.i2s_port);
     }
@@ -279,6 +280,7 @@ esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bi
     i2s_info.sample_rates = rate;
     audio_element_setinfo(i2s_stream, &i2s_info);
 
+    i2s_mclk_gpio_enable(i2s->config.i2s_port, i2s->config.i2s_config, i2s->config.mclk_gpio_num);
     if (i2s_set_clk(i2s->config.i2s_port, rate, bits, ch) == ESP_FAIL) {
         ESP_LOGE(TAG, "i2s_set_clk failed, type = %d,port:%d", i2s->config.type, i2s->config.i2s_port);
         err = ESP_FAIL;
@@ -364,11 +366,15 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     if ((config->i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
         i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
     } else {
-        i2s_pin_config_t i2s_pin_cfg = {0};
-        get_i2s_pins(i2s->config.i2s_port, &i2s_pin_cfg);
-        i2s_set_pin(i2s->config.i2s_port, &i2s_pin_cfg);
+        if (i2s->config.i2s_pin_config.bck_io_num == GPIO_NUM_NC &&
+            i2s->config.i2s_pin_config.ws_io_num == GPIO_NUM_NC &&
+            i2s->config.i2s_pin_config.data_out_num == GPIO_NUM_NC &&
+            i2s->config.i2s_pin_config.data_in_num == GPIO_NUM_NC) {
+            get_i2s_pins(i2s->config.i2s_port, &i2s->config.i2s_pin_config);
+        }
+        i2s_set_pin(i2s->config.i2s_port, &i2s->config.i2s_pin_config);
     }
-    i2s_mclk_gpio_select(i2s->config.i2s_port, GPIO_NUM_0);
+    i2s_mclk_gpio_enable(i2s->config.i2s_port, i2s->config.i2s_config, i2s->config.mclk_gpio_num);
 
     return el;
 }

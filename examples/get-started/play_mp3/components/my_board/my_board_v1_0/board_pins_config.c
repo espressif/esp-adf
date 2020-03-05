@@ -24,12 +24,16 @@
 
 #include "esp_log.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include <string.h>
 #include "board.h"
 #include "audio_error.h"
 #include "audio_mem.h"
 
 static const char *TAG = "MY_BOARD_V1_0";
+
+static ledc_timer_config_t   mclk_ledc_timer_config = {0};
+static ledc_channel_config_t mclk_ledc_channel_config = {0};
 
 esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
 {
@@ -85,38 +89,83 @@ esp_err_t get_spi_pins(spi_bus_config_t *spi_config, spi_device_interface_config
     return ESP_OK;
 }
 
-esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
+esp_err_t i2s_mclk_gpio_enable(i2s_port_t i2s_num, gpio_num_t mclk_gpio_num)
 {
     if (i2s_num >= I2S_NUM_MAX) {
         ESP_LOGE(TAG, "Does not support i2s number(%d)", i2s_num);
         return ESP_ERR_INVALID_ARG;
     }
-    if (gpio_num != GPIO_NUM_0 && gpio_num != GPIO_NUM_1 && gpio_num != GPIO_NUM_3) {
-        ESP_LOGE(TAG, "Only support GPIO0/GPIO1/GPIO3, gpio_num:%d", gpio_num);
+    if (!GPIO_IS_VALID_OUTPUT_GPIO(mclk_gpio_num)) {
+        ESP_LOGE(TAG, "Invalid OUTPUT_GPIO mclk_gpio_num:%d", mclk_gpio_num);
         return ESP_ERR_INVALID_ARG;
     }
-    ESP_LOGI(TAG, "I2S%d, MCLK output by GPIO%d", i2s_num, gpio_num);
-    if (i2s_num == I2S_NUM_0) {
-        if (gpio_num == GPIO_NUM_0) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-            WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
-        } else if (gpio_num == GPIO_NUM_1) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
-            WRITE_PERI_REG(PIN_CTRL, 0xF0F0);
-        } else {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
-            WRITE_PERI_REG(PIN_CTRL, 0xFF00);
+    if (mclk_gpio_num == GPIO_NUM_0 || mclk_gpio_num == GPIO_NUM_1 || mclk_gpio_num == GPIO_NUM_3) {
+        if (i2s_num == I2S_NUM_0) {
+            if (mclk_gpio_num == GPIO_NUM_0) {
+                PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+                WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
+            } else if (mclk_gpio_num == GPIO_NUM_1) {
+                PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
+                WRITE_PERI_REG(PIN_CTRL, 0xF0F0);
+            } else {
+                PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
+                WRITE_PERI_REG(PIN_CTRL, 0xFF00);
+            }
+        } else if (i2s_num == I2S_NUM_1) {
+            if (mclk_gpio_num == GPIO_NUM_0) {
+                PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+                WRITE_PERI_REG(PIN_CTRL, 0xFFFF);
+            } else if (mclk_gpio_num == GPIO_NUM_1) {
+                PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
+                WRITE_PERI_REG(PIN_CTRL, 0xF0FF);
+            } else {
+                PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
+                WRITE_PERI_REG(PIN_CTRL, 0xFF0F);
+            }
         }
-    } else if (i2s_num == I2S_NUM_1) {
-        if (gpio_num == GPIO_NUM_0) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-            WRITE_PERI_REG(PIN_CTRL, 0xFFFF);
-        } else if (gpio_num == GPIO_NUM_1) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
-            WRITE_PERI_REG(PIN_CTRL, 0xF0FF);
-        } else {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
-            WRITE_PERI_REG(PIN_CTRL, 0xFF0F);
+        ESP_LOGI(TAG, "I2S%d, MCLK output by GPIO%d", i2s_num, mclk_gpio_num);
+    } else {
+        periph_module_enable(PERIPH_LEDC_MODULE);
+
+        mclk_ledc_timer_config.duty_resolution = LEDC_TIMER_2_BIT;
+        mclk_ledc_timer_config.freq_hz = (i2s_config.sample_rate*256);
+        mclk_ledc_timer_config.speed_mode = LEDC_HIGH_SPEED_MODE;
+        mclk_ledc_timer_config.timer_num = LEDC_TIMER_1;
+        mclk_ledc_timer_config.clk_cfg = LEDC_AUTO_CLK;
+        esp_err_t err = ledc_timer_config(&mclk_ledc_timer_config);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "ledc_timer_config failed, rc=%x", err);
+            return err;
+        }
+        mclk_ledc_channel_config.gpio_num = mclk_gpio_num;
+        mclk_ledc_channel_config.speed_mode = LEDC_HIGH_SPEED_MODE;
+        mclk_ledc_channel_config.channel = LEDC_CHANNEL_1;
+        mclk_ledc_channel_config.intr_type = LEDC_INTR_DISABLE;
+        mclk_ledc_channel_config.timer_sel = LEDC_TIMER_1;
+        mclk_ledc_channel_config.duty = (1<<mclk_ledc_timer_config.duty_resolution)/2;
+        mclk_ledc_channel_config.hpoint = 0;
+        err = ledc_channel_config(&mclk_ledc_channel_config);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "ledc_channel_config failed, rc=%x", err);
+            return err;
+        }
+        ESP_LOGI(TAG, "I2S%d, MCLK output by GPIO%d (ledch=%d,ledtmr=%d)", i2s_num, mclk_gpio_num, mclk_ledc_channel_config.channel, mclk_ledc_channel_config.timer_sel);
+    }
+    return ESP_OK;
+}
+
+esp_err_t i2s_mclk_gpio_disable(i2s_port_t i2s_num, gpio_num_t mclk_gpio_num)
+{
+    if (mclk_gpio_num != GPIO_NUM_0 && mclk_gpio_num != GPIO_NUM_1 && mclk_gpio_num != GPIO_NUM_3) {
+        esp_err_t err = ledc_set_duty(mclk_ledc_channel_config.speed_mode, mclk_ledc_channel_config.channel, 0);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "ledc_set_duty failed, rc=%x", err);
+            return err;
+        }
+        err = ledc_update_duty(mclk_ledc_channel_config.speed_mode, mclk_ledc_channel_config.channel);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "ledc_update_duty failed, rc=%x", err);
+            return err;
         }
     }
     return ESP_OK;

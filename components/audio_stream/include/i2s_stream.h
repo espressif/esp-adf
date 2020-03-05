@@ -25,6 +25,7 @@
 #ifndef _I2S_STREAM_WRITER_H_
 #define _I2S_STREAM_WRITER_H_
 
+#include "driver/gpio.h"
 #include "driver/i2s.h"
 #include "audio_common.h"
 #include "audio_error.h"
@@ -41,6 +42,8 @@ typedef struct {
     audio_stream_type_t     type;               /*!< Type of stream */
     i2s_config_t            i2s_config;         /*!< I2S driver configurations */
     i2s_port_t              i2s_port;           /*!< I2S driver hardware port */
+    i2s_pin_config_t        i2s_pin_config;     /*!< I2S pin configurations */
+    gpio_num_t              mclk_gpio_num;      /*!< MCLK gpio number */
     bool                    use_alc;            /*!< It is a flag for ALC. If use ALC, the value is true. Or the value is false */
     int                     volume;             /*!< The volume of audio input data will be set. */
     int                     out_rb_size;        /*!< Size of output ringbuffer */
@@ -76,6 +79,13 @@ typedef struct {
         .tx_desc_auto_clear = true,                                             \
     },                                                                          \
     .i2s_port = 0,                                                              \
+    .i2s_pin_config = {                                                         \
+        .bck_io_num = GPIO_NUM_NC,                                              \
+        .ws_io_num = GPIO_NUM_NC,                                               \
+        .data_out_num = GPIO_NUM_NC,                                            \
+        .data_in_num = GPIO_NUM_NC,                                             \
+    },                                                                          \
+    .mclk_gpio_num = GPIO_NUM_0,                                                \
     .use_alc = false,                                                           \
     .volume = 0,                                                                \
     .multi_out_num = 0,                                                         \
