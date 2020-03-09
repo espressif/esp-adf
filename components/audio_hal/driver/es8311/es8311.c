@@ -38,7 +38,7 @@
  */
 #define FROM_MCLK_PIN       0
 #define FROM_SCLK_PIN       1
-#define MCLK_SOURCE         0
+#define MCLK_SOURCE         1   /* 0 select MCLK   1 select BCLK */
 
 /*
  * to define whether to reverse the clock
@@ -202,7 +202,7 @@ static esp_err_t es8311_write_reg(uint8_t reg_addr, uint8_t data)
 static int es8311_read_reg(uint8_t reg_addr)
 {
     uint8_t data;
-    i2c_bus_read_bytes(i2c_handle, ES8311_ADDR, reg_addr, &data, 1);
+    i2c_bus_read_bytes(i2c_handle, ES8311_ADDR, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
     return (int)data;
 }
 
@@ -410,6 +410,10 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
                 break;
             default:
                 break;
+        }
+
+        if (MCLK_SOURCE == FROM_SCLK_PIN) {
+            datmp = 3;     /* DIG_MCLK = LRCK * 256 = BCLK * 8 */
         }
         regv |= (datmp) << 3;
         ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG02, regv);

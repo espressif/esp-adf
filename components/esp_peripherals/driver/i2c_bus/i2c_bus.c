@@ -121,7 +121,7 @@ esp_err_t i2c_bus_write_data(i2c_bus_handle_t bus, int addr, uint8_t *data, int 
     return ret;
 }
 
-esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, int reg, uint8_t *outdata, int len)
+esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int reglen, uint8_t *outdata, int datalen)
 {
     I2C_BUS_CHECK(bus != NULL, "Handle error", ESP_FAIL);
     i2c_bus_t *p_bus = (i2c_bus_t *) bus;
@@ -133,7 +133,7 @@ esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, int reg, uint8_t *o
     cmd = i2c_cmd_link_create();
     ret |= i2c_master_start(cmd);
     ret |= i2c_master_write_byte(cmd, addr, I2C_ACK_CHECK_EN);
-    ret |= i2c_master_write_byte(cmd, reg,  I2C_ACK_CHECK_EN);
+    ret |= i2c_master_write(cmd, reg, reglen, I2C_ACK_CHECK_EN);
     ret |= i2c_master_stop(cmd);
     ret |= i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
@@ -142,10 +142,10 @@ esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, int reg, uint8_t *o
     ret |= i2c_master_start(cmd);
     ret |= i2c_master_write_byte(cmd, addr | 0x01, I2C_ACK_CHECK_EN);
 
-    for (int i = 0; i < len - 1; i++) {
+    for (int i = 0; i < datalen - 1; i++) {
         ret |= i2c_master_read_byte(cmd, &outdata[i], 0);
     }
-    ret |= i2c_master_read_byte(cmd, &outdata[len - 1], 1);
+    ret |= i2c_master_read_byte(cmd, &outdata[datalen - 1], 1);
 
     ret = i2c_master_stop(cmd);
     ret = i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
