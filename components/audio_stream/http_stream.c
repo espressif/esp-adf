@@ -543,6 +543,45 @@ _stream_redirect:
     return ESP_OK;
 }
 
+static esp_err_t _http_close(audio_element_handle_t self)
+{
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
+    ESP_LOGD(TAG, "_http_close");
+    while (http->is_open) {
+        http->is_open = false;
+        if (http->stream_type != AUDIO_STREAM_WRITER) {
+            break;
+        }
+        if (dispatch_hook(self, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
+            break;
+        }
+        esp_http_client_fetch_headers(http->client);
+
+        if (dispatch_hook(self, HTTP_STREAM_FINISH_REQUEST, NULL, 0) < 0) {
+            break;
+        }
+    }
+    if (http->enable_playlist_parser) {
+        _playlist_clear(http->playlist);
+        _playlist_clear(http->variant_playlist);
+        http->is_variant_playlist = false;
+        http->is_playlist_resolved = false;
+    }
+    if (http->client) {
+        esp_http_client_close(http->client);
+        esp_http_client_cleanup(http->client);
+        http->client = NULL;
+    }
+    if (AEL_STATE_PAUSED != audio_element_get_state(self) && (errno == 0)) {
+        audio_element_report_pos(self);
+        audio_element_info_t info = {0};
+        audio_element_getinfo(self, &info);
+        info.byte_pos = 0;
+        audio_element_setinfo(self, &info);
+    }
+    return ESP_OK;
+}
+
 static int _http_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
@@ -559,7 +598,18 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         }
     }
     if (rlen <= 0) {
-        ESP_LOGW(TAG, "No more data,errno:%d, total_bytes:%llu", errno, info.byte_pos);
+        ESP_LOGW(TAG, "No more data,errno:%d, total_bytes:%llu, rlen = %d", errno, info.byte_pos, rlen);
+        if (errno != 0) {  // Error occuered, reset connection 
+            ESP_LOGW(TAG, "Got %d errno, reconnect to peer", errno);
+            esp_err_t ret = ESP_OK;
+            ret |= _http_close(self);
+            ret |= _http_open(self);
+            if (ret != ESP_OK) {
+                ESP_LOGE(TAG, "Fail to reset connection, ret = %d", ret);
+                return ret;
+            }
+            return errno;
+        }
         if (http->auto_connect_next_track) {
             if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
                 ESP_LOGE(TAG, "Failed to process user callback");
@@ -603,51 +653,17 @@ static int _http_process(audio_element_handle_t self, char *in_buffer, int in_le
     int r_size = audio_element_input(self, in_buffer, in_len);
     int w_size = 0;
     if (r_size > 0) {
-        w_size = audio_element_output(self, in_buffer, r_size);
-        audio_element_multi_output(self, in_buffer, r_size, 0);
+        if (errno != 0) {
+            errno = 0; // reset error number
+            return r_size;
+        } else {
+            w_size = audio_element_output(self, in_buffer, r_size);
+            audio_element_multi_output(self, in_buffer, r_size, 0);
+        }
     } else {
         w_size = r_size;
     }
     return w_size;
-}
-
-static esp_err_t _http_close(audio_element_handle_t self)
-{
-    http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
-    ESP_LOGD(TAG, "_http_close");
-    while (http->is_open) {
-        http->is_open = false;
-        if (http->stream_type != AUDIO_STREAM_WRITER) {
-            break;
-        }
-        if (dispatch_hook(self, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
-            break;
-        }
-        esp_http_client_fetch_headers(http->client);
-
-        if (dispatch_hook(self, HTTP_STREAM_FINISH_REQUEST, NULL, 0) < 0) {
-            break;
-        }
-    }
-    if (http->enable_playlist_parser) {
-        _playlist_clear(http->playlist);
-        _playlist_clear(http->variant_playlist);
-        http->is_variant_playlist = false;
-        http->is_playlist_resolved = false;
-    }
-    if (http->client) {
-        esp_http_client_close(http->client);
-        esp_http_client_cleanup(http->client);
-        http->client = NULL;
-    }
-    if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
-        audio_element_report_pos(self);
-        audio_element_info_t info = {0};
-        audio_element_getinfo(self, &info);
-        info.byte_pos = 0;
-        audio_element_setinfo(self, &info);
-    }
-    return ESP_OK;
 }
 
 static esp_err_t _http_destroy(audio_element_handle_t self)
