@@ -24,6 +24,7 @@ set(COMPONENT_SRCS ./esp_peripherals.c
                 ./periph_spiffs.c
                 ./periph_touch.c
                 ./periph_wifi.c
+                ./periph_ws2812.c
                 ./lib/sdcard/sdcard.c
                 ./lib/button/button.c
                 ./lib/touch/touch.c

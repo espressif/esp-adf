@@ -17,7 +17,34 @@ config ESP_LYRATD_MSC_V2_2_BOARD
     bool "ESP32-LyraTD-MSC V2.2"
 config ESP_LYRAT_MINI_V1_1_BOARD
     bool "ESP32-Lyrat-Mini V1.1"
+config ESP32_CORVO_DU1906_BOARD
+    bool "ESP32_CORVO_DU1906"
 
+endchoice
+
+choice ESP32_CORVO_DU1906_DAC
+    prompt "ESP32 Corvo DU1906 Board DAC chip"
+    depends on ESP32_CORVO_DU1906_BOARD
+    default ESP32_CORVO_DU1906_CODEC_TAS5805M
+    help
+        Select DAC chip to use on ESP32_CORVO_DU1906 board
+
+config ESP32_CORVO_DU1906_DAC_TAS5805M
+    bool "ESP32_CORVO_DU1906_DAC_TAS5805M"
+config ESP32_CORVO_DU1906_DAC_ES7148
+    bool "ESP32_CORVO_DU1906_DAC_ES7148"
+
+endchoice
+
+choice ESP32_CORVO_DU1906_ADC
+    prompt "ESP32 Corvo DU1906 Board ADC chip"
+    depends on ESP32_CORVO_DU1906_BOARD
+    default ESP32_CORVO_DU1906_ADC_ES7243
+    help
+        Select ADC chip to use on ESP32_CORVO_DU1906 board
+
+config ESP32_CORVO_DU1906_ADC_ES7243
+    bool "ESP32_CORVO_DU1906_ADC_ES7243"
 endchoice
 
 endmenu

@@ -144,7 +144,7 @@ static esp_err_t wifi_event_cb(void *ctx, system_event_t *event)
                 case WIFI_REASON_AUTH_FAIL:
                 case WIFI_REASON_ASSOC_FAIL:
                 case WIFI_REASON_HANDSHAKE_TIMEOUT:
-                    ESP_LOGI(TAG, "STA Auth Error");
+                    ESP_LOGI(TAG, "STA Auth Error, reason:%d", event->event_info.disconnected.reason);
                     serv->reason = WIFI_SERV_STA_AUTH_ERROR;
                     break;
                 case WIFI_REASON_NO_AP_FOUND:
@@ -152,6 +152,8 @@ static esp_err_t wifi_event_cb(void *ctx, system_event_t *event)
                     serv->reason = WIFI_SERV_STA_AP_NOT_FOUND;
                     break;
                 default:
+                    ESP_LOGI(TAG, "STA Error, reason:%d", event->event_info.disconnected.reason);
+                    serv->reason = WIFI_SERV_STA_COM_ERROR;
                     break;
             }
             break;
@@ -204,19 +206,24 @@ static void wifi_task(void *pvParameters)
     periph_service_handle_t serv_handle = (periph_service_handle_t)pvParameters;
     wifi_service_t *serv = periph_service_get_data(serv_handle);
     wifi_config_t wifi_cfg = {0};
-    if (ESP_OK == esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg)) {
-        if (wifi_cfg.sta.ssid[0] != 0) {
-            ESP_LOGI(TAG, "Connect to stored Wi-Fi SSID:%s", wifi_cfg.sta.ssid);
-        }
-    } else {
-        ESP_LOGW(TAG, "No wifi SSID stored!");
-    }
     wifi_task_msg_t wifi_msg = {0};
     bool task_run = true;
     periph_service_event_t cb_evt = {0};
     wifi_setting_item_t *item;
+    wifi_config_t *stored_ssid = NULL;
 
     wifi_sta_setup(pvParameters);
+    if (ESP_OK == esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg)) {
+        stored_ssid = audio_calloc(1, sizeof(wifi_config_t));
+        if (stored_ssid) {
+            memcpy(stored_ssid, &wifi_cfg, sizeof(wifi_config_t));
+            ESP_LOGI(TAG, "Got the stored SSID:%s", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
+        } else {
+            ESP_LOGW(TAG, "Got the stored SSID:%s, but not used", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
+        }
+    } else {
+        ESP_LOGW(TAG, "No Wi-Fi SSID stored!");
+    }
     configure_wifi_sta_mode(&wifi_cfg);
     ESP_ERROR_CHECK(esp_wifi_start());
 
@@ -285,8 +292,20 @@ static void wifi_task(void *pvParameters)
                 periph_service_callback(serv_handle, &cb_evt);
             } else if (wifi_msg.msg_type == WIFI_SERV_EVENT_TYPE_CMD) {
                 if (wifi_msg.type == WIFI_SERV_CMD_CONNECT) {
-                    ESP_LOGI(TAG, "WIFI_SERV_CMD_CONNECT");
-                    memcpy(&wifi_cfg, &serv->info, sizeof(wifi_config_t));
+                    if (stored_ssid && (stored_ssid->sta.ssid[0] != 0)) {
+                        memcpy(&wifi_cfg, stored_ssid, sizeof(wifi_config_t));
+                        ESP_LOGI(TAG, "Found a stored SSID:%s", wifi_cfg.sta.ssid);
+                        audio_free(stored_ssid);
+                        stored_ssid = NULL;
+                    } else if (serv->info.sta.ssid[0] != 0) {
+                        memcpy(&wifi_cfg, &serv->info, sizeof(wifi_config_t));
+                    } else {
+                        if ((wifi_cfg.sta.ssid[0] == 0)) {
+                            ESP_LOGW(TAG, "WIFI_SERV_CMD_CONNECT failed, SSID:%s", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
+                            continue;
+                        }
+                    }
+                    ESP_LOGI(TAG, "WIFI_SERV_CMD_CONNECT,SSID:%s", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
                     configure_wifi_sta_mode(&wifi_cfg);
                     ESP_ERROR_CHECK(esp_wifi_connect());
                 } else if (wifi_msg.type == WIFI_SERV_CMD_DISCONNECT) {
@@ -341,6 +360,10 @@ static void wifi_task(void *pvParameters)
     esp_timer_delete(serv->retry_timer);
     serv->setting_timer = NULL;
     serv->retry_timer = NULL;
+    if (stored_ssid) {
+        audio_free(stored_ssid);
+        stored_ssid = NULL;
+    }
     xEventGroupSetBits(serv->sync_evt, WIFI_TASK_DESTROY_BIT);
     vTaskDelete(NULL);
 }
