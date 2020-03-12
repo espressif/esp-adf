@@ -74,11 +74,8 @@ esp_err_t led_bar_ws2812_pattern(void *handle, int pat, int value)
     if (pat == DISPLAY_PATTERN_VOLUME) {
         periph_ws2812_ctrl_cfg_t *cfg = (h->control_cfg + h->led_num * pat);
         int on_n = (value * h->led_num) / 100; // volume range is 0-100
-        int off_n = h->led_num - on_n;
-        cfg += on_n;
-        for (int i = 0; i < off_n; ++i) {
-            cfg->color = LED2812_COLOR_BLACK;
-            cfg->color = LED2812_COLOR_BLACK;
+        for (int i = 0; i < on_n; ++i) {
+            cfg->color = LED2812_COLOR_WHITE;
             cfg ++;
         }
     }
