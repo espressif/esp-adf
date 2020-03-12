@@ -67,6 +67,7 @@ typedef struct {
     long long                tick;
     uint32_t                 loop;
     bool                     is_on;
+    bool                     is_set;
 } periph_ws2812_state_t;
 
 typedef struct {
@@ -216,13 +217,18 @@ static void ws2812_timer_handler(TimerHandle_t tmr)
                     periph_ws2812->color[i] = st[i].color;
                     ws2812_set_colors(periph_ws2812);
                     st[i].is_on = false;
+                    st[i].loop = 0;
                 }
                 break;
 
             case PERIPH_WS2812_BLINK:
+                if (st[i].is_set == false) {
+                    continue;
+                }
                 if (st[i].loop == 0) {
                     periph_ws2812->color[i] = LED2812_COLOR_BLACK;
                     ws2812_set_colors(periph_ws2812);
+                    st[i].is_set = false;
                 }
 
                 if (st[i].is_on && audio_sys_get_time_ms() - st[i].tick > st[i].time_off_ms) {
@@ -244,9 +250,13 @@ static void ws2812_timer_handler(TimerHandle_t tmr)
                 break;
 
             case PERIPH_WS2812_FADE:
+                if (st[i].is_set == false) {
+                    continue;
+                }
                 if (st[i].loop == 0) {
                     periph_ws2812->color[i] = LED2812_COLOR_BLACK;
                     ws2812_set_colors(periph_ws2812);
+                    st[i].is_set = false;
                     continue;
                 }
 
@@ -294,6 +304,7 @@ static void ws2812_timer_handler(TimerHandle_t tmr)
                 break;
         }
     }
+    
 }
 
 static esp_err_t _ws2812_run(esp_periph_handle_t periph, audio_event_iface_msg_t *msg)
@@ -415,6 +426,7 @@ esp_err_t periph_ws2812_control(esp_periph_handle_t periph, periph_ws2812_ctrl_c
         periph_ws2812->state[i].tick = audio_sys_get_time_ms();
         periph_ws2812->state[i].loop = control_cfg[i].loop;
         periph_ws2812->state[i].is_on = true;
+        periph_ws2812->state[i].is_set = true;
         periph_ws2812->state[i].mode = control_cfg[i].mode;
     }
 
