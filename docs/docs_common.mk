@@ -62,7 +62,7 @@ clean:
 # Note: This is intended to help developers who generate the documentation on their local machine. Read The Docs uses
 # the requirements.txt file directly and calls sphinx also directly without the use of the makefile!
 check_python_packages:
-	$(IDF_PATH)/tools/check_python_dependencies.py -r $(IDF_PATH)/docs/requirements.txt
+	$(IDF_PATH)/tools/check_python_dependencies.py -r $(ADF_PATH)/docs/requirements.txt
 
 html: | check_python_packages
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
