@@ -87,8 +87,8 @@ static esp_err_t tas5805m_transmit_registers(const tas5805m_cfg_reg_t *conf_buf,
             case CFG_END_1:
                 if (CFG_END_2 == conf_buf[i + 1].offset && CFG_END_3 == conf_buf[i + 2].offset) {
                     ESP_LOGI(TAG, "End of tms5805m reg: %d\n", i);
-                    break;
                 }
+                break;
             default:
                 ret = i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, (unsigned char *)(&conf_buf[i].offset), 1, (unsigned char *)(&conf_buf[i].value), 1);
                 break;

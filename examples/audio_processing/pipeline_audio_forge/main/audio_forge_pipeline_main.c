@@ -80,7 +80,7 @@ void app_main(void)
             .gain = {0, MUSIC_GAIN_DB},
             .transit_time = TRANSMITTIME,
     };
-    audio_forge_src_info_t source_info[NUMBER_SOURCE_FILE] = {NULL};
+    audio_forge_src_info_t source_info[NUMBER_SOURCE_FILE] = {0};
     audio_forge_downmix_t downmix_info[NUMBER_SOURCE_FILE];
     for (int i = 0; i < NUMBER_SOURCE_FILE; i++) {
         source_info[i] = source_information;
@@ -178,7 +178,7 @@ void app_main(void)
         /* Stop when the last pipeline element (fatfs_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
             && msg.source == (void *) audio_forge
-            && msg.cmd == AEL_MSG_CMD_REPORT_STATUS 
+            && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
             && (((int)msg.data == AEL_STATUS_STATE_STOPPED)
                 || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
             break;

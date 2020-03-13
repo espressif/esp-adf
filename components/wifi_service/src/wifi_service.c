@@ -136,6 +136,10 @@ static esp_err_t wifi_event_cb(void *ctx, system_event_t *event)
             wifi_serv_state_send(serv->wifi_serv_que, WIFI_SERV_EVENT_CONNECTED, 0, 0, 0);
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
+            if (serv->reason == WIFI_SERV_STA_BY_USER) {
+                ESP_LOGI(TAG, "SYSTEM_EVENT_STA_DISCONNECTED, reason is WIFI_SERV_STA_BY_USER");
+                break;
+            }
             wifi_serv_state_send(serv->wifi_serv_que, WIFI_SERV_EVENT_DISCONNECTED, 0, 0, 0);
             switch (event->event_info.disconnected.reason) {
                 case WIFI_REASON_AUTH_EXPIRE:

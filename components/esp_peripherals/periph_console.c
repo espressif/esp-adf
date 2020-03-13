@@ -32,7 +32,7 @@
 #include "esp_log.h"
 #include "esp_console.h"
 #include "esp_vfs_dev.h"
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "argtable3/argtable3.h"
 #include "periph_console.h"
 

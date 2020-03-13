@@ -240,9 +240,9 @@ static esp_err_t wifi_set(esp_periph_handle_t periph, int argc, char *argv[])
     wifi_config_t w_config = {0};
     switch (argc) {
         case 2:
-            memcpy(w_config.sta.password, argv[1], strlen(argv[1]));
+            memcpy(w_config.sta.password, argv[1], sizeof(w_config.sta.password));
         case 1:
-            memcpy(w_config.sta.ssid, argv[0], strlen(argv[0]));
+            memcpy(w_config.sta.ssid, argv[0], sizeof(w_config.sta.ssid));
             esp_wifi_disconnect();
             ESP_LOGI(TAG, "Connecting Wi-Fi, SSID:\"%s\" PASSWORD:\"%s\"", w_config.sta.ssid, w_config.sta.password);
             esp_wifi_set_config(WIFI_IF_STA, &w_config);
