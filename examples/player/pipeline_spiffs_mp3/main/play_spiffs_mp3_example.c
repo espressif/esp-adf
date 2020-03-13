@@ -64,7 +64,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.0] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     pipeline = audio_pipeline_init(&pipeline_cfg);
-    AUDIO_NULL_CHECK(TAG, pipeline, return NULL);
+    AUDIO_NULL_CHECK(TAG, pipeline, return);
 
     ESP_LOGI(TAG, "[3.1] Create spiffs stream to read data from sdcard");
     spiffs_stream_cfg_t flash_cfg = SPIFFS_STREAM_CFG_DEFAULT();

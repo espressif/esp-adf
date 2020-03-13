@@ -30,7 +30,7 @@
 #include "freertos/ringbuf.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-#include "rom/queue.h"
+#include "sys/queue.h"
 
 #include "esp_log.h"
 #include "errno.h"

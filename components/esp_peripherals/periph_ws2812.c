@@ -26,7 +26,7 @@
 #include "freertos/timers.h"
 #include <driver/gpio.h>
 #include <driver/rmt.h>
-#include <esp_intr.h>
+#include "esp_intr_alloc.h"
 #include "esp_log.h"
 #include "audio_mem.h"
 #include "audio_sys.h"

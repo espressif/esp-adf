@@ -31,7 +31,7 @@
 
 #include "esp_log.h"
 #include "driver/gpio.h"
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "button.h"
 
 #ifdef periph_tick_get

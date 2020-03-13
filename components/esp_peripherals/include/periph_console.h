@@ -25,7 +25,7 @@
 #ifndef _PERIPH_CONSOLE_H_
 #define _PERIPH_CONSOLE_H_
 
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "audio_error.h"
 #include "esp_peripherals.h"
 

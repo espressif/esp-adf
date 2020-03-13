@@ -376,8 +376,8 @@ void duer_app_init(void)
     disp_serv = audio_board_led_init();
 
     wifi_config_t sta_cfg = {0};
-    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, strlen(CONFIG_WIFI_SSID));
-    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, strlen(CONFIG_WIFI_PASSWORD));
+    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, sizeof(sta_cfg.sta.ssid));
+    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, sizeof(sta_cfg.sta.password));
     wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
     cfg.evt_cb = wifi_service_cb;
     cfg.cb_ctx = NULL;

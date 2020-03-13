@@ -23,7 +23,7 @@
  */
 
 #include <string.h>
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "audio_error.h"
 #include "audio_mem.h"
 #include "dram_list.h"

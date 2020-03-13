@@ -28,7 +28,7 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "esp_log.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"

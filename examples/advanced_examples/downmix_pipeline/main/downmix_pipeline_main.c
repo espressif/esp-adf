@@ -64,11 +64,11 @@ void app_main(void)
             .gain = {0, MUSIC_GAIN_DB},
             .transit_time = TRANSMITTIME,
     };
-    esp_downmix_input_info_t source_information[NUMBER_SOURCE_FILE] = {NULL};
+    esp_downmix_input_info_t source_information[NUMBER_SOURCE_FILE] = {0};
     for(int i = 0; i < NUMBER_SOURCE_FILE; i++)
     {
        source_information[i] = source_info;
-    }    
+    }
     source_info_init(downmixer, source_information);
 
     ESP_LOGI(TAG, "[3.2] Create i2s stream to read audio data from codec chip");

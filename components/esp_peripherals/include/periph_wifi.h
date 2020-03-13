@@ -25,7 +25,7 @@
 #ifndef _DEV_WIFI_H_
 #define _DEV_WIFI_H_
 
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "audio_error.h"
 #include "audio_common.h"
 #include "esp_peripherals.h"

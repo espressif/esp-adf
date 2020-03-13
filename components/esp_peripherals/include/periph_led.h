@@ -25,7 +25,7 @@
 #ifndef _PERIPH_LED_H_
 #define _PERIPH_LED_H_
 
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "driver/ledc.h"
 #include "esp_err.h"
 #include "audio_common.h"
