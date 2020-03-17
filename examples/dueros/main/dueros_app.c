@@ -375,6 +375,12 @@ void duer_app_init(void)
     audio_board_sdcard_init(set);
     disp_serv = audio_board_led_init();
 
+    duer_audio_wrapper_init();
+    xTimerHandle retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
+                                     pdFALSE, NULL, retry_login_timer_cb);
+    duer_serv_handle = dueros_service_create();
+    audio_service_set_callback(duer_serv_handle, duer_callback, retry_login_timer);
+
     wifi_config_t sta_cfg = {0};
     strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, sizeof(sta_cfg.sta.ssid));
     strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, sizeof(sta_cfg.sta.password));
@@ -401,7 +407,6 @@ void duer_app_init(void)
     wifi_service_set_sta_info(wifi_serv, &sta_cfg);
     wifi_service_connect(wifi_serv);
 
-
     rec_config_t eng = DEFAULT_REC_ENGINE_CONFIG();
     eng.vad_off_delay_ms = 800;
     eng.wakeup_time_ms = 10 * 1000;
@@ -417,10 +422,4 @@ void duer_app_init(void)
     eng.support_encoding = false;
     eng.user_data = NULL;
     rec_engine_create(&eng);
-
-    xTimerHandle retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
-                                     pdFALSE, NULL, retry_login_timer_cb);
-    duer_serv_handle = dueros_service_create();
-    duer_audio_wrapper_init();
-    audio_service_set_callback(duer_serv_handle, duer_callback, retry_login_timer);
 }

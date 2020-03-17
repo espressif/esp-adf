@@ -161,7 +161,7 @@ static void bt_a2d_source_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param
             break;
         case ESP_A2D_MEDIA_CTRL_ACK_EVT:
             if (param->media_ctrl_stat.cmd == ESP_A2D_MEDIA_CTRL_CHECK_SRC_RDY &&
-                    param->media_ctrl_stat.status == ESP_A2D_MEDIA_CTRL_ACK_SUCCESS) {
+                param->media_ctrl_stat.status == ESP_A2D_MEDIA_CTRL_ACK_SUCCESS) {
                 esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
             }
             break;
@@ -216,7 +216,7 @@ audio_element_handle_t a2dp_stream_init(a2dp_stream_config_t *config)
     }
 
     cfg.task_stack = -1; // No need task
-    cfg.tag = "a2dp";
+    cfg.tag = "aadp";
 
     if (config->type == AUDIO_STREAM_READER) {
         // A2DP sink
@@ -265,16 +265,16 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
                 if (rc->conn_stat.connected) {
                     ESP_LOGD(TAG, "ESP_AVRC_CT_CONNECTION_STATE_EVT");
                     bt_key_act_sm_init();
-                } else if (0 == rc->conn_stat.connected){
+                } else if (0 == rc->conn_stat.connected) {
                     bt_key_act_sm_deinit();
                 }
 
                 ESP_LOGD(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
-                                         rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
+                         rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
                 break;
             }
         case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT: {
-                if(avrcp_conn_state) {
+                if (avrcp_conn_state) {
                     ESP_LOGD(TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
                     bt_key_act_param_t param;
                     memset(&param, 0, sizeof(bt_key_act_param_t));
@@ -355,7 +355,7 @@ static esp_err_t periph_bt_avrc_passthrough_cmd(esp_periph_handle_t periph, uint
 esp_err_t periph_bt_play(esp_periph_handle_t periph)
 {
     esp_err_t err = ESP_OK;
-    if(a2d_stream_type == AUDIO_STREAM_READER) {
+    if (a2d_stream_type == AUDIO_STREAM_READER) {
         err = periph_bt_avrc_passthrough_cmd(periph, ESP_AVRC_PT_CMD_PLAY);
     } else {
         err = esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_CHECK_SRC_RDY);
@@ -366,7 +366,7 @@ esp_err_t periph_bt_play(esp_periph_handle_t periph)
 esp_err_t periph_bt_pause(esp_periph_handle_t periph)
 {
     esp_err_t err = ESP_OK;
-    if(a2d_stream_type == AUDIO_STREAM_READER) {
+    if (a2d_stream_type == AUDIO_STREAM_READER) {
         err = periph_bt_avrc_passthrough_cmd(periph, ESP_AVRC_PT_CMD_PAUSE);
     } else {
         err = esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_SUSPEND);
@@ -377,7 +377,7 @@ esp_err_t periph_bt_pause(esp_periph_handle_t periph)
 esp_err_t periph_bt_stop(esp_periph_handle_t periph)
 {
     esp_err_t err = ESP_OK;
-    if(a2d_stream_type == AUDIO_STREAM_READER) {
+    if (a2d_stream_type == AUDIO_STREAM_READER) {
         err = periph_bt_avrc_passthrough_cmd(periph, ESP_AVRC_PT_CMD_STOP);
     } else {
         esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_STOP);
@@ -407,7 +407,7 @@ esp_err_t periph_bt_avrc_fast_forward(esp_periph_handle_t periph)
 
 esp_err_t periph_bt_discover(esp_periph_handle_t periph)
 {
-    if(a2d_stream_type == AUDIO_STREAM_READER) {
+    if (a2d_stream_type == AUDIO_STREAM_READER) {
         return esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
     }
     return ESP_OK;
