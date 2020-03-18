@@ -34,9 +34,11 @@
 
 static const char *TAG = "HLS_PLAYLIST";
 
-void hls_playlist_insert(playlist_t *playlist, char *track_uri, const char *host_uri)
+void hls_playlist_insert(playlist_t *playlist, char *track_uri)
 {
     track_t *track;
+    const char *host_uri = (const char *) playlist->host_uri;
+
     while (playlist->total_tracks > MAX_PLAYLIST_TRACKS) {
         track = STAILQ_FIRST(&playlist->tracks);
         if (track == NULL) {
@@ -121,5 +123,10 @@ void hls_playlist_clear(playlist_t *playlist)
         STAILQ_REMOVE(&playlist->tracks, track, track_, next);
         free(track->uri);
         free(track);
+    }
+
+    if (playlist->host_uri) {
+        free(playlist->host_uri);
+        playlist->host_uri = NULL;
     }
 }

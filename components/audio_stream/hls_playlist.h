@@ -46,6 +46,7 @@ typedef struct track_ {
 typedef STAILQ_HEAD(track_list, track_) track_list_t;
 
 typedef struct {
+    char            *host_uri;
     char            *data;
     int             index;
     int             remain;
@@ -53,12 +54,13 @@ typedef struct {
     track_list_t    tracks;
     int             total_tracks;
     int             content_length;
+    bool            is_incomplete;      /* Indicates if playlist is live stream and must be fetched again */
 } playlist_t;
 
 /**
  * @brief Insert a track into hls_playlist
  */
-void hls_playlist_insert(playlist_t *playlist, char *track_uri, const char *host_uri);
+void hls_playlist_insert(playlist_t *playlist, char *track_uri);
 
 /**
  * @brief Clear all the tracks from playlist

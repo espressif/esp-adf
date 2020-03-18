@@ -231,6 +231,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
     http->playlist->remain = 0;
     http->playlist->index = 0;
     http->playlist->total_read = 0;
+    http->playlist->host_uri = audio_strdup(uri);
     char *line = NULL;
     bool valid_playlist = false;
     bool is_playlist_uri = false;
@@ -242,7 +243,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
             if (!strncmp(line, "File", sizeof("File") - 1)) { //this line contains url
                 int i = 4;
                 while (line[i++] != '='); //Skip till '='
-                hls_playlist_insert(http->playlist, line + i, uri);
+                hls_playlist_insert(http->playlist, line + i);
             } else {
                 /* Ignore all other lines */
             }
@@ -258,7 +259,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
             continue;
         }
         if (strstr(line, "http") == (void *)line) {
-            hls_playlist_insert(http->playlist, line, uri);
+            hls_playlist_insert(http->playlist, line);
             valid_playlist = true;
             continue;
         }
@@ -287,7 +288,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         }
         is_playlist_uri = false;
 
-        hls_playlist_insert(http->playlist, line, uri);
+        hls_playlist_insert(http->playlist, line);
     }
     return valid_playlist ? ESP_OK : ESP_FAIL;
 }
