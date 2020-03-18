@@ -29,20 +29,11 @@
 extern "C" {
 #endif
 
-#include "audio_error.h"
-#include "audio_element.h"
-#include "audio_common.h"
+#include "esp_err.h"
+#include "stdbool.h"
 #include "sys/queue.h"
 
-#define MAX_PLAYLIST_TRACKS (128)
-#define MAX_PLAYLIST_KEEP_TRACK (18)
-
-typedef struct track_ {
-    char *uri;
-    bool is_played;
-    STAILQ_ENTRY(track_) next;
-} track_t;
-
+struct track_; // Forward declaration
 typedef STAILQ_HEAD(track_list, track_) track_list_t;
 
 typedef struct {
@@ -58,12 +49,32 @@ typedef struct {
 } playlist_t;
 
 /**
- * @brief Insert a track into hls_playlist
+ * @brief       Insert a track into hls_playlist
+ *
+ * @param       playlist playlist handle
+ * @param       track_uri Track URI to be inserted in playlist
+ *
  */
 void hls_playlist_insert(playlist_t *playlist, char *track_uri);
 
 /**
- * @brief Clear all the tracks from playlist
+ * @brief       Get next not-played track from playlist
+ *
+ * @param       playlist playlist handle
+ *
+ * @return
+ *      - NULL if no playable track
+ *      - Playable track
+ *
+ * @note        returned track must `not` be freed by application
+ */
+char *hls_playlist_get_next_track(playlist_t *playlist);
+
+/**
+ * @brief       Clear all the tracks from playlist
+ *
+ * @param       playlist playlist handle
+ *
  */
 void hls_playlist_clear(playlist_t *playlist);
 

@@ -34,6 +34,15 @@
 
 static const char *TAG = "HLS_PLAYLIST";
 
+#define MAX_PLAYLIST_TRACKS (128)
+#define MAX_PLAYLIST_KEEP_TRACKS (18)
+
+typedef struct track_ {
+    char *uri;
+    bool is_played;
+    STAILQ_ENTRY(track_) next;
+} track_t;
+
 void hls_playlist_insert(playlist_t *playlist, char *track_uri)
 {
     track_t *track;
@@ -50,7 +59,7 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
         free(track);
         playlist->total_tracks --;
     }
-    track = calloc(1, sizeof(track_t));
+    track = audio_calloc(1, sizeof(track_t));
     if (track == NULL) {
         return;
     }
@@ -116,6 +125,34 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
     playlist->total_tracks ++;
 }
 
+char *hls_playlist_get_next_track(playlist_t *playlist)
+{
+    track_t *track;
+    char *uri = NULL;
+
+    /* Find not played entry. */
+    STAILQ_FOREACH(track, &playlist->tracks, next) {
+        if (!track->is_played) {
+            track->is_played = true;
+            uri = track->uri;
+            break;
+        }
+    }
+
+    if (uri) {
+        /* Remove head entry if total_entries are > MAX_PLAYLIST_KEEP_TRACKS */
+        if (playlist->total_tracks > MAX_PLAYLIST_KEEP_TRACKS) {
+            track = STAILQ_FIRST(&playlist->tracks);
+            STAILQ_REMOVE_HEAD(&playlist->tracks, next);
+            free(track->uri);
+            free(track);
+            playlist->total_tracks--;
+        }
+    }
+
+    return uri;
+}
+
 void hls_playlist_clear(playlist_t *playlist)
 {
     track_t *track, *tmp;
@@ -129,4 +166,5 @@ void hls_playlist_clear(playlist_t *playlist)
         free(playlist->host_uri);
         playlist->host_uri = NULL;
     }
+    playlist->is_incomplete = false;
 }

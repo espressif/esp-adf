@@ -79,7 +79,6 @@ typedef struct {
     int                         task_stack;             /*!< Task stack size */
     int                         task_core;              /*!< Task running in core (0 or 1) */
     int                         task_prio;              /*!< Task priority (based on freeRTOS priority) */
-    bool                        stack_in_ext;           /*!< Try to allocate stack in external memory */
     http_stream_event_handle_t  event_handle;           /*!< The hook function for HTTP Stream */
     void                        *user_data;             /*!< User data context */
     bool                        auto_connect_next_track;/*!< connect next track without open/close */
@@ -127,6 +126,19 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config);
  */
 esp_err_t http_stream_next_track(audio_element_handle_t el);
 esp_err_t http_stream_restart(audio_element_handle_t el);
+
+/**
+ * @brief       Try to fetch the tracks again.
+ *
+ *              If this is live stream we will need to keep fetching URIs.
+ *
+ * @param       el  The http_stream element handle
+ *
+ * @return
+ *     - ESP_OK on success
+ *     - ESP_ERR_NOT_SUPPORTED if playlist is finished
+ */
+esp_err_t http_stream_fetch_again(audio_element_handle_t el);
 
 #ifdef __cplusplus
 }

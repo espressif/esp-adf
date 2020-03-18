@@ -252,6 +252,11 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
     }
 
     /* M3U8 playlist */
+    http->playlist->is_incomplete = true;
+
+#define ENDLIST_TAG "#EXT-X-ENDLIST"
+#define VARIANT_TAG "#EXT-X-STREAM-INF"
+
     while ((line = _client_read_line(http))) {
         ESP_LOGD(TAG, "Playlist line = %s", line);
         if (!valid_playlist && strcmp(line, "#EXTM3U") == 0) {
@@ -269,13 +274,17 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         if (!is_playlist_uri && strstr(line, "#EXTINF") == (void *)line) {
             is_playlist_uri = true;
             continue;
-        } else if (!is_playlist_uri && strstr(line, "#EXT-X-STREAM-INF") == (void *)line) {
+        } else if (!is_playlist_uri && strstr(line, VARIANT_TAG) == (void *)line) {
             /**
-             * As these are stream URIs we need to fetch thse periodically to keep live streaming.
-             * For now we handle it same as normal uri and exit.
+             * Non-standard attribute.
+             * There are multiple variants of audios. We do not support this for now.
              */
             is_playlist_uri = true;
             continue;
+        } else if (strstr(line, ENDLIST_TAG) == (void *)line) {
+            /* Got the ENDLIST_TAG, mark our playlist as complete and break! */
+            http->playlist->is_incomplete = false;
+            break;
         } else if (strncmp(line, "#", 1) == 0) {
             /**
              * Some other playlist field we don't support.
@@ -290,19 +299,19 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
 
         hls_playlist_insert(http->playlist, line);
     }
+
+    if (http->playlist->is_incomplete) {
+        ESP_LOGI(TAG, "Live stream URI. Need to be fetched again!");
+    }
+
     return valid_playlist ? ESP_OK : ESP_FAIL;
 }
 
-static track_t *_playlist_get_next_track(audio_element_handle_t self)
+static char *_playlist_get_next_track(audio_element_handle_t self)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     if (http->enable_playlist_parser && http->is_playlist_resolved) {
-        track_t *track;
-        STAILQ_FOREACH(track, &http->playlist->tracks, next) {
-            if (!track->is_played) {
-                return track;
-            }
-        }
+        return hls_playlist_get_next_track(http->playlist);
     }
     return NULL;
 }
@@ -312,7 +321,6 @@ static esp_err_t _http_open(audio_element_handle_t self)
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     esp_err_t err;
     char *uri = NULL;
-    track_t *track;
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
     ESP_LOGD(TAG, "_http_open");
@@ -324,8 +332,8 @@ static esp_err_t _http_open(audio_element_handle_t self)
 
 _stream_open_begin:
 
-    track = _playlist_get_next_track(self);
-    if (track == NULL) {
+    uri = _playlist_get_next_track(self);
+    if (uri == NULL) {
         if (http->is_playlist_resolved && http->enable_playlist_parser) {
             if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
                 ESP_LOGE(TAG, "Failed to process user callback");
@@ -334,8 +342,6 @@ _stream_open_begin:
             goto _stream_open_begin;
         }
         uri = audio_element_get_uri(self);
-    } else {
-        uri = track->uri;
     }
 
     if (uri == NULL) {
@@ -649,23 +655,6 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
 esp_err_t http_stream_next_track(audio_element_handle_t el)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
-
-    track_t *track = _playlist_get_next_track(el);
-    if (track) {
-        track->is_played = true;
-        ESP_LOGD(TAG, "Finish %s", track->uri);
-        if (http->playlist->total_tracks > MAX_PLAYLIST_KEEP_TRACK) {
-            STAILQ_REMOVE(&http->playlist->tracks, track, track_, next);
-            ESP_LOGD(TAG, "Remove %s", track->uri);
-            free(track->uri);
-            free(track);
-            http->playlist->total_tracks--;
-        }
-
-    } else {
-        ESP_LOGW(TAG, "there are no track");
-        return ESP_OK;
-    }
     audio_element_reset_state(el);
     audio_element_info_t info;
     audio_element_getinfo(el, &info);
@@ -681,24 +670,9 @@ esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el)
     audio_element_info_t info;
     audio_element_getinfo(el, &info);
     http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
-    track_t *track = _playlist_get_next_track(el);
+    char *track = _playlist_get_next_track(el);
     if (track) {
-        track->is_played = true;
-        ESP_LOGD(TAG, "Finish %s", track->uri);
-        if (http->playlist->total_tracks > MAX_PLAYLIST_KEEP_TRACK) {
-            STAILQ_REMOVE(&http->playlist->tracks, track, track_, next);
-            ESP_LOGD(TAG, "Remove %s", track->uri);
-            free(track->uri);
-            free(track);
-            http->playlist->total_tracks --;
-        }
-    } else {
-        return ESP_FAIL;
-    }
-    track = _playlist_get_next_track(el);
-
-    if (track) {
-        esp_http_client_set_url(http->client, track->uri);
+        esp_http_client_set_url(http->client, track);
         char *buffer = NULL;
         int post_len = esp_http_client_get_post_field(http->client, &buffer);
 redirection:
@@ -725,7 +699,17 @@ redirection:
 esp_err_t http_stream_fetch_again(audio_element_handle_t el)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
-    http->is_playlist_resolved = false;
+    if (!http->playlist->is_incomplete) {
+        ESP_LOGI(TAG, "Finished playing.");
+        return ESP_ERR_NOT_SUPPORTED;
+    } else {
+        ESP_LOGI(TAG, "Fetching again...");
+        http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+        esp_http_client_close(http->client);
+        http->client = NULL;
+        audio_element_set_uri(el, http->playlist->host_uri);
+        http->is_playlist_resolved = false;
+    }
     return ESP_OK;
 }
 
