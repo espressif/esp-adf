@@ -30,11 +30,11 @@
 #include "freertos/ringbuf.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-#include "sys/queue.h"
 
 #include "esp_log.h"
 #include "errno.h"
 #include "http_stream.h"
+#include "hls_playlist.h"
 #include "audio_mem.h"
 #include "audio_element.h"
 #include "esp_system.h"
@@ -43,26 +43,7 @@
 
 static const char *TAG = "HTTP_STREAM";
 #define MAX_PLAYLIST_LINE_SIZE (512)
-#define MAX_PLAYLIST_TRACKS (128)
-#define MAX_PLAYLIST_KEEP_TRACK (18)
 #define HTTP_STREAM_BUFFER_SIZE (2048)
-
-typedef struct track_ {
-    char *uri;
-    bool is_played;
-    STAILQ_ENTRY(track_) next;
-} track_t;
-
-typedef STAILQ_HEAD(track_list, track_) track_list_t;
-typedef struct {
-    char            *data;
-    int             index;
-    int             remain;
-    int             total_read;
-    track_list_t    tracks;
-    int             total_tracks;
-    int             content_length;
-} playlist_t;
 
 typedef struct http_stream {
     audio_stream_type_t             type;
@@ -221,86 +202,6 @@ static char *_client_read_line(http_stream_t *http)
     return line;
 }
 
-static void _insert_to_playlist(playlist_t *playlist, char *track_uri, const char *uri)
-{
-    track_t *track;
-    while (playlist->total_tracks > MAX_PLAYLIST_TRACKS) {
-        track = STAILQ_FIRST(&playlist->tracks);
-        if (track == NULL) {
-            break;
-        }
-        STAILQ_REMOVE(&playlist->tracks, track, track_, next);
-        ESP_LOGD(TAG, "Remove %s", track->uri);
-        free(track->uri);
-        free(track);
-        playlist->total_tracks --;
-    }
-    track = calloc(1, sizeof(track_t));
-    if (track == NULL) {
-        return;
-    }
-    if (strstr(track_uri, "http") == track_uri) { // Full URI
-        track->uri = audio_strdup(track_uri);
-    } else if (strstr(track_uri, "//") == track_uri) { // schemeless URI
-        if (strstr(uri, "https") == uri) {
-            asprintf(&track->uri, "https:%s", track_uri);
-        } else {
-            asprintf(&track->uri, "http:%s", track_uri);
-        }
-    } else if (strstr(track_uri, "/") == track_uri) { // Root uri
-        char *url = audio_strdup(uri);
-        if (url == NULL) {
-            return;
-        }
-        char *host = strstr(url, "//");
-        if (host == NULL) {
-            free(url);
-            return;
-        }
-        host += 2;
-        char *path = strstr(host, "/");
-        if (path == NULL) {
-            free(url);
-            return;
-        }
-        path[0] = 0;
-        asprintf(&track->uri, "%s%s", url, track_uri);
-        free(url);
-    } else { // Relative URI
-        char *url = audio_strdup(uri);
-        if (url == NULL) {
-            return;
-        }
-        char *pos = strrchr(url, '/'); // Search for last "/"
-        if (pos == NULL) {
-            free(url);
-            return;
-        }
-        pos[1] = '\0';
-        asprintf(&track->uri, "%s%s", url, track_uri);
-        free(url);
-    }
-    if (track->uri == NULL) {
-        ESP_LOGE(TAG, "Error insert URI to playlist");
-        free(track);
-        return;
-    }
-
-    track_t *find = NULL;
-    STAILQ_FOREACH(find, &playlist->tracks, next) {
-        if (strcmp(find->uri, track->uri) == 0) {
-            ESP_LOGW(TAG, "URI exist");
-            free(track->uri);
-            free(track);
-            return;
-        }
-    }
-
-    ESP_LOGD(TAG, "INSERT %s", track->uri);
-    STAILQ_INSERT_TAIL(&playlist->tracks, track, next);
-    playlist->total_tracks ++;
-}
-
 static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
 {
     audio_element_info_t info;
@@ -341,7 +242,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
             if (!strncmp(line, "File", sizeof("File") - 1)) { //this line contains url
                 int i = 4;
                 while (line[i++] != '='); //Skip till '='
-                _insert_to_playlist(http->playlist, line + i, uri);
+                hls_playlist_insert(http->playlist, line + i, uri);
             } else {
                 /* Ignore all other lines */
             }
@@ -357,7 +258,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
             continue;
         }
         if (strstr(line, "http") == (void *)line) {
-            _insert_to_playlist(http->playlist, line, uri);
+            hls_playlist_insert(http->playlist, line, uri);
             valid_playlist = true;
             continue;
         }
@@ -386,7 +287,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         }
         is_playlist_uri = false;
 
-        _insert_to_playlist(http->playlist, line, uri);
+        hls_playlist_insert(http->playlist, line, uri);
     }
     return valid_playlist ? ESP_OK : ESP_FAIL;
 }
@@ -403,16 +304,6 @@ static track_t *_playlist_get_next_track(audio_element_handle_t self)
         }
     }
     return NULL;
-}
-
-static void _playlist_clear(playlist_t *playlist)
-{
-    track_t *track, *tmp;
-    STAILQ_FOREACH_SAFE(track, &playlist->tracks, next, tmp) {
-        STAILQ_REMOVE(&playlist->tracks, track, track_, next);
-        free(track->uri);
-        free(track);
-    }
 }
 
 static esp_err_t _http_open(audio_element_handle_t self)
@@ -524,9 +415,9 @@ _stream_redirect:
         && (esp_http_client_get_status_code(http->client) != 206)) {
         ESP_LOGE(TAG, "Invalid HTTP stream, status code = %d", status_code);
         if (http->enable_playlist_parser) {
-            _playlist_clear(http->playlist);
+            hls_playlist_clear(http->playlist);
             http->is_playlist_resolved = false;
-            _playlist_clear(http->variant_playlist);
+            hls_playlist_clear(http->variant_playlist);
             http->is_variant_playlist = false;
         }
         return ESP_FAIL;
@@ -562,8 +453,8 @@ static esp_err_t _http_close(audio_element_handle_t self)
         }
     }
     if (http->enable_playlist_parser) {
-        _playlist_clear(http->playlist);
-        _playlist_clear(http->variant_playlist);
+        hls_playlist_clear(http->playlist);
+        hls_playlist_clear(http->variant_playlist);
         http->is_variant_playlist = false;
         http->is_playlist_resolved = false;
     }
@@ -599,7 +490,7 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
     }
     if (rlen <= 0) {
         ESP_LOGW(TAG, "No more data,errno:%d, total_bytes:%llu, rlen = %d", errno, info.byte_pos, rlen);
-        if (errno != 0) {  // Error occuered, reset connection 
+        if (errno != 0) {  // Error occuered, reset connection
             ESP_LOGW(TAG, "Got %d errno, reconnect to peer", errno);
             esp_err_t ret = ESP_OK;
             ret |= _http_close(self);
@@ -828,6 +719,13 @@ redirection:
         return ESP_OK;
     }
     return ESP_FAIL;
+}
+
+esp_err_t http_stream_fetch_again(audio_element_handle_t el)
+{
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+    http->is_playlist_resolved = false;
+    return ESP_OK;
 }
 
 esp_err_t http_stream_restart(audio_element_handle_t el)
