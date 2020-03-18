@@ -29,7 +29,7 @@
 #include "periph_service.h"
 #include "led_bar_is31x.h"
 #include "led_indicator.h"
-#include "esp_es2812.h"
+#include "led_bar_ws2812.h"
 #include "unity.h"
 
 static const char *TAG = "test_display_service";

@@ -23,6 +23,7 @@
  */
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/timers.h"
 #include <driver/gpio.h>
 #include <driver/rmt.h>
@@ -85,8 +86,6 @@ typedef struct periph_ws2812 {
     periph_ws2812_state_t     *state;
     periph_ws2812_process_t   process;
 } periph_ws2812_t;
-
-typedef void (*timer_callback)(TimerHandle_t tmr);
 
 static esp_err_t ws2812_init_rmt_channel(int rmt_channel)
 {
