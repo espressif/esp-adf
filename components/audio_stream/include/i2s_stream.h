@@ -47,6 +47,7 @@ typedef struct {
     int                     task_stack;         /*!< Task stack size */
     int                     task_core;          /*!< Task running in core (0 or 1) */
     int                     task_prio;          /*!< Task priority (based on freeRTOS priority) */
+    bool                    stack_in_ext;       /*!< Try to allocate stack in external memory */
     int                     multi_out_num;      /*!< The number of multiple output */
     bool                    uninstall_drv;      /*!< whether uninstall the i2s driver when stream destroyed*/
 } i2s_stream_cfg_t;
@@ -62,6 +63,7 @@ typedef struct {
     .task_prio = I2S_STREAM_TASK_PRIO,                                          \
     .task_core = I2S_STREAM_TASK_CORE,                                          \
     .task_stack = I2S_STREAM_TASK_STACK,                                        \
+    .stack_in_ext = false,                                                      \
     .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
     .i2s_config = {                                                             \
         .mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX,                    \

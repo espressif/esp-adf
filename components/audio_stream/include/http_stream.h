@@ -79,6 +79,7 @@ typedef struct {
     int                         task_stack;             /*!< Task stack size */
     int                         task_core;              /*!< Task running in core (0 or 1) */
     int                         task_prio;              /*!< Task priority (based on freeRTOS priority) */
+    bool                        stack_in_ext;           /*!< Try to allocate stack in external memory */
     http_stream_event_handle_t  event_handle;           /*!< The hook function for HTTP Stream */
     void                        *user_data;             /*!< User data context */
     bool                        auto_connect_next_track;/*!< connect next track without open/close */
@@ -97,6 +98,7 @@ typedef struct {
     .task_prio = HTTP_STREAM_TASK_PRIO, \
     .task_core = HTTP_STREAM_TASK_CORE, \
     .task_stack = HTTP_STREAM_TASK_STACK, \
+    .stack_in_ext = false,\
     .out_rb_size = HTTP_STREAM_RINGBUFFER_SIZE, \
     .multi_out_num = 0, \
 }
