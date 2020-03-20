@@ -72,7 +72,7 @@ typedef struct {
         .dma_buf_count = 3,                                                     \
         .dma_buf_len = 300,                                                     \
         .use_apll = 1,                                                          \
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                               \
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,          \
         .tx_desc_auto_clear = true,                                             \
     },                                                                          \
     .i2s_port = 0,                                                              \
