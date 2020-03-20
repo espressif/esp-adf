@@ -305,8 +305,6 @@ is31fl3216_handle_t is31fl3216_init(void)
     conf.master.clk_speed = I2C_MASTER_FREQ_HZ;
     is31fl3216_dev_t *led = (is31fl3216_dev_t *) calloc(1, sizeof(is31fl3216_dev_t));
     led->bus = i2c_bus_create(I2C_MASTER_NUM, &conf);
-    SET_PERI_REG_BITS(PERIPHS_IO_MUX_GPIO18_U, FUN_DRV, 3, FUN_DRV_S);
-    SET_PERI_REG_BITS(PERIPHS_IO_MUX_GPIO23_U, FUN_DRV, 3, FUN_DRV_S);
     led->addr = IS31FL3216_ADDRESS;
     IS31_ERROR_CHECK(ESP_OK == is31fl3216_power(led, IS31FL3216_PWR_NORMAL));
     IS31_ERROR_CHECK(ESP_OK == is31fl3216_cur_mode_set(led, IS31FL3216_CUR_MODE_REXT));

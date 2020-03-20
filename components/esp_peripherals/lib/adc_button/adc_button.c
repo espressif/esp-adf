@@ -30,7 +30,9 @@
 #include "freertos/queue.h"
 #include "driver/adc.h"
 #include "math.h"
+#if CONFIG_IDF_TARGET_ESP32
 #include "esp_adc_cal.h"
+#endif
 #include "string.h"
 #include "adc_button.h"
 #include "esp_log.h"
@@ -140,11 +142,19 @@ static int get_adc_voltage(int channel)
     uint32_t data[ADC_SAMPLES_NUM] = { 0 };
     uint32_t sum = 0;
     int tmp = 0;
+
+#if CONFIG_IDF_TARGET_ESP32
     esp_adc_cal_characteristics_t characteristics;
     esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_11db, ADC_WIDTH_12Bit, V_REF, &characteristics);
     for (int i = 0; i < ADC_SAMPLES_NUM; ++i) {
         esp_adc_cal_get_voltage(channel, &characteristics, &data[i]);
     }
+#elif CONFIG_IDF_TARGET_ESP32S2
+    for (int i = 0; i < ADC_SAMPLES_NUM; i++) {
+        data[i] = adc1_get_raw((adc1_channel_t)channel);
+    }
+#endif
+
     for (int j = 0; j < ADC_SAMPLES_NUM - 1; j++) {
         for (int i = 0; i < ADC_SAMPLES_NUM - j - 1; i++) {
             if (data[i] > data[i + 1]) {
@@ -253,7 +263,12 @@ static void button_task(void *parameters)
     adc_btn_list *head = tag->head;
     adc_btn_list *find = head;
     xEventGroupClearBits(g_event_bit, DESTROY_BIT);
+#if CONFIG_IDF_TARGET_ESP32
     adc1_config_width(ADC_WIDTH_12Bit);
+#elif CONFIG_IDF_TARGET_ESP32S2
+    adc1_config_width(ADC_WIDTH_13Bit);
+#endif
+    
     while (find) {
         adc_arr_t *info = &(find->adc_info);
         reset_btn(find->btn_dscp, info->total_steps);

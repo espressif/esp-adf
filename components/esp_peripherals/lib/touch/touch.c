@@ -34,6 +34,7 @@
 #include "driver/touch_pad.h"
 #include "sys/queue.h"
 #include "touch.h"
+#include "sdkconfig.h"
 
 #define TOUCHPAD_TRIGGER_THRESHOLD      100
 #define TOUCHPAD_FILTER_PERIOD          (30)
@@ -80,7 +81,9 @@ static long long tick_get()
 static void touch_pad_isr_handler(void* arg)
 {
     esp_touch_handle_t touch = (esp_touch_handle_t)arg;
+#if CONFIG_IDF_TARGET_ESP32
     touch_pad_clear_status();
+#endif
     if (touch->intr_fn) {
         touch->intr_fn(touch->intr_context);
     }
@@ -129,7 +132,11 @@ esp_touch_handle_t esp_touch_init(touch_config_t *config)
             });
             new_touch->touch_num = touch_num;
             new_touch->last_read_tick = tick_get() + touch_index * 10;
+#if CONFIG_IDF_TARGET_ESP32
             touch_pad_config(touch_num, 0);
+#elif CONFIG_IDF_TARGET_ESP32S2
+            touch_pad_config(touch_num);
+#endif
             if (config->touch_intr_handler) {
                 touch_pad_set_thresh(touch_num, TOUCHPAD_TRIGGER_THRESHOLD);
             }
@@ -143,10 +150,18 @@ esp_touch_handle_t esp_touch_init(touch_config_t *config)
     touch->intr_context = config->intr_context;
 
     if (config->touch_intr_handler) {
+#if CONFIG_IDF_TARGET_ESP32
         touch_pad_isr_register(touch_pad_isr_handler, touch);
         touch_pad_intr_enable();
+#elif CONFIG_IDF_TARGET_ESP32S2
+        touch_pad_isr_register(touch_pad_isr_handler, touch, TOUCH_PAD_INTR_MASK_ALL);
+        touch_pad_intr_enable(TOUCH_PAD_INTR_MASK_ALL);
+#endif
+
     }
+#if CONFIG_IDF_TARGET_ESP32
     touch_pad_filter_start(TOUCHPAD_FILTER_PERIOD);
+#endif
     return touch;
 }
 
@@ -157,7 +172,13 @@ static touch_status_t touch_get_state(esp_touch_handle_t touch, esp_touch_item_t
     }
 
     touch_item->last_read_tick = tick;
+
+#if CONFIG_IDF_TARGET_ESP32
     esp_err_t err = touch_pad_read_filtered(touch_item->touch_num, &touch_item->last_read_value);
+#elif CONFIG_IDF_TARGET_ESP32S2
+    esp_err_t err = ESP_OK;
+#endif
+
 
     if (err != ESP_OK) {
         return TOUCH_UNCHANGE;
@@ -264,8 +285,13 @@ bool esp_touch_read(esp_touch_handle_t touch, touch_result_t *result)
 esp_err_t esp_touch_destroy(esp_touch_handle_t touch)
 {
     esp_touch_item_t *touch_item, *tmp;
+#if CONFIG_IDF_TARGET_ESP32
     touch_pad_filter_delete();
     touch_pad_intr_disable();
+#elif CONFIG_IDF_TARGET_ESP32S2
+    touch_pad_intr_disable(TOUCH_PAD_INTR_MASK_ALL);
+#endif
+
     touch_pad_isr_deregister(touch_pad_isr_handler, touch);
     STAILQ_FOREACH_SAFE(touch_item, &touch->touch_list, entry, tmp) {
         STAILQ_REMOVE(&touch->touch_list, touch_item, esp_touch_item, entry);
