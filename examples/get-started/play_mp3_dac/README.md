@@ -4,14 +4,20 @@ This example plays a sample 7 second mp3 file provided in 'main' folder. The fil
 
 ## Compatibility
 
-| ESP32-LyraT | ESP32-LyraTD-MSC | ESP32-LyraT-Mini |
-|:-----------:|:----------------:|:----------------:|
-| [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) |
-| ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/no-button.png "Not Compatible") | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
+This example is will run on boards marked with green checkbox. Please remember to select the board in menuconfig as discussed is section *Usage* below.
 
-To run this example you need an ESP32 board that has DAC pins GPIO25 and GPIO26 exposed.
+| Board Name | Getting Started | Chip | Compatible |
+|-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
+| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
+| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
+| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
+| ESP32-Dul1906 | ![alt text](../../../docs/_static/esp32-korvo-dul1906-v1.1-small.jpg "ESP32-Korvo-DUL1906") | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
+| ESP32-S2-Kaluga-1 Kit | ![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit") | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
 
-On ESP32-LyraT GPIO25 and GPIO26 are broken out on I2S pin header as LRCK and DSDIN.  
+To run this example you need an ESP32 board that has DAC pins GPIO25 and GPIO26 exposed or an ESP32S2 board that has DAC pins GPIO17 and GPIO18 exposed
+
+On ESP32-LyraT GPIO25 and GPIO26 are broken out on I2S pin header as LRCK and DSDIN.
+
 
 ## Usage
 
@@ -38,6 +44,29 @@ GND +-------/\/\/\----+
                       |
 GPIO26 +--------------+
 ```                      
+
+Prepare the ESP32S2 board by connecting GPIO17, GPIO18 and GND pins to the earphones according to schematic below.
+
+Example connections:
+
+```
+GPIO17 +--------------+
+                      |  __  
+                      | /  \ _
+                     +-+    | |
+                     | |    | |  Earphone
+                     +-+    |_|
+                      | \__/
+             330R     |
+GND +-------/\/\/\----+
+                      |  __  
+                      | /  \ _
+                     +-+    | |
+                     | |    | |  Earphone
+                     +-+    |_|
+                      | \__/
+                      |
+GPIO18 +--------------+
 
 Load and run the example.
 
