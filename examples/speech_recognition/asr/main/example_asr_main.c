@@ -168,7 +168,7 @@ void app_main()
     audio_pipeline_register(pipeline, raw_read, "raw");
 
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    ESP_LOGI(EVENT_TAG, "[ 4 ] Link elements together [codec_chip]-->i2s_stream-->raw-->[SR]");
+    ESP_LOGI(TAG, "[ 4 ] Link elements together [codec_chip]-->i2s_stream-->raw-->[SR]");
     audio_pipeline_link(pipeline, (const char *[]) {"i2s",  "raw"}, 2);
 #else
     audio_pipeline_register(pipeline, filter, "filter");
