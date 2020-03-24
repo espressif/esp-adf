@@ -1,6 +1,7 @@
 set(COMPONENT_SRCS "fatfs_stream.c"
                     "i2s_stream.c"
                     "http_stream.c"
+                    "hls_playlist.c"
                     "raw_stream.c"
                     "spiffs_stream.c"
                     "tone_stream.c")

@@ -41,10 +41,9 @@ int _http_stream_event_handle(http_stream_event_msg_t *msg)
         return http_stream_next_track(msg->el);
     }
     if (msg->event_id == HTTP_STREAM_FINISH_PLAYLIST) {
-        return http_stream_restart(msg->el);
+        return http_stream_fetch_again(msg->el);
     }
     return ESP_OK;
-
 }
 
 void app_main(void)

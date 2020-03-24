@@ -116,7 +116,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config);
  * @brief      Connect to next track in the playlist.
  *
  *             This function can be used in event_handler of http_stream.
- *             User can call this function to connect to next track in playlist when he/she gets `HTTP_STREAM_FINISH_TRACK` event 
+ *             User can call this function to connect to next track in playlist when he/she gets `HTTP_STREAM_FINISH_TRACK` event
  *
  * @param      el  The http_stream element handle
  *
@@ -126,6 +126,19 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config);
  */
 esp_err_t http_stream_next_track(audio_element_handle_t el);
 esp_err_t http_stream_restart(audio_element_handle_t el);
+
+/**
+ * @brief       Try to fetch the tracks again.
+ *
+ *              If this is live stream we will need to keep fetching URIs.
+ *
+ * @param       el  The http_stream element handle
+ *
+ * @return
+ *     - ESP_OK on success
+ *     - ESP_ERR_NOT_SUPPORTED if playlist is finished
+ */
+esp_err_t http_stream_fetch_again(audio_element_handle_t el);
 
 #ifdef __cplusplus
 }
