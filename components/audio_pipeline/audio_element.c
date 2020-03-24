@@ -1123,6 +1123,7 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
     }
     if (el->task_stack <= 0) {
         el->is_running = false;
+        audio_element_force_set_state(el, AEL_STATE_STOPPED);
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
         audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
         return ESP_OK;
