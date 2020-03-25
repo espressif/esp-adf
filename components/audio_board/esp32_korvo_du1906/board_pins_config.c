@@ -29,7 +29,7 @@
 #include "audio_error.h"
 #include "audio_mem.h"
 
-static const char *TAG = "ESP32_Corvo_DU1906";
+static const char *TAG = "ESP32_Korvo_DU1906";
 
 esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
 {
