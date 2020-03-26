@@ -108,7 +108,7 @@ static const tas5805m_cfg_reg_t tas5805m_registers[] = {
 
 
     { 0x00, 0x00 },
-#if CONFIG_ESP32_CORVO_DU1906_BOARD
+#if CONFIG_ESP32_KORVO_DU1906_BOARD
     { 0x02, 0x00 },
 #else
     { 0x02, 0x04 },
