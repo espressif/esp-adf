@@ -59,6 +59,16 @@
 #include "periph_adc_button.h"
 #include "algorithm_stream.h"
 
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#endif
+
+#ifdef ESP_IDF_VERSION
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#include "driver/touch_pad.h"
+#endif
+#endif
+
 static const char *TAG              = "DUEROS";
 extern esp_audio_handle_t           player;
 
