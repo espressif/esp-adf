@@ -236,8 +236,6 @@ esp_err_t configure_wifi_sta_mode(wifi_config_t *wifi_cfg)
 
 static void wifi_sta_setup(void *para)
 {
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 #if defined(ESP_IDF_VERSION)
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -245,13 +243,15 @@ static void wifi_sta_setup(void *para)
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_cb, para));
 #endif
 #else
-    #include "esp_event_loop.h"
+#include "esp_event_loop.h"
     if (esp_event_loop_get_queue() == NULL) {
         ESP_ERROR_CHECK(esp_event_loop_init(wifi_event_cb, para));
     } else {
         esp_event_loop_set_cb(wifi_event_cb, para);
     }
 #endif
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
 }
 
