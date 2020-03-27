@@ -62,36 +62,36 @@ typedef struct http_stream {
 
 static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
 
-static audio_codec_t get_audio_type(const char *content_type)
+static esp_codec_type_t get_audio_type(const char *content_type)
 {
     if (strcasecmp(content_type, "mp3") == 0 ||
         strcasecmp(content_type, "audio/mp3") == 0 ||
         strcasecmp(content_type, "audio/mpeg") == 0 ||
         strcasecmp(content_type, "binary/octet-stream") == 0 ||
         strcasecmp(content_type, "application/octet-stream") == 0) {
-        return AUDIO_CODEC_MP3;
+        return ESP_CODEC_TYPE_MP3;
     }
     if (strcasecmp(content_type, "audio/aac") == 0 ||
         strcasecmp(content_type, "audio/x-aac") == 0 ||
         strcasecmp(content_type, "audio/mp4") == 0 ||
         strcasecmp(content_type, "audio/aacp") == 0 ||
         strcasecmp(content_type, "video/MP2T") == 0) {
-        return AUDIO_CODEC_AAC;
+        return ESP_CODEC_TYPE_AAC;
     }
     if (strcasecmp(content_type, "audio/wav") == 0) {
-        return AUDIO_CODEC_WAV;
+        return ESP_CODEC_TYPE_WAV;
     }
     if (strcasecmp(content_type, "audio/opus") == 0) {
-        return AUDIO_CODEC_OPUS;
+        return ESP_CODEC_TYPE_OPUS;
     }
     if (strcasecmp(content_type, "application/vnd.apple.mpegurl") == 0 ||
         strcasecmp(content_type, "vnd.apple.mpegURL") == 0) {
-        return AUDIO_PLAYLIST_M3U8;
+        return ESP_AUDIO_TYPE_M3U8;
     }
     if (strncasecmp(content_type, "audio/x-scpls", strlen("audio/x-scpls")) == 0) {
-        return AUDIO_PLAYLIST_PLS;
+        return ESP_AUDIO_TYPE_PLS;
     }
-    return AUDIO_CODEC_NONE;
+    return ESP_CODEC_TYPE_UNKNOW;
 }
 
 static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
@@ -129,7 +129,7 @@ static int dispatch_hook(audio_element_handle_t self, http_stream_event_id_t typ
 
 static bool _is_playlist(audio_element_info_t *info, const char *uri)
 {
-    if (info->codec_fmt == AUDIO_PLAYLIST_M3U8 || info->codec_fmt == AUDIO_PLAYLIST_PLS) {
+    if (info->codec_fmt == ESP_AUDIO_TYPE_M3U8 || info->codec_fmt == ESP_AUDIO_TYPE_PLS) {
         return true;
     }
     char *dot = strrchr(uri, '.');
@@ -241,7 +241,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
     bool valid_playlist = false;
     bool is_playlist_uri = false;
 
-    if (info.codec_fmt == AUDIO_PLAYLIST_PLS) {
+    if (info.codec_fmt == ESP_AUDIO_TYPE_PLS) {
         /* pls playlist */
         while ((line = _client_read_line(http))) {
             ESP_LOGD(TAG, "Playlist line = %s", line);
