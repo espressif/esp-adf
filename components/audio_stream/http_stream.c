@@ -47,7 +47,6 @@ static const char *TAG = "HTTP_STREAM";
 
 typedef struct http_stream {
     audio_stream_type_t             type;
-    char                            *uri;
     bool                            is_open;
     esp_http_client_handle_t        client;
     http_stream_event_handle_t      hook;
@@ -220,6 +219,8 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
          * The one we resolved is variant playlist
          * We need to move this playlist to variant_playlist and parse this one.
          */
+        /* If there already is a variant data, free it */
+        hls_playlist_clear(http->variant_playlist);
         http->is_variant_playlist = true;
         http->is_playlist_resolved = false;
         playlist_t *tmp = http->variant_playlist;
@@ -231,7 +232,11 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
     http->playlist->remain = 0;
     http->playlist->index = 0;
     http->playlist->total_read = 0;
+    if (http->playlist->host_uri) {
+        free(http->playlist->host_uri);
+    }
     http->playlist->host_uri = audio_strdup(uri);
+
     char *line = NULL;
     bool valid_playlist = false;
     bool is_playlist_uri = false;
@@ -322,7 +327,6 @@ static esp_err_t _http_open(audio_element_handle_t self)
     esp_err_t err;
     char *uri = NULL;
     audio_element_info_t info;
-    audio_element_getinfo(self, &info);
     ESP_LOGD(TAG, "_http_open");
 
     if (http->is_open) {
@@ -348,6 +352,8 @@ _stream_open_begin:
         ESP_LOGE(TAG, "Error open connection, uri = NULL");
         return ESP_FAIL;
     }
+
+    audio_element_getinfo(self, &info);
     ESP_LOGD(TAG, "URI=%s", uri);
     // if not initialize http client, initial it
     if (http->client == NULL) {
@@ -429,6 +435,11 @@ _stream_redirect:
         }
         return ESP_FAIL;
     }
+
+    /**
+     * `audio_element_setinfo` is risky affair.
+     * It overwrites URI pointer as well. Pay attention to that!
+     */
     audio_element_setinfo(self, &info);
 
     if (_resolve_playlist(self, uri) == ESP_OK) {
@@ -704,9 +715,6 @@ esp_err_t http_stream_fetch_again(audio_element_handle_t el)
         return ESP_ERR_NOT_SUPPORTED;
     } else {
         ESP_LOGI(TAG, "Fetching again...");
-        http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
-        esp_http_client_close(http->client);
-        http->client = NULL;
         audio_element_set_uri(el, http->playlist->host_uri);
         http->is_playlist_resolved = false;
     }
