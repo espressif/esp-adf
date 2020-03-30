@@ -43,6 +43,21 @@ typedef struct track_ {
     STAILQ_ENTRY(track_) next;
 } track_t;
 
+static void hls_remove_played_entry(playlist_t *playlist)
+{
+    track_t *track;
+    /* Remove head entry if total_entries are > MAX_PLAYLIST_KEEP_TRACKS */
+    if (playlist->total_tracks > MAX_PLAYLIST_KEEP_TRACKS) {
+        track = STAILQ_FIRST(&playlist->tracks);
+        if (track->is_played) {
+            STAILQ_REMOVE_HEAD(&playlist->tracks, next);
+            free(track->uri);
+            free(track);
+            playlist->total_tracks--;
+        }
+    }
+}
+
 void hls_playlist_insert(playlist_t *playlist, char *track_uri)
 {
     track_t *track;
@@ -122,35 +137,22 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
 
     ESP_LOGD(TAG, "INSERT %s", track->uri);
     STAILQ_INSERT_TAIL(&playlist->tracks, track, next);
-    playlist->total_tracks ++;
+    playlist->total_tracks++;
+    hls_remove_played_entry(playlist);
 }
 
 char *hls_playlist_get_next_track(playlist_t *playlist)
 {
     track_t *track;
-    char *uri = NULL;
-
+    hls_remove_played_entry(playlist);
     /* Find not played entry. */
     STAILQ_FOREACH(track, &playlist->tracks, next) {
         if (!track->is_played) {
             track->is_played = true;
-            uri = track->uri;
-            break;
+            return track->uri;
         }
     }
-
-    if (uri) {
-        /* Remove head entry if total_entries are > MAX_PLAYLIST_KEEP_TRACKS */
-        if (playlist->total_tracks > MAX_PLAYLIST_KEEP_TRACKS) {
-            track = STAILQ_FIRST(&playlist->tracks);
-            STAILQ_REMOVE_HEAD(&playlist->tracks, next);
-            free(track->uri);
-            free(track);
-            playlist->total_tracks--;
-        }
-    }
-
-    return uri;
+    return NULL;
 }
 
 void hls_playlist_clear(playlist_t *playlist)
@@ -167,4 +169,6 @@ void hls_playlist_clear(playlist_t *playlist)
         playlist->host_uri = NULL;
     }
     playlist->is_incomplete = false;
+    playlist->total_tracks = 0;
+    playlist->total_read = 0;
 }
