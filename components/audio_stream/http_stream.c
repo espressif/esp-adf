@@ -416,8 +416,14 @@ _stream_redirect:
         esp_http_client_close(http->client);
         return ESP_FAIL;
     }
+    /*
+    * Due to the total byte of content has been changed after seek, set info.total_bytes at beginning only.
+    */
+    int64_t cur_pos = esp_http_client_fetch_headers(http->client);
+    if (info.byte_pos <= 0) {
+        info.total_bytes = cur_pos;
+    }
 
-    info.total_bytes = esp_http_client_fetch_headers(http->client);
     ESP_LOGI(TAG, "total_bytes=%d", (int)info.total_bytes);
     int status_code = esp_http_client_get_status_code(http->client);
     if (status_code == 301 || status_code == 302) {
@@ -666,6 +672,15 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
 esp_err_t http_stream_next_track(audio_element_handle_t el)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+    if (!(http->enable_playlist_parser && http->is_playlist_resolved)) {
+        /**
+         * This is not a playlist!
+         * Do not reset states for restart element.
+         * Just return.
+         */
+        ESP_LOGD(TAG, "Direct URI. Stream will be stopped");
+        return ESP_OK;
+    }
     audio_element_reset_state(el);
     audio_element_info_t info;
     audio_element_getinfo(el, &info);
