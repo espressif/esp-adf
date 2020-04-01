@@ -137,6 +137,7 @@ static void wifi_event_cb(void *arg, esp_event_base_t event_base,
         wifi_event_sta_disconnected_t *event = (wifi_event_sta_disconnected_t *) event_data;
         if (serv->reason == WIFI_SERV_STA_BY_USER) {
             ESP_LOGI(TAG, "SYSTEM_EVENT_STA_DISCONNECTED, reason is WIFI_SERV_STA_BY_USER");
+            return;
         }
         wifi_serv_state_send(serv->wifi_serv_que, WIFI_SERV_EVENT_DISCONNECTED, 0, 0, 0);
         switch (event->reason) {
