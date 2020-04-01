@@ -666,6 +666,15 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
 esp_err_t http_stream_next_track(audio_element_handle_t el)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+    if (!(http->enable_playlist_parser && http->is_playlist_resolved)) {
+        /**
+         * This is not a playlist!
+         * Do not reset states for restart element.
+         * Just return.
+         */
+        ESP_LOGD(TAG, "Direct URI. Stream will be stopped");
+        return ESP_OK;
+    }
     audio_element_reset_state(el);
     audio_element_info_t info;
     audio_element_getinfo(el, &info);
