@@ -36,7 +36,11 @@
 #include "esp_log.h"
 #include "esp_event.h"
 #include "esp_wifi.h"
-#include "esp_event_loop.h"
+#include "esp_event.h"
+
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#endif
 
 static const char *TAG                  = "WIFI_SERV";
 const static int WIFI_TASK_DESTROY_BIT  = BIT0;
@@ -116,6 +120,52 @@ static void wifi_serv_state_send(void *que, int type, void *data, int len, int d
     }
 }
 
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+static void wifi_event_cb(void *arg, esp_event_base_t event_base,
+                          int32_t event_id, void *event_data)
+{
+    periph_service_handle_t serv_handle = (periph_service_handle_t)arg;
+    wifi_service_t *serv = periph_service_get_data(serv_handle);
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        esp_wifi_connect();
+    }  else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
+        ESP_LOGI(TAG, "Got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        wifi_serv_state_send(serv->wifi_serv_que, WIFI_SERV_EVENT_CONNECTED, 0, 0, 0);
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        wifi_event_sta_disconnected_t *event = (wifi_event_sta_disconnected_t *) event_data;
+        if (serv->reason == WIFI_SERV_STA_BY_USER) {
+            ESP_LOGI(TAG, "SYSTEM_EVENT_STA_DISCONNECTED, reason is WIFI_SERV_STA_BY_USER");
+            return;
+        }
+        wifi_serv_state_send(serv->wifi_serv_que, WIFI_SERV_EVENT_DISCONNECTED, 0, 0, 0);
+        switch (event->reason) {
+            case WIFI_REASON_AUTH_EXPIRE:
+            case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
+            case WIFI_REASON_BEACON_TIMEOUT:
+            case WIFI_REASON_AUTH_FAIL:
+            case WIFI_REASON_ASSOC_FAIL:
+            case WIFI_REASON_HANDSHAKE_TIMEOUT:
+                ESP_LOGI(TAG, "STA Auth Error, reason:%d", event->reason);
+                serv->reason = WIFI_SERV_STA_AUTH_ERROR;
+                break;
+            case WIFI_REASON_NO_AP_FOUND:
+                ESP_LOGI(TAG, "STA AP Not found");
+                serv->reason = WIFI_SERV_STA_AP_NOT_FOUND;
+                break;
+            default:
+                ESP_LOGI(TAG, "STA Error, reason:%d", event->reason);
+                serv->reason = WIFI_SERV_STA_COM_ERROR;
+                break;
+        }
+    } else {
+        ESP_LOGW(TAG, "WiFi Event cb, Unhandle event_base:%s, event_id:%d", event_base, event_id);
+    }
+}
+
+#endif
+#else
 static esp_err_t wifi_event_cb(void *ctx, system_event_t *event)
 {
     periph_service_handle_t serv_handle = (periph_service_handle_t)ctx;
@@ -132,10 +182,14 @@ static esp_err_t wifi_event_cb(void *ctx, system_event_t *event)
             break;
         case SYSTEM_EVENT_STA_GOT_IP:
             ESP_LOGI(TAG, "Got ip:%s",
-                     ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
+                     ip4addr_ntoa((const ip4_addr_t *)&event->event_info.got_ip.ip_info.ip));
             wifi_serv_state_send(serv->wifi_serv_que, WIFI_SERV_EVENT_CONNECTED, 0, 0, 0);
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
+            if (serv->reason == WIFI_SERV_STA_BY_USER) {
+                ESP_LOGI(TAG, "SYSTEM_EVENT_STA_DISCONNECTED, reason is WIFI_SERV_STA_BY_USER");
+                break;
+            }
             wifi_serv_state_send(serv->wifi_serv_que, WIFI_SERV_EVENT_DISCONNECTED, 0, 0, 0);
             switch (event->event_info.disconnected.reason) {
                 case WIFI_REASON_AUTH_EXPIRE:
@@ -144,7 +198,7 @@ static esp_err_t wifi_event_cb(void *ctx, system_event_t *event)
                 case WIFI_REASON_AUTH_FAIL:
                 case WIFI_REASON_ASSOC_FAIL:
                 case WIFI_REASON_HANDSHAKE_TIMEOUT:
-                    ESP_LOGI(TAG, "STA Auth Error");
+                    ESP_LOGI(TAG, "STA Auth Error, reason:%d", event->event_info.disconnected.reason);
                     serv->reason = WIFI_SERV_STA_AUTH_ERROR;
                     break;
                 case WIFI_REASON_NO_AP_FOUND:
@@ -152,6 +206,8 @@ static esp_err_t wifi_event_cb(void *ctx, system_event_t *event)
                     serv->reason = WIFI_SERV_STA_AP_NOT_FOUND;
                     break;
                 default:
+                    ESP_LOGI(TAG, "STA Error, reason:%d", event->event_info.disconnected.reason);
+                    serv->reason = WIFI_SERV_STA_COM_ERROR;
                     break;
             }
             break;
@@ -170,6 +226,7 @@ static esp_err_t wifi_event_cb(void *ctx, system_event_t *event)
     }
     return ESP_OK;
 }
+#endif
 
 esp_err_t configure_wifi_sta_mode(wifi_config_t *wifi_cfg)
 {
@@ -180,9 +237,22 @@ esp_err_t configure_wifi_sta_mode(wifi_config_t *wifi_cfg)
 
 static void wifi_sta_setup(void *para)
 {
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_cb, para));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_cb, para));
+#endif
+#else
+#include "esp_event_loop.h"
+    if (esp_event_loop_get_queue() == NULL) {
+        ESP_ERROR_CHECK(esp_event_loop_init(wifi_event_cb, para));
+    } else {
+        esp_event_loop_set_cb(wifi_event_cb, para);
+    }
+#endif
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    ESP_ERROR_CHECK(esp_event_loop_init(wifi_event_cb, para));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
 }
 
@@ -204,19 +274,24 @@ static void wifi_task(void *pvParameters)
     periph_service_handle_t serv_handle = (periph_service_handle_t)pvParameters;
     wifi_service_t *serv = periph_service_get_data(serv_handle);
     wifi_config_t wifi_cfg = {0};
-    if (ESP_OK == esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg)) {
-        if (wifi_cfg.sta.ssid[0] != 0) {
-            ESP_LOGI(TAG, "Connect to stored Wi-Fi SSID:%s", wifi_cfg.sta.ssid);
-        }
-    } else {
-        ESP_LOGW(TAG, "No wifi SSID stored!");
-    }
     wifi_task_msg_t wifi_msg = {0};
     bool task_run = true;
     periph_service_event_t cb_evt = {0};
     wifi_setting_item_t *item;
+    wifi_config_t *stored_ssid = NULL;
 
     wifi_sta_setup(pvParameters);
+    if (ESP_OK == esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg)) {
+        stored_ssid = audio_calloc(1, sizeof(wifi_config_t));
+        if (stored_ssid) {
+            memcpy(stored_ssid, &wifi_cfg, sizeof(wifi_config_t));
+            ESP_LOGI(TAG, "Got the stored SSID:%s", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
+        } else {
+            ESP_LOGW(TAG, "Got the stored SSID:%s, but not used", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
+        }
+    } else {
+        ESP_LOGW(TAG, "No Wi-Fi SSID stored!");
+    }
     configure_wifi_sta_mode(&wifi_cfg);
     ESP_ERROR_CHECK(esp_wifi_start());
 
@@ -285,8 +360,20 @@ static void wifi_task(void *pvParameters)
                 periph_service_callback(serv_handle, &cb_evt);
             } else if (wifi_msg.msg_type == WIFI_SERV_EVENT_TYPE_CMD) {
                 if (wifi_msg.type == WIFI_SERV_CMD_CONNECT) {
-                    ESP_LOGI(TAG, "WIFI_SERV_CMD_CONNECT");
-                    memcpy(&wifi_cfg, &serv->info, sizeof(wifi_config_t));
+                    if (stored_ssid && (stored_ssid->sta.ssid[0] != 0)) {
+                        memcpy(&wifi_cfg, stored_ssid, sizeof(wifi_config_t));
+                        ESP_LOGI(TAG, "Found a stored SSID:%s", wifi_cfg.sta.ssid);
+                        audio_free(stored_ssid);
+                        stored_ssid = NULL;
+                    } else if (serv->info.sta.ssid[0] != 0) {
+                        memcpy(&wifi_cfg, &serv->info, sizeof(wifi_config_t));
+                    } else {
+                        if ((wifi_cfg.sta.ssid[0] == 0)) {
+                            ESP_LOGW(TAG, "WIFI_SERV_CMD_CONNECT failed, SSID:%s", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
+                            continue;
+                        }
+                    }
+                    ESP_LOGI(TAG, "WIFI_SERV_CMD_CONNECT,SSID:%s", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
                     configure_wifi_sta_mode(&wifi_cfg);
                     ESP_ERROR_CHECK(esp_wifi_connect());
                 } else if (wifi_msg.type == WIFI_SERV_CMD_DISCONNECT) {
@@ -341,6 +428,10 @@ static void wifi_task(void *pvParameters)
     esp_timer_delete(serv->retry_timer);
     serv->setting_timer = NULL;
     serv->retry_timer = NULL;
+    if (stored_ssid) {
+        audio_free(stored_ssid);
+        stored_ssid = NULL;
+    }
     xEventGroupSetBits(serv->sync_evt, WIFI_TASK_DESTROY_BIT);
     vTaskDelete(NULL);
 }

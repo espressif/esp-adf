@@ -42,16 +42,16 @@ To use ESP-ADF you need set up the ESP-IDF first, and this is described in the n
 
 .. note::
 
-    ESP-ADF is developed using `stable version of ESP-IDF <https://docs.espressif.com/projects/esp-idf/en/stable/versions.html>`_. If your have already set up another version, please switch to the stable, or you may not be able to compile ESP-ADF applications.
+    ESP-ADF is developed using `v3.3.1 version of ESP-IDF <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/versions.html>`_. If your have already set up another version, please switch to the v3.3.1, or you may not be able to compile ESP-ADF applications.
 
 .. _get-started-setup-esp-idf:
 
 Set up ESP-IDF
 ==============
 
-Configure your PC according to `ESP32 Documentation <https://docs.espressif.com/projects/esp-idf/en/stable/>`_. `Windows <https://docs.espressif.com/projects/esp-idf/en/stable/get-started/windows-setup.html>`_, `Linux <https://docs.espressif.com/projects/esp-idf/en/stable/get-started/linux-setup.html>`_ and `Mac OS <https://docs.espressif.com/projects/esp-idf/en/stable/get-started/macos-setup.html>`_ operating systems are supported.
+Configure your PC according to `ESP32 Documentation <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/>`_. `Windows <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/get-started/windows-setup.html>`_, `Linux <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/get-started/linux-setup.html>`_ and `Mac OS <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/get-started/macos-setup.html>`_ operating systems are supported.
 
-You have a choice to compile and upload code to the ESP32 by command line with `make <https://docs.espressif.com/projects/esp-idf/en/stable/get-started/make-project.html>`_ or using `Eclipse IDE <https://docs.espressif.com/projects/esp-idf/en/stable/get-started/eclipse-setup.html>`_.
+You have a choice to compile and upload code to the ESP32 by command line with `make <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/get-started/make-project.html>`_ or using `Eclipse IDE <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/get-started/eclipse-setup.html>`_.
 
 .. note::
 
@@ -89,7 +89,7 @@ ESP-ADF will be downloaded into ``~/esp/esp-adf``.
 Setup Path to ESP-ADF
 =====================
 
-The toolchain programs access ESP-ADF using ``ADF_PATH`` environment variable. This variable should be set up on your PC, otherwise the projects will not build. The process to set it up is analogous to setting up the ``IDF_PATH`` variable, please see instructions in ESP-IDF documentation under `Add IDF_PATH to User Profile <https://docs.espressif.com/projects/esp-idf/en/stable/get-started/add-idf_path-to-profile.html>`_.
+The toolchain programs access ESP-ADF using ``ADF_PATH`` environment variable. This variable should be set up on your PC, otherwise the projects will not build. The process to set it up is analogous to setting up the ``IDF_PATH`` variable, please see instructions in ESP-IDF documentation under `Add IDF_PATH to User Profile <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/get-started/add-idf_path-to-profile.html>`_.
 
 
 .. _get-started-start-project:
@@ -119,7 +119,7 @@ You can also find a range of example projects under the :adf:`examples` director
 Connect and Configure
 =====================
 
-Connect the audio ESP32 board to the PC, check under what serial port the board is visible and verify, if serial communication works as described in `ESP-IDF Documentation <https://docs.espressif.com/projects/esp-idf/en/stable/get-started/establish-serial-connection.html>`_.
+Connect the audio ESP32 board to the PC, check under what serial port the board is visible and verify, if serial communication works as described in `ESP-IDF Documentation <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/get-started/establish-serial-connection.html>`_.
 
 At the terminal window, go to the directory of ``play_mp3`` application and configure it with ``menuconfig`` by selecting the serial port, upload speed and the audio board version::
 

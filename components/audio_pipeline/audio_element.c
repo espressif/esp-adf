@@ -1002,6 +1002,8 @@ esp_err_t audio_element_run(audio_element_handle_t el)
     xEventGroupClearBits(el->state_event, TASK_CREATED_BIT);
     if (el->task_stack > 0) {
         if (xTaskCreatePinnedToCore(audio_element_task, task_name, el->task_stack, el, el->task_prio, NULL, el->task_core) != pdPASS) {
+            audio_element_force_set_state(el, AEL_STATE_ERROR);
+            audio_element_report_status(el, AEL_STATUS_ERROR_OPEN);
             ESP_LOGE(TAG, "[%s] Error create element task", el->tag);
             return ESP_FAIL;
         }
@@ -1121,6 +1123,7 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
     }
     if (el->task_stack <= 0) {
         el->is_running = false;
+        audio_element_force_set_state(el, AEL_STATE_STOPPED);
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
         audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
         return ESP_OK;

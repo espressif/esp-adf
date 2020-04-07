@@ -29,6 +29,9 @@
 extern "C" {
 #endif
 
+#define ___STR___(x) #x
+#define STR_AUDIO(x) ___STR___(x)
+
 /**
  * @brief       Get system ticks by given millisecond
  *

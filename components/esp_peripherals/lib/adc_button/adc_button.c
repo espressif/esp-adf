@@ -312,6 +312,7 @@ static void button_task(void *parameters)
             switch (cur_state) {
                 case ADC_BTN_STATE_ADC: {
                         int adc = get_adc_voltage(info->adc_ch);
+                        ESP_LOGD(TAG, "ADC:%d", adc);
                         for (int i = 0; i < info->total_steps; ++i) {
                             if (btn_dscp[i].active_id > ADC_BTN_INVALID_ID) {
                                 act_id = i;
@@ -322,6 +323,7 @@ static void button_task(void *parameters)
                         if (btn_st != ADC_BTN_STATE_IDLE) {
                             cur_act_id = act_id;
                             cur_state = btn_st;
+                            ESP_LOGD(TAG, "ADC ID:%d", act_id);
                         }
                         break;
                     }
@@ -367,8 +369,8 @@ void adc_btn_delete_task(void)
 {
     if (_task_flag) {
         _task_flag = false;
-    } 
-    
+    }
+
     if (g_event_bit) {
         xEventGroupWaitBits(g_event_bit, DESTROY_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
         vEventGroupDelete(g_event_bit);

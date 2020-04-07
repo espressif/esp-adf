@@ -32,9 +32,13 @@
 #include "esp_log.h"
 #include "esp_console.h"
 #include "esp_vfs_dev.h"
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "argtable3/argtable3.h"
 #include "periph_console.h"
+
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#endif
 
 static const char *TAG = "PERIPH_CONSOLE";
 
@@ -95,7 +99,14 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
     char c;
     char tx[3];
 
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    int nread = uart_read_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (uint8_t *)&c, 1, time_to_wait);  
+#else
+#endif
+#else
     int nread = uart_read_bytes(CONFIG_CONSOLE_UART_NUM, (uint8_t *)&c, 1, time_to_wait);
+#endif
     if (nread <= 0) {
         return false;
     }
@@ -105,14 +116,31 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
             tx[0] = c;
             tx[1] = 0x20;
             tx[2] = c;
+
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+            uart_write_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (const char *)tx, 3);
+#else
+#endif
+#else
             uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 3);
+#endif
+
         }
         return false;
     }
     if (c == '\n' || c == '\r') {
         tx[0] = '\r';
         tx[1] = '\n';
+
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+        uart_write_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (const char *)tx, 2);
+#else
+#endif
+#else
         uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 2);
+#endif
         console->buffer[console->total_bytes] = 0;
         return true;
     }
@@ -120,7 +148,16 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
     if (c < 0x20) {
         return false;
     }
+
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    uart_write_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (const char *)&c, 1);
+#else
+#endif
+#else
     uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)&c, 1);
+#endif
+
     console->buffer[console->total_bytes++] = (char)c;
     if (console->total_bytes > max_size) {
         console->total_bytes = 0;
@@ -229,11 +266,24 @@ static esp_err_t _console_init(esp_periph_handle_t self)
     /* Move the caret to the beginning of the next line on '\n' */
     esp_vfs_dev_uart_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
 
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, console->buffer_size * 2, 0, 0, NULL, 0);
+#else
+#endif
+#else
     uart_driver_install(CONFIG_CONSOLE_UART_NUM, console->buffer_size * 2, 0, 0, NULL, 0);
+#endif
 
     /* Tell VFS to use UART driver */
+#if defined(ESP_IDF_VERSION)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
+#else
+#endif
+#else
     esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART_NUM);
-
+#endif 
 
     console->buffer = (char *) malloc(console->buffer_size);
     AUDIO_MEM_CHECK(TAG, console->buffer, {

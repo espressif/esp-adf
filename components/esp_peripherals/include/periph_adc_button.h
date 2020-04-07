@@ -49,6 +49,19 @@ typedef enum {
     PERIPH_ADC_BUTTON_LONG_RELEASE,
 } periph_adc_button_event_id_t;
 
+/**
+* ESP32 ADC1 channels and GPIO table
+*   ADC1_CHANNEL_0 -  GPIO36
+*   ADC1_CHANNEL_1 -  GPIO37
+*   ADC1_CHANNEL_2 -  GPIO38
+*   ADC1_CHANNEL_3 -  GPIO39
+*   ADC1_CHANNEL_4 -  GPIO32
+*   ADC1_CHANNEL_5 -  GPIO33
+*   ADC1_CHANNEL_6 -  GPIO34
+*   ADC1_CHANNEL_7 -  GPIO35
+*
+**/
+
 #define ADC_DEFAULT_ARR() {   \
     .adc_ch = ADC1_CHANNEL_3, \
     .adc_level_step = NULL,   \

@@ -28,7 +28,7 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "esp_log.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"
@@ -389,7 +389,7 @@ esp_err_t audio_pipeline_stop(audio_pipeline_handle_t pipeline)
     audio_element_item_t *el_item;
     ESP_LOGD(TAG, "audio_element_stop");
     if (pipeline->state != AEL_STATE_RUNNING) {
-        ESP_LOGW(TAG, "audio_pipeline state is not running, %d", pipeline->state);
+        ESP_LOGW(TAG, "Without stop, st:%d", pipeline->state);
         return ESP_FAIL;
     }
     bool type = false;
@@ -428,7 +428,7 @@ esp_err_t audio_pipeline_wait_for_stop(audio_pipeline_handle_t pipeline)
 {
     audio_element_item_t *el_item;
     if (pipeline->state != AEL_STATE_RUNNING) {
-        ESP_LOGW(TAG, "audio_pipeline state is not running, %d", pipeline->state);
+        ESP_LOGW(TAG, "Without wait stop, st:%d", pipeline->state);
         return ESP_FAIL;
     }
     ESP_LOGD(TAG, "audio_pipeline_wait_for_stop - IN");
@@ -650,13 +650,22 @@ esp_err_t audio_pipeline_check_items_state(audio_pipeline_handle_t pipeline, aud
         el_cnt ++;
         ESP_LOGV(TAG, "pipeline state check, pl:%p, el:%p, tag:%16s, state:%d, status:%d", pipeline, item->el,
                  audio_element_get_tag(item->el), item->el_state, status);
+        int st = audio_element_get_state(item->el);
+        if ((st == AEL_STATE_STOPPED)
+            || (st == AEL_STATE_FINISHED)
+            || (st == AEL_STATE_ERROR)) {
+            ESP_LOGV(TAG, "Element rewrite, tag:%16s, el-state:%d, it->el_state:%d, wanted:%d",
+                     audio_element_get_tag(item->el), st, it->el_state, status);
+            item->el_state = st + AEL_STATUS_OUTPUT_DONE;
+        }
         if (item->el_state == AEL_STATUS_NONE) {
             continue;
         }
         if (status == item->el_state) {
             el_sta_cnt++;
         } else if ((status == AEL_STATUS_STATE_RUNNING)) {
-            if ((item->el_state > AEL_STATUS_NONE) && (item->el_state < AEL_STATUS_INPUT_DONE)) {
+            if ((item->el_state == AEL_STATUS_STATE_FINISHED)
+                || ((item->el_state > AEL_STATUS_NONE) && (item->el_state < AEL_STATUS_INPUT_DONE))) {
                 el_sta_cnt++;
                 ESP_LOGW(TAG, "Check AEL RUNNING, pl:%p, el:%p, tag:%16s, state:%d, wanted:%d", pipeline, item->el,
                          audio_element_get_tag(item->el), item->el_state, status);
@@ -676,7 +685,7 @@ esp_err_t audio_pipeline_check_items_state(audio_pipeline_handle_t pipeline, aud
                          audio_element_get_tag(item->el), item->el_state, status);
             }
         } else if (status == AEL_STATUS_STATE_FINISHED) {
-            if ((item->el_state == AEL_STATUS_STATE_FINISHED)
+            if ((item->el_state == AEL_STATUS_STATE_STOPPED)
                 || ((item->el_state > AEL_STATUS_NONE) && (item->el_state < AEL_STATUS_INPUT_DONE))) {
                 el_sta_cnt++;
                 ESP_LOGW(TAG, "Check AEL FINISHED, pl:%p, el:%p, tag:%16s, state:%d, wanted:%d", pipeline, item->el,

@@ -27,7 +27,7 @@
 #include "driver/gpio.h"
 #include "audio_error.h"
 #include "audio_mem.h"
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "esp_peripherals.h"
 #include "periph_gpio_isr.h"
 

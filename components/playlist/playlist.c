@@ -22,7 +22,7 @@
  *
  */
 
-#include "rom/queue.h"
+#include "sys/queue.h"
 #include "esp_log.h"
 #include "audio_mem.h"
 #include "audio_error.h"
