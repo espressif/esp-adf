@@ -45,6 +45,10 @@ If your Chinese pronunciation is not good, you can try the "Alexa" keyword. You 
 | ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/yes-button.png "Compatible") | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
 ## Usage
 
+Prepare the audio board:
+
+- Insert a microSD card loaded with  MP3 files 'dingdong.mp3' and 'haode.mp3' into board's slot.
+
 Configure the example:
 
 - Select compatible audio board in `menuconfig` > `Audio HAL`.

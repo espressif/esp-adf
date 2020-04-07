@@ -7,28 +7,21 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/semphr.h"
-#include "freertos/timers.h"
-#include "driver/gpio.h"
-#include "esp_system.h"
 #include "esp_log.h"
 #include "board.h"
-#include "audio_common.h"
 #include "audio_pipeline.h"
-#include "mp3_decoder.h"
+#include "fatfs_stream.h"
 #include "i2s_stream.h"
 #include "raw_stream.h"
-#include "filter_resample.h"
+#include "esp_audio.h"
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
 #include "esp_mn_iface.h"
 #include "esp_mn_models.h"
-#include "dl_lib_coefgetter_if.h"
+#include "mp3_decoder.h"
+#include "filter_resample.h"
 #include "rec_eng_helper.h"
 
 static const char *TAG = "example_asr_keywords";
@@ -61,14 +54,45 @@ typedef enum {
     ID_MAX,
 } asr_multinet_event_t;
 
-#define WAKEUP_TIME_MS 10000
 static esp_err_t asr_multinet_control(int commit_id);
-bool enable_multinet = false;
 
-void tmr_wakeup_cb(xTimerHandle tmr)
+static esp_audio_handle_t setup_player()
 {
-    ESP_LOGI(TAG, "Wakeup time is out");
-    enable_multinet = false;
+    esp_audio_handle_t player = NULL;
+    esp_audio_cfg_t cfg = DEFAULT_ESP_AUDIO_CONFIG();
+    audio_board_handle_t board_handle = audio_board_init();
+    cfg.vol_handle = board_handle->audio_hal;
+    cfg.prefer_type = ESP_AUDIO_PREFER_MEM;
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    cfg.resample_rate = 16000;
+#else
+    cfg.resample_rate = 48000;
+#endif
+    player = esp_audio_create(&cfg);
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+    fatfs_stream_cfg_t fs_reader = FATFS_STREAM_CFG_DEFAULT();
+    fs_reader.type = AUDIO_STREAM_READER;
+    raw_stream_cfg_t raw_reader = RAW_STREAM_CFG_DEFAULT();
+    raw_reader.type = AUDIO_STREAM_READER;
+    esp_audio_input_stream_add(player, raw_stream_init(&raw_reader));
+    esp_audio_input_stream_add(player, fatfs_stream_init(&fs_reader));
+    mp3_decoder_cfg_t  mp3_dec_cfg  = DEFAULT_MP3_DECODER_CONFIG();
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
+    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    i2s_writer.i2s_config.sample_rate = 16000;
+#else
+    i2s_writer.i2s_config.sample_rate = 48000;
+#endif
+
+    i2s_writer.type = AUDIO_STREAM_WRITER;
+    audio_element_handle_t i2s_stream_writer = i2s_stream_init(&i2s_writer);
+    esp_audio_output_stream_add(player, i2s_stream_writer);
+    esp_audio_vol_set(player, 60);
+        
+    ESP_LOGI(TAG, "esp_audio instance is:%p\r\n", player);
+    return player;
 }
 
 void app_main()
@@ -118,16 +142,16 @@ void app_main()
         size = audio_mn_chunksize;
     }
     int16_t *buffer = (int16_t *)malloc(size * sizeof(short));
-    
-    TimerHandle_t tmr_wakeup;
-    tmr_wakeup = xTimerCreate("tm_wakeup", WAKEUP_TIME_MS / portTICK_PERIOD_MS, pdFALSE, NULL, tmr_wakeup_cb);
-
-    ESP_LOGI(TAG, "[ 1 ] Start codec chip");
-    audio_board_handle_t board_handle = audio_board_init();
-    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
     audio_pipeline_handle_t pipeline;
     audio_element_handle_t i2s_stream_reader, filter, raw_read;
+    esp_audio_handle_t player;
+    bool enable_wn = true;
+    uint32_t mn_count = 0;
+
+    ESP_LOGI(TAG, "[ 1 ] Start codec chip");
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
+    audio_board_sdcard_init(esp_periph_set_init(&periph_cfg));
 
     ESP_LOGI(TAG, "[ 2.0 ] Create audio pipeline for recording");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -139,7 +163,6 @@ void app_main()
     i2s_cfg.i2s_config.sample_rate = 48000;
     i2s_cfg.type = AUDIO_STREAM_READER;
 
-   // Mini board record by I2S1 and play music by I2S0, no need to add resample element.
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_cfg.i2s_config.sample_rate = 16000;
     i2s_cfg.i2s_port = 1;
@@ -176,27 +199,37 @@ void app_main()
     audio_pipeline_link(pipeline, (const char *[]) {"i2s", "filter", "raw"}, 3);
 #endif
 
+    player = setup_player();
+
     ESP_LOGI(TAG, "[ 5 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
+
     while (1) {
         raw_stream_read(raw_read, (char *)buffer, size * sizeof(short));
-        if (wakenet->detect(model_wn_data, (int16_t *)buffer) ==  WAKE_UP) {
-            ESP_LOGI(TAG, "wake up");
-            enable_multinet = true;
-            xTimerStart(tmr_wakeup, portMAX_DELAY);
-            
-        }
-        if (enable_multinet ==  true) {
-            int commit_id = multinet->detect(model_mn_data, buffer);
-            if (asr_multinet_control(commit_id) == ESP_OK) {
-                enable_multinet = false;
-                xTimerStop(tmr_wakeup, portMAX_DELAY);
+        if (enable_wn) {
+            if (wakenet->detect(model_wn_data, (int16_t *)buffer) ==  WAKE_UP) {
+                esp_audio_sync_play(player, "file://sdcard/dingdong.mp3", 0);
+                ESP_LOGI(TAG, "wake up");
+                enable_wn = false;
             }
-        }      
+        } else {
+            mn_count++;
+            int commit_id = multinet->detect(model_mn_data, buffer);
+            if (asr_multinet_control(commit_id) == ESP_OK ) {
+                esp_audio_sync_play(player, "file://sdcard/haode.mp3", 0);
+                enable_wn = true;
+                mn_count = 0;
+            }
+            if (mn_count == mn_num) {
+                ESP_LOGI(TAG, "stop multinet");
+                enable_wn = true;
+                mn_count = 0;
+            }
+        }    
     }
 
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
-
+  
     audio_pipeline_terminate(pipeline);
 
     /* Terminate the pipeline before removing the listener */
