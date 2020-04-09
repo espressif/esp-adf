@@ -123,7 +123,7 @@ typedef struct {
     int64_t total_bytes;                        /*!< The total bytes for an element */
     int duration;                               /*!< The duration for an element (optional) */
     char *uri;                                  /*!< URI (optional) */
-    audio_codec_t codec_fmt;                    /*!< Music format (optional) */
+    esp_codec_type_t codec_fmt;                 /*!< Music format (optional) */
     audio_element_reserve_data_t reserve_data;  /*!< This value is reserved for user use (optional) */
 } audio_element_info_t;
 
