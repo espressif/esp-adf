@@ -131,7 +131,7 @@ static esp_err_t g711dec_pipeline_open()
     rsp_cfg.src_ch = G711_CHANNEL;
     rsp_cfg.dest_rate = I2S_SAMPLE_RATE;
     rsp_cfg.dest_ch = I2S_CHANNEL;
-    rsp_cfg.complexity = 5;
+    rsp_cfg.complexity = 0;
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
 
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
