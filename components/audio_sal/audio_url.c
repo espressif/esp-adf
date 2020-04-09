@@ -30,8 +30,6 @@ char *audio_url_encode(const char *str)
             (str[i] == '?') || (str[i] == '+') ||
             (str[i] == '\'') || (str[i] == '~')) {
             *final++ = str[i];
-        } else if (str[i] == ' ') {
-            *final++ = '+';
         } else {
             *final++ = '%';
             *final++ = char_to_hex((unsigned char)str[i] >> 4);
