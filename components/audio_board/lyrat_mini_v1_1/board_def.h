@@ -36,6 +36,9 @@
 #define BUTTON_MODE_ID            4
 #define BUTTON_REC_ID             5
 
+#define ES8311_MCLK_SOURCE        0   /* 0 From MCLK of esp32   1 From BCLK */
+
+
 #define HEADPHONE_DETECT          GPIO_NUM_19
 #define PA_ENABLE_GPIO            GPIO_NUM_21
 

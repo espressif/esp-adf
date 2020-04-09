@@ -194,3 +194,8 @@ int8_t get_blue_led_gpio(void)
 {
     return BLUE_LED_GPIO;
 }
+
+int8_t get_es8311_mclk_src(void)
+{
+    return ES8311_MCLK_SOURCE;
+}
