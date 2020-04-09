@@ -27,7 +27,6 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
-#include "freertos/task.h"
 #include "freertos/event_groups.h"
 
 #include "esp_log.h"
@@ -35,6 +34,7 @@
 #include "audio_mem.h"
 #include "audio_mutex.h"
 #include "audio_error.h"
+#include "audio_thread.h"
 
 static const char *TAG = "AUDIO_ELEMENT";
 #define DEFAULT_MAX_WAIT_TIME       (2000/portTICK_RATE_MS)
@@ -109,6 +109,9 @@ struct audio_element {
     xSemaphoreHandle            lock;
     audio_element_info_t        info;
     audio_element_info_t        *report_info;
+
+    bool                        stack_in_ext;
+    audio_thread_t              audio_thread;
 
     /* PrivateData */
     void                        *data;
@@ -450,7 +453,7 @@ void audio_element_task(void *pv)
     el->stopping = false;
     el->task_run = false;
     xEventGroupSetBits(el->state_event, TASK_DESTROYED_BIT);
-    vTaskDelete(NULL);
+    audio_thread_delete_task(&el->audio_thread);
 }
 
 esp_err_t audio_element_reset_state(audio_element_handle_t el)
@@ -892,6 +895,7 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
 
     if (config->task_stack > 0) {
         el->task_stack = config->task_stack;
+        el->stack_in_ext = config->stack_in_ext;
     }
     if (config->task_prio) {
         el->task_prio = config->task_prio;
@@ -984,6 +988,9 @@ esp_err_t audio_element_deinit(audio_element_handle_t el)
     if (el->report_info) {
         audio_free(el->report_info);
     }
+    if (el->audio_thread) {
+        audio_thread_cleanup(&el->audio_thread);
+    }
     audio_free(el);
     return ESP_OK;
 }
@@ -1001,10 +1008,12 @@ esp_err_t audio_element_run(audio_element_handle_t el)
     audio_event_iface_discard(el->iface_event);
     xEventGroupClearBits(el->state_event, TASK_CREATED_BIT);
     if (el->task_stack > 0) {
-        if (xTaskCreatePinnedToCore(audio_element_task, task_name, el->task_stack, el, el->task_prio, NULL, el->task_core) != pdPASS) {
+        int ret = audio_thread_create(&el->audio_thread, el->tag, audio_element_task, el, el->task_stack,
+                                      el->task_prio, el->stack_in_ext, el->task_core);
+        if (ret == ESP_FAIL) {
             audio_element_force_set_state(el, AEL_STATE_ERROR);
             audio_element_report_status(el, AEL_STATUS_ERROR_OPEN);
-            ESP_LOGE(TAG, "[%s] Error create element task", el->tag);
+            ESP_LOGE(TAG, "[%s] audio_thread_create failed", el->tag);
             return ESP_FAIL;
         }
         EventBits_t uxBits = xEventGroupWaitBits(el->state_event, TASK_CREATED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);

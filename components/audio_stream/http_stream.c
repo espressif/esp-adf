@@ -611,6 +611,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     cfg.task_stack = config->task_stack;
     cfg.task_prio = config->task_prio;
     cfg.task_core = config->task_core;
+    cfg.stack_in_ext = config->stack_in_ext;
     cfg.out_rb_size = config->out_rb_size;
     cfg.multi_out_rb_num = config->multi_out_num;
     cfg.tag = "http";
