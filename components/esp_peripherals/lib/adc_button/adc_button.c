@@ -264,9 +264,9 @@ static void button_task(void *parameters)
     adc_btn_list *find = head;
     xEventGroupClearBits(g_event_bit, DESTROY_BIT);
 #if CONFIG_IDF_TARGET_ESP32
-    adc1_config_width(ADC_WIDTH_12Bit);
+    adc1_config_width(ADC_WIDTH_BIT_12);
 #elif CONFIG_IDF_TARGET_ESP32S2
-    adc1_config_width(ADC_WIDTH_13Bit);
+    adc1_config_width(ADC_WIDTH_BIT_13);
 #endif
     
     while (find) {
