@@ -435,7 +435,7 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
     g_bt_service = calloc(1, sizeof(bluetooth_service_t));
     AUDIO_MEM_CHECK(TAG, g_bt_service, return ESP_ERR_NO_MEM);
 	
-#if define(CONFIG_BTDM_CONTROLLER_MODE_BR_EDR_ONLY)
+#if defined(CONFIG_BTDM_CONTROLLER_MODE_BR_EDR_ONLY)
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_BLE));
 #endif
 
@@ -445,19 +445,19 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
         AUDIO_ERROR(TAG, "initialize controller failed");
         return ESP_FAIL;
     }
-#if define(CONFIG_BTDM_CONTROLLER_MODE_BTDM)
+#if defined(CONFIG_BTDM_CONTROLLER_MODE_BTDM)
     if (esp_bt_controller_enable(ESP_BT_MODE_BTDM) != ESP_OK) {
         AUDIO_ERROR(TAG, "enable controller (BTDM Mode) failed");
         return ESP_FAIL;
     }
 #endif
-#if define(CONFIG_BTDM_CONTROLLER_MODE_BLE_ONLY)
+#if defined(CONFIG_BTDM_CONTROLLER_MODE_BLE_ONLY)
     if (esp_bt_controller_enable(ESP_BT_MODE_BLE) != ESP_OK) {
         AUDIO_ERROR(TAG, "enable controller (BLE Only) failed");
         return ESP_FAIL;
     }
 #endif
-#if define(CONFIG_BTDM_CONTROLLER_MODE_BR_EDR_ONLY)
+#if defined(CONFIG_BTDM_CONTROLLER_MODE_BR_EDR_ONLY)
     if (esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT) != ESP_OK) {
         AUDIO_ERROR(TAG, "enable controller (BR_EDR Mode) failed");
         return ESP_FAIL;
