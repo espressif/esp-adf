@@ -7,6 +7,7 @@ set(COMPONENT_ADD_INCLUDEDIRS ./include
 ./lib/button
 ./lib/blufi
 ./lib/IS31FL3216
+./lib/aw2013
 ./driver/i2c_bus
 )
 ELSEIF (CONFIG_IDF_TARGET MATCHES "esp32s2")
@@ -17,6 +18,7 @@ set(COMPONENT_ADD_INCLUDEDIRS ./include
 ./lib/button
 ./lib/blufi
 ./lib/IS31FL3216
+./lib/aw2013
 ./driver/i2c_bus
 )
 ENDIF ( NOT (CONFIG_IDF_TARGET MATCHES "esp32s2"))
@@ -38,6 +40,7 @@ set(COMPONENT_SRCS ./esp_peripherals.c
                 ./periph_touch.c
                 ./periph_wifi.c
                 ./periph_ws2812.c
+                ./periph_aw2013.c
                 ./lib/sdcard/sdcard.c
                 ./lib/button/button.c
                 ./lib/touch/touch.c
@@ -59,6 +62,7 @@ set(COMPONENT_SRCS ./esp_peripherals.c
                 ./periph_spiffs.c
                 ./periph_touch.c
                 ./periph_wifi.c
+                ./periph_aw2013.c
                 ./lib/button/button.c
                 ./lib/touch/touch.c
                 ./lib/blufi/blufi_security.c
