@@ -2,7 +2,7 @@ set(COMPONENT_ADD_INCLUDEDIRS include)
 set(COMPONENT_PRIV_INCLUDEDIRS inc)
 
 # Edit following two lines to set component requirements (see docs)
-set(COMPONENT_REQUIRES bt mbedtls)
+set(COMPONENT_REQUIRES bt mbedtls nvs_flash)
 set(COMPONENT_PRIV_REQUIRES audio_sal esp_dispatcher)
 
 set(COMPONENT_SRCS src/esp_wifi_setting.c
