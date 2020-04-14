@@ -52,7 +52,7 @@ static esp_err_t flash_list_choose_id(flash_list_t *playlist, int id, char **url
     esp_err_t ret = ESP_OK;
 
     if (playlist->cur_url) {
-        free(playlist->cur_url);
+        audio_free(playlist->cur_url);
     }
 
     playlist->cur_url = (char *)audio_calloc(1, NVS_FLASH_URL_MAX_LENGTH);
@@ -91,7 +91,7 @@ esp_err_t flash_list_create(playlist_operator_handle_t *handle)
 
     flash_list_t *flash_list = (flash_list_t *)audio_calloc(1, sizeof(flash_list_t));
     AUDIO_NULL_CHECK(TAG, flash_list, {
-        free(flash_handle);
+        audio_free(flash_handle);
         return ESP_FAIL;
     });
 
@@ -100,17 +100,17 @@ esp_err_t flash_list_create(playlist_operator_handle_t *handle)
 
     flash_list->name_space = audio_calloc(1, NVS_NAME_SPACE_MAX_LENGTH);
     AUDIO_NULL_CHECK(TAG, flash_list, {
-        free(flash_handle);
-        free(flash_list);
+        audio_free(flash_handle);
+        audio_free(flash_list);
         return ESP_FAIL;
     });
     sprintf(flash_list->name_space, "%s%d", DEFAULT_NVS_NAME_SPACE, list_id++);
     ret |= nvs_open(flash_list->name_space, NVS_READWRITE, &flash_list->url_nvs_handle);
 
     if (ret != ESP_OK) {
-        free(flash_handle);
-        free(flash_list->name_space);
-        free(flash_list);
+        audio_free(flash_handle);
+        audio_free(flash_list->name_space);
+        audio_free(flash_list);
         ESP_LOGE(TAG, "Flash playlist open failed, please check");
     }
 
@@ -134,7 +134,7 @@ esp_err_t flash_list_save(playlist_operator_handle_t handle, const char *url)
     ret |= nvs_commit(playlist->url_nvs_handle);
 
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Flash save url failed, URL: %s", url);
+        ESP_LOGE(TAG, "Flash save url failed, URL: %s, ret: %d", url, ret);
         return ESP_FAIL;
     }
 
@@ -157,7 +157,7 @@ esp_err_t flash_list_show(playlist_operator_handle_t handle)
         ret = nvs_get_str(playlist->url_nvs_handle, (const char *)&i, out_str, &len);
         ESP_LOGI(TAG, "ID:%d 	URL: %s", i, out_str);
     }
-    free(out_str);
+    audio_free(out_str);
     return ret;
 }
 
@@ -251,6 +251,48 @@ esp_err_t flash_list_choose(playlist_operator_handle_t handle, int url_id, char 
     return flash_list_choose_id(playlist, url_id, url_buff);
 }
 
+esp_err_t flash_list_reset(playlist_operator_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    flash_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    nvs_erase_all(playlist->url_nvs_handle);
+    if (playlist->cur_url) {
+        audio_free(playlist->cur_url);
+        playlist->cur_url = NULL;
+    }
+
+    playlist->cur_url_id = 0;
+    playlist->url_num = 0;
+    return ESP_OK;
+}
+
+bool flash_list_exist(playlist_operator_handle_t handle, const char *url)
+{
+    esp_err_t ret = ESP_OK;
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    flash_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    size_t len = NVS_FLASH_URL_MAX_LENGTH;
+    char *out_str = audio_calloc(1, NVS_FLASH_URL_MAX_LENGTH);
+    for (int i = 0; i < playlist->url_num; i++) {
+        memset(out_str, 0, NVS_FLASH_URL_MAX_LENGTH);
+        len = NVS_FLASH_URL_MAX_LENGTH;
+        ret = nvs_get_str(playlist->url_nvs_handle, (const char *)&i, out_str, &len);
+        if (strlen(url) != strlen(out_str)) {
+            continue;
+        }
+        if (strcmp(url, out_str) == 0) {
+            audio_free(out_str);
+            return true;
+        }
+    }
+    audio_free(out_str);
+    return ret;
+}
+
 int flash_list_get_url_num(playlist_operator_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
@@ -258,6 +300,14 @@ int flash_list_get_url_num(playlist_operator_handle_t handle)
     AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
 
     return playlist->url_num;
+}
+
+int flash_list_get_url_id(playlist_operator_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    flash_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+    return playlist->cur_url_id;
 }
 
 esp_err_t flash_list_destroy(playlist_operator_handle_t handle)
@@ -268,15 +318,15 @@ esp_err_t flash_list_destroy(playlist_operator_handle_t handle)
 
     nvs_erase_all(playlist->url_nvs_handle);
     nvs_close(playlist->url_nvs_handle);
-    free(playlist->name_space);
+    audio_free(playlist->name_space);
     playlist->name_space = NULL;
     if (playlist->cur_url) {
-        free(playlist->cur_url);
+        audio_free(playlist->cur_url);
         playlist->cur_url = NULL;
     }
-    free(playlist);
+    audio_free(playlist);
     handle->playlist = NULL;
-    free(handle);
+    audio_free(handle);
     return ESP_OK;
 }
 
@@ -287,10 +337,13 @@ esp_err_t flash_list_get_operation(playlist_operation_t *operation)
     operation->save = (void *)flash_list_save;
     operation->next = (void *)flash_list_next;
     operation->prev = (void *)flash_list_prev;
+    operation->reset   = (void *)flash_list_reset;
+    operation->exist   = (void *)flash_list_exist;
     operation->current = (void *)flash_list_current;
     operation->choose  = (void *)flash_list_choose;
     operation->destroy = (void *)flash_list_destroy;
     operation->get_url_num = (void *)flash_list_get_url_num;
+    operation->get_url_id  = (void *)flash_list_get_url_id;
     operation->type = PLAYLIST_FLASH;
     return ESP_OK;
 }

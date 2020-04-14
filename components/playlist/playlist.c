@@ -56,7 +56,7 @@ playlist_handle_t playlist_create(void)
     AUDIO_NULL_CHECK(TAG, handle, return NULL);
     handle->playlist_operate_lock = mutex_create();
     AUDIO_NULL_CHECK(TAG, handle->playlist_operate_lock, {
-        free(handle);
+        audio_free(handle);
         return NULL;
     });
     STAILQ_INIT(&handle->playlist_info_list);
@@ -112,7 +112,7 @@ esp_err_t playlist_choose(playlist_handle_t handle, int url_id, char **url_buff)
     playlist_operator_handle_t cur_handle = cur_list->list_handle;
     playlist_operation_t operation = {0};
     cur_handle->get_operation(&operation);
-    
+
     ret = operation.choose(cur_handle, url_id, url_buff);
     mutex_unlock(handle->playlist_operate_lock);
     return ret;
@@ -136,6 +136,41 @@ esp_err_t playlist_save(playlist_handle_t handle, const char *url)
     return ret;
 }
 
+esp_err_t playlist_reset(playlist_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, handle->cur_playlist, return ESP_FAIL);
+
+    esp_err_t ret = ESP_OK;
+    mutex_lock(handle->playlist_operate_lock);
+
+    playlist_info_t *cur_list = handle->cur_playlist;
+    playlist_operator_handle_t cur_handle = cur_list->list_handle;
+    playlist_operation_t operation = {0};
+    cur_handle->get_operation(&operation);
+
+    ret = operation.reset(cur_handle);
+    mutex_unlock(handle->playlist_operate_lock);
+    return ret;
+}
+
+bool playlist_exist(playlist_handle_t handle, const char *url)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, handle->cur_playlist, return ESP_FAIL);
+
+    mutex_lock(handle->playlist_operate_lock);
+
+    playlist_info_t *cur_list = handle->cur_playlist;
+    playlist_operator_handle_t cur_handle = cur_list->list_handle;
+    playlist_operation_t operation = {0};
+    cur_handle->get_operation(&operation);
+
+    bool ret = operation.exist(cur_handle, url);
+    mutex_unlock(handle->playlist_operate_lock);
+    return ret;
+}
+
 esp_err_t playlist_show(playlist_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
@@ -150,6 +185,54 @@ esp_err_t playlist_show(playlist_handle_t handle)
     cur_handle->get_operation(&operation);
 
     ret = operation.show(cur_handle);
+    mutex_unlock(handle->playlist_operate_lock);
+    return ret;
+}
+
+esp_err_t playlist_remove_by_url(playlist_handle_t handle, const char *url)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, handle->cur_playlist, return ESP_FAIL);
+
+    esp_err_t ret = ESP_OK;
+    mutex_lock(handle->playlist_operate_lock);
+
+    playlist_info_t *cur_list = handle->cur_playlist;
+    playlist_operator_handle_t cur_handle = cur_list->list_handle;
+    playlist_operation_t operation = {0};
+    cur_handle->get_operation(&operation);
+
+    if (operation.remove_by_url) {
+        ret = operation.remove_by_url(cur_handle, url);
+    } else {
+        ESP_LOGE(TAG, "Remove by url only can be use in dram list now");
+        mutex_unlock(handle->playlist_operate_lock);
+        return ESP_ERR_NOT_SUPPORTED;
+    }
+    mutex_unlock(handle->playlist_operate_lock);
+    return ret;
+}
+
+esp_err_t playlist_remove_by_url_id(playlist_handle_t handle, uint16_t url_id)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, handle->cur_playlist, return ESP_FAIL);
+
+    esp_err_t ret = ESP_OK;
+    mutex_lock(handle->playlist_operate_lock);
+
+    playlist_info_t *cur_list = handle->cur_playlist;
+    playlist_operator_handle_t cur_handle = cur_list->list_handle;
+    playlist_operation_t operation = {0};
+    cur_handle->get_operation(&operation);
+
+    if (operation.remove_by_id) {
+        ret = operation.remove_by_id(cur_handle, url_id);
+    } else {
+        ESP_LOGE(TAG, "Remove by url id only can be use in dram list now");
+        mutex_unlock(handle->playlist_operate_lock);
+        return ESP_ERR_NOT_SUPPORTED;
+    }
     mutex_unlock(handle->playlist_operate_lock);
     return ret;
 }
@@ -169,11 +252,11 @@ esp_err_t playlist_destroy(playlist_handle_t handle)
         ret |= cur_handle->get_operation(&operation);
         ret |= operation.destroy(cur_handle);
         STAILQ_REMOVE(&handle->playlist_info_list, item, playlist_info, entries);
-        free(item);
+        audio_free(item);
     }
     mutex_unlock(handle->playlist_operate_lock);
     mutex_destroy(handle->playlist_operate_lock);
-    free(handle);
+    audio_free(handle);
     ESP_LOGW(TAG, "Handle of playlists has been destroyed");
     return ret;
 }
@@ -233,6 +316,15 @@ esp_err_t playlist_checkout_by_id(playlist_handle_t handle, uint8_t id)
     return ESP_FAIL;
 }
 
+int playlist_get_list_num(playlist_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return -1);
+    mutex_lock(handle->playlist_operate_lock);
+    int num = handle->list_num;
+    mutex_unlock(handle->playlist_operate_lock);
+    return num;
+}
+
 int playlist_get_current_list_id(playlist_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return -1);
@@ -289,6 +381,21 @@ int playlist_get_current_list_url_num(playlist_handle_t handle)
     cur_handle->get_operation(&operation);
 
     int ret = operation.get_url_num(cur_handle);
+    mutex_unlock(handle->playlist_operate_lock);
+    return ret;
+}
+
+int playlist_get_current_list_url_id(playlist_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, handle->cur_playlist, return ESP_FAIL);
+
+    mutex_lock(handle->playlist_operate_lock);
+    playlist_info_t *cur_list = handle->cur_playlist;
+    playlist_operator_handle_t cur_handle = cur_list->list_handle;
+    playlist_operation_t operation = {0};
+    cur_handle->get_operation(&operation);
+    int ret = operation.get_url_id(cur_handle);;
     mutex_unlock(handle->playlist_operate_lock);
     return ret;
 }

@@ -76,6 +76,27 @@ esp_err_t sdcard_list_next(playlist_operator_handle_t handle, int step, char **u
 esp_err_t sdcard_list_prev(playlist_operator_handle_t handle, int step, char **url_buff);
 
 /**
+ * @brief Judge whether the url exists in sdcard playlist
+ *
+ * @param handle   Playlist handle
+ * @param url      The url to be checked
+ *
+ * @return true    existence
+ *         false   Non-existent
+ */
+bool sdcard_list_exist(playlist_operator_handle_t handle, const char *url);
+
+/**
+ * @brief Reset sdcard playlist
+ *
+ * @param handle   Playlist handle
+ *
+ * @return ESP_OK   success
+ *         ESP_FAIL failed
+ */
+esp_err_t sdcard_list_reset(playlist_operator_handle_t handle);
+
+/**
  * @brief Get current URL in sdcard playlist
  *
  * @param      handle         Playlist handle
@@ -104,9 +125,19 @@ esp_err_t sdcard_list_choose(playlist_operator_handle_t handle, int url_id, char
  * @param handle        Playlist handle
  *
  * @return URLs number in sdcard playlist
- *
+ *         ESP_FAIL     Fail to get number of urls
  */
 int sdcard_list_get_url_num(playlist_operator_handle_t handle);
+
+/**
+ * @brief Destroy sdcard playlist
+ *
+ * @param handle     Playlist handle
+ *
+ * @return Current url id in partition playlist
+ *         ESP_FAIL  Fail to get url id
+ */
+int sdcard_list_get_url_id(playlist_operator_handle_t handle);
 
 /**
  * @brief Destroy sdcard playlist

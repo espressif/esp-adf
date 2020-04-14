@@ -98,6 +98,27 @@ esp_err_t flash_list_prev(playlist_operator_handle_t handle, int step, char **ur
 esp_err_t flash_list_current(playlist_operator_handle_t handle, char **url_buff);
 
 /**
+ * @brief Judge whether the url exists in flash playlist
+ *
+ * @param handle   Playlist handle
+ * @param url      The url to be checked
+ *
+ * @return true    existence
+ *         false   Non-existent
+ */
+bool flash_list_exist(playlist_operator_handle_t handle, const char *url);
+
+/**
+ * @brief Reset flash playlist
+ *
+ * @param handle   Playlist handle
+ *
+ * @return ESP_OK   success
+ *         ESP_FAIL failed
+ */
+esp_err_t flash_list_reset(playlist_operator_handle_t handle);
+
+/**
  * @brief Choose a url by url id
  *
  * @param      handle          Playlist handle
@@ -115,9 +136,19 @@ esp_err_t flash_list_choose(playlist_operator_handle_t handle, int url_id, char 
  * @param handle        Playlist handle
  *
  * @return URLs number in flash playlist
- *
+ *         ESP_FAIL     Fail to get number of urls
  */
 int flash_list_get_url_num(playlist_operator_handle_t handle);
+
+/**
+ * @brief Get current url id in the flash playlist
+ *
+ * @param handle        Playlist handle
+ *
+ * @return Curernt url id in flash playlist
+ *         ESP_FAIL     Fail to get url id
+ */
+int flash_list_get_url_id(playlist_operator_handle_t handle);
 
 /**
  * @brief Destroy the nvs flash playlist

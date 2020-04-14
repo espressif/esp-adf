@@ -318,8 +318,9 @@ static esp_err_t playlist_sd_scan(esp_periph_handle_t periph, int argc, char *ar
             ESP_LOGE(TAG, "Invalid scan path parameter");
             return ESP_ERR_INVALID_ARG;
         }
+        sdcard_list_reset(playlist);
         sdcard_scan(sdcard_url_save_cb, argv[0],
-        0, (const char *[]) {"mp3", "m4a", "flac", "ogg", "opus", "amr", "ts"}, 7, playlist);
+        0, (const char *[]) {"mp3", "m4a", "flac", "ogg", "opus", "amr", "ts", "aac", "wav"}, 9, playlist);
         sdcard_list_show(playlist);
     } else {
         ESP_LOGE(TAG, "Please enter the can path");

@@ -77,6 +77,27 @@ esp_err_t dram_list_next(playlist_operator_handle_t handle, int step, char **url
 esp_err_t dram_list_prev(playlist_operator_handle_t handle, int step, char **url_buff);
 
 /**
+ * @brief Judge whether the url exists in dram playlist
+ *
+ * @param handle   Playlist handle
+ * @param url      The url to be checked
+ *
+ * @return true    existence
+ *         false   Non-existent
+ */
+bool dram_list_exist(playlist_operator_handle_t handle, const char *url);
+
+/**
+ * @brief Reset dram playlist
+ *
+ * @param handle   Playlist handle
+ *
+ * @return ESP_OK   success
+ *         ESP_FAIL failed
+ */
+esp_err_t dram_list_reset(playlist_operator_handle_t handle);
+
+/**
  * @brief The current URL in current playlist
  *
  * @param      handle         Playlist handle
@@ -105,9 +126,19 @@ esp_err_t dram_list_choose(playlist_operator_handle_t handle, int url_id, char *
  * @param handle        Playlist handle
  *
  * @return URLs number in dram playlist
- *
+ *         ESP_FAIL     Fail to get number of urls
  */
 int dram_list_get_url_num(playlist_operator_handle_t handle);
+
+/**
+ * @brief Get current url id in the dram playlist
+ *
+ * @param handle        Playlist handle
+ *
+ * @return Current url id in dram playlist
+ *         ESP_FAIL     Fail to get url id
+ */
+int dram_list_get_url_id(playlist_operator_handle_t handle);
 
 /**
  * @brief Show all the URLs in the dram playlist
@@ -118,6 +149,28 @@ int dram_list_get_url_num(playlist_operator_handle_t handle);
  *         ESP_FAIL  failed
  */
 esp_err_t dram_list_show(playlist_operator_handle_t handle);
+
+/**
+ * @brief Remove corrsponding url in dram list
+ *
+ * @param handle   Playlist handle
+ * @param url      The url to be removed
+ *
+ * @return ESP_OK    success
+ *         ESP_FAIL  failed
+ */
+esp_err_t dram_list_remove_by_url(playlist_operator_handle_t handle, const char *url);
+
+/**
+ * @brief Remove url by id
+ *
+ * @param handle   Playlist handle
+ * @param url_id   The url id to be removed
+ *
+ * @return ESP_OK    success
+ *         ESP_FAIL  failed
+ */
+esp_err_t dram_list_remove_by_url_id(playlist_operator_handle_t handle, uint16_t url_id);
 
 /**
  * @brief Destroy the dram playlist

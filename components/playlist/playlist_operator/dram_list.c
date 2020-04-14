@@ -35,6 +35,7 @@ static const char *TAG = "DRAM_LIST";
  */
 typedef struct url_info {
     char *url_name;                /*!< URL string */
+    int   url_id;
     TAILQ_ENTRY(url_info) entries; /*!< list node */
 } url_info_t;
 
@@ -57,7 +58,7 @@ esp_err_t dram_list_create(playlist_operator_handle_t *handle)
 
     dram_list_t *dram_list = (dram_list_t *) audio_calloc(1, sizeof(dram_list_t));
     AUDIO_NULL_CHECK(TAG, dram_list, {
-        free(dram_handle);
+        audio_free(dram_handle);
         return ESP_FAIL;
     });
 
@@ -79,8 +80,9 @@ esp_err_t dram_list_save(playlist_operator_handle_t handle, const char *url)
     url_info_t *list_node = (url_info_t *)audio_calloc(1, sizeof(url_info_t));
     AUDIO_NULL_CHECK(TAG, list_node, return ESP_FAIL);
     list_node->url_name = (char *)audio_calloc(1, strlen(url) + 1);
+    list_node->url_id = playlist->url_num;
     AUDIO_NULL_CHECK(TAG, list_node->url_name, {
-        free(list_node);
+        audio_free(list_node);
         list_node = NULL;
         return ESP_FAIL;
     });
@@ -206,6 +208,42 @@ esp_err_t dram_list_show(playlist_operator_handle_t handle)
     return ESP_OK;
 }
 
+bool dram_list_exist(playlist_operator_handle_t handle, const char *url)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    dram_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    url_info_t *item, *tmp;
+    TAILQ_FOREACH_SAFE(item, &playlist->url_info_list, entries, tmp) {
+        if (strlen(url) != strlen(item->url_name)) {
+            continue;
+        }
+        if (strcmp(item->url_name, url) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+esp_err_t dram_list_reset(playlist_operator_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    dram_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    url_info_t *item, *tmp;
+    TAILQ_FOREACH_SAFE(item, &playlist->url_info_list, entries, tmp) {
+        audio_free(item->url_name);
+        item->url_name = NULL;
+        TAILQ_REMOVE(&playlist->url_info_list, item, entries);
+        audio_free(item);
+        item = NULL;
+    }
+    playlist->url_num = 0;
+    return ESP_OK;
+}
+
 int dram_list_get_url_num(playlist_operator_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
@@ -213,6 +251,86 @@ int dram_list_get_url_num(playlist_operator_handle_t handle)
     AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
 
     return playlist->url_num;
+}
+
+int dram_list_get_url_id(playlist_operator_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    dram_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    if (playlist->url_num == 0) {
+        ESP_LOGE(TAG, "Please add urls to playlist first");
+        return ESP_FAIL;
+    }
+
+    url_info_t *cur_node = playlist->cur_node;
+    return cur_node->url_id;
+}
+
+esp_err_t dram_list_remove_by_url(playlist_operator_handle_t handle, const char *url)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    dram_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+    bool _find_flag = false;
+
+    url_info_t *item, *tmp;
+    TAILQ_FOREACH_SAFE(item, &playlist->url_info_list, entries, tmp) {
+        if (strlen(url) != strlen(item->url_name)) {
+            continue;
+        }
+        if (strcmp(url, item->url_name) == 0) {
+            audio_free(item->url_name);
+            item->url_name = NULL;
+            TAILQ_REMOVE(&playlist->url_info_list, item, entries);
+            audio_free(item);
+            item = NULL;
+            playlist->url_num--;
+            _find_flag = true;
+            continue;
+        }
+        if (_find_flag) {
+            item->url_id--;
+        }
+    }
+    if (_find_flag) {
+        return ESP_OK;
+    } else {
+        ESP_LOGE(TAG, "Cannot find the url, fail to remove");
+        return ESP_ERR_NOT_FOUND;
+    }
+}
+
+esp_err_t dram_list_remove_by_url_id(playlist_operator_handle_t handle, uint16_t url_id)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    dram_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+    bool _find_flag = false;
+
+    url_info_t *item, *tmp;
+    TAILQ_FOREACH_SAFE(item, &playlist->url_info_list, entries, tmp) {
+        if (item->url_id == url_id) {
+            audio_free(item->url_name);
+            item->url_name = NULL;
+            TAILQ_REMOVE(&playlist->url_info_list, item, entries);
+            audio_free(item);
+            item = NULL;
+            playlist->url_num--;
+            _find_flag = true;
+            continue;
+        }
+        if (_find_flag) {
+            item->url_id--;
+        }
+    }
+    if (_find_flag) {
+        return ESP_OK;
+    } else {
+        ESP_LOGE(TAG, "Cannot find the url id, fail to remove");
+        return ESP_ERR_NOT_FOUND;
+    }
 }
 
 esp_err_t dram_list_destroy(playlist_operator_handle_t handle)
@@ -223,15 +341,15 @@ esp_err_t dram_list_destroy(playlist_operator_handle_t handle)
 
     url_info_t *item, *tmp;
     TAILQ_FOREACH_SAFE(item, &playlist->url_info_list, entries, tmp) {
-        free(item->url_name);
+        audio_free(item->url_name);
         item->url_name = NULL;
         TAILQ_REMOVE(&playlist->url_info_list, item, entries);
-        free(item);
+        audio_free(item);
         item = NULL;
     }
-    free(playlist);
+    audio_free(playlist);
     handle->playlist = NULL;
-    free(handle);
+    audio_free(handle);
     return ESP_OK;
 }
 
@@ -242,10 +360,15 @@ esp_err_t dram_list_get_operation(playlist_operation_t *operation)
     operation->save = (void *)dram_list_save;
     operation->next = (void *)dram_list_next;
     operation->prev = (void *)dram_list_prev;
+    operation->reset   = (void *)dram_list_reset;
+    operation->exist   = (void *)dram_list_exist;
     operation->current = (void *)dram_list_current;
     operation->destroy = (void *)dram_list_destroy;
     operation->choose  = (void *)dram_list_choose;
     operation->get_url_num = (void *)dram_list_get_url_num;
+    operation->get_url_id  = (void *)dram_list_get_url_id;
+    operation->remove_by_url = (void *)dram_list_remove_by_url;
+    operation->remove_by_id  = (void *)dram_list_remove_by_url_id;
     operation->type = PLAYLIST_DRAM;
     return ESP_OK;
 }
