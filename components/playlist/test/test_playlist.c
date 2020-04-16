@@ -635,3 +635,252 @@ TEST_CASE("Checkout to a playlist id that is non-existed", "[playlist]")
 
     TEST_ASSERT_FALSE(playlist_destroy(handle));
 }
+
+TEST_CASE("Get number of urls and current id in playlist", "[playlist]")
+{
+    esp_periph_set_handle_t set;
+    TEST_ASSERT_FALSE(initialize_sdcard(&set));
+
+    ESP_LOGI(TAG, "Create a handle to manage playlists");
+    playlist_handle_t handle = playlist_create();
+    TEST_ASSERT_NOT_NULL(handle);
+
+    ESP_LOGI(TAG, "Create specific playlist");
+    playlist_operator_handle_t sdcard_handle = NULL;
+    TEST_ASSERT_FALSE(sdcard_list_create(&sdcard_handle));
+    playlist_operator_handle_t flash_handle = NULL;
+    TEST_ASSERT_FALSE(flash_list_create(&flash_handle));
+    playlist_operator_handle_t partition_handle = NULL;
+    TEST_ASSERT_FALSE(partition_list_create(&partition_handle));
+    playlist_operator_handle_t dram_handle = NULL;
+    TEST_ASSERT_FALSE(dram_list_create(&dram_handle));
+
+    ESP_LOGI(TAG, "add a dram playlist and save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, dram_handle, 0));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist2"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a sdcard playlist and checkout to the playlist and then save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, sdcard_handle, 1));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 1));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to sdcard playlist0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to sdcard playlist1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to sdcard playlist2"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a nvs flash playlist and checkout to the playlist and then save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, flash_handle, 2));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 2));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to flash playlist0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to flash playlist1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to flash playlist2"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a partition playlist and checkout to the playlist and then save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, partition_handle, 3));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 3));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to partition playlist0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to partition playlist1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to partition playlist2"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "get type and list id of current playlist");
+    TEST_ASSERT_NOT_EQUAL(-1, playlist_get_current_list_type(handle));
+    TEST_ASSERT_NOT_EQUAL(-1, playlist_get_current_list_id(handle));
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 0));
+    TEST_ASSERT_EQUAL(3, playlist_get_current_list_url_num(handle));
+    char *buff = NULL;
+    for (int i = 0; i < 2; i++) {
+        TEST_ASSERT_EQUAL(i, playlist_get_current_list_url_id(handle));
+        TEST_ASSERT_FALSE(playlist_next(handle, 1, &buff));
+    }
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 1));
+    TEST_ASSERT_EQUAL(3, playlist_get_current_list_url_num(handle));
+    for (int i = 0; i < 2; i++) {
+        TEST_ASSERT_EQUAL(i, playlist_get_current_list_url_id(handle));
+        TEST_ASSERT_FALSE(playlist_next(handle, 1, &buff));
+    }
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 2));
+    TEST_ASSERT_EQUAL(3, playlist_get_current_list_url_num(handle));
+    for (int i = 0; i < 2; i++) {
+        TEST_ASSERT_EQUAL(i, playlist_get_current_list_url_id(handle));
+        TEST_ASSERT_FALSE(playlist_next(handle, 1, &buff));
+    }
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 3));
+    TEST_ASSERT_EQUAL(3, playlist_get_current_list_url_num(handle));
+    for (int i = 0; i < 2; i++) {
+        TEST_ASSERT_EQUAL(i, playlist_get_current_list_url_id(handle));
+        TEST_ASSERT_FALSE(playlist_next(handle, 1, &buff));
+    }
+
+    ESP_LOGI(TAG, "destroy all playlists");
+    TEST_ASSERT_FALSE(playlist_destroy(handle));
+    handle = NULL;
+
+    TEST_ASSERT_FALSE(esp_periph_set_destroy(set));
+}
+
+TEST_CASE("Judge whether a url exists in playlist and reset playlist", "[playlist]")
+{
+    esp_periph_set_handle_t set;
+    TEST_ASSERT_FALSE(initialize_sdcard(&set));
+
+    ESP_LOGI(TAG, "Create a handle to manage playlists");
+    playlist_handle_t handle = playlist_create();
+    TEST_ASSERT_NOT_NULL(handle);
+
+    ESP_LOGI(TAG, "Create specific playlist");
+    playlist_operator_handle_t sdcard_handle = NULL;
+    TEST_ASSERT_FALSE(sdcard_list_create(&sdcard_handle));
+    playlist_operator_handle_t flash_handle = NULL;
+    TEST_ASSERT_FALSE(flash_list_create(&flash_handle));
+    playlist_operator_handle_t partition_handle = NULL;
+    TEST_ASSERT_FALSE(partition_list_create(&partition_handle));
+    playlist_operator_handle_t dram_handle = NULL;
+    TEST_ASSERT_FALSE(dram_list_create(&dram_handle));
+
+    ESP_LOGI(TAG, "add a dram playlist and save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, dram_handle, 0));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist0"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a sdcard playlist and checkout to the playlist and then save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, sdcard_handle, 1));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 1));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to sdcard playlist0"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a nvs flash playlist and checkout to the playlist and then save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, flash_handle, 2));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 2));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to flash playlist0"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a partition playlist and checkout to the playlist and then save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, partition_handle, 3));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 3));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to partition playlist0"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 0));
+    TEST_ASSERT_TRUE(playlist_exist(handle, "save a url to dram playlist0"));
+    TEST_ASSERT_FALSE(playlist_reset(handle));
+    TEST_ASSERT_EQUAL(0, playlist_get_current_list_url_num(handle));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist2"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 1));
+    TEST_ASSERT_TRUE(playlist_exist(handle, "save a url to sdcard playlist0"));
+    TEST_ASSERT_FALSE(playlist_reset(handle));
+    TEST_ASSERT_EQUAL(0, playlist_get_current_list_url_num(handle));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to sdcard playlist0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to sdcard playlist1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to sdcard playlist2"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 2));
+    TEST_ASSERT_TRUE(playlist_exist(handle, "save a url to flash playlist0"));
+    TEST_ASSERT_FALSE(playlist_reset(handle));
+    TEST_ASSERT_EQUAL(0, playlist_get_current_list_url_num(handle));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to flash playlist0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to flash playlist1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to flash playlist2"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 3));
+    TEST_ASSERT_TRUE(playlist_exist(handle, "save a url to partition playlist0"));
+    TEST_ASSERT_FALSE(playlist_reset(handle));
+    TEST_ASSERT_EQUAL(0, playlist_get_current_list_url_num(handle));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to partition playlist0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to partition playlist1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to partition playlist2"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "destroy all playlists");
+    TEST_ASSERT_FALSE(playlist_destroy(handle));
+    handle = NULL;
+
+    TEST_ASSERT_FALSE(esp_periph_set_destroy(set));
+}
+
+TEST_CASE("Remove fuction test in dram list", "[playlist]")
+{
+    esp_periph_set_handle_t set;
+    TEST_ASSERT_FALSE(initialize_sdcard(&set));
+
+    ESP_LOGI(TAG, "Create a handle to manage playlists");
+    playlist_handle_t handle = playlist_create();
+    TEST_ASSERT_NOT_NULL(handle);
+
+    ESP_LOGI(TAG, "Create specific playlist");
+    playlist_operator_handle_t sdcard_handle = NULL;
+    TEST_ASSERT_FALSE(sdcard_list_create(&sdcard_handle));
+    playlist_operator_handle_t flash_handle = NULL;
+    TEST_ASSERT_FALSE(flash_list_create(&flash_handle));
+    playlist_operator_handle_t partition_handle = NULL;
+    TEST_ASSERT_FALSE(partition_list_create(&partition_handle));
+    playlist_operator_handle_t dram_handle = NULL;
+    TEST_ASSERT_FALSE(dram_list_create(&dram_handle));
+
+    ESP_LOGI(TAG, "add a dram playlist and save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, dram_handle, 0));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist0"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist1"));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to dram playlist2"));
+
+    ESP_LOGI(TAG, "add a sdcard playlist and checkout to the playlist and then save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, sdcard_handle, 1));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 1));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to sdcard playlist0"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a nvs flash playlist and checkout to the playlist and then save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, flash_handle, 2));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 2));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to flash playlist0"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add a partition playlist and checkout to the playlist and then save a url to it");
+    TEST_ASSERT_FALSE(playlist_add(handle, partition_handle, 3));
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 3));
+    TEST_ASSERT_FALSE(playlist_save(handle, "save a url to partition playlist0"));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "remove a url");
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 0));
+    TEST_ASSERT_FALSE(playlist_remove_by_url(handle, "save a url to dram playlist0"));
+    TEST_ASSERT_FALSE(playlist_remove_by_url_id(handle, 1));
+    TEST_ASSERT_EQUAL(1, playlist_get_current_list_url_num(handle));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+    ESP_LOGI(TAG, "add urls again");
+    TEST_ASSERT_FALSE(playlist_save(handle, "save url after remove"));
+    TEST_ASSERT_EQUAL(2, playlist_get_current_list_url_num(handle));
+    TEST_ASSERT_FALSE(playlist_show(handle));
+
+// We only support remove function in dram list, so the remove fuction will return 
+// ESP_ERR_NOT_SUPPORTED when checkout to other playlists.
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 1));
+    TEST_ASSERT_EQUAL(ESP_ERR_NOT_SUPPORTED, playlist_remove_by_url(handle, "save a url to sdcard playlist0"));
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 2));
+    TEST_ASSERT_EQUAL(ESP_ERR_NOT_SUPPORTED, playlist_remove_by_url(handle, "save a url to flash playlist0"));
+
+    TEST_ASSERT_FALSE(playlist_checkout_by_id(handle, 3));
+    TEST_ASSERT_EQUAL(ESP_ERR_NOT_SUPPORTED, playlist_remove_by_url(handle, "save a url to partition playlist0"));
+
+    ESP_LOGI(TAG, "destroy all playlists");
+    TEST_ASSERT_FALSE(playlist_destroy(handle));
+    handle = NULL;
+
+    TEST_ASSERT_FALSE(esp_periph_set_destroy(set));
+}

@@ -50,11 +50,17 @@ typedef struct {
     esp_err_t (*save)    (void *playlist, const char *url);             /*!< Save URLs to playlist */
     esp_err_t (*next)    (void *playlist, int step, char **url_buff);   /*!< Get next URL in playlist */
     esp_err_t (*prev)    (void *playlist, int step, char **url_buff);   /*!< Get previous URL in playlist */
-    esp_err_t (*choose)  (void *playlist, int url_id, char **url_buff); /*!< Get url by url id */          
+    esp_err_t (*reset)   (void *playlist);                              /*!< Reset the playlist */
+    esp_err_t (*choose)  (void *playlist, int url_id, char **url_buff); /*!< Get url by url id */
     esp_err_t (*current) (void *playlist, char **url_buff);             /*!< Get current URL in playlist */
     esp_err_t (*destroy) (void *playlist);                              /*!< Destroy playlist */
+    bool      (*exist)   (void *playlist, const char *url);             /*!< Judge whether the url exists */
     int   (*get_url_num) (void *playlist);                              /*!< Get number of URLS in current playlist */
+    int   (*get_url_id)  (void *playlist);                              /*!< Get current url id in playlist */
     playlist_type_t      type;                                          /*!< Type of playlist */
+    esp_err_t (*remove_by_url)(void *playlist, const char *url);        /*!< Remove the corresponding url */
+    esp_err_t (*remove_by_id)(void *playlist, uint16_t url_id);         /*!< Remove url by id */
+
 } playlist_operation_t;
 
 /**
@@ -104,6 +110,16 @@ esp_err_t playlist_add(playlist_handle_t handle, playlist_operator_handle_t list
 esp_err_t playlist_checkout_by_id(playlist_handle_t handle, uint8_t id);
 
 /**
+ * @brief Get number of playlists in the handle
+ *
+ * @param handle  Playlist handle
+ *
+ * @return success Number of playlists in handle
+ *         failed  -1
+ */
+int playlist_get_list_num(playlist_handle_t handle);
+
+/**
  * @brief Get current playlist type
  *
  * @param handle  Playlist handle
@@ -142,6 +158,15 @@ esp_err_t playlist_get_current_list_url(playlist_handle_t handle, char **url_buf
  * @return Number of URLS in current playlsit
  */
 int playlist_get_current_list_url_num(playlist_handle_t handle);
+
+/**
+ * @brief Get current url id in current playlist
+ *
+ * @param handle       Playlist handle
+ *
+ * @return Current url's id in current playlsit
+ */
+int playlist_get_current_list_url_id(playlist_handle_t handle);
 
 /**
  * @brief Save a URL to the current playlist
@@ -199,6 +224,49 @@ esp_err_t playlist_choose(playlist_handle_t handle, int url_id, char **url_buff)
  *         ESP_FAIL failed
  */
 esp_err_t playlist_show(playlist_handle_t handle);
+
+/**
+ * @brief Reset current playlist
+ *
+ * @param handle   Playlist handle
+ *
+ * @return ESP_OK   success
+ *         ESP_FAIL failed
+ */
+esp_err_t playlist_reset(playlist_handle_t handle);
+
+/**
+ * @brief Remove corresponding url
+ *
+ * @param handle   Playlist handle
+ * @param url      The url to be removed
+ *
+ * @return ESP_OK   success
+ *         ESP_FAIL failed
+ */
+esp_err_t playlist_remove_by_url(playlist_handle_t handle, const char *url);
+
+/**
+ * @brief Remove url by url id
+ *
+ * @param handle   Playlist handle
+ * @param url_id   The id of url to be removed
+ *
+ * @return ESP_OK   success
+ *         ESP_FAIL failed
+ */
+esp_err_t playlist_remove_by_url_id(playlist_handle_t handle, uint16_t url_id);
+
+/**
+ * @brief Judge whether the url exists in current playlist
+ *
+ * @param handle   Playlist handle
+ * @param url      The url to be checked
+ *
+ * @return true    existence
+ *         false   Non-existent
+ */
+bool playlist_exist(playlist_handle_t handle, const char *url);
 
 /**
  * @brief Destroy all playlists in the handle

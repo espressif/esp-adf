@@ -62,7 +62,7 @@ static esp_err_t partition_list_choose_id(partition_list_t *playlist, int id, ch
     ret |= esp_partition_read(playlist->offset_part, offset + sizeof(uint32_t), &size, sizeof(uint16_t));
 
     if (playlist->cur_url) {
-        free(playlist->cur_url);
+        audio_free(playlist->cur_url);
     }
 
     playlist->cur_url = (char *)audio_calloc(1, size + 1);
@@ -93,7 +93,7 @@ esp_err_t partition_list_create(playlist_operator_handle_t *handle)
 
     partition_list_t *partition_list = audio_calloc(1, sizeof(partition_list_t));
     AUDIO_NULL_CHECK(TAG, partition_list, {
-        free(partition_handle);
+        audio_free(partition_handle);
     });
 
     partition_handle->playlist = partition_list;
@@ -104,8 +104,8 @@ esp_err_t partition_list_create(playlist_operator_handle_t *handle)
     partition_list->offset_part = esp_partition_find_first(DEFAULT_PARTITION_TYPE, DEFAULT_PARTITION_OFFSET_SUB_TYPE, NULL);
     if (NULL == partition_list->url_part || NULL == partition_list->offset_part) {
         ESP_LOGE(TAG, "Can not find the offset partition or url partition, please check the partition table");
-        free(partition_handle);
-        free(partition_list);
+        audio_free(partition_handle);
+        audio_free(partition_list);
         return ESP_FAIL;
     }
     const esp_partition_t *url_part = partition_list->url_part;
@@ -257,7 +257,61 @@ esp_err_t partition_list_show(playlist_operator_handle_t handle)
         ESP_LOGI(TAG, "%d   %s", i, url);
     }
 
-    free(url);
+    audio_free(url);
+    return ret;
+}
+
+bool partition_list_exist(playlist_operator_handle_t handle, const char *url)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    partition_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    esp_err_t ret = ESP_OK;
+    uint32_t pos = 0, offset = 0;
+    uint16_t  size = 0;
+    char *url_buff = audio_calloc(1, PARTITION_LIST_URL_MAX_LENGTH);
+
+    for (int i = 0; i < playlist->url_num; i++) {
+        memset(url_buff, 0, PARTITION_LIST_URL_MAX_LENGTH);
+        ret |= esp_partition_read(playlist->offset_part, offset, &pos, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+        ret |= esp_partition_read(playlist->offset_part, offset, &size, sizeof(uint16_t));
+        offset += sizeof(uint16_t);
+        ret |= esp_partition_read(playlist->url_part, pos, url_buff, size);
+        if (strlen(url) != strlen(url_buff)) {
+            continue;
+        }
+        if (strcmp(url, url_buff) == 0) {
+            audio_free(url_buff);
+            return true;
+        }
+    }
+
+    audio_free(url_buff);
+    return false;
+}
+
+esp_err_t partition_list_reset(playlist_operator_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    partition_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    esp_err_t ret = ESP_OK;
+    const esp_partition_t *url_part = playlist->url_part;
+    const esp_partition_t *offset_part = playlist->offset_part;
+    ret |= esp_partition_erase_range(url_part, 0, url_part->size);
+    ret |= esp_partition_erase_range(offset_part, 0, offset_part->size);
+    if (playlist->cur_url) {
+        audio_free(playlist->cur_url);
+        playlist->cur_url = NULL;
+    }
+
+    playlist->url_num = 0;
+    playlist->cur_url_id = 0;
+    playlist->total_size_offset_part = 0;
+    playlist->total_size_url_part = 0;
     return ret;
 }
 
@@ -268,6 +322,15 @@ int partition_list_get_url_num(playlist_operator_handle_t handle)
     AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
 
     return playlist->url_num;
+}
+
+int partition_list_get_url_id(playlist_operator_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    partition_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    return playlist->cur_url_id;
 }
 
 esp_err_t partition_list_destroy(playlist_operator_handle_t handle)
@@ -282,12 +345,12 @@ esp_err_t partition_list_destroy(playlist_operator_handle_t handle)
     ret |= esp_partition_erase_range(url_part, 0, url_part->size);
     ret |= esp_partition_erase_range(offset_part, 0, offset_part->size);
     if (playlist->cur_url) {
-        free(playlist->cur_url);
+        audio_free(playlist->cur_url);
         playlist->cur_url = NULL;
     }
-    free(playlist);
+    audio_free(playlist);
     handle->playlist = NULL;
-    free(handle);
+    audio_free(handle);
     return ret;
 }
 
@@ -298,10 +361,13 @@ esp_err_t partition_list_get_operation(playlist_operation_t *operation)
     operation->save = (void *)partition_list_save;
     operation->next = (void *)partition_list_next;
     operation->prev = (void *)partition_list_prev;
+    operation->reset   = (void *)partition_list_reset;
+    operation->exist   = (void *)partition_list_exist;
     operation->choose  = (void *)partition_list_choose;
     operation->current = (void *)partition_list_current;
     operation->destroy = (void *)partition_list_destroy;
     operation->get_url_num = (void *)partition_list_get_url_num;
+    operation->get_url_id  = (void *)partition_list_get_url_id;
     operation->type = PLAYLIST_PARTITION;
     return ESP_OK;
 }

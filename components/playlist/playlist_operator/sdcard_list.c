@@ -76,8 +76,6 @@ static esp_err_t save_url_to_sdcard(sdcard_list_t *playlist, const char *path)
     uint16_t len = strlen(path);
     CHECK_ERROR(TAG, ((fseek(playlist->offset_file, playlist->total_size_offset_file, SEEK_SET)) == 0), return ESP_FAIL);
     CHECK_ERROR(TAG, ((fseek(playlist->save_file, playlist->total_size_save_file, SEEK_SET)) == 0), return ESP_FAIL);
-
-
     CHECK_ERROR(TAG, (fwrite(path, 1, len, playlist->save_file) == len), return ESP_FAIL);
     CHECK_ERROR(TAG, (fwrite(&playlist->total_size_save_file, 1, sizeof(uint32_t), playlist->offset_file) == sizeof(uint32_t)), return ESP_FAIL);
     CHECK_ERROR(TAG, (fwrite(&len, 1, sizeof(uint16_t), playlist->offset_file)) == sizeof(uint16_t), return ESP_FAIL);
@@ -96,7 +94,7 @@ static esp_err_t sdcard_list_open(sdcard_list_t *playlist, uint8_t list_id)
     AUDIO_NULL_CHECK(TAG, playlist->save_file_name, return ESP_FAIL);
     playlist->offset_file_name = audio_calloc(1, SDCARD_OFFSET_FILE_NAME_LENGTH);
     AUDIO_NULL_CHECK(TAG, playlist->offset_file_name, {
-        free(playlist->save_file_name);
+        audio_free(playlist->save_file_name);
         return ESP_FAIL;
     });
 
@@ -110,8 +108,8 @@ static esp_err_t sdcard_list_open(sdcard_list_t *playlist, uint8_t list_id)
 
     if (playlist->save_file == NULL || NULL == playlist->offset_file) {
         ESP_LOGE(TAG, "open file error, line: %d, have you mounted sdcard, set the long file name and UTF-8 encoding configuration ?", __LINE__);
-        free(playlist->save_file_name);
-        free(playlist->offset_file_name);
+        audio_free(playlist->save_file_name);
+        audio_free(playlist->offset_file_name);
         if (playlist->save_file) {
             fclose(playlist->save_file);
         }
@@ -143,7 +141,7 @@ static esp_err_t sdcard_list_choose_id(sdcard_list_t *playlist, int id, char **u
     CHECK_ERROR(TAG, ((fread(&size, 1, sizeof(uint16_t), playlist->offset_file)) == sizeof(uint16_t)), return ESP_FAIL);
 
     if (playlist->cur_url) {
-        free(playlist->cur_url);
+        audio_free(playlist->cur_url);
     }
     playlist->cur_url = (char *)audio_calloc(1, size + 1);
     AUDIO_NULL_CHECK(TAG, playlist->cur_url, {
@@ -173,7 +171,7 @@ esp_err_t sdcard_list_create(playlist_operator_handle_t *handle)
 
     sdcard_list_t *sdcard_list = (sdcard_list_t *)audio_calloc(1, sizeof(sdcard_list_t));
     AUDIO_NULL_CHECK(TAG, sdcard_list, {
-        free(sdcard_handle);
+        audio_free(sdcard_handle);
         return ESP_FAIL;
     });
 
@@ -183,8 +181,8 @@ esp_err_t sdcard_list_create(playlist_operator_handle_t *handle)
     static int list_id;
     ret |= sdcard_list_open(sdcard_list, list_id++);
     if (ret != ESP_OK) {
-        free(sdcard_handle);
-        free(sdcard_list);
+        audio_free(sdcard_handle);
+        audio_free(sdcard_list);
         return ESP_FAIL;
     }
 
@@ -215,7 +213,7 @@ esp_err_t sdcard_list_show(playlist_operator_handle_t handle)
         ESP_LOGI(TAG, "%d   %s", i, url);
     }
 
-    free(url);
+    audio_free(url);
     return ESP_OK;
 }
 
@@ -327,6 +325,64 @@ esp_err_t sdcard_list_save(playlist_operator_handle_t handle, const char *url)
     return ret;
 }
 
+bool sdcard_list_exist(playlist_operator_handle_t handle, const char *url)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    sdcard_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    uint32_t pos = 0;
+    uint16_t  size = 0;
+    char *url_buff = audio_calloc(1, SDCARD_LIST_URL_MAX_LENGTH);
+
+    CHECK_ERROR(TAG, (fseek(playlist->save_file, 0, SEEK_SET) == 0), return ESP_FAIL);
+    CHECK_ERROR(TAG, (fseek(playlist->offset_file, 0, SEEK_SET) == 0), return ESP_FAIL);
+
+    for (int i = 0; i < playlist->url_num; i++) {
+        memset(url_buff, 0, SDCARD_LIST_URL_MAX_LENGTH);
+        CHECK_ERROR(TAG, (fread(&pos, 1, sizeof(uint32_t), playlist->offset_file) == sizeof(uint32_t)), return ESP_FAIL);
+        CHECK_ERROR(TAG, (fread(&size, 1, sizeof(uint16_t), playlist->offset_file) == sizeof(uint16_t)), return ESP_FAIL);
+        CHECK_ERROR(TAG, (fseek(playlist->save_file, pos, SEEK_SET) == 0), return ESP_FAIL);
+        CHECK_ERROR(TAG, (fread(url_buff, 1, size, playlist->save_file) == size), return ESP_FAIL);
+        if (strlen(url_buff) != strlen(url)) {
+            continue;
+        }
+        if (strcmp(url, url_buff) == 0) {
+            audio_free(url_buff);
+            return true;
+        }
+    }
+
+    audio_free(url_buff);
+    return false;
+}
+
+esp_err_t sdcard_list_reset(playlist_operator_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    sdcard_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    /**
+     * ftruncate() function is not supported now, it won't affect the operation result.
+     *
+       CHECK_ERROR(TAG, (ftruncate(playlist->save_file, 0) == ESP_OK), return ESP_FAIL);
+       CHECK_ERROR(TAG, (ftruncate(playlist->offset_file, 0) == ESP_OK), return ESP_FAIL);
+       CHECK_ERROR(TAG, (fseek(playlist->save_file, 0, SEEK_SET) == 0), return ESP_FAIL);
+       CHECK_ERROR(TAG, (fseek(playlist->offset_file, 0, SEEK_SET) == 0), return ESP_FAIL);
+    */
+    if (playlist->cur_url) {
+        audio_free(playlist->cur_url);
+        playlist->cur_url = NULL;
+    }
+
+    playlist->url_num = 0;
+    playlist->cur_url_id = 0;
+    playlist->total_size_offset_file = 0;
+    playlist->total_size_save_file = 0;
+    return ESP_OK;
+}
+
 int sdcard_list_get_url_num(playlist_operator_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
@@ -334,6 +390,15 @@ int sdcard_list_get_url_num(playlist_operator_handle_t handle)
     AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
 
     return playlist->url_num;
+}
+
+int sdcard_list_get_url_id(playlist_operator_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    sdcard_list_t *playlist = handle->playlist;
+    AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
+
+    return playlist->cur_url_id;
 }
 
 esp_err_t sdcard_list_destroy(playlist_operator_handle_t handle)
@@ -345,15 +410,15 @@ esp_err_t sdcard_list_destroy(playlist_operator_handle_t handle)
     sdcard_list_close(playlist);
     remove(playlist->save_file_name);
     remove(playlist->offset_file_name);
-    free(playlist->save_file_name);
-    free(playlist->offset_file_name);
+    audio_free(playlist->save_file_name);
+    audio_free(playlist->offset_file_name);
     if (playlist->cur_url) {
-        free(playlist->cur_url);
+        audio_free(playlist->cur_url);
         playlist->cur_url = NULL;
     }
-    free(playlist);
+    audio_free(playlist);
     handle->playlist = NULL;
-    free(handle);
+    audio_free(handle);
     return ESP_OK;
 }
 
@@ -364,10 +429,13 @@ esp_err_t sdcard_list_get_operation(playlist_operation_t *operation)
     operation->save = (void *)sdcard_list_save;
     operation->next = (void *)sdcard_list_next;
     operation->prev = (void *)sdcard_list_prev;
+    operation->reset   = (void *)sdcard_list_reset;
+    operation->exist   = (void *)sdcard_list_exist;
     operation->choose  = (void *)sdcard_list_choose;
     operation->current = (void *)sdcard_list_current;
     operation->destroy = (void *)sdcard_list_destroy;
     operation->get_url_num = (void *)sdcard_list_get_url_num;
+    operation->get_url_id  = (void *)sdcard_list_get_url_id;
     operation->type = PLAYLIST_SDCARD;
     return ESP_OK;
 }

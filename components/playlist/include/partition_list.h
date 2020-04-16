@@ -79,6 +79,27 @@ esp_err_t partition_list_next(playlist_operator_handle_t handle, int step, char 
 esp_err_t partition_list_prev(playlist_operator_handle_t handle, int step, char **url_buff);
 
 /**
+ * @brief Judge whether the url exists in partition playlist
+ *
+ * @param handle   Playlist handle
+ * @param url      The url to be checked
+ *
+ * @return true    existence
+ *         false   Non-existent
+ */
+bool partition_list_exist(playlist_operator_handle_t handle, const char *url);
+
+/**
+ * @brief Reset partition playlist
+ *
+ * @param handle   Playlist handle
+ *
+ * @return ESP_OK   success
+ *         ESP_FAIL failed
+ */
+esp_err_t partition_list_reset(playlist_operator_handle_t handle);
+
+/**
  * @brief Get current URL in the partition playlist
  *
  * @param      handle         Playlist handle
@@ -107,9 +128,19 @@ esp_err_t partition_list_choose(playlist_operator_handle_t handle, int url_id, c
  * @param handle        Playlist handle
  *
  * @return URLs number in partition playlist
- *
+ *         ESP_FAIL     Fail to get number of urls
  */
 int partition_list_get_url_num(playlist_operator_handle_t handle);
+
+/**
+ * @brief Get curernt url id in the partition playlist
+ *
+ * @param handle        Playlist handle
+ *
+ * @return Current url id in partition playlist
+ *         ESP_FAIL     Fail to get url id
+ */
+int partition_list_get_url_id(playlist_operator_handle_t handle);
 
 /**
  * @brief Show all the URLs in the partition playlist
