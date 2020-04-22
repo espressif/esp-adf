@@ -33,6 +33,7 @@
 
 #include "audio_mem.h"
 #include "wifi_service.h"
+#include "wifi_ssid_manager.h"
 #include "esp_log.h"
 #include "esp_event.h"
 #include "esp_wifi.h"
@@ -71,6 +72,7 @@ typedef struct {
     wifi_setting_list_t                 setting_list;
     int                                 setting_index;
     wifi_service_disconnect_reason_t    reason;
+    wifi_ssid_manager_handle_t          ssid_manager;
     bool                                is_setting;
     esp_timer_handle_t                  retry_timer;
     esp_timer_handle_t                  setting_timer;
@@ -281,17 +283,7 @@ static void wifi_task(void *pvParameters)
     wifi_config_t *stored_ssid = NULL;
 
     wifi_sta_setup(pvParameters);
-    if (ESP_OK == esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg)) {
-        stored_ssid = audio_calloc(1, sizeof(wifi_config_t));
-        if (stored_ssid) {
-            memcpy(stored_ssid, &wifi_cfg, sizeof(wifi_config_t));
-            ESP_LOGI(TAG, "Got the stored SSID:%s", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
-        } else {
-            ESP_LOGW(TAG, "Got the stored SSID:%s, but not used", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
-        }
-    } else {
-        ESP_LOGW(TAG, "No Wi-Fi SSID stored!");
-    }
+    esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg);
     configure_wifi_sta_mode(&wifi_cfg);
     ESP_ERROR_CHECK(esp_wifi_start());
 
@@ -331,6 +323,7 @@ static void wifi_task(void *pvParameters)
                     serv->retry_times = 0;
                     serv->retrying = false;
                     if (serv->is_setting) {
+                        wifi_ssid_manager_save(serv->ssid_manager, (const char *)wifi_cfg.sta.ssid,  (const char *)wifi_cfg.sta.password);
                         esp_timer_stop(serv->setting_timer);
                         STAILQ_FOREACH(item, &serv->setting_list, next) {
                             if (item->running == false) {
@@ -345,13 +338,23 @@ static void wifi_task(void *pvParameters)
                     if ((serv->reason != WIFI_SERV_STA_BY_USER)
                         && (serv->reason != WIFI_SERV_STA_UNKNOWN)) {
                         // reconnect the SSID
-                        if (serv->retry_times < 10) {
+                        if (serv->retry_times < 5) {
                             serv->retry_times++;
                             serv->retrying = true;
                             esp_timer_start_once(serv->retry_timer, (uint64_t)serv->retry_times * 1000 * 1000 * 2);
                         } else {
                             ESP_LOGW(TAG, "Reconnect wifi failed, retry times is %d", serv->retry_times);
                             serv->retrying = false;
+                            if (wifi_ssid_manager_get_ssid_num(serv->ssid_manager) > 1) {
+                                ESP_LOGW(TAG, "Try to connect to ssid stored in flash ...");
+                                if (wifi_ssid_manager_get_best_config(serv->ssid_manager, &wifi_cfg) == ESP_OK) {
+                                    serv->retry_times = 0;
+                                    serv->retrying = true;
+                                    ESP_LOGI(TAG, "Connect to stored wifi ssid: %s, pwd: %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
+                                    configure_wifi_sta_mode(&wifi_cfg);
+                                    esp_timer_start_once(serv->retry_timer, (uint64_t)serv->retry_times * 1000 * 1000 * 2);
+                                }
+                            }
                         }
                         ESP_LOGW(TAG, "Disconnect reason %d", serv->reason);
                         continue;
@@ -360,22 +363,18 @@ static void wifi_task(void *pvParameters)
                 periph_service_callback(serv_handle, &cb_evt);
             } else if (wifi_msg.msg_type == WIFI_SERV_EVENT_TYPE_CMD) {
                 if (wifi_msg.type == WIFI_SERV_CMD_CONNECT) {
-                    if (stored_ssid && (stored_ssid->sta.ssid[0] != 0)) {
-                        memcpy(&wifi_cfg, stored_ssid, sizeof(wifi_config_t));
-                        ESP_LOGI(TAG, "Found a stored SSID:%s", wifi_cfg.sta.ssid);
-                        audio_free(stored_ssid);
-                        stored_ssid = NULL;
-                    } else if (serv->info.sta.ssid[0] != 0) {
-                        memcpy(&wifi_cfg, &serv->info, sizeof(wifi_config_t));
-                    } else {
-                        if ((wifi_cfg.sta.ssid[0] == 0)) {
-                            ESP_LOGW(TAG, "WIFI_SERV_CMD_CONNECT failed, SSID:%s", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
+                    if (wifi_ssid_manager_get_latest_config(serv->ssid_manager, &wifi_cfg) != ESP_OK) {
+                        ESP_LOGW(TAG, "No ssid stored in flash, try to connect to wifi set by wifi_service_set_sta_info()");
+                        if (serv->info.sta.ssid[0] == 0) {
+                            ESP_LOGW(TAG, "There is no preset ssid, please set the wifi first");
                             continue;
                         }
+                        memcpy(&wifi_cfg, &serv->info, sizeof(wifi_config_t));
                     }
-                    ESP_LOGI(TAG, "WIFI_SERV_CMD_CONNECT,SSID:%s", wifi_cfg.sta.ssid[0] != 0 ? (char *)wifi_cfg.sta.ssid : "NULL");
+                    ESP_LOGI(TAG, "Connect to wifi ssid: %s, pwd: %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
                     configure_wifi_sta_mode(&wifi_cfg);
                     ESP_ERROR_CHECK(esp_wifi_connect());
+
                 } else if (wifi_msg.type == WIFI_SERV_CMD_DISCONNECT) {
                     serv->reason = WIFI_SERV_STA_BY_USER;
                     ESP_LOGI(TAG, "WIFI_SERV_CMD_DISCONNECT");
@@ -416,6 +415,13 @@ static void wifi_task(void *pvParameters)
                 } else if (wifi_msg.type == WIFI_SERV_CMD_DESTROY) {
                     task_run = false;
                     ESP_LOGI(TAG, "DUER_CMD_DESTROY");
+                } else if (wifi_msg.type == WIFI_SERV_CMD_UPDATE) {
+                    wifi_config_t *info = (wifi_config_t *)wifi_msg.pdata;
+                    ESP_LOGI(TAG, "WIFI_SERV_CMD_UPDATE got ssid: %s, pwd: %s", info->sta.ssid, info->sta.password);
+                    memcpy(&wifi_cfg, info, sizeof(wifi_config_t));
+                    configure_wifi_sta_mode(&wifi_cfg);
+                    esp_wifi_connect();
+                    free(info);
                 }
             } else {
                 ESP_LOGI(TAG, "Not supported event type");
@@ -474,6 +480,17 @@ esp_err_t wifi_service_setting_start(periph_service_handle_t handle, int index)
     AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
     wifi_service_t *serv = periph_service_get_data(handle);
     wifi_serv_cmd_send(serv->wifi_serv_que, WIFI_SERV_CMD_SETTING_START, (void *)index, 0, 0);
+    return ESP_OK;
+}
+
+esp_err_t wifi_service_update_sta_info(periph_service_handle_t handle, wifi_config_t *wifi_conf)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
+    wifi_service_t *serv = periph_service_get_data(handle);
+    wifi_config_t *conf = (wifi_config_t *)audio_calloc(1, sizeof(wifi_config_t));
+    AUDIO_NULL_CHECK(TAG, conf, return ESP_FAIL);
+    memcpy(conf, wifi_conf, sizeof(wifi_config_t));
+    wifi_serv_cmd_send(serv->wifi_serv_que, WIFI_SERV_CMD_UPDATE, conf, 0, 0);
     return ESP_OK;
 }
 
@@ -545,15 +562,24 @@ periph_service_handle_t wifi_service_create(wifi_service_config_t *config)
 {
     wifi_service_t *serv =  audio_calloc(1, sizeof(wifi_service_t));
     AUDIO_MEM_CHECK(TAG, serv, return NULL);
+
+    serv->ssid_manager = wifi_ssid_manager_create(config->max_ssid_num);
+    AUDIO_MEM_CHECK(TAG, serv->ssid_manager, {
+        free(serv);
+        return NULL;
+    });
+
     STAILQ_INIT(&serv->setting_list);
     serv->wifi_serv_que = xQueueCreate(3, sizeof(wifi_task_msg_t));
     AUDIO_MEM_CHECK(TAG, serv->wifi_serv_que, {
+        wifi_ssid_manager_destroy(serv->ssid_manager);
         free(serv);
         return NULL;
     });
     serv->sync_evt = xEventGroupCreate();
     AUDIO_MEM_CHECK(TAG, serv->sync_evt, {
         vQueueDelete(serv->wifi_serv_que);
+        wifi_ssid_manager_destroy(serv->ssid_manager);
         free(serv);
         return NULL;
     });
@@ -578,6 +604,7 @@ periph_service_handle_t wifi_service_create(wifi_service_config_t *config)
     AUDIO_MEM_CHECK(TAG, wifi, {
         vQueueDelete(serv->wifi_serv_que);
         vEventGroupDelete(serv->sync_evt);
+        wifi_ssid_manager_destroy(serv->ssid_manager);
         free(serv);
         return NULL;
     });
@@ -585,3 +612,4 @@ periph_service_handle_t wifi_service_create(wifi_service_config_t *config)
 
     return wifi;
 }
+
