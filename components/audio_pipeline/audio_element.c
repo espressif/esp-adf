@@ -1008,8 +1008,8 @@ esp_err_t audio_element_run(audio_element_handle_t el)
     audio_event_iface_discard(el->iface_event);
     xEventGroupClearBits(el->state_event, TASK_CREATED_BIT);
     if (el->task_stack > 0) {
-        int ret = audio_thread_create(&el->audio_thread, el->tag, audio_element_task, el, el->task_stack,
-                                      el->task_prio, el->stack_in_ext, el->task_core);
+        ret = audio_thread_create(&el->audio_thread, el->tag, audio_element_task, el, el->task_stack,
+                                  el->task_prio, el->stack_in_ext, el->task_core);
         if (ret == ESP_FAIL) {
             audio_element_force_set_state(el, AEL_STATE_ERROR);
             audio_element_report_status(el, AEL_STATUS_ERROR_OPEN);
@@ -1025,6 +1025,7 @@ esp_err_t audio_element_run(audio_element_handle_t el)
         el->is_running = true;
         audio_element_force_set_state(el, AEL_STATE_RUNNING);
         audio_element_report_status(el, AEL_STATUS_STATE_RUNNING);
+        ret = ESP_OK;
     }
     ESP_LOGI(TAG, "[%s] Element task created", el->tag);
     return ret;
