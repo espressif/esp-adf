@@ -323,7 +323,6 @@ static void wifi_task(void *pvParameters)
                     serv->retry_times = 0;
                     serv->retrying = false;
                     if (serv->is_setting) {
-                        wifi_ssid_manager_save(serv->ssid_manager, (const char *)wifi_cfg.sta.ssid,  (const char *)wifi_cfg.sta.password);
                         esp_timer_stop(serv->setting_timer);
                         STAILQ_FOREACH(item, &serv->setting_list, next) {
                             if (item->running == false) {
@@ -333,6 +332,7 @@ static void wifi_task(void *pvParameters)
                             esp_wifi_setting_teardown(item->on_handle, NULL);
                         }
                     }
+                    wifi_ssid_manager_save(serv->ssid_manager, (const char *)wifi_cfg.sta.ssid,  (const char *)wifi_cfg.sta.password);
                 }
                 if (wifi_msg.type == WIFI_SERV_EVENT_DISCONNECTED) {
                     if ((serv->reason != WIFI_SERV_STA_BY_USER)

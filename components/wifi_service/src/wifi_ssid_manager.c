@@ -282,6 +282,10 @@ esp_err_t wifi_ssid_manager_get_latest_config(wifi_ssid_manager_handle_t handle,
     nvs_stored_info_t info = {0};
 
     ret |= nvs_ssid_list_conf_get(handle, &conf);
+    if (conf.exsit_ssid_num <= 0) {
+        ESP_LOGW(TAG, "There is no ssid stored in flash, please save ssids to flash first");
+        return ESP_FAIL;
+    }
     ret |= nvs_wifi_info_get(handle, conf.latest_ssid, &info);
     memset(config->sta.ssid, 0, sizeof(config->sta.ssid));
     memset(config->sta.password, 0, sizeof(config->sta.password));
