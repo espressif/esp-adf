@@ -48,7 +48,7 @@ typedef struct audio_pipeline_cfg {
 
 /**
  * @brief      Initialize audio_pipeline_handle_t object
- *             audio_pipeline is responsible for controlling the audio data stream and connecting the audio elements with the ringbuffer
+ *             audio_pipeline is responsible for controlling the audio data stream and connecting the audio elements with the ringbuffer.
  *             It will connect and start the audio element in order, responsible for retrieving the data from the previous element
  *             and passing it to the element after it. Also get events from each element, process events or pass it to a higher layer
  *
