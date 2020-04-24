@@ -653,7 +653,7 @@ esp_err_t audio_element_change_cmd(audio_element_handle_t el, audio_element_msg_
 esp_err_t audio_element_reset_output_ringbuf(audio_element_handle_t el);
 
 /**
- * @brief      Call this function to provice Element input data.
+ * @brief      Call this function to provide Element input data.
  *             Depending on setup using ringbuffer or function callback, Element invokes read ringbuffer, or calls read callback funtion.
  *
  * @param[in]  el            The audio element handle
