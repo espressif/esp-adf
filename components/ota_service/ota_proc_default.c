@@ -75,6 +75,7 @@ static esp_err_t validate_image_header(esp_app_desc_t *new_app_info)
 static esp_err_t ota_app_partition_prepare(void **handle, ota_node_attr_t *node)
 {
     ota_app_upgrade_ctx_t *context = audio_calloc(1, sizeof(ota_app_upgrade_ctx_t));
+    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
     *handle = context;
 
     if (strstr(node->uri, "file://")) {
@@ -123,7 +124,8 @@ static esp_err_t ota_app_partition_prepare(void **handle, ota_node_attr_t *node)
 static bool ota_app_partition_need_upgrade(void *handle, ota_node_attr_t *node)
 {
     ota_app_upgrade_ctx_t *context = (ota_app_upgrade_ctx_t *)handle;
-
+    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context->ota_handle, return ESP_FAIL);
     esp_app_desc_t app_desc;
     esp_err_t err = context->get_img_desc(context->ota_handle, &app_desc);
     if (err != ESP_OK) {
@@ -141,6 +143,8 @@ static bool ota_app_partition_need_upgrade(void *handle, ota_node_attr_t *node)
 static esp_err_t ota_app_partition_exec_upgrade(void *handle, ota_node_attr_t *node)
 {
     ota_app_upgrade_ctx_t *context = (ota_app_upgrade_ctx_t *)handle;
+    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context->ota_handle, return ESP_FAIL);
     esp_err_t err = ESP_FAIL;
 
     while (1) {
@@ -157,6 +161,7 @@ static esp_err_t ota_app_partition_exec_upgrade(void *handle, ota_node_attr_t *n
 static esp_err_t ota_app_partition_finish(void *handle, ota_node_attr_t *node, esp_err_t result)
 {
     ota_app_upgrade_ctx_t *context = (ota_app_upgrade_ctx_t *)handle;
+    AUDIO_NULL_CHECK(TAG, context->ota_handle, return ESP_FAIL);
     esp_err_t err = context->finish(context->ota_handle);
     if (err != ESP_OK) {
         if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
@@ -179,6 +184,7 @@ void ota_app_get_default_proc(ota_upgrade_ops_t *ops)
 static esp_err_t ota_data_partition_prepare(void **handle, ota_node_attr_t *node)
 {
     ota_data_upgrade_ctx_t *context = audio_calloc(1, sizeof(ota_data_upgrade_ctx_t));
+    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
     *handle = context;
 
     context->partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, node->label);
@@ -215,6 +221,8 @@ static esp_err_t ota_data_partition_exec_upgrade(void *handle, ota_node_attr_t *
 {
     int r_size = 0;
     ota_data_upgrade_ctx_t *context = (ota_data_upgrade_ctx_t *)handle;
+    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context->r_stream, return ESP_FAIL);
 
     while ((r_size = audio_element_input(context->r_stream, context->read_buf, READER_BUF_LEN)) > 0) {
         ESP_LOGI(TAG, "write_offset %d, r_size %d", context->write_offset, r_size);
@@ -235,6 +243,7 @@ static esp_err_t ota_data_partition_exec_upgrade(void *handle, ota_node_attr_t *
 static esp_err_t ota_data_partition_finish(void *handle, ota_node_attr_t *node, esp_err_t result)
 {
     ota_data_upgrade_ctx_t *context = (ota_data_upgrade_ctx_t *)handle;
+    AUDIO_NULL_CHECK(TAG, context->r_stream, return ESP_FAIL);
     audio_element_deinit(context->r_stream);
 
     free(handle);
@@ -257,6 +266,7 @@ esp_err_t ota_data_image_stream_read(void *handle, char *buf, int wanted_size)
         ESP_LOGE(TAG, "run prepare first");
         return ESP_ERR_INVALID_STATE;
     }
+    AUDIO_NULL_CHECK(TAG, context->r_stream, return ESP_FAIL);
     int r_size = 0;
     do {
         int ret = audio_element_input(context->r_stream, buf, wanted_size - r_size);

@@ -115,7 +115,7 @@ void app_main()
     events = xEventGroupCreate();
 
     ESP_LOGI(TAG, "[2.1] Set upgrade list");
-    static ota_upgrade_ops_t upgrade_list[] =
+    ota_upgrade_ops_t upgrade_list[] =
     {
         {
             {

@@ -52,7 +52,6 @@ typedef struct {
 } ota_service_t;
 
 typedef enum {
-    OTA_SERVICE_CMD_SET_LIST,
     OTA_SERVICE_CMD_START,
     OTA_SERVICE_CMD_DESTROY,
 } ota_cmd_t;
@@ -116,16 +115,6 @@ static void ota_task(void *pvParameters)
             case OTA_IDLE: {
                 if (xQueueReceive(ota->srv_q, &msg, portMAX_DELAY) == pdTRUE) {
                     switch (msg.cmd) {
-                        case OTA_SERVICE_CMD_SET_LIST: {
-                            ota_list_msg_t *list_msg = msg.pdata;
-                            ESP_LOGI(TAG, "set list  %d", list_msg->len);
-
-                            ota->upgrade_list = list_msg->list;
-                            ota->list_len = list_msg->len;
-
-                            free(list_msg);
-                            break;
-                        }
                         case OTA_SERVICE_CMD_START: {
                             if (ota->upgrade_list == NULL || ota->list_len == 0) {
                                 ESP_LOGE(TAG, "Please set upgrade list first");
@@ -194,6 +183,9 @@ static void ota_task(void *pvParameters)
     }
 
     vQueueDelete(ota->srv_q);
+    if (ota->upgrade_list) {
+        audio_free(ota->upgrade_list);
+    }
     free(ota);
     vTaskDelete(NULL);
 }
@@ -222,12 +214,10 @@ esp_err_t ota_service_set_upgrade_param(periph_service_handle_t handle, ota_upgr
 
     ota_service_t *ota = periph_service_get_data(handle);
 
-    ota_list_msg_t *list_msg = audio_calloc(1, sizeof(ota_list_msg_t));
-    AUDIO_MEM_CHECK(TAG, list_msg != 0, return ESP_FAIL);
-
-    list_msg->list = list;
-    list_msg->len = list_len;
-    ota_service_cmd_send(ota->srv_q, OTA_SERVICE_CMD_SET_LIST, list_msg, 0);
+    ota->upgrade_list = audio_calloc(1, list_len * sizeof(ota_upgrade_ops_t));
+    AUDIO_NULL_CHECK(TAG, ota->upgrade_list, return ESP_FAIL);
+    memcpy(ota->upgrade_list, list, list_len * sizeof(ota_upgrade_ops_t));
+    ota->list_len = list_len;
 
     return ESP_OK;
 }
