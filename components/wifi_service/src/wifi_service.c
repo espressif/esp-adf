@@ -79,6 +79,7 @@ typedef struct {
     int                                 setting_timeout_s;
     EventGroupHandle_t                  sync_evt;
     int                                 retry_times;
+    int                                 max_retry_time;
     bool                                retrying;
 } wifi_service_t;
 
@@ -301,6 +302,7 @@ static void wifi_task(void *pvParameters)
     };
     esp_timer_create(&retry_args, &serv->retry_timer);
 
+    uint64_t retry_interval = 0;
     serv->retry_times = 0;
     while (task_run) {
         if (xQueueReceive(serv->wifi_serv_que, &wifi_msg, portMAX_DELAY)) {
@@ -337,24 +339,36 @@ static void wifi_task(void *pvParameters)
                 if (wifi_msg.type == WIFI_SERV_EVENT_DISCONNECTED) {
                     if ((serv->reason != WIFI_SERV_STA_BY_USER)
                         && (serv->reason != WIFI_SERV_STA_UNKNOWN)) {
+                        retry_interval = serv->retry_times * 1000 * 1000 * 2;
+                        if (retry_interval > 60 * 1000 * 1000) { // Longest interval is 60s
+                            retry_interval = 60 * 1000 * 1000;
+                        }
                         // reconnect the SSID
-                        if (serv->retry_times < 5) {
-                            serv->retry_times++;
-                            serv->retrying = true;
-                            esp_timer_start_once(serv->retry_timer, (uint64_t)serv->retry_times * 1000 * 1000 * 2);
-                        } else {
-                            ESP_LOGW(TAG, "Reconnect wifi failed, retry times is %d", serv->retry_times);
-                            serv->retrying = false;
-                            if (wifi_ssid_manager_get_ssid_num(serv->ssid_manager) > 1) {
-                                ESP_LOGW(TAG, "Try to connect to ssid stored in flash ...");
-                                if (wifi_ssid_manager_get_best_config(serv->ssid_manager, &wifi_cfg) == ESP_OK) {
-                                    serv->retry_times = 0;
-                                    serv->retrying = true;
-                                    ESP_LOGI(TAG, "Connect to stored wifi ssid: %s, pwd: %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
-                                    configure_wifi_sta_mode(&wifi_cfg);
-                                    esp_timer_start_once(serv->retry_timer, (uint64_t)serv->retry_times * 1000 * 1000 * 2);
+                        if (serv->max_retry_time >= 0) {
+                            if (serv->retry_times < serv->max_retry_time) {
+                                serv->retry_times++;
+                                serv->retrying = true;
+                                esp_timer_start_once(serv->retry_timer, retry_interval);
+                            } else {
+                                ESP_LOGW(TAG, "Reconnect wifi failed, retry times is %d", serv->retry_times);
+                                serv->retrying = false;
+                                if (wifi_ssid_manager_get_ssid_num(serv->ssid_manager) > 1) {
+                                    ESP_LOGW(TAG, "Try to connect to ssid stored in flash ...");
+                                    if (wifi_ssid_manager_get_best_config(serv->ssid_manager, &wifi_cfg) == ESP_OK) {
+                                        serv->retry_times = 0;
+                                        serv->retrying = true;
+                                        ESP_LOGI(TAG, "Connect to stored wifi ssid: %s, pwd: %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
+                                        configure_wifi_sta_mode(&wifi_cfg);
+                                        esp_timer_start_once(serv->retry_timer, retry_interval);
+                                    }
                                 }
                             }
+                        } else {
+                            serv->retrying = true;
+                            serv->retry_times ++;
+                            // The time interval for reconnection will gradually increase. At the maximum, the connection will be once a minute.
+                            esp_timer_start_once(serv->retry_timer, retry_interval);
+                            ESP_LOGW(TAG, "Got max_retry_time = %d, the station will try to reconnect until connected", serv->max_retry_time);
                         }
                         ESP_LOGW(TAG, "Disconnect reason %d", serv->reason);
                         continue;
@@ -568,6 +582,7 @@ periph_service_handle_t wifi_service_create(wifi_service_config_t *config)
         free(serv);
         return NULL;
     });
+    serv->max_retry_time = config->max_retry_time;
 
     STAILQ_INIT(&serv->setting_list);
     serv->wifi_serv_que = xQueueCreate(3, sizeof(wifi_task_msg_t));
