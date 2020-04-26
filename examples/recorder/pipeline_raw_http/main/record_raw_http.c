@@ -28,9 +28,14 @@
 #include "periph_button.h"
 #include "periph_wifi.h"
 #include "filter_resample.h"
-
+#include "input_key_service.h"
 
 static const char *TAG = "REC_RAW_HTTP";
+
+#define DEMO_EXIT_BIT (BIT0)
+
+static audio_pipeline_handle_t pipeline;
+static EventGroupHandle_t EXIT_FLAG;
 
 esp_err_t _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
@@ -90,13 +95,43 @@ esp_err_t _http_stream_event_handle(http_stream_event_msg_t *msg)
     return ESP_OK;
 }
 
+static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
+{
+    audio_element_handle_t http_stream_writer = (audio_element_handle_t)ctx;
+    if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK) {
+        switch ((int)evt->data) {
+            case INPUT_KEY_USER_ID_MODE:
+                ESP_LOGW(TAG, "[ * ] [Set] input key event, exit the demo ...");
+                xEventGroupSetBits(EXIT_FLAG, DEMO_EXIT_BIT);
+                break;
+            case INPUT_KEY_USER_ID_REC:
+                ESP_LOGI(TAG, "[ * ] [Rec] input key event, resuming pipeline ...");
+                audio_element_set_uri(http_stream_writer, CONFIG_SERVER_URI);
+                audio_pipeline_run(pipeline);
+                break;
+        }
+    } else if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE || evt->type == INPUT_KEY_SERVICE_ACTION_PRESS_RELEASE) {
+        switch ((int)evt->data) {
+            case INPUT_KEY_USER_ID_REC:
+                ESP_LOGI(TAG, "[ * ] [Rec] key released, stop pipeline ...");
+                audio_pipeline_stop(pipeline);
+                audio_pipeline_wait_for_stop(pipeline);
+                audio_pipeline_terminate(pipeline);
+                break;
+        }
+    }
+
+    return ESP_OK;
+}
+
 void app_main(void)
 {
-    audio_pipeline_handle_t pipeline;
     audio_element_handle_t http_stream_writer, i2s_stream_reader;
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
+
+    EXIT_FLAG = xEventGroupCreate();
 
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
@@ -118,17 +153,9 @@ void app_main(void)
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
 
-    // Initialize Button peripheral
-    periph_button_cfg_t btn_cfg = {
-        .gpio_mask = GPIO_SEL_36 | GPIO_SEL_39, //REC BTN & MODE BTN
-    };
-    esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
-
     // Start wifi & button peripheral
-    esp_periph_start(set, button_handle);
     esp_periph_start(set, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
-
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
@@ -161,55 +188,19 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.4] Link it together [codec_chip]-->i2s_stream->http_stream-->[http_server]");
     audio_pipeline_link(pipeline, (const char *[]) {"i2s", "http"}, 2);
 
-    ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
-    audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
-    audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
-
-    ESP_LOGI(TAG, "[4.1] Listening event from the pipeline");
-    audio_pipeline_set_listener(pipeline, evt);
-
-    ESP_LOGI(TAG, "[4.2] Listening event from peripherals");
-    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
+    // Initialize Button peripheral
+    audio_board_key_init(set);
+    input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
+    periph_service_handle_t input_ser = input_key_service_create(set);
+    input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
+    periph_service_set_callback(input_ser, input_key_service_cb, (void *)http_stream_writer);
 
     i2s_stream_set_clk(i2s_stream_reader, 16000, 16, 2);
 
-    ESP_LOGI(TAG, "[ 5 ] Listen for all pipeline events");
-    while (1) {
-        audio_event_iface_msg_t msg;
-        esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
+    ESP_LOGI(TAG, "[ 4 ] Press [Rec] button to record, Press [Mode] to exit");
+    xEventGroupWaitBits(EXIT_FLAG, DEMO_EXIT_BIT, true, false, portMAX_DELAY);
 
-        if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
-            continue;
-        }
-
-        if (msg.source_type != PERIPH_ID_BUTTON) {
-            continue;
-        }
-
-        // It's not REC button
-        if ((int)msg.data == GPIO_NUM_39) {
-            break;
-        }
-
-        // It's not REC button
-        if ((int)msg.data != GPIO_NUM_36) {
-            continue;
-        }
-
-        if (msg.cmd == PERIPH_BUTTON_PRESSED) {
-            ESP_LOGI(TAG, "[ * ] Resuming pipeline");
-            audio_element_set_uri(http_stream_writer, CONFIG_SERVER_URI);
-            audio_pipeline_run(pipeline);
-        } else if (msg.cmd == PERIPH_BUTTON_RELEASE || msg.cmd == PERIPH_BUTTON_LONG_RELEASE) {
-            ESP_LOGI(TAG, "[ * ] Stop pipeline");
-            audio_pipeline_stop(pipeline);
-            audio_pipeline_wait_for_stop(pipeline);
-            audio_pipeline_terminate(pipeline);
-        }
-
-    }
-    ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
+    ESP_LOGI(TAG, "[ 5 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
 
     audio_pipeline_unregister(pipeline, http_stream_writer);
@@ -220,10 +211,6 @@ void app_main(void)
 
     /* Stop all periph before removing the listener */
     esp_periph_set_stop_all(set);
-    audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
-
-    /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
-    audio_event_iface_destroy(evt);
 
     /* Release all resources */
     audio_pipeline_deinit(pipeline);
