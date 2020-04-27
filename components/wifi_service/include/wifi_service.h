@@ -67,6 +67,7 @@ typedef struct {
     void                        *cb_ctx;                /*!< Callback context */
     char                        *user_data;             /*!< User data */
     int                         setting_timeout_s;      /*!< Timeout of setting WiFi */
+    int                         max_retry_time;         /*!< Maximum times of reconnection */
     uint8_t                     max_ssid_num;           /*!< Maximum ssid that can be stored */
 } wifi_service_config_t;
 
@@ -77,6 +78,7 @@ typedef struct {
     .user_data = NULL, \
     .setting_timeout_s = 60, \
     .max_ssid_num = 5, \
+    .max_retry_time = 5,\
 }
 
 /*
