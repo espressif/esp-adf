@@ -32,12 +32,12 @@
 extern "C" {
 #endif
 
-typedef struct audio_thread *audio_thread_t;
+#define audio_thread_t xTaskHandle
 
 /**
  * @brief       Allocate handle if not allocated and create a thread
  *
- * @param       p_handle        pointer to audio_thread_t handle.
+ * @param       p_handle        pointer to audio_thread_t handle
  * @param       name            Task name
  * @param       main_func       The function which task will execute
  * @param       stack           Task stack
@@ -48,9 +48,10 @@ typedef struct audio_thread *audio_thread_t;
  * @return      - ESP_OK :      Task creation successful
  *              - ESP_FAIL:     Failed to create task
  *
- * @note        Please enable Support for external RAM and
- *              `Allow external memory as an argument to xTaskCreateStatic`
- *              to be able to use external memory for task stack.
+ * @note       - Please apply the $ADF_PATH/idf_patches/idf_v3.3/4.x_freertos.patch first.
+ *             - Please enable support for external RAM and `Allow external memory as an argument to xTaskCreateStatic`
+ *              to be able to use external memory for task stack, namely `CONFIG_SPIRAM_BOOT_INIT=y` and `CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y`.
+ *
  */
 esp_err_t audio_thread_create(audio_thread_t *p_handle, const char* name, void(*main_func)(void* arg), void *arg,
                               uint32_t stack, int prio, bool stack_in_ext, int core_id);

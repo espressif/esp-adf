@@ -28,113 +28,72 @@
 
 #include "esp_log.h"
 #include "audio_mem.h"
+#include "audio_error.h"
 #include "audio_thread.h"
 
 static const char *TAG = "AUDIO_THREAD";
 
-struct audio_thread {
-    xTaskHandle                 task_handle;
-    StackType_t                 *element_task_stack;
-    StaticTask_t                *element_task_buf;
-};
+BaseType_t __attribute__((weak)) xTaskCreateRestrictedPinnedToCore(const TaskParameters_t *const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID)
+{
+    ESP_LOGE(TAG, "Not found right %s. Please apply the $ADF_PATH/idf_patches/idf_v3.3/4.x_freertos.patch first", __func__);
+    return pdFALSE;
+}
 
 esp_err_t audio_thread_create(audio_thread_t *p_handle, const char *name, void(*main_func)(void *arg), void *arg,
                               uint32_t stack, int prio, bool stack_in_ext, int core_id)
 {
-    audio_thread_t handle = *p_handle;
-    if (handle == NULL) {
-        handle = (audio_thread_t) audio_calloc(1, sizeof (struct audio_thread));
-    }
-    if (handle == NULL) {
-        ESP_LOGE(TAG, "allocation for handle failed");
-        return ESP_FAIL;
-    }
-
-#if defined (CONFIG_SPIRAM_BOOT_INIT) && defined (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY)
-    ESP_LOGD(TAG, "The %s task allocate stack on external memory", name);
-    if (stack_in_ext) {
-        if (handle->element_task_stack == NULL) {
-            handle->element_task_stack = (StackType_t *) audio_calloc(1, stack);
-        }
-        if (handle->element_task_stack == NULL) {
-            ESP_LOGE(TAG, "Failed to allocate task_stack for %s", name);
+    StackType_t *task_stack = NULL;
+    if (stack_in_ext && audio_mem_spiram_is_enabled()) {
+        /*
+         * Note: 1. Make sure selected the `CONFIG_SPIRAM_BOOT_INIT` and `CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY` by `make menuconfig`
+         *       2. Please apply the $ADF_PATH/idf_patches/idf_v3.3/4.x_freertos.patch
+         *
+         */
+        ESP_LOGI(TAG, "The %s task allocate stack on external memory", name);
+        /* task_stack freed by freertos*/
+        task_stack = (StackType_t *) audio_calloc(1, stack);
+        AUDIO_MEM_CHECK(TAG, task_stack, goto audio_thread_create_error );
+        TaskParameters_t xRegParameters = {
+            .pvTaskCode = main_func,
+            .pcName = name,
+            .usStackDepth = stack,
+            .pvParameters = arg,
+            .uxPriority = prio | portPRIVILEGE_BIT,
+            .puxStackBuffer = task_stack,
+            .xRegions = {{
+                    .pvBaseAddress = 0x00,
+                    .ulLengthInBytes = 0x00,
+                    .ulParameters = 0x00,
+                }
+            }
+        };
+        if (xTaskCreateRestrictedPinnedToCore(&xRegParameters, (xTaskHandle)&p_handle, core_id) != pdPASS) {
+            ESP_LOGE(TAG, "Error creating RestrictedPinnedToCore %s", name);
             goto audio_thread_create_error;
         }
-        if (handle->element_task_buf == NULL) {
-            handle->element_task_buf = (StaticTask_t *) audio_calloc_inner(1, sizeof(StaticTask_t));
-        }
-        if (handle->element_task_buf == NULL) {
-            ESP_LOGE(TAG, "Failed to allocate task_buf for %s", name);
-            goto audio_thread_create_error;
-        }
-        handle->task_handle = xTaskCreateStaticPinnedToCore(main_func, name, stack, arg, prio, handle->element_task_stack,
-                              handle->element_task_buf, core_id);
-        if (handle->task_handle == NULL) {
-            ESP_LOGE(TAG, "Error creating task %s", name);
-            goto audio_thread_create_error;
-        }
-    } else
-#endif
-    {
-        if (xTaskCreatePinnedToCore(main_func, name, stack, arg, prio, &handle->task_handle, core_id) != pdPASS) {
+    } else {
+        if (xTaskCreatePinnedToCore(main_func, name, stack, arg, prio, (xTaskHandle)&p_handle, core_id) != pdPASS) {
             ESP_LOGE(TAG, "Error creating task %s", name);
             goto audio_thread_create_error;
         }
     }
-    *p_handle = handle;
     return ESP_OK;
 
 audio_thread_create_error:
-    if (handle->element_task_stack) {
-        audio_free(handle->element_task_stack);
-        handle->element_task_stack = NULL;
-    }
-    if (handle->element_task_buf) {
-        audio_free(handle->element_task_buf);
-        handle->element_task_buf = NULL;
+    if (task_stack) {
+        audio_free(task_stack);
     }
     return ESP_FAIL;
 }
 
 esp_err_t audio_thread_cleanup(audio_thread_t *p_handle)
 {
-    audio_thread_t handle = *p_handle;
-    if (handle == NULL) {
-        ESP_LOGE(TAG, "Thread is already clean");
-        return ESP_FAIL; /* Invalid argument */
-    }
-    if (handle->element_task_stack) {
-        audio_free(handle->element_task_stack);
-        handle->element_task_stack = NULL;
-    }
-    /**
-     * Sometimes FreeRTOS freeing of task memory will still be delegated to the Idle Task.
-     * The TCB buffer handle->element_task_buf should be free after task really delete.
-     * Delay 100 ms to wait for Idle task free the deleted task memory.
-     */
-    vTaskDelay(100 / portTICK_RATE_MS);
-    if (handle->element_task_buf) {
-        audio_free(handle->element_task_buf);
-        handle->element_task_buf = NULL;
-    }
-    audio_free(handle);
-    *p_handle = NULL;
+    // TODO nothing
     return ESP_OK;
 }
 
 esp_err_t audio_thread_delete_task(audio_thread_t *p_handle)
 {
-    audio_thread_t handle = *p_handle;
-    if (handle == NULL) {
-        ESP_LOGE(TAG, "Thread is already clean");
-        return ESP_FAIL; /* Invalid argument */
-    }
-    xTaskHandle task_handle = handle->task_handle;
-    if (task_handle == NULL) {
-        ESP_LOGE(TAG, "Task is already destroyed!");
-        return ESP_FAIL;
-    }
-    handle->task_handle = NULL;
-    vTaskDelete(task_handle);
+    vTaskDelete(NULL);
     return ESP_OK; /* Control never reach here if this is self delete */
 }
