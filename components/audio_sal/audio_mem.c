@@ -30,6 +30,7 @@
 #include "audio_mem.h"
 #include "esp_heap_caps.h"
 
+// #define ENABLE_AUDIO_MEM_TRACE
 
 void *audio_malloc(size_t size)
 {
@@ -39,12 +40,18 @@ void *audio_malloc(size_t size)
 #else
     data = malloc(size);
 #endif
+#ifdef ENABLE_AUDIO_MEM_TRACE
+    ESP_LOGI("AUDIO_MEM", "malloc:%p, size:%d, called:0x%08x", data, size, (intptr_t)__builtin_return_address(0) - 2);
+#endif
     return data;
 }
 
 void audio_free(void *ptr)
 {
     free(ptr);
+#ifdef ENABLE_AUDIO_MEM_TRACE
+    ESP_LOGI("AUIDO_MEM", "free:%p, called:0x%08x", ptr, (intptr_t)__builtin_return_address(0) - 2);
+#endif
 }
 
 void *audio_calloc(size_t nmemb, size_t size)
@@ -58,6 +65,9 @@ void *audio_calloc(size_t nmemb, size_t size)
 #else
     data = calloc(nmemb, size);
 #endif
+#ifdef ENABLE_AUDIO_MEM_TRACE
+    ESP_LOGI("AUIDO_MEM", "calloc:%p, size:%d, called:0x%08x", data, size, (intptr_t)__builtin_return_address(0) - 2);
+#endif
     return data;
 }
 
@@ -68,6 +78,9 @@ void *audio_realloc(void *ptr, size_t size)
     p = heap_caps_realloc(ptr, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 #else
     p = heap_caps_realloc(ptr, size, MALLOC_CAP_8BIT);
+#endif
+#ifdef ENABLE_AUDIO_MEM_TRACE
+    ESP_LOGI("AUDIO_MEM", "realloc,new:%p, ptr:%p size:%d, called:0x%08x", p, ptr, size, (intptr_t)__builtin_return_address(0) - 2);
 #endif
     return p;
 }
@@ -82,6 +95,9 @@ char *audio_strdup(const char *str)
     if (copy) {
         strcpy(copy, str);
     }
+#ifdef ENABLE_AUDIO_MEM_TRACE
+    ESP_LOGI("AUDIO_MEM", "strdup:%p, size:%d, called:0x%08x", copy, strlen(copy), (intptr_t)__builtin_return_address(0) - 2);
+#endif
     return copy;
 }
 
@@ -92,6 +108,9 @@ void *audio_calloc_inner(size_t n, size_t size)
     if (data) {
         memset(data, 0, n * size);
     }
+#ifdef ENABLE_AUDIO_MEM_TRACE
+    ESP_LOGI("AUIDO_MEM", "calloc_inner:%p, size:%d, called:0x%08x", data, size, (intptr_t)__builtin_return_address(0) - 2);
+#endif
     return data;
 }
 
@@ -104,3 +123,15 @@ void audio_mem_print(const char *tag, int line, const char *func)
     ESP_LOGI(tag, "Func:%s, Line:%d, MEM Total:%d Bytes\r\n", func, line, esp_get_free_heap_size());
 #endif
 }
+
+#if defined (CONFIG_SPIRAM_BOOT_INIT)
+bool audio_mem_spiram_is_enabled(void)
+{
+    return true;
+}
+#else
+bool audio_mem_spiram_is_enabled(void)
+{
+    return false;
+}
+#endif

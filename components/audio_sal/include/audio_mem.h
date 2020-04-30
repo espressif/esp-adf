@@ -25,7 +25,7 @@
 #ifndef _AUDIO_MEM_H_
 #define _AUDIO_MEM_H_
 
-#include <stdlib.h>
+#include <esp_types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -113,10 +113,19 @@ void *audio_realloc(void *ptr, size_t size);
  */
 char *audio_strdup(const char *str);
 
+/**
+ * @brief   SPI ram is enabled or not
+ *
+ * @return
+ *     - true, spi ram is enabled
+ *     - false, spi ram is not enabled
+ */
+bool audio_mem_spiram_is_enabled(void);
+
 #define AUDIO_MEM_SHOW(x)  audio_mem_print(x, __LINE__, __func__)
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /*_AUDIO_MEM_H_*/
