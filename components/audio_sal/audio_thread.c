@@ -35,7 +35,7 @@ static const char *TAG = "AUDIO_THREAD";
 
 BaseType_t __attribute__((weak)) xTaskCreateRestrictedPinnedToCore(const TaskParameters_t *const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID)
 {
-    ESP_LOGE(TAG, "Not found right %s. Please apply the $ADF_PATH/idf_patches/idf_v3.3/4.x_freertos.patch first", __func__);
+    ESP_LOGE(TAG, "Not found right %s. Please apply the $ADF_PATH/idf_patches/idf_v3.3_freertos.patch first", __func__);
     return pdFALSE;
 }
 
@@ -46,7 +46,7 @@ esp_err_t audio_thread_create(audio_thread_t *p_handle, const char *name, void(*
     if (stack_in_ext && audio_mem_spiram_is_enabled()) {
         /*
          * Note: 1. Make sure selected the `CONFIG_SPIRAM_BOOT_INIT` and `CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY` by `make menuconfig`
-         *       2. Please apply the $ADF_PATH/idf_patches/idf_v3.3/4.x_freertos.patch
+         *       2. Please apply the $ADF_PATH/idf_patches/idf_v3.3_freertos.patch
          *
          */
         ESP_LOGI(TAG, "The %s task allocate stack on external memory", name);
