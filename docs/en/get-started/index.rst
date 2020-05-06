@@ -51,7 +51,7 @@ To use ESP-ADF you need set up the ESP-IDF first, and this is described in the n
 
 .. note::
 
-    ESP-ADF has been tested for compatibility with specific releases of the ESP-IDF described in `release notes <https://github.com/espressif/esp-adf/releases>`_ of the ESP-ADF repository. Consult `Versions <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/versions.html>`_ section of ESP-IDF Programming Guide for information about which ESP-IDF version to use in your situation.
+    ESP-ADF provides support for specific ESP-IDF versions (v3.3.1, v4.0 and v4.1) <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/versions.html>`_. If your have already set up another version, please switch to a supported ESP-IDF version, or you may not be able to compile ESP-ADF applications.
 
 
 .. _get-started-step-by-step:
