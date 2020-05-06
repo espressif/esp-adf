@@ -13,7 +13,8 @@ To build the project, please follow the steps below:
 * `export ADF_PATH={ your ESP-ADF's path }`
 * `export IDF_PATH={ your ESP-IDF's path }`
 * Clone `MicroPython` into `${ADF_PATH}/micropyton_adf`.
-* MicroPython support HASH 'f301170c7cb50fdb9250a6e4b89682f9c0e543cb'.
+* MicroPython support HASH '1f371947309c5ea6023b6d9065415697cbc75578'.
+* `cd ${IDF_PATH}`, and apply the patch of `${ADF_PATH}/idf_patches/idf_v3.3_freertos.patch`
 * `cd ${ADF_PATH}/micropyton_adf/micropython`, and apply the patch of `${ADF_PATH}/micropyton_adf/mpmake.patch`.
 * select your audio board in `${ADF_PATH}/micropyton_adf/sdkconfig.adf`.
 * `cd ${ADF_PATH}/micropyton_adf/micropython/mpy-cross`, run `make -j8`.

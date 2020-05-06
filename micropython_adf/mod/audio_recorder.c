@@ -76,6 +76,7 @@ STATIC audio_element_handle_t audio_recorder_create_filter(int encoder_type)
     rsp_cfg.src_rate = 48000;
     rsp_cfg.src_ch = 2;
     rsp_cfg.dest_ch = 1;
+    rsp_cfg.task_core = 1;
 
     switch (encoder_type) {
         case PCM: {
@@ -103,11 +104,13 @@ STATIC audio_element_handle_t audio_recorder_create_encoder(int encoder_type)
     switch (encoder_type) {
         case AMR: {
             amrnb_encoder_cfg_t amr_enc_cfg = DEFAULT_AMRNB_ENCODER_CONFIG();
+            amr_enc_cfg.task_core = 1;
             encoder = amrnb_encoder_init(&amr_enc_cfg);
             break;
         }
         case WAV: {
             wav_encoder_cfg_t wav_cfg = DEFAULT_WAV_ENCODER_CONFIG();
+            wav_cfg.task_core = 1;
             encoder = wav_encoder_init(&wav_cfg);
             break;
         }
@@ -124,6 +127,7 @@ STATIC audio_element_handle_t audio_recorder_create_outstream(const char *uri)
     if (strstr(uri, "/sdcard/") != NULL) {
         vfs_stream_cfg_t vfs_cfg = VFS_STREAM_CFG_DEFAULT();
         vfs_cfg.type = AUDIO_STREAM_WRITER;
+        vfs_cfg.task_core = 1;
         out_stream = vfs_stream_init(&vfs_cfg);
     } else if (strstr(uri, "/spiffs/") != NULL) {
         // TODO: spiffs
@@ -151,6 +155,7 @@ STATIC void audio_recorder_create(audio_recorder_obj_t *self, const char *uri, i
     i2s_cfg.type = AUDIO_STREAM_READER;
     i2s_cfg.uninstall_drv = false;
     i2s_cfg.i2s_config.sample_rate = 48000;
+    i2s_cfg.task_core = 1;
     self->i2s_stream = i2s_stream_init(&i2s_cfg);
     // filter
     self->filter = audio_recorder_create_filter(format);
@@ -246,32 +251,15 @@ STATIC mp_obj_t audio_recorder_stop(mp_obj_t self_in)
         self->timer = NULL;
     }
     if (self->pipeline != NULL) {
-        audio_pipeline_terminate(self->pipeline);
+        audio_pipeline_deinit(self->pipeline);
     } else {
         return mp_obj_new_bool(false);
     }
 
-    if (self->i2s_stream) {
-        audio_pipeline_unregister(self->pipeline, self->i2s_stream);
-        audio_element_deinit(self->i2s_stream);
-        self->i2s_stream = NULL;
-    }
-    if (self->filter) {
-        audio_pipeline_unregister(self->pipeline, self->filter);
-        audio_element_deinit(self->filter);
-        self->filter = NULL;
-    }
-    if (self->encoder) {
-        audio_pipeline_unregister(self->pipeline, self->encoder);
-        audio_element_deinit(self->encoder);
-        self->encoder = NULL;
-    }
-    if (self->out_stream) {
-        audio_pipeline_unregister(self->pipeline, self->out_stream);
-        audio_element_deinit(self->out_stream);
-        self->out_stream = NULL;
-    }
-    audio_pipeline_deinit(self->pipeline);
+    self->i2s_stream = NULL;
+    self->filter = NULL;
+    self->encoder = NULL;
+    self->out_stream = NULL;
     self->pipeline = NULL;
 
     return mp_obj_new_bool(true);

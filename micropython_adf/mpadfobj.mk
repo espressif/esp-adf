@@ -34,6 +34,7 @@ ESPADF_AUDIO_STREAM_O = $(patsubst %.c,%.o,\
 	$(ADFCOMP)/audio_stream/raw_stream.c \
 	$(ADFCOMP)/audio_stream/spiffs_stream.c \
 	$(ADFCOMP)/audio_stream/i2s_stream.c \
+	$(ADFCOMP)/audio_stream/hls_playlist.c \
 	)
 
 ESPADF_DISPLAY_SERVICE_O = $(patsubst %.c,%.o,\
@@ -46,7 +47,7 @@ ESPADF_ESP_DISPATCHER_O = $(patsubst %.c,%.o,$(wildcard $(ADFCOMP)/esp_dispatche
 
 ESPADF_ESP_PERIPHERALS_O = $(patsubst %.c,%.o,\
 	$(wildcard $(ADFCOMP)/esp_peripherals/*.c) \
-	$(wildcard $(ADFCOMP)/esp_peripherals/i2c_bus/*.c) \
+	$(wildcard $(ADFCOMP)/esp_peripherals/driver/i2c_bus/*.c) \
 	$(wildcard $(ADFCOMP)/esp_peripherals/lib/*/*.c) \
 	)
 
@@ -82,6 +83,7 @@ ESPIDF_TCP_TRANSPORT_O = $(patsubst %.c,%.o,$(wildcard $(ESPCOMP)/tcp_transport/
 
 ESPIDF_ESP_TLS_O = $(patsubst %.c,%.o,$(wildcard $(ESPCOMP)/esp-tls/*.c))
 
+ESPIDF_ESP_NGHTTP = $(patsubst %.c,%.o,$(wildcard $(ESPCOMP)/nghttp/port/*.c))
 
 $(eval $(call gen_espidf_lib_rule,esp_http_client,$(ESPIDF_HTTP_CLIENT_O)))
 $(eval $(call gen_espidf_lib_rule,spiffs,$(ESPIDF_SPIFFS_O)))
@@ -90,3 +92,4 @@ $(eval $(call gen_espidf_lib_rule,esp_adc_cal,$(ESPIDF_ADC_CAL_O)))
 $(eval $(call gen_espidf_lib_rule,wear_levelling,$(ESPIDF_WEAR_LEVELLING_O)))
 $(eval $(call gen_espidf_lib_rule,tcp_transport,$(ESPIDF_TCP_TRANSPORT_O)))
 $(eval $(call gen_espidf_lib_rule,esp_tls,$(ESPIDF_ESP_TLS_O)))
+$(eval $(call gen_espidf_lib_rule,nghttp,$(ESPIDF_ESP_NGHTTP)))
