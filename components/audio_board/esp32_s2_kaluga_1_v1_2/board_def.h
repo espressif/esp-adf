@@ -38,7 +38,7 @@
 #define BUTTON_ADC                6
 #define WS2812_LED_GPIO           45
 
-#define ES8311_MCLK_SOURCE        1   /* 0 From MCLK of esp32   1 From BCLK */
+#define ES8311_MCLK_SOURCE        1   /* 0 From MCLK, 1 From BCLK */
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 

@@ -107,8 +107,7 @@ periph_wifi_state_t periph_wifi_is_connected(esp_periph_handle_t periph)
     return wifi->wifi_state;
 }
 
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
 static void _wifi_smartconfig_event_callback(void *arg, esp_event_base_t event_base,
         int32_t event_id, void *event_data)
 {
@@ -159,7 +158,6 @@ static void _wifi_smartconfig_event_callback(void *arg, esp_event_base_t event_b
             break;
     }
 }
-#endif
 #else
 static void _wifi_smartconfig_event_callback(smartconfig_status_t status, void *pdata)
 {
@@ -249,12 +247,10 @@ esp_err_t periph_wifi_config_start(esp_periph_handle_t periph, periph_wifi_confi
         // esp_wifi_start();
         err |= esp_smartconfig_set_type(mode);
         err |= esp_smartconfig_fast_mode(true);
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
         smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
         err |= esp_smartconfig_start(&cfg);
         esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, &_wifi_smartconfig_event_callback, NULL);
-#endif
 #else
         err |= esp_smartconfig_start(_wifi_smartconfig_event_callback, 0);
 #endif
@@ -301,8 +297,7 @@ static void wifi_reconnect_timer(xTimerHandle tmr)
     }
 }
 
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
 static void _wifi_event_callback(void *arg, esp_event_base_t event_base,
                                  int32_t event_id, void *event_data)
 {
@@ -340,7 +335,6 @@ static void _wifi_event_callback(void *arg, esp_event_base_t event_base,
         ESP_LOGW(TAG, "WiFi Event cb, Unhandle event_base:%s, event_id:%d", event_base, event_id);
     }
 }
-#endif
 #else
 static esp_err_t _wifi_event_callback(void *ctx, system_event_t *event)
 {
@@ -402,12 +396,10 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         return ESP_FAIL;
     }
 
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_wifi_event_callback, self));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &_wifi_event_callback, self));
-#endif
 #else
 #include "esp_event_loop.h"
     if (esp_event_loop_get_queue() == NULL) {

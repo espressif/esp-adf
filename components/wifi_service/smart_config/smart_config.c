@@ -42,8 +42,7 @@ typedef struct {
     smartconfig_type_t type;
 } smart_config_info;
 
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
 static void smartconfg_cb(void *arg, esp_event_base_t event_base,
     int32_t event_id, void *event_data)
 {
@@ -78,7 +77,6 @@ static void smartconfg_cb(void *arg, esp_event_base_t event_base,
             break;
     }
 }
-#endif
 #else
 static void smartconfg_cb(smartconfig_status_t status, void *pdata)
 {
@@ -139,12 +137,10 @@ static esp_err_t _smart_config_start(esp_wifi_setting_handle_t self)
         return ESP_FAIL;
     }
 
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
     smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
     ret = esp_smartconfig_start(&cfg);
     esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, &smartconfg_cb, NULL);
-#endif
 #else
     ret = esp_smartconfig_start(smartconfg_cb, 1);
 #endif

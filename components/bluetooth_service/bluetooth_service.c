@@ -367,7 +367,6 @@ static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
     }
     return;
 }
-
 static void bt_a2d_source_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
 {
     ESP_LOGI(TAG, "%s state %d, evt 0x%x", __func__, g_bt_service->source_a2d_state, event);
@@ -381,10 +380,8 @@ static void bt_a2d_source_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param
             if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
                 ESP_LOGI(TAG, "a2dp connected");
                 g_bt_service->source_a2d_state = BT_SOURCE_STATE_CONNECTED;
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
                 esp_bt_gap_set_scan_mode(ESP_BT_NON_CONNECTABLE, ESP_BT_NON_DISCOVERABLE);
-#endif
 #else
                 esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_NONE);
 #endif
@@ -502,10 +499,8 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
     }
 
     /* set discoverable and connectable mode */
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
     esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
-#endif
 #else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
 #endif
@@ -607,15 +602,15 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
             ESP_LOGD(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
             break;
         }
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
         case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {
             ESP_LOGD(TAG, "remote rn_cap: count %d, bitmask 0x%x", rc->get_rn_caps_rsp.cap_count,
                 rc->get_rn_caps_rsp.evt_set.bits);
             break;
         }
 #endif
-#endif
+
         default:
             ESP_LOGE(TAG, "%s unhandled evt %d", __func__, event);
             break;
