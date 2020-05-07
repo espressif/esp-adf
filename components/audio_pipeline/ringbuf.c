@@ -93,15 +93,19 @@ esp_err_t rb_destroy(ringbuf_handle_t rb)
     }
     if (rb->p_o) {
         audio_free(rb->p_o);
+        rb->p_o = NULL;
     }
     if (rb->can_read) {
         vSemaphoreDelete(rb->can_read);
+        rb->can_read = NULL;
     }
     if (rb->can_write) {
         vSemaphoreDelete(rb->can_write);
+        rb->can_write = NULL;
     }
     if (rb->lock) {
         vSemaphoreDelete(rb->lock);
+        rb->lock = NULL;
     }
     audio_free(rb);
     rb = NULL;
