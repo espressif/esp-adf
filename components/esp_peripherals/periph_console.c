@@ -103,6 +103,7 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     int nread = uart_read_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (uint8_t *)&c, 1, time_to_wait);  
 #else
+    int nread = uart_read_bytes(CONFIG_CONSOLE_UART_NUM, (uint8_t *)&c, 1, time_to_wait);
 #endif
 #else
     int nread = uart_read_bytes(CONFIG_CONSOLE_UART_NUM, (uint8_t *)&c, 1, time_to_wait);
@@ -121,6 +122,7 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
             uart_write_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (const char *)tx, 3);
 #else
+            uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 3);
 #endif
 #else
             uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 3);
@@ -137,6 +139,7 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
         uart_write_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (const char *)tx, 2);
 #else
+        uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 2);
 #endif
 #else
         uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 2);
@@ -153,6 +156,7 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     uart_write_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (const char *)&c, 1);
 #else
+    uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)&c, 1);
 #endif
 #else
     uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)&c, 1);
@@ -270,6 +274,7 @@ static esp_err_t _console_init(esp_periph_handle_t self)
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, console->buffer_size * 2, 0, 0, NULL, 0);
 #else
+    uart_driver_install(CONFIG_CONSOLE_UART_NUM, console->buffer_size * 2, 0, 0, NULL, 0);
 #endif
 #else
     uart_driver_install(CONFIG_CONSOLE_UART_NUM, console->buffer_size * 2, 0, 0, NULL, 0);
@@ -280,6 +285,7 @@ static esp_err_t _console_init(esp_periph_handle_t self)
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
 #else
+    esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART_NUM);
 #endif
 #else
     esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART_NUM);
