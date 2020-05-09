@@ -63,10 +63,8 @@
 #include "esp_idf_version.h"
 #endif
 
-#ifdef ESP_IDF_VERSION
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
 #include "driver/touch_pad.h"
-#endif
 #endif
 
 static const char *TAG              = "DUEROS";
