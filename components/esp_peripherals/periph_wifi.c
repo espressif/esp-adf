@@ -46,6 +46,8 @@
 
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch)  0
 #endif
 
 static const char *TAG = "PERIPH_WIFI";
@@ -78,11 +80,6 @@ static const int SMARTCONFIG_DONE_BIT = BIT2;
 static const int SMARTCONFIG_ERROR_BIT = BIT3;
 
 static esp_periph_handle_t g_periph = NULL;
-
-// static esp_err_t wifi_send_cmd(esp_periph_handle_t periph, int cmd, int data)
-// {
-//     return esp_periph_send_event(periph, cmd, (void*)data, 0);
-// }
 
 esp_err_t periph_wifi_wait_for_connected(esp_periph_handle_t periph, TickType_t tick_to_wait)
 {

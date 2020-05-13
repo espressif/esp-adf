@@ -33,6 +33,8 @@
 
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 0
 #endif
 
 static char *TAG = "SMART_CONFIG";
