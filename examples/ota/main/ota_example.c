@@ -30,8 +30,7 @@
 static const char *TAG = "HTTPS_OTA_EXAMPLE";
 static EventGroupHandle_t events = NULL;
 
-#define OTA_SUCCESS (BIT0)
-#define OTA_FAIL    (BIT1)
+#define OTA_FINISH (BIT0)
 
 typedef struct {
     int major_ver;
@@ -70,11 +69,14 @@ static bool ota_data_iamge_need_upgrade(void *handle, ota_node_attr_t *node)
 static esp_err_t ota_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
 {
     if (evt->type == OTA_SERV_EVENT_TYPE_RESULT) {
-        if ((int)evt->data == ESP_OK) {
-            xEventGroupSetBits(events, OTA_SUCCESS);
+        ota_result_t *result_data = evt->data;
+        if (result_data->result != ESP_OK) {
+            ESP_LOGE(TAG, "List id: %d, OTA failed", result_data->id);
         } else {
-            xEventGroupSetBits(events, OTA_FAIL);
+            ESP_LOGI(TAG, "List id: %d, OTA success", result_data->id);
         }
+    } else if (evt->type == OTA_SERV_EVENT_TYPE_FINISH) {
+        xEventGroupSetBits(events, OTA_FINISH);
     }
 
     return ESP_OK;
@@ -115,8 +117,7 @@ void app_main()
     events = xEventGroupCreate();
 
     ESP_LOGI(TAG, "[2.1] Set upgrade list");
-    ota_upgrade_ops_t upgrade_list[] =
-    {
+    ota_upgrade_ops_t upgrade_list[] = {
         {
             {
                 ESP_PARTITION_TYPE_DATA,
@@ -128,6 +129,7 @@ void app_main()
             NULL,
             NULL,
             NULL,
+            false,
             false
         },
         {
@@ -141,9 +143,11 @@ void app_main()
             NULL,
             NULL,
             NULL,
-            true
+            true,
+            false
         }
     };
+
     ota_data_get_default_proc(&upgrade_list[0]);
     upgrade_list[0].need_upgrade = ota_data_iamge_need_upgrade;
     ota_app_get_default_proc(&upgrade_list[1]);
@@ -154,11 +158,11 @@ void app_main()
     AUDIO_MEM_SHOW(TAG);
     periph_service_start(ota_service);
 
-    EventBits_t bits = xEventGroupWaitBits(events, OTA_SUCCESS | OTA_FAIL, true, false, portMAX_DELAY);
-    if (bits & OTA_FAIL) {
-        ESP_LOGE(TAG, "upgrade failed");
+    EventBits_t bits = xEventGroupWaitBits(events, OTA_FINISH, true, false, portMAX_DELAY);
+    if (bits & OTA_FINISH) {
+        ESP_LOGI(TAG, "[2.3] Finish OTA service");
     }
-    ESP_LOGI(TAG, "[2.3] Clear OTA service");
+    ESP_LOGI(TAG, "[2.4] Clear OTA service");
     periph_service_destroy(ota_service);
     vEventGroupDelete(events);
 }

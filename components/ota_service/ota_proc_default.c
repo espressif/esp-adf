@@ -124,8 +124,8 @@ static esp_err_t ota_app_partition_prepare(void **handle, ota_node_attr_t *node)
 static bool ota_app_partition_need_upgrade(void *handle, ota_node_attr_t *node)
 {
     ota_app_upgrade_ctx_t *context = (ota_app_upgrade_ctx_t *)handle;
-    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
-    AUDIO_NULL_CHECK(TAG, context->ota_handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context, return false);
+    AUDIO_NULL_CHECK(TAG, context->ota_handle, return false);
     esp_app_desc_t app_desc;
     esp_err_t err = context->get_img_desc(context->ota_handle, &app_desc);
     if (err != ESP_OK) {
