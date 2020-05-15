@@ -35,7 +35,7 @@
 #define BATTERY_DETECT_GPIO       GPIO_NUM_37
 
 #define SDCARD_OPEN_FILE_NUM_MAX  5
-#define SDCARD_INTR_GPIO          GPIO_NUM_34
+#define SDCARD_INTR_GPIO          GPIO_NUM_39
 
 
 #define WS2812_LED_GPIO_PIN       3
