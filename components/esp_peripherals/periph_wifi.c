@@ -421,6 +421,7 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     memset(&wifi_config, 0x00, sizeof(wifi_config_t));
+	wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
     if (periph_wifi->ssid) {
         strcpy((char *)wifi_config.sta.ssid, periph_wifi->ssid);
         ESP_LOGD(TAG, "WIFI_SSID=%s", wifi_config.sta.ssid);
