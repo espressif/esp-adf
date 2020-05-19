@@ -116,8 +116,8 @@ ESP32-LyraT-Mini 上电之前，请首先确认开发板完好无损。
 * :ref:`get-started-get-esp-adf` 获取开发音频应用程序的 API；
 * :ref:`get-started-setup-path` 使编译器找到音频应用 API；
 * :ref:`get-started-start-project` 提供 ESP32-LyraT-Mini 开发板的音频应用程序示例；
-* :ref:`get-started-connect-configure` 准备加载应用程序；
-* :ref:`get-started-build-flash-monitor` 最后运行应用程序并播放音乐。
+* :ref:`get-started-connect` 准备加载应用程序；
+* :ref:`get-started-build` 最后运行应用程序并播放音乐。
 
 其他 LyraT 系列开发板
 ------------------------------
