@@ -432,14 +432,14 @@ If this is what you see on the LEDs, the board should be ready for application u
 Develop Applications
 ^^^^^^^^^^^^^^^^^^^^
 
-If the ESP32 LyraT is initially set up and checked, you can proceed with preparation of the development tools. Go to section :doc:`index`, which will walk you through the following steps:
+Once the board is initially set up and checked, you can start preparing the development tools. The Section :ref:`get-started-step-by-step` will walk you through the following steps:
 
-* :ref:`get-started-setup-esp-idf` in your PC that provides a common framework to develop applications for the ESP32 in C language;
-* :ref:`get-started-get-esp-adf` to have the API specific for the audio applications;
-* :ref:`get-started-setup-path` to make the framework aware of the audio specific API;
-* :ref:`get-started-start-project` that will provide a sample audio application for the ESP32-LyraT board;
-* :ref:`get-started-connect-configure` to prepare the application for loading;
-* :ref:`get-started-build-flash-monitor` this will finally run the application and play some music.
+* **Set up ESP-IDF** to get a common development framework for the ESP32 (and ESP32-S2) chips in C language;
+* **Get ESP-ADF**  to install the API specific to audio applications;
+* **Setup Path to ESP-ADF** to make the framework aware of the audio specific API;
+* **Start a Project** that will provide a sample audio application for the board;
+* **Connect Your Device** to prepare the application for loading;
+*  **Build the Project** to finally run the application and play some music.
 
 
 Related Documents
