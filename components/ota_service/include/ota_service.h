@@ -58,6 +58,7 @@ typedef struct {
 
 typedef enum {
     OTA_SERV_EVENT_TYPE_RESULT,
+    OTA_SERV_EVENT_TYPE_FINISH
 } ota_service_event_type_t;
 
 typedef struct {
@@ -67,7 +68,13 @@ typedef struct {
     esp_err_t (*execute_upgrade)(void *handle, ota_node_attr_t *node);
     esp_err_t (*finished_check)(void *handle, ota_node_attr_t *node, esp_err_t result);
     bool reboot_flag;
+    bool break_after_fail;
 } ota_upgrade_ops_t;
+
+typedef struct {
+    uint8_t   id;
+    esp_err_t result;
+} ota_result_t;
 
 /**
   * @brief     Create the OTA service instance
@@ -81,7 +88,8 @@ typedef struct {
 periph_service_handle_t ota_service_create(ota_service_config_t *config);
 
 /**
-  * @brief     configure the upgrade parameter
+  * @brief     Configure the upgrade parameter
+  * @Note      This function is not thread safe
   *
   * This function will set the parameter table to ota service,
   * and the ota service will upgrade the partitions defined in the table one by one,
