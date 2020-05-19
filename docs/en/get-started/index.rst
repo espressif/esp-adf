@@ -26,7 +26,7 @@ For easier start with ESP-ADF, Espressif designed ESP32 and ESP32-S2 based devel
 .. _Getting Started with ESP32-LyraT-Mini: get-started-esp32-lyrat-mini.html
 
 .. |Getting Started with ESP32-S2-Kaluga-1-Kit| image:: ../../_static/esp32-s2-kaluga-1-kit.png
-.. _Getting Started with ESP32-S2-Kaluga-1-Kit: https://docs.espressif.com/projects/esp-idf/en/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html
+.. _Getting Started with ESP32-S2-Kaluga-1-Kit: https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html
 
 
 .. toctree::
