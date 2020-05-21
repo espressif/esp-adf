@@ -865,6 +865,16 @@ esp_err_t audio_element_process_deinit(audio_element_handle_t el);
  */
 esp_err_t audio_element_seek(audio_element_handle_t el, void *in_data, int in_size, void *out_data, int *out_size);
 
+/**
+ * @brief      Get Element stopping flag
+ *
+ * @param[in]  el    The audio element handle
+ *
+ * @return     element's stopping flag
+ */
+bool audio_element_is_stopping(audio_element_handle_t el);
+
+
 #ifdef __cplusplus
 }
 #endif
