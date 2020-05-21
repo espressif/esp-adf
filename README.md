@@ -2,11 +2,11 @@
 
 [![Documentation Status](https://readthedocs.com/projects/espressif-esp-adf/badge/?version=latest)](https://docs.espressif.com/projects/esp-adf/en/latest/?badge=latest)
 
-Espressif Systems Audio Development Framework (ESP-ADF) is the official audio development framework for the [ESP32](https://espressif.com/en/products/hardware/esp32/overview) chip.
+Espressif Systems Audio Development Framework (ESP-ADF) is the official audio development framework for the [ESP32](https://espressif.com/en/products/hardware/esp32/overview) and [ESP32-S2](https://www.espressif.com/en/products/socs/esp32-s2) SoCs.
 
 ## Overview
 
-ESP-ADF supports development of audio applications for the Espressif Systems [ESP32](https://espressif.com/en/products/hardware/esp32/overview) chip in the most comprehensive way. With ESP-ADF, you can easily add features, develop audio applications from simple to complex:
+ESP-ADF supports development of audio applications for the Espressif Systems SoCs in the most comprehensive way. With ESP-ADF, you can easily add features, develop audio applications from simple to complex:
 
 - Music player or recorder supports audio formats such as MP3, AAC, FLAC, WAV, OGG, OPUS, AMR, TS, EQ, Downmixer, Sonic, ALC, G.711...
 - Play music from sources: HTTP, HLS(HTTP Live Streaming), SPIFFS, SDCARD,  A2DP-Source, A2DP-Sink, HFP ...
@@ -22,29 +22,26 @@ As a general, the ESP-ADF features will be supported as shown below:
 
 ### Quick Start
 
-You need [version 3.3.1 of ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/v3.3.1/versions.html) to provide the toolchain, the ESP32-LyraT board and headphone connected.
+You need one of ESP-IDF versions described in [ESP-ADF Releases](https://github.com/espressif/esp-adf/releases), one of audio boards below and headphones.
 
-**Note:**  If this is your first exposure to ESP32 and ESP-IDF, proceed to [Getting Started](https://docs.espressif.com/projects/esp-idf/en/v3.3.1/get-started/index.html) documentation.
+**Note:**  If this is your first exposure to ESP-IDF, proceed to **Getting Started** documentation specific for [ESP32](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) or [ESP32-S2](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/get-started/index.html) SoCs.
 
-Clone the ESP-ADF repository, set up `ADF_PATH`, and then compile, flash and monitor applications in the same way as when working with ESP-IDF.
-
-```
-git clone --recursive https://github.com/espressif/esp-adf.git
-cd esp-adf/examples/get-started/play_mp3
-make menuconfig
-make flash monitor
-```
-
-If you clone project without `--recursive` flag, please goto the `esp-adf` directory and run command `git submodule update --init` before doing anything.
+Click on one of audio boards shown below to set up and start using ESP-ADF.
 
 ### Hardware
 
-Espressif Systems has released a number of boards for ESP-ADF to develop ESP32 audio applications, including:
+Espressif Systems has released a number of boards for ESP-ADF to develop audio applications, including:
 
-| ESP32-LyraT Development Board | ESP32-LyraTD-MSC Development Board | ESP32-LyraT-Mini Development Board |
-|:----:|:----:|:----:|
-|  [<img src="docs/_static/esp32-lyrat-v4.2-side.jpg" width="400" alt ="ESP32-LyraT Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html)  |  [<img src="docs/_static/esp32-lyratd-msc-v2.2.jpg" width="380" alt ="ESP32-LyraTD-MSC Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html)  |  [<img src="docs/_static/esp32-lyrat-mini-v1.2.png" width="380" alt ="ESP32-LyraT-Mini Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html)  |
-|  [Getting Started with ESP32-LyraT](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html)  |  [Getting Started with ESP32-LyraTD-MSC](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html)  |  [Getting Started with ESP32-LyraT-Mini](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html)  |
+| ESP32-LyraT Development Board | ESP32-LyraTD-MSC Development Board |
+|:----:|:----:| 
+| [<img src="docs/_static/esp32-lyrat-v4.2-side.jpg" width="380" alt ="ESP32-LyraT Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [<img src="docs/_static/esp32-lyratd-msc-v2.2.jpg" width="380" alt ="ESP32-LyraTD-MSC Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) |
+| [Getting Started with ESP32-LyraT](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [Getting Started with ESP32-LyraTD-MSC](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) |
+
+| ESP32-LyraT-Mini Development Board | ESP32-S2-Kaluga-1 Kit (ESP-LyraT-8311A) |
+|:----:|:----:| 
+| [<img src="docs/_static/esp32-lyrat-mini-v1.2.png" width="380" alt ="ESP32-LyraT-Mini Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | [<img src="docs/_static/esp32-s2-kaluga-1-kit.png" width="380" alt ="ESP32-LyraT-Mini Development Board" align="center" />](https://docs.espressif.com/projects/esp-idf/en/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) |
+| [Getting Started with ESP32-LyraT-Mini](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | [Getting Started with ESP32-S2-Kaluga-1 Kit](https://docs.espressif.com/projects/esp-idf/en/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) |
+
 
 #### ESP32-LyraT
 
@@ -74,7 +71,14 @@ An open-source mono development board. Designed for connected smart speakers and
 * [Getting Started with ESP32-LyraT-Mini](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html)
 * [ESP32-LyraT-Mini Schematic (PDF) ](https://dl.espressif.com/dl/schematics/SCH_ESP32-LYRAT-MINI_V1.2_20190605.pdf)
 
-ESP-**A**DF is based on the application layer of ESP-**I**DF ([Espressif IoT Development Framework](https://github.com/espressif/esp-idf)). The `git clone` command, described under [Quick Start](#quick-start) above, automatically downloads specific version of the ESP-IDF alongside with ESP-ADF. Please take a look at [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html)
+#### ESP32-S2-Kaluga-1 Kit (ESP-LyraT-8311A)
+
+The ESP32-S2-Kaluga-1 multimedia kit is based on ESP32-S2 and features several extensions including ESP-LyraT-8311A audio board (below) as well as camera, LCD, and touch pad boards. 
+
+[<div align="center"><img src="docs/_static/esp-lyrat-8311a-v1.2-layout-front.png" width="740" alt ="ESP-LyraT-8311A Extension Board" align="center" /></div>](https://docs.espressif.com/projects/esp-idf/en/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html)
+
+* [Getting Started with ESP32-S2-Kaluga-1 Kit](https://docs.espressif.com/projects/esp-idf/en/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html)
+* [ESP32-S2-Kaluga-1 Schematic (PDF) ](https://dl.espressif.com/dl/schematics/ESP-LyraT-8311A_V1_2_SCH_20200421A.pdf)
 
 #### Examples
 
