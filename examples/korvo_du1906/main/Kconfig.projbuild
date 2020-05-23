@@ -1,0 +1,54 @@
+menu "Example Configuration"
+
+config WIFI_SSID
+    string "WiFi SSID"
+    default "myssid"
+    help
+        SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+    default "myssid"
+    help
+        WiFi password (WPA or WPA2) for the example to use.
+
+        Can be left blank if the network has no security set.
+
+choice WIFI_SETTING_TYPE
+    prompt "WiFi Setting type"
+    default ESP_SMARTCONFIG
+    help
+        Select wifi setting method
+
+config ESP_SMARTCONFIG
+    bool "Enable esp smartconfig"
+
+config ESP_BLUFI
+    bool "Enable espressif blufi"
+
+config AIRKISS_ENCRYPT
+    bool "Enable airkiss encrypt"
+
+config AIRKISS_APPID
+    string "Airkiss APP ID"
+    depends on AIRKISS_ENCRYPT
+    default "Your APP ID"
+    help
+        The airkiss application id.
+
+config AIRKISS_DEVICEID
+    string "Airkiss device ID"
+    depends on AIRKISS_ENCRYPT
+    default "Your device ID"
+    help
+        The airkiss device id.
+
+config AIRKISS_KEY
+    string "The airkiss key"
+    depends on AIRKISS_ENCRYPT
+    default "Enter aes key string"
+    help
+        The key used to encrypt ssid and password with AES method.
+
+endchoice
+endmenu
