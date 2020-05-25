@@ -18,6 +18,8 @@
 #include "i2s_stream.h"
 #include "esp_peripherals.h"
 #include "periph_touch.h"
+#include "periph_adc_button.h"
+#include "periph_button.h"
 #include "board.h"
 #include "filter_resample.h"
 #include "audio_mem.h"
@@ -139,9 +141,8 @@ void app_main(void)
             continue;
         }
 
-        if (msg.source_type == PERIPH_ID_TOUCH
-            && msg.cmd == PERIPH_TOUCH_TAP
-            && msg.source == (void *)esp_periph_set_get_by_id(set, PERIPH_ID_TOUCH)) {
+        if ((msg.source_type == PERIPH_ID_TOUCH || msg.source_type == PERIPH_ID_BUTTON || msg.source_type == PERIPH_ID_ADC_BTN)
+            && (msg.cmd == PERIPH_TOUCH_TAP || msg.cmd == PERIPH_BUTTON_PRESSED || msg.cmd == PERIPH_ADC_BUTTON_PRESSED)) {
 
             if ((int) msg.data == get_input_play_id()) {
                 ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
