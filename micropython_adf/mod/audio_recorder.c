@@ -181,13 +181,17 @@ STATIC void audio_recorder_create(audio_recorder_obj_t *self, const char *uri, i
     }
     // link
     if (self->filter && self->encoder) {
-        audio_pipeline_link(self->pipeline, (const char *[]) { "i2s", "filter", "encoder", "out" }, 4);
+        const char *link_tag[4] = {"i2s", "filter", "encoder", "out"};
+        audio_pipeline_link(self->pipeline, &link_tag[0], 4);
     } else if (self->filter) {
-        audio_pipeline_link(self->pipeline, (const char *[]) { "i2s", "filter", "out" }, 3);
+        const char *link_tag[3] = {"i2s", "filter", "out"};
+        audio_pipeline_link(self->pipeline, &link_tag[0], 3);
     } else if (self->encoder) {
-        audio_pipeline_link(self->pipeline, (const char *[]) { "i2s", "encoder", "out" }, 3);
+        const char *link_tag[3] = {"i2s", "encoder", "out"};
+        audio_pipeline_link(self->pipeline, &link_tag[0], 3);
     } else {
-        audio_pipeline_link(self->pipeline, (const char *[]) { "i2s", "out" }, 2);
+        const char *link_tag[2] = {"i2s", "out"};
+        audio_pipeline_link(self->pipeline, &link_tag[0], 2);
     }
 }
 

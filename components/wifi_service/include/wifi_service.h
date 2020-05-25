@@ -75,10 +75,12 @@ typedef struct {
     .task_stack = 3*1024, \
     .task_prio = 6, \
     .task_core = 0, \
+    .evt_cb = NULL, \
+    .cb_ctx = NULL, \
     .user_data = NULL, \
     .setting_timeout_s = 60, \
-    .max_ssid_num = 5, \
     .max_retry_time = 5,\
+    .max_ssid_num = 5, \
 }
 
 /*

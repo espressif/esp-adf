@@ -46,6 +46,8 @@ audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE = {
     .audio_codec_set_mute = es7243_adc_set_voice_mute,
     .audio_codec_set_volume = es7243_adc_set_voice_volume,
     .audio_codec_get_volume = es7243_adc_get_voice_volume,
+    .audio_hal_lock = NULL,
+    .handle = NULL,
 };
 
 static esp_err_t es7243_write_reg(uint8_t reg_add, uint8_t data)

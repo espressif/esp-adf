@@ -88,8 +88,9 @@ static audio_pipeline_handle_t example_create_play_pipeline(const char *url, out
                 audio_pipeline_register(pipeline, mp3_decoder, "mp3");
                 audio_pipeline_register(pipeline, resample_for_play, "filter");
                 audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
-
-                audio_pipeline_link(pipeline, (const char *[]) {"file", "mp3", "filter", "i2s"}, 4);
+                
+                const char *link_tag[4] = {"file", "mp3", "filter", "i2s"};
+                audio_pipeline_link(pipeline, &link_tag[0], 4);
                 audio_element_set_uri(fatfs_stream_reader, url);
                 break;
             }
@@ -113,8 +114,9 @@ static audio_pipeline_handle_t example_create_play_pipeline(const char *url, out
                 audio_pipeline_register(pipeline, mp3_decoder, "mp3");
                 audio_pipeline_register(pipeline, resample_for_play, "filter");
                 audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
-
-                audio_pipeline_link(pipeline, (const char *[]) {"http", "mp3", "filter", "i2s"}, 4);
+                
+                const char *link_tag[4] = {"http", "mp3", "filter", "i2s"};
+                audio_pipeline_link(pipeline, &link_tag[0], 4);
                 audio_element_set_uri(http_stream_reader, url);
                 break;
             }
@@ -160,8 +162,9 @@ static audio_pipeline_handle_t example_create_rec_pipeline(const char *url, int 
                 audio_pipeline_register(pipeline, wav_encoder, "wav");
                 audio_pipeline_register(pipeline, resample_for_rec, "filter");
                 audio_pipeline_register(pipeline, fatfs_stream_writer, "file");
-
-                audio_pipeline_link(pipeline, (const char *[]) {"i2s", "filter", "wav", "file"}, 4);
+                
+                const char *link_tag[4] = {"i2s", "filter", "wav", "file"};
+                audio_pipeline_link(pipeline, &link_tag[0], 4);
                 audio_element_set_uri(fatfs_stream_writer, url);
                 break;
             }
@@ -192,8 +195,9 @@ static audio_pipeline_handle_t example_create_rec_pipeline(const char *url, int 
                 audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
                 audio_pipeline_register(pipeline, resample_for_rec, "filter");
                 audio_pipeline_register(pipeline, raw_reader, "raw_read");
-
-                audio_pipeline_link(pipeline, (const char *[]) {"i2s", "filter", "raw_read"}, 3);
+                
+                const char *link_tag[3] = {"i2s", "filter", "raw_read"};
+                audio_pipeline_link(pipeline, &link_tag[0], 3);
                 break;
             }
         default:

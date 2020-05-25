@@ -128,10 +128,12 @@ void app_main(void)
 
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->i2s_stream-->resample-->opus_encoder-->fatfs_stream-->[sdcard]");
-    audio_pipeline_link(pipeline, (const char *[]) {"i2s", "res", "opus", "file"}, 4);
+    const char *link_tag[4] = {"i2s", "res", "opus", "file"};
+    audio_pipeline_link(pipeline, &link_tag[0], 4);
 #else
     ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->i2s_stream-->opus_encoder-->fatfs_stream-->[sdcard]");
-    audio_pipeline_link(pipeline, (const char *[]) {"i2s", "opus", "file"}, 3);
+    const char *link_tag[3] = {"i2s", "opus", "file"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 #endif
 
     ESP_LOGI(TAG, "[3.6] Setup uri (file as fatfs_stream, opus as opus encoder)");

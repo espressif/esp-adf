@@ -62,6 +62,8 @@ audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE = {
     .audio_codec_set_mute = es8311_set_voice_mute,
     .audio_codec_set_volume = es8311_codec_set_voice_volume,
     .audio_codec_get_volume = es8311_codec_get_voice_volume,
+    .audio_hal_lock = NULL,
+    .handle = NULL,
 };
 
 /*

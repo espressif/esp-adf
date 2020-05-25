@@ -178,7 +178,8 @@ void record_playback_task()
              * [codec_chip]-->i2s_stream--->filter-->wav_encoder-->fatfs_stream-->[sdcard]
              */
             ESP_LOGI(TAG, "Link audio elements to make recorder pipeline ready");
-            audio_pipeline_link(pipeline_rec, (const char *[]) {"i2s_reader", "filter_downsample", "wav_encoder", "file_writer"}, 4);
+            const char *link_tag[4] = {"i2s_reader", "filter_downsample", "wav_encoder", "file_writer"};
+            audio_pipeline_link(pipeline_rec, &link_tag[0], 4);
 
             ESP_LOGI(TAG, "Setup file path to save recorded audio");
             i2s_stream_set_clk(i2s_writer_el, RECORD_RATE, RECORD_BITS, RECORD_CHANNEL);
@@ -194,7 +195,8 @@ void record_playback_task()
              * [sdcard]-->fatfs_stream-->wav_decoder-->filter-->i2s_stream-->[codec_chip]
              */
             ESP_LOGI(TAG, "Link audio elements to make playback pipeline ready");
-            audio_pipeline_link(pipeline_play, (const char *[]) {"file_reader", "wav_decoder", "filter_upsample", "i2s_writer"}, 4);
+            const char *link_tag[4] = {"file_reader", "wav_decoder", "filter_upsample", "i2s_writer"};
+            audio_pipeline_link(pipeline_play, &link_tag[0], 4);
 
             ESP_LOGI(TAG, "Setup file path to read the wav audio to play");
             i2s_stream_set_clk(i2s_writer_el, PLAYBACK_RATE, PLAYBACK_BITS, PLAYBACK_CHANNEL);

@@ -96,13 +96,11 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->i2s_stream-->amr_encoder-->fatfs_stream-->[sdcard]");
 
 #ifdef CONFIG_CHOICE_AMR_WB
-    audio_pipeline_link(pipeline, (const char *[]) {
-        "i2s", "Wamr", "file"
-    }, 3);
+    const char *link_tag[3] = {"i2s", "Wamr", "file"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 #elif defined CONFIG_CHOICE_AMR_NB
-    audio_pipeline_link(pipeline, (const char *[]) {
-        "i2s", "amr", "file"
-    }, 3);
+    const char *link_tag[3] = {"i2s", "amr", "file"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 #endif
     ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, amr as amr encoder)");
 #ifdef CONFIG_CHOICE_AMR_WB

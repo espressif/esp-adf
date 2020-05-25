@@ -49,14 +49,15 @@ typedef struct {
 #define VFS_STREAM_TASK_PRIO (4)
 #define VFS_STREAM_RINGBUFFER_SIZE (8 * 1024)
 
-#define VFS_STREAM_CFG_DEFAULT()                   \
-    {                                              \
-        .task_prio = VFS_STREAM_TASK_PRIO,         \
-        .task_core = VFS_STREAM_TASK_CORE,         \
-        .task_stack = VFS_STREAM_TASK_STACK,       \
-        .out_rb_size = VFS_STREAM_RINGBUFFER_SIZE, \
-        .buf_sz = VFS_STREAM_BUF_SIZE,             \
-    }
+#define VFS_STREAM_CFG_DEFAULT()               \
+{                                              \
+    .type =  AUDIO_STREAM_NONE,                \
+    .buf_sz = VFS_STREAM_BUF_SIZE,             \
+    .out_rb_size = VFS_STREAM_RINGBUFFER_SIZE, \
+    .task_stack = VFS_STREAM_TASK_STACK,       \
+    .task_core = VFS_STREAM_TASK_CORE,         \
+    .task_prio = VFS_STREAM_TASK_PRIO,         \
+}
 
 /**
  * @brief      Create a handle to an Audio Element to stream data from FatFs to another Element

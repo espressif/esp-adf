@@ -139,8 +139,9 @@ void app_main(void)
         audio_pipeline_register(pipeline[i], fats_rd_el[i], "file");
         audio_pipeline_register(pipeline[i], wav_decoder[i], "wav");
         audio_pipeline_register(pipeline[i], el_raw_write[i], "raw");
-
-        audio_pipeline_link(pipeline[i], (const char *[]) {"file", "wav", "raw"}, 3);
+          
+        const char *link_tag[3] = {"file", "wav", "raw"};
+        audio_pipeline_link(pipeline[i], &link_tag[0], 3);
         ringbuf_handle_t rb = audio_element_get_input_ringbuf(el_raw_write[i]);
         audio_element_set_multi_input_ringbuf(audio_forge, rb, i);
         audio_pipeline_set_listener(pipeline[i], evt);

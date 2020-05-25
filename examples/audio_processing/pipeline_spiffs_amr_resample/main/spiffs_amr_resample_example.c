@@ -179,7 +179,8 @@ void record_playback_task()
              * [codec_chip]-->i2s_stream--->filter-->amrnb_encoder-->spiffs_stream-->[flash]
              */
             ESP_LOGI(TAG, "Link audio elements to make recorder pipeline ready");
-            audio_pipeline_link(pipeline_rec, (const char *[]) {"i2s_reader", "filter_downsample", "amrnb_encoder", "file_writer"}, 4);
+            const char *link_rec[4] = {"i2s_reader", "filter_downsample", "amrnb_encoder", "file_writer"};
+            audio_pipeline_link(pipeline_rec, &link_rec[0], 4);
 
             ESP_LOGI(TAG, "Setup file path to save recorded audio");
             i2s_stream_set_clk(i2s_writer_el, RECORD_RATE, RECORD_BITS, RECORD_CHANNEL);
@@ -198,7 +199,8 @@ void record_playback_task()
              * [flash]-->spiffs_stream-->amr_decoder-->filter-->i2s_stream-->[codec_chip]
              */
             ESP_LOGI(TAG, "Link audio elements to make playback pipeline ready");
-            audio_pipeline_link(pipeline_play, (const char *[]) {"file_reader", "amr_decoder", "filter_upsample", "i2s_writer"}, 4);
+            const char *link_play[4] = {"file_reader", "amr_decoder", "filter_upsample", "i2s_writer"};
+            audio_pipeline_link(pipeline_play, &link_play[0], 4);
 
             ESP_LOGI(TAG, "Setup file path to read the amr audio to play");
             i2s_stream_set_clk(i2s_writer_el, PLAYBACK_RATE, PLAYBACK_BITS, PLAYBACK_CHANNEL);

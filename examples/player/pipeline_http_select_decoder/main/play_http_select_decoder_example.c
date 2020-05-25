@@ -131,7 +131,8 @@ void app_main(void)
     audio_pipeline_register(pipeline, i2s_stream_writer,  "i2s");
 
     ESP_LOGI(TAG, "[2.5] Link it together http_stream-->%s_decoder-->i2s_stream-->[codec_chip]", selected_decoder_name);
-    audio_pipeline_link(pipeline, (const char *[]) {"http", selected_decoder_name, "i2s"}, 3);
+    const char *link_tag[3] = {"http", selected_decoder_name, "i2s"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[2.6] Set up  uri (http as http_stream, %s as %s_decoder, and default output is i2s)",
              selected_decoder_name, selected_decoder_name);

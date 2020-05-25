@@ -87,7 +87,8 @@ static esp_err_t recorder_pipeline_open()
     audio_pipeline_register(recorder, filter, "filter");
     audio_pipeline_register(recorder, sip_encoder, "sip_enc");
     audio_pipeline_register(recorder, raw_read, "raw");
-    audio_pipeline_link(recorder, (const char *[]) {"i2s", "filter", "sip_enc", "raw"}, 4);
+    const char *link_tag[4] = {"i2s", "filter", "sip_enc", "raw"};
+    audio_pipeline_link(recorder, &link_tag[0], 4);
     audio_pipeline_run(recorder);
     ESP_LOGI(TAG, " SIP recorder has been created");
     return ESP_OK;
@@ -130,9 +131,10 @@ static esp_err_t player_pipeline_open()
     audio_pipeline_register(player, sip_decoder, "sip_dec");
     audio_pipeline_register(player, filter, "filter");
     audio_pipeline_register(player, i2s_stream_writer, "i2s");
-    audio_pipeline_link(player, (const char *[]) {"raw", "sip_dec", "filter", "i2s"}, 4);
+    const char *link_tag[4] = {"raw", "sip_dec", "filter", "i2s"};
+    audio_pipeline_link(player, &link_tag[0], 4);
     audio_pipeline_run(player);
-    ESP_LOGI(TAG, "SIP player has been created");
+    ESP_LOGI(TAG, "Speaker has been created");
     return ESP_OK;
 }
 

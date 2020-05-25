@@ -145,8 +145,9 @@ static esp_err_t recorder_pipeline_open_for_mini(void **handle)
     audio_pipeline_register(recorder, algo_handle, "algo");
     audio_element_set_read_cb(algo_handle, duer_i2s_read_cb, (void *)i2s_reader);
     audio_pipeline_register(recorder, raw_read, "raw");
-
-    audio_pipeline_link(recorder, (const char *[]) {"algo", "raw"}, 2);
+    
+    const char *link_tag[2] = {"algo", "raw"};
+    audio_pipeline_link(recorder, &link_tag[0], 2);
 
     audio_pipeline_run(recorder);
     ESP_LOGI(TAG, "Recorder has been created");
@@ -187,7 +188,8 @@ static esp_err_t recorder_pipeline_open(void **handle)
     audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
     audio_pipeline_register(recorder, filter, "filter");
     audio_pipeline_register(recorder, raw_read, "raw");
-    audio_pipeline_link(recorder, (const char *[]) {"i2s", "filter", "raw"}, 3);
+    const char *link_tag[3] = {"i2s", "filter", "raw"};
+    audio_pipeline_link(recorder, &link_tag[0], 3);
     audio_pipeline_run(recorder);
     ESP_LOGI(TAG, "Recorder has been created");
     *handle = recorder;

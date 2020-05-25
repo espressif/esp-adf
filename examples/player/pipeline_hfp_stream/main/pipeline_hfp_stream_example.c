@@ -132,9 +132,10 @@ void app_main(void)
     audio_pipeline_register(pipeline_out, hfp_out_stream, "outgoing");
 
     ESP_LOGI(TAG, "[3.3] Link it together [Bluetooth]-->hfp_in_stream-->i2s_stream_writer-->[codec_chip]");
-
-    audio_pipeline_link(pipeline_in, (const char *[]) {"incoming", "i2s_writer"}, 2);
-    audio_pipeline_link(pipeline_out, (const char *[]) {"i2s_reader", "outgoing"}, 2);
+    const char *link_in[2] = {"incoming", "i2s_writer"};
+    audio_pipeline_link(pipeline_in, &link_in[0], 2);
+    const char *link_out[2] = {"i2s_reader", "outgoing"};
+    audio_pipeline_link(pipeline_out, &link_out[0], 2);
 
     ESP_LOGI(TAG, "[ 4 ] Initialize peripherals");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();

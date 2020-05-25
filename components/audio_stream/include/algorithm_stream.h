@@ -117,11 +117,11 @@ typedef struct {
 
 #define ALGORITHM_STREAM_CFG_DEFAULT() {                  \
     .input_type = ALGORITHM_STREAM_INPUT_TYPE1,           \
-    .task_core  = ALGORITHM_STREAM_PINNED_TO_CORE,        \
-    .task_prio  = ALGORITHM_STREAM_TASK_PERIOD,           \
     .task_stack = ALGORITHM_STREAM_TASK_STACK_SIZE,       \
-    .ref_ch     = 1,                                      \
+    .task_prio  = ALGORITHM_STREAM_TASK_PERIOD,           \
+    .task_core  = ALGORITHM_STREAM_PINNED_TO_CORE,        \
     .rec_ch     = 1,                                      \
+    .ref_ch     = 1,                                      \
     .ref_sample_rate    = 16000,                          \
     .rec_sample_rate    = 16000,                          \
     .rec_linear_factor = 1,                               \

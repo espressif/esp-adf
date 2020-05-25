@@ -77,7 +77,8 @@ void app_main(void)
     audio_pipeline_register(pipeline, i2s_stream_writer,  "i2s");
 
     ESP_LOGI(TAG, "[2.5] Link elements together http_stream-->mp3_decoder-->i2s_stream-->[codec_chip]");
-    audio_pipeline_link(pipeline, (const char *[]) {"http", "mp3", "i2s"}, 3);
+    const char *link_tag[3] = {"http", "mp3", "i2s"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
     ESP_LOGI(TAG, "[2.6] Set up  uri (http as http_stream, mp3 as mp3 decoder, and default output is i2s)");
     audio_element_set_uri(http_stream_reader, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3");
 
@@ -103,7 +104,8 @@ void app_main(void)
     audio_pipeline_register(pipeline_save, el_fatfs_wr_stream, "file");
 
     ESP_LOGI(TAG, "[3.5] Link elements together raw_stream-->fatfs_stream");
-    audio_pipeline_link(pipeline_save, (const char *[]) {"raw", "file"}, 2);
+    const char *link_save[2] = {"raw", "file"};
+    audio_pipeline_link(pipeline_save, &link_save[0], 2);
 
     ESP_LOGI(TAG, "[3.6] Connect input ringbuffer of pipeline_save to http stream multi output");
     ringbuf_handle_t rb = audio_element_get_output_ringbuf(el_raw_read);

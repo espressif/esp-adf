@@ -53,13 +53,14 @@ typedef struct {
 #define FATFS_STREAM_TASK_PRIO           (4)
 #define FATFS_STREAM_RINGBUFFER_SIZE     (8 * 1024)
 
-#define FATFS_STREAM_CFG_DEFAULT() {\
-    .task_prio = FATFS_STREAM_TASK_PRIO, \
-    .task_core = FATFS_STREAM_TASK_CORE, \
-    .task_stack = FATFS_STREAM_TASK_STACK, \
+#define FATFS_STREAM_CFG_DEFAULT() {             \
+    .type = AUDIO_STREAM_NONE,                   \
+    .buf_sz = FATFS_STREAM_BUF_SIZE,             \
     .out_rb_size = FATFS_STREAM_RINGBUFFER_SIZE, \
-    .buf_sz = FATFS_STREAM_BUF_SIZE, \
-    .ext_stack = false \
+    .task_stack = FATFS_STREAM_TASK_STACK,       \
+    .task_core = FATFS_STREAM_TASK_CORE,         \
+    .task_prio = FATFS_STREAM_TASK_PRIO,         \
+    .ext_stack = false                           \
 }
 
 /**

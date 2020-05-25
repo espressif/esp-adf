@@ -65,7 +65,9 @@ audio_hal_func_t AUDIO_CODEC_TAS5805M_DEFAULT_HANDLE = {
     .audio_codec_config_iface = tas5805m_conig_iface,
     .audio_codec_set_mute = tas5805m_set_mute,
     .audio_codec_set_volume = tas5805m_set_volume,
-    .audio_codec_get_volume = tas5805m_get_volume
+    .audio_codec_get_volume = tas5805m_get_volume,
+    .audio_hal_lock = NULL,
+    .handle = NULL,
 };
 
 static esp_err_t tas5805m_transmit_registers(const tas5805m_cfg_reg_t *conf_buf, int size)
