@@ -48,6 +48,7 @@ typedef struct {
     xQueueHandle srv_q;
     ota_upgrade_ops_t *upgrade_list;
     int list_len;
+    int result;
 } ota_service_t;
 
 typedef enum {
@@ -94,8 +95,12 @@ static esp_err_t ota_service_process(ota_upgrade_ops_t *upgrade_info)
         }
     }
 
-    AUDIO_CHECK(TAG, upgrade_info->finished_check != NULL, return ESP_FAIL, "finished_check should not be NULL");
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "OTA service process failed");
+        return ESP_FAIL;
+    }
 
+    AUDIO_CHECK(TAG, upgrade_info->finished_check != NULL, return ESP_FAIL, "finished_check should not be NULL");
     return upgrade_info->finished_check(handle, &upgrade_info->node, ret);
 }
 
@@ -108,13 +113,11 @@ static void ota_task(void *pvParameters)
     ota_result_t result_data = { 0 };
 
     ota->state = OTA_IDLE;
-    int index = 0;
-
     while (true) {
         switch (ota->state) {
             case OTA_INIT:
             case OTA_IDLE: {
-                index = 0;
+                ota->result = 0;
                 if (xQueueReceive(ota->srv_q, &msg, portMAX_DELAY) == pdTRUE) {
                     switch (msg.cmd) {
                         case OTA_SERVICE_CMD_START: {
@@ -137,10 +140,12 @@ static void ota_task(void *pvParameters)
             }
             case OTA_START: {
                 esp_err_t ret = ESP_FAIL;
-                int i = 0;
-                for (i = 0; i < ota->list_len; i++) {
+                for (int i = 0; i < ota->list_len; i++) {
                     ota_upgrade_ops_t *cur_node = &ota->upgrade_list[i];
                     ret = ota_service_process(cur_node);
+                    if (ret == ESP_OK) {
+                        ota->result |= (0x01 << i);
+                    }
                     ser_evt.type = OTA_SERV_EVENT_TYPE_RESULT;
                     ser_evt.source = serv_handle;
                     result_data.result = ret;
@@ -153,23 +158,23 @@ static void ota_task(void *pvParameters)
                         break;
                     }
                 }
-                index = i;
                 ota->state = OTA_END;
                 break;
             }
             case OTA_END: {
                 ESP_LOGW(TAG, "OTA_END!");
-                memset(&ser_evt, 0, sizeof(periph_service_event_t));
-                ser_evt.type = OTA_SERV_EVENT_TYPE_FINISH;
-                periph_service_callback(serv_handle, &ser_evt);
-                if (index == ota->list_len) { // Success to update all the list
-                    for (int i = 0; i < ota->list_len; i++) {
+                for (int i = 0; i < ota->list_len; i++) {
+                    if (ota->result & (0x01 << i)) {
                         if (ota->upgrade_list[i].reboot_flag == true) {
                             ESP_LOGW(TAG, "restart!");
                             esp_restart();
                         }
                     }
                 }
+                memset(&ser_evt, 0, sizeof(periph_service_event_t));
+                ser_evt.type = OTA_SERV_EVENT_TYPE_FINISH;
+                periph_service_callback(serv_handle, &ser_evt);
+
                 ota->state = OTA_IDLE;
                 break;
             }
