@@ -42,6 +42,19 @@ extern "C" {
  */
 esp_wifi_setting_handle_t blufi_config_create(void *info);
 
+/**
+ * @brief      Set customized data to be sent after configurate wifi successfully.
+ *
+ * @param[in]  handle   Wifi setting handle
+ * @param[in]  data     Customized data
+ * @param[in]  data_len Customized data length
+
+ * @return
+ *     - ESP_FAIL, Fail
+ *     - ESP_OK, Success
+ */
+esp_err_t blufi_set_customized_data(esp_wifi_setting_handle_t handle, char *data, int data_len);
+
 #ifdef __cplusplus
 }
 #endif
