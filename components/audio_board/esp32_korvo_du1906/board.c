@@ -47,9 +47,9 @@ audio_board_handle_t audio_board_init(void)
     board_handle = (audio_board_handle_t) audio_calloc(1, sizeof(struct audio_board_handle));
     AUDIO_MEM_CHECK(TAG, board_handle, return NULL);
     board_handle->audio_hal = audio_board_dac_init();
-    es7243_adc_set_addr(0x20);
+    es7243_adc_set_addr(0x24);
     board_handle->adc_line_in_hal = audio_board_adc_init();
-    es7243_adc_set_addr(0x22);
+    es7243_adc_set_addr(0x26);
     board_handle->adc_ref_pa_hal = audio_board_adc_init();
     return board_handle;
 }
