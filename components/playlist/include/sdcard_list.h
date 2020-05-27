@@ -130,7 +130,7 @@ esp_err_t sdcard_list_choose(playlist_operator_handle_t handle, int url_id, char
 int sdcard_list_get_url_num(playlist_operator_handle_t handle);
 
 /**
- * @brief Destroy sdcard playlist
+ * @brief Get current url id in the sdcard playlist
  *
  * @param handle     Playlist handle
  *

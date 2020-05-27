@@ -36,6 +36,8 @@ typedef struct wifi_blufi_config {
     uint8_t                 ble_server_if;
     uint16_t                ble_conn_id;
     wifi_config_t           sta_config;
+    void                    *user_data;
+    int                     user_data_length;
 } wifi_blufi_config_t;
 
 static const char *TAG = "BLUFI_CONFIG";
@@ -78,7 +80,6 @@ static void wifi_ble_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_par
             break;
         case ESP_BLUFI_EVENT_BLE_CONNECT:
             ESP_LOGI(TAG, "BLUFI ble connect");
-            // esp_smartconfig_stop();
             cfg->ble_server_if = param->connect.server_if;
             cfg->ble_conn_id = param->connect.conn_id;
             break;
@@ -91,8 +92,10 @@ static void wifi_ble_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_par
             break;
         case ESP_BLUFI_EVENT_REQ_CONNECT_TO_AP:
             ESP_LOGI(TAG, "BLUFI request wifi connect to AP");
-            esp_wifi_disconnect(); // ？？？
-
+            if (cfg->user_data && (cfg->user_data_length != 0)) {
+                ESP_LOGI(TAG, "send a string to peer: %s, data_len: %d", (char *)cfg->user_data, cfg->user_data_length);
+                esp_blufi_send_custom_data((uint8_t *)cfg->user_data, cfg->user_data_length);
+            }
             if (bc_setting_handle) {
                 esp_wifi_setting_info_notify(bc_setting_handle, &cfg->sta_config);
             }
@@ -175,4 +178,17 @@ esp_wifi_setting_handle_t blufi_config_create(void *info)
     esp_wifi_setting_set_data(bc_setting_handle, cfg);
     esp_wifi_setting_register_function(bc_setting_handle, _ble_config_start, _ble_config_stop, NULL);
     return bc_setting_handle;
+}
+
+esp_err_t blufi_set_customized_data(esp_wifi_setting_handle_t handle, char *data, int data_len)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, data, return ESP_FAIL);
+    wifi_blufi_config_t *blufi_cfg = esp_wifi_setting_get_data(handle);
+    blufi_cfg->user_data = audio_calloc(1, data_len + 1);
+    blufi_cfg->user_data_length = data_len;
+    AUDIO_MEM_CHECK(TAG, blufi_cfg->user_data, return ESP_FAIL);
+    memcpy(blufi_cfg->user_data, data, data_len);
+    ESP_LOGI(TAG, "Set blufi customized data: %s, length: %d", data, data_len);
+    return ESP_OK;
 }
