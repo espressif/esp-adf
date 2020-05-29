@@ -212,6 +212,17 @@ periph_service_state_t wifi_service_state_get(periph_service_handle_t handle);
  */
 wifi_service_disconnect_reason_t wifi_service_disconnect_reason_get(periph_service_handle_t handle);
 
+/*
+ * @brief Erase all the ssid information stored in ssid manager
+ *
+ * @param handle  The periph_service_handle_t instance
+ *
+ * @return 
+ *     - ESP_OK, Success
+ *     - Others, Fail
+ */
+esp_err_t wifi_service_erase_ssid_manager_info(periph_service_handle_t handle);
+
 #ifdef __cplusplus
 }
 #endif
