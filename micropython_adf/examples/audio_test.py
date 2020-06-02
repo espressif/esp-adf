@@ -66,9 +66,6 @@ def run():
     print('========= Record WAV with maxtime and endcb =========')
     def recorder_endcb(rec):
         print('\nRecoder state: ', rec.is_running())
-        print('Playback the recording file')
-        mPlayer.play('file://sdcard/3.wav')
-        wait_playing(mPlayer)
 
     print('Recording voice to a WAV file in 10 seconds. Please say something via microphone.')
     aRecorder.start('/sdcard/3.wav', recorder.WAV, 10, recorder_endcb)
@@ -77,3 +74,6 @@ def run():
         print('\rRecording: %s' % ('*' * i), end='')
         i += 1
         time.sleep(1)
+    print('Playback the recording file')
+    mPlayer.play('file://sdcard/3.wav')
+    wait_playing(mPlayer)
