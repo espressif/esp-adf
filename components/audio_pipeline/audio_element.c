@@ -177,9 +177,11 @@ esp_err_t audio_element_process_init(audio_element_handle_t el)
         return ESP_OK;
     } else if (ret == AEL_IO_DONE) {
         ESP_LOGW(TAG, "[%s] AEL_STATUS_ERROR_OPEN IO_DONE,%d", el->tag, ret);
+        audio_element_force_set_state(el, AEL_STATE_ERROR);
         audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
     } else {
         ESP_LOGE(TAG, "[%s] AEL_STATUS_ERROR_OPEN,%d", el->tag, ret);
+        audio_element_force_set_state(el, AEL_STATE_ERROR);
         audio_element_report_status(el, AEL_STATUS_ERROR_OPEN);
         audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
     }
@@ -308,7 +310,7 @@ static esp_err_t audio_element_process_running(audio_element_handle_t el)
                 if (audio_element_get_state(el) == AEL_STATE_INIT) {
                     el->is_open = false;
                     el->is_running = false;
-                    audio_element_resume(el, 0, 0);
+                    audio_element_cmd_send(el, AEL_MSG_CMD_RESUME);
                     return ESP_OK;
                 }
                 audio_element_set_ringbuf_done(el);
@@ -445,7 +447,13 @@ void audio_element_task(void *pv)
     while (el->task_run) {
         if (audio_event_iface_waiting_cmd_msg(el->iface_event) != ESP_OK) {
             xEventGroupSetBits(el->state_event, STOPPED_BIT);
-            break;
+            /*
+             * Do not exit task when audio_element_process_init failure to
+             * make call audio_element_deinit safety.
+            */
+            if (el->task_run == 0) {
+                break;
+            }
         }
         if (audio_element_process_running(el) != ESP_OK) {
             // continue;
@@ -1129,7 +1137,7 @@ esp_err_t audio_element_resume(audio_element_handle_t el, float wait_for_rb_thre
     int ret =  ESP_OK;
     xEventGroupClearBits(el->state_event, RESUMED_BIT);
     audio_element_cmd_send(el, AEL_MSG_CMD_RESUME);
-    EventBits_t uxBits = xEventGroupWaitBits(el->state_event, RESUMED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
+    EventBits_t uxBits = xEventGroupWaitBits(el->state_event, RESUMED_BIT, false, true, timeout);
     if ((uxBits & RESUMED_BIT) != RESUMED_BIT) {
         ESP_LOGW(TAG, "[%s] RESUME timeout", el->tag);
         ret = ESP_FAIL;
@@ -1264,4 +1272,12 @@ esp_err_t audio_element_seek(audio_element_handle_t el, void *in_data, int in_si
         ret = ESP_ERR_NOT_SUPPORTED;
     }
     return ret;
+}
+
+bool audio_element_is_stopping(audio_element_handle_t el)
+{
+    if (el) {
+        return el->stopping;
+    }
+    return false;
 }

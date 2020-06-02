@@ -453,12 +453,6 @@ static void wifi_task(void *pvParameters)
     vTaskDelete(NULL);
 }
 
-static esp_err_t _wifi_destroy(periph_service_handle_t handle)
-{
-    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
-    return wifi_service_destroy(handle);
-}
-
 static esp_err_t _wifi_start(periph_service_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
@@ -607,7 +601,7 @@ periph_service_handle_t wifi_service_create(wifi_service_config_t *config)
         .service_start = _wifi_start,
         .service_stop = _wifi_stop,
         .service_ioctl = NULL,
-        .service_destroy = _wifi_destroy,
+        .service_destroy = wifi_service_destroy,
         .service_name = "wifi_serv",
         .user_data = (void *)serv,
     };
