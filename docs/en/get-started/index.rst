@@ -45,7 +45,7 @@ For easier start with ESP-ADF, Espressif designed ESP32 and ESP32-S2 based devel
     Guide for ESP32-LyraT <get-started-esp32-lyrat>
     Guide for ESP32-LyraTD-MSC <get-started-esp32-lyratd-msc>
     Guide for ESP32-LyraT-Mini <get-started-esp32-lyrat-mini>
-    Guide for ESP32-S2-Kaluga-1-Kit <get-started-esp32-lyrat-mini>
+    Guide for ESP32-S2-Kaluga-1-Kit <https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html>
     Guide for ESP32-Korvo-DU1906 <esp32-korvo-du1906-user-guide>
 
 
