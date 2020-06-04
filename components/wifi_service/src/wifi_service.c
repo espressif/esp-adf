@@ -281,7 +281,6 @@ static void wifi_task(void *pvParameters)
     wifi_config_t *stored_ssid = NULL;
 
     wifi_sta_setup(pvParameters);
-    esp_wifi_get_config(WIFI_IF_STA, &wifi_cfg);
     configure_wifi_sta_mode(&wifi_cfg);
     ESP_ERROR_CHECK(esp_wifi_start());
 
@@ -560,6 +559,20 @@ esp_err_t wifi_service_destroy(periph_service_handle_t handle)
     vEventGroupDelete(serv->sync_evt);
     free(serv);
     periph_service_destroy(handle);
+    return ret;
+}
+
+esp_err_t wifi_service_erase_ssid_manager_info(periph_service_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
+    esp_err_t ret = ESP_OK;
+    wifi_service_t *serv = periph_service_get_data(handle);
+    if (serv->ssid_manager) {
+        ret = wifi_ssid_manager_erase_all(serv->ssid_manager);
+        if (ret == ESP_OK) {
+            ESP_LOGW(TAG, "Erase all the ssid information stored in flash");
+        }
+    }
     return ret;
 }
 

@@ -81,7 +81,7 @@ static esp_err_t tas5805m_transmit_registers(const tas5805m_cfg_reg_t *conf_buf,
                 vTaskDelay(conf_buf[i].value / portTICK_RATE_MS);
                 break;
             case CFG_META_BURST:
-                ret = i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, (unsigned char *)(&conf_buf[i + 1].offset), 1, (unsigned char *)(&conf_buf[i + 1].value), 1);
+                ret = i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, (unsigned char *)(&conf_buf[i + 1].offset), 1, (unsigned char *)(&conf_buf[i + 1].value), conf_buf[i].value);
                 i +=  (conf_buf[i].value / 2) + 1;
                 break;
             case CFG_END_1:
@@ -100,26 +100,6 @@ static esp_err_t tas5805m_transmit_registers(const tas5805m_cfg_reg_t *conf_buf,
         return ESP_FAIL;
     }
     ESP_LOGI(TAG, "%s:  write %d reg done", __FUNCTION__, i);
-    return ret;
-}
-
-static esp_err_t tas5805m_switch_book(int book_id, int page_id)
-{
-    esp_err_t ret = ESP_OK;
-    //w 98 00 00 switch to page 0
-    uint8_t cmd[2] = {TAS5805M_REG_00, TAS5805M_REG_00};
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-    //w 98 7f <book_id> switch to book |book_id|
-    cmd[0] = TAS5805M_REG_7F;
-    cmd[1] = book_id;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-    //w 98 00 <page_id> switch to page |page_id|
-    cmd[0] = TAS5805M_REG_00;
-    cmd[1] = page_id;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-    if (ret) {
-        ESP_LOGE(TAG, "Fail to switch book, book_id: %d, page_id: %d.", book_id, page_id);
-    }
     return ret;
 }
 
@@ -152,62 +132,23 @@ esp_err_t tas5805m_init(audio_hal_codec_config_t *codec_cfg)
 
 esp_err_t tas5805m_set_volume(int vol)
 {
+    int vol_idx = 0;
+
     if (vol < TAS5805M_VOLUME_MIN) {
         vol = TAS5805M_VOLUME_MIN;
     }
     if (vol > TAS5805M_VOLUME_MAX) {
         vol = TAS5805M_VOLUME_MAX;
     }
+    vol_idx = vol / 5;
+
     uint8_t cmd[2] = {0, 0};
-    uint32_t volume_hex = 0;
-    uint8_t byte4 = 0;
-    uint8_t byte3 = 0;
-    uint8_t byte2 = 0;
-    uint8_t byte1 = 0;
     esp_err_t ret = ESP_OK;
-    volume_hex = tas5805m_volume[vol];
 
-    byte4 = ((volume_hex >> 24) & 0xFF);
-    byte3 = ((volume_hex >> 16) & 0xFF);
-    byte2 = ((volume_hex >> 8)  & 0xFF);
-    byte1 = ((volume_hex >> 0)  & 0xFF);
-
-    tas5805m_switch_book(TAS5805M_BOOK_8C, TAS5805M_PAGE_2A);
-    //w 58 24 xx xx xx xx
-    cmd[0] = TAS5805M_REG_24;
-    cmd[1] = byte4;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-
-    cmd[0] = TAS5805M_REG_25;
-    cmd[1] = byte3;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-
-    cmd[0] = TAS5805M_REG_26;
-    cmd[1] = byte2;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-
-    cmd[0] = TAS5805M_REG_27;
-    cmd[1] = byte1;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-
-    //w 58 28 xx xx xx xx
-    cmd[0] = TAS5805M_REG_28;
-    cmd[1] = byte4;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-
-    cmd[0] = TAS5805M_REG_29;
-    cmd[1] = byte3;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-
-    cmd[0] = TAS5805M_REG_2A;
-    cmd[1] = byte2;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-
-    cmd[0] = TAS5805M_REG_2B;
-    cmd[1] = byte1;
-    ret |= i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-
-    tas5805m_switch_book(TAS5805M_BOOK_00, TAS5805M_PAGE_00);
+    cmd[0] = MASTER_VOL_REG_ADDR;
+    cmd[1] = tas5805m_volume[vol_idx];
+    ret = i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
+    ESP_LOGW(TAG, "volume = 0x%x", cmd[1]);
     return ret;
 }
 
@@ -217,8 +158,13 @@ esp_err_t tas5805m_get_volume(int *value)
     uint8_t cmd[2] = {MASTER_VOL_REG_ADDR, 0x00};
     esp_err_t ret = i2c_bus_read_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
     TAS5805M_ASSERT(ret, "Fail to get volume", ESP_FAIL);
-    ESP_LOGI(TAG, "Volume is 0x%x", cmd[1]);
-    *value = cmd[1];
+    int i;
+    for (i = 0; i < sizeof(tas5805m_volume); i++) {
+        if (cmd[1] >= tas5805m_volume[i])
+            break;
+    }
+    ESP_LOGI(TAG, "Volume is %d", i * 5);
+    *value = 5 * i;
     return ret;
 }
 
