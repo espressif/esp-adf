@@ -33,12 +33,12 @@ Click on one of audio boards shown below to set up and start using ESP-ADF.
 Espressif Systems has released a number of boards for ESP-ADF to develop audio applications, including:
 
 | ESP32-LyraT Development Board | ESP32-LyraTD-MSC Development Board |
-|:----:|:----:| 
+|:----:|:----:|
 | [<img src="docs/_static/esp32-lyrat-v4.2-side.jpg" width="380" alt ="ESP32-LyraT Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [<img src="docs/_static/esp32-lyratd-msc-v2.2.jpg" width="380" alt ="ESP32-LyraTD-MSC Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) |
-| [Getting Started with ESP32-LyraT](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [Getting Started with ESP32-LyraTD-MSC](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) |
+| [Getting Started with ESP32-LyraT](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [Getting Started with ESP32-LyraTD-MSC](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) |
 
 | ESP32-LyraT-Mini Development Board | ESP32-S2-Kaluga-1 Kit (ESP-LyraT-8311A) |
-|:----:|:----:| 
+|:----:|:----:|
 | [<img src="docs/_static/esp32-lyrat-mini-v1.2.png" width="380" alt ="ESP32-LyraT-Mini Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | [<img src="docs/_static/esp32-s2-kaluga-1-kit.png" width="380" alt ="ESP32-LyraT-Mini Development Board" align="center" />](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) |
 | [Getting Started with ESP32-LyraT-Mini](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | [Getting Started with ESP32-S2-Kaluga-1 Kit](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) |
 
@@ -73,7 +73,7 @@ An open-source mono development board. Designed for connected smart speakers and
 
 #### ESP32-S2-Kaluga-1 Kit (ESP-LyraT-8311A)
 
-The ESP32-S2-Kaluga-1 multimedia kit is based on ESP32-S2 and features several extensions including ESP-LyraT-8311A audio board (below) as well as camera, LCD, and touch pad boards. 
+The ESP32-S2-Kaluga-1 multimedia kit is based on ESP32-S2 and features several extensions including ESP-LyraT-8311A audio board (below) as well as camera, LCD, and touch pad boards.
 
 [<div align="center"><img src="docs/_static/esp-lyrat-8311a-v1.2-layout-front.png" width="740" alt ="ESP-LyraT-8311A Extension Board" align="center" /></div>](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html)
 
