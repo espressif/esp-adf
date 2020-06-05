@@ -159,7 +159,7 @@ static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
             }
             break;
         }
-        default: 
+        default:
             break;
     }
     return;
@@ -299,6 +299,8 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
 
     /* Terminal the pipeline before removing the listener */

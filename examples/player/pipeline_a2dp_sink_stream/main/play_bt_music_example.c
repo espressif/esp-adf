@@ -196,6 +196,8 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[ 9 ] Stop audio_pipeline");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
 
     /* Terminate the pipeline before removing the listener */

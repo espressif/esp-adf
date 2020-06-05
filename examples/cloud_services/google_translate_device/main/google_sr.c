@@ -253,6 +253,8 @@ esp_err_t google_sr_destroy(google_sr_handle_t sr)
     if (sr == NULL) {
         return ESP_FAIL;
     }
+    audio_pipeline_stop(sr->pipeline);
+    audio_pipeline_wait_for_stop(sr->pipeline);
     audio_pipeline_terminate(sr->pipeline);
     audio_pipeline_remove_listener(sr->pipeline);
     audio_pipeline_deinit(sr->pipeline);

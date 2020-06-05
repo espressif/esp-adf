@@ -302,7 +302,7 @@ static esp_err_t audio_element_process_running(audio_element_handle_t el)
         switch (process_len) {
             case AEL_IO_ABORT:
                 ESP_LOGD(TAG, "[%s] ERROR_PROCESS, AEL_IO_ABORT", el->tag);
-                audio_element_cmd_send(el, AEL_MSG_CMD_ERROR);
+                audio_element_cmd_send(el, AEL_MSG_CMD_STOP);
                 break;
             case AEL_IO_DONE:
             case AEL_IO_OK:

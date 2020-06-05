@@ -81,7 +81,7 @@ void app_main(void)
     } else {
         i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
     }
-    
+
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
     i2s_cfg.i2s_port = 1;
@@ -89,7 +89,7 @@ void app_main(void)
 
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD   
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     rsp_filter_cfg_t rsp_file_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_file_cfg.src_rate = SAMPLE_RATE;
     rsp_file_cfg.src_ch = 2;
@@ -110,7 +110,7 @@ void app_main(void)
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     if (opus_cfg.channel == 2) {
         ESP_LOGE(TAG, "esp_lyrat_mini only support one channel");
-        return; 
+        return;
     }
 #endif
 
@@ -119,21 +119,21 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
 
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD   
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     audio_pipeline_register(pipeline, resample, "res");
 #endif
 
     audio_pipeline_register(pipeline, opus_encoder, "opus");
     audio_pipeline_register(pipeline, fatfs_stream_writer, "file");
 
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD  
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->i2s_stream-->resample-->opus_encoder-->fatfs_stream-->[sdcard]");
     audio_pipeline_link(pipeline, (const char *[]) {"i2s", "res", "opus", "file"}, 4);
 #else
     ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->i2s_stream-->opus_encoder-->fatfs_stream-->[sdcard]");
     audio_pipeline_link(pipeline, (const char *[]) {"i2s", "opus", "file"}, 3);
 #endif
- 
+
     ESP_LOGI(TAG, "[3.6] Setup uri (file as fatfs_stream, opus as opus encoder)");
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.opus");
 
@@ -173,11 +173,13 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
     audio_pipeline_unregister(pipeline, fatfs_stream_writer);
     audio_pipeline_unregister(pipeline, opus_encoder);
 
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD  
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     audio_pipeline_unregister(pipeline, resample);
 #endif
 
@@ -198,7 +200,7 @@ void app_main(void)
     audio_element_deinit(fatfs_stream_writer);
     audio_element_deinit(opus_encoder);
 
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD  
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     audio_element_deinit(resample);
 #endif
 

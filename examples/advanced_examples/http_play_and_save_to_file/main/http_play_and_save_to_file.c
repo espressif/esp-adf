@@ -169,6 +169,8 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[ 7 ] Stop pipelines");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
     audio_pipeline_unregister_more(pipeline, http_stream_reader,
                                    mp3_decoder, i2s_stream_writer, NULL);

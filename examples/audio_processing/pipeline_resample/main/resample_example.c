@@ -204,7 +204,11 @@ void record_playback_task()
     }
 
     ESP_LOGI(TAG, "[ 4 ] Stop audio_pipeline");
+    audio_pipeline_stop(pipeline_rec);
+    audio_pipeline_wait_for_stop(pipeline_rec);
     audio_pipeline_terminate(pipeline_rec);
+    audio_pipeline_stop(pipeline_play);
+    audio_pipeline_wait_for_stop(pipeline_play);
     audio_pipeline_terminate(pipeline_play);
 
     audio_pipeline_unregister(pipeline_play, fatfs_reader_el);

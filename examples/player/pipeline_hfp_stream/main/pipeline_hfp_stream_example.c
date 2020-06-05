@@ -110,7 +110,7 @@ void app_main(void)
     i2s_cfg2.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg2);
 
-    
+
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_stream_set_clk(i2s_stream_reader, 8000, 16, 1);
 #endif
@@ -177,7 +177,11 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[ 8 ] Stop audio_pipeline");
+    audio_pipeline_stop(pipeline_in);
+    audio_pipeline_wait_for_stop(pipeline_in);
     audio_pipeline_terminate(pipeline_in);
+    audio_pipeline_stop(pipeline_out);
+    audio_pipeline_wait_for_stop(pipeline_out);
     audio_pipeline_terminate(pipeline_out);
 
     audio_pipeline_unregister(pipeline_in, hfp_in_stream);

@@ -59,15 +59,14 @@ void app_main(void)
     downmix_cfg.downmix_info.source_num = NUMBER_SOURCE_FILE;
     audio_element_handle_t downmixer = downmix_init(&downmix_cfg);
     esp_downmix_input_info_t source_info = {
-            .samplerate = SAMPLERATE,
-            .channel = DEFAULT_CHANNEL,
-            .gain = {0, MUSIC_GAIN_DB},
-            .transit_time = TRANSMITTIME,
+        .samplerate = SAMPLERATE,
+        .channel = DEFAULT_CHANNEL,
+        .gain = {0, MUSIC_GAIN_DB},
+        .transit_time = TRANSMITTIME,
     };
     esp_downmix_input_info_t source_information[NUMBER_SOURCE_FILE] = {0};
-    for(int i = 0; i < NUMBER_SOURCE_FILE; i++)
-    {
-       source_information[i] = source_info;
+    for (int i = 0; i < NUMBER_SOURCE_FILE; i++) {
+        source_information[i] = source_info;
     }
     source_info_init(downmixer, source_information);
 
@@ -163,6 +162,8 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[6.0] Stop pipelines");
     for (int i = 0; i < NUMBER_SOURCE_FILE; i++) {
+        audio_pipeline_stop(pipeline[i]);
+        audio_pipeline_wait_for_stop(pipeline[i]);
         audio_pipeline_terminate(pipeline[i]);
         audio_pipeline_unregister_more(pipeline[i], fats_rd_el[i], wav_decoder[i], el_raw_write[i], NULL);
         audio_pipeline_remove_listener(pipeline[i]);
@@ -172,6 +173,8 @@ void app_main(void)
         audio_element_deinit(wav_decoder[i]);
         audio_element_deinit(el_raw_write[i]);
     }
+    audio_pipeline_stop(pipeline_mix);
+    audio_pipeline_wait_for_stop(pipeline_mix);
     audio_pipeline_terminate(pipeline_mix);
     audio_pipeline_unregister_more(pipeline_mix, downmixer, i2s_writer, NULL);
     audio_pipeline_remove_listener(pipeline_mix);
