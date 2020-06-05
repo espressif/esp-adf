@@ -339,8 +339,8 @@ static void periph_led_test(void)
     esp_periph_handle_t led_handle = periph_led_init(&led_cfg);
     TEST_ASSERT_FALSE(esp_periph_start(set, led_handle));
 
-    TEST_ASSERT_FALSE(periph_led_blink(led_handle, get_blue_led_gpio(), 1000, 1000, true, -1));
-    TEST_ASSERT_FALSE(periph_led_blink(led_handle, get_green_led_gpio(), 500, 500, false, 4));
+    TEST_ASSERT_FALSE(periph_led_blink(led_handle, get_blue_led_gpio(), 1000, 1000, true, -1, 0));
+    TEST_ASSERT_FALSE(periph_led_blink(led_handle, get_green_led_gpio(), 500, 500, false, 4, 0));
 
     ESP_LOGI(TAG, "running...");
     vTaskDelay(1000 / portTICK_RATE_MS);
@@ -349,8 +349,8 @@ static void periph_led_test(void)
 
     vTaskDelay(1000 / portTICK_RATE_MS);
     ESP_LOGI(TAG, "Changing blink preset...");
-    TEST_ASSERT_FALSE(periph_led_blink(led_handle, get_blue_led_gpio(), 500, 200, false, -1));
-    TEST_ASSERT_FALSE(periph_led_blink(led_handle, get_green_led_gpio(), 500, 1000, true, -1));
+    TEST_ASSERT_FALSE(periph_led_blink(led_handle, get_blue_led_gpio(), 500, 200, false, -1, 0));
+    TEST_ASSERT_FALSE(periph_led_blink(led_handle, get_green_led_gpio(), 500, 1000, true, -1, 0));
 
     ESP_LOGI(TAG, "Quit test, release all resources");
     TEST_ASSERT_FALSE(esp_periph_set_stop_all(set));

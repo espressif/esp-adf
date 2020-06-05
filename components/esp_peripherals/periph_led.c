@@ -53,12 +53,14 @@ static const char *TAG = "PERIPH_LED";
 typedef struct {
     int index;
     int pin;
-    int time_on_ms;
-    int time_off_ms;
+    int high_level_ms;
+    int low_level_ms;
     long long tick;
     int loop;
-    bool is_off;
+    bool is_high_level;
     bool fade;
+    bool stop;
+    int  level;
 } periph_led_channel_t;
 
 typedef struct periph_led {
@@ -97,7 +99,7 @@ static esp_err_t _led_destroy(esp_periph_handle_t self)
     for (int i = 0; i < MAX_LED_CHANNEL; i++) {
         periph_led_channel_t *ch = &periph_led->channels[i];
         if (ch->index > 0 && ch->pin > 0) {
-            ledc_stop(periph_led->led_speed_mode, ch->index, 0);
+            ledc_stop(periph_led->led_speed_mode, ch->index, ch->level);
         }
     }
     esp_periph_stop_timer(self);
@@ -148,54 +150,54 @@ static void led_timer_handler(xTimerHandle tmr)
     periph_led_t *periph_led = esp_periph_get_data(periph);
     for (int i = 0; i < MAX_LED_CHANNEL; i++) {
         periph_led_channel_t *ch = &periph_led->channels[i];
-        if (ch->pin < 0) {
+        if (ch->pin < 0 || ch->stop == true) {
             continue;
         }
 
         if (ch->loop == 0) {
-            ledc_stop(periph_led->led_speed_mode, ch->index, 0);
+            ledc_stop(periph_led->led_speed_mode, ch->index, ch->level);
             esp_periph_send_event(periph, PERIPH_LED_BLINK_FINISH, (void *)ch->pin, 0);
-            ch->pin = -1; // disable this channel
+            ch->stop = true;
             continue;
         }
 
-        if (ch->is_off && audio_sys_get_time_ms() - ch->tick > ch->time_off_ms) {
+        if (!ch->is_high_level && audio_sys_get_time_ms() - ch->tick > ch->low_level_ms) {
             if (ch->loop > 0) {
                 ch->loop --;
             }
             // now, switch on
             if (ch->fade) {
-                ledc_set_fade_with_time(periph_led->led_speed_mode, ch->index, pow(2, periph_led->led_duty_resolution) - 1, ch->time_on_ms);
+                ledc_set_fade_with_time(periph_led->led_speed_mode, ch->index, pow(2, periph_led->led_duty_resolution) - 1, ch->high_level_ms);
                 ledc_fade_start(periph_led->led_speed_mode, ch->index, LEDC_FADE_NO_WAIT);
             } else {
                 ledc_set_duty(periph_led->led_speed_mode, ch->index, pow(2, periph_led->led_duty_resolution) - 1);
                 ledc_update_duty(periph_led->led_speed_mode, ch->index);
             }
-            if (ch->time_off_ms > 0) {
-                ch->is_off = false;
+            if (ch->low_level_ms > 0) {
+                ch->is_high_level = true;
             }
             ch->tick = audio_sys_get_time_ms();
-        } else if (!ch->is_off && audio_sys_get_time_ms() - ch->tick > ch->time_on_ms) {
+        } else if (ch->is_high_level && audio_sys_get_time_ms() - ch->tick > ch->high_level_ms) {
             if (ch->loop > 0) {
                 ch->loop --;
             }
             // switch off
             if (ch->fade) {
-                ledc_set_fade_with_time(periph_led->led_speed_mode, ch->index, 0, ch->time_off_ms);
+                ledc_set_fade_with_time(periph_led->led_speed_mode, ch->index, 0, ch->low_level_ms);
                 ledc_fade_start(periph_led->led_speed_mode, ch->index, LEDC_FADE_NO_WAIT);
             } else {
                 ledc_set_duty(periph_led->led_speed_mode, ch->index, 0);
                 ledc_update_duty(periph_led->led_speed_mode, ch->index);
             }
-            if (ch->time_on_ms > 0) {
-                ch->is_off = true;
+            if (ch->high_level_ms > 0) {
+                ch->is_high_level = false;
             }
             ch->tick = audio_sys_get_time_ms();
         }
     }
 }
 
-esp_err_t periph_led_blink(esp_periph_handle_t periph, int gpio_num, int time_on_ms, int time_off_ms, bool fade, int loop)
+esp_err_t periph_led_blink(esp_periph_handle_t periph, int gpio_num, int time_on_ms, int time_off_ms, bool fade, int loop, periph_led_idle_level_t level)
 {
     periph_led_t *periph_led = esp_periph_get_data(periph);
     periph_led_channel_t *ch = _find_led_channel(periph_led, gpio_num);
@@ -212,11 +214,19 @@ esp_err_t periph_led_blink(esp_periph_handle_t periph, int gpio_num, int time_on
     ledc_channel_config(&ledc_channel_cfg);
     ch->pin = gpio_num;
     ch->tick = audio_sys_get_time_ms();
-    ch->time_on_ms = time_on_ms;
-    ch->time_off_ms = time_off_ms;
     ch->loop = loop;
     ch->fade = fade;
-    ch->is_off = true;
+    if (level == PERIPH_LED_IDLE_LEVEL_LOW) {
+        ch->is_high_level = false;
+        ch->high_level_ms = time_on_ms;
+        ch->low_level_ms = time_off_ms;
+    } else {
+        ch->is_high_level = true;
+        ch->high_level_ms = time_off_ms;
+        ch->low_level_ms = time_on_ms;
+    }
+    ch->stop = false;
+    ch->level = level;
     esp_periph_start_timer(periph, portTICK_RATE_MS, led_timer_handler);
     return ESP_OK;
 }
@@ -228,8 +238,8 @@ esp_err_t periph_led_stop(esp_periph_handle_t periph, int gpio_num)
     if (ch && (ch->pin < 0 || ch->index < 0)) {
         return ESP_OK;
     }
-    ledc_stop(periph_led->led_speed_mode, ch->index, 0);
-    ch->pin = -1;
-    ch->index = -1;
+
+    ledc_stop(periph_led->led_speed_mode, ch->index, ch->level);
+    ch->stop = true;
     return ESP_OK;
 }

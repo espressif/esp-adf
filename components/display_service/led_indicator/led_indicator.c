@@ -58,19 +58,19 @@ esp_err_t led_indicator_pattern(void *handle, int pat, int value)
     ESP_LOGD(TAG, "pat:%d, gpio:%d", pat, h->gpio_num);
     switch (pat) {
         case DISPLAY_PATTERN_WIFI_SETTING:
-            periph_led_blink(h->periph_handle, h->gpio_num, 500, 500, false, -1);
+            periph_led_blink(h->periph_handle, h->gpio_num, 500, 500, false, -1, value);
             break;
         case DISPLAY_PATTERN_WIFI_CONNECTED:
-            periph_led_blink(h->periph_handle, h->gpio_num, 1000, 200, true, 10);
+            periph_led_blink(h->periph_handle, h->gpio_num, 1000, 200, true, 10, value);
             break;
         case DISPLAY_PATTERN_WIFI_DISCONNECTED:
-            periph_led_blink(h->periph_handle, h->gpio_num, 200, 500, false, -1);
+            periph_led_blink(h->periph_handle, h->gpio_num, 200, 500, false, -1, value);
             break;
         case DISPLAY_PATTERN_TURN_ON:
-            periph_led_blink(h->periph_handle, h->gpio_num, 100, 0, false, -1);
+            periph_led_blink(h->periph_handle, h->gpio_num, 100, 0, false, -1, value);
             break;
         case DISPLAY_PATTERN_TURN_OFF:
-            periph_led_blink(h->periph_handle, h->gpio_num, 0, 100, false, -1);
+            periph_led_blink(h->periph_handle, h->gpio_num, 0, 100, false, -1, value);
             break;
         default:
             ESP_LOGW(TAG, "The led mode is invalid");
