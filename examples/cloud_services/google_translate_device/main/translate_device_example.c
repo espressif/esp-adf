@@ -41,7 +41,7 @@ esp_periph_handle_t led_handle = NULL;
 void google_sr_begin(google_sr_handle_t sr)
 {
     if (led_handle) {
-        periph_led_blink(led_handle, get_green_led_gpio(), 500, 500, true, -1);
+        periph_led_blink(led_handle, get_green_led_gpio(), 500, 500, true, -1, 0);
     }
     ESP_LOGW(TAG, "Start speaking now");
 }

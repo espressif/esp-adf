@@ -43,6 +43,13 @@ typedef enum {
     PERIPH_LED_BLINK_FINISH,  /*!< When LED blink is finished */
 } periph_led_event_id_t;
 
+/**
+ * @brief      Peripheral LED idle output level
+ */
+typedef enum {
+	PERIPH_LED_IDLE_LEVEL_LOW,  /*!< Low level output */
+	PERIPH_LED_IDLE_LEVEL_HIGH  /*!< High level output */
+} periph_led_idle_level_t;
 
 /**
  * @brief   The LED peripheral configuration
@@ -80,12 +87,13 @@ esp_periph_handle_t periph_led_init(periph_led_cfg_t* config);
  * @param[in]  time_off_ms  The time off milliseconds
  * @param[in]  fade         Fading enabled
  * @param[in]  loop         Loop
+ * @param[in]  level        idle level
  *
  * @return
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t periph_led_blink(esp_periph_handle_t periph, int gpio_num, int time_on_ms, int time_off_ms, bool fade, int loop);
+esp_err_t periph_led_blink(esp_periph_handle_t periph, int gpio_num, int time_on_ms, int time_off_ms, bool fade, int loop, periph_led_idle_level_t level);
 
 /**
  * @brief      Stop Blink the LED
