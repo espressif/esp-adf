@@ -82,7 +82,7 @@ static esp_err_t _gpio_isr_destory(esp_periph_handle_t self)
         tmp_info = &item->gpio_info;
         ret |= gpio_isr_deinit(tmp_info->gpio_num);
         STAILQ_REMOVE(&gpio_isr_info_list, item, gpio_info_node, entries);
-        free(item);
+        audio_free(item);
     }
 
     return ret;
@@ -123,7 +123,7 @@ esp_err_t periph_gpio_isr_delete(int gpio_num)
         if (tmp_info->gpio_num == gpio_num) {
             STAILQ_REMOVE(&gpio_isr_info_list, tmp_node, gpio_info_node, entries);
             ret |= gpio_isr_deinit(tmp_info->gpio_num);
-            free(tmp_node);
+            audio_free(tmp_node);
             return ret;
         }
     }
@@ -142,7 +142,7 @@ esp_periph_handle_t periph_gpio_isr_init(periph_gpio_isr_cfg_t *isr_config)
         for (int i = 0; i < isr_config->info_size; i++) {
             gpio_isr_node_t *gpio_isr_node = (gpio_isr_node_t *)audio_calloc(1, sizeof(gpio_isr_node_t));
             AUDIO_NULL_CHECK(TAG, gpio_isr_node, {
-                free(periph);
+                audio_free(periph);
                 return NULL;
             });
             memcpy(gpio_isr_node, &isr_config->gpio_isr_info[i], sizeof(gpio_isr_info_t));

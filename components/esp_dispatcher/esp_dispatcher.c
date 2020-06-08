@@ -221,7 +221,7 @@ _failed:
         mutex_destroy(impl->mutex);
         impl->mutex = NULL;
     }
-    free(impl);
+    audio_free(impl);
     impl = NULL;
     return impl;
 }
@@ -238,7 +238,7 @@ esp_err_t esp_dispatcher_destroy(esp_dispatcher_handle_t dh)
     esp_action_exe_item_t *item;
     STAILQ_FOREACH(item, &impl->exe_list, entries) {
         STAILQ_REMOVE(&impl->exe_list, item, evt_exe_item, entries);
-        free(item);
+        audio_free(item);
     }
 
     if (impl->result_que) {
@@ -253,7 +253,7 @@ esp_err_t esp_dispatcher_destroy(esp_dispatcher_handle_t dh)
         mutex_destroy(impl->mutex);
         impl->mutex = NULL;
     }
-    free(impl);
+    audio_free(impl);
     impl = NULL;
     return ESP_OK;
 }

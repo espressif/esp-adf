@@ -23,6 +23,7 @@
  */
 
 #include "sdkconfig.h"
+#include "audio_mem.h"
 #ifdef CONFIG_BLUEDROID_ENABLED
 #include <stdio.h>
 #include <stdlib.h>
@@ -88,10 +89,10 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
     case SEC_TYPE_DH_PARAM_LEN:
         blufi_sec->dh_param_len = ((data[1]<<8)|data[2]);
         if (blufi_sec->dh_param) {
-            free(blufi_sec->dh_param);
+            audio_free(blufi_sec->dh_param);
             blufi_sec->dh_param = NULL;
         }
-        blufi_sec->dh_param = (uint8_t *)malloc(blufi_sec->dh_param_len);
+        blufi_sec->dh_param = (uint8_t *)audio_calloc(1, blufi_sec->dh_param_len);
         if (blufi_sec->dh_param == NULL) {
             ESP_LOGE(BLUFI_SECURITY_TAG, "%s, Malloc failed", __func__);
             return;
@@ -109,7 +110,7 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
             ESP_LOGE(BLUFI_SECURITY_TAG, "%s Read param failed %d", __func__, ret);
             return;
         }
-        free(blufi_sec->dh_param);
+        audio_free(blufi_sec->dh_param);
         blufi_sec->dh_param = NULL;
         ret = mbedtls_dhm_make_public(&blufi_sec->dhm, (int) mbedtls_mpi_size( &blufi_sec->dhm.P ), blufi_sec->self_public_key, blufi_sec->dhm.len, myrand, NULL);
         if (ret) {
@@ -187,12 +188,10 @@ uint16_t blufi_crc_checksum(uint8_t iv8, uint8_t *data, int len)
 
 esp_err_t blufi_security_init(void)
 {
-    blufi_sec = (struct blufi_security *)malloc(sizeof(struct blufi_security));
+    blufi_sec = (struct blufi_security *)audio_calloc(1, sizeof(struct blufi_security));
     if (blufi_sec == NULL) {
         return ESP_FAIL;
     }
-
-    memset(blufi_sec, 0x0, sizeof(struct blufi_security));
 
     mbedtls_dhm_init(&blufi_sec->dhm);
     mbedtls_aes_init(&blufi_sec->aes);
@@ -207,7 +206,7 @@ esp_err_t blufi_security_deinit(void)
         return ESP_FAIL;
     }
     if (blufi_sec->dh_param){
-        free(blufi_sec->dh_param);
+        audio_free(blufi_sec->dh_param);
         blufi_sec->dh_param = NULL;
     }
     mbedtls_dhm_free(&blufi_sec->dhm);
@@ -215,7 +214,7 @@ esp_err_t blufi_security_deinit(void)
 
     memset(blufi_sec, 0x0, sizeof(struct blufi_security));
 
-    free(blufi_sec);
+    audio_free(blufi_sec);
     blufi_sec = NULL;
 
     return ESP_OK;

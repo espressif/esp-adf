@@ -33,6 +33,7 @@
 #include "driver/gpio.h"
 #include "sys/queue.h"
 #include "button.h"
+#include "audio_mem.h"
 
 #ifdef periph_tick_get
 #define tick_get periph_tick_get
@@ -94,7 +95,7 @@ static button_status_t button_get_state(esp_button_handle_t button, esp_button_i
 
 esp_button_handle_t button_init(button_config_t *config)
 {
-    esp_button_handle_t btn = calloc(1, sizeof(struct esp_button));
+    esp_button_handle_t btn = audio_calloc(1, sizeof(struct esp_button));
     AUDIO_MEM_CHECK(TAG, btn, return NULL);
     if (config->gpio_mask <= 0) {
         ESP_LOGE(TAG, "required at least 1 gpio");
@@ -123,7 +124,7 @@ esp_button_handle_t button_init(button_config_t *config)
     while (gpio_mask) {
         if (gpio_mask & 0x01) {
             ESP_LOGD(TAG, "Mask = %llx, current_mask = %llx, idx=%d", btn->gpio_mask, gpio_mask, gpio_num);
-            esp_button_item_t *new_btn = calloc(1, sizeof(esp_button_item_t));
+            esp_button_item_t *new_btn = audio_calloc(1, sizeof(esp_button_item_t));
             AUDIO_MEM_CHECK(TAG, new_btn, {
                 button_destroy(btn);
                 return NULL;
@@ -190,8 +191,8 @@ esp_err_t button_destroy(esp_button_handle_t button)
         gpio_intr_disable(btn_item->gpio_num);
         gpio_isr_handler_remove(btn_item->gpio_num);
         STAILQ_REMOVE(&button->btn_list, btn_item, esp_button_item, entry);
-        free(btn_item);
+        audio_free(btn_item);
     }
-    free(button);
+    audio_free(button);
     return ESP_OK;
 }

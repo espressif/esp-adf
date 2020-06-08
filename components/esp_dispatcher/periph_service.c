@@ -63,7 +63,7 @@ periph_service_handle_t periph_service_create(periph_service_config_t *config)
     impl->service_ioctl         = config->service_ioctl;
     impl->user_data             = config->user_data;
     if (config->service_name) {
-        impl->service_name = strdup(config->service_name);
+        impl->service_name = audio_strdup(config->service_name);
         AUDIO_MEM_CHECK(TAG, impl, goto serv_failed);
     }
     if (config->task_stack > 0) {
@@ -80,9 +80,9 @@ periph_service_handle_t periph_service_create(periph_service_config_t *config)
     }
     return impl;
 serv_failed:
-    free(impl->service_name);
+    audio_free(impl->service_name);
     impl->service_name = NULL;
-    free(impl);
+    audio_free(impl);
     impl = NULL;
     return impl;
 }
@@ -94,10 +94,10 @@ esp_err_t periph_service_destroy(periph_service_handle_t handle)
     if (impl->service_destroy) {
         impl->service_destroy(handle);
     }
-    free(impl->service_name);
+    audio_free(impl->service_name);
     impl->service_name = NULL;
     impl->task_handle = NULL;
-    free(impl);
+    audio_free(impl);
     impl = NULL;
     return ESP_OK;
 }

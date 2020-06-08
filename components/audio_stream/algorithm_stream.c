@@ -91,7 +91,7 @@ static esp_err_t algorithm_data_info_destroy(algorithm_data_info_t *data_info)
         data_info->rsp_handle = NULL;
     }
     if (data_info->aec_buff) {
-        free(data_info->aec_buff);
+        audio_free(data_info->aec_buff);
         data_info->aec_buff = NULL;
     }
     return ESP_OK;
@@ -116,19 +116,19 @@ static esp_err_t _algo_close(audio_element_handle_t self)
         algo->agc_handle = NULL;
     }
     if (algo->ns_buff) {
-        free(algo->ns_buff);
+        audio_free(algo->ns_buff);
         algo->ns_buff = NULL;
     }
     if (algo->aec_buff) {
-        free(algo->aec_buff);
+        audio_free(algo->aec_buff);
         algo->aec_buff = NULL;
     }
     if (algo->agc_buff) {
-        free(algo->agc_buff);
+        audio_free(algo->agc_buff);
         algo->agc_buff = NULL;
     }
     if (algo->scale_buff) {
-        free(algo->scale_buff);
+        audio_free(algo->scale_buff);
         algo->scale_buff = NULL;
     }
 
@@ -555,12 +555,12 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     if (config->input_type == ALGORITHM_STREAM_INPUT_TYPE1) {
         if ((config->ref_sample_rate != config->rec_sample_rate) || (config->ref_ch != config->rec_ch)) {
             ESP_LOGE(TAG, "The frequence and channel number should be the same, please check about that!");
-            free(algo);
+            audio_free(algo);
             return NULL;
         }
         if (config->algo_mask != (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_AGC | ALGORITHM_STREAM_USE_NS)) {
             ESP_LOGE(TAG, "When type1 is choosen, both these algorithms should be used");
-            free(algo);
+            audio_free(algo);
             return NULL;
         }
     }
@@ -570,7 +570,7 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     algo->algo_mask = config->algo_mask;
     audio_element_handle_t el = audio_element_init(&cfg);
     AUDIO_NULL_CHECK(TAG, el, {
-        free(algo);
+        audio_free(algo);
         return NULL;
     });
     bool _success = true;
@@ -593,7 +593,7 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     AUDIO_NULL_CHECK(TAG, _success, {
         ESP_LOGE(TAG, "Error occured");
         _algo_close(el);
-        free(algo);
+        audio_free(algo);
         return NULL;
     });
 

@@ -98,7 +98,7 @@ typedef struct {
     .task_prio = HTTP_STREAM_TASK_PRIO, \
     .task_core = HTTP_STREAM_TASK_CORE, \
     .task_stack = HTTP_STREAM_TASK_STACK, \
-    .stack_in_ext = false,\
+    .stack_in_ext = true,\
     .out_rb_size = HTTP_STREAM_RINGBUFFER_SIZE, \
     .multi_out_num = 0, \
 }

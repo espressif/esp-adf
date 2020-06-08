@@ -22,12 +22,7 @@
  *
  */
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
-#include "freertos/timers.h"
-#include <driver/gpio.h>
 #include <driver/rmt.h>
-#include "esp_intr_alloc.h"
 #include "esp_log.h"
 #include "audio_mem.h"
 #include "audio_sys.h"
@@ -197,7 +192,7 @@ static esp_err_t ws2812_set_colors(periph_ws2812_t *ws)
 
     xSemaphoreTake(ws->sem, portMAX_DELAY);
     if (ws->process.buffer) {
-        free(ws->process.buffer);
+        audio_free(ws->process.buffer);
         ws->process.buffer = NULL;
     }
 
@@ -303,7 +298,7 @@ static void ws2812_timer_handler(TimerHandle_t tmr)
                 break;
         }
     }
-    
+
 }
 
 static esp_err_t _ws2812_run(esp_periph_handle_t periph, audio_event_iface_msg_t *msg)
@@ -331,12 +326,12 @@ static esp_err_t _ws2812_destroy(esp_periph_handle_t periph)
         ws2812_set_colors(periph_ws2812);
 
         if (periph_ws2812->color) {
-            free(periph_ws2812->color);
+            audio_free(periph_ws2812->color);
             periph_ws2812->color = NULL;
         }
 
         if (periph_ws2812->state) {
-            free(periph_ws2812->state);
+            audio_free(periph_ws2812->state);
             periph_ws2812->state = NULL;
         }
 
@@ -346,7 +341,7 @@ static esp_err_t _ws2812_destroy(esp_periph_handle_t periph)
         esp_intr_free(periph_ws2812->rmt_intr_handle);
         vSemaphoreDelete(periph_ws2812->sem);
 
-        free(periph_ws2812);
+        audio_free(periph_ws2812);
         periph_ws2812 = NULL;
     }
 

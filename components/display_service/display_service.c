@@ -75,6 +75,6 @@ esp_err_t display_destroy(display_service_handle_t handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
     periph_service_destroy(handle->based);
-    free(handle);
+    audio_free(handle);
     return ESP_OK;
 }

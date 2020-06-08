@@ -27,6 +27,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include "audio_mem.h"
 
 #ifdef CONFIG_BLUEDROID_ENABLED
 #include "esp_system.h"
@@ -112,8 +113,8 @@ static void wifi_ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap
 
 esp_err_t ble_config_stop(void)
 {
-    if(g_wifi_ble_config != NULL) {
-        free(g_wifi_ble_config);
+    if (g_wifi_ble_config != NULL) {
+        audio_free(g_wifi_ble_config);
         g_wifi_ble_config = NULL;
     }
     blufi_security_deinit();
@@ -235,7 +236,7 @@ esp_err_t ble_config_start(esp_periph_handle_t periph)
     ESP_LOGI(WIFI_BLE_TAG, "BD ADDR: "ESP_BD_ADDR_STR"", ESP_BD_ADDR_HEX(esp_bt_dev_get_address()));
     ESP_LOGI(WIFI_BLE_TAG, "BLUFI VERSION %04x", esp_blufi_get_version());
 
-    g_wifi_ble_config = calloc(1, sizeof(wifi_ble_config_t));
+    g_wifi_ble_config = audio_calloc(1, sizeof(wifi_ble_config_t));
     AUDIO_MEM_CHECK(WIFI_BLE_TAG, g_wifi_ble_config, return ESP_FAIL);
     g_wifi_ble_config->periph = periph;
 

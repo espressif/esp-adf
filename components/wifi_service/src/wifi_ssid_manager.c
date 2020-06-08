@@ -106,7 +106,7 @@ static esp_err_t nvs_wifi_info_save(wifi_ssid_manager_handle_t handle, uint8_t k
     char *key = get_key_by_id(key_id);
     ret |= nvs_set_blob(handle->info_nvs, (const char *)key, (const void *)info, sizeof(nvs_stored_info_t));
     ret |= nvs_commit(handle->info_nvs);
-    free(key);
+    audio_free(key);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Fail to save wifi information, key id: %d", key_id);
     }
@@ -119,7 +119,7 @@ static esp_err_t nvs_wifi_info_get(wifi_ssid_manager_handle_t handle, uint8_t ke
     size_t length = sizeof(nvs_stored_info_t);
     char *key = get_key_by_id(key_id);
     ret = nvs_get_blob(handle->info_nvs, (const char *)key, info, &length);
-    free(key);
+    audio_free(key);
     if (ret != ESP_OK && ret != ESP_ERR_NVS_NOT_FOUND) {
         ESP_LOGE(TAG, "Fail to get configuration from nvs flash");
     }
@@ -206,14 +206,14 @@ wifi_ssid_manager_handle_t wifi_ssid_manager_create(uint8_t max_ssid_num)
     ret = nvs_open(WIFI_CONF_NVS_NAMESPACE, NVS_READWRITE, &mng_handle->conf_nvs);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Fail to open conf nvs namespace");
-        free(mng_handle);
+        audio_free(mng_handle);
         return NULL;
     }
     ret = nvs_open(WIFI_INFO_NVS_NAMESPACE, NVS_READWRITE, &mng_handle->info_nvs);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Fail to open info nvs namespace");
         nvs_close(mng_handle->conf_nvs);
-        free(mng_handle);
+        audio_free(mng_handle);
         return NULL;
     }
 
@@ -339,7 +339,7 @@ esp_err_t wifi_ssid_manager_get_best_config(wifi_ssid_manager_handle_t handle, w
                 }
             }
         }
-        free(ap_record);
+        audio_free(ap_record);
         if (max_rssi_stroed_id >= 0) {
             conf.latest_ssid = max_rssi_stroed_id;
             nvs_stored_info_t info = {0};
@@ -414,6 +414,6 @@ esp_err_t wifi_ssid_manager_destroy(wifi_ssid_manager_handle_t handle)
     ret |= nvs_erase_all(handle->conf_nvs);
     nvs_close(handle->info_nvs);
     nvs_close(handle->conf_nvs);
-    free(handle);
+    audio_free(handle);
     return ret;
 }

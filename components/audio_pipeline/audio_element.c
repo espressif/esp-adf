@@ -510,7 +510,7 @@ esp_err_t audio_element_set_tag(audio_element_handle_t el, const char *tag)
     }
 
     if (tag) {
-        el->tag = strdup(tag);
+        el->tag = audio_strdup(tag);
         AUDIO_MEM_CHECK(TAG, el->tag, {
             return ESP_ERR_NO_MEM;
         });
@@ -531,7 +531,7 @@ esp_err_t audio_element_set_uri(audio_element_handle_t el, const char *uri)
     }
 
     if (uri) {
-        el->info.uri = strdup(uri);
+        el->info.uri = audio_strdup(uri);
         AUDIO_MEM_CHECK(TAG, el->info.uri, {
             return ESP_ERR_NO_MEM;
         });
@@ -976,7 +976,7 @@ _element_init_failed:
         el->multi_out.rb = NULL;
     }
     audio_element_set_uri(el, NULL);
-    free(el);
+    audio_free(el);
     return NULL;
 }
 

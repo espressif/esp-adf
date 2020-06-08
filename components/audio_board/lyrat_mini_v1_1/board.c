@@ -169,7 +169,7 @@ esp_err_t audio_board_deinit(audio_board_handle_t audio_board)
     esp_err_t ret = ESP_OK;
     ret |= audio_hal_deinit(audio_board->audio_hal);
     ret |= audio_hal_deinit(audio_board->adc_hal);
-    free(audio_board);
+    audio_free(audio_board);
     board_handle = NULL;
     return ret;
 }

@@ -169,7 +169,7 @@ static esp_err_t ota_app_partition_finish(void *handle, ota_node_attr_t *node, e
         }
         ESP_LOGE(TAG, "upgrade failed %d", err);
     }
-    free(handle);
+    audio_free(handle);
     return err;
 }
 
@@ -246,7 +246,7 @@ static esp_err_t ota_data_partition_finish(void *handle, ota_node_attr_t *node, 
     AUDIO_NULL_CHECK(TAG, context->r_stream, return ESP_FAIL);
     audio_element_deinit(context->r_stream);
 
-    free(handle);
+    audio_free(handle);
     return result;
 }
 

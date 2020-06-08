@@ -22,20 +22,9 @@
  *
  */
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
 #include <math.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "soc/soc.h"
-#include "soc/rtc_cntl_reg.h"
-#include "soc/sens_reg.h"
 #include "esp_log.h"
-#include "esp_system.h"
 #include "audio_mem.h"
 #include "audio_sys.h"
 #include "periph_led.h"
@@ -104,7 +93,7 @@ static esp_err_t _led_destroy(esp_periph_handle_t self)
     }
     esp_periph_stop_timer(self);
     ledc_fade_func_uninstall();
-    free(periph_led);
+    audio_free(periph_led);
     return ESP_OK;
 }
 

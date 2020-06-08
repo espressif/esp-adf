@@ -125,7 +125,7 @@ failure:
     if (fs_ota_handle->fp) {
         fclose(fs_ota_handle->fp);
     }
-    free(fs_ota_handle);
+    audio_free(fs_ota_handle);
     *handle = NULL;
     return err;
 }
@@ -234,7 +234,7 @@ esp_err_t esp_fs_ota_finish(esp_fs_ota_handle_t fs_ota_handle)
             err = esp_ota_end(handle->update_handle);
         case ESP_FS_OTA_BEGIN:
             if (handle->ota_upgrade_buf) {
-                free(handle->ota_upgrade_buf);
+                audio_free(handle->ota_upgrade_buf);
             }
             if (handle->fp) {
                 fclose(handle->fp);
@@ -251,7 +251,7 @@ esp_err_t esp_fs_ota_finish(esp_fs_ota_handle_t fs_ota_handle)
             ESP_LOGE(TAG, "esp_ota_set_boot_partition failed! err=0x%d", err);
         }
     }
-    free(handle);
+    audio_free(handle);
     return err;
 }
 

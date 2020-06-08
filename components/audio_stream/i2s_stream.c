@@ -136,7 +136,7 @@ static int i2s_stream_clear_dma_buffer(audio_element_handle_t self)
         audio_element_output(self, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4);
     }
     if (buf) {
-        free(buf);
+        audio_free(buf);
     }
     return ESP_OK;
 }

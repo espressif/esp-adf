@@ -127,9 +127,9 @@ static void input_key_service_task(void *parameters)
     input_key_node_t *item, *tmp;
     STAILQ_FOREACH_SAFE(item, &input_key_ser->input_info_list, entries, tmp) {
         STAILQ_REMOVE(&input_key_ser->input_info_list, item, input_key, entries);
-        free(item);
+        audio_free(item);
     }
-    free(input_key_ser);
+    audio_free(input_key_ser);
     vTaskDelete(NULL);
 }
 
@@ -213,11 +213,11 @@ periph_service_handle_t input_key_service_create(esp_periph_set_handle_t periph_
 
 _create_service_failed:
     if (input_key_handle) {
-        free(input_key_handle);
+        audio_free(input_key_handle);
         input_key_handle = NULL;
     }
     if (input_key_ser) {
-        free(input_key_ser);
+        audio_free(input_key_ser);
         input_key_ser = NULL;
     }
     return NULL;
