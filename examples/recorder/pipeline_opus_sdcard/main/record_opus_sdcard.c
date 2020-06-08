@@ -19,6 +19,11 @@
 #include "audio_hal.h"
 #include "fatfs_stream.h"
 #include "i2s_stream.h"
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+#include "filter_resample.h"
+#endif
+
 #include "opus_encoder.h"
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
@@ -37,6 +42,10 @@ void app_main(void)
 {
     audio_pipeline_handle_t pipeline;
     audio_element_handle_t fatfs_stream_writer, i2s_stream_reader, opus_encoder;
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    audio_element_handle_t resample;
+#endif
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -72,10 +81,24 @@ void app_main(void)
     } else {
         i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
     }
+    
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
     i2s_cfg.i2s_port = 1;
 #endif
+
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD   
+    rsp_filter_cfg_t rsp_file_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_file_cfg.src_rate = SAMPLE_RATE;
+    rsp_file_cfg.src_ch = 2;
+    rsp_file_cfg.dest_rate = SAMPLE_RATE;
+    rsp_file_cfg.dest_ch = 1;
+    rsp_file_cfg.complexity = 0;
+    rsp_file_cfg.down_ch_idx = 1;
+    resample = rsp_filter_init(&rsp_file_cfg);
+#endif
 
     ESP_LOGI(TAG, "[3.3] Create opus encoder to encode opus format");
     opus_encoder_cfg_t opus_cfg = DEFAULT_OPUS_ENCODER_CONFIG();
@@ -83,16 +106,34 @@ void app_main(void)
     opus_cfg.channel            = CHANNEL;
     opus_cfg.bitrate            = BIT_RATE;
     opus_cfg.complexity         = COMPLEXITY;
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    if (opus_cfg.channel == 2) {
+        ESP_LOGE(TAG, "esp_lyrat_mini only support one channel");
+        return; 
+    }
+#endif
+
     opus_encoder = encoder_opus_init(&opus_cfg);
 
     ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD   
+    audio_pipeline_register(pipeline, resample, "res");
+#endif
+
     audio_pipeline_register(pipeline, opus_encoder, "opus");
     audio_pipeline_register(pipeline, fatfs_stream_writer, "file");
 
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD  
+    ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->i2s_stream-->resample-->opus_encoder-->fatfs_stream-->[sdcard]");
+    audio_pipeline_link(pipeline, (const char *[]) {"i2s", "res", "opus", "file"}, 4);
+#else
     ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->i2s_stream-->opus_encoder-->fatfs_stream-->[sdcard]");
     audio_pipeline_link(pipeline, (const char *[]) {"i2s", "opus", "file"}, 3);
-
+#endif
+ 
     ESP_LOGI(TAG, "[3.6] Setup uri (file as fatfs_stream, opus as opus encoder)");
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.opus");
 
@@ -135,6 +176,11 @@ void app_main(void)
     audio_pipeline_terminate(pipeline);
     audio_pipeline_unregister(pipeline, fatfs_stream_writer);
     audio_pipeline_unregister(pipeline, opus_encoder);
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD  
+    audio_pipeline_unregister(pipeline, resample);
+#endif
+
     audio_pipeline_unregister(pipeline, i2s_stream_reader);
 
     /* Terminate the pipeline before removing the listener */
@@ -151,6 +197,11 @@ void app_main(void)
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(fatfs_stream_writer);
     audio_element_deinit(opus_encoder);
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD  
+    audio_element_deinit(resample);
+#endif
+
     audio_element_deinit(i2s_stream_reader);
     esp_periph_set_destroy(set);
 }
