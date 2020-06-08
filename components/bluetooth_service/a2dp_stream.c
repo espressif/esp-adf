@@ -22,13 +22,10 @@
  *
  */
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include "nvs.h"
 #include "nvs_flash.h"
-#include "esp_system.h"
 #include "esp_log.h"
 #include "esp_peripherals.h"
 #include "audio_common.h"

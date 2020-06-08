@@ -35,6 +35,7 @@
 #include "sys/queue.h"
 #include "touch.h"
 #include "sdkconfig.h"
+#include "audio_mem.h"
 
 #define TOUCHPAD_TRIGGER_THRESHOLD      100
 #define TOUCHPAD_FILTER_PERIOD          (30)
@@ -91,7 +92,7 @@ static void touch_pad_isr_handler(void* arg)
 
 esp_touch_handle_t esp_touch_init(touch_config_t *config)
 {
-    esp_touch_handle_t touch = calloc(1, sizeof(struct esp_touch));
+    esp_touch_handle_t touch = audio_calloc(1, sizeof(struct esp_touch));
     AUDIO_MEM_CHECK(TAG, touch, return NULL);
 
     if (config->touch_mask <= 0) {
@@ -113,7 +114,7 @@ esp_touch_handle_t esp_touch_init(touch_config_t *config)
     bool _success = (touch_pad_init() == ESP_OK);
 
     AUDIO_MEM_CHECK(TAG, _success, {
-        free(touch);
+        audio_free(touch);
         return NULL;
     });
 
@@ -124,10 +125,10 @@ esp_touch_handle_t esp_touch_init(touch_config_t *config)
     while (touch_mask) {
         if (touch_mask & 0x01) {
             ESP_LOGD(TAG, "Mask = %x, current_mask = %x, idx=%d", touch->touch_mask, touch_mask, touch_num);
-            esp_touch_item_t *new_touch = calloc(1, sizeof(esp_touch_item_t));
+            esp_touch_item_t *new_touch = audio_calloc(1, sizeof(esp_touch_item_t));
             AUDIO_MEM_CHECK(TAG, new_touch, {
                 esp_touch_destroy(touch);
-                free(touch);
+                audio_free(touch);
                 return NULL;
             });
             new_touch->touch_num = touch_num;
@@ -295,9 +296,9 @@ esp_err_t esp_touch_destroy(esp_touch_handle_t touch)
     touch_pad_isr_deregister(touch_pad_isr_handler, touch);
     STAILQ_FOREACH_SAFE(touch_item, &touch->touch_list, entry, tmp) {
         STAILQ_REMOVE(&touch->touch_list, touch_item, esp_touch_item, entry);
-        free(touch_item);
+        audio_free(touch_item);
     }
     touch_pad_deinit();
-    free(touch);
+    audio_free(touch);
     return ESP_OK;
 }

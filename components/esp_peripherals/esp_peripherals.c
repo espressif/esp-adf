@@ -23,16 +23,13 @@
  */
 
 #include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
 #include "sys/queue.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "audio_event_iface.h"
 #include "audio_mutex.h"
 #include "esp_peripherals.h"
+#include "audio_mem.h"
 
 static const char *TAG = "ESP_PERIPH";
 
@@ -129,7 +126,7 @@ esp_periph_set_handle_t esp_periph_set_init(esp_periph_config_t *config)
     int _err_step = 1;
     bool _success =
         (
-            (periph_sets                   = calloc(1, sizeof(esp_periph_set_t))) && _err_step ++ &&
+            (periph_sets                   = audio_calloc(1, sizeof(esp_periph_set_t))) && _err_step ++ &&
             (periph_sets->state_event_bits = xEventGroupCreate())                  && _err_step ++ &&
             (periph_sets->lock             = mutex_create())                       && _err_step ++
         );
@@ -171,7 +168,7 @@ _periph_init_failed:
             audio_event_iface_destroy(periph_sets->event_handle.iface);
         }
 
-        free(periph_sets);
+        audio_free(periph_sets);
         periph_sets = NULL;
     }
     return NULL;
@@ -188,15 +185,15 @@ esp_err_t esp_periph_set_destroy(esp_periph_set_handle_t periph_set_handle)
     esp_periph_handle_t item, tmp;
     STAILQ_FOREACH_SAFE(item, &periph_set_handle->periph_list, entries, tmp) {
         STAILQ_REMOVE(&periph_set_handle->periph_list, item, esp_periph, entries);
-        free(item->tag);
-        free(item);
+        audio_free(item->tag);
+        audio_free(item);
     }
     mutex_destroy(periph_set_handle->lock);
     vEventGroupDelete(periph_set_handle->state_event_bits);
 
     gpio_uninstall_isr_service();
     audio_event_iface_destroy(periph_set_handle->event_handle.iface);
-    free(periph_set_handle);
+    audio_free(periph_set_handle);
     periph_set_handle = NULL;
     return ESP_OK;
 }
@@ -300,16 +297,16 @@ esp_err_t esp_periph_set_list_destroy(esp_periph_set_handle_t periph_set)
 
 esp_periph_handle_t esp_periph_create(int periph_id, const char *tag)
 {
-    esp_periph_handle_t new_entry = calloc(1, sizeof(struct esp_periph));
+    esp_periph_handle_t new_entry = audio_calloc(1, sizeof(struct esp_periph));
 
     AUDIO_MEM_CHECK(TAG, new_entry, return NULL);
     if (tag) {
-        new_entry->tag = strdup(tag);
+        new_entry->tag = audio_strdup(tag);
     } else {
-        new_entry->tag = strdup("periph");
+        new_entry->tag = audio_strdup("periph");
     }
     AUDIO_MEM_CHECK(TAG, new_entry->tag, {
-        free(new_entry);
+        audio_free(new_entry);
         return NULL;
     })
     new_entry->state = PERIPH_STATE_INIT;

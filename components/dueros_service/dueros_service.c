@@ -259,7 +259,7 @@ dueros_task_fail:
         free(voiceData);
     }
     vQueueDelete(serv->duer_que);
-    free(serv);
+    audio_free(serv);
     vTaskDelete(NULL);
 }
 

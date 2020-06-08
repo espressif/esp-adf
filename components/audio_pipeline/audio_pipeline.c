@@ -466,7 +466,7 @@ static esp_err_t _pipeline_rb_linked(audio_pipeline_handle_t pipeline, audio_ele
                         );
 
         AUDIO_MEM_CHECK(TAG, _success, {
-            free(rb_item);
+            audio_free(rb_item);
             return ESP_ERR_NO_MEM;
         });
 
@@ -894,7 +894,7 @@ static esp_err_t audio_pipeline_el_item_link(audio_pipeline_handle_t pipeline,
                         );
 
         AUDIO_MEM_CHECK(TAG, _success, {
-            free(cur_rb_item);
+            audio_free(cur_rb_item);
             return ESP_ERR_NO_MEM;
         });
         cur_rb_item->rb = tmp_rb;

@@ -22,24 +22,11 @@
  *
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/time.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "soc/soc.h"
-#include "soc/rtc_cntl_reg.h"
-#include "soc/sens_reg.h"
 #include "esp_log.h"
-#include "esp_system.h"
-
 #include "periph_touch.h"
 #include "touch.h"
 #include "esp_peripherals.h"
-#include "board.h"
+#include "audio_mem.h"
 
 static const char *TAG = "PERIPH_TOUCH";
 
@@ -112,7 +99,7 @@ static esp_err_t _touch_destroy(esp_periph_handle_t self)
 {
     periph_touch_t *periph_touch = esp_periph_get_data(self);
     esp_touch_destroy(periph_touch->touch);
-    free(periph_touch);
+    audio_free(periph_touch);
     return ESP_OK;
 }
 
@@ -120,7 +107,7 @@ esp_periph_handle_t periph_touch_init(periph_touch_cfg_t *config)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_TOUCH, "periph_touch");
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
-    periph_touch_t *periph_touch = calloc(1, sizeof(periph_touch_t));
+    periph_touch_t *periph_touch = audio_calloc(1, sizeof(periph_touch_t));
 
     AUDIO_MEM_CHECK(TAG, periph_touch, return NULL);
     periph_touch->touch_mask = config->touch_mask;

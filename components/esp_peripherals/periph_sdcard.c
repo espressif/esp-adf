@@ -22,24 +22,13 @@
  *
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/time.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "soc/soc.h"
-#include "soc/rtc_cntl_reg.h"
-#include "soc/sens_reg.h"
 #include "esp_log.h"
-#include "esp_system.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdmmc_defs.h"
 #include "driver/gpio.h"
 #include "sdcard.h"
-#include "board.h"
 #include "periph_sdcard.h"
+#include "audio_mem.h"
 
 static const char *TAG = "PERIPH_SDCARD";
 
@@ -121,8 +110,8 @@ static esp_err_t _sdcard_destroy(esp_periph_handle_t self)
         ESP_LOGE(TAG, "stop sdcard error!");
     }
     periph_sdcard_t *sdcard = esp_periph_get_data(self);
-    free(sdcard->root);
-    free(sdcard);
+    audio_free(sdcard->root);
+    audio_free(sdcard);
     return ret;
 }
 
@@ -171,15 +160,15 @@ esp_periph_handle_t periph_sdcard_init(periph_sdcard_cfg_t *sdcard_cfg)
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_SDCARD, "periph_sdcard");
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
 
-    periph_sdcard_t *sdcard = calloc(1, sizeof(periph_sdcard_t));
+    periph_sdcard_t *sdcard = audio_calloc(1, sizeof(periph_sdcard_t));
     AUDIO_MEM_CHECK(TAG, sdcard, return NULL);
     if (sdcard_cfg->root) {
-        sdcard->root = strdup(sdcard_cfg->root);
+        sdcard->root = audio_strdup(sdcard_cfg->root);
     } else {
-        sdcard->root = strdup("/sdcard");
+        sdcard->root = audio_strdup("/sdcard");
     }
     AUDIO_MEM_CHECK(TAG, sdcard->root, {
-        free(sdcard);
+        audio_free(sdcard);
         return NULL;
     });
 

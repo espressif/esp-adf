@@ -22,27 +22,16 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "freertos/task.h"
-#include "soc/rtc_cntl_reg.h"
-#include "soc/sens_reg.h"
-#include "soc/soc.h"
-
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_smartconfig.h"
-#include "esp_system.h"
 #include "esp_wifi.h"
 
-#include "board.h"
 #include "esp_peripherals.h"
 #include "periph_wifi.h"
 #include "wifibleconfig.h"
+#include "audio_mem.h"
 
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
@@ -438,11 +427,11 @@ static esp_err_t _wifi_destroy(esp_periph_handle_t self)
     periph_wifi_wait_for_disconnected(self, portMAX_DELAY);
     esp_wifi_stop();
     esp_wifi_deinit();
-    free(periph_wifi->ssid);
-    free(periph_wifi->password);
+    audio_free(periph_wifi->ssid);
+    audio_free(periph_wifi->password);
 
     vEventGroupDelete(periph_wifi->state_event);
-    free(periph_wifi);
+    audio_free(periph_wifi);
     g_periph = NULL;
     return ESP_OK;
 }
@@ -451,7 +440,11 @@ esp_periph_handle_t periph_wifi_init(periph_wifi_cfg_t *config)
 {
     esp_periph_handle_t periph = NULL;
     periph_wifi_handle_t periph_wifi = NULL;
-    bool _success = ((periph = esp_periph_create(PERIPH_ID_WIFI, "periph_wifi")) && (periph_wifi = calloc(1, sizeof(struct periph_wifi))) && (periph_wifi->state_event = xEventGroupCreate()) && (config->ssid ? (bool)(periph_wifi->ssid = strdup(config->ssid)) : true) && (config->password ? (bool)(periph_wifi->password = strdup(config->password)) : true));
+    bool _success = ((periph = esp_periph_create(PERIPH_ID_WIFI, "periph_wifi"))
+                     && (periph_wifi = audio_calloc(1, sizeof(struct periph_wifi)))
+                     && (periph_wifi->state_event = xEventGroupCreate())
+                     && (config->ssid ? (bool)(periph_wifi->ssid = audio_strdup(config->ssid)) : true)
+                     && (config->password ? (bool)(periph_wifi->password = audio_strdup(config->password)) : true));
 
     AUDIO_MEM_CHECK(TAG, _success, goto _periph_wifi_init_failed);
 
@@ -469,9 +462,9 @@ esp_periph_handle_t periph_wifi_init(periph_wifi_cfg_t *config)
 _periph_wifi_init_failed:
     if (periph_wifi) {
         vEventGroupDelete(periph_wifi->state_event);
-        free(periph_wifi->ssid);
-        free(periph_wifi->password);
-        free(periph_wifi);
+        audio_free(periph_wifi->ssid);
+        audio_free(periph_wifi->password);
+        audio_free(periph_wifi);
     }
     return NULL;
 }

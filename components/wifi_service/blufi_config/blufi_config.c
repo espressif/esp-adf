@@ -177,7 +177,7 @@ esp_wifi_setting_handle_t blufi_config_create(void *info)
     AUDIO_MEM_CHECK(TAG, bc_setting_handle, return NULL);
     wifi_blufi_config_t *cfg = audio_calloc(1, sizeof(wifi_blufi_config_t));
     AUDIO_MEM_CHECK(TAG, cfg, {
-        free(bc_setting_handle);
+        audio_free(bc_setting_handle);
         return NULL;
     });
     esp_wifi_setting_set_data(bc_setting_handle, cfg);

@@ -32,6 +32,7 @@
 #include "esp_log.h"
 #include "audio_event_iface.h"
 #include "audio_error.h"
+#include "audio_mem.h"
 
 static const char *TAG = "AUDIO_EVT";
 
@@ -64,7 +65,7 @@ struct audio_event_iface {
 
 audio_event_iface_handle_t audio_event_iface_init(audio_event_iface_cfg_t *config)
 {
-    audio_event_iface_handle_t evt = calloc(1, sizeof(struct audio_event_iface));
+    audio_event_iface_handle_t evt = audio_calloc(1, sizeof(struct audio_event_iface));
     AUDIO_MEM_CHECK(TAG, evt, return NULL);
     evt->queue_set_size   = config->queue_set_size;
     evt->internal_queue_size = config->internal_queue_size;
@@ -158,7 +159,7 @@ esp_err_t audio_event_iface_destroy(audio_event_iface_handle_t evt)
     audio_event_iface_item_t *item, *tmp;
     STAILQ_FOREACH_SAFE(item, &evt->listening_queues, next, tmp) {
         STAILQ_REMOVE(&evt->listening_queues, item, audio_event_iface_item, next);
-        free(item);
+        audio_free(item);
     }
     if (evt->internal_queue) {
         audio_event_iface_set_cmd_waiting_timeout(evt, 0);
@@ -170,7 +171,7 @@ esp_err_t audio_event_iface_destroy(audio_event_iface_handle_t evt)
     if (evt->queue_set) {
         vQueueDelete(evt->queue_set);
     }
-    free(evt);
+    audio_free(evt);
     return ESP_OK;
 }
 
@@ -180,7 +181,7 @@ esp_err_t audio_event_iface_set_listener(audio_event_iface_handle_t evt, audio_e
         || (0 == evt->external_queue_size)) {
         return ESP_ERR_INVALID_ARG;
     }
-    audio_event_iface_item_t *item = calloc(1, sizeof(audio_event_iface_item_t));
+    audio_event_iface_item_t *item = audio_calloc(1, sizeof(audio_event_iface_item_t));
     AUDIO_MEM_CHECK(TAG, item, return ESP_ERR_NO_MEM);
 
     if (audio_event_iface_cleanup_listener(listener) != ESP_OK) {
@@ -199,7 +200,7 @@ esp_err_t audio_event_iface_set_msg_listener(audio_event_iface_handle_t evt, aud
         || (0 == evt->internal_queue_size)) {
         return ESP_ERR_INVALID_ARG;
     }
-    audio_event_iface_item_t *item = calloc(1, sizeof(audio_event_iface_item_t));
+    audio_event_iface_item_t *item = audio_calloc(1, sizeof(audio_event_iface_item_t));
     AUDIO_MEM_CHECK(TAG, item, return ESP_ERR_NO_MEM);
     if (audio_event_iface_cleanup_listener(listener) != ESP_OK) {
         AUDIO_ERROR(TAG, "Error cleanup listener");
@@ -224,7 +225,7 @@ esp_err_t audio_event_iface_remove_listener(audio_event_iface_handle_t listen, a
     STAILQ_FOREACH_SAFE(item, &listen->listening_queues, next, tmp) {
         if (evt->external_queue == item->queue) {
             STAILQ_REMOVE(&listen->listening_queues, item, audio_event_iface_item, next);
-            free(item);
+            audio_free(item);
         }
     }
     return audio_event_iface_update_listener(listen);

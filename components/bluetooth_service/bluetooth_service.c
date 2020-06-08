@@ -22,18 +22,14 @@
  *
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "nvs.h"
-#include "nvs_flash.h"
 
 #include "esp_log.h"
-#include "esp_system.h"
+#include "audio_mem.h"
 #include "sdkconfig.h"
 
 #if __has_include("esp_idf_version.h")
@@ -431,7 +427,7 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
         return ESP_FAIL;
     }
 
-    g_bt_service = calloc(1, sizeof(bluetooth_service_t));
+    g_bt_service = audio_calloc(1, sizeof(bluetooth_service_t));
     AUDIO_MEM_CHECK(TAG, g_bt_service, return ESP_ERR_NO_MEM);
 
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_BLE));
@@ -528,7 +524,7 @@ esp_err_t bluetooth_service_destroy()
         esp_bt_controller_disable();
         esp_bt_controller_deinit();
         esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
-        free(g_bt_service);
+        audio_free(g_bt_service);
         g_bt_service = NULL;
     }
     return ESP_OK;

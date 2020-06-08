@@ -82,7 +82,7 @@ static esp_err_t _aw2013_destroy(esp_periph_handle_t self)
     periph_aw2013_t *aw2013 = esp_periph_get_data(self);
 
     ret |= aw2013_deinit();
-    free(aw2013);
+    audio_free(aw2013);
     return ret;
 }
 
@@ -140,7 +140,7 @@ esp_periph_handle_t periph_aw2013_init(periph_aw2013_cfg_t *aw2013_cfg)
 
     periph_aw2013_t *aw2013 = audio_calloc(1, sizeof(periph_aw2013_t));
     AUDIO_MEM_CHECK(TAG, aw2013, {
-        free(periph);
+        audio_free(periph);
         return NULL;
     });
 

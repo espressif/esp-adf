@@ -49,7 +49,7 @@ static void scan_dir(sdcard_scan_cb_t save_url_cb, const char *path, int cur_dep
     DIR *dir = opendir(path);
     if (dir == NULL) {
         ESP_LOGE(TAG, "Open [%s] directory failed", path);
-        free(file_url);
+        audio_free(file_url);
         return;
     }
 
@@ -90,7 +90,7 @@ static void scan_dir(sdcard_scan_cb_t save_url_cb, const char *path, int cur_dep
             }
         }
     }
-    free(file_url);
+    audio_free(file_url);
     closedir(dir);
 }
 

@@ -22,13 +22,9 @@
  *
  */
 
-#include <sys/unistd.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
-#include "esp_system.h"
 #include "esp_log.h"
-#include "esp_system.h"
 #include "raw_stream.h"
 #include "audio_element.h"
 #include "audio_mem.h"

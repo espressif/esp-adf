@@ -22,22 +22,10 @@
  *
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "soc/soc.h"
-#include "soc/rtc_cntl_reg.h"
-#include "soc/sens_reg.h"
-
 #include "esp_log.h"
-#include "esp_system.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "board.h"
 #include "button.h"
 #include "periph_button.h"
+#include "audio_mem.h"
 
 static const char* TAG = "PERIPH_BUTTON";
 
@@ -83,7 +71,7 @@ static esp_err_t _button_destroy(esp_periph_handle_t self)
 {
     periph_button_t *periph_btn = esp_periph_get_data(self);
     button_destroy(periph_btn->btn);
-    free(periph_btn);
+    audio_free(periph_btn);
     return ESP_OK;
 }
 
@@ -121,10 +109,10 @@ esp_periph_handle_t periph_button_init(periph_button_cfg_t *config)
 {
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_BUTTON, "periph_btn");
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
-    periph_button_t *periph_btn = calloc(1, sizeof(periph_button_t));
+    periph_button_t *periph_btn = audio_calloc(1, sizeof(periph_button_t));
 
     AUDIO_MEM_CHECK(TAG, periph_btn, {
-        free(periph);
+        audio_free(periph);
         return NULL;
     });
     periph_btn->gpio_mask = config->gpio_mask;

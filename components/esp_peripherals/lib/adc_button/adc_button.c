@@ -30,6 +30,8 @@
 #include "freertos/queue.h"
 #include "driver/adc.h"
 #include "math.h"
+#include "audio_mem.h"
+
 #if CONFIG_IDF_TARGET_ESP32
 #include "esp_adc_cal.h"
 #endif
@@ -73,7 +75,7 @@ adc_btn_list *adc_btn_create_list(adc_arr_t *adc_conf, int channels)
     adc_btn_list *node = NULL;
     adc_btn_list *find = NULL;
     for (int i = 0; i < channels; i++) {
-        node = (adc_btn_list *)calloc(1, sizeof(adc_btn_list));
+        node = (adc_btn_list *)audio_calloc(1, sizeof(adc_btn_list));
         if (NULL == node) {
             ESP_LOGE(TAG, "Memory allocation failed! Line: %d", __LINE__);
             return NULL;
@@ -81,11 +83,11 @@ adc_btn_list *adc_btn_create_list(adc_arr_t *adc_conf, int channels)
         memset(node, 0, sizeof(adc_btn_list));
         adc_arr_t *info = &(node->adc_info);
         memcpy(info, adc_conf + i, sizeof(adc_arr_t));
-        info->adc_level_step = (int *)calloc(1, (info->total_steps + 1) * sizeof(int));
+        info->adc_level_step = (int *)audio_calloc(1, (info->total_steps + 1) * sizeof(int));
         memset(info->adc_level_step, 0, (info->total_steps + 1) * sizeof(int));
         if (NULL == info->adc_level_step) {
             ESP_LOGE(TAG, "Memory allocation failed! Line: %d", __LINE__);
-            free(node);
+            audio_free(node);
             return NULL;
         }
         if (adc_conf[i].adc_level_step == NULL) {
@@ -95,14 +97,14 @@ adc_btn_list *adc_btn_create_list(adc_arr_t *adc_conf, int channels)
         }
         if (info->total_steps > USER_KEY_MAX) {
             ESP_LOGE(TAG, "The total_steps should be less than USER_KEY_MAX");
-            free(info->adc_level_step);
-            free(node);
+            audio_free(info->adc_level_step);
+            audio_free(node);
         }
-        node->btn_dscp = (btn_decription *)calloc(1, sizeof(btn_decription) * (adc_conf[i].total_steps));
+        node->btn_dscp = (btn_decription *)audio_calloc(1, sizeof(btn_decription) * (adc_conf[i].total_steps));
         if (NULL == node->btn_dscp) {
             ESP_LOGE(TAG, "Memory allocation failed! Line: %d", __LINE__);
-            free(info->adc_level_step);
-            free(node);
+            audio_free(info->adc_level_step);
+            audio_free(node);
         }
         memset(node->btn_dscp, 0, sizeof(btn_decription) * (adc_conf[i].total_steps));
         node->next = NULL;
@@ -129,9 +131,9 @@ esp_err_t adc_btn_destroy_list(adc_btn_list *head)
     while (find) {
         adc_arr_t *info = &(find->adc_info);
         tmp = find->next;
-        free(find->btn_dscp);
-        free(info->adc_level_step);
-        free(find);
+        audio_free(find->btn_dscp);
+        audio_free(info->adc_level_step);
+        audio_free(find);
         find = tmp;
     }
     return ESP_OK;
@@ -268,7 +270,7 @@ static void button_task(void *parameters)
 #elif CONFIG_IDF_TARGET_ESP32S2
     adc1_config_width(ADC_WIDTH_BIT_13);
 #endif
-    
+
     while (find) {
         adc_arr_t *info = &(find->adc_info);
         reset_btn(find->btn_dscp, info->total_steps);
@@ -376,7 +378,7 @@ static void button_task(void *parameters)
     if (g_event_bit) {
         xEventGroupSetBits(g_event_bit, DESTROY_BIT);
     }
-    free(tag);
+    audio_free(tag);
     vTaskDelete(NULL);
 }
 
@@ -395,7 +397,7 @@ void adc_btn_delete_task(void)
 
 void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head)
 {
-    adc_btn_tag_t *tag = calloc(1, sizeof(adc_btn_tag_t));
+    adc_btn_tag_t *tag = audio_calloc(1, sizeof(adc_btn_tag_t));
     if (NULL == tag) {
         ESP_LOGE(TAG, "Memory allocation failed! Line: %d", __LINE__);
         return;

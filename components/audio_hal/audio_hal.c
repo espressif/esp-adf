@@ -47,13 +47,13 @@ audio_hal_handle_t audio_hal_init(audio_hal_codec_config_t *audio_hal_conf, audi
     audio_hal->audio_hal_lock = mutex_create();
 
     AUDIO_MEM_CHECK(TAG, audio_hal->audio_hal_lock, {
-        free(audio_hal);
+        audio_free(audio_hal);
         return NULL;
     });
     mutex_lock(audio_hal->audio_hal_lock);
     ret  = audio_hal->audio_codec_initialize(audio_hal_conf);
     if (ret == ESP_FAIL) {
-        free(audio_hal);
+        audio_free(audio_hal);
         if (audio_hal_func->handle) {
             return audio_hal_func->handle;
         } else {
@@ -77,7 +77,7 @@ esp_err_t audio_hal_deinit(audio_hal_handle_t audio_hal)
     ret = audio_hal->audio_codec_deinitialize();
     audio_hal->audio_hal_lock = NULL;
     audio_hal->handle = NULL;
-    free(audio_hal);
+    audio_free(audio_hal);
     audio_hal = NULL;
     return ret;
 }

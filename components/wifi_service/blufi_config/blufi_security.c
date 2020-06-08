@@ -29,6 +29,7 @@
 #include <string.h>
 #include "esp_log.h"
 #include "esp_system.h"
+#include "audio_mem.h"
 
 #include "mbedtls/aes.h"
 #include "mbedtls/dhm.h"
@@ -85,61 +86,61 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
     }
 
     switch (type) {
-    case SEC_TYPE_DH_PARAM_LEN:
-        blufi_sec->dh_param_len = ((data[1]<<8)|data[2]);
-        if (blufi_sec->dh_param) {
-            free(blufi_sec->dh_param);
-            blufi_sec->dh_param = NULL;
-        }
-        blufi_sec->dh_param = (uint8_t *)malloc(blufi_sec->dh_param_len);
-        if (blufi_sec->dh_param == NULL) {
-            ESP_LOGE(BLUFI_SECURITY_TAG, "%s, Malloc failed", __func__);
-            return;
-        }
-        break;
-    case SEC_TYPE_DH_PARAM_DATA:{
-        if (blufi_sec->dh_param == NULL) {
-            ESP_LOGE(BLUFI_SECURITY_TAG, "%s, Blufi_sec->dh_param == NULL", __func__);
-            return;
-        }
-        uint8_t *param = blufi_sec->dh_param;
-        memcpy(blufi_sec->dh_param, &data[1], blufi_sec->dh_param_len);
-        ret = mbedtls_dhm_read_params(&blufi_sec->dhm, &param, &param[blufi_sec->dh_param_len]);
-        if (ret) {
-            ESP_LOGE(BLUFI_SECURITY_TAG, "%s Read param failed %d", __func__, ret);
-            return;
-        }
-        free(blufi_sec->dh_param);
-        blufi_sec->dh_param = NULL;
-        ret = mbedtls_dhm_make_public(&blufi_sec->dhm, (int) mbedtls_mpi_size( &blufi_sec->dhm.P ), blufi_sec->self_public_key, blufi_sec->dhm.len, myrand, NULL);
-        if (ret) {
-            ESP_LOGE(BLUFI_SECURITY_TAG, "%s Make public failed %d", __func__, ret);
-            return;
-        }
+        case SEC_TYPE_DH_PARAM_LEN:
+            blufi_sec->dh_param_len = ((data[1] << 8) | data[2]);
+            if (blufi_sec->dh_param) {
+                audio_free(blufi_sec->dh_param);
+                blufi_sec->dh_param = NULL;
+            }
+            blufi_sec->dh_param = (uint8_t *)audio_calloc(1,  blufi_sec->dh_param_len);
+            if (blufi_sec->dh_param == NULL) {
+                ESP_LOGE(BLUFI_SECURITY_TAG, "%s, Malloc failed", __func__);
+                return;
+            }
+            break;
+        case SEC_TYPE_DH_PARAM_DATA: {
+                if (blufi_sec->dh_param == NULL) {
+                    ESP_LOGE(BLUFI_SECURITY_TAG, "%s, Blufi_sec->dh_param == NULL", __func__);
+                    return;
+                }
+                uint8_t *param = blufi_sec->dh_param;
+                memcpy(blufi_sec->dh_param, &data[1], blufi_sec->dh_param_len);
+                ret = mbedtls_dhm_read_params(&blufi_sec->dhm, &param, &param[blufi_sec->dh_param_len]);
+                if (ret) {
+                    ESP_LOGE(BLUFI_SECURITY_TAG, "%s Read param failed %d", __func__, ret);
+                    return;
+                }
+                audio_free(blufi_sec->dh_param);
+                blufi_sec->dh_param = NULL;
+                ret = mbedtls_dhm_make_public(&blufi_sec->dhm, (int) mbedtls_mpi_size( &blufi_sec->dhm.P ), blufi_sec->self_public_key, blufi_sec->dhm.len, myrand, NULL);
+                if (ret) {
+                    ESP_LOGE(BLUFI_SECURITY_TAG, "%s Make public failed %d", __func__, ret);
+                    return;
+                }
 
-        mbedtls_dhm_calc_secret( &blufi_sec->dhm,
-                blufi_sec->share_key,
-                SHARE_KEY_BIT_LEN,
-                &blufi_sec->share_len,
-                NULL, NULL);
+                mbedtls_dhm_calc_secret( &blufi_sec->dhm,
+                                         blufi_sec->share_key,
+                                         SHARE_KEY_BIT_LEN,
+                                         &blufi_sec->share_len,
+                                         NULL, NULL);
 
-        mbedtls_md5(blufi_sec->share_key, blufi_sec->share_len, blufi_sec->psk);
+                mbedtls_md5(blufi_sec->share_key, blufi_sec->share_len, blufi_sec->psk);
 
-        mbedtls_aes_setkey_enc(&blufi_sec->aes, blufi_sec->psk, 128);
+                mbedtls_aes_setkey_enc(&blufi_sec->aes, blufi_sec->psk, 128);
 
-        /* Alloc output data */
-        *output_data = &blufi_sec->self_public_key[0];
-        *output_len = blufi_sec->dhm.len;
-        *need_free = false;
+                /* Alloc output data */
+                *output_data = &blufi_sec->self_public_key[0];
+                *output_len = blufi_sec->dhm.len;
+                *need_free = false;
 
-    }
-        break;
-    case SEC_TYPE_DH_P:
-        break;
-    case SEC_TYPE_DH_G:
-        break;
-    case SEC_TYPE_DH_PUBLIC:
-        break;
+            }
+            break;
+        case SEC_TYPE_DH_P:
+            break;
+        case SEC_TYPE_DH_G:
+            break;
+        case SEC_TYPE_DH_PUBLIC:
+            break;
     }
 }
 
@@ -187,12 +188,10 @@ uint16_t blufi_crc_checksum(uint8_t iv8, uint8_t *data, int len)
 
 esp_err_t blufi_security_init(void)
 {
-    blufi_sec = (struct blufi_security *)malloc(sizeof(struct blufi_security));
+    blufi_sec = (struct blufi_security *)audio_calloc(1, sizeof(struct blufi_security));
     if (blufi_sec == NULL) {
         return ESP_FAIL;
     }
-
-    memset(blufi_sec, 0x0, sizeof(struct blufi_security));
 
     mbedtls_dhm_init(&blufi_sec->dhm);
     mbedtls_aes_init(&blufi_sec->aes);
@@ -206,8 +205,8 @@ esp_err_t blufi_security_deinit(void)
     if (blufi_sec == NULL) {
         return ESP_FAIL;
     }
-    if (blufi_sec->dh_param){
-        free(blufi_sec->dh_param);
+    if (blufi_sec->dh_param) {
+        audio_free(blufi_sec->dh_param);
         blufi_sec->dh_param = NULL;
     }
     mbedtls_dhm_free(&blufi_sec->dhm);
@@ -215,7 +214,7 @@ esp_err_t blufi_security_deinit(void)
 
     memset(blufi_sec, 0x0, sizeof(struct blufi_security));
 
-    free(blufi_sec);
+    audio_free(blufi_sec);
     blufi_sec = NULL;
 
     return ESP_OK;

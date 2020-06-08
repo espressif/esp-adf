@@ -89,9 +89,9 @@ esp_err_t led_bar_ws2812_deinit(led_bar_ws2812_handle_t handle)
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
     esp_periph_destroy(handle->periph_handle);
     if (handle->control_cfg) {
-        free(handle->control_cfg);
+        audio_free(handle->control_cfg);
         handle->control_cfg = NULL;
     }
-    free(handle);
+    audio_free(handle);
     return ESP_OK;
 }

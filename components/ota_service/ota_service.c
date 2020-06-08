@@ -201,7 +201,7 @@ static void ota_task(void *pvParameters)
     if (ota->upgrade_list) {
         audio_free(ota->upgrade_list);
     }
-    free(ota);
+    audio_free(ota);
     vTaskDelete(NULL);
 }
 
@@ -244,7 +244,7 @@ periph_service_handle_t ota_service_create(ota_service_config_t *config)
 
     ota->srv_q = xQueueCreate(3, sizeof(ota_msg_t));
     AUDIO_MEM_CHECK(TAG, ota->srv_q, {
-        free(ota);
+        audio_free(ota);
         return NULL;
     });
     ota->state = OTA_INIT;
@@ -264,7 +264,7 @@ periph_service_handle_t ota_service_create(ota_service_config_t *config)
     periph_service_handle_t periph_ota = periph_service_create(&cfg);
     AUDIO_MEM_CHECK(TAG, periph_ota, {
         vQueueDelete(ota->srv_q);
-        free(ota);
+        audio_free(ota);
         return NULL;
     });
     periph_service_set_callback(periph_ota, config->evt_cb, config->cb_ctx);

@@ -135,13 +135,13 @@ static void airkiss_notify_task(void *pvParameters)
     int ret, err;
     airkiss_lan_ret_t lan_ret;
 
-    buf = malloc(buf_len);
+    buf = audio_malloc(buf_len);
     if (buf == NULL) {
         ESP_LOGE(TAG, "buf allocate fail");
         goto _fail;
     }
 
-    req_buf = malloc(buf_len);
+    req_buf = audio_malloc(buf_len);
     if (req_buf == NULL) {
         ESP_LOGE(TAG, "lan buf allocate fail");
         goto _fail;
@@ -256,16 +256,16 @@ _out:
     close(send_socket);
 _fail:
     if (buf) {
-        free(buf);
+        audio_free(buf);
         buf = NULL;
     }
     if (req_buf) {
-        free(req_buf);
+        audio_free(req_buf);
         req_buf = NULL;
     }
-    free(lan_param->appid);
-    free(lan_param->deviceid);
-    free(lan_param);
+    audio_free(lan_param->appid);
+    audio_free(lan_param->deviceid);
+    audio_free(lan_param);
     vTaskDelete(NULL);
 }
 
@@ -275,9 +275,9 @@ void airkiss_ssdp_notify(airkiss_lan_pack_param_t *lan_param)
         ESP_LOGE(TAG, "lan_param invalid");
         return;
     }
-    airkiss_lan_pack_param_t *pack = malloc(sizeof(airkiss_lan_pack_param_t));
-    pack->appid = strdup(lan_param->appid);
-    pack->deviceid = strdup(lan_param->deviceid);
+    airkiss_lan_pack_param_t *pack = audio_malloc(sizeof(airkiss_lan_pack_param_t));
+    pack->appid = audio_strdup(lan_param->appid);
+    pack->deviceid = audio_strdup(lan_param->deviceid);
     xTaskCreate(airkiss_notify_task, "airkiss_notify_task", AIRKISS_NOTIFY_TASK_STACK_SIZE, pack, AIRKISS_NOTIFY_TASK_PRIORITY, NULL);
 }
 
@@ -406,7 +406,7 @@ static void airkiss_finish(void)
     } else {
         ESP_LOGI(TAG, "airkiss_get_result() failed !");
     }
-    free(ak_ctx);
+    audio_free(ak_ctx);
     ak_ctx = NULL;
 }
 
@@ -480,11 +480,11 @@ static void airkiss_wifi_scan_ap(void)
                     }
                 }
             }
-            free(ap_record);
+            audio_free(ap_record);
         }
     }
 
-    free(scan_config);
+    audio_free(scan_config);
 }
 
 static esp_err_t airkiss_start(esp_wifi_setting_handle_t handle)
@@ -499,7 +499,7 @@ static esp_err_t airkiss_start(esp_wifi_setting_handle_t handle)
     }
     res = airkiss_init(ak_ctx, &ak_conf);
     if (res < 0) {
-        free(ak_ctx);
+        audio_free(ak_ctx);
         ESP_LOGE(TAG, "Airkiss init failed!");
         return ESP_FAIL;
     }
@@ -547,7 +547,7 @@ static esp_err_t airkiss_stop(esp_wifi_setting_handle_t handle)
         channel_change_timer = NULL;
     }
     esp_wifi_set_promiscuous(false);
-    free(ak_ctx);
+    audio_free(ak_ctx);
     ak_ctx = NULL;
     return ESP_OK;
 }
@@ -558,13 +558,13 @@ esp_wifi_setting_handle_t airkiss_config_create(airkiss_config_info_t *info)
     AUDIO_MEM_CHECK(TAG, air_setting_handle, return NULL);
     airkiss_notify_para_t *cfg = audio_calloc(1, sizeof(airkiss_notify_para_t));
     AUDIO_MEM_CHECK(TAG, cfg, {
-        free(air_setting_handle);
+        audio_free(air_setting_handle);
         return NULL;
     });
     cfg->lan_pack.appid = info->lan_pack.appid;
     cfg->lan_pack.deviceid = info->lan_pack.deviceid;
     if (info->aes_key) {
-        cfg->aes_key = strdup(info->aes_key);
+        cfg->aes_key = audio_strdup(info->aes_key);
     }
     cfg->ssdp_notify_enable = info->ssdp_notify_enable;
     esp_wifi_setting_set_data(air_setting_handle, cfg);

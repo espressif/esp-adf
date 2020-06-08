@@ -165,7 +165,7 @@ esp_wifi_setting_handle_t smart_config_create(smart_config_info_t *info)
     AUDIO_MEM_CHECK(TAG, sm_setting_handle, return NULL);
     smart_config_info *cfg = audio_calloc(1, sizeof(smart_config_info));
     AUDIO_MEM_CHECK(TAG, cfg, {
-        free(sm_setting_handle);
+        audio_free(sm_setting_handle);
         return NULL;
     });
     cfg->type = info->type;

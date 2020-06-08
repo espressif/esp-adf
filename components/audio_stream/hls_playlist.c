@@ -51,8 +51,8 @@ static void hls_remove_played_entry(playlist_t *playlist)
         track = STAILQ_FIRST(&playlist->tracks);
         if (track->is_played) {
             STAILQ_REMOVE_HEAD(&playlist->tracks, next);
-            free(track->uri);
-            free(track);
+            audio_free(track->uri);
+            audio_free(track);
             playlist->total_tracks--;
         }
     }
@@ -70,8 +70,8 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
         }
         STAILQ_REMOVE(&playlist->tracks, track, track_, next);
         ESP_LOGD(TAG, "Remove %s", track->uri);
-        free(track->uri);
-        free(track);
+        audio_free(track->uri);
+        audio_free(track);
         playlist->total_tracks --;
     }
     track = audio_calloc(1, sizeof(track_t));
@@ -93,18 +93,18 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
         }
         char *host = strstr(url, "//");
         if (host == NULL) {
-            free(url);
+            audio_free(url);
             return;
         }
         host += 2;
         char *path = strstr(host, "/");
         if (path == NULL) {
-            free(url);
+            audio_free(url);
             return;
         }
         path[0] = 0;
         asprintf(&track->uri, "%s%s", url, track_uri);
-        free(url);
+        audio_free(url);
     } else { // Relative URI
         char *url = audio_strdup(host_uri);
         if (url == NULL) {
@@ -112,16 +112,16 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
         }
         char *pos = strrchr(url, '/'); // Search for last "/"
         if (pos == NULL) {
-            free(url);
+            audio_free(url);
             return;
         }
         pos[1] = '\0';
         asprintf(&track->uri, "%s%s", url, track_uri);
-        free(url);
+        audio_free(url);
     }
     if (track->uri == NULL) {
         ESP_LOGE(TAG, "Error insert URI to playlist");
-        free(track);
+        audio_free(track);
         return;
     }
 
@@ -129,8 +129,8 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
     STAILQ_FOREACH(find, &playlist->tracks, next) {
         if (strcmp(find->uri, track->uri) == 0) {
             ESP_LOGW(TAG, "URI exist");
-            free(track->uri);
-            free(track);
+            audio_free(track->uri);
+            audio_free(track);
             return;
         }
     }
@@ -160,12 +160,12 @@ void hls_playlist_clear(playlist_t *playlist)
     track_t *track, *tmp;
     STAILQ_FOREACH_SAFE(track, &playlist->tracks, next, tmp) {
         STAILQ_REMOVE(&playlist->tracks, track, track_, next);
-        free(track->uri);
-        free(track);
+        audio_free(track->uri);
+        audio_free(track);
     }
 
     if (playlist->host_uri) {
-        free(playlist->host_uri);
+        audio_free(playlist->host_uri);
         playlist->host_uri = NULL;
     }
     playlist->is_incomplete = false;

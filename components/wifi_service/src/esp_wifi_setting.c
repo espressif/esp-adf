@@ -45,12 +45,12 @@ esp_wifi_setting_handle_t esp_wifi_setting_create(const char *tag)
     esp_wifi_setting_handle_t new_entry = audio_calloc(1, sizeof(struct esp_wifi_setting));
     AUDIO_MEM_CHECK(TAG, new_entry, return NULL);
     if (tag) {
-        new_entry->tag = strdup(tag);
+        new_entry->tag = audio_strdup(tag);
     } else {
-        new_entry->tag = strdup("wifi_setting");
+        new_entry->tag = audio_strdup("wifi_setting");
     }
     AUDIO_MEM_CHECK(TAG, new_entry->tag, {
-        free(new_entry);
+        audio_free(new_entry);
         return NULL;
     })
     return new_entry;

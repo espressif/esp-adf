@@ -25,6 +25,7 @@
 #include "esp_log.h"
 #include "audio_error.h"
 #include "periph_adc_button.h"
+#include "audio_mem.h"
 
 static const char *TAG = "PERIPH_ADC_BUTTON";
 
@@ -55,7 +56,7 @@ static esp_err_t _adc_button_destroy(esp_periph_handle_t self)
     periph_adc_btn_t *periph_adc_btn = esp_periph_get_data(self);
     adc_btn_delete_task();
     adc_btn_destroy_list(periph_adc_btn->list);
-    free(periph_adc_btn);
+    audio_free(periph_adc_btn);
     return ESP_OK;
 }
 
@@ -71,16 +72,16 @@ esp_periph_handle_t periph_adc_button_init(periph_adc_button_cfg_t *config)
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_ADC_BTN, "periph_adc_btn");
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
 
-    periph_adc_btn_t *periph_adc_btn = calloc(1, sizeof(periph_adc_btn_t));
+    periph_adc_btn_t *periph_adc_btn = audio_calloc(1, sizeof(periph_adc_btn_t));
     AUDIO_MEM_CHECK(TAG, periph_adc_btn, {
-        free(periph);
+        audio_free(periph);
         return NULL;
     });
     periph_adc_btn->adc_channels = config->arr_size;
     periph_adc_btn->list = adc_btn_create_list(config->arr, config->arr_size);
     AUDIO_MEM_CHECK(TAG, periph_adc_btn->list, {
-        free(periph);
-        free(periph_adc_btn);
+        audio_free(periph);
+        audio_free(periph_adc_btn);
         return NULL;
     });
 
