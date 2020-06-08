@@ -54,7 +54,7 @@ typedef struct periph_console {
     char                        *buffer;
     int                         total_bytes;
     bool                        run;
-    const periph_console_cmd_t  *commands;
+    periph_console_cmd_t  *commands;
     int                         command_num;
     EventGroupHandle_t          state_event_bits;
     int                         task_stack;
@@ -194,6 +194,7 @@ static esp_err_t _console_destroy(esp_periph_handle_t self)
     if (console->prompt_string) {
         free(console->prompt_string);
     }
+    free(console->commands);
     free(console->buffer);
     free(console);
     return ESP_OK;
@@ -290,7 +291,9 @@ esp_periph_handle_t periph_console_init(periph_console_cfg_t *config)
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
     periph_console_t *console = calloc(1, sizeof(periph_console_t));
     AUDIO_MEM_CHECK(TAG, console, return NULL);
-    console->commands = config->commands;
+    periph_console_cmd_t* commands = malloc(sizeof(periph_console_cmd_t)*config->command_num);
+    memcpy(commands, config->commands, sizeof(periph_console_cmd_t)*config->command_num);
+    console->commands = commands;
     console->command_num = config->command_num;
     console->task_stack = CONSOLE_DEFAULT_TASK_STACK;
     console->task_prio = CONSOLE_DEFAULT_TASK_PRIO;
