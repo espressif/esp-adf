@@ -95,7 +95,7 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
             sdcard_list_choose(playlist, index, &str);
             ESP_LOGI(TAG, "play index= %d, URI:%s, byte_pos:%d", index, str, byte_pos);
         } else {
-            ESP_LOGI(TAG, "play URI:%s, byte_pos:%d", argv[0], byte_pos);
+            ESP_LOGI(TAG, "play index= %d, URI:%s, byte_pos:%d", -1, argv[0], byte_pos);
             str = argv[0];
         }
     } else {
@@ -198,7 +198,7 @@ static esp_err_t cli_insert_tone(esp_periph_handle_t periph, int argc, char *arg
             sdcard_list_choose(playlist, index, &str);
             ESP_LOGI(TAG, "Tone play index= %d, URI:%s", index, str);
         } else {
-            ESP_LOGI(TAG, "Tone play URI:%s", argv[0]);
+            ESP_LOGI(TAG, "Tone play index= %d, URI:%s", -1, argv[0]);
             str = argv[0];
         }
     } else {
@@ -471,6 +471,7 @@ static void esp_audio_state_task (void *para)
             if (auto_play_type) {
                 char *url = NULL;
                 if (sdcard_list_next(playlist, 1, &url) == ESP_OK) {
+                    ESP_LOGI(TAG, "play index= %d, URI:%s, byte_pos:%d", sdcard_list_get_url_id(playlist), url, 0);
                     esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, url, 0);
                 }
             }
