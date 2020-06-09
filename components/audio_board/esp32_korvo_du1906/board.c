@@ -107,6 +107,7 @@ esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
 {
     esp_err_t ret = ESP_OK;
     periph_adc_button_cfg_t adc_btn_cfg = PERIPH_ADC_BUTTON_DEFAULT_CONFIG();
+    adc_btn_cfg.task_cfg.ext_stack = true;
     adc_arr_t adc_btn_tag = ADC_DEFAULT_ARR();
     adc_btn_tag.adc_ch = ADC1_CHANNEL_0; // GPIO36
     adc_btn_tag.total_steps = 4;
