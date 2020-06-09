@@ -26,10 +26,28 @@
 #define _TONE_STREAM_H_
 
 #include "audio_element.h"
+#include "esp_image_format.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define FLASH_TONE_HEADER       (0x2053)
+#define FLASH_TONE_TAIL         (0xDFAC)
+#define FLASH_TONE_MAGIC_WORD   (0xF55F9876)
+#define FLASH_TONE_PROJECT_NAME "ESP_TONE_BIN"
+
+/**
+ * @brief  The fone bin head
+ */
+#pragma pack(1)
+typedef struct flash_tone_header
+{
+    uint16_t header_tag;   /*!< File header tag is 0x2053 */
+    uint16_t total_num;    /*!< Number of all tones */
+    uint32_t format;       /*!< The version of the bin file */
+} flash_tone_header_t;
+#pragma pack()
 
 /**
  * @brief   TONE Stream configurations, if any entry is zero then the configuration will be set to default values
@@ -69,6 +87,28 @@ typedef struct
  * @return     The Audio Element handle
  */
 audio_element_handle_t tone_stream_init(tone_stream_cfg_t *config);
+
+/**
+ * @brief      Verify the flash tone partition
+ *
+ * @param
+ *
+ * @return
+ *      - ESP_OK: Success
+ *      - others: Failed
+ */
+esp_err_t tone_partition_verify(void);
+
+/**
+ * @brief      Get the 'esp_app_desc_t' structure in 'flash_tone' partition.
+ *
+ * @param      desc  Pointer to 'esp_app_desc_t'
+ *
+ * @return
+ *      - ESP_OK: Success
+ *      - others: Failed
+ */
+esp_err_t tone_partition_get_app_desc(esp_app_desc_t *desc);
 
 #ifdef __cplusplus
 }

@@ -26,44 +26,86 @@
 #include "audio_mem.h"
 #include "ota_service.h"
 #include "ota_proc_default.h"
+#include "tone_stream.h"
 
 static const char *TAG = "HTTPS_OTA_EXAMPLE";
 static EventGroupHandle_t events = NULL;
 
 #define OTA_FINISH (BIT0)
 
-typedef struct {
-    int major_ver;
-    int minor_ver;
-} data_image_ver_t;
-
-static bool ota_data_iamge_need_upgrade(void *handle, ota_node_attr_t *node)
+static bool audio_tone_need_upgrade(void *handle, ota_node_attr_t *node)
 {
+    bool                need_write_desc = false;
+    flash_tone_header_t cur_header      = { 0 };
+    flash_tone_header_t incoming_header = { 0 };
+    esp_app_desc_t      current_desc    = { 0 };
+    esp_app_desc_t      incoming_desc   = { 0 };
+    esp_err_t           err             = ESP_OK;
+
+    /* try to get the tone partition*/
     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, node->label);
     if (partition == NULL) {
         ESP_LOGE(TAG, "data partition [%s] not found", node->label);
         return false;
     }
-    data_image_ver_t cur_ver = { 0 };
-    data_image_ver_t incoming_ver = { 0 };
-    if (esp_partition_read(partition, 0, (char *)&cur_ver, sizeof(data_image_ver_t)) != ESP_OK) {
+
+    if (tone_partition_verify() == ESP_FAIL) {
+        esp_partition_erase_range(partition, 0, partition->size);
+        return true;
+    }
+
+    /* Read tone header from partition */
+    if (esp_partition_read(partition, 0, (char *)&cur_header, sizeof(flash_tone_header_t)) != ESP_OK) {
         return false;
     }
-    if (ota_data_image_stream_read(handle, (char *)&incoming_ver, sizeof(data_image_ver_t)) != ESP_OK) {
+
+    /* Read tone header from incoming stream */
+    if (ota_data_image_stream_read(handle, (char *)&incoming_header, sizeof(flash_tone_header_t)) != ESP_OK) {
         return false;
     }
-    ESP_LOGI(TAG, "current version %d.%d, the incoming image version %d.%d", cur_ver.major_ver, cur_ver.minor_ver, incoming_ver.major_ver, incoming_ver.minor_ver);
-    if (cur_ver.major_ver != incoming_ver.major_ver || cur_ver.minor_ver != incoming_ver.minor_ver) {
-        esp_err_t err = ESP_OK;
-        if ((err = esp_partition_erase_range(partition, 0, partition->size)) != ESP_OK) {
-            ESP_LOGE(TAG, "Erase [%s] failed and return %d", node->label, err);
+    if (incoming_header.header_tag != 0x2053) {
+        ESP_LOGE(TAG, "not audio tone bin");
+        return false;
+    }
+    ESP_LOGI(TAG, "format %d : %d", cur_header.format, incoming_header.format);
+    /* upgrade the tone bin when incoming bin format is 0 */
+    if (incoming_header.format == 0) {
+        goto write_flash;
+    }
+
+    /* read the app desc from incoming stream when bin format is 1*/
+    if (ota_data_image_stream_read(handle, (char *)&incoming_desc, sizeof(esp_app_desc_t)) != ESP_OK) {
+        return false;
+    }
+    ESP_LOGI(TAG, "imcoming magic_word %X, project_name %s", incoming_desc.magic_word, incoming_desc.project_name);
+    /* check the incoming app desc */
+    if (incoming_desc.magic_word != FLASH_TONE_MAGIC_WORD || strstr(FLASH_TONE_PROJECT_NAME, incoming_desc.project_name) == NULL) {
+        return false;
+    }
+    /* compare current app desc with the incoming one if the current bin's format is 1*/
+    if (cur_header.format == 1) {
+        if (tone_partition_get_app_desc(&current_desc) != ESP_OK) {
             return false;
         }
-        ota_data_partition_write(handle, (char *)&incoming_ver, sizeof(data_image_ver_t));
-        return true;
-    } else {
+        ESP_LOGI(TAG, "current version %s, incoming version %s", current_desc.version, incoming_desc.version);
+        if (strstr(current_desc.version, incoming_desc.version) != NULL) {
+            return false;
+        }
+    }
+
+    /* incoming bin's format is 1, and the current bin's format is 0, upgrade the incoming one */
+    need_write_desc = true;
+
+write_flash:
+    if ((err = esp_partition_erase_range(partition, 0, partition->size)) != ESP_OK) {
+        ESP_LOGE(TAG, "Erase [%s] failed and return %d", node->label, err);
         return false;
     }
+    ota_data_partition_write(handle, (char *)&incoming_header, sizeof(flash_tone_header_t));
+    if (need_write_desc) {
+        ota_data_partition_write(handle, (char *)&incoming_desc, sizeof(esp_app_desc_t));
+    }
+    return true;
 }
 
 static esp_err_t ota_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
@@ -149,7 +191,7 @@ void app_main()
     };
 
     ota_data_get_default_proc(&upgrade_list[0]);
-    upgrade_list[0].need_upgrade = ota_data_iamge_need_upgrade;
+    upgrade_list[0].need_upgrade = audio_tone_need_upgrade;
     ota_app_get_default_proc(&upgrade_list[1]);
 
     ota_service_set_upgrade_param(ota_service, upgrade_list, sizeof(upgrade_list) / sizeof(ota_upgrade_ops_t));
