@@ -35,6 +35,10 @@
 extern "C" {
 #endif
 
+#define INPUT_KEY_SERVICE_TASK_STACK_SIZE (3 * 1024)
+#define INPUT_KEY_SERVICE_TASK_PRIORITY   (5)
+#define INPUT_KEY_SERVICE_TASK_ON_CORE    (1)
+
 /**
  * @brief input key action id
  */
@@ -56,15 +60,32 @@ typedef struct {
 } input_key_service_info_t;
 
 /**
+ * @brief input key's configuration
+ */
+typedef struct {
+    periph_service_config_t based_cfg; /*!< Peripheral service configuration */
+    esp_periph_set_handle_t handle;    /*!< Peripheral set handle */
+} input_key_service_cfg_t;
+
+#define INPUT_KEY_SERVICE_DEFAULT_CONFIG() {             \
+    .based_cfg = {                                       \
+        .task_stack = INPUT_KEY_SERVICE_TASK_STACK_SIZE, \
+        .task_prio = INPUT_KEY_SERVICE_TASK_PRIORITY,    \
+        .task_core = INPUT_KEY_SERVICE_TASK_ON_CORE,     \
+        .extern_stack = false                            \
+    }                                                    \
+}
+
+/**
  * @brief Initialize and start the input key service
  *
- * @param periph_set_handle The handler of esp_peripheral set
+ * @param input_key_config Configuration of input key service
  *
  * @return NULL    failed
  *         others  input key service handle
  */
 
-periph_service_handle_t input_key_service_create(esp_periph_set_handle_t periph_set_handle);
+periph_service_handle_t input_key_service_create(input_key_service_cfg_t *input_key_config);
 
 /**
  * @brief Get the state of input key service

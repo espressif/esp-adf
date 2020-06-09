@@ -59,7 +59,7 @@ static void periph_adc_button_test(void)
     TEST_ASSERT_NOT_NULL(set);
 
     ESP_LOGI(TAG, "Register ADC button to peripherals");
-    periph_adc_button_cfg_t adc_btn_cfg = {0};
+    periph_adc_button_cfg_t adc_btn_cfg = PERIPH_ADC_BUTTON_DEFAULT_CONFIG();
     adc_arr_t adc_btn_tag = ADC_DEFAULT_ARR();
     adc_btn_tag.total_steps = 6;
     int btn_array[7] = {190, 600, 1000, 1375, 1775, 2195, 3100};

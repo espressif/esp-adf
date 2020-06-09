@@ -255,6 +255,7 @@ audio_element_handle_t fatfs_stream_init(fatfs_stream_cfg_t *config)
     cfg.task_core = config->task_core;
     cfg.out_rb_size = config->out_rb_size;
     cfg.buffer_len = config->buf_sz;
+    cfg.stack_in_ext = config->ext_stack;
     if (cfg.buffer_len == 0) {
         cfg.buffer_len = FATFS_STREAM_BUF_SIZE;
     }

@@ -191,7 +191,9 @@ void app_main(void)
     // Initialize Button peripheral
     audio_board_key_init(set);
     input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
-    periph_service_handle_t input_ser = input_key_service_create(set);
+    input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
+    input_cfg.handle = set;
+    periph_service_handle_t input_ser = input_key_service_create(&input_cfg);
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
     periph_service_set_callback(input_ser, input_key_service_cb, (void *)http_stream_writer);
 

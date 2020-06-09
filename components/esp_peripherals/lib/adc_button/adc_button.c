@@ -38,9 +38,7 @@
 #include "string.h"
 #include "adc_button.h"
 #include "esp_log.h"
-
-#define ADC_BUTTON_STACK_SIZE           2500
-#define ADC_BUTTON_TASK_PRIORITY        10
+#include "audio_thread.h"
 
 #define V_REF                           1100
 
@@ -63,6 +61,7 @@ typedef struct {
     adc_button_callback btn_callback;
     adc_btn_list *head;
     void *user_data;
+    audio_thread_t audio_thread;
 } adc_btn_tag_t;
 
 static const int default_step_level[USER_KEY_MAX] = {0, 683, 1193, 1631, 2090, 2578, 3103};
@@ -395,7 +394,7 @@ void adc_btn_delete_task(void)
     }
 }
 
-void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head)
+void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head, adc_btn_task_cfg_t *task_cfg)
 {
     adc_btn_tag_t *tag = audio_calloc(1, sizeof(adc_btn_tag_t));
     if (NULL == tag) {
@@ -408,9 +407,11 @@ void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head)
 
     g_event_bit = xEventGroupCreate();
 
-#ifndef CONFIG_MEMMAP_SMP
-    xTaskCreate(button_task, "button_task", ADC_BUTTON_STACK_SIZE, (void *)tag, ADC_BUTTON_TASK_PRIORITY, NULL);
-#else
-    xTaskCreatePinnedToCore(button_task, "button_task", ADC_BUTTON_STACK_SIZE, (void *)tag, ADC_BUTTON_TASK_PRIORITY, NULL, 1);
-#endif
+    audio_thread_create(&tag->audio_thread, 
+                        "button_task", button_task, 
+                        (void *)tag,
+                        task_cfg->task_stack, 
+                        task_cfg->task_prio,
+                        task_cfg->ext_stack,
+                        task_cfg->task_core);
 }

@@ -234,7 +234,9 @@ void duer_app_init(void)
 
     ESP_LOGI(TAG, "[Step 2.1] Initialize input key service");
     input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
-    dueros_speaker->input_serv = input_key_service_create(set);
+    input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
+    input_cfg.handle = set;
+    dueros_speaker->input_serv = input_key_service_create(&input_cfg);
     input_key_service_add_key(dueros_speaker->input_serv, input_key_info, INPUT_KEY_NUM);
     periph_service_set_callback(dueros_speaker->input_serv, input_key_service_cb, (void *)dueros_speaker);
 
