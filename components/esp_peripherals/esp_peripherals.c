@@ -29,6 +29,7 @@
 #include "audio_event_iface.h"
 #include "audio_mutex.h"
 #include "esp_peripherals.h"
+#include "audio_thread.h"
 #include "audio_mem.h"
 
 static const char *TAG = "ESP_PERIPH";
@@ -56,6 +57,8 @@ typedef struct esp_periph_sets {
     int                                             task_stack;
     int                                             task_prio;
     int                                             task_core;
+    audio_thread_t                                  audio_thread;
+    bool                                            ext_stack;
     bool                                            run;
     esp_periph_event_t                              event_handle;
     STAILQ_HEAD(esp_periph_list_item, esp_periph)   periph_list;
@@ -148,6 +151,7 @@ esp_periph_set_handle_t esp_periph_set_init(esp_periph_config_t *config)
     periph_sets->task_stack = config->task_stack;
     periph_sets->task_prio = config->task_prio;
     periph_sets->task_core = config->task_core;
+    periph_sets->ext_stack = config->extern_stack;
 
     audio_event_iface_cfg_t event_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     event_cfg.queue_set_size = 0;
@@ -340,16 +344,14 @@ esp_err_t esp_periph_start(esp_periph_set_handle_t periph_set_handle, esp_periph
     }
     if (periph_set_handle->run == false && periph_set_handle->task_stack > 0) {
         periph_set_handle->run = true;
-        if ( xTaskCreatePinnedToCore(esp_periph_task,
-                                     "esp_periph",
-                                     periph_set_handle->task_stack,
-                                     periph_set_handle,
-                                     periph_set_handle->task_prio,
-                                     NULL,
-                                     periph_set_handle->task_core) != pdTRUE) {
-            AUDIO_ERROR(TAG, "Error create peripheral task");
-            periph_set_handle->run = false;
-            return ESP_FAIL;
+        if ( audio_thread_create(&periph_set_handle->audio_thread,
+                                 "esp_periph",
+                                 esp_periph_task,
+                                 periph_set_handle,
+                                 periph_set_handle->task_stack,
+                                 periph_set_handle->task_prio,
+                                 periph_set_handle->ext_stack,
+                                 periph_set_handle->task_core) != ESP_OK) {
         }
     }
     return ESP_OK;

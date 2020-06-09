@@ -589,6 +589,7 @@ static void cli_setup_player(void)
 
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.i2s_config.sample_rate = 48000;
+    i2s_writer.i2s_config.mode = I2S_MODE_MASTER | I2S_MODE_TX;
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
     raw_stream_cfg_t raw_writer = RAW_STREAM_CFG_DEFAULT();

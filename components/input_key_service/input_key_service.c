@@ -32,10 +32,6 @@
 #include "input_key_service.h"
 #include "audio_event_iface.h"
 
-#define INPUT_KEY_SERVICE_TASK_STACK_SIZE (3 * 1024)
-#define INPUT_KEY_SERVICE_TASK_PRIORITY   (5)
-#define INPUT_KEY_SERVICE_TASK_ON_CORE    (1)
-
 static const char *TAG = "INPUT_KEY_SERVICE";
 
 typedef struct input_key {
@@ -177,15 +173,17 @@ esp_err_t input_key_service_add_key(periph_service_handle_t input_key_handle, in
     return ESP_OK;
 }
 
-periph_service_handle_t input_key_service_create(esp_periph_set_handle_t periph_set_handle)
+periph_service_handle_t input_key_service_create(input_key_service_cfg_t *input_key_config)
 {
-    AUDIO_NULL_CHECK(TAG, periph_set_handle, return NULL);
+    AUDIO_NULL_CHECK(TAG, input_key_config, return NULL);
+    periph_service_config_t *input_cfg = &input_key_config->based_cfg;
 
-    periph_service_config_t input_cfg = {
-        .task_stack = INPUT_KEY_SERVICE_TASK_STACK_SIZE,
-        .task_prio = INPUT_KEY_SERVICE_TASK_PRIORITY,
-        .task_core = INPUT_KEY_SERVICE_TASK_ON_CORE,
-        .task_func = input_key_service_task,
+    periph_service_config_t service_cfg = {
+        .task_stack = input_cfg->task_stack,
+        .task_prio  = input_cfg->task_prio,
+        .task_core  = input_cfg->task_core,
+        .extern_stack = input_cfg->extern_stack,
+        .task_func  = input_key_service_task,
         .service_start = input_key_service_start,
         .service_stop = input_key_service_stop,
         .service_destroy = input_key_service_destroy,
@@ -199,14 +197,20 @@ periph_service_handle_t input_key_service_create(esp_periph_set_handle_t periph_
     input_key_ser = (input_key_service_t *)audio_calloc(1, sizeof(input_key_service_t));
     AUDIO_NULL_CHECK(TAG, input_key_ser, goto _create_service_failed);
 
-    input_key_ser->periph_set_handle = periph_set_handle;
+    if (input_key_config->handle) {
+        input_key_ser->periph_set_handle = input_key_config->handle;
+    } else {
+        ESP_LOGE(TAG, "peripherals set handle is NULL");
+        free(input_key_ser);
+        return NULL;
+    }
     input_key_ser->ser_state = PERIPH_SERVICE_STATE_UNKNOWN;
 
     STAILQ_INIT(&input_key_ser->input_info_list);
 
-    input_cfg.user_data = (void *)input_key_ser;
+    service_cfg.user_data = (void *)input_key_ser;
 
-    input_key_handle = periph_service_create(&input_cfg);
+    input_key_handle = periph_service_create(&service_cfg);
     AUDIO_NULL_CHECK(TAG, input_key_handle, goto _create_service_failed);
 
     return input_key_handle;

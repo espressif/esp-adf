@@ -66,6 +66,7 @@ typedef struct {
     int                         task_prio;              /*!< Service task priority (based on freeRTOS priority) */
     int                         task_core;              /*!< Service task running in core (0 or 1) */
     TaskFunction_t              task_func;              /*!< Service task function */
+    bool                        extern_stack;           /*!< Task stack allocate on the extern ram */
     periph_service_ctrl         service_start;          /*!< Start function */
     periph_service_ctrl         service_stop;           /*!< Stop function */
     periph_service_ctrl         service_destroy;        /*!< Destroy function */

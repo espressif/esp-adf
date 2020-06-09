@@ -24,7 +24,7 @@ void app_main(void)
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     ESP_LOGI(TAG, "[1.1] Initialize ADC Button peripheral");
-    periph_adc_button_cfg_t adc_button_cfg = { 0 };
+    periph_adc_button_cfg_t adc_button_cfg = PERIPH_ADC_BUTTON_DEFAULT_CONFIG();
     adc_arr_t adc_btn_tag = ADC_DEFAULT_ARR();
     adc_button_cfg.arr = &adc_btn_tag;
     adc_button_cfg.arr_size = 1;

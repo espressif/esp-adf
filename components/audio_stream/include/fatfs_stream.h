@@ -43,6 +43,7 @@ typedef struct {
     int                     task_stack;     /*!< Task stack size */
     int                     task_core;      /*!< Task running in core (0 or 1) */
     int                     task_prio;      /*!< Task priority (based on freeRTOS priority) */
+    bool                    ext_stack;      /*!< Allocate stack on extern ram */
 } fatfs_stream_cfg_t;
 
 
@@ -58,6 +59,7 @@ typedef struct {
     .task_stack = FATFS_STREAM_TASK_STACK, \
     .out_rb_size = FATFS_STREAM_RINGBUFFER_SIZE, \
     .buf_sz = FATFS_STREAM_BUF_SIZE, \
+    .ext_stack = false \
 }
 
 /**

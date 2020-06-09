@@ -33,13 +33,27 @@
 extern "C" {
 #endif
 
+#define ADC_BUTTON_STACK_SIZE           2500
+#define ADC_BUTTON_TASK_PRIORITY        10
+#define ADC_BUTTON_TASK_CORE_ID         0
+
 /**
  * @brief      The configuration of ADC Button
  */
 typedef struct {
     adc_arr_t *arr;  /*!< An array with configuration of buttons */
     int arr_size;    /*!< The array size */
+    adc_btn_task_cfg_t task_cfg; /*!< Adc button task configuration */
 } periph_adc_button_cfg_t;
+
+#define PERIPH_ADC_BUTTON_DEFAULT_CONFIG() {   \
+    .task_cfg = {                              \
+        .task_stack = ADC_BUTTON_STACK_SIZE,   \
+        .task_core  = ADC_BUTTON_TASK_CORE_ID, \
+        .task_prio  = ADC_BUTTON_TASK_PRIORITY,\
+        .ext_stack  = false                    \
+    }                                          \
+}
 
 typedef enum {
     PERIPH_ADC_BUTTON_IDLE = 0,

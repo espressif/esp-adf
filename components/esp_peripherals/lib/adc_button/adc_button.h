@@ -70,9 +70,16 @@ typedef struct adc_btn {
     struct adc_btn *next;
 } adc_btn_list;
 
+typedef struct {
+    int task_stack;
+    int task_prio;
+    int task_core;
+    bool ext_stack;
+} adc_btn_task_cfg_t;
+
 typedef void (*adc_button_callback) (void *user_data, int adc, int id, adc_btn_state_t state);
 
-void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head);
+void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head, adc_btn_task_cfg_t *task_cfg);
 
 adc_btn_list *adc_btn_create_list(adc_arr_t *adc_conf, int channels);
 
