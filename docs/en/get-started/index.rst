@@ -35,8 +35,8 @@ For easier start with ESP-ADF, Espressif designed ESP32 and ESP32-S2 based devel
 .. |Getting Started with ESP32-S2-Kaluga-1-Kit| image:: ../../_static/esp32-s2-kaluga-1-kit.png
 .. _Getting Started with ESP32-S2-Kaluga-1-Kit: https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html
 
-.. |Getting Started with ESP32-Korvo-DU1906| image:: ../../_static/esp32-korvo-du1906.png
-.. _Getting Started with ESP32-Korvo-DU1906: esp32-korvo-du1906-user-guide.html
+.. |Getting Started with ESP32-Korvo-DU1906| image:: ../../_static/esp32-korvo-du1906-v1.1.png
+.. _Getting Started with ESP32-Korvo-DU1906: get-started-esp32-korvo-du1906.html
 
 .. toctree::
     :hidden:
@@ -46,7 +46,7 @@ For easier start with ESP-ADF, Espressif designed ESP32 and ESP32-S2 based devel
     Guide for ESP32-LyraTD-MSC <get-started-esp32-lyratd-msc>
     Guide for ESP32-LyraT-Mini <get-started-esp32-lyrat-mini>
     Guide for ESP32-S2-Kaluga-1-Kit <https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html>
-    Guide for ESP32-Korvo-DU1906 <esp32-korvo-du1906-user-guide>
+    Guide for ESP32-Korvo-DU1906 <get-started-esp32-korvo-du1906>
 
 
 If you do not have any of the above boards, you can still use ESP-ADF for the ESP32 and ESP32-S2 based audio applications. For this, your board needs to have a compatible audio codec or DSP chip; alternatively, you can develop a driver to support communication with your specific chip.
