@@ -42,11 +42,10 @@ Espressif Systems has released a number of boards for ESP-ADF to develop audio a
 | [<img src="docs/_static/esp32-lyrat-mini-v1.2.png" width="380" alt ="ESP32-LyraT-Mini Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | [<img src="docs/_static/esp32-s2-kaluga-1-kit.png" width="380" alt ="ESP32-LyraT-Mini Development Board" align="center" />](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) |
 | [Getting Started with ESP32-LyraT-Mini](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | [Getting Started with ESP32-S2-Kaluga-1 Kit](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) |
 
-| ESP32-Korvo-DU1906 Development Board|
-|:----:|
-| [<img src="docs/_static/esp32-korvo-dul1906-v1.1.png" width="380" alt ="ESP32-Korvo-DU1906 Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/esp32-korvo-du1906-user-guide.html) |
-| [ESP32-Korvo-DU1906 User Guide](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/esp32-korvo-du1906-user-guide.html) |
-
+| ESP32-Korvo-DU1906 Development Board |
+| :----: |
+| [<img src="docs/_static/esp32-korvo-du1906-v1.1.png" width="380" alt ="ESP32-Korvo-DU1906 Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | 
+| [Getting Started with ESP32-Korvo-DU1906](https://docs.espressif.com/projects/esp-adf/en/latest/get-started-esp32-korvo-du1906.html) |
 
 #### ESP32-LyraT
 
@@ -87,12 +86,12 @@ The ESP32-S2-Kaluga-1 multimedia kit is based on ESP32-S2 and features several e
 
 #### ESP32-Korvo-DU1906
 
-This is an audio board, with the ESP32-DU1906 as its core processing module, integrating Wi-Fi, Bluetooth, Bluetooth Low Energy RF and voice/speech signal processing functions.
+ESP32-Korvo-DU1906 is an Espressif audio development board with an ESP32-DU1906 module as its core, integrating Wi-Fi, Bluetooth, Bluetooth Low Energy RF and voice/speech signal processing functions. 
 
-[<div align="center"><img src="docs/_static/esp32-korvo-dul1906-v1.1.png" width="740" alt ="ESP32-Korvo-DU1906" align="center" /></div>](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/esp32-korvo-du1906-user-guide.html)
+[<div align="center"><img src="docs/_static/esp32-korvo-du1906-v1.1.png" width="600" alt ="ESP32-Korvo-DU1906 Development Board" align="center" /></div>](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html)
 
-* [ESP32-Korvo-DU1906 User Guide](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/esp32-korvo-du1906-user-guide.html)
-* [ESP32-Korvo-DU1906 Schematic (PDF)](https://dl.espressif.com/dl/schematics/ESP32-Korvo-DU1906-schematics.pdf)
+* [ESP32-Korvo-DU1906 User Guide](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html)
+* [ESP32-Korvo-DU1906 Schematic (PDF) ](https://dl.espressif.com/dl/schematics/ESP32-Korvo-DU1906-schematics.pdf)
 
 #### Examples
 
