@@ -227,6 +227,7 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
 static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    len = len >> 2 << 2;
     size_t bytes_written = 0;
     i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
     return bytes_written;
