@@ -27,29 +27,17 @@
 
 #include "esp_log.h"
 #include "esp_partition.h"
+#include "esp_image_format.h"
 
 #include "audio_mem.h"
 #include "audio_error.h"
 #include "audio_element.h"
 #include "tone_stream.h"
 
-#define FLASH_TONE_HEADER            0x2053
 #define FLASH_TONE_FILE_TAG          0x28
 #define FLASH_TONE_FILE_INFO_BLOCK   64
 
 static const char *TAG = "TONE_STREAM";
-
-/**
- * @brief  The fone bin head
- */
-#pragma pack(1)
-typedef struct flash_tone_header
-{
-    uint16_t header_tag;   /*!< File header tag is 0x2053 */ 
-    uint16_t total_num;    /*!< Number of all tones */
-    uint32_t header_crc;   /*!< The crc value of the entire file */
-} flash_tone_header_t;
-#pragma pack()
 
 /**
  * @brief  Parameters of each tone
@@ -106,7 +94,14 @@ static esp_err_t _get_flash_tone_info(uint16_t index, flash_tone_info_t *info)
         return ESP_FAIL;
     }
     flash_tone_info_t info_tmp = {0};
-    int start_adr = sizeof(flash_tone_header_t) + FLASH_TONE_FILE_INFO_BLOCK * index;
+    int start_adr = 0;
+    if (_header.format == 0) {
+        start_adr = sizeof(flash_tone_header_t) + FLASH_TONE_FILE_INFO_BLOCK * index;
+    } else if (_header.format == 1) {
+        start_adr = sizeof(flash_tone_header_t) + sizeof(esp_app_desc_t) + FLASH_TONE_FILE_INFO_BLOCK * index;
+    } else {
+        return ESP_FAIL;
+    }
     if (ESP_OK == esp_partition_read(_flash_partition, start_adr, &info_tmp, sizeof(info_tmp))) {
         //TODO check crc
         if (info_tmp.file_tag == FLASH_TONE_FILE_TAG) {
@@ -119,8 +114,26 @@ static esp_err_t _get_flash_tone_info(uint16_t index, flash_tone_info_t *info)
     return ESP_OK;
 }
 
+static esp_err_t _get_flash_tone_tail(uint16_t *tail)
+{
+    if (_header.format == 1) {
+        flash_tone_info_t last_file = {0};
+        _get_flash_tone_info(_header.total_num - 1, &last_file);
+        int tail_addr = last_file.song_adr + last_file.song_len + ((4 - last_file.song_len % 4) % 4) + 4;
+        ESP_LOGD(TAG, "addr %X, len %X, tail %X", last_file.song_adr, last_file.song_len, tail_addr);
+        return esp_partition_read(_flash_partition, tail_addr, tail, sizeof(uint16_t));
+    } else {
+        *tail = 0;
+        return ESP_FAIL;
+    }
+}
+
 static esp_err_t _flash_tone_init(void)
 {
+    if (_flash_partition != NULL) {
+        ESP_LOGD(TAG, "already init");
+        return ESP_OK;
+    }
     _flash_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, partition_label);
     if (NULL == _flash_partition) {
         ESP_LOGE(TAG, "Can not found flash tone file partition");
@@ -130,15 +143,42 @@ static esp_err_t _flash_tone_init(void)
     ESP_LOGD("flashPartition", "%d: subtype[%x]", __LINE__, _flash_partition->subtype);
     ESP_LOGD("flashPartition", "%d: address:0x%x", __LINE__, _flash_partition->address);
     ESP_LOGD("flashPartition", "%d: size:0x%x", __LINE__, _flash_partition->size);
-    ESP_LOGI("flashPartition", "%d: labe:%s", __LINE__, _flash_partition->label);
+    ESP_LOGI("flashPartition", "%d: label:%s", __LINE__, _flash_partition->label);
     if (ESP_OK == esp_partition_read(_flash_partition, 0, &_header, sizeof(_header))) {
-        // TODO check crc
+        ESP_LOGI(TAG, "header tag %X, format %d", _header.header_tag, _header.format);
         if (_header.header_tag == FLASH_TONE_HEADER) {
-            return ESP_OK;
+            if (_header.format == 1) {
+                uint16_t tail = 0;
+                if (ESP_OK == _get_flash_tone_tail(&tail) && tail == FLASH_TONE_TAIL) {
+                    ESP_LOGI(TAG, "audio tone's tail is %X", tail);
+                    return ESP_OK;
+                } else {
+                    ESP_LOGE(TAG, "Flash tone init failed at tail check %X", tail);
+                }
+            } else {
+                return ESP_OK;
+            }
         }
     } else {
         ESP_LOGE(TAG, "Read flash tone file header failed");
     }
+    _flash_partition = NULL;
+    return ESP_FAIL;
+}
+
+esp_err_t tone_partition_verify(void)
+{
+    return _flash_tone_init();
+}
+
+esp_err_t tone_partition_get_app_desc(esp_app_desc_t *desc)
+{
+    if (_flash_tone_init() == ESP_OK && _header.format == 1) {
+        if (ESP_OK == esp_partition_read(_flash_partition, sizeof(flash_tone_header_t), desc, sizeof(esp_app_desc_t))) {
+            return ESP_OK;
+        }
+    }
+
     return ESP_FAIL;
 }
 
@@ -147,9 +187,11 @@ static esp_err_t _flash_open(audio_element_handle_t self)
     flash_stream_t *flash = (flash_stream_t *)audio_element_getdata(self);
     audio_element_info_t info = { 0 };
     audio_element_getinfo(self, &info);
-    _flash_tone_init();
+    if (_flash_tone_init() != ESP_OK) {
+        return ESP_FAIL;
+    }
     char *flash_url = audio_element_get_uri(self);
- 
+
     flash_url += strlen("flash://tone/");
     char *temp = strchr(flash_url, '_');
     char find_num[2] = {0};
@@ -178,7 +220,7 @@ static esp_err_t _flash_open(audio_element_handle_t self)
     flash->read_addr = flash_info.song_adr + info.byte_pos;
     audio_element_setdata(self, flash);
     audio_element_setinfo(self, &info);
-    return ESP_OK; 
+    return ESP_OK;
 }
 
 static int _flash_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
@@ -207,7 +249,7 @@ static int _flash_read(audio_element_handle_t self, char *buffer, int len, TickT
         return ESP_OK;
     }
     audio_element_setinfo(self, &info);
-   
+
     return len;
 }
 
@@ -221,7 +263,7 @@ static int _flash_write(audio_element_handle_t self, char *buffer, int len, Tick
         info.byte_pos += len;
         audio_element_setinfo(self, &info);
         return len;
-    } 
+    }
     return ESP_FAIL;
 }
 
