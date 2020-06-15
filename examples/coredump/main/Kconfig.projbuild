@@ -1,0 +1,21 @@
+menu "Core dump upload configuration"
+
+config WIFI_SSID
+    string "WiFi SSID"
+    default "myssid"
+    help
+	SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+    default "mypassword"
+    help
+	WiFi password (WPA or WPA2) for the example to use.
+
+config COREDUMP_UPLOAD_URI
+    string "core dump upload uri"
+    default "http://192.168.1.10:8000/upload"
+    help
+        URI to upload the core dump
+        image.
+endmenu
