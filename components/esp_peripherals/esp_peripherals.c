@@ -344,7 +344,7 @@ esp_err_t esp_periph_start(esp_periph_set_handle_t periph_set_handle, esp_periph
     }
     if (periph_set_handle->run == false && periph_set_handle->task_stack > 0) {
         periph_set_handle->run = true;
-        if ( audio_thread_create(&periph_set_handle->audio_thread,
+        if (audio_thread_create(&periph_set_handle->audio_thread,
                                  "esp_periph",
                                  esp_periph_task,
                                  periph_set_handle,
@@ -352,6 +352,8 @@ esp_err_t esp_periph_start(esp_periph_set_handle_t periph_set_handle, esp_periph
                                  periph_set_handle->task_prio,
                                  periph_set_handle->ext_stack,
                                  periph_set_handle->task_core) != ESP_OK) {
+            ESP_LOGE(TAG, "Create [%s] task failed", periph->tag);
+            return ESP_FAIL;
         }
     }
     return ESP_OK;
