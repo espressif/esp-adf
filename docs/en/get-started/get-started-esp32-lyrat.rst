@@ -1,9 +1,11 @@
 ESP32-LyraT V4.3 Getting Started Guide
 ======================================
 
+:link_to_translation:`zh_CN:[中文]`
+
 This guide provides users with functional descriptions, configuration options for ESP32-LyraT V4.3 audio development board, as well as how to get started with the ESP32-LyraT board. Check section `Other Versions of LyraT`_, if you have different version of this board.
 
-The ESP32-LyraT is a hardware platform designed for the dual-core ESP32 audio applications, e.g., Wi-Fi or BT audio speakers, speech-based remote controllers, connected smart-home appliances with one or more audio functionality, etc. 
+The ESP32-LyraT is a hardware platform designed for the dual-core ESP32 audio applications, e.g., Wi-Fi or Bluetooth audio speakers, speech-based remote controllers, connected smart-home appliances with one or more audio functionality, etc. 
 
 The ESP32-LyraT is a stereo audio board. If you are looking for a mono audio board, intended for lower end applications, check :doc:`get-started-esp32-lyrat-mini`.
 
@@ -24,17 +26,17 @@ Overview
 
 The ESP32-LyraT V4.3 is an audio development board produced by `Espressif <https://espressif.com>`_ built around ESP32. It is intended for audio applications, by providing hardware for audio processing and additional RAM on top of what is already onboard of the ESP32 chip. The specific hardware includes:
 
-* **ESP32-WROVER Module**
-* **Audio Codec Chip**
-* Dual **Microphones** on board
-* **Headphone** input
-* **2 x 3-watt Speaker** output
-* Dual **Auxiliary Input**
-* **MicroSD Card** slot (1 line or 4 lines)
-* **Six buttons** (2 physical buttons and 4 touch buttons)
-* **JTAG** header
-* Integrated **USB-UART Bridge Chip**
-* Li-ion **Battery-Charge Management**
+* ESP32-WROVER Module
+* Audio Codec Chip
+* Dual Microphones on board
+* Headphone output
+* 2 x 3-watt Speaker output
+* Dual Auxiliary Input
+* MicroSD Card slot (1 line or 4 lines)
+* Six buttons (2 physical buttons and 4 touch buttons)
+* JTAG header
+* Integrated USB-UART Bridge Chip
+* Li-ion Battery-Charge Management
 
 The block diagram below presents main components of the ESP32-LyraT and interconnections between components.
 
@@ -52,13 +54,13 @@ The following list and figure describe key components, interfaces and controls o
 
 
 ESP32-WROVER Module
-    The ESP32-WROVER module contains ESP32 chip to provide Wi-Fi / BT connectivity and data processing power as well as integrates 32 Mbit SPI flash and 32 Mbit PSRAM for flexible data storage.
+    The ESP32-WROVER module contains ESP32 chip to provide Wi-Fi / Bluetooth connectivity and data processing power as well as integrates 32 Mbit SPI flash and 32 Mbit PSRAM for flexible data storage.
 Headphone Output
     Output socket to connect headphones with a 3.5 mm stereo jack.
 
     .. note::
 
-        The socket may be used with mobile phone headsets and is compatible with OMPT standard headsets only. It does work with CTIA headsets. Please refer to `Phone connector (audio) <https://en.wikipedia.org/wiki/Phone_connector_(audio)#TRRS_standards>`_ on Wikipedia.
+        The socket may be used with mobile phone headsets and is compatible with OMPT standard headsets only. It does not work with CTIA headsets. Please refer to `Phone connector (audio) <https://en.wikipedia.org/wiki/Phone_connector_(audio)#TRRS_standards>`_ on Wikipedia.
 
 .. _get-started-esp32-lyrat-v4.3-board:
 
