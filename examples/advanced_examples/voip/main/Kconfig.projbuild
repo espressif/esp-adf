@@ -1,4 +1,16 @@
-menu "VOIP App Configuration"
+menu "VoIP App Configuration"
+
+choice VOIP_CODEC
+    prompt "SIP Codec"
+    default G711A
+    help
+        sip codec
+
+config SIP_CODEC_G711A
+    bool "G711 PCMA"
+config SIP_CODEC_G711U
+    bool "G711 PCMU"
+endchoice
 
 config WIFI_SSID
     string "WiFi SSID"
@@ -12,18 +24,6 @@ config WIFI_PASSWORD
     help
 	WiFi password (WPA or WPA2) for the example to use.
 
-choice VOIP_CODEC
-    prompt "SIP Codec"
-    default G711A
-    help
-        sip codec
-
-config SIP_CODEC_G711A
-    bool "G711 PCMA"
-config SIP_CODEC_G711U
-    bool "G711 PCMU"
-endchoice	
-	
 config SIP_URI
     string "SIP URI"
     default "udp://100:100@192.168.1.123:5060"
