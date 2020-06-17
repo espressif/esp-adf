@@ -315,6 +315,8 @@ static void wifi_task(void *pvParameters)
                             esp_wifi_setting_stop(item->on_handle);
                         }
                     }
+                    wifi_service_connect(serv_handle);
+                    serv->reason = WIFI_SERV_STA_UNKNOWN;
                 }
                 if (wifi_msg.type == WIFI_SERV_EVENT_CONNECTED) {
                     serv->reason = WIFI_SERV_STA_UNKNOWN;
@@ -334,7 +336,7 @@ static void wifi_task(void *pvParameters)
                 }
                 if (wifi_msg.type == WIFI_SERV_EVENT_DISCONNECTED) {
                     if ((serv->reason != WIFI_SERV_STA_BY_USER)
-                        && (serv->reason != WIFI_SERV_STA_UNKNOWN)) {
+                        ) {
                         retry_interval = serv->retry_times * 1000 * 1000 * 2;
                         if (retry_interval > 60 * 1000 * 1000) { // Longest interval is 60s
                             retry_interval = 60 * 1000 * 1000;
