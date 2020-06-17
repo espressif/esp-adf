@@ -42,9 +42,9 @@ typedef enum {
     ID8_SONGFENGMOSHI       = 8,
     ID9_JIENENGMOSHI        = 9,
     ID10_GUANBIJIENENGMOSHI = 10,
-    ID11_CHUSHIMOSHI        = 11,  
+    ID11_CHUSHIMOSHI        = 11,
     ID12_GUANBICHUSHIMOSHI  = 12,
-    ID13_DAKAILANYA         = 13,  
+    ID13_DAKAILANYA         = 13,
     ID14_GUANBILANYA        = 14,
     ID15_BOFANGGEQU         = 15,
     ID16_ZANTINGBOFANG      = 16,
@@ -90,7 +90,7 @@ static esp_audio_handle_t setup_player()
     audio_element_handle_t i2s_stream_writer = i2s_stream_init(&i2s_writer);
     esp_audio_output_stream_add(player, i2s_stream_writer);
     esp_audio_vol_set(player, 60);
-        
+
     ESP_LOGI(TAG, "esp_audio instance is:%p\r\n", player);
     return player;
 }
@@ -117,7 +117,7 @@ void app_main()
     model_coeff_getter_t *model_coeff_getter;
     model_iface_data_t *model_wn_data;
     const esp_mn_iface_t *multinet = &MULTINET_MODEL;
-   
+
     get_wakenet_iface(&wakenet);
     get_wakenet_coeff(&model_coeff_getter);
     model_wn_data = wakenet->create(model_coeff_getter, DET_MODE_90);
@@ -136,7 +136,7 @@ void app_main()
     int mn_num = multinet->get_samp_chunknum(model_mn_data);
     int mn_sample_rate = multinet->get_samp_rate(model_mn_data);
     ESP_LOGI(TAG, "keywords_num = %d , sample_rate = %d, chunksize = %d, sizeof_uint16 = %d", mn_num,  mn_sample_rate, audio_mn_chunksize, sizeof(int16_t));
-   
+
     int size = audio_wn_chunksize;
     if (audio_mn_chunksize > audio_wn_chunksize) {
         size = audio_mn_chunksize;
@@ -225,11 +225,13 @@ void app_main()
                 enable_wn = true;
                 mn_count = 0;
             }
-        }    
+        }
     }
 
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
-  
+
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
 
     /* Terminate the pipeline before removing the listener */
@@ -252,7 +254,7 @@ void app_main()
     buffer = NULL;
 }
 
-static esp_err_t asr_multinet_control(int commit_id) 
+static esp_err_t asr_multinet_control(int commit_id)
 {
     if (commit_id >=0 && commit_id < ID_MAX) {
         switch (commit_id) {
@@ -320,7 +322,7 @@ static esp_err_t asr_multinet_control(int commit_id)
                 ESP_LOGI(TAG, "not supportint mode");
                 break;
         }
-        return ESP_OK; 
-    } 
+        return ESP_OK;
+    }
     return ESP_FAIL;
 }

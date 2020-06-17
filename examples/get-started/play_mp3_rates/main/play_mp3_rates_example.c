@@ -149,6 +149,8 @@ void app_main(void)
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
             && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
+            audio_pipeline_stop(pipeline);
+            audio_pipeline_wait_for_stop(pipeline);
             audio_pipeline_terminate(pipeline);
             audio_pipeline_reset_ringbuffer(pipeline);
             audio_pipeline_reset_elements(pipeline);
@@ -159,6 +161,8 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[ 5 ] Stop audio_pipeline");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
 
     audio_pipeline_unregister(pipeline, mp3_decoder);

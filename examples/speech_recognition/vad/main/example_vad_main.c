@@ -106,6 +106,8 @@ abort_speech_detection:
     vad_destroy(vad_inst);
 
     ESP_LOGI(TAG, "[ 8 ] Stop audio_pipeline and release all resources");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
 
     /* Terminate the pipeline before removing the listener */

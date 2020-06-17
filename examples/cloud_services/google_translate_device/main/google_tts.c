@@ -204,6 +204,8 @@ esp_err_t google_tts_destroy(google_tts_handle_t tts)
     if (tts == NULL) {
         return ESP_FAIL;
     }
+    audio_pipeline_stop(tts->pipeline);
+    audio_pipeline_wait_for_stop(tts->pipeline);
     audio_pipeline_terminate(tts->pipeline);
     audio_pipeline_remove_listener(tts->pipeline);
     audio_pipeline_deinit(tts->pipeline);

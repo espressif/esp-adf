@@ -116,6 +116,8 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 ESP_LOGI(TAG, "[ * ] [Rec] key released, stop pipeline ...");
                 audio_pipeline_stop(pipeline);
                 audio_pipeline_wait_for_stop(pipeline);
+                audio_pipeline_stop(pipeline);
+                audio_pipeline_wait_for_stop(pipeline);
                 audio_pipeline_terminate(pipeline);
                 break;
         }
@@ -203,6 +205,8 @@ void app_main(void)
     xEventGroupWaitBits(EXIT_FLAG, DEMO_EXIT_BIT, true, false, portMAX_DELAY);
 
     ESP_LOGI(TAG, "[ 5 ] Stop audio_pipeline");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
 
     audio_pipeline_unregister(pipeline, http_stream_writer);

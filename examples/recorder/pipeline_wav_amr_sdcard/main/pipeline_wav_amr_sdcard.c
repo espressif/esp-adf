@@ -1,4 +1,4 @@
-/* Record wav and amr to SD card 
+/* Record wav and amr to SD card
 
    This example code is in the Public Domain (or CC0 licensed, at your option.)
 
@@ -21,8 +21,8 @@ static const char *TAG = "PIPELINR_REC_WAV_AMR_SDCARD";
 #define  RECORD_TIME_SECONDS (10)
 
 void app_main()
-{ 
-    audio_pipeline_handle_t pipeline_wav,pipeline_amr;
+{
+    audio_pipeline_handle_t pipeline_wav, pipeline_amr;
     audio_element_handle_t wav_fatfs_stream_writer, i2s_stream_reader, wav_encoder, amr_fatfs_stream_writer, amr_encoder;
 
     esp_log_level_set("*", ESP_LOG_WARN);
@@ -43,7 +43,7 @@ void app_main()
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     pipeline_wav = audio_pipeline_init(&pipeline_cfg);
     mem_assert(pipeline_wav);
-   
+
     ESP_LOGI(TAG, "[3.1] Create i2s stream to read audio data from codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
@@ -58,18 +58,18 @@ void app_main()
 #elif defined CONFIG_CHOICE_AMR_NB
     i2s_cfg.i2s_config.sample_rate = 8000;
 #endif
-    i2s_stream_reader = i2s_stream_init(&i2s_cfg);    
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
     ESP_LOGI(TAG, "[3.2] Create wav encoder to encode wav format");
     wav_encoder_cfg_t wav_cfg = DEFAULT_WAV_ENCODER_CONFIG();
     wav_encoder = wav_encoder_init(&wav_cfg);
-  
+
     ESP_LOGI(TAG, "[3.3] Create fatfs stream to write data to sdcard");
     fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
     fatfs_cfg.type = AUDIO_STREAM_WRITER;
     wav_fatfs_stream_writer = fatfs_stream_init(&fatfs_cfg);
 
-    audio_element_info_t info = AUDIO_ELEMENT_INFO_DEFAULT();  
+    audio_element_info_t info = AUDIO_ELEMENT_INFO_DEFAULT();
     audio_element_getinfo(i2s_stream_reader, &info);
     audio_element_setinfo(wav_fatfs_stream_writer, &info);
 
@@ -106,7 +106,7 @@ void app_main()
     amr_fatfs_cfg.type = AUDIO_STREAM_WRITER;
     amr_fatfs_cfg.task_core = 1;
     amr_fatfs_stream_writer = fatfs_stream_init(&amr_fatfs_cfg);
-   
+
     ESP_LOGI(TAG, "[4.4] Register all elements to audio amr_pipeline");
     audio_pipeline_register(pipeline_amr, el_raw_reader, "amr_raw");
 #ifdef CONFIG_CHOICE_AMR_WB
@@ -115,7 +115,7 @@ void app_main()
     audio_pipeline_register(pipeline_amr, amr_encoder, "amr");
 #endif
     audio_pipeline_register(pipeline_amr, amr_fatfs_stream_writer, "amr_file");
- 
+
     ESP_LOGI(TAG, "[4.5] Link it together [codec_chip]-->i2s_stream-->wav_encoder-->fatfs_stream-->[sdcard]");
     audio_pipeline_link(pipeline_amr, (const char *[]) {"amr_raw", "amr", "amr_file"}, 3);
 #ifdef CONFIG_CHOICE_AMR_WB
@@ -137,7 +137,7 @@ void app_main()
     audio_element_set_uri(amr_fatfs_stream_writer, "/sdcard/rec_out.Wamr");
 #elif defined CONFIG_CHOICE_AMR_NB
     audio_element_set_uri(amr_fatfs_stream_writer, "/sdcard/rec_out.amr");
-#endif 
+#endif
 
     ESP_LOGI(TAG, "[5.0] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -172,12 +172,13 @@ void app_main()
             break;
         }
     }
-
+    audio_pipeline_stop(pipeline_wav);
+    audio_pipeline_wait_for_stop(pipeline_wav);
     audio_pipeline_terminate(pipeline_wav);
     audio_pipeline_unregister_more(pipeline_wav, i2s_stream_reader,
-                                   wav_encoder, wav_fatfs_stream_writer, NULL); 
+                                   wav_encoder, wav_fatfs_stream_writer, NULL);
     audio_pipeline_unregister_more(pipeline_amr, el_raw_reader,
-                                  amr_encoder, amr_fatfs_stream_writer, NULL); 
+                                   amr_encoder, amr_fatfs_stream_writer, NULL);
     ESP_LOGI(TAG, "[8.0] Stop audio_pipeline");
 
     /* Terminate the pipeline before removing the listener */

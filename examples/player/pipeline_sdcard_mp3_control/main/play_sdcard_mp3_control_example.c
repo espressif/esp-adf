@@ -75,6 +75,8 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 ESP_LOGI(TAG, "[ * ] [Set] input key event");
                 ESP_LOGI(TAG, "[ * ] Stopped, advancing to the next song");
                 char *url = NULL;
+                audio_pipeline_stop(pipeline);
+                audio_pipeline_wait_for_stop(pipeline);
                 audio_pipeline_terminate(pipeline);
                 sdcard_list_next(sdcard_list_handle, 1, &url);
                 ESP_LOGW(TAG, "URL: %s", url);
@@ -243,6 +245,8 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
 
     audio_pipeline_unregister(pipeline, mp3_decoder);

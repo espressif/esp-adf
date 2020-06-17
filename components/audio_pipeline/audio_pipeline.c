@@ -374,8 +374,6 @@ esp_err_t audio_pipeline_terminate(audio_pipeline_handle_t pipeline)
 {
     audio_element_item_t *el_item;
     ESP_LOGD(TAG, "Destroy audio_pipeline elements");
-    audio_pipeline_stop(pipeline);
-    audio_pipeline_wait_for_stop(pipeline);
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
             audio_element_terminate(el_item->el);
@@ -392,33 +390,9 @@ esp_err_t audio_pipeline_stop(audio_pipeline_handle_t pipeline)
         ESP_LOGW(TAG, "Without stop, st:%d", pipeline->state);
         return ESP_FAIL;
     }
-    bool type = false;
-    STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
-        if (el_item->linked
-            && el_item->el_state == AEL_STATUS_STATE_FINISHED) {
-            type = true;
-            ESP_LOGW(TAG, "audio_element_stop type is finished");
-            break;
-        }
-    }
-    // Fix the in stream has been finished while calling PAUSE function, then call audio_pipeline_stop.
-    // There are AEL_STATUS_STATE_FINISHED and AEL_STATUS_STATE_PAUSED status in linked elements,
-    // use audio_element_set_ringbuf_done easy to cause block.
-    STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
-        if (el_item->linked
-            && el_item->el_state == AEL_STATUS_STATE_PAUSED) {
-            type = false;
-            ESP_LOGW(TAG, "audio_element_stop has paused element");
-            break;
-        }
-    }
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
-            if (type) {
-                audio_element_set_ringbuf_done(el_item->el);
-            } else {
-                audio_element_stop(el_item->el);
-            }
+            audio_element_stop(el_item->el);
         }
     }
     return ESP_OK;

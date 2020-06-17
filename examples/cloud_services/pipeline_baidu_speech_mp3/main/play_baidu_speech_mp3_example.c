@@ -174,6 +174,8 @@ void app_main(void)
         }
     }
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
+    audio_pipeline_stop(pipeline);
+    audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
 
     audio_pipeline_unregister(pipeline, http_stream_reader);
@@ -186,10 +188,10 @@ void app_main(void)
     /* Stop all periph before removing the listener */
     esp_periph_set_stop_all(set);
     audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt);
-  
+
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
-   
+
     /* Release all resources */
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(http_stream_reader);
