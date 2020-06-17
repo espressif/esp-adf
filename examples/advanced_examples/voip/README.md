@@ -77,7 +77,7 @@ See the Getting Started Guide for full steps to configure and use ESP-IDF to bui
 ## Example Output
 
 ### SIP register
-
+```
 I (4164) VOIP_EXAMPLE: [ 3 ] Create and start input key service
 I (4164) VOIP_EXAMPLE: [ 4 ] Create SIP Service
 I (4184) SIP: Conecting...
@@ -157,9 +157,11 @@ Content-Length: 0
 I (4514) SIP: [1970-01-01/00:00:01]<<======================
 I (4524) VOIP_EXAMPLE: SIP_EVENT_REGISTERED
 W (4524) SIP: CHANGE STATE FROM 1, TO 2, :func: sip_register:1592
+```
 
 ### SIP call in
 
+```
 I (688034) SIP: [1970-01-01/00:11:13]<<=====READ 1372 bytes==
 I (688034) SIP:
 
@@ -239,9 +241,11 @@ I (689384) VOIP_EXAMPLE: ringing... RemotePhoneNum 1001
 I (690384) VOIP_EXAMPLE: ringing... RemotePhoneNum 1001
 I (691384) VOIP_EXAMPLE: ringing... RemotePhoneNum 1001
 I (692384) VOIP_EXAMPLE: ringing... RemotePhoneNum 1001
+```
 
 ### SIP hangup
 
+```
 I (1372804) SIP: User call sip BYE
 I (1372834) SIP: [1970-01-01/00:22:25]=======WRITE 0664 bytes>>
 I (1372834) SIP:
@@ -278,6 +282,7 @@ I (1372954) SIP: [1970-01-01/00:22:25]<<======================
 W (1372964) SIP: CHANGE STATE FROM 32, TO 2, :func: _sip_request_bye:1368
 I (1372974) SIP_RTP: send task stopped
 I (1373024) VOIP_EXAMPLE: SIP_EVENT_AUDIO_SESSION_END
+```
 
 ## Troubleshooting
 
