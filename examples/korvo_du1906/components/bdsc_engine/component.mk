@@ -1,0 +1,3 @@
+COMPONENT_ADD_INCLUDEDIRS := include
+
+COMPONENT_ADD_LDFLAGS += $(COMPONENT_PATH)/lib/libbdsc_engine.a
