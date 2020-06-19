@@ -87,8 +87,12 @@ static bool audio_tone_need_upgrade(void *handle, ota_node_attr_t *node)
         if (tone_partition_get_app_desc(&current_desc) != ESP_OK) {
             return false;
         }
+        if (ota_get_version_number(incoming_desc.version) < 0) {
+            return false;
+        }
         ESP_LOGI(TAG, "current version %s, incoming version %s", current_desc.version, incoming_desc.version);
-        if (strstr(current_desc.version, incoming_desc.version) != NULL) {
+        if (ota_get_version_number(incoming_desc.version) <= ota_get_version_number(current_desc.version)) {
+            ESP_LOGW(TAG, "The incoming version is same as or lower than the running version");
             return false;
         }
     }
