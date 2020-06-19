@@ -181,7 +181,11 @@ static int _sip_event_handler(sip_event_msg_t *event)
             break;
         case SIP_EVENT_AUDIO_SESSION_END:
             ESP_LOGI(TAG, "SIP_EVENT_AUDIO_SESSION_END");
+            audio_pipeline_stop(player);
+            audio_pipeline_wait_for_stop(player);
             audio_pipeline_deinit(player);
+            audio_pipeline_stop(recorder);
+            audio_pipeline_wait_for_stop(recorder);
             audio_pipeline_deinit(recorder);
             break;
         case SIP_EVENT_READ_AUDIO_DATA:
