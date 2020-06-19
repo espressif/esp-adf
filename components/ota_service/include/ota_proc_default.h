@@ -81,6 +81,18 @@ esp_err_t ota_data_image_stream_read(void *handle, char *buf, int wanted_size);
   */
 esp_err_t ota_data_partition_write(void *handle, char *buf, int size);
 
+/**
+  * @brief     Generate a number by image version
+  * @Note      The version should be (V0.0.0 - V255.255.255)
+  *
+  * @param[in]  handle          pointer to upgrade handle
+  *
+  * @return
+  *    - -1:      Failed
+  *    - Others:  version number
+  */
+int ota_get_version_number(char *version);
+
 #ifdef __cplusplus
 }
 #endif

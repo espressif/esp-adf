@@ -65,8 +65,13 @@ static esp_err_t validate_image_header(esp_app_desc_t *new_app_info)
         ESP_LOGI(TAG, "Running firmware version: %s, the incoming firmware version %s", running_app_info.version, new_app_info->version);
     }
 
-    if (memcmp(new_app_info->version, running_app_info.version, sizeof(new_app_info->version)) == 0) {
-        ESP_LOGW(TAG, "Current running version is the same as a new. We will not continue the update.");
+    if (ota_get_version_number(new_app_info->version) < 0) {
+        ESP_LOGE(TAG, "Error version incoming");
+        return ESP_FAIL;
+    }
+
+    if (ota_get_version_number(new_app_info->version) <= ota_get_version_number(running_app_info.version)) {
+        ESP_LOGW(TAG, "Current running version is the same as or higher than a new. We will not continue the update.");
         return ESP_FAIL;
     }
     return ESP_OK;
@@ -300,4 +305,49 @@ esp_err_t ota_data_partition_write(void *handle, char *buf, int size)
     } else {
         return ESP_FAIL;
     }
+}
+
+int ota_get_version_number(char *version)
+{
+    AUDIO_NULL_CHECK(TAG, version, return -1);
+    if (strlen(version) > 32) {
+        ESP_LOGE(TAG, "Invalid version");
+        return -1;
+    }
+    int ver_num = 0;
+    char *ver = audio_calloc(1, strlen(version) + 1);
+    AUDIO_NULL_CHECK(TAG, ver, return -1);
+    memcpy(ver, version, strlen(version));
+    char *p = strtok(ver, ".");
+    AUDIO_NULL_CHECK(TAG, p, goto _err_ver);
+
+    if (p[0] == 'v' || p[0] == 'V') {
+        p++;
+        int cnt = 2; // expect max version V255.255.255
+        while (p) {
+            for (int i = 0; i < strlen(p); i++) {
+                if (p[i] < '0' || p[i] > '9') {
+                    goto _err_ver;
+                }
+            }
+            if (atoi(p) > 255) {
+                goto _err_ver;
+            }
+            ver_num |= (atoi(p) << (cnt * 8));
+            p = strtok(NULL, ".");
+            cnt--;
+        }
+        if (cnt != -1) {
+            goto _err_ver;
+        }
+        free(ver);
+        return ver_num;
+    } else {
+        goto _err_ver;
+    }
+
+_err_ver:
+    ESP_LOGE(TAG, "Got invalid version: %s, the version should be (V0.0.0 - V255.255.255)", version);
+    free(ver);
+    return -1;
 }
