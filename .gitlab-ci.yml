@@ -214,7 +214,7 @@ assign_test:
     - ESP32
     - Example_AUDIO_PLAY
 
-push_master_to_github:
+push_to_github:
   stage: deploy
   only:
     - master
@@ -223,7 +223,6 @@ push_master_to_github:
   image: $CI_DOCKER_REGISTRY/esp32-ci-env
   variables:
     GIT_STRATEGY: clone
-    GITHUB_PUSH_REFS: refs/remotes/origin/release refs/remotes/origin/master
   before_script:
     - echo "skip default before_script"
   script:
@@ -233,12 +232,7 @@ push_master_to_github:
     - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    - git remote remove github &>/dev/null || true
     - git remote add github git@github.com:espressif/esp-adf.git
-    # What the next line of script does: goes through the list of refs for all branches we push to github,
-    # generates a snippet of shell which is evaluated. The snippet checks CI_BUILD_REF against the SHA
-    # (aka objectname) at tip of each branch, and if any SHAs match then it checks out the local branch
-    # and then pushes that ref to a corresponding github branch
-    #
-    # NB: In gitlab 9.x, CI_BUILD_REF was deprecated. New name is CI_COMMIT_REF. If below command suddenly
-    # generates bash syntax errors, this is probably why.
-    - eval $(git for-each-ref --shell bash --format 'if [ $CI_BUILD_REF == %(objectname) ]; then git checkout -B %(refname:strip=3); git push --follow-tags github %(refname:strip=3); fi;' $GITHUB_PUSH_REFS)
+    - tools/ci/push_to_github.sh
+
