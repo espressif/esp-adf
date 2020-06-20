@@ -1,6 +1,8 @@
 ESP32-LyraTD-MSC V2.2 Getting Started Guide
 ===========================================
 
+:link_to_translation:`zh_CN:[中文]`
+
 This guide provides users with functional descriptions, configuration options for ESP32-LyraTD-MSC V2.2 audio development board, as well as how to get started with the ESP32-LyraTD-MSC board.
 
 The ESP32-LyraTD-MSC is a hardware platform designed for smart speakers and AI applications. It supports Acoustic Echo Cancellation (AEC), Automatic Speech Recognition (ASR), Wake-up Interrupt and Voice Interaction.
@@ -34,17 +36,17 @@ This audio development board consists of two parts: the upper board (B), which p
 
 The specific hardware includes:
 
-* **ESP32-WROVER-B Module**
-* **DSP** (Digital Signal Processing) chip
-* Three digital **Microphones** that support far-field voice pick-up
-* **2 x 3-watt Speaker** output
-* **Headphone** output
-* **MicroSD Card** slot (1 line or 4 lines)
-* Individually controlled **Twelve LEDs** distributed in a circle on the board's edge
-* **Six Function Buttons** that may be assigned user functions
-* Several interface ports: **I2S**, **I2C**, **SPI** and **JTAG**
-* Integrated **USB-UART Bridge Chip**
-* Li-ion **Battery-Charge Management**
+* ESP32-WROVER-B Module
+* DSP (Digital Signal Processing) chip
+* Three digital Microphones that support far-field voice pick-up
+* 2 x 3-watt Speaker output
+* Headphone output
+* MicroSD Card slot (1 line or 4 lines)
+* Individually controlled Twelve LEDs distributed in a circle on the board's edge
+* Six Function Buttons that may be assigned user functions
+* Several interface ports: I2S, I2C, SPI and JTAG
+* Integrated USB-UART Bridge Chip
+* Li-ion Battery-Charge Management
 
 The block diagram below presents main components of the ESP32-LyraTD-MSC and interconnections between components.
 
@@ -61,7 +63,7 @@ Components
 The following list and figure describe key components, interfaces and controls of the ESP32-LyraTD-MSC used in this guide. This covers just what is needed now. For additional details please refer to schematics provided in `Related Documents`_.
 
 ESP32-WROVER-B Module
-    The ESP32-WROVER-B module contains ESP32 chip to provide Wi-Fi / BT connectivity and data processing power as well as integrates 32 Mbit SPI flash and 64 Mbit PSRAM for flexible data storage.
+    The ESP32-WROVER-B module contains ESP32 chip to provide Wi-Fi / Bluetooth connectivity and data processing power as well as integrates 32 Mbit SPI flash and 64 Mbit PSRAM for flexible data storage.
 DSP Chip
     The Digital Signal Processing chip `ZL38063 <https://www.microsemi.com/document-portal/doc_download/136798-zl38063-datasheet>`_ is used for Automatic Speech Recognition (ASR) applications. It captures audio data from an external microphone array and outputs audio signals through its Digital-to-Analog-Converter (DAC) port.
 Headphone Output
@@ -69,7 +71,7 @@ Headphone Output
 
     .. note::
 
-        The socket may be used with mobile phone headsets and is compatible with OMPT standard headsets only. It does work with CTIA headsets. Please refer to `Phone connector (audio) <https://en.wikipedia.org/wiki/Phone_connector_(audio)#TRRS_standards>`_ on Wikipedia.
+        The socket may be used with mobile phone headsets and is compatible with OMPT standard headsets only. It does not work with CTIA headsets. Please refer to `Phone connector (audio) <https://en.wikipedia.org/wiki/Phone_connector_(audio)#TRRS_standards>`_ on Wikipedia.
 
 Left Speaker Output
     Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
@@ -83,7 +85,7 @@ Right Speaker Output
     ESP32-LyraTD-MSC V2.2 Lower Board (A) Components
 
 USB-UART Port
-    Functions as the communication interface between a PC and the ESP32 WROVER module.
+    Functions as the communication interface between a PC and the ESP32-WROVER-B module.
 USB Power Port
     Provides the power supply for the board.
 Standby / Charging LEDs
