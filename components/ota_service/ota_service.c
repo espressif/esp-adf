@@ -80,27 +80,33 @@ static void ota_service_cmd_send(void *que, int cmd, void *data, int dir)
     }
 }
 
-static esp_err_t ota_service_process(ota_upgrade_ops_t *upgrade_info)
+static ota_service_err_reason_t ota_service_process(ota_upgrade_ops_t *upgrade_info)
 {
-    esp_err_t ret = ESP_FAIL;
+    ota_service_err_reason_t ret = OTA_SERV_ERR_REASON_UNKNOWN;
     void *handle = NULL;
 
-    AUDIO_NULL_CHECK(TAG, upgrade_info != NULL, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, upgrade_info, return OTA_SERV_ERR_REASON_NULL_POINTER);
+    AUDIO_NULL_CHECK(TAG, upgrade_info->prepare, return OTA_SERV_ERR_REASON_NULL_POINTER);
+    AUDIO_NULL_CHECK(TAG, upgrade_info->need_upgrade, return OTA_SERV_ERR_REASON_NULL_POINTER);
+    AUDIO_NULL_CHECK(TAG, upgrade_info->execute_upgrade, return OTA_SERV_ERR_REASON_NULL_POINTER);
 
-    if (upgrade_info->prepare != NULL && upgrade_info->prepare(&handle, &upgrade_info->node) == ESP_OK) {
-        if (upgrade_info->need_upgrade == NULL || upgrade_info->need_upgrade(handle, &upgrade_info->node) == true) {
-            if (upgrade_info->execute_upgrade != NULL && upgrade_info->execute_upgrade(handle, &upgrade_info->node) == ESP_OK) {
-                ret = ESP_OK;
-            }
-        }
+    ret = upgrade_info->prepare(&handle, &upgrade_info->node);
+    if (ret != OTA_SERV_ERR_REASON_SUCCESS) {
+        ESP_LOGE(TAG, "OTA prepared fail");
+        return ret;
+    }
+    ret = upgrade_info->need_upgrade(handle, &upgrade_info->node);
+    if (ret != OTA_SERV_ERR_REASON_SUCCESS) {
+        ESP_LOGE(TAG, "No need to upgrade");
+        return ret;
+    }
+    ret = upgrade_info->execute_upgrade(handle, &upgrade_info->node);
+    if (ret != OTA_SERV_ERR_REASON_SUCCESS) {
+        ESP_LOGE(TAG, "Fail to execute upgrade");
+        return ret;
     }
 
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "OTA service process failed");
-        return ESP_FAIL;
-    }
-
-    AUDIO_CHECK(TAG, upgrade_info->finished_check != NULL, return ESP_FAIL, "finished_check should not be NULL");
+    AUDIO_CHECK(TAG, upgrade_info->finished_check != NULL, return OTA_SERV_ERR_REASON_NULL_POINTER, "finished_check should not be NULL");
     return upgrade_info->finished_check(handle, &upgrade_info->node, ret);
 }
 
@@ -139,11 +145,11 @@ static void ota_task(void *pvParameters)
                 break;
             }
             case OTA_START: {
-                esp_err_t ret = ESP_FAIL;
+                ota_service_err_reason_t ret = OTA_SERV_ERR_REASON_UNKNOWN;
                 for (int i = 0; i < ota->list_len; i++) {
                     ota_upgrade_ops_t *cur_node = &ota->upgrade_list[i];
                     ret = ota_service_process(cur_node);
-                    if (ret == ESP_OK) {
+                    if (ret == OTA_SERV_ERR_REASON_SUCCESS) {
                         ota->result |= (0x01 << i);
                     }
                     ser_evt.type = OTA_SERV_EVENT_TYPE_RESULT;
@@ -153,7 +159,7 @@ static void ota_task(void *pvParameters)
                     ser_evt.data = (void *)&result_data;
                     ser_evt.len = ota->list_len;
                     periph_service_callback(serv_handle, &ser_evt);
-                    if (ret != ESP_OK && cur_node->break_after_fail) {
+                    if (ret != OTA_SERV_ERR_REASON_SUCCESS && cur_node->break_after_fail) {
                         ESP_LOGE(TAG, "upgrade_list[%d] OTA failed, break the update list", i);
                         break;
                     }

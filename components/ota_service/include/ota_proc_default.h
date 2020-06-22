@@ -63,10 +63,10 @@ void ota_data_get_default_proc(ota_upgrade_ops_t *ops);
   * @param[in]  wanted_size     bytes to read
   *
   * @return
-  *    - ESP_OK:  Success
+  *    - OTA_SERV_ERR_REASON_SUCCESS:  Success
   *    - Others:  Failed
   */
-esp_err_t ota_data_image_stream_read(void *handle, char *buf, int wanted_size);
+ota_service_err_reason_t ota_data_image_stream_read(void *handle, char *buf, int wanted_size);
 
 /**
   * @brief     write to the data partition under upgrading
@@ -76,10 +76,10 @@ esp_err_t ota_data_image_stream_read(void *handle, char *buf, int wanted_size);
   * @param[in]  size            bytes to write
   *
   * @return
-  *    - ESP_OK:  Success
+  *    - OTA_SERV_ERR_REASON_SUCCESS:  Success
   *    - Others:  Failed
   */
-esp_err_t ota_data_partition_write(void *handle, char *buf, int size);
+ota_service_err_reason_t ota_data_partition_write(void *handle, char *buf, int size);
 
 /**
   * @brief     Generate a number by image version

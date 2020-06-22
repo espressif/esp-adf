@@ -39,26 +39,27 @@ static EventGroupHandle_t OTA_FLAG;
 #define OTA_FINISH (BIT0)
 #define OTA_SERVICE_STACK_SIZE  (4 * 1024)
 
-static bool ota_sdcard_image_need_upgrade(void *handle, ota_node_attr_t *node)
+static ota_service_err_reason_t ota_sdcard_image_need_upgrade(void *handle, ota_node_attr_t *node)
 {
-    AUDIO_NULL_CHECK(TAG, node->uri, return false);
+    AUDIO_NULL_CHECK(TAG, node->uri, return OTA_SERV_ERR_REASON_NULL_POINTER);
     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, node->label);
     if (partition == NULL) {
         ESP_LOGE(TAG, "data partition [%s] not found", node->label);
-        return false;
+        return OTA_SERV_ERR_REASON_PARTITION_NOT_FOUND;
     }
 
     char *uri = strstr(node->uri, "/sdcard/");
+    AUDIO_NULL_CHECK(TAG, uri, return OTA_SERV_ERR_REASON_URL_PARSE_FAIL);
     if (access(uri, 0) == 0) {
         ESP_LOGI(TAG, "Found ota file in sdcard, uri: %s", uri);
         esp_err_t err = ESP_OK;
         if ((err = esp_partition_erase_range(partition, 0, partition->size)) != ESP_OK) {
             ESP_LOGE(TAG, "Erase [%s] failed and return %d", node->label, err);
-            return false;
+            return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
         }
-        return true;
+        return OTA_SERV_ERR_REASON_SUCCESS;
     } else {
-        return false;
+        return OTA_SERV_ERR_REASON_FILE_NOT_FOUND;
     }
 }
 
@@ -67,7 +68,7 @@ static esp_err_t ota_service_cb(periph_service_handle_t handle, periph_service_e
     if (evt->type == OTA_SERV_EVENT_TYPE_RESULT) {
         ota_result_t *result_data = evt->data;
         if (result_data->result != ESP_OK) {
-            ESP_LOGE(TAG, "List id: %d, OTA failed", result_data->id);
+            ESP_LOGE(TAG, "List id: %d, result: %d, OTA failed", result_data->id, result_data->result);
         } else {
             ESP_LOGI(TAG, "List id: %d, OTA sucessed", result_data->id);
         }

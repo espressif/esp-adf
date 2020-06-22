@@ -53,10 +53,10 @@ typedef struct {
 
 static const char *TAG = "OTA_DEFAULT";
 
-static esp_err_t validate_image_header(esp_app_desc_t *new_app_info)
+static ota_service_err_reason_t validate_image_header(esp_app_desc_t *new_app_info)
 {
     if (new_app_info == NULL) {
-        return ESP_ERR_INVALID_ARG;
+        return OTA_SERV_ERR_REASON_NULL_POINTER;
     }
 
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -67,20 +67,20 @@ static esp_err_t validate_image_header(esp_app_desc_t *new_app_info)
 
     if (ota_get_version_number(new_app_info->version) < 0) {
         ESP_LOGE(TAG, "Error version incoming");
-        return ESP_FAIL;
+        return OTA_SERV_ERR_REASON_ERROR_VERSION;
     }
 
     if (ota_get_version_number(new_app_info->version) <= ota_get_version_number(running_app_info.version)) {
         ESP_LOGW(TAG, "Current running version is the same as or higher than a new. We will not continue the update.");
-        return ESP_FAIL;
+        return OTA_SERV_ERR_REASON_NO_HIGHER_VERSION;
     }
-    return ESP_OK;
+    return OTA_SERV_ERR_REASON_SUCCESS;
 }
 
-static esp_err_t ota_app_partition_prepare(void **handle, ota_node_attr_t *node)
+static ota_service_err_reason_t ota_app_partition_prepare(void **handle, ota_node_attr_t *node)
 {
     ota_app_upgrade_ctx_t *context = audio_calloc(1, sizeof(ota_app_upgrade_ctx_t));
-    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context, return OTA_SERV_ERR_REASON_NULL_POINTER);
     *handle = context;
 
     if (strstr(node->uri, "file://")) {
@@ -97,7 +97,7 @@ static esp_err_t ota_app_partition_prepare(void **handle, ota_node_attr_t *node)
         esp_err_t err = esp_fs_ota_begin(&ota_config, &context->ota_handle);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "ESP FS OTA Begin failed");
-            return err;
+            return OTA_SERV_ERR_REASON_UNKNOWN;
         }
     } else if (strstr(node->uri, "https://") || strstr(node->uri, "http://")) {
         context->get_img_desc = esp_https_ota_get_img_desc;
@@ -117,39 +117,34 @@ static esp_err_t ota_app_partition_prepare(void **handle, ota_node_attr_t *node)
         esp_err_t err = esp_https_ota_begin(&ota_config, &context->ota_handle);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "ESP HTTPS OTA Begin failed");
-            return err;
+            return OTA_SERV_ERR_REASON_UNKNOWN;
         }
     } else {
-        return ESP_FAIL;
+        return OTA_SERV_ERR_REASON_URL_PARSE_FAIL;
     }
 
-    return ESP_OK;
+    return OTA_SERV_ERR_REASON_SUCCESS;
 }
 
-static bool ota_app_partition_need_upgrade(void *handle, ota_node_attr_t *node)
+static ota_service_err_reason_t ota_app_partition_need_upgrade(void *handle, ota_node_attr_t *node)
 {
     ota_app_upgrade_ctx_t *context = (ota_app_upgrade_ctx_t *)handle;
-    AUDIO_NULL_CHECK(TAG, context, return false);
-    AUDIO_NULL_CHECK(TAG, context->ota_handle, return false);
+    AUDIO_NULL_CHECK(TAG, context, return OTA_SERV_ERR_REASON_NULL_POINTER);
+    AUDIO_NULL_CHECK(TAG, context->ota_handle, return OTA_SERV_ERR_REASON_NULL_POINTER);
     esp_app_desc_t app_desc;
     esp_err_t err = context->get_img_desc(context->ota_handle, &app_desc);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "get_img_desc failed");
-        return false;
+        return OTA_SERV_ERR_REASON_GET_NEW_APP_DESC_FAIL;
     }
-    err = validate_image_header(&app_desc);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "image header verification failed");
-        return false;
-    }
-    return true;
+    return validate_image_header(&app_desc);
 }
 
 static esp_err_t ota_app_partition_exec_upgrade(void *handle, ota_node_attr_t *node)
 {
     ota_app_upgrade_ctx_t *context = (ota_app_upgrade_ctx_t *)handle;
-    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
-    AUDIO_NULL_CHECK(TAG, context->ota_handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context, return OTA_SERV_ERR_REASON_NULL_POINTER);
+    AUDIO_NULL_CHECK(TAG, context->ota_handle, return OTA_SERV_ERR_REASON_NULL_POINTER);
     esp_err_t err = ESP_FAIL;
 
     while (1) {
@@ -163,10 +158,10 @@ static esp_err_t ota_app_partition_exec_upgrade(void *handle, ota_node_attr_t *n
     return err;
 }
 
-static esp_err_t ota_app_partition_finish(void *handle, ota_node_attr_t *node, esp_err_t result)
+static esp_err_t ota_app_partition_finish(void *handle, ota_node_attr_t *node, ota_service_err_reason_t result)
 {
     ota_app_upgrade_ctx_t *context = (ota_app_upgrade_ctx_t *)handle;
-    AUDIO_NULL_CHECK(TAG, context->ota_handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context->ota_handle, return OTA_SERV_ERR_REASON_NULL_POINTER);
     esp_err_t err = context->finish(context->ota_handle);
     if (err != ESP_OK) {
         if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
@@ -186,16 +181,16 @@ void ota_app_get_default_proc(ota_upgrade_ops_t *ops)
     ops->finished_check = ota_app_partition_finish;
 }
 
-static esp_err_t ota_data_partition_prepare(void **handle, ota_node_attr_t *node)
+static ota_service_err_reason_t ota_data_partition_prepare(void **handle, ota_node_attr_t *node)
 {
     ota_data_upgrade_ctx_t *context = audio_calloc(1, sizeof(ota_data_upgrade_ctx_t));
-    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context, return OTA_SERV_ERR_REASON_NULL_POINTER);
     *handle = context;
 
     context->partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, node->label);
     if (context->partition == NULL) {
         ESP_LOGE(TAG, "partition [%s] not found", node->label);
-        return ESP_FAIL;
+        return OTA_SERV_ERR_REASON_PARTITION_NOT_FOUND;
     }
 
     ESP_LOGI(TAG, "data upgrade uri %s", node->uri);
@@ -211,41 +206,41 @@ static esp_err_t ota_data_partition_prepare(void **handle, ota_node_attr_t *node
         context->r_stream = http_stream_init(&http_cfg);
     } else {
         ESP_LOGE(TAG, "not support uri");
-        return ESP_FAIL;
+        return OTA_SERV_ERR_REASON_URL_PARSE_FAIL;
     }
     audio_element_set_uri(context->r_stream, node->uri);
     if (audio_element_process_init(context->r_stream) != ESP_OK) {
         ESP_LOGE(TAG, "reader stream init failed");
-        return ESP_FAIL;
+        return OTA_SERV_ERR_REASON_STREAM_INIT_FAIL;
     }
 
-    return ESP_OK;
+    return OTA_SERV_ERR_REASON_SUCCESS;
 }
 
-static esp_err_t ota_data_partition_exec_upgrade(void *handle, ota_node_attr_t *node)
+static ota_service_err_reason_t ota_data_partition_exec_upgrade(void *handle, ota_node_attr_t *node)
 {
     int r_size = 0;
     ota_data_upgrade_ctx_t *context = (ota_data_upgrade_ctx_t *)handle;
-    AUDIO_NULL_CHECK(TAG, context, return ESP_FAIL);
-    AUDIO_NULL_CHECK(TAG, context->r_stream, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context, return OTA_SERV_ERR_REASON_NULL_POINTER);
+    AUDIO_NULL_CHECK(TAG, context->r_stream, return OTA_SERV_ERR_REASON_NULL_POINTER);
 
     while ((r_size = audio_element_input(context->r_stream, context->read_buf, READER_BUF_LEN)) > 0) {
         ESP_LOGI(TAG, "write_offset %d, r_size %d", context->write_offset, r_size);
         if (esp_partition_write(context->partition, context->write_offset, context->read_buf, r_size) == ESP_OK) {
             context->write_offset += r_size;
         } else {
-            return ESP_FAIL;
+            return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
         }
     }
     if (r_size == AEL_IO_OK || r_size == AEL_IO_DONE) {
         ESP_LOGI(TAG, "partition %s upgrade successes", node->label);
-        return ESP_OK;
+        return OTA_SERV_ERR_REASON_SUCCESS;
     } else {
-        return ESP_FAIL;
+        return OTA_SERV_ERR_REASON_STREAM_RD_FAIL;
     }
 }
 
-static esp_err_t ota_data_partition_finish(void *handle, ota_node_attr_t *node, esp_err_t result)
+static ota_service_err_reason_t ota_data_partition_finish(void *handle, ota_node_attr_t *node, ota_service_err_reason_t result)
 {
     ota_data_upgrade_ctx_t *context = (ota_data_upgrade_ctx_t *)handle;
     AUDIO_NULL_CHECK(TAG, context->r_stream, return ESP_FAIL);
@@ -263,15 +258,15 @@ void ota_data_get_default_proc(ota_upgrade_ops_t *ops)
     ops->finished_check = ota_data_partition_finish;
 }
 
-esp_err_t ota_data_image_stream_read(void *handle, char *buf, int wanted_size)
+ota_service_err_reason_t ota_data_image_stream_read(void *handle, char *buf, int wanted_size)
 {
     ota_data_upgrade_ctx_t *context = (ota_data_upgrade_ctx_t *)handle;
 
     if (context == NULL) {
         ESP_LOGE(TAG, "run prepare first");
-        return ESP_ERR_INVALID_STATE;
+        return OTA_SERV_ERR_REASON_NULL_POINTER;
     }
-    AUDIO_NULL_CHECK(TAG, context->r_stream, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, context->r_stream, return OTA_SERV_ERR_REASON_NULL_POINTER);
     int r_size = 0;
     do {
         int ret = audio_element_input(context->r_stream, buf, wanted_size - r_size);
@@ -283,27 +278,27 @@ esp_err_t ota_data_image_stream_read(void *handle, char *buf, int wanted_size)
     } while (r_size < wanted_size);
 
     if (r_size == wanted_size) {
-        return ESP_OK;
+        return OTA_SERV_ERR_REASON_SUCCESS;
     } else {
-        return ESP_FAIL;
+        return OTA_SERV_ERR_REASON_STREAM_RD_FAIL;
     }
 }
 
-esp_err_t ota_data_partition_write(void *handle, char *buf, int size)
+ota_service_err_reason_t ota_data_partition_write(void *handle, char *buf, int size)
 {
     ota_data_upgrade_ctx_t *context = (ota_data_upgrade_ctx_t *)handle;
 
     if (context == NULL) {
         ESP_LOGE(TAG, "run prepare first");
-        return ESP_ERR_INVALID_STATE;
+        return OTA_SERV_ERR_REASON_NULL_POINTER;
     }
 
     ESP_LOGI(TAG, "write_offset %d, size %d", context->write_offset, size);
     if (esp_partition_write(context->partition, context->write_offset, buf, size) == ESP_OK) {
         context->write_offset += size;
-        return ESP_OK;
+        return OTA_SERV_ERR_REASON_SUCCESS;
     } else {
-        return ESP_FAIL;
+        return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
     }
 }
 

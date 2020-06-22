@@ -32,6 +32,8 @@
 extern "C" {
 #endif
 
+#define OTA_SERVICE_ERR_REASON_BASE  (0x90000)
+
 typedef struct {
     int task_stack;           /*!< >0 Service task stack; =0 with out task created */
     int task_prio;            /*!< Service task priority (based on freeRTOS priority) */
@@ -61,19 +63,37 @@ typedef enum {
     OTA_SERV_EVENT_TYPE_FINISH
 } ota_service_event_type_t;
 
+typedef enum {
+    OTA_SERV_ERR_REASON_UNKNOWN               = ESP_FAIL,
+    OTA_SERV_ERR_REASON_SUCCESS               = ESP_OK,
+    OTA_SERV_ERR_REASON_NULL_POINTER          = OTA_SERVICE_ERR_REASON_BASE + 1,
+    OTA_SERV_ERR_REASON_URL_PARSE_FAIL        = OTA_SERVICE_ERR_REASON_BASE + 2,
+    OTA_SERV_ERR_REASON_ERROR_VERSION         = OTA_SERVICE_ERR_REASON_BASE + 3,
+    OTA_SERV_ERR_REASON_NO_HIGHER_VERSION     = OTA_SERVICE_ERR_REASON_BASE + 4,
+    OTA_SERV_ERR_REASON_ERROR_MAGIC_WORD      = OTA_SERVICE_ERR_REASON_BASE + 5,
+    OTA_SERV_ERR_REASON_ERROR_PROJECT_NAME    = OTA_SERVICE_ERR_REASON_BASE + 6,
+    OTA_SERV_ERR_REASON_FILE_NOT_FOUND        = OTA_SERVICE_ERR_REASON_BASE + 7,
+    OTA_SERV_ERR_REASON_PARTITION_NOT_FOUND   = OTA_SERVICE_ERR_REASON_BASE + 8,
+    OTA_SERV_ERR_REASON_PARTITION_WT_FAIL     = OTA_SERVICE_ERR_REASON_BASE + 9,
+    OTA_SERV_ERR_REASON_PARTITION_RD_FAIL     = OTA_SERVICE_ERR_REASON_BASE + 10,
+    OTA_SERV_ERR_REASON_STREAM_INIT_FAIL      = OTA_SERVICE_ERR_REASON_BASE + 11,
+    OTA_SERV_ERR_REASON_STREAM_RD_FAIL        = OTA_SERVICE_ERR_REASON_BASE + 12,
+    OTA_SERV_ERR_REASON_GET_NEW_APP_DESC_FAIL = OTA_SERVICE_ERR_REASON_BASE + 13,
+} ota_service_err_reason_t;
+
 typedef struct {
     ota_node_attr_t node;
-    esp_err_t (*prepare)(void **handle, ota_node_attr_t *node);
-    bool (*need_upgrade)(void *handle, ota_node_attr_t *node);
-    esp_err_t (*execute_upgrade)(void *handle, ota_node_attr_t *node);
-    esp_err_t (*finished_check)(void *handle, ota_node_attr_t *node, esp_err_t result);
+    ota_service_err_reason_t (*prepare)(void **handle, ota_node_attr_t *node);
+    ota_service_err_reason_t (*need_upgrade)(void *handle, ota_node_attr_t *node);
+    ota_service_err_reason_t (*execute_upgrade)(void *handle, ota_node_attr_t *node);
+    ota_service_err_reason_t (*finished_check)(void *handle, ota_node_attr_t *node, ota_service_err_reason_t result);
     bool reboot_flag;
     bool break_after_fail;
 } ota_upgrade_ops_t;
 
 typedef struct {
     uint8_t   id;
-    esp_err_t result;
+    ota_service_err_reason_t result;
 } ota_result_t;
 
 /**
