@@ -33,7 +33,7 @@ static EventGroupHandle_t events = NULL;
 
 #define OTA_FINISH (BIT0)
 
-static bool audio_tone_need_upgrade(void *handle, ota_node_attr_t *node)
+static ota_service_err_reason_t audio_tone_need_upgrade(void *handle, ota_node_attr_t *node)
 {
     bool                need_write_desc = false;
     flash_tone_header_t cur_header      = { 0 };
@@ -46,26 +46,26 @@ static bool audio_tone_need_upgrade(void *handle, ota_node_attr_t *node)
     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, node->label);
     if (partition == NULL) {
         ESP_LOGE(TAG, "data partition [%s] not found", node->label);
-        return false;
+        return OTA_SERV_ERR_REASON_PARTITION_NOT_FOUND;
     }
 
     if (tone_partition_verify() == ESP_FAIL) {
         esp_partition_erase_range(partition, 0, partition->size);
-        return true;
+        return OTA_SERV_ERR_REASON_SUCCESS;
     }
 
     /* Read tone header from partition */
     if (esp_partition_read(partition, 0, (char *)&cur_header, sizeof(flash_tone_header_t)) != ESP_OK) {
-        return false;
+        return OTA_SERV_ERR_REASON_PARTITION_RD_FAIL;
     }
 
     /* Read tone header from incoming stream */
     if (ota_data_image_stream_read(handle, (char *)&incoming_header, sizeof(flash_tone_header_t)) != ESP_OK) {
-        return false;
+        return OTA_SERV_ERR_REASON_STREAM_RD_FAIL;
     }
     if (incoming_header.header_tag != 0x2053) {
         ESP_LOGE(TAG, "not audio tone bin");
-        return false;
+        return OTA_SERV_ERR_REASON_UNKNOWN;
     }
     ESP_LOGI(TAG, "format %d : %d", cur_header.format, incoming_header.format);
     /* upgrade the tone bin when incoming bin format is 0 */
@@ -75,25 +75,29 @@ static bool audio_tone_need_upgrade(void *handle, ota_node_attr_t *node)
 
     /* read the app desc from incoming stream when bin format is 1*/
     if (ota_data_image_stream_read(handle, (char *)&incoming_desc, sizeof(esp_app_desc_t)) != ESP_OK) {
-        return false;
+        return OTA_SERV_ERR_REASON_STREAM_RD_FAIL;
     }
     ESP_LOGI(TAG, "imcoming magic_word %X, project_name %s", incoming_desc.magic_word, incoming_desc.project_name);
     /* check the incoming app desc */
-    if (incoming_desc.magic_word != FLASH_TONE_MAGIC_WORD || strstr(FLASH_TONE_PROJECT_NAME, incoming_desc.project_name) == NULL) {
-        return false;
+    if (incoming_desc.magic_word != FLASH_TONE_MAGIC_WORD) {
+        return OTA_SERV_ERR_REASON_ERROR_MAGIC_WORD;
     }
+    if (strstr(FLASH_TONE_PROJECT_NAME, incoming_desc.project_name) == NULL) {
+        return OTA_SERV_ERR_REASON_ERROR_PROJECT_NAME;
+    }
+
     /* compare current app desc with the incoming one if the current bin's format is 1*/
     if (cur_header.format == 1) {
         if (tone_partition_get_app_desc(&current_desc) != ESP_OK) {
-            return false;
+            return OTA_SERV_ERR_REASON_PARTITION_RD_FAIL;
         }
         if (ota_get_version_number(incoming_desc.version) < 0) {
-            return false;
+            return OTA_SERV_ERR_REASON_ERROR_VERSION;
         }
         ESP_LOGI(TAG, "current version %s, incoming version %s", current_desc.version, incoming_desc.version);
         if (ota_get_version_number(incoming_desc.version) <= ota_get_version_number(current_desc.version)) {
             ESP_LOGW(TAG, "The incoming version is same as or lower than the running version");
-            return false;
+            return OTA_SERV_ERR_REASON_NO_HIGHER_VERSION;
         }
     }
 
@@ -103,13 +107,13 @@ static bool audio_tone_need_upgrade(void *handle, ota_node_attr_t *node)
 write_flash:
     if ((err = esp_partition_erase_range(partition, 0, partition->size)) != ESP_OK) {
         ESP_LOGE(TAG, "Erase [%s] failed and return %d", node->label, err);
-        return false;
+        return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
     }
     ota_data_partition_write(handle, (char *)&incoming_header, sizeof(flash_tone_header_t));
     if (need_write_desc) {
         ota_data_partition_write(handle, (char *)&incoming_desc, sizeof(esp_app_desc_t));
     }
-    return true;
+    return OTA_SERV_ERR_REASON_SUCCESS;
 }
 
 static esp_err_t ota_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
