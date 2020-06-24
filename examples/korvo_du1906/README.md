@@ -111,9 +111,16 @@ Func | NA |Setting Wi-Fi
 
 ### Upgrade function
 
-The application, flash tone and profile bins upgrade are supported. Those bins can be store on SDcard or HTTP Server, such as,`/sdcard/flash_tone.bin`,`/sdcard/profile.bin`, "https://github.com/withdra/my_ota_test/blob/master/dul1906.bin?raw=true". The bin files version checking after every booting, exculde `profile.bin`.
+The application, flash tone and profile bins upgrade are supported. Those bins can be store on SDcard or HTTP Server, such as,`/sdcard/flash_tone.bin`,`/sdcard/profile.bin`, "https://github.com/espressif/esp-adf/raw/master/examples/korvo_du1906/firmware/app.bin". The bin files version checking after every booting, exculde `profile.bin`.
 
 User copy the `flash_tone.bin` and `profile.bin` to SDCard root folder and inserted to ESP32-Korvo-DU1906 sdcard slot could be execute upgrade.
+
+#### Firmware version
+
+Before the upgration, usually compare the firmware version first, and then judge whether the firmware need to be upgraded. (Sdcard ota in this example doesn't compare firmware version).
+To edit the version of firmware like below:
+- App bin:  Change "version.txt" in the project directory.
+- Tone bin: Use this script to assign version ``` python  $ADF_PATH/tools/audio_tone/mk_audio_tone.py -r tone/ -f components/audio_flash_tone -v v1.1.1 ```
 
 ## Example Output
 

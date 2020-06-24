@@ -120,7 +120,7 @@ void app_ota_start()
             {
                 ESP_PARTITION_TYPE_APP,
                 NULL,
-                "https://github.com/withdra/my_ota_test/blob/master/dul1906.bin?raw=true",
+                "https://github.com/espressif/esp-adf/raw/master/examples/korvo_du1906/firmware/app.bin",
                 NULL
             },
             NULL,
