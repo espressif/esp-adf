@@ -38,6 +38,8 @@
 #include "esp_event.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
+#include "esp_action_def.h"
+#include "esp_delegate.h"
 
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
@@ -256,6 +258,16 @@ static void wifi_sta_setup(void *para)
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
 }
 
+static esp_err_t wifi_init(void *instance, action_arg_t *arg, action_result_t *result)
+{
+    wifi_config_t wifi_cfg = {0};
+
+    wifi_sta_setup(instance);
+    configure_wifi_sta_mode(&wifi_cfg);
+    ESP_ERROR_CHECK(esp_wifi_start());
+    return ESP_OK;
+}
+
 static void setting_timeout_callback(void *timer_arg)
 {
     periph_service_handle_t serv_handle = (periph_service_handle_t)timer_arg;
@@ -280,9 +292,9 @@ static void wifi_task(void *pvParameters)
     wifi_setting_item_t *item;
     wifi_config_t *stored_ssid = NULL;
 
-    wifi_sta_setup(pvParameters);
-    configure_wifi_sta_mode(&wifi_cfg);
-    ESP_ERROR_CHECK(esp_wifi_start());
+    esp_dispatcher_handle_t dispatcher = esp_dispatcher_get_delegate_handle();
+    action_result_t result = { 0 };
+    esp_dispatcher_execute_with_func(dispatcher, wifi_init, pvParameters, NULL, &result);
 
     esp_timer_create_args_t tmr_args = {
         .callback = &setting_timeout_callback,
@@ -612,6 +624,7 @@ periph_service_handle_t wifi_service_create(wifi_service_config_t *config)
         .task_stack = config->task_stack,
         .task_prio  = config->task_prio,
         .task_core  = config->task_core,
+        .extern_stack = config->extern_stack,
         .task_func  = wifi_task,
         .service_start = _wifi_start,
         .service_stop = _wifi_stop,
