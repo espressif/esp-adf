@@ -1,0 +1,113 @@
+diff --git a/components/audio_stream/http_stream.c b/components/audio_stream/http_stream.c
+index 927de394..a1a37a2b 100644
+--- a/components/audio_stream/http_stream.c
++++ b/components/audio_stream/http_stream.c
+@@ -32,7 +32,6 @@
+ #include "freertos/task.h"
+ 
+ #include "esp_log.h"
+-#include "errno.h"
+ #include "http_stream.h"
+ #include "hls_playlist.h"
+ #include "audio_mem.h"
+@@ -44,6 +43,7 @@
+ static const char *TAG = "HTTP_STREAM";
+ #define MAX_PLAYLIST_LINE_SIZE (512)
+ #define HTTP_STREAM_BUFFER_SIZE (2048)
++#define HTTP_MAX_CONNECT_TIMES  (5)
+ 
+ typedef struct http_stream {
+     audio_stream_type_t             type;
+@@ -58,6 +58,8 @@ typedef struct http_stream {
+     bool                            is_playlist_resolved;
+     playlist_t                      *variant_playlist; /* contains more playlists */
+     playlist_t                      *playlist; /* media playlist */
++    int                             _errno;
++    int                             connect_times;
+ } http_stream_t;
+ 
+ static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
+@@ -330,7 +332,7 @@ static esp_err_t _http_open(audio_element_handle_t self)
+         ESP_LOGE(TAG, "already opened");
+         return ESP_FAIL;
+     }
+-
++    http->_errno = 0;
+ _stream_open_begin:
+ 
+     uri = _playlist_get_next_track(self);
+@@ -493,7 +495,7 @@ static esp_err_t _http_close(audio_element_handle_t self)
+         esp_http_client_cleanup(http->client);
+         http->client = NULL;
+     }
+-    if (AEL_STATE_PAUSED != audio_element_get_state(self) && (errno == 0)) {
++    if (AEL_STATE_PAUSED != audio_element_get_state(self) && http->_errno == 0) {
+         audio_element_report_pos(self);
+         audio_element_info_t info = {0};
+         audio_element_getinfo(self, &info);
+@@ -519,17 +521,11 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
+         }
+     }
+     if (rlen <= 0) {
+-        ESP_LOGW(TAG, "No more data,errno:%d, total_bytes:%llu, rlen = %d", errno, info.byte_pos, rlen);
+-        if (errno != 0) {  // Error occuered, reset connection
+-            ESP_LOGW(TAG, "Got %d errno, reconnect to peer", errno);
+-            esp_err_t ret = ESP_OK;
+-            ret |= _http_close(self);
+-            ret |= _http_open(self);
+-            if (ret != ESP_OK) {
+-                ESP_LOGE(TAG, "Fail to reset connection, ret = %d", ret);
+-                return ret;
+-            }
+-            return errno;
++        http->_errno = esp_http_client_get_errno(http->client);
++        ESP_LOGW(TAG, "No more data,errno:%d, total_bytes:%llu, rlen = %d", http->_errno, info.byte_pos, rlen);
++        if (http->_errno != 0) {  // Error occuered, reset connection
++            ESP_LOGW(TAG, "Got %d errno(%s)", http->_errno, strerror(http->_errno));
++            return http->_errno;
+         }
+         if (http->auto_connect_next_track) {
+             if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
+@@ -564,7 +560,8 @@ static int _http_write(audio_element_handle_t self, char *buffer, int len, TickT
+     }
+ 
+     if ((wrlen = esp_http_client_write(http->client, buffer, len)) <= 0) {
+-        ESP_LOGE(TAG, "Failed to write data to http stream, wrlen=%d, errno=%d", wrlen, errno);
++        http->_errno = esp_http_client_get_errno(http->client);
++        ESP_LOGE(TAG, "Failed to write data to http stream, wrlen=%d, errno=%d(%s)", wrlen, http->_errno, strerror(http->_errno));
+     }
+     return wrlen;
+ }
+@@ -574,10 +571,23 @@ static int _http_process(audio_element_handle_t self, char *in_buffer, int in_le
+     int r_size = audio_element_input(self, in_buffer, in_len);
+     int w_size = 0;
+     if (r_size > 0) {
+-        if (errno != 0) {
+-            errno = 0; // reset error number
+-            return r_size;
++        http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
++        if (http->_errno != 0) {
++            esp_err_t ret = ESP_OK;
++            if (http->connect_times > HTTP_MAX_CONNECT_TIMES) {
++                ESP_LOGE(TAG, "reconnect times more than %d, disconnect http stream", HTTP_MAX_CONNECT_TIMES);
++                return ESP_FAIL;
++            };
++            http->connect_times++;
++            ret |= _http_close(self);
++            ret |= _http_open(self);
++            if (ret != ESP_OK) {
++                ESP_LOGE(TAG, "Failed to reset connection");
++                return ret;
++            }
++            ESP_LOGW(TAG, "reconnect to peer successful");
+         } else {
++            http->connect_times = 0;
+             w_size = audio_element_output(self, in_buffer, r_size);
+             audio_element_multi_output(self, in_buffer, r_size, 0);
+         }
+diff --git a/esp-idf b/esp-idf
+--- a/esp-idf
++++ b/esp-idf
+@@ -1 +1 @@
+-Subproject commit 722043f734fa556d66d57473ac266fb1d0ec5ad2
++Subproject commit 722043f734fa556d66d57473ac266fb1d0ec5ad2-dirty
