@@ -193,8 +193,9 @@ esp_err_t audio_element_process_deinit(audio_element_handle_t el)
     if (el->is_open && el->close) {
         ESP_LOGV(TAG, "[%s] will be closed, line %d", el->tag, __LINE__);
         el->close(el);
-        el->is_open = false;
+
     }
+    el->is_open = false;
     return ESP_OK;
 }
 
@@ -308,7 +309,6 @@ static esp_err_t audio_element_process_running(audio_element_handle_t el)
             case AEL_IO_OK:
                 // Re-open if reset_state function called
                 if (audio_element_get_state(el) == AEL_STATE_INIT) {
-                    el->is_open = false;
                     el->is_running = false;
                     audio_element_cmd_send(el, AEL_MSG_CMD_RESUME);
                     return ESP_OK;
@@ -463,8 +463,8 @@ void audio_element_task(void *pv)
     if (el->is_open && el->close) {
         ESP_LOGD(TAG, "[%s] el closed", el->tag);
         el->close(el);
-        el->is_open = false;
     }
+    el->is_open = false;
     audio_free(el->buf);
     el->stopping = false;
     el->task_run = false;
