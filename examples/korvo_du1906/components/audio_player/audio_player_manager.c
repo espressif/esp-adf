@@ -42,7 +42,16 @@
 
 const static int EP_TSK_INIT_BIT                = BIT0;
 const static int EP_TSK_DELETE_BIT              = BIT1;
-const static int EP_TSK_PLAY_SYNC_BIT           = BIT2;
+const static int EP_TSK_PLAY_SYNC_TONE_BIT      = BIT2;
+const static int EP_TSK_PLAY_SYNC_RUNNING_BIT   = BIT3;
+const static int EP_TSK_PLAY_SYNC_PAUSED_BIT    = BIT4;
+const static int EP_TSK_PLAY_SYNC_STOPPED_BIT   = BIT5;
+const static int EP_TSK_PLAY_SYNC_FINISHED_BIT  = BIT6;
+const static int EP_TSK_PLAY_SYNC_ERROR_BIT     = BIT7;
+
+
+#define AM_ACTION_TIMEOUT                       (3000)
+
 
 typedef struct ap_ops_item {
     STAILQ_ENTRY(ap_ops_item)   next;
@@ -171,23 +180,28 @@ static void audio_player_manager_task (void *para)
                         break;
                     }
                 case AUDIO_STATUS_RUNNING: {
+                        xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_RUNNING_BIT);
                         break;
                     }
                 case AUDIO_STATUS_PAUSED: {
+                        xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_PAUSED_BIT);
                         break;
                     }
                 case AUDIO_STATUS_STOPPED: {
+                        xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_STOPPED_BIT);
                         ESP_LOGI(TAG, "AUDIO_STATUS_STOPPED, resume:%d, is_backup:%d", player->cur_ops->attr.auto_resume, player->is_backup);
                         if (player->cur_ops->attr.blocked) {
-                            xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_BIT);
+                            xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT);
                         }
                         break;
                     }
                 case AUDIO_STATUS_ERROR:
+                    xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_ERROR_BIT);
                     ESP_LOGI(TAG, "AUDIO_STATUS_ERROR, resume:%d, is_backup:%d", player->cur_ops->attr.auto_resume, player->is_backup);
                     is_done = true;
                     break;
                 case AUDIO_STATUS_FINISHED:
+                    xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_FINISHED_BIT);
                     ESP_LOGI(TAG, "AUDIO_STATUS_FINISHED, resume:%d, is_backup:%d", player->cur_ops->attr.auto_resume, player->is_backup);
                     is_done = true;
                     break;
@@ -195,10 +209,10 @@ static void audio_player_manager_task (void *para)
             }
             if (is_done) {
                 if (player->cur_ops->attr.blocked) {
-                    xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_BIT);
+                    xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT);
                 }
                 bool cur_auto_resume = false;
-                player->is_backup = false;
+                // player->is_backup = false;
                 // if (player->is_backup) {
                 //     cur_auto_resume = player->cur_ops->attr.auto_resume;
                 //     ap_manager_restore_audio_info();
@@ -381,7 +395,8 @@ ap_ops_t *ap_manager_find_ops_by_src(int src_type)
 {
     ap_ops_item_t *item, *tmp;
     STAILQ_FOREACH_SAFE(item,  &s_player->ops_list, next, tmp) {
-        ESP_LOGD(TAG, "Find media Src[%x], %p", item->func->para.media_src, item->func->para.ctx);
+        ESP_LOGD(TAG, "Find media Src[%x], %p",
+                 item->func->para.media_src, item->func->para.ctx);
         if (item->func->para.media_src == src_type) {
             return item->func;
         }
@@ -616,27 +631,30 @@ audio_err_t ap_manager_play(const char *url, uint32_t pos, bool blocked, bool au
     esp_audio_state_t st = {0};
     esp_audio_state_get(s_player->audio_handle, &st);
     s_player->prepare_playing = true;
-    ESP_LOGI(TAG, "%s, %d, inter:%d, type:%x, auto:%d, block:%d, %s", __func__, __LINE__, interrupt,
-             type, auto_resume, blocked, ESP_AUDIO_STATUS_STRING[st.status]);
+    ESP_LOGI("AP_MANAGER_PLAY", "Enter:%s, pos:%d, block:%d, auto:%d, mix:%d, inter:%d, type:%x, st:%s", __func__, pos, blocked, auto_resume, mixed, interrupt,
+             type, ESP_AUDIO_STATUS_STRING[st.status]);
+    mutex_lock(s_player->lock_handle);
     if (interrupt == true) {
         ap_manager_backup_audio_info();
     } else {
-        ESP_LOGW(TAG, "Call esp_audio_stop before playing");
-        esp_audio_stop(s_player->audio_handle, TERMINATION_TYPE_NOW);
-    }
-    if (ret != ESP_ERR_AUDIO_NO_ERROR) {
-        s_player->prepare_playing = false;
-        return ret;
+        ESP_LOGI("AP_MANAGER_PLAY", "Call esp_audio_stop before playing");
+        xEventGroupClearBits(s_player->sync_state, EP_TSK_PLAY_SYNC_STOPPED_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT | EP_TSK_PLAY_SYNC_FINISHED_BIT);
+        ret = esp_audio_stop(s_player->audio_handle, TERMINATION_TYPE_NOW);
+        if (ret == ESP_ERR_AUDIO_NO_ERROR) {
+            xEventGroupWaitBits(s_player->sync_state,
+                                EP_TSK_PLAY_SYNC_STOPPED_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT | EP_TSK_PLAY_SYNC_FINISHED_BIT, false, false, AM_ACTION_TIMEOUT / portTICK_PERIOD_MS);
+        } else {
+            ESP_LOGW("AP_MANAGER_PLAY", "Call esp_audio_stop error, ret:%x", ret);
+        }
     }
     if (mixed == true) {
         // TODO
     }
-    mutex_lock(s_player->lock_handle);
     ap_ops_t *tmp = ap_manager_find_ops_by_src(type);
     if (tmp == NULL) {
         mutex_unlock(s_player->lock_handle);
         s_player->prepare_playing = false;
-        ESP_LOGW(TAG, "The media_src type %x not found", type);
+        ESP_LOGW("AP_MANAGER_PLAY", "The media_src type %x not found", type);
         return ESP_ERR_AUDIO_NOT_SUPPORT;
     }
     tmp->attr.blocked = blocked;
@@ -649,27 +667,155 @@ audio_err_t ap_manager_play(const char *url, uint32_t pos, bool blocked, bool au
         tmp->para.url = NULL;
     }
     tmp->para.url = audio_strdup(url);
-    AUDIO_MEM_CHECK(TAG, tmp->para.url, {mutex_unlock(s_player->lock_handle);
-                                         s_player->prepare_playing = false;
-                                         return ESP_ERR_AUDIO_MEMORY_LACK;
-                                        });
+    AUDIO_MEM_CHECK("AP_MANAGER_PLAY", tmp->para.url, {mutex_unlock(s_player->lock_handle);
+                    s_player->prepare_playing = false;
+                    return ESP_ERR_AUDIO_MEMORY_LACK;
+                                                      });
     s_player->cur_ops = tmp;
     ret = esp_audio_media_type_set(s_player->audio_handle, type);
-
     if (blocked == true) {
-        xEventGroupClearBits(s_player->sync_state, EP_TSK_PLAY_SYNC_BIT);
-        ESP_LOGW(TAG, "Blocked playing, %s, type:%x", s_player->cur_ops->para.url, type);
-        ret |= esp_audio_play(s_player->audio_handle, AUDIO_CODEC_TYPE_DECODER, s_player->cur_ops->para.url, 0);
-        EventBits_t uxBits = xEventGroupWaitBits(s_player->sync_state, EP_TSK_PLAY_SYNC_BIT, false, true, portMAX_DELAY);
-        if ((uxBits & EP_TSK_PLAY_SYNC_BIT) == 0) {
-            ESP_LOGW(TAG, "Audio player sync play activity timeout");
-            ret = ESP_ERR_AUDIO_TIMEOUT;
+        ESP_LOGW("AP_MANAGER_PLAY", "Blocked playing, %s, type:%x", s_player->cur_ops->para.url, type);
+        xEventGroupClearBits(s_player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT);
+        mutex_unlock(s_player->lock_handle);
+        ret = esp_audio_play(s_player->audio_handle, AUDIO_CODEC_TYPE_DECODER, s_player->cur_ops->para.url, 0);
+        if (ret == ESP_ERR_AUDIO_NO_ERROR) {
+            EventBits_t uxBits = xEventGroupWaitBits(s_player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT, false, false, portMAX_DELAY);
+            if ((uxBits | EP_TSK_PLAY_SYNC_ERROR_BIT) == EP_TSK_PLAY_SYNC_ERROR_BIT) {
+                esp_audio_state_t st = {0};
+                esp_audio_state_get(s_player->audio_handle, &st);
+                ESP_LOGW("AP_MANAGER_PLAY", "Blocked playing occur an error, src:%x, err:%x", st.media_src, st.err_msg);
+                ret = st.err_msg;
+            }
+        } else {
+            ESP_LOGW("AP_MANAGER_PLAY", "Blocked playing, esp_audio_play return error:%x", ret);
         }
     } else {
-        ESP_LOGW(TAG, "%s, %d, type:%x,auto:%d,block:%d", __func__, __LINE__, type, s_player->cur_ops->attr.auto_resume, s_player->cur_ops->attr.blocked);
-        ret |= esp_audio_play(s_player->audio_handle, AUDIO_CODEC_TYPE_DECODER, s_player->cur_ops->para.url, s_player->cur_ops->para.pos);
+        ESP_LOGW("AP_MANAGER_PLAY", "Unblock playing, type:%x, auto:%d, block:%d", type, s_player->cur_ops->attr.auto_resume, s_player->cur_ops->attr.blocked);
+        mutex_unlock(s_player->lock_handle);
+        ret = esp_audio_play(s_player->audio_handle, AUDIO_CODEC_TYPE_DECODER, s_player->cur_ops->para.url, s_player->cur_ops->para.pos);
+        if (ret == ESP_ERR_AUDIO_NO_ERROR) {
+            EventBits_t uxBits = xEventGroupWaitBits(s_player->sync_state, EP_TSK_PLAY_SYNC_RUNNING_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT, false, false,  AM_ACTION_TIMEOUT / portTICK_PERIOD_MS);
+            if ((uxBits | EP_TSK_PLAY_SYNC_ERROR_BIT) == EP_TSK_PLAY_SYNC_ERROR_BIT) {
+                esp_audio_state_t st = {0};
+                esp_audio_state_get(s_player->audio_handle, &st);
+                ESP_LOGW("AP_MANAGER_PLAY", "Unblock playing occur an error, src:%x, err:%x", st.media_src, st.err_msg);
+                ret = st.err_msg;
+            } else if ((uxBits | EP_TSK_PLAY_SYNC_RUNNING_BIT) == EP_TSK_PLAY_SYNC_RUNNING_BIT) {
+
+            } else {
+                ret = ESP_ERR_AUDIO_TIMEOUT;
+                ESP_LOGW("AP_MANAGER_PLAY", "Unblock playing timeout occurred");
+            }
+        } else {
+            ESP_LOGW("AP_MANAGER_PLAY", "Unblock playing, esp_audio_play return error:%x", ret);
+        }
     }
     s_player->prepare_playing = false;
+    ESP_LOGI("AP_MANAGER_PLAY", "Exit %s", __func__);
+    return ret;
+}
+
+audio_err_t ap_manager_stop(void)
+{
+    int ret = ESP_OK;
+    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
+    if (cur_ops == NULL) {
+        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
+        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
+    }
+    ESP_LOGI(TAG, "Enter:%s", __func__);
+    mutex_lock(s_player->lock_handle);
+    if (cur_ops->stop) {
+        ESP_LOGI(TAG, "stop, cur media type:%x", cur_ops->para.media_src);
+        ret = cur_ops->stop(&cur_ops->attr, &cur_ops->para);
+    }
     mutex_unlock(s_player->lock_handle);
-    return ESP_OK;
+    ESP_LOGI(TAG, "Exit:%s", __func__);
+    return ret;
+}
+
+audio_err_t ap_manager_pause(void)
+{
+    int ret = ESP_OK;
+    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
+    if (cur_ops == NULL) {
+        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
+        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
+    }
+    mutex_lock(s_player->lock_handle);
+    if (cur_ops->pause) {
+        ESP_LOGI(TAG, "pause, cur media type:%x", cur_ops->para.media_src);
+        ret = cur_ops->pause(&cur_ops->attr, &cur_ops->para);
+    }
+    mutex_unlock(s_player->lock_handle);
+    return ret;
+}
+
+audio_err_t ap_manager_resume(void)
+{
+    int ret = ESP_OK;
+    ap_ops_t *cur_ops = ap_manager_find_ops_by_src(s_player->backup_info.st.media_src);
+    if (cur_ops == NULL) {
+        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
+        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
+    }
+    mutex_lock(s_player->lock_handle);
+    if (cur_ops->resume) {
+        ESP_LOGI(TAG, "resume, cur media type:%x", cur_ops->para.media_src);
+        ret = cur_ops->resume(&cur_ops->attr, &cur_ops->para);
+    }
+    mutex_unlock(s_player->lock_handle);
+    return ret;
+}
+
+audio_err_t ap_manager_next(void)
+{
+    int ret = ESP_OK;
+    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
+    if (cur_ops == NULL) {
+        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
+        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
+    }
+    mutex_lock(s_player->lock_handle);
+    if (cur_ops->next) {
+        ESP_LOGI(TAG, "next, cur media type:%x", cur_ops->para.media_src);
+        ret = cur_ops->next(&cur_ops->attr, &cur_ops->para);
+    }
+    mutex_unlock(s_player->lock_handle);
+    return ret;
+}
+
+audio_err_t ap_manager_prev(void)
+{
+    int ret = ESP_OK;
+    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
+    if (cur_ops == NULL) {
+        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
+        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
+    }
+    mutex_lock(s_player->lock_handle);
+    if (cur_ops->prev) {
+        ESP_LOGI(TAG, "prev, cur media type:%x", cur_ops->para.media_src);
+        ret = cur_ops->prev(&cur_ops->attr, &cur_ops->para);
+    }
+    mutex_unlock(s_player->lock_handle);
+    return ret;
+}
+
+audio_err_t ap_manager_seek(int seek_time_sec)
+{
+    audio_err_t ret = ESP_OK;
+    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
+    if (cur_ops == NULL) {
+        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
+        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
+    }
+    mutex_lock(s_player->lock_handle);
+    if (cur_ops->seek) {
+        cur_ops->para.seek_time_sec = seek_time_sec;
+        ESP_LOGI(TAG, "prev, cur media type:%x", cur_ops->para.media_src);
+        ret = cur_ops->seek(&cur_ops->attr, &cur_ops->para);
+    }
+    mutex_unlock(s_player->lock_handle);
+    return ret;
 }
