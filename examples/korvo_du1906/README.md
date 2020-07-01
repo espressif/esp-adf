@@ -23,18 +23,119 @@ This example is will run on boards marked with green checkbox. Please remember t
 | ESP32-Du1906 | ![alt text](../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DUL1906") | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "Compatible") |
 | ESP32-S2-Kaluga-1 Kit | ![alt text](../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit") | <img src="../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../docs/_static/no-button.png "Compatible") |
 
-## Configure the project
-Please refer to [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html#get-started) for toolchain setup.
+## Setup software environment
+
+Please refer to [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html#get-started).
+
+## Authentication code
+
+Please refer to [度家 AIOT 快速入门](https://cloud.baidu.com/doc/SHC/s/wk7bl9g8i) and apply for factory code (fc), product Key (pk), access key (ak) and secret key (sk) that should be then saved in `profiles/profile.bin`
+
+## Jumpstart the example
+No need to compile the project, just use the firmware in this example.
+
+The firmware downloading flash address refer to follow table.
+
+Flash address | Bin Path
+---|---
+0x1000 | bootloader.bin
+0x8000 | partitions.bin
+0x10000 | app.bin
+0x542000 | dsp_v1.4.0.C.bin
+0x7c2000 | profile.bin
+0x7c3000 | audio_tone.bin
+
+### Download firmware
+
+#### Linux operating system
+
+Run the command below:
+```bash
+python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
+--port PORT --baud 921600 \
+--before default_reset \
+--after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect \
+0x1000   ./firmware/bootloader.bin \
+0x8000   ./firmware/partitions.bin \
+0x10000  ./firmware/app.bin \
+0x542000 ./firmware/dsp_v1.4.0.C.bin \
+0x7c2000 ./profiles/profile.bin \
+0x7c3000 ./tone/audio_tone.bin
+```
+#### Windows operating system
+
+- **step 1:** [Download the firmware download tool](https://www.espressif.com/sites/default/files/tools/flash_download_tool_v3.8.5_0.zip) and unzip the compressed package, then run the executable file with ".exe" suffix.
+- **step 2:** Choose download mode (Developer Mode)
+
+    <img src="./docs/pictures/tool_choose_mode.jpg" height="320" width="480" alt="Tool choose mode">
+
+- **step 3:** Choose chip (ESP32)
+
+    <img src="./docs/pictures/tool_choose_chip.jpg" height="640" width="480" alt="Tool choose chip">
+
+- **step 4:** open firmware directory (`$ADF_PATH/example/korvo_du1906/firmware`) and fill in the address according to the above flash address table.
+
+    <img src="./docs/pictures/tool_download.png" height="640" width="480" alt="Tool download">
+
+**Note: The tone bin is in `$ADF_PATH/example/korvo_du1906/tone/audio_tone.bin` and profile.bin is in `$ADF_PATH/example/korvo_du1906/profile/profile.bin`**
+
+- **step 5:** Click `START` button on the graphical interface to download the firmware
+
+After download firmware, press `[RST]` button, and then there will be some logs print on the serial port.
+
+### Network configuration
+
+- **step 1:** Download and install Blufi app on cell phone, [App for Andriod](https://github.com/EspressifApp/EspBlufiForAndroid/releases), [App for IOS](https://github.com/EspressifApp/EspBlufiForiOS/releases)
+- **step 2:** Open bluetooth and open blufi app on mobilephone, scan the device.
+- **step 3:** Press `[FUNC]` button on device for 4s, the device will enter wifi-setting mode, and play a tone music "请点击确认开始配网".
+- **step 4:** Fresh the scan list, there will be a device named "BLUFI_DEVICE", click it and choose `[连接]` on phone.
+
+    <img src="./docs/pictures/blufi_connect.png" height="640" width="480" alt="Blufi connect">
+
+- **step 5:** After connect to device, click `[配网]`, input wifi ssid and password that to connect.
+- **step 6:** Click `[确认]`, the device will acquire the wifi information and connect to network. If conenct to wifi successfully, the app will receive a string "hello world" and the device will play a tone music "网络连接成功".
+
+    <img src="./docs/pictures/blufi_config.png" height="640" width="480" alt="Blufi configuration">
+
+**Note: If configurate fails, check the above process and try again. Be careful and patient!**
+
+### Features experience
+
+**Note that, please make sure that there is a speaker inserts to the board at least.**
+
+#### Voice interaction
+
+After configurate wifi information and connect to network, you can start a conversation with a voice wake-up word "xiaodu xiaodu", such as below supported command:
+- "小度小度" "在呢" "讲个笑话"
+- "小度小度" "在呢" "上海天气怎么样？"
+- "小度小度" "在呢" "播放一首歌"
+- "小度小度" "在呢" "百度百科乐鑫信息科技"
+
+If you need more instructions, you can define them in the background of Baidu.
+
+#### bluetooth music
+
+Press `[MUTE]` button for 3-5s enter BT mode, open bluetooth on your phone and connect to device named "ESP_BT_COEX_DEV", and then you can play bt music on the device.
+
+#### Buttons usage
+Name of Button | Short press | Long press
+:-:|:-:|:-:
+VOL + | Volume up | NA
+VOL - | Volume down| NA
+MUTE | Enter mute mode |Enter/Exit BT mode
+FUNC | NA |Setting Wi-Fi
+
+## Build and flash
+
+After the experience, it's time to build the example now! you can also add some features by yourself and then build it.
 
 ### Apply patch
+
 For now, we need to apply an IDF patch.
 ```bash
 cd $IDF_PATH
 git apply $ADF_PATH/idf_patches/idf_v3.3_freertos.patch
 ```
-### Authentication code
-
-Please refer to [度家 AIOT 快速入门](https://cloud.baidu.com/doc/SHC/s/wk7bl9g8i) and apply for factory code (fc), product Key (pk), access key (ak) and secret key (sk) that should be then saved in `profiles/profile.bin`
 
 ###  Menuconfig
 
@@ -44,9 +145,8 @@ Select the default sdkconfig for build
 cp sdkconfig.defaults sdkconfig
 ```
 
-## Build and Flash
-
 ### Build
+
 You can use `GNU make` or `cmake` to build the project.
 If you are using make:
 ```bash
@@ -63,6 +163,7 @@ idf.py fullclean
 idf.py menuconfig
 idf.py build
 ```
+
 ### Downloading
 
 Download application with make
@@ -87,27 +188,11 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 0x7c3000 ./tone/audio_tone.bin
 ```
 
-The firmware downloading flash address refer to follow table.
+The firmware downloading flash address refer to above table in jumpstart part.
 
-Flash address | Bin Path
----|---
-0x1000 | bootloader.bin
-0x8000 | partitions.bin
-0x10000 | app.bin
-0x542000 | dsp_v1.4.0.C.bin
-0x7c2000 | profile.bin
-0x7c3000 | audio_tone.bin
+### Usage
 
-## Usage
-- Name of BT device  is `ESP_BT_COEX_DEV`
-
-### Keys
-Name of Key | Short press | Long press
----|---|---
-Vol + | Volume up | NA
-Vol - | Volume down| NA
-Mute | NA |Enter/Exit BT mode
-Func | NA |Setting Wi-Fi
+Please refer to jumpstart part.
 
 ### Upgrade function
 
