@@ -207,7 +207,7 @@ void app_init(void)
     esp_log_level_set("spi_master", ESP_LOG_WARN);
     esp_log_level_set("ESP_AUDIO_CTRL", ESP_LOG_WARN);
     esp_log_level_set("ESP_AUDIO_TASK", ESP_LOG_INFO);
-    // esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("AUDIO_MANAGER", ESP_LOG_DEBUG);
 
     WIFI_CONNECTED_FLAG = xEventGroupCreate();
 

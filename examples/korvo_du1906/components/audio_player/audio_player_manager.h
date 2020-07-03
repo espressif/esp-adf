@@ -239,6 +239,90 @@ audio_err_t ap_manager_event_unregister(void *que);
  */
 audio_err_t ap_manager_play(const char *url, uint32_t pos, bool blocked, bool auto_resume, bool mixed, bool interrupt, media_source_type_t type);
 
+/**
+ * @brief A synchronous interface for stop the player. The maximum of block time is 8000ms.
+ *
+ * @note 1. If user queue has been registered by evt_que, AUDIO_STATUS_STOPPED event for success
+ *       or AUDIO_STATUS_ERROR event for error will be received.
+ *       2. `TERMINATION_TYPE_DONE` only works with input stream which can't stopped by itself,
+ *       e.g. `raw read/write stream`, others streams are no effect.
+ *       3. The synchronous interface is used to ensure that working pipeline is stopped.
+ *
+ * @param type   Stop immediately or done
+ *
+ * @return
+ *      - ESP_ERR_AUDIO_NO_ERROR: on success
+ *      - ESP_ERR_AUDIO_INVALID_PARAMETER: invalid arguments
+ *      - ESP_ERR_AUDIO_NOT_READY: The status is not AUDIO_STATUS_RUNNING or AUDIO_STATUS_PAUSED
+ *      - ESP_ERR_AUDIO_TIMEOUT: timeout(8000ms) the stop activity.
+ */
+audio_err_t ap_manager_stop(void);
+
+/**
+ * @brief Pause the player
+ *
+ * @note 1. Only support music and without live stream. If user queue has been registered by evt_que, AUDIO_STATUS_PAUSED event for success
+ *       or AUDIO_STATUS_ERROR event for error will be received.
+ *       2. The Paused music must be stoped by `player_stop` before new playing, otherwise got block on new play.
+ *
+ * @return
+ *      - ESP_ERR_AUDIO_NO_ERROR: on success
+ *      - ESP_ERR_AUDIO_INVALID_PARAMETER: invalid arguments
+ *      - ESP_ERR_AUDIO_NOT_READY: the status is not running
+ *      - ESP_ERR_AUDIO_TIMEOUT: timeout(8000ms) the pause activity.
+ */
+
+audio_err_t ap_manager_pause(void);
+
+/**
+ * @brief Resume the music paused
+ *
+ * @note Only support music and without live stream. If user queue has been registered by evt_que, AUDIO_STATUS_RUNNING event for success
+ *       or AUDIO_STATUS_ERROR event for error will be received.
+ *
+ * @return
+ *      - ESP_ERR_AUDIO_NO_ERROR: on success
+ *      - ESP_ERR_AUDIO_INVALID_PARAMETER: invalid arguments
+ *      - ESP_ERR_AUDIO_TIMEOUT: timeout(8000ms) the resume activity.
+ */
+audio_err_t ap_manager_resume(void);
+
+/*
+ * @brief Set current uri as next uri in current play list,
+ *
+ * @return
+ *      - ESP_ERR_AUDIO_NO_ERROR: on success
+ *      - ESP_ERR_AUDIO_INVALID_PARAMETER: invalid arguments
+ */
+audio_err_t ap_manager_next(void);
+
+/*
+ * @brief Set current uri as previous uri in current play list,
+ *
+ * @return
+ *      - ESP_ERR_AUDIO_NO_ERROR: on success
+ *      - ESP_ERR_AUDIO_INVALID_PARAMETER: invalid arguments
+ */
+audio_err_t ap_manager_prev(void);
+
+/**
+ * @brief Seek the position in second of currently played music.
+ *
+ * @note This function works only with decoding music.
+ *
+ * @param seek_time_sec     A specific integer value to indicate player decoding position.
+ *
+ * @return
+ *      - ESP_ERR_AUDIO_NO_ERROR: on success
+ *      - ESP_ERR_AUDIO_FAIL: codec or allocation failure
+ *      - ESP_ERR_AUDIO_TIMEOUT: timeout for sync the element status
+ *      - ESP_ERR_AUDIO_INVALID_PARAMETER: no player instance
+ *      - ESP_ERR_AUDIO_NOT_SUPPORT: codec has finished
+ *      - ESP_ERR_AUDIO_OUT_OF_RANGE: the seek_time_ms is out of the range
+ *      - ESP_ERR_AUDIO_NOT_READY: the status is neither running nor paused
+ */
+audio_err_t ap_manager_seek(int seek_time_sec);
+
 #ifdef __cplusplus
 }
 #endif

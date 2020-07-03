@@ -136,94 +136,32 @@ audio_err_t audio_player_raw_waiting_finished(void)
 
 audio_err_t audio_player_stop(void)
 {
-    int ret = ESP_OK;
-    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
-    if (cur_ops == NULL) {
-        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
-        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
-    }
-    if (cur_ops->stop) {
-        ESP_LOGI(TAG, "stop, cur media type:%x", cur_ops->para.media_src);
-        ret = cur_ops->stop(&cur_ops->attr, &cur_ops->para);
-    }
-    return ret;
+    return ap_manager_stop();
 }
 
 audio_err_t audio_player_pause(void)
 {
-    int ret = ESP_OK;
-    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
-    if (cur_ops == NULL) {
-        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
-        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
-    }
-    if (cur_ops->pause) {
-        ESP_LOGI(TAG, "pause, cur media type:%x", cur_ops->para.media_src);
-        ret = cur_ops->pause(&cur_ops->attr, &cur_ops->para);
-    }
-    return ret;
+    return ap_manager_pause();
 }
 
 audio_err_t audio_player_resume(void)
 {
-    int ret = ESP_OK;
-    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
-    if (cur_ops == NULL) {
-        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
-        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
-    }
-    ESP_LOGI(TAG, "resume, cur media type:%x", cur_ops->para.media_src);
-    if (cur_ops->resume) {
-        ESP_LOGI(TAG, "resume, cur media type:%x", cur_ops->para.media_src);
-        ret = cur_ops->resume(&cur_ops->attr, &cur_ops->para);
-    }
-    return ret;
+    return ap_manager_resume();
 }
 
 audio_err_t audio_player_next(void)
 {
-    int ret = ESP_OK;
-    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
-    if (cur_ops == NULL) {
-        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
-        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
-    }
-    if (cur_ops->next) {
-        ESP_LOGI(TAG, "next, cur media type:%x", cur_ops->para.media_src);
-        ret = cur_ops->next(&cur_ops->attr, &cur_ops->para);
-    }
-    return ret;
+    return ap_manager_next();
 }
 
 audio_err_t audio_player_prev(void)
 {
-    int ret = ESP_OK;
-    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
-    if (cur_ops == NULL) {
-        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
-        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
-    }
-    if (cur_ops->prev) {
-        ESP_LOGI(TAG, "prev, cur media type:%x", cur_ops->para.media_src);
-        ret = cur_ops->prev(&cur_ops->attr, &cur_ops->para);
-    }
-    return ret;
+    return ap_manager_prev();
 }
 
 audio_err_t audio_player_seek(int seek_time_sec)
 {
-    audio_err_t ret = ESP_OK;
-    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
-    if (cur_ops == NULL) {
-        ESP_LOGW(TAG, "%s, not found the current operations", __func__);
-        return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
-    }
-    if (cur_ops->seek) {
-        cur_ops->para.seek_time_sec = seek_time_sec;
-        ESP_LOGI(TAG, "prev, cur media type:%x", cur_ops->para.media_src);
-        ret = cur_ops->seek(&cur_ops->attr, &cur_ops->para);
-    }
-    return ret;
+    return ap_manager_seek(seek_time_sec);
 }
 
 audio_err_t audio_player_duration_get(int *duration)
