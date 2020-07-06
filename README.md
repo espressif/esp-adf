@@ -45,7 +45,7 @@ Espressif Systems has released a number of boards for ESP-ADF to develop audio a
 | ESP32-Korvo-DU1906 Development Board |
 | :----: |
 | [<img src="docs/_static/esp32-korvo-du1906-v1.1.png" width="380" alt ="ESP32-Korvo-DU1906 Development Board" align="center" />](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | 
-| [Getting Started with ESP32-Korvo-DU1906](https://docs.espressif.com/projects/esp-adf/en/latest/get-started-esp32-korvo-du1906.html) |
+| [Getting Started with ESP32-Korvo-DU1906](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) |
 
 #### ESP32-LyraT
 
@@ -90,7 +90,7 @@ ESP32-Korvo-DU1906 is an Espressif audio development board with an ESP32-DU1906 
 
 [<div align="center"><img src="docs/_static/esp32-korvo-du1906-v1.1.png" width="600" alt ="ESP32-Korvo-DU1906 Development Board" align="center" /></div>](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html)
 
-* [ESP32-Korvo-DU1906 User Guide](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html)
+* [Getting Started with ESP32-Korvo-DU1906](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html)
 * [ESP32-Korvo-DU1906 Schematic (PDF) ](https://dl.espressif.com/dl/schematics/ESP32-Korvo-DU1906-schematics.pdf)
 
 #### Examples
