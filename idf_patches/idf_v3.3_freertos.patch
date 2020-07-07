@@ -1,5 +1,5 @@
 diff --git a/components/freertos/include/freertos/task.h b/components/freertos/include/freertos/task.h
-index adefb3a85..66a77733c 100644
+index adefb3a85..b05c91bd4 100644
 --- a/components/freertos/include/freertos/task.h
 +++ b/components/freertos/include/freertos/task.h
 @@ -674,6 +674,38 @@ is used in assert() statements. */
@@ -9,7 +9,7 @@ index adefb3a85..66a77733c 100644
 +
 +/** @cond */
 +/**
-+ * xTaskCreateRestrictedPinnedToCore() should only be used in systems that 
++ * xTaskCreateRestrictedPinnedToCore() should only be used in systems that
 + * include an MPU implementation.
 + *
 + * Create a new task and add it to the list of tasks that are ready to run.
@@ -42,7 +42,7 @@ index adefb3a85..66a77733c 100644
  
  
 diff --git a/components/freertos/tasks.c b/components/freertos/tasks.c
-index 001735c25..d1d2a76e5 100644
+index 001735c25..7248bad70 100644
 --- a/components/freertos/tasks.c
 +++ b/components/freertos/tasks.c
 @@ -756,6 +756,47 @@ void taskYIELD_OTHER_CORE( BaseType_t xCoreID, UBaseType_t uxPriority )
@@ -80,7 +80,7 @@ index 001735c25..d1d2a76e5 100644
 +										pxTaskDefinition->uxPriority,
 +										pxCreatedTask, pxNewTCB,
 +										pxTaskDefinition->xRegions,
-+										tskNO_AFFINITY );
++										xCoreID );
 +
 +				prvAddNewTaskToReadyList( pxNewTCB, pxTaskDefinition->pvTaskCode, xCoreID );
 +				xReturn = pdPASS;
