@@ -87,44 +87,11 @@ void esp_dlna_rcs_register_service(upnp_handle_t upnp)
     };
 
     const service_notify_t rcs_notify[] = {
-        {
-            .name = "Volume",
-            .num_attrs = 2,
-            .attrs = (const upnp_attr_t[])
-            {
-                { .name = "Channel", .val = CONST_STR("Master"),           .type = (ATTR_TYPE_STR | ATTR_CONST)   },
-                { .name = "val",     .val = ATTR_CB(esp_dlna_upnp_attr_cb), .type = (ATTR_CALLBACK | RCS_GET_VOL) },
-            },
 
-        },
-        {
-            .name = "Mute",
-            .num_attrs = 2,
-            .attrs = (const upnp_attr_t[])
-            {
-                { .name = "Channel", .val = CONST_STR("Master"),            .type = (ATTR_TYPE_STR | ATTR_CONST)   },
-                { .name = "val",     .val = ATTR_CB(esp_dlna_upnp_attr_cb), .type = (ATTR_CALLBACK | RCS_GET_MUTE) },
-            },
-
-        },
-        {
-            .name = "PresetNameList",
-            .num_attrs = 1,
-            .attrs = (const upnp_attr_t[])
-            {
-                { .name = "val",  .val = CONST_STR("FactoryDefaults"), .type = (ATTR_TYPE_STR | ATTR_CONST) },
-            }
-
-        },
-        {
-            .name = "VolumeDB",
-            .num_attrs = 2,
-            .attrs = (const upnp_attr_t[])
-            {
-                { .name = "Channel", .val = CONST_STR("Master"),     .type = (ATTR_TYPE_STR | ATTR_CONST)   },
-                { .name = "val",     .val = 0,                       .type = (ATTR_TYPE_INT | ATTR_CONST)   },
-            }
-        },
+        { .name = "Volume",             ONE_ATTR_CB_TYPE("val", esp_dlna_upnp_attr_cb, RCS_GET_VOL)     },
+        { .name = "Mute",               ONE_ATTR_CB_TYPE("val", esp_dlna_upnp_attr_cb, RCS_GET_MUTE)    },
+        { .name = "PresetNameList",     ONE_ATTR_CONST("val", "FactoryDefaults")                        },
+        { .name = "LastChange",         ONE_ATTR_CONST("val", "NOT_IMPLEMENTED")                        },
         { .name = NULL  },
     };
 

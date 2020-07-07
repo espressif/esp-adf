@@ -9,6 +9,6 @@ set(COMPONENT_EMBED_TXTFILES 	xml/ConnectionManager.xml
                                 xml/EventLastChange.xml
                                 xml/EventProtocolCMR.xml)
 
-set(COMPONENT_REQUIRES esp-adf-libs esp_http_server)
+set(COMPONENT_REQUIRES esp-adf-libs esp_http_server audio_sal)
 
 register_component()

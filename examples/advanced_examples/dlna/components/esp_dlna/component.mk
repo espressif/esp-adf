@@ -7,6 +7,7 @@ COMPONENT_ADD_INCLUDEDIRS := include
 COMPONENT_SRCDIRS :=  .
 
 COMPONENT_EMBED_TXTFILES := xml/rootDesc.xml \
+                            xml/devicelist.xml \
                             xml/rootDescLogo.xml \
                             xml/rootDescService.xml \
                             xml/SoapResponseErr.xml \

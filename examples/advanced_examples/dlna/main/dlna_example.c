@@ -7,43 +7,32 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
-#include <string.h>
-
-#include "esp_system.h"
-#include "esp_wifi.h"
-#include "esp_event_loop.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "board.h"
+#include "esp_peripherals.h"
+#include "periph_wifi.h"
 
-#include "lwip/err.h"
-#include "lwip/sys.h"
+#include "audio_mem.h"
+#include "esp_wifi.h"
 #include "esp_ssdp.h"
 #include "esp_dlna.h"
 
-#include "sdkconfig.h"
-#include "esp_peripherals.h"
-#include "periph_wifi.h"
-#include "board.h"
-
 #include "esp_audio.h"
-#include "audio_mem.h"
 #include "esp_decoder.h"
-#include "aac_decoder.h"
-#include "mp3_decoder.h"
-#include "wav_decoder.h"
 #include "http_stream.h"
 #include "i2s_stream.h"
 
 static const char *TAG = "DLNA_EXAMPLE";
 
-#define DLNA_UNIQUE_DEVICE_NAME "8db0797a-f01a-4949-8f59-51188b181809"
+#define DLNA_UNIQUE_DEVICE_NAME "ESP32_DMR_8db0797a"
+#define DLNA_DEVICE_UUID "8db0797a-f01a-4949-8f59-51188b181809"
 #define DLNA_ROOT_PATH "/rootDesc.xml"
-#define MAX_UINT32_STR "2147483647"
 
 static esp_audio_handle_t player = NULL;
-esp_dlna_handle_t dlna_handle = NULL;
+static esp_dlna_handle_t  dlna_handle = NULL;
 
-static int vol = 100, mute = 0;
+static int vol, mute;
 static char *track_uri = NULL;
 static const char *trans_state = "STOPPED";
 
@@ -56,15 +45,16 @@ static void player_event_handler(esp_audio_state_t *state, void *ctx)
     switch (state->status) {
         case AUDIO_STATUS_RUNNING:
             trans_state = "PLAYING";
-            esp_dlna_notify_avt(dlna_handle, 0);
-            break;
-        case AUDIO_STATUS_STOPPED:
-            trans_state = "STOPPED";
-            esp_dlna_notify_avt(dlna_handle, 0);
+            esp_dlna_notify_avt_by_action(dlna_handle, "TransportState");
             break;
         case AUDIO_STATUS_PAUSED:
             trans_state = "PAUSED_PLAYBACK";
-            esp_dlna_notify_avt(dlna_handle, 0);
+            esp_dlna_notify_avt_by_action(dlna_handle, "TransportState");
+            break;
+        case AUDIO_STATUS_STOPPED:
+        case AUDIO_STATUS_FINISHED:
+            trans_state = "STOPPED";
+            esp_dlna_notify_avt_by_action(dlna_handle, "TransportState");
             break;
         default:
             break;
@@ -75,6 +65,7 @@ int renderer_request(esp_dlna_handle_t dlna, const upnp_attr_t *attr, int attr_n
 {
     int req_type;
     int tmp_data = 0, buffer_len = 0;
+    int hour = 0, min = 0, sec = 0;
 
     if (attr_num != 1) {
         return 0;
@@ -83,17 +74,17 @@ int renderer_request(esp_dlna_handle_t dlna, const upnp_attr_t *attr, int attr_n
     req_type = attr->type & 0xFF;
     switch (req_type) {
         case RCS_GET_MUTE:
-            ESP_LOGI(TAG, "get mute = %d", mute);
+            ESP_LOGD(TAG, "get mute = %d", mute);
             return snprintf(buffer, max_buffer_len, "%d", mute);
         case RCS_SET_MUTE:
             mute = atoi(buffer);
-            ESP_LOGI(TAG, "set mute = %d", mute);
+            ESP_LOGD(TAG, "set mute = %d", mute);
             if (mute) {
                 esp_audio_vol_set(player, 0);
             } else {
                 esp_audio_vol_set(player, vol);
             }
-            esp_dlna_notify_rcs(dlna, 0);
+            esp_dlna_notify(dlna, "RenderingControl");
             return 0;
         case RCS_GET_VOL:
             esp_audio_vol_get(player, &vol);
@@ -103,7 +94,7 @@ int renderer_request(esp_dlna_handle_t dlna, const upnp_attr_t *attr, int attr_n
             vol = atoi(buffer);
             ESP_LOGI(TAG, "set vol = %d", vol);
             esp_audio_vol_set(player, vol);
-            esp_dlna_notify_rcs(dlna, 0);
+            esp_dlna_notify(dlna, "RenderingControl");
             return 0;
         case AVT_PLAY:
             ESP_LOGI(TAG, "Play with speed=%s trans_state %s", buffer, trans_state);
@@ -111,29 +102,32 @@ int renderer_request(esp_dlna_handle_t dlna, const upnp_attr_t *attr, int attr_n
             esp_audio_state_get(player, &state);
             if (state.status == AUDIO_STATUS_PAUSED) {
                 esp_audio_resume(player);
-                esp_dlna_notify_rcs(dlna, 0);
+                esp_dlna_notify(dlna, "AVTransport");
                 break;
             } else if (track_uri != NULL) {
                 esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, track_uri, 0);
-                esp_dlna_notify_rcs(dlna, 0);
+                esp_dlna_notify(dlna, "AVTransport");
             }
             return 0;
         case AVT_STOP:
             ESP_LOGI(TAG, "Stop instance=%s", buffer);
             esp_audio_stop(player, TERMINATION_TYPE_NOW);
+            esp_dlna_notify_avt_by_action(dlna_handle, "TransportState");
             return 0;
         case AVT_PAUSE:
             ESP_LOGI(TAG, "Pause instance=%s", buffer);
             esp_audio_pause(player);
+            esp_dlna_notify_avt_by_action(dlna_handle, "TransportState");
             return 0;
         case AVT_NEXT:
         case AVT_PREV:
             esp_audio_stop(player, TERMINATION_TYPE_NOW);
             return 0;
         case AVT_SEEK:
-            tmp_data = atoi(buffer);
+            sscanf(buffer, "%d:%d:%d", &hour, &min, &sec);
+            tmp_data = hour*3600 + min*60 + sec;
             ESP_LOGI(TAG, "Seekto %d s", tmp_data);
-            //esp_audio_seek(player, tmp_data);
+            esp_audio_seek(player, tmp_data);
             return 0;
         case AVT_SET_TRACK_URI:
             ESP_LOGI(TAG, "SetAVTransportURI=%s", buffer);
@@ -141,11 +135,16 @@ int renderer_request(esp_dlna_handle_t dlna, const upnp_attr_t *attr, int attr_n
             esp_audio_state_get(player, &state_t);
             if ((track_uri != NULL) && (state_t.status == AUDIO_STATUS_RUNNING) && strcasecmp(track_uri, buffer)) {
                 esp_audio_stop(player, TERMINATION_TYPE_NOW);
-                esp_dlna_notify_rcs(dlna, 0);
+                esp_dlna_notify(dlna, "AVTransport");
             }
             free(track_uri);
             track_uri = NULL;
-            asprintf(&track_uri, "%s", buffer);
+            if (track_uri == NULL) {
+                asprintf(&track_uri, "%s", buffer);
+            }
+            return 0;
+        case AVT_SET_TRACK_METADATA:
+            ESP_LOGD(TAG, "CurrentURIMetaData=%s", buffer);
             return 0;
         case AVT_GET_TRACK_URI:
             if (track_uri != NULL) {
@@ -165,8 +164,9 @@ int renderer_request(esp_dlna_handle_t dlna, const upnp_attr_t *attr, int attr_n
         case AVT_GET_TRACK_DURATION:
         case AVT_GET_MEDIA_DURATION:
             esp_audio_duration_get(player, &tmp_data);
-            buffer_len = snprintf(buffer, max_buffer_len, "%d", tmp_data);
-            ESP_LOGI(TAG, "_avt_get_duration %s", buffer);
+            tmp_data /= 1000;
+            buffer_len = snprintf(buffer, max_buffer_len, "%02d:%02d:%02d", tmp_data / 3600, tmp_data / 60, tmp_data % 60);
+            ESP_LOGD(TAG, "_avt_get_duration %s", buffer);
             return buffer_len;
         case AVT_GET_TRACK_NO:
             return snprintf(buffer, max_buffer_len, "%d", 1);
@@ -177,19 +177,32 @@ int renderer_request(esp_dlna_handle_t dlna, const upnp_attr_t *attr, int attr_n
             esp_audio_time_get(player, &tmp_data);
             tmp_data /= 1000;
             buffer_len = snprintf(buffer, max_buffer_len, "%02d:%02d:%02d", tmp_data / 3600, tmp_data / 60, tmp_data % 60);
-            ESP_LOGI(TAG, "_avt_get_time %s", buffer);
+            ESP_LOGD(TAG, "_avt_get_time %s", buffer);
             return buffer_len;
         // case AVT_GET_POS_ABSCOUNT:
         case AVT_GET_POS_RELCOUNT:
             esp_audio_pos_get(player, &tmp_data);
             buffer_len = snprintf(buffer, max_buffer_len, "%d", tmp_data);
-            ESP_LOGI(TAG, "_avt_get_pos %s", buffer);
+            ESP_LOGD(TAG, "_avt_get_pos %s", buffer);
             return buffer_len;
     }
     return 0;
 }
 
-#define ESP_AUDIO_AUTO_PLAY
+static int _http_stream_event_handle(http_stream_event_msg_t *msg)
+{
+    if (msg->event_id == HTTP_STREAM_RESOLVE_ALL_TRACKS) {
+        return ESP_OK;
+    }
+    if (msg->event_id == HTTP_STREAM_FINISH_TRACK) {
+        return http_stream_next_track(msg->el);
+    }
+    if (msg->event_id == HTTP_STREAM_FINISH_PLAYLIST) {
+        return http_stream_restart(msg->el);
+    }
+    return ESP_OK;
+}
+
 static void audio_player_init(void)
 {
     audio_board_handle_t board_handle = audio_board_init();
@@ -205,13 +218,14 @@ static void audio_player_init(void)
 
     // Create readers and add to esp_audio
     http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
+    http_cfg.event_handle = _http_stream_event_handle;
     http_cfg.type = AUDIO_STREAM_READER;
-    http_cfg.enable_playlist_parser = false;
+    http_cfg.enable_playlist_parser = true;
+    http_cfg.task_prio = 12;
+    http_cfg.stack_in_ext = true;
     audio_element_handle_t http_stream_reader = http_stream_init(&http_cfg);
     esp_audio_input_stream_add(player, http_stream_reader);
 
-    // Add decoders to esp_audio
-#ifdef ESP_AUDIO_AUTO_PLAY
     audio_decoder_t auto_decode[] = {
         DEFAULT_ESP_MP3_DECODER_CONFIG(),
         DEFAULT_ESP_WAV_DECODER_CONFIG(),
@@ -220,27 +234,12 @@ static void audio_player_init(void)
         DEFAULT_ESP_TS_DECODER_CONFIG(),
     };
     esp_decoder_cfg_t auto_dec_cfg = DEFAULT_ESP_DECODER_CONFIG();
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, esp_decoder_init(&auto_dec_cfg, auto_decode, 10));
-#else
-    mp3_decoder_cfg_t  mp3_dec_cfg  = DEFAULT_MP3_DECODER_CONFIG();
-    wav_decoder_cfg_t  wav_dec_cfg  = DEFAULT_WAV_DECODER_CONFIG();
-    aac_decoder_cfg_t  aac_dec_cfg  = DEFAULT_AAC_DECODER_CONFIG();
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, esp_decoder_init(&auto_dec_cfg, auto_decode, 5));
 
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, aac_decoder_init(&aac_dec_cfg));
-
-    audio_element_handle_t m4a_dec_cfg = aac_decoder_init(&aac_dec_cfg);
-    audio_element_set_tag(m4a_dec_cfg, "m4a");
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, m4a_dec_cfg);
-
-    audio_element_handle_t ts_dec_cfg = aac_decoder_init(&aac_dec_cfg);
-    audio_element_set_tag(ts_dec_cfg, "ts");
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, ts_dec_cfg);
-#endif
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
+    i2s_writer.stack_in_ext = true;
     i2s_writer.i2s_config.sample_rate = 48000;
     i2s_writer.task_core = 1;
     esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
@@ -249,10 +248,60 @@ static void audio_player_init(void)
     esp_audio_vol_set(player, 35);
 }
 
+static void start_dlna()
+{
+    const ssdp_service_t ssdp_service[] = {
+        { DLNA_DEVICE_UUID, "upnp:rootdevice",                                  NULL },
+        { DLNA_DEVICE_UUID, "urn:schemas-upnp-org:device:MediaRenderer:1",      NULL },
+        { DLNA_DEVICE_UUID, "urn:schemas-upnp-org:service:ConnectionManager:1", NULL },
+        { DLNA_DEVICE_UUID, "urn:schemas-upnp-org:service:RenderingControl:1",  NULL },
+        { DLNA_DEVICE_UUID, "urn:schemas-upnp-org:service:AVTransport:1",       NULL },
+        { NULL, NULL, NULL },
+    };
+
+    ssdp_config_t ssdp_config = SSDP_DEFAULT_CONFIG();
+    ssdp_config.udn = DLNA_UNIQUE_DEVICE_NAME;
+    ssdp_config.location = "http://${ip}"DLNA_ROOT_PATH;
+    ssdp_start(&ssdp_config, ssdp_service);
+
+    static httpd_handle_t httpd = NULL;
+    httpd_config_t httpd_config = HTTPD_DEFAULT_CONFIG();
+    httpd_config.max_uri_handlers = 25;
+    httpd_config.stack_size = 6 * 1024;
+    if (httpd_start(&httpd, &httpd_config) != ESP_OK) {
+        ESP_LOGI(TAG, "Error starting httpd");
+    }
+
+    extern const uint8_t logo_png_start[] asm("_binary_logo_png_start");
+    extern const uint8_t logo_png_end[] asm("_binary_logo_png_end");
+
+    dlna_config_t dlna_config = {
+        .friendly_name = "ESP32 MD (ESP32 Renderer)",
+        .uuid = (const char *)DLNA_DEVICE_UUID,
+        .logo               = {
+            .mime_type  = "image/png",
+            .data       = (const char *)logo_png_start,
+            .size       = logo_png_end - logo_png_start,
+        },
+        .httpd          = httpd,
+        .httpd_port     = httpd_config.server_port,
+        .renderer_req   = renderer_request,
+        .root_path      = DLNA_ROOT_PATH,
+        .device_list    = false
+    };
+
+    dlna_handle = esp_dlna_start(&dlna_config);
+
+    ESP_LOGI(TAG, "DLNA Started...");
+}
+
 void app_main()
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set(TAG, ESP_LOG_DEBUG);
+    esp_log_level_set(TAG, ESP_LOG_INFO);
+    esp_log_level_set("AUDIO_ELEMENT", ESP_LOG_WARN);
+    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_ERROR);
+    esp_log_level_set("ESP_AUDIO_CTRL", ESP_LOG_WARN);
 
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES) {
@@ -275,47 +324,5 @@ void app_main()
     audio_player_init();
     esp_audio_callback_set(player, player_event_handler, NULL);
 
-    ssdp_config_t ssdp_config = {
-        .udn = DLNA_UNIQUE_DEVICE_NAME,
-        .location = "http://${ip}"DLNA_ROOT_PATH, //default location
-    };
-    const ssdp_service_t ssdp_service[] = {
-        { "upnp:rootdevice",                                  NULL },
-        { "urn:schemas-upnp-org:device:MediaRenderer:1",      NULL },
-        { "urn:schemas-upnp-org:service:ConnectionManager:1", NULL },
-        { "urn:schemas-upnp-org:service:RenderingControl:1",  NULL },
-        { "urn:schemas-upnp-org:service:AVTransport:1",       NULL },
-        { NULL, NULL },
-    };
-    ssdp_start(&ssdp_config, ssdp_service);
-
-    httpd_handle_t httpd = NULL;
-    httpd_config_t httpd_config = HTTPD_DEFAULT_CONFIG();
-    httpd_config.max_uri_handlers = 20;
-    httpd_config.stack_size = 8*1024;
-
-    if (httpd_start(&httpd, &httpd_config) != ESP_OK) {
-        ESP_LOGI(TAG, "Error starting httpd");
-    }
-
-    extern const uint8_t logo_png_start[] asm("_binary_logo_png_start");
-    extern const uint8_t logo_png_end[] asm("_binary_logo_png_end");
-
-    dlna_config_t dlna_config = {
-        .friendly_name = "ESP32 MD (ESP32 Renderer)",
-        .udn = (const char *)DLNA_UNIQUE_DEVICE_NAME,
-        .logo               = {
-            .mime_type  = "image/png",
-            .data       = (const char *)logo_png_start,
-            .size       = logo_png_end - logo_png_start,
-        },
-        .httpd          = httpd,
-        .httpd_port     = httpd_config.server_port,
-        .renderer_req   = renderer_request,
-        .root_path      = DLNA_ROOT_PATH
-    };
-
-    dlna_handle = esp_dlna_start(&dlna_config);
-
-    ESP_LOGI(TAG, "DLNA Started...");
+    start_dlna();
 }
