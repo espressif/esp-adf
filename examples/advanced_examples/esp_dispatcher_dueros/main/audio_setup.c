@@ -169,11 +169,14 @@ static esp_err_t recorder_pipeline_open(void **handle)
     audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
     audio_pipeline_register(recorder, raw_read, "raw");
 
+    
 #ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    audio_pipeline_link(recorder, (const char *[]) {"i2s", "raw"}, 2);
+    const char *link_tag[2] = {"i2s", "raw"};
+    audio_pipeline_link(recorder, &link_tag[0], 2);
 #else
     audio_pipeline_register(recorder, filter, "filter");
-    audio_pipeline_link(recorder, (const char *[]) {"i2s", "filter", "raw"}, 3);
+    const char *link_tag[3] = {"i2s", "filter", "raw"};
+    audio_pipeline_link(recorder, &link_tag[0], 3);
 #endif
 
     audio_pipeline_run(recorder);

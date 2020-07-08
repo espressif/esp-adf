@@ -239,7 +239,8 @@ google_sr_handle_t google_sr_init(google_sr_config_t *config)
 
     audio_pipeline_register(sr->pipeline, sr->http_stream_writer, "sr_http");
     audio_pipeline_register(sr->pipeline, sr->i2s_reader,         "sr_i2s");
-    audio_pipeline_link(sr->pipeline, (const char *[]) {"sr_i2s", "sr_http"}, 2);
+    const char *link_tag[2] = {"sr_i2s", "sr_http"};
+    audio_pipeline_link(sr->pipeline, &link_tag[0], 2);
     i2s_stream_set_clk(sr->i2s_reader, config->record_sample_rates, 16, 1);
 
     return sr;

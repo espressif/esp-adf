@@ -188,7 +188,8 @@ void app_main(void)
     audio_pipeline_register(pipeline, http_stream_writer, "http");
 
     ESP_LOGI(TAG, "[3.4] Link it together [codec_chip]-->i2s_stream->http_stream-->[http_server]");
-    audio_pipeline_link(pipeline, (const char *[]) {"i2s", "http"}, 2);
+    const char *link_tag[2] = {"i2s", "http"};
+    audio_pipeline_link(pipeline, &link_tag[0], 2);
 
     // Initialize Button peripheral
     audio_board_key_init(set);

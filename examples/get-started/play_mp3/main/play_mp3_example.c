@@ -87,10 +87,11 @@ void app_main(void)
     rsp_cfg.dest_ch = 2;
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
     audio_pipeline_register(pipeline, filter, "filter");
-    audio_pipeline_link(pipeline, (const char *[]) {"mp3", "filter", "i2s"}, 3);
+    const char *link_tag[3] = {"mp3", "filter", "i2s"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 #else
-    audio_pipeline_link(pipeline, (const char *[]) {"mp3", "i2s"}, 2);
-
+    const char *link_tag[2] = {"mp3", "i2s"};
+    audio_pipeline_link(pipeline, &link_tag[0], 2);
 #endif
     ESP_LOGI(TAG, "[ 3 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();

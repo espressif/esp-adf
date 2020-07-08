@@ -65,7 +65,8 @@ void app_main(void)
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
 
     ESP_LOGI(TAG, "[2.5] Link it together [flash]-->tone_stream-->mp3_decoder-->i2s_stream-->[codec_chip]");
-    audio_pipeline_link(pipeline, (const char *[]) {"tone", "mp3", "i2s"}, 3);
+    const char *link_tag[3] = {"tone", "mp3", "i2s"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[2.6] Set up  uri (file as tone_stream, mp3 as mp3 decoder, and default output is i2s)");
     audio_element_set_uri(tone_stream_reader, tone_uri[TONE_TYPE_HELLO]);

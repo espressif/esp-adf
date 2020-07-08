@@ -421,9 +421,11 @@ void app_main(void)
     audio_pipeline_register(pipeline_e, raw_read, "raw");
 
     ESP_LOGI(TAG, "[3.3] Link it together [Bluetooth]-->bt_stream_reader-->i2s_stream_writer-->[codec_chip]");
-    audio_pipeline_link(pipeline_d, (const char *[]) {"bt", "i2s"}, 2);
-
-    audio_pipeline_link(pipeline_e, (const char *[]) {"i2s", "raw"}, 2);
+    const char *link_d[2] = {"bt", "i2s"};
+    audio_pipeline_link(pipeline_d, &link_d[0], 2);
+    
+    const char *link_e[2] = {"i2s", "raw"};
+    audio_pipeline_link(pipeline_e, &link_e[0], 2);
 
     ESP_LOGI(TAG, "[ 4 ] Initialize peripherals");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();

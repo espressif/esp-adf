@@ -54,6 +54,7 @@ typedef struct {
 #define RAW_STREAM_RINGBUFFER_SIZE     (8 * 1024)
 
 #define RAW_STREAM_CFG_DEFAULT() {\
+    .type = AUDIO_STREAM_NONE, \
     .out_rb_size = RAW_STREAM_RINGBUFFER_SIZE, \
 }
 

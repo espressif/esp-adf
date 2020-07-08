@@ -51,12 +51,13 @@ typedef struct {
 #define SPIFFS_STREAM_TASK_PRIO           (4)
 #define SPIFFS_STREAM_RINGBUFFER_SIZE     (8 * 1024)
 
-#define SPIFFS_STREAM_CFG_DEFAULT() {\
-    .task_prio = SPIFFS_STREAM_TASK_PRIO, \
-    .task_core = SPIFFS_STREAM_TASK_CORE, \
-    .task_stack = SPIFFS_STREAM_TASK_STACK, \
+#define SPIFFS_STREAM_CFG_DEFAULT() {             \
+    .type = AUDIO_STREAM_NONE,                    \
+    .buf_sz = SPIFFS_STREAM_BUF_SIZE,             \
     .out_rb_size = SPIFFS_STREAM_RINGBUFFER_SIZE, \
-    .buf_sz = SPIFFS_STREAM_BUF_SIZE, \
+    .task_stack = SPIFFS_STREAM_TASK_STACK,       \
+    .task_core = SPIFFS_STREAM_TASK_CORE,         \
+    .task_prio = SPIFFS_STREAM_TASK_PRIO,         \
 }
 
 /**

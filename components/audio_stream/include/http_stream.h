@@ -93,14 +93,18 @@ typedef struct {
 #define HTTP_STREAM_TASK_PRIO           (4)
 #define HTTP_STREAM_RINGBUFFER_SIZE     (20 * 1024)
 
-#define HTTP_STREAM_CFG_DEFAULT() {\
-    .type = AUDIO_STREAM_READER,\
-    .task_prio = HTTP_STREAM_TASK_PRIO, \
-    .task_core = HTTP_STREAM_TASK_CORE, \
-    .task_stack = HTTP_STREAM_TASK_STACK, \
-    .stack_in_ext = true,\
-    .out_rb_size = HTTP_STREAM_RINGBUFFER_SIZE, \
-    .multi_out_num = 0, \
+#define HTTP_STREAM_CFG_DEFAULT() {              \
+    .type = AUDIO_STREAM_READER,                 \
+    .out_rb_size = HTTP_STREAM_RINGBUFFER_SIZE,  \
+    .task_stack = HTTP_STREAM_TASK_STACK,        \
+    .task_core = HTTP_STREAM_TASK_CORE,          \
+    .task_prio = HTTP_STREAM_TASK_PRIO,          \
+    .stack_in_ext = true,                        \
+    .event_handle = NULL,                        \
+    .user_data = NULL,                           \
+    .auto_connect_next_track = false,            \
+    .enable_playlist_parser = false,             \
+    .multi_out_num = 0,                          \
 }
 
 /**

@@ -50,6 +50,8 @@ audio_hal_func_t AUDIO_CODEC_ES8374_DEFAULT_HANDLE = {
     .audio_codec_set_mute = es8374_set_voice_mute,
     .audio_codec_set_volume = es8374_codec_set_voice_volume,
     .audio_codec_get_volume = es8374_codec_get_voice_volume,
+    .audio_hal_lock = NULL,
+    .handle = NULL,
 };
 
 static bool es8374_codec_initialized()

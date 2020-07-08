@@ -127,11 +127,16 @@ typedef struct {
     audio_element_reserve_data_t reserve_data;  /*!< This value is reserved for user use (optional) */
 } audio_element_info_t;
 
-#define AUDIO_ELEMENT_INFO_DEFAULT()    {   \
-    .sample_rates = 44100,                  \
-    .channels = 2,                          \
-    .bits = 16,                             \
-    .uri = NULL,                            \
+#define AUDIO_ELEMENT_INFO_DEFAULT()    { \
+    .sample_rates = 44100,                \
+    .channels = 2,                        \
+    .bits = 16,                           \
+    .bps = 0,                             \
+    .byte_pos = 0,                        \
+    .total_bytes = 0,                     \
+    .duration = 0,                        \
+    .uri = NULL,                          \
+    .codec_fmt = ESP_CODEC_TYPE_UNKNOW    \
 }
 
 typedef esp_err_t (*el_io_func)(audio_element_handle_t self);

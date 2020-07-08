@@ -245,7 +245,8 @@ void app_main(void)
     audio_pipeline_register(pipeline, bt_stream_writer, "bt");
 
     ESP_LOGI(TAG, "[3.5] Link it together [sdcard]-->fatfs_stream-->mp3_decoder-->bt_stream-->[bt sink]");
-    audio_pipeline_link(pipeline, (const char *[]) {"file", "mp3", "bt"}, 3);
+    const char *link_tag[3] = {"file", "mp3", "bt"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, mp3 as mp3 decoder, and default output is i2s)");
     audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.mp3");

@@ -53,8 +53,8 @@ typedef struct {
         .appid = NULL, \
         .deviceid = NULL, \
     }, \
-    .aes_key = NULL, \
     .ssdp_notify_enable = true, \
+    .aes_key = NULL, \
 }
 
 /**

@@ -85,12 +85,12 @@ void app_main(void)
     alc_el = alc_volume_setup_init(&alc_cfg);
     audio_pipeline_register(pipeline, alc_el, "alc");
     ESP_LOGI(TAG, "[3.5] Link it together [sdcard]-->fatfs_stream-->wav_decoder-->ALC-->i2s_stream-->[codec_chip]");
-    audio_pipeline_link(pipeline, (const char *[]) {
-        "file", "wav", "alc", "i2s"}, 4);
+    const char *link_tag[4] = {"file", "wav", "alc", "i2s"};
+    audio_pipeline_link(pipeline, &link_tag[0], 4);
 #else
     ESP_LOGI(TAG, "[3.5] Link it together [sdcard]-->fatfs_stream-->wav_decoder-->i2s_stream-->[codec_chip]");
-    audio_pipeline_link(pipeline, (const char *[]) {
-        "file", "wav", "i2s"}, 3);
+    const char *link_tag[3] = {"file", "wav", "i2s"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 #endif
 
     ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, wav as wav decoder, and default output is i2s)");

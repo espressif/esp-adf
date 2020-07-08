@@ -73,7 +73,8 @@ void app_main()
     audio_pipeline_register(pipeline, raw_read, "raw");
 
     ESP_LOGI(TAG, "[ 4 ] Link elements together [codec_chip]-->i2s_stream-->filter-->raw-->[VAD]");
-    audio_pipeline_link(pipeline, (const char *[]) {"i2s", "filter", "raw"}, 3);
+    const char *link_tag[3] = {"i2s", "filter", "raw"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[ 5 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);

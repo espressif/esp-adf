@@ -79,7 +79,8 @@ void app_main()
     audio_pipeline_register(pipeline_wav, wav_fatfs_stream_writer, "wav_file");
 
     ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->i2s_stream-->wav_encoder-->fatfs_stream-->[sdcard]");
-    audio_pipeline_link(pipeline_wav, (const char *[]) {"i2s", "wav", "wav_file"}, 3);
+    const char *link_wav[3] = {"i2s", "wav", "wav_file"};
+    audio_pipeline_link(pipeline_wav, &link_wav[0], 3);
 
     ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, wav as wav encoder)");
     audio_element_set_uri(wav_fatfs_stream_writer, "/sdcard/rec_out.wav");
@@ -117,15 +118,12 @@ void app_main()
     audio_pipeline_register(pipeline_amr, amr_fatfs_stream_writer, "amr_file");
 
     ESP_LOGI(TAG, "[4.5] Link it together [codec_chip]-->i2s_stream-->wav_encoder-->fatfs_stream-->[sdcard]");
-    audio_pipeline_link(pipeline_amr, (const char *[]) {"amr_raw", "amr", "amr_file"}, 3);
 #ifdef CONFIG_CHOICE_AMR_WB
-    audio_pipeline_link(pipeline_amr, (const char *[]) {
-        "amr_raw", "Wamr", "amr_file"
-    }, 3);
+    const char *link_amr[3] = {"amr_raw", "Wamr", "amr_file"};
+    audio_pipeline_link(pipeline_amr, &link_amr[0], 3);
 #elif defined CONFIG_CHOICE_AMR_NB
-    audio_pipeline_link(pipeline_amr, (const char *[]) {
-        "amr_raw", "amr", "amr_file"
-    }, 3);
+     const char *link_amr[3] = {"amr_raw", "amr", "amr_file"};
+    audio_pipeline_link(pipeline_amr, &link_amr[0], 3);
 #endif
 
     ESP_LOGI(TAG, "[4.6] Create ringbuf to link  i2s");

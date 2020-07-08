@@ -192,11 +192,13 @@ void app_main()
 
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     ESP_LOGI(TAG, "[ 4 ] Link elements together [codec_chip]-->i2s_stream-->raw-->[SR]");
-    audio_pipeline_link(pipeline, (const char *[]) {"i2s",  "raw"}, 2);
+    const char *link_tag[2] = {"i2s", "raw"};
+    audio_pipeline_link(pipeline, &link_tag[0], 2);
 #else
     audio_pipeline_register(pipeline, filter, "filter");
     ESP_LOGI(TAG, "[ 4 ] Link elements together [codec_chip]-->i2s_stream-->filter-->raw-->[SR]");
-    audio_pipeline_link(pipeline, (const char *[]) {"i2s", "filter", "raw"}, 3);
+    const char *link_tag[3] = {"i2s", "filter", "raw"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 #endif
 
     player = setup_player();

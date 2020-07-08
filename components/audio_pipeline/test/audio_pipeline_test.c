@@ -94,6 +94,7 @@ TEST_CASE("audio_pipeline", "esp-adf")
     audio_pipeline_handle_t pipeline = audio_pipeline_init(&pipeline_cfg);
     TEST_ASSERT_NOT_NULL(pipeline);
 
+    
     TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_register(pipeline, first_el, "first"));
     TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_register(pipeline, mid_el, "mid"));
     TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_register(pipeline, last_el, "last"));

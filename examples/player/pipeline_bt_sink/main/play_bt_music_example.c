@@ -81,9 +81,11 @@ void app_main(void)
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
     audio_pipeline_register(pipeline, filter, "filter");
     i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
-    audio_pipeline_link(pipeline, (const char *[]) {"bt", "filter", "i2s"}, 3);
+    const char *link_tag[3] = {"bt", "filter", "i2s"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
 #else
-    audio_pipeline_link(pipeline, (const char *[]) {"bt", "i2s"}, 2);
+    const char *link_tag[2] = {"bt", "i2s"};
+    audio_pipeline_link(pipeline, &link_tag[0], 2);
 #endif
     ESP_LOGI(TAG, "[ 4 ] Initialize peripherals");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
