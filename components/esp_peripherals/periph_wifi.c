@@ -23,6 +23,7 @@
  */
 
 #include <string.h>
+#include "esp_wpa2.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_smartconfig.h"
@@ -49,6 +50,10 @@ static const char *TAG = "PERIPH_WIFI";
 
 #define DEFAULT_RECONNECT_TIMEOUT_MS (1000)
 
+/* Constants that aren't configurable in menuconfig */
+#define EAP_PEAP 1
+#define EAP_TTLS 2
+
 typedef struct periph_wifi *periph_wifi_handle_t;
 
 struct periph_wifi {
@@ -61,6 +66,7 @@ struct periph_wifi {
     EventGroupHandle_t state_event;
     int reconnect_timeout_ms;
     periph_wifi_config_mode_t config_mode;
+    periph_wpa2_enterprise_cfg_t *wpa2_e_cfg;
 };
 
 static const int CONNECTED_BIT = BIT0;
@@ -410,6 +416,29 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     }
+    if (periph_wifi->wpa2_e_cfg->diasble_wpa2_e) {
+        unsigned int ca_pem_bytes = periph_wifi->wpa2_e_cfg->ca_pem_end - periph_wifi->wpa2_e_cfg->ca_pem_start;
+        unsigned int client_crt_bytes = periph_wifi->wpa2_e_cfg->wpa2_e_cert_end - periph_wifi->wpa2_e_cfg->wpa2_e_cert_start;
+        unsigned int client_key_bytes = periph_wifi->wpa2_e_cfg->wpa2_e_key_end - periph_wifi->wpa2_e_cfg->wpa2_e_key_start;
+
+        ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_ca_cert((const unsigned char *)periph_wifi->wpa2_e_cfg->ca_pem_start, ca_pem_bytes));
+        ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_cert_key((const unsigned char *)periph_wifi->wpa2_e_cfg->wpa2_e_cert_start, client_crt_bytes,\
+    		    (const unsigned char *)periph_wifi->wpa2_e_cfg->wpa2_e_key_start, client_key_bytes, NULL, 0));
+        ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)periph_wifi->wpa2_e_cfg->eap_id, strlen(periph_wifi->wpa2_e_cfg->eap_id)));
+        if (periph_wifi->wpa2_e_cfg->eap_method == EAP_PEAP || periph_wifi->wpa2_e_cfg->eap_method == EAP_TTLS) {
+            ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_username((uint8_t *)periph_wifi->wpa2_e_cfg->eap_username, strlen(periph_wifi->wpa2_e_cfg->eap_username)));
+            ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_password((uint8_t *)periph_wifi->wpa2_e_cfg->eap_password, strlen(periph_wifi->wpa2_e_cfg->eap_password)));
+        }
+
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+        ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_enable());
+#else
+        esp_wpa2_config_t wpa2_config = WPA2_CONFIG_INIT_DEFAULT();
+        ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_enable(&wpa2_config));
+#endif
+        
+    }
+
     ESP_ERROR_CHECK(esp_wifi_start());
     periph_wifi->is_open = true;
     periph_wifi->wifi_state = PERIPH_WIFI_DISCONNECTED;
@@ -429,8 +458,12 @@ static esp_err_t _wifi_destroy(esp_periph_handle_t self)
     esp_wifi_deinit();
     audio_free(periph_wifi->ssid);
     audio_free(periph_wifi->password);
-
+    
     vEventGroupDelete(periph_wifi->state_event);
+    if (periph_wifi->wpa2_e_cfg != NULL) {
+        audio_free(periph_wifi->wpa2_e_cfg);
+        periph_wifi->wpa2_e_cfg = NULL;
+    }
     audio_free(periph_wifi);
     g_periph = NULL;
     return ESP_OK;
@@ -453,6 +486,11 @@ esp_periph_handle_t periph_wifi_init(periph_wifi_cfg_t *config)
         periph_wifi->reconnect_timeout_ms = DEFAULT_RECONNECT_TIMEOUT_MS;
     }
     periph_wifi->disable_auto_reconnect = config->disable_auto_reconnect;
+
+
+    periph_wifi->wpa2_e_cfg = audio_malloc(sizeof(periph_wpa2_enterprise_cfg_t));
+    AUDIO_NULL_CHECK(TAG, periph_wifi->wpa2_e_cfg, return NULL);
+    memcpy(periph_wifi->wpa2_e_cfg, &config->wpa2_e_cfg, sizeof(periph_wpa2_enterprise_cfg_t));
 
     esp_periph_set_data(periph, periph_wifi);
     esp_periph_set_function(periph, _wifi_init, _wifi_run, _wifi_destroy);
