@@ -34,7 +34,8 @@
 #include "zl38063.h"
 
 
-#define TEST_I2S_NUM  I2S_NUM_0
+#define TEST_I2S_NUM		I2S_NUM_0
+#define TEST_I2S_MCLK_GPIO	GPIO_NUM_0
 
 static const char *TAG = "TEST_AUDIO_HAL";
 
@@ -59,11 +60,12 @@ static void i2s_init()
     i2s_pin_config_t i2s_pin_cfg = {0};
     get_i2s_pins(TEST_I2S_NUM, &i2s_pin_cfg);
     i2s_set_pin(TEST_I2S_NUM, &i2s_pin_cfg);
-    i2s_mclk_gpio_select(TEST_I2S_NUM, GPIO_NUM_0);
+    i2s_mclk_gpio_enable(TEST_I2S_NUM, TEST_I2S_MCLK_GPIO);
 }
 
 static void i2s_deinit()
 {
+    i2s_mclk_gpio_disable(TEST_I2S_NUM, TEST_I2S_MCLK_GPIO);
     i2s_driver_uninstall(TEST_I2S_NUM);
 }
 

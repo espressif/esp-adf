@@ -77,9 +77,14 @@ esp_err_t get_spi_pins(spi_bus_config_t *spi_config, spi_device_interface_config
     return ESP_OK;
 }
 
-esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
+esp_err_t i2s_mclk_gpio_enable(i2s_port_t i2s_num, gpio_num_t mclk_gpio_num)
 {
     return ESP_ERR_ADF_NOT_SUPPORT;
+}
+
+esp_err_t i2s_mclk_gpio_disable(i2s_port_t i2s_num, gpio_num_t mclk_gpio_num)
+{
+	return ESP_ERR_ADF_NOT_SUPPORT;
 }
 
 // sdcard
