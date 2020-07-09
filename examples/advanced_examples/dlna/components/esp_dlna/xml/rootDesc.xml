@@ -6,7 +6,7 @@
     </specVersion>
     <device>
         <deviceType>urn:schemas-upnp-org:device:%s:%s</deviceType>
-        <presentationURL>/</presentationURL>
+        <presentationURL>rootDesc.xml</presentationURL>
         <friendlyName>%s</friendlyName>
         <manufacturer>%s</manufacturer>
         <manufacturerURL>%s</manufacturerURL>
@@ -15,10 +15,14 @@
         <modelNumber>%s</modelNumber>
         <modelURL>%s</modelURL>
         <serialNumber>%s</serialNumber>
-        <UDN>%s</UDN>
+        <UPC>Universal Product Code</UPC>
+        <UDN>uuid:%s</UDN>
+        <dlna:X_DLNADOC xmlns:dlna="urn:schemas-dlna-org:device-1-0">DMR-1.01</dlna:X_DLNADOC>
         %s
         <serviceList>
             %s
         </serviceList>
+	    %s
     </device>
+    <URLBase>http://%s:%d/</URLBase>
 </root>

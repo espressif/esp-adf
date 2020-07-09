@@ -22,16 +22,14 @@
  *
  */
 
-#ifndef _DLNA_H
-#define _DLNA_H
+#ifndef _ESP_DLNA_H
+#define _ESP_DLNA_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "upnp.h"
-#include "upnp_service.h"
-#include "upnp_notify.h"
 
 /**
  * DLNA Renderer request type
@@ -48,6 +46,7 @@ typedef enum {
     AVT_PAUSE,                  /* Request pause player*/
     AVT_SEEK,                   /* Request seek track */
     AVT_SET_TRACK_URI,          /* Request set track uri */
+    AVT_SET_TRACK_METADATA,     /* Request set track metadata */
     AVT_GET_TRACK_URI,          /* Request get track uri */
     AVT_GET_PLAY_SPEED,         /* Request get current playing speed */
     AVT_GET_PLAY_MODE,          /* Request get current playing mode */
@@ -72,13 +71,14 @@ typedef int (*renderer_request_t)(esp_dlna_handle_t dlna, const upnp_attr_t *att
  */
 typedef struct {
     const char              *friendly_name; /*<! Short user-friendly title */
-    const char              *udn;           /*<! Unique device name - uuid:UUID  */
+    const char              *uuid;          /*<! Device UUID */
     httpd_handle_t          httpd;          /*<! The httpd server to use to listen with */
     int                     httpd_port;     /*<! The httpd server port */
     renderer_request_t      renderer_req;   /*<! Renderer request callback */
     const upnp_file_info_t  logo;           /*<! Logo for the device */
     void                    *user_ctx;      /*<! User context, can be get with `esp_dlna_get_user_ctx` */
     const char              *root_path;     /*<! XML rootpath (must be same with SSDP advertisement) */
+    bool                    device_list;    /*<! Support Device List */
 } dlna_config_t;
 
 /**
@@ -91,53 +91,28 @@ typedef struct {
 esp_dlna_handle_t esp_dlna_start(dlna_config_t *config);
 
 /**
- * @brief      Send notification the UPnP service with name
+ * @brief      Send all service action notification by name
  *
  * @param[in]  dlna           The dlna handle
  * @param[in]  service_name   The service name
- * @param[in]  delay_send_ms  The delay timeout, after a period of milliseconds the message will be sent
  *
  * @return
  *     - ESP_OK
  *     - ESP_xx if any errors
  */
-esp_err_t esp_dlna_notify(esp_dlna_handle_t dlna, const char *service_name, int delay_send_ms);
+esp_err_t esp_dlna_notify(esp_dlna_handle_t dlna, const char *service_name);
 
 /**
- * @brief      Send notification the AVTransport UPnP service
+ * @brief      Send AVTransport service notification by action name
  *
  * @param[in]  dlna           The dlna handle
- * @param[in]  delay_send_ms  The delay timeout, after a period of milliseconds the message will be sent
+ * @param[in]  action_name    The action name
  *
  * @return
  *     - ESP_OK
  *     - ESP_xx if any errors
  */
-esp_err_t esp_dlna_notify_avt(esp_dlna_handle_t dlna, int delay_send_ms);
-
-/**
- * @brief      Send notification the RenderingControl UPnP service
- *
- * @param[in]  dlna           The dlna handle
- * @param[in]  delay_send_ms  The delay timeout, after a period of milliseconds the message will be sent
- *
- * @return
- *     - ESP_OK
- *     - ESP_xx if any errors
- */
-esp_err_t esp_dlna_notify_rcs(esp_dlna_handle_t dlna, int delay_send_ms);
-
-/**
- * @brief      Send notification the ConnectionManager UPnP service
- *
- * @param[in]  dlna           The dlna handle
- * @param[in]  delay_send_ms  The delay timeout, after a period of milliseconds the message will be sent
- *
- * @return
- *     - ESP_OK
- *     - ESP_xx if any errors
- */
-esp_err_t esp_dlna_notify_cmr(esp_dlna_handle_t dlna, int delay_send_ms);
+esp_err_t esp_dlna_notify_avt_by_action(esp_dlna_handle_t dlna, const char *action_name);
 
 /**
  * @brief      Get the dlna user context (passed from the configuration)
@@ -161,7 +136,6 @@ void *esp_dlna_get_user_ctx(esp_dlna_handle_t dlna);
  */
 int esp_dlna_upnp_attr_cb(void *user_ctx, const upnp_attr_t *attr, int attr_num, char *buffer, int max_buffer_len);
 
-
 /**
  * @brief      Cleanup and destroy DLNA service
  *
@@ -172,7 +146,6 @@ int esp_dlna_upnp_attr_cb(void *user_ctx, const upnp_attr_t *attr, int attr_num,
  *     - ESP_xx if any errors
  */
 esp_err_t esp_dlna_destroy(esp_dlna_handle_t dlna);
-
 
 #define CONST_STR(x)                (void *)((const char *)x)
 #define ATTR_CB(x)                  ((void *)x)
@@ -197,10 +170,8 @@ esp_err_t esp_dlna_destroy(esp_dlna_handle_t dlna);
                                         .type = (ATTR_TYPE_STR | ATTR_CONST)\
                                     }}
 
-
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif

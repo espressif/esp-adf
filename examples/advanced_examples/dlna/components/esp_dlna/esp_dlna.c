@@ -29,6 +29,8 @@
 #include "freertos/event_groups.h"
 #include "esp_log.h"
 
+#include "audio_mem.h"
+
 typedef struct esp_dlna {
     EventGroupHandle_t      state_event;
     upnp_handle_t           upnp;
@@ -40,7 +42,7 @@ static const char *TAG = "ESP_DLNA";
 
 esp_dlna_handle_t esp_dlna_start(dlna_config_t *config)
 {
-    esp_dlna_handle_t dlna = calloc(1, sizeof(esp_dlna_t));
+    esp_dlna_handle_t dlna = audio_calloc(1, sizeof(esp_dlna_t));
     if (dlna == NULL) {
         return NULL;
     }
@@ -48,18 +50,19 @@ esp_dlna_handle_t esp_dlna_start(dlna_config_t *config)
     upnp_config_t upnp_config = {
         .httpd              = config->httpd,
         .port               = config->httpd_port,
-        .udn                = config->udn,
-        .serial             = "0001",
+        .uuid               = config->uuid,
+        .serial             = config->uuid,
         .friendly_name      = config->friendly_name,
         .root_path          = config->root_path,
+        .device_list        = config->device_list,
         .device_type        = "MediaRenderer",
         .version            = "1",
-        .manufacturer       = "Espressif",
-        .manufacturer_url   = "http://espressif.com",
+        .manufacturer       = "ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD",
+        .manufacturer_url   = "https://espressif.com",
         .model_description  = "Media Renderer Device",
         .model_name         = "AV Renderer",
-        .model_number       = "ESP32_IDF_v3.0",
-        .model_url          = "http://espressif.com/esp32",
+        .model_number       = "ESP32_Audio_Board",
+        .model_url          = "https://www.espressif.com/en/products/socs",
         .logo               = {
             .mime_type  = config->logo.mime_type,
             .path       = config->logo.path,
@@ -97,36 +100,20 @@ int esp_dlna_upnp_attr_cb(void *user_ctx, const upnp_attr_t *attr, int attr_num,
     return dlna->renderer_req(dlna, attr, attr_num, buffer, max_buffer_len);
 }
 
-esp_err_t esp_dlna_notify(esp_dlna_handle_t dlna, const char *service_name, int delay_send_ms)
+esp_err_t esp_dlna_notify(esp_dlna_handle_t dlna, const char *service_name)
 {
     if (dlna == NULL || service_name == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-    return upnp_send_notify(dlna->upnp, service_name, delay_send_ms);
+    return upnp_send_notify(dlna->upnp, service_name);
 }
 
-esp_err_t esp_dlna_notify_avt(esp_dlna_handle_t dlna, int delay_send_ms)
+esp_err_t esp_dlna_notify_avt_by_action(esp_dlna_handle_t dlna, const char *action_name)
 {
-    if (dlna == NULL) {
+    if (dlna == NULL || action_name == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-    return upnp_send_notify(dlna->upnp, "AVTransport", delay_send_ms);
-}
-
-esp_err_t esp_dlna_notify_rcs(esp_dlna_handle_t dlna, int delay_send_ms)
-{
-    if (dlna == NULL) {
-        return ESP_ERR_INVALID_ARG;
-    }
-    return upnp_send_notify(dlna->upnp, "RenderingControl", delay_send_ms);
-}
-
-esp_err_t esp_dlna_notify_cmr(esp_dlna_handle_t dlna, int delay_send_ms)
-{
-    if (dlna == NULL) {
-        return ESP_ERR_INVALID_ARG;
-    }
-    return upnp_send_notify(dlna->upnp, "ConnectionManager", delay_send_ms);
+    return upnp_send_avt_notify(dlna->upnp, action_name);
 }
 
 void *esp_dlna_get_user_ctx(esp_dlna_handle_t dlna)

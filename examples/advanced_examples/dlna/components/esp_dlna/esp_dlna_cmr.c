@@ -67,7 +67,8 @@ void esp_dlna_cmr_register_service(upnp_handle_t upnp)
             },
             .callback = NULL,
         },
-        { .name = NULL                  },
+        { .name = "GetCurrentConnectionInfo", ONE_ATTR_CONST("val", "NOT_IMPLEMENTED"), .callback = NULL },
+        { .name = NULL },
     };
 
     const upnp_service_item_t cmr_service = {
