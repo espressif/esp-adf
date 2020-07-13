@@ -41,9 +41,9 @@ Flash address | Bin Path
 0x1000 | bootloader.bin
 0x8000 | partitions.bin
 0x10000 | app.bin
-0x542000 | dsp_v1.4.0.C.bin
-0x7c2000 | profile.bin
-0x7c3000 | audio_tone.bin
+0x510000 | DU1906_slave_v1.4.8.E.bin
+0x790000 | profile.bin
+0x791000 | audio_tone.bin
 
 ### Download firmware
 
@@ -58,9 +58,9 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 0x1000   ./firmware/bootloader.bin \
 0x8000   ./firmware/partitions.bin \
 0x10000  ./firmware/app.bin \
-0x542000 ./firmware/dsp_v1.4.0.C.bin \
-0x7c2000 ./profiles/profile.bin \
-0x7c3000 ./tone/audio_tone.bin
+0x510000 ./firmware/DU1906_slave_v1.4.8.E.bin \
+0x790000 ./profiles/profile.bin \
+0x791000 ./tone/audio_tone.bin
 ```
 #### Windows operating system
 

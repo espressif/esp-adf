@@ -31,7 +31,13 @@ typedef enum {
  */
 typedef struct {
     char *data;
+    uint64_t pos;
 } mixed_url_t;
+
+typedef enum 
+{
+	HTTP_CLIENT_RST_STATE = 104,
+} http_status_type_t;
 
 /**
  * @brief mixed play task init

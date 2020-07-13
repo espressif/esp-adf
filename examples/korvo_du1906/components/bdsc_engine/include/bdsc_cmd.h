@@ -77,6 +77,8 @@ void bdsc_link_stop();
  */
 void bdsc_dynamic_config(char *config);
 
+void qnet_connect_config();
+
 #ifdef __cplusplus
 }
 #endif

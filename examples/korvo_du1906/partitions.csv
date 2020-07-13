@@ -5,9 +5,6 @@ otadata,      data, ota,     0xd000,    0x2000,
 phy_init,     data, phy,     0xf000,    0x1000,
 ota_0,        app,  ota_0,   0x10000,   2560K,
 ota_1,        app,  ota_1,   0x290000,  2560K,
-
-# 200K reserved for later firmware size increase
-
-dsp_bin,      data, 0x24,    0x542000,  2560K,
-profile,      data, 0x29,    0x7c2000,  0x1000,
-flash_tone,   data, 0x27,    0x7c3000,  0x20000,
+dsp_bin,      data, 0x24,    0x510000,  2560K,
+profile,      data, 0x29,    0x790000,  0x1000,
+flash_tone,   data, 0x27,    0x791000,  384K,

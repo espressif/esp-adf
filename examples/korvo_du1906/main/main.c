@@ -20,11 +20,23 @@
 #include "bdsc_event_dispatcher.h"
 #include "app_control.h"
 #include "app_sys_tools.h"
+#include "display_service.h"
+#include "bdsc_json.h"
+#include "audio_mem.h"
 
 #define TAG "MAIN"
 
+bool need_skip_current_playing()
+{
+    /* 用户在某些特定应用场景下需要跳过当前session的 asr tts 处理 */
+    return false;
+}
+
+
 esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
 {
+    cJSON *json;
+    
     switch (evt->event_id) {
     case BDSC_EVENT_ERROR:
         ESP_LOGI(TAG, "==> Got BDSC_EVENT_ERROR");
@@ -47,41 +59,17 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
          *
          * TIPS: 若有问题需百度技术支持，可提供上述的 “错误码” 以及 “sn号码”，协助排查问题。
          */
-        break;
-    case BDSC_EVENT_ON_LINK_CONNECTED:
-        ESP_LOGI(TAG, "==> Got BDSC_EVENT_ON_LINK_CONNECTED");
-        /*
-         * 语音链路连接成功事件回调。成功之后用户即可开始通过“唤醒词 + 命令”进行交互。
-         * 返回的 evt 类型如下：
-         *
-         * evt->data     为 NULL
-         * evt->data_len 为 0
-         * evt->client   为 全局 bdsc_engine_handle_t 实例对象
-         *
-         */
-
-        break;
+        return BDSC_CUSTOM_DESIRE_DEFAULT;
+    case BDSC_EVENT_ON_WAKEUP:
+        /* 每次唤醒的回调 */
+        return BDSC_CUSTOM_DESIRE_DEFAULT;
     case BDSC_EVENT_ON_ASR_RESULT:
         ESP_LOGI(TAG, "==> Got BDSC_EVENT_ON_ASR_RESULT");
-
-        bdsc_event_data_t *context_data = (bdsc_event_data_t *)evt->data;
-
-        if (strstr((char *)context_data->buffer, "打开") && strstr((char *)context_data->buffer, "蓝牙")) {
-            ESP_LOGE(TAG, "[ * ] [Enter BT mode]");
-            char *a2dp_url = "aadp://44100:2@bt/sink/stream.pcm";
-            event_engine_elem_EnQueque(EVENT_RECV_A2DP_START_PLAY, (uint8_t *)a2dp_url, strlen(a2dp_url) + 1);
-        }
-
-        if (strstr((char *)context_data->buffer, "关闭") && strstr((char *)context_data->buffer, "蓝牙")) {
-            audio_player_stop();
-            ESP_LOGE(TAG, "[ * ] [Exit BT mode]");
-        }
-
         /*
          * 用户通过 “唤醒词 + 命令” 进行交互时，云端返回的ASR结果。
          * 返回的 evt 类型如下：
-         * evt->data     为 bdsc_event_data_t 结构体指针
-         * evt->data_len 为 bdsc_event_data_t 结构体大小
+         * evt->data     为 bdsc_engine_event_data_t 结构体指针
+         * evt->data_len 为 bdsc_engine_event_data_t 结构体大小
          * evt->client   为 全局 bdsc_engine_handle_t 实例对象
          * 结构体定义如下：
          *
@@ -89,8 +77,8 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
             char sn[SN_LENGTH];      // 在语音链路中，每个request都对应一个sn码，方便追溯问题。
             int16_t idx;             // 序号
             uint16_t buffer_length;  // 数据包长度
-            uint8_t buffer[];        // 数据
-        } bdsc_event_data_t;
+            uint8_t *buffer;        // 数据
+        } bdsc_engine_event_data_t;
          *
          * 返回的 buffer 数据为 JSON 格式。格式如下：
          * 以“问：今天天气”为例，返回：
@@ -106,27 +94,52 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
          *
          * TIPS: 随 ASR 一起下发的TTS语音流，由SDK自动播放，暂时不对用户开放。
          */
-        break;
+
+        /* 通过语音控制蓝牙打开 */
+        bdsc_engine_event_data_t *asr_result = (bdsc_engine_event_data_t *)evt->data;
+        if (!asr_result->buffer) {
+            ESP_LOGE(TAG, "BUG!!!\n");
+            return BDSC_CUSTOM_DESIRE_DEFAULT;
+        }
+        if (strstr((char *)asr_result->buffer, "打开") && strstr((char *)asr_result->buffer, "蓝牙")) {
+            bdsc_engine_open_bt();
+            return BDSC_CUSTOM_DESIRE_DEFAULT;
+        }
+        /* 通过语音控制蓝牙关闭 */
+        if (strstr((char *)asr_result->buffer, "关闭") && strstr((char *)asr_result->buffer, "蓝牙")) {
+            bdsc_engine_close_bt();
+            return BDSC_CUSTOM_DESIRE_DEFAULT;
+        }
+
+        if (!(json = BdsJsonParse((const char *)asr_result->buffer))) {
+            ESP_LOGE(TAG, "json format error");
+            return BDSC_CUSTOM_DESIRE_SKIP_DEFAULT;
+        }
+        int err_value;
+        if (-1 == BdsJsonObjectGetInt(json, "err_no", &err_value)) {
+            ESP_LOGE(TAG, "json format error");
+            BdsJsonPut(json);
+            return BDSC_CUSTOM_DESIRE_SKIP_DEFAULT;
+        }
+
+        if (err_value == -3005) {
+            bdsc_play_hint(BDSC_HINT_NOT_FIND);
+            BdsJsonPut(json);
+            return BDSC_CUSTOM_DESIRE_DEFAULT;
+        }
+
+        BdsJsonPut(json);
+        return BDSC_CUSTOM_DESIRE_DEFAULT;
     case BDSC_EVENT_ON_NLP_RESULT:
         ESP_LOGI(TAG, "==> Got BDSC_EVENT_ON_NLP_RESULT");
-        //esp_player_tone_play(tone_uri[TONE_TYPE_TEST], false, MEDIA_SRC_TYPE_TONE_FLASH);
-
         /*
          * 用户通过 “唤醒词 + 命令” 进行交互时，云端返回的NLP结果。默认情况下，该结果会随着ASR结果一起下发。
          * 返回的 evt 类型如下：
-         * evt->data     为 bdsc_event_data_t 结构体指针
-         * evt->data_len 为 bdsc_event_data_t 结构体大小
+         * evt->data     为 nlp 结果 json 字符串
+         * evt->data_len 为 nlp 结果 json 字符串长度
          * evt->client   为 全局 bdsc_engine_handle_t 实例对象
-         * 结构体定义如下：
-         *
-        typedef struct {
-            char sn[SN_LENGTH];      // 在语音链路中，每个request都对应一个sn码，方便追溯问题。
-            int16_t idx;             // 序号
-            uint16_t buffer_length;  // 数据包长度
-            uint8_t buffer[];        // 数据
-        } bdsc_event_data_t;
-         *
-         * 返回的 buffer 数据为 JSON 格式。格式如下：
+         * 
+         * 返回的 nlp 数据为 JSON 格式。格式如下：
          * 以下以电视控制技能为例（比如，“小度小度，湖南卫视”），返回：
          *
          {
@@ -152,7 +165,8 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
          *
          * TIPS: 随 NLP 一起下发的TTS语音流，由SDK自动播放，暂时不对用户开放。
          */
-        break;
+        return BDSC_CUSTOM_DESIRE_DEFAULT;
+
     case BDSC_EVENT_ON_CHANNEL_DATA:
         ESP_LOGI(TAG, "==> Got BDSC_EVENT_ON_CHANNEL_DATA");
         /*
@@ -165,24 +179,12 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
          *
          * 关于 用户数据推送 的使用，请参考相关文档。
          */
-        break;
-    case BDSC_EVENT_ON_LINK_DISCONN:
-        ESP_LOGI(TAG, "==> Got BDSC_EVENT_ON_LINK_DISCONN");
-        /*
-         * 语音链路连接断开事件回调。一般是网络中断或抖动造成，请检查网络连接。
-         * 返回的 evt 类型如下：
-         *
-         * evt->data     为 NULL
-         * evt->data_len 为 0
-         * evt->client   为 全局 bdsc_engine_handle_t 实例对象
-         *
-         */
-        break;
+        return BDSC_CUSTOM_DESIRE_DEFAULT;
     default:
-        break;
+        return BDSC_CUSTOM_DESIRE_DEFAULT;
     }
 
-    return ESP_OK;
+    return BDSC_CUSTOM_DESIRE_DEFAULT;
 }
 
 void app_main(void)
@@ -209,5 +211,5 @@ void app_main(void)
 
     bdsc_engine_init(&cfg);
 
-    start_sys_monitor();
+    // start_sys_monitor();
 }

@@ -26,6 +26,7 @@
 #include "bdsc_event_dispatcher.h"
 #include "mixed_play_task.h"
 #include "mqtt_client.h"
+#include "cJSON.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,15 +51,19 @@ typedef struct bdsc_engine_event *bdsc_engine_event_handle_t;
  */
 typedef enum {
     BDSC_EVENT_ERROR = 0,            /*!< Occurs when there are any errors */
-    BDSC_EVENT_ON_LINK_CONNECTED,    /*!< Occurs when connected to Baidu asr server */
+    BDSC_EVENT_ON_WAKEUP,            /*!< Occurs when wakeup */
     BDSC_EVENT_ON_ASR_RESULT,        /*!< Occurs when receiving asr result from server */
     BDSC_EVENT_ON_NLP_RESULT,        /*!< Occurs when receiving nlp result from server */
     BDSC_EVENT_ON_CHANNEL_DATA,      /*!< Occurs when receiving mqtt data from server */
-    BDSC_EVENT_ON_LINK_DISCONN,      /*!< The connection has been disconnected */
 } bdsc_engine_event_id_t;
 
+typedef enum {
+    BDSC_CUSTOM_DESIRE_SKIP_DEFAULT,
+    BDSC_CUSTOM_DESIRE_DEFAULT,
+} bdsc_custom_desire_action_t;
+
 /**
- * @brief      Bdsc Engine  events data
+ * @brief      Bdsc Engine  event type
  */
 typedef struct bdsc_engine_event {
     bdsc_engine_event_id_t event_id;    /*!< event_id, to know the cause of the event */
@@ -78,6 +83,16 @@ typedef enum {
     BDSC_TRANSPORT_OVER_WSS,        /*!< Transport over wss */
 } bdsc_engine_transport_t;
 
+/**
+ * @brief      Bdsc Engine  event data type
+ */
+typedef struct {
+    char sn[SN_LENGTH];
+    int16_t idx;
+    uint16_t buffer_length;
+    uint8_t *buffer;
+} bdsc_engine_event_data_t;
+
 typedef esp_err_t (*bdsc_engine_event_handle_cb)(bdsc_engine_event_t *evt);
 
 /**
@@ -94,31 +109,32 @@ typedef struct {
     int                         bdsc_methods;      /*!< BDSC configuable methods*/ 
 } bdsc_engine_config_t;
 
+typedef enum {
+    ASR_TTS_ENGINE_WAKEUP_TRIGGER,
+    ASR_TTS_ENGINE_STARTTED,
+    ASR_TTS_ENGINE_GOT_ASR_BEGIN,
+    ASR_TTS_ENGINE_GOT_ASR_RESULT,
+    ASR_TTS_ENGINE_GOT_EXTERN_DATA,
+    ASR_TTS_ENGINE_GOT_TTS_DATA,
+    ASR_TTS_ENGINE_GOT_ASR_ERROR,
+    ASR_TTS_ENGINE_GOT_ASR_END,
+    ASR_TTS_ENGINE_WANT_RESTART_ASR,
+} bdsc_engine_internal_st;
+
 /**
  * @brief bdsc engine instance
  */
 struct bdsc_engine {
     bdsc_engine_config_t    *cfg;
     vendor_info_t           *g_vendor_info;
+    char                    cuid[256];
     bds_client_handle_t     g_client_handle;
     bdsc_auth_cb            g_auth_cb;
     QueueHandle_t           g_engine_queue;
     SemaphoreHandle_t       enqueue_mutex;
     TimerHandle_t           asr_timer;
 
-    enum {
-        ASR_TTS_ENGINE_LINK_CONNECTED,
-        ASR_TTS_ENGINE_LINK_DISCONNECTED,
-        ASR_TTS_ENGINE_WAKEUP_TRIGGER,
-        ASR_TTS_ENGINE_STARTTED,
-        ASR_TTS_ENGINE_GOT_ASR_BEGIN,
-        ASR_TTS_ENGINE_GOT_ASR_RESULT,
-        ASR_TTS_ENGINE_GOT_EXTERN_DATA,
-        ASR_TTS_ENGINE_GOT_TTS_DATA,
-        ASR_TTS_ENGINE_GOT_ASR_ERROR,
-        ASR_TTS_ENGINE_GOT_ASR_END,
-        ASR_TTS_ENGINE_WANT_RESTART_ASR,
-    } g_asr_tts_state;
+    bdsc_engine_internal_st g_asr_tts_state;
 
     bool                    asr_timeout_once;
     bool                    has_connected;
@@ -141,7 +157,22 @@ struct bdsc_engine {
     esp_mqtt_client_handle_t g_mqtt_client;
     char                     g_pub_topic[256];
     char                     g_sub_topic[256];
+
+    bool                    is_mute;
+    int                     cur_vol;
+    int                     in_duplex_mode;
+    TimerHandle_t           duplex_timer;
+
+    cJSON                   *user_app_dataJ;
     char                    *asrnlp_ttsurl;
+    
+    bool                    g_has_greeted;
+    char                    *current_asr_words;
+    char                    *asr_block_words;
+    cJSON                   *profile_json;
+    int                     ota_trans_num;
+    bool                    skip_tts_playing_once;
+    bool                    in_ota_process_flag;
 
 	void                    *userData;
 };
@@ -162,6 +193,10 @@ extern bdsc_engine_handle_t g_bdsc_engine;
  *     - NULL if any errors
  */
 bdsc_engine_handle_t bdsc_engine_init(bdsc_engine_config_t *cfg);
+
+esp_err_t bdsc_engine_open_bt();
+
+esp_err_t bdsc_engine_close_bt();
 
 /**
  * @brief      BT play
@@ -219,6 +254,10 @@ void bdsc_engine_net_connected_cb();
  */
 void bdsc_engine_set_connect_flag(bool connected);
 
+int bdsc_engine_get_internal_state(bdsc_engine_handle_t client);
+
+void bdsc_engine_skip_current_session_playing_once_flag_set(bdsc_engine_handle_t client);
+void bdsc_engine_skip_current_session_playing_once_flag_unset(bdsc_engine_handle_t client);
 
 /**
  * @brief      Bdsc Engine data channel upload
