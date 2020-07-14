@@ -177,7 +177,7 @@ Retail orders
 
 If you order one or several samples, each board will come in a plastic package or other package chosen by the retailer.
 
-For retail orders, please go to https://www.espressif.com/en/products/devkits/esp32-korvo-du1906.
+For retail orders, please go to https://www.espressif.com/zh-hans/products/devkits/esp32-korvo-du1906.
 
 
 Related Documents
