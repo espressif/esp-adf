@@ -38,12 +38,16 @@ typedef struct {
     char *pk;
     char *ak;
     char *sk;
-    char *cuid;
 
     char *mqtt_broker;
     char *mqtt_username;
     char *mqtt_password;
     char *mqtt_cid;
+
+    int cur_version_num;
+    char *tone_sub_ver;
+    char *dsp_sub_ver;
+    char *app_sub_ver;
 } vendor_info_t;
 
 /**

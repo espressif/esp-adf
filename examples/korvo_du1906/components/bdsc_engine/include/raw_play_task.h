@@ -31,6 +31,9 @@ typedef enum _play_task_cmd {
     CMD_A2DP_PLAY_START = '5',
 } play_task_cmd_t;
 
+
+void handle_play_cmd(int cmd, uint8_t *buffer, size_t len);
+
 #ifdef __cplusplus
 }
 #endif

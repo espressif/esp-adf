@@ -185,9 +185,8 @@ void bdsc_event_params_destroy(bdsc_eventupload_params_t *params);
  *     - NULL if any errors
  */
 bdsc_engine_params_t* bdsc_engine_params_create(char *sn, uint32_t pid, char *host, int port, uint8_t protocol,
-        char *cuid, char *app, uint16_t pam_len, char *pam);
-       
-
+        char *cuid, char *app, LAUNCH_MODE_T launch_mode, uint16_t pam_len, char *pam);
+   
 /**
  * @brief      destory bdsc engine params
  *

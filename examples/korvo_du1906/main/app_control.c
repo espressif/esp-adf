@@ -167,6 +167,8 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 }
                 audio_player_vol_set(player_volume);
                 ESP_LOGI(TAG, "Now volume is %d", player_volume);
+            } else if (evt->type == INPUT_KEY_SERVICE_ACTION_PRESS) {
+                ESP_LOGI(TAG, "[ * ] [Vol+] press event");
             }
         default:
             break;
@@ -187,8 +189,11 @@ static void user_a2dp_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *para
         case ESP_A2D_CONNECTION_STATE_EVT:
             if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
                 ESP_LOGI(TAG, "A2DP disconnected");
+                bdsc_play_hint(BDSC_HINT_BT_DISCONNECTED);
             } else if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
                 ESP_LOGI(TAG, "A2DP connected");
+                // Do not play hint to avoid interrupt BT player
+                //bdsc_play_hint(BDSC_HINT_BT_CONNECTED);
             }
             break;
         default:
@@ -202,10 +207,10 @@ void app_init(void)
     // Clear the debug message
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("A2DP_STREAM", ESP_LOG_WARN);
-    esp_log_level_set("AUDIO_ELEMENT", ESP_LOG_WARN);
+    esp_log_level_set("AUDIO_ELEMENT", ESP_LOG_DEBUG);
     esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_ERROR);
     esp_log_level_set("spi_master", ESP_LOG_WARN);
-    esp_log_level_set("ESP_AUDIO_CTRL", ESP_LOG_WARN);
+    esp_log_level_set("ESP_AUDIO_CTRL", ESP_LOG_DEBUG);
     esp_log_level_set("ESP_AUDIO_TASK", ESP_LOG_INFO);
     esp_log_level_set("AUDIO_MANAGER", ESP_LOG_DEBUG);
 
@@ -229,7 +234,7 @@ void app_init(void)
     wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
     cfg.evt_cb = wifi_service_cb;
     cfg.cb_ctx = NULL;
-    cfg.setting_timeout_s = 60;
+    cfg.setting_timeout_s = 3600;
     cfg.max_retry_time = -1;
     wifi_serv = wifi_service_create(&cfg);
     vTaskDelay(1000);
@@ -249,7 +254,7 @@ void app_init(void)
 #elif (defined CONFIG_ESP_BLUFI)
     ESP_LOGI(TAG, "ESP_BLUFI wifi setting module has been selected");
     h = blufi_config_create(NULL);
-    blufi_set_customized_data(h, "hello world\n", strlen("hello world\n"));
+    //blufi_set_customized_data(h, "hello world\n", strlen("hello world\n"));
 #endif
     esp_wifi_setting_regitster_notify_handle(h, (void *)wifi_serv);
     wifi_service_register_setting_handle(wifi_serv, h, &reg_idx);
@@ -259,7 +264,7 @@ void app_init(void)
     // step 5. wait for wifi connected, and start ota service
     EventBits_t bits = xEventGroupWaitBits(WIFI_CONNECTED_FLAG, WIFI_CONNECTED_BIT, true, false, WIFI_WAIT_CONNECT_TIME_MS);
     if (bits & WIFI_CONNECTED_BIT) {
-        app_ota_start();
+
     } else {
         ESP_LOGW(TAG, "WIFI  connection timeout(%dms), skipped OTA service", WIFI_WAIT_CONNECT_TIME_MS);
     }
@@ -270,9 +275,10 @@ void app_init(void)
     audio_board_key_init(set);
     input_key_service_info_t input_info[] = INPUT_KEY_DEFAULT_INFO();
     input_key_service_cfg_t key_serv_info = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
-    key_serv_info.based_cfg.extern_stack = true;
+    key_serv_info.based_cfg.extern_stack = false;
     key_serv_info.handle = set;
     periph_service_handle_t input_key_handle = input_key_service_create(&key_serv_info);
+
     AUDIO_NULL_CHECK(TAG, input_key_handle, return);
     input_key_service_add_key(input_key_handle, input_info, INPUT_KEY_NUM);
     periph_service_set_callback(input_key_handle, input_key_service_cb, NULL);

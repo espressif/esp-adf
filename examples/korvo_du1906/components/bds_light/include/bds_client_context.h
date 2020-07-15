@@ -57,12 +57,28 @@ extern "C" {
 #define KEY_NQE_MODE                            "nqe_mode"
 #define KEY_LC_HOST                             "lc_host"
 #define KEY_ASR_MODE_STATE                      "asr_mode_state"
+#define KEY_WS_HEAD_HOST                        "head_host"
 #define KEY_SELF_WAKEUP_RESTRAIN                "self_wakeup_restrain"
+
+#define KEY_HOST                                "host"
+#define KEY_PORT                                "port"
+#define KEY_CUID                                "cuid"
+#define KEY_PID                                 "pid"
+#define KEY_KEY                                 "key"
+#define KEY_ENGINE_URI                          "engine_uri"
+#define KEY_NET_LOG_LEVEL                       "qnet_log_level"
+
+#define LENGTH_SN                               (SN_LENGTH)
+#define LENGTH_HOST                             64
+#define LENGTH_CUID                             64
+#define LENGTH_KEY                              128
+#define LENGTH_URI                              128
 
 /**
  * @brief      Bdsc Audio data type
  */
 typedef struct {
+    char sn[LENGTH_SN];
     int32_t flag;
     uint16_t buffer_length;
     uint16_t real_length;
