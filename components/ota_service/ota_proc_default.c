@@ -109,7 +109,7 @@ static ota_service_err_reason_t ota_app_partition_prepare(void **handle, ota_nod
         esp_http_client_config_t config = {
             .url = node->uri,
             .cert_pem = node->cert_pem,
-            .timeout_ms = 1000,
+            .timeout_ms = 5000,
         };
         esp_https_ota_config_t ota_config = {
             .http_config = &config,
