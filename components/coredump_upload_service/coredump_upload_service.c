@@ -28,8 +28,6 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 
-#include "rom/rtc.h"
-
 #include "esp_core_dump.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
