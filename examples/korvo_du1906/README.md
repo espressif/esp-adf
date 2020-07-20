@@ -177,15 +177,15 @@ idf.py flash -p PORT
 
 **Note:** Replace `PORT` with USB port name where ESP32-Korvo-DU1906 board is connected to.
 
-In addition, ESP32-Korvo-DU1906 have three more bins, `./firmware/dsp_v1.4.0.C.bin`,  `./profiles/profile.bin` and `./tone/audio-esp.bin`.
+In addition, ESP32-Korvo-DU1906 have three more bins, `./firmware/DU1906_slave_v1.4.8.E.bin`,  `./profiles/profile.bin` and `./tone/audio-esp.bin`.
 ```bash
 python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 --port PORT --baud 921600 \
 --before default_reset \
 --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect \
-0x542000 ./firmware/dsp_v1.4.0.C.bin \
-0x7c2000 ./profiles/profile.bin \
-0x7c3000 ./tone/audio_tone.bin
+0x510000 ./firmware/DU1906_slave_v1.4.8.E.bin \
+0x790000 ./profiles/profile.bin \
+0x791000 ./tone/audio_tone.bin
 ```
 
 The firmware downloading flash address refer to above table in jumpstart part.
@@ -195,23 +195,51 @@ The firmware downloading flash address refer to above table in jumpstart part.
 Please refer to jumpstart part.
 
 ### Upgrade function
+	
+The application, flash tone, profile bins, dsp firmware and app firmware upgrade are supported. Those bins can be store on SDcard or HTTP Server, such as, "/sdcard/profile.bin", "https://github.com/espressif/esp-adf/raw/master/examples/korvo_du1906/firmware/app.bin".	
 
-The application, flash tone and profile bins upgrade are supported. Those bins can be store on SDcard or HTTP Server, such as,`/sdcard/flash_tone.bin`,`/sdcard/profile.bin`, "https://github.com/espressif/esp-adf/raw/master/examples/korvo_du1906/firmware/app.bin". The bin files version checking after every booting, exculde `profile.bin`.
+#### Upgrade strategy
 
-User copy the `flash_tone.bin` and `profile.bin` to SDCard root folder and inserted to ESP32-Korvo-DU1906 sdcard slot could be execute upgrade.
+We have two kind of firmware ota strategy in this example like below.
+- Each partition to be upgraded has a separate URL. **(strategy 1)**
+- Combine different binary bins to a whole firmware and add a description header to the firmware and just need one URL to access it. **(strategy 2)**
 
-#### Firmware version
+#### strategy 1 (default)
 
 Before the upgration, usually compare the firmware version first, and then judge whether the firmware need to be upgraded. (Sdcard ota in this example doesn't compare firmware version).
 To edit the version of firmware like below:
-- App bin:  Change "version.txt" in the project directory.
+- App bin:  Change "version.txt" in the project directory and recompile.
 - Tone bin: Use this script to assign version ``` python  $ADF_PATH/tools/audio_tone/mk_audio_tone.py -r tone/ -f components/audio_flash_tone -v v1.1.1 ```
+
+The bin files version checking after every booting, exculde profile.bin.
+User copy the profile.bin to SDCard root folder and inserted to ESP32-Korvo-DU1906 sdcard slot could be execute profile bin upgrade.
+
+The app will wait 15s for wifi connection. If wifi connect, the ota process will start, if not, skip it.
+
+#### strategy 2
+
+To use ota strategy 2, some patchs should be applied first.
+```bash
+cd $ADF_PATH; git apply $ADF_PATH/examples/korvo_du1906/patches/adf_ota_patch.patch
+cd $IDF_PATH; git apply $ADF_PATH/examples/korvo_du1906/patches/idf_ota_patch.patch
+```
+Use script under tools directory to assign version
+```bash
+cd $ADF_PATH/examples/korvo_du1906/tools/iot_ota_pkg_generator
+python mk_ota_bin.py -c tda -st x.x.x -sd x.x.x -sa x.x.x -v xxx -p ../../
+```
+Use ``` python mk_ota_bin.py -h ``` to get more information about the script.
+
+After execute the script, there will be a combine firmware named "combine_ota_default.bin" generated under the directory. Put the firmware on your website and update the upgrade URL.
+
+Press button `[VOL +]` to excute ota process.
 
 ## Example Output
 
 After download the follow logs should be output.
 ```c
-I (35) boot: compile time 15:56:22
+boot: ESP-IDF v3.3.2-107-g722043f73-dirty 2nd stage bootloader
+I (35) boot: compile time 11:07:53
 I (35) boot: Enabling RNG early entropy source...
 I (35) qio_mode: Enabling default flash chip QIO
 I (36) boot: SPI Speed      : 80MHz
@@ -224,350 +252,323 @@ I (40) boot:  1 otadata          OTA data         01 00 0000d000 00002000
 I (41) boot:  2 phy_init         RF data          01 01 0000f000 00001000
 I (42) boot:  3 ota_0            OTA app          00 10 00010000 00280000
 I (43) boot:  4 ota_1            OTA app          00 11 00290000 00280000
-I (44) boot:  5 dsp_bin          Unknown data     01 24 00542000 00280000
-I (45) boot:  6 profile          Unknown data     01 29 007c2000 00001000
-I (46) boot:  7 flash_tone       Unknown data     01 27 007c3000 00020000
+I (44) boot:  5 dsp_bin          Unknown data     01 24 00510000 00280000
+I (45) boot:  6 profile          Unknown data     01 29 00790000 00001000
+I (46) boot:  7 flash_tone       Unknown data     01 27 00791000 00060000
 I (47) boot: End of partition table
-I (47) boot: No factory image, trying OTA 0
-I (48) esp_image: segment 0: paddr=0x00010020 vaddr=0x3f400020 size=0x9a5f8 (632312) map
-I (208) esp_image: segment 1: paddr=0x000aa620 vaddr=0x3ffbdb60 size=0x04bc8 ( 19400) load
-I (214) esp_image: segment 2: paddr=0x000af1f0 vaddr=0x40080000 size=0x00400 (  1024) load
-0x40080000: _WindowOverflow4 at /Users/maojianxin/duros/esp-adf-internal-dev/esp-idf/components/freertos/xtensa_vectors.S:1779
+I (47) esp_image: segment 0: paddr=0x00010020 vaddr=0x3f400020 size=0xa9bf8 (695288) map
+I (223) esp_image: segment 1: paddr=0x000b9c20 vaddr=0x3ffbdb60 size=0x04d64 ( 19812) load
+I (229) esp_image: segment 2: paddr=0x000be98c vaddr=0x40080000 size=0x00400 (  1024) load
+0x40080000: _WindowOverflow4 at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/freertos/xtensa_vectors.S:1779
 
-I (214) esp_image: segment 3: paddr=0x000af5f8 vaddr=0x40080400 size=0x00a18 (  2584) load
-I (216) esp_image: segment 4: paddr=0x000b0018 vaddr=0x400d0018 size=0x171888 (1513608) map
+I (230) esp_image: segment 3: paddr=0x000bed94 vaddr=0x40080400 size=0x0127c (  4732) load
+I (232) esp_image: segment 4: paddr=0x000c0018 vaddr=0x400d0018 size=0x1a29c4 (1714628) map
 0x400d0018: _stext at ??:?
 
-I (597) esp_image: segment 5: paddr=0x002218a8 vaddr=0x40080e18 size=0x1a27c (107132) load
-I (646) boot: Loaded app from partition at offset 0x10000
-I (662) boot: Set actual ota_seq=1 in otadata[0]
-I (662) boot: Disabling RNG early entropy source...
-I (662) psram: This chip is ESP32-D0WD
-I (663) spiram: Found 64MBit SPI RAM device
-I (663) spiram: SPI RAM mode: flash 80m sram 80m
-I (664) spiram: PSRAM initialized, cache is in low/high (2-core) mode.
-I (665) cpu_start: Pro cpu up.
-I (665) cpu_start: Application information:
-I (666) cpu_start: Compile time:     Jun 18 2020 15:56:19
-I (666) cpu_start: ELF file SHA256:  3a84593410f44598...
-I (667) cpu_start: ESP-IDF:          v3.3.2-108-gbd1b1ff20-dirty
-I (668) cpu_start: Starting app cpu, entry point is 0x400814d0
-0x400814d0: call_start_cpu1 at /Users/maojianxin/duros/esp-adf-internal-dev/esp-idf/components/esp32/cpu_start.c:268
+I (663) esp_image: segment 5: paddr=0x002629e4 vaddr=0x4008167c size=0x19720 (104224) load
+0x4008167c: call_start_cpu0 at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/esp32/cpu_start.c:217
+
+I (712) boot: Loaded app from partition at offset 0x10000
+I (712) boot: Disabling RNG early entropy source...
+I (712) psram: This chip is ESP32-D0WD
+I (713) spiram: Found 64MBit SPI RAM device
+I (713) spiram: SPI RAM mode: flash 80m sram 80m
+I (714) spiram: PSRAM initialized, cache is in low/high (2-core) mode.
+I (715) cpu_start: Pro cpu up.
+I (715) cpu_start: Application information:
+I (716) cpu_start: Project name:     korvo_du1906
+I (717) cpu_start: App version:      v1.1.1
+I (717) cpu_start: ELF file SHA256:  d438b2d0efdff2ef...
+I (718) cpu_start: ESP-IDF:          v3.3.2-107-g722043f73-dirty
+I (719) cpu_start: Starting app cpu, entry point is 0x400814b4
+0x400814b4: call_start_cpu1 at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/esp32/cpu_start.c:268
 
 I (0) cpu_start: App cpu up.
-I (1148) spiram: SPI SRAM memory test OK
-I (1150) heap_init: Initializing. RAM available for dynamic allocation:
-I (1151) heap_init: At 3FFAFF10 len 000000F0 (0 KiB): DRAM
-I (1151) heap_init: At 3FFB6388 len 00001C78 (7 KiB): DRAM
-I (1151) heap_init: At 3FFB9A20 len 00004108 (16 KiB): DRAM
-I (1152) heap_init: At 3FFBDB5C len 00000004 (0 KiB): DRAM
-I (1153) heap_init: At 3FFC5268 len 0001AD98 (107 KiB): DRAM
-I (1154) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
-I (1155) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
-I (1155) heap_init: At 4009B094 len 00004F6C (19 KiB): IRAM
-I (1156) cpu_start: Pro cpu start user code
-I (1157) spiram: Adding pool of 4057K of external SPI memory to heap allocator
-I (48) esp_core_dump_common: Init core dump to UART
-E (53) esp_core_dump_common: No core dump partition found!
-I (53) cpu_start: Starting scheduler on PRO CPU.
+I (1199) spiram: SPI SRAM memory test OK
+I (1201) heap_init: Initializing. RAM available for dynamic allocation:
+I (1201) heap_init: At 3FFAFF10 len 000000F0 (0 KiB): DRAM
+I (1201) heap_init: At 3FFB6388 len 00001C78 (7 KiB): DRAM
+I (1202) heap_init: At 3FFB9A20 len 00004108 (16 KiB): DRAM
+I (1203) heap_init: At 3FFBDB5C len 00000004 (0 KiB): DRAM
+I (1204) heap_init: At 3FFC5F38 len 0001A0C8 (104 KiB): DRAM
+I (1205) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
+I (1205) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
+I (1206) heap_init: At 4009AD9C len 00005264 (20 KiB): IRAM
+I (1207) cpu_start: Pro cpu start user code
+I (1208) spiram: Adding pool of 4056K of external SPI memory to heap allocator
+I (99) esp_core_dump_common: Init core dump to UART
+E (104) esp_core_dump_common: No core dump partition found!
+I (105) cpu_start: Starting scheduler on PRO CPU.
 I (0) cpu_start: Starting scheduler on APP CPU.
-I (54) spiram: Reserving pool of 18K of internal memory for DMA/internal allocations
-I (77) AUDIO_THREAD: The esp_periph task allocate stack on external memory
-I (77) SDCARD: Trying to mount with base path=/sdcard
-I (148) SDCARD: CID name SC16G!
+I (105) spiram: Reserving pool of 18K of internal memory for DMA/internal allocations
+I (127) AUDIO_THREAD: The esp_periph task allocate stack on external memory
+E (128) PERIPH_SDCARD: no sdcard detect
+E (2628) AUDIO_BOARD: Sdcard mount failed
+I (2635) wifi:wifi driver task: 3ffcfcd8, prio:23, stack:3584, core=0
+I (2635) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
+I (2635) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
+I (2652) wifi:wifi firmware version: 5f8804c
+I (2652) wifi:config NVS flash: enabled
+I (2652) wifi:config nano formating: disabled
+I (2652) wifi:Init dynamic tx buffer num: 32
+I (2652) wifi:Init data frame dynamic rx buffer num: 512
+I (2653) wifi:Init management frame dynamic rx buffer num: 512
+I (2654) wifi:Init management short buffer num: 32
+I (2654) wifi:Init static tx buffer num: 16
+I (2655) wifi:Init static rx buffer size: 1600
+I (2655) wifi:Init static rx buffer num: 16
+I (2656) wifi:Init dynamic rx buffer num: 512
+I (2759) phy: phy_version: 4180, cb3948e, Sep 12 2019, 16:39:13, 0, 0
+I (2760) wifi:mode : sta (fc:f5:c4:37:bf:0c)
+I (3634) DU1910_APP: SMARTCONFIG wifi setting module has been selected
+I (3638) WIFI_SERV: Connect to wifi ssid: ESP-Audio, pwd: esp123456
+I (3818) wifi:new:<6,0>, old:<1,0>, ap:<255,255>, sta:<6,0>, prof:1
+I (3818) wifi:state: init -> auth (b0)
+I (3820) wifi:state: auth -> assoc (0)
+I (3824) wifi:state: assoc -> run (10)
+I (3841) wifi:connected with ESP-Audio, aid = 2, channel 6, BW20, bssid = ac:22:0b:d2:ee:58
+I (3841) wifi:security type: 4, phy: bgn, rssi: -58
+I (3846) wifi:pm start, type: 1
 
-I (588) wifi:wifi driver task: 3ffcf7b4, prio:23, stack:3584, core=0
-I (588) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
-I (588) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
-I (604) wifi:wifi firmware version: 5f8804c
-I (605) wifi:config NVS flash: enabled
-I (605) wifi:config nano formating: disabled
-I (605) wifi:Init dynamic tx buffer num: 32
-I (605) wifi:Init data frame dynamic rx buffer num: 512
-I (606) wifi:Init management frame dynamic rx buffer num: 512
-I (606) wifi:Init management short buffer num: 32
-I (607) wifi:Init static tx buffer num: 8
-I (608) wifi:Init static rx buffer size: 1600
-I (608) wifi:Init static rx buffer num: 16
-I (608) wifi:Init dynamic rx buffer num: 512
-I (784) phy: phy_version: 4180, cb3948e, Sep 12 2019, 16:39:13, 0, 0
-I (785) wifi:mode : sta (fc:f5:c4:37:c1:10)
-I (1587) DU1910_APP: ESP_BLUFI wifi setting module has been selected
-I (1587) BLUFI_CONFIG: Set blufi customized data: hello world
-, length: 12
-I (1591) WIFI_SERV: Connect to wifi ssid: steven, pwd: esp123456
-I (1729) wifi:new:<6,2>, old:<1,0>, ap:<255,255>, sta:<6,2>, prof:1
-I (1730) wifi:state: init -> auth (b0)
-I (1738) wifi:state: auth -> assoc (0)
-I (1748) wifi:state: assoc -> run (10)
-I (1775) wifi:connected with steven, aid = 2, channel 6, 40D, bssid = b0:95:8e:17:94:a5
-I (1775) wifi:security type: 4, phy: bgn, rssi: -32
-I (1839) wifi:pm start, type: 1
-
-I (1839) wifi:AP's beacon interval = 102400 us, DTIM period = 1
-I (2583) event: sta ip: 192.168.1.108, mask: 255.255.255.0, gw: 192.168.1.1
-I (2584) WIFI_SERV: Got ip:192.168.1.108
-W (2584) WIFI_SERV: STATE type:2, pdata:0x0, len:0
-I (2604) DU1910_APP: PERIPH_WIFI_CONNECTED [64]
-I (2605) SNTP_INIT: ------------Initializing SNTP
-I (2606) APP_OTA_UPGRADE: Create OTA service
-I (2606) APP_OTA_UPGRADE: Start OTA service
-I (2606) OTA_DEFAULT: data upgrade uri file://sdcard/flash_tone.bin
-I (4381) FATFS_STREAM: File size is 0 byte,pos:0
-E (4381) FATFS_STREAM: Failed to open file /sdcard/flash_tone.bin
-E (4382) AUDIO_ELEMENT: [file] AEL_STATUS_ERROR_OPEN,-1
-E (4382) OTA_DEFAULT: reader stream init failed
-E (4383) OTA_SERVICE: OTA service process failed
-E (4384) APP_OTA_UPGRADE: List id: 0, OTA failed
-I (4384) OTA_DEFAULT: data upgrade uri file://sdcard/profile.bin
-I (4386) FATFS_STREAM: File size is 112 byte,pos:0
-I (4387) APP_OTA_UPGRADE: Found ota file in sdcard, uri: /sdcard/profile.bin
-I (4435) OTA_DEFAULT: write_offset 0, r_size 112
-W (4436) FATFS_STREAM: No more data,ret:0
-I (4436) OTA_DEFAULT: partition profile upgrade successes
-W (4436) AUDIO_ELEMENT: [file] Element has not create when AUDIO_ELEMENT_TERMINATE
-I (4438) APP_OTA_UPGRADE: List id: 1, OTA sucessed
-E (4438) esp_https_ota: Server certificate not found in esp_http_client config
-E (4439) OTA_DEFAULT: ESP HTTPS OTA Begin failed
-E (4440) OTA_SERVICE: OTA service process failed
-E (4440) APP_OTA_UPGRADE: List id: 2, OTA failed
-W (4441) OTA_SERVICE: OTA_END!
-W (4442) APP_OTA_UPGRADE: upgrade finished, Please check the result of OTA
-I (4443) AUDIO_THREAD: The input_key_service task allocate stack on external memory
-I (4444) TAS5805M: Power ON CODEC with GPIO 12
-I (4444) gpio: GPIO[12]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 1| Pulldown: 1| Intr:0
-I (4451) AUDIO_THREAD: The button_task task allocate stack on external memory
-I (5410) TAS5805M: tas5805m_transmit_registers:  write 1677 reg done
-W (5411) TAS5805M: volume = 0x44
-W (5411) I2C_BUS: i2c_bus_create:57: I2C bus has been already created, [port:0]
-W (5415) I2C_BUS: i2c_bus_create:57: I2C bus has been already created, [port:0]
-I (5418) AUDIO_HAL: Codec mode is 3, Ctrl:1
-I (5418) APP_BT_INIT: Init Bluetooth module
-I (5418) BTDM_INIT: BT controller compile version [3cd70f2]
-I (5419) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
-I (5758) BLE_GATTS: ble gatts module init
-I (5758) APP_BT_INIT: Start Bluetooth peripherals
-I (5759) AUDIO_THREAD: The media_task task allocate stack on external memory
-I (5759) ESP_AUDIO_TASK: media_ctrl_task running...,0x3f81d098
+I (3856) wifi:AP's beacon interval = 102400 us, DTIM period = 3
+I (4628) event: sta ip: 192.168.1.61, mask: 255.255.255.0, gw: 192.168.1.1
+I (4628) WIFI_SERV: Got ip:192.168.1.61
+W (4628) WIFI_SERV: STATE type:2, pdata:0x0, len:0
+I (4642) DU1910_APP: PERIPH_WIFI_CONNECTED [64]
+I (4642) SNTP_INIT: ------------Initializing SNTP
+I (4644) APP_OTA_UPGRADE: Create OTA service
+I (4645) APP_OTA_UPGRADE: Start OTA service
+I (4645) OTA_DEFAULT: data upgrade uri https://github.com/espressif/esp-adf/raw/master/examples/korvo_du1906/tone/audio_tone.bin
+I (7278) HTTP_STREAM: total_bytes=166
+I (9093) HTTP_STREAM: total_bytes=107950
+I (9093) flashPartition: 146: label:flash_tone
+I (9093) TONE_STREAM: header tag 2053, format 1
+I (9094) TONE_STREAM: audio tone's tail is DFAC
+E (9094) APP_OTA_UPGRADE: not audio tone bin
+E (9095) OTA_SERVICE: No need to upgrade
+E (9095) APP_OTA_UPGRADE: List id: 0, OTA failed, result: -1
+I (9096) OTA_DEFAULT: data upgrade uri file://sdcard/profile.bin
+I (9097) FATFS_STREAM: File size is 0 byte,pos:0
+E (9098) FATFS_STREAM: Failed to open file /sdcard/profile.bin
+E (9098) AUDIO_ELEMENT: [file] AEL_STATUS_ERROR_OPEN,-1
+E (9099) OTA_DEFAULT: reader stream init failed
+E (9100) OTA_SERVICE: OTA prepared fail
+E (9100) APP_OTA_UPGRADE: List id: 1, OTA failed, result: 589835
+I (13701) esp_https_ota: Starting OTA...
+I (13701) esp_https_ota: Writing to partition subtype 17 at offset 0x290000
+I (13703) OTA_DEFAULT: Running firmware version: v1.1.1, the incoming firmware version 
+E (13705) OTA_DEFAULT: Got invalid version: , the version should be (V0.0.0 - V255.255.255)
+E (13706) OTA_DEFAULT: Error version incoming
+E (13707) OTA_SERVICE: No need to upgrade
+E (13707) APP_OTA_UPGRADE: List id: 2, OTA failed, result: 589827
+W (13708) OTA_SERVICE: OTA_END!
+W (13709) APP_OTA_UPGRADE: upgrade finished, Please check the result of OTA
+I (13710) TAS5805M: Power ON CODEC with GPIO 12
+I (13710) gpio: GPIO[12]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 1| Pulldown: 1| Intr:0 
+I (13719) AUDIO_THREAD: The button_task task allocate stack on external memory
+I (14654) TAS5805M: tas5805m_transmit_registers:  write 1677 reg done
+W (14655) TAS5805M: volume = 0x44
+W (14655) I2C_BUS: i2c_bus_create:57: I2C bus has been already created, [port:0]
+W (14658) I2C_BUS: i2c_bus_create:57: I2C bus has been already created, [port:0]
+I (14661) AUDIO_HAL: Codec mode is 3, Ctrl:1
+I (14661) APP_BT_INIT: Init Bluetooth module
+I (14662) BTDM_INIT: BT controller compile version [3cd70f2]
+I (14663) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
+I (15020) BLE_GATTS: ble gatts module init
+I (15020) APP_BT_INIT: Start Bluetooth peripherals
+I (15021) AUDIO_THREAD: The media_task task allocate stack on external memory
 
 ----------------------------- ESP Audio Platform -----------------------------
 |                                                                            |
-|                               ESP_AUDIO-v1.6.2                             |
-|                     Compile date: Jun 16 2020-21:20:16                     |
+|                         ESP_AUDIO-v1.6.2-8-g9d685b8                        |
+|                     Compile date: Jul  2 2020-10:23:28                     |
 ------------------------------------------------------------------------------
-I (5764) BLE_GATTS: create attribute table successful, the number handle = 8
-I (5765) BT_HELPER: ap_helper_a2dp_handle_set, 42, 0x0x3f81f114, 0x3ffc4940
-I (5767) MP3_DECODER: MP3 init
-I (5768) ESP_DECODER: esp_decoder_init, stack size is 5120
-I (5770) I2S: DMA Malloc info, datalen=blocksize=1200, dma_buf_count=3
-I (5770) BLE_GATTS: SERVICE_START_EVT, status 0, service_handle 40
-I (5772) I2S: APLL: Req RATE: 48000, real rate: 47999.961, BITS: 16, CLKM: 1, BCK_M: 8, MCLK: 12287990.000, SCLK: 1535998.750000, diva: 1, divb: 0
-I (5773) ESP32_Korvo_DU1906: I2S0, MCLK output by GPIO0
-W (5775) TAS5805M: volume = 0x4a
-I (5775) APP_PLAYER_INIT: Func:setup_app_esp_audio_instance, Line:157, MEM Total:4163856 Bytes, Inter:131768 Bytes, Dram:111472 Bytes
+I (15026) BT_HELPER: ap_helper_a2dp_handle_set, 42, 0x0x3f8712e4, 0x3ffc42ec
+I (15026) BLE_GATTS: create attribute table successful, the number handle = 8
+I (15027) MP3_DECODER: MP3 init
+I (15032) BLE_GATTS: SERVICE_START_EVT, status 0, service_handle 40
+I (15036) ESP_DECODER: esp_decoder_init, stack size is 5120
+W (15038) TAS5805M: volume = 0x4a
+I (15038) APP_PLAYER_INIT: Func:setup_app_esp_audio_instance, Line:151, MEM Total:3803080 Bytes, Inter:108960 Bytes, Dram:87904 Bytes
 
-I (5776) APP_PLAYER_INIT: esp_audio instance is:0x3f81d098
-I (5777) AUDIO_THREAD: The audio_manager_task task allocate stack on external memory
-I (5778) SD_HELPER: default_sdcard_player_init
-I (5778) SD_HELPER: default_sdcard_player_init  playlist_create
-I (5779) RAW_HELPER: default_raw_player_init :106, que:0x3ffe50d0
-W (5781) TAS5805M: volume = 0x58
-I (5781) BDSC_ENGINE: APP version is fdc453bfdba43e38fa5b7728e72442aa2e5e2103
-I (5782) SNTP_INIT: ------------Initializing SNTP
-I (5787) PROFILE: 56: type[0x1]
-I (5788) PROFILE: 57: subtype[0x29]
-I (5788) PROFILE: 58: address:0x7c2000
-I (5788) PROFILE: 59: size:0x1000
-I (5788) PROFILE: 60: label:profile
-I (5799) PROFILE: fc            = your_fc
-I (5799) PROFILE: pk            = your_pk
-I (5799) PROFILE: ak            = your_ak
-I (5799) PROFILE: sk            = your_sk
-I (5800) PROFILE: cuid          = your_cuid
-I (5801) PROFILE: mqtt_broker   =
-I (5801) PROFILE: mqtt_username =
-I (5802) PROFILE: mqtt_password =
-I (5802) PROFILE: mqtt_cid      =
-==> generate_auth_pam
-current ts: 1592467274
-==> generate_auth_sig_needfree
-sig: 9c8288d0e2cf59cde94ce384a211e99a
-pam_string: {"fc":"your_fc","pk":"your_pk","ak":"your_ak","time_stamp":26541121,"signature":"9c8288d0e2cf59cde94ce384a211e99a"}
-I (5806) AUTH_TASK: test request: POST /v1/manage/mqtt HTTP/1.0
-Host: smarthome.baidubce.com
-User-Agent: esp32
-Content-Type: application/json
-Content-Length: 130
+I (15039) APP_PLAYER_INIT: esp_audio instance is:0x3f86f760
+I (15040) I2S: DMA Malloc info, datalen=blocksize=1200, dma_buf_count=3
+I (15043) I2S: APLL: Req RATE: 48000, real rate: 47999.961, BITS: 16, CLKM: 1, BCK_M: 8, MCLK: 12287990.000, SCLK: 1535998.750000, diva: 1, divb: 0
+I (15045) ESP32_Korvo_DU1906: I2S0, MCLK output by GPIO0
+I (15045) AUDIO_THREAD: The audio_manager_task task allocate stack on external memory
+I (15046) SD_HELPER: default_sdcard_player_init
+I (15047) SD_HELPER: default_sdcard_player_init  playlist_create
+I (15048) RAW_HELPER: default_raw_player_init :106, que:0x3ffebfdc
+W (15049) TAS5805M: volume = 0x58
+I (15049) BDSC_ENGINE: APP version is 4c50d0cfc76cf43e12c0b600575a5a217d66aaab
+I (15050) AUDIO_PLAYER: tone play, type:203, cur media type:203
+I (15051) AP_HELPER: audio_player_helper_default_play, type:203,url:flash://tone/1_boot.mp3,pos:0,block:0,auto:0,mixed:0,inter:1
+W (15052) AUDIO_MANAGER: ap_manager_backup_audio_info, not found the current operations
+W (15053) AUDIO_MANAGER: AP_MANAGER_PLAY, Unblock playing, type:203, auto:0, block:0
+I (15058) AUDIO_THREAD: The DEC_auto task allocate stack on external memory
+I (15059) ESP_DECODER: Ready to do audio type check, pos:0, (line 104)
+I (15059) TONE_STREAM: Wanted read flash tone index is 1
+I (15059) TONE_STREAM: Tone offset:00001a38, Tone length:39019, total num:13  pos:1
 
-{"fc":"your_fc","pk":"your_pk","ak":"your_ak","time_stamp":26541121,"signature":"9c8288d0e2cf59cde94ce384a211e99a"}
-I (6695) HTTP_TASK: Connection established...
-I (6696) HTTP_TASK: 266 bytes written
-I (6697) HTTP_TASK: Reading HTTP response...
-I (6948) HTTP_TASK: 196 bytes read
-HTTP/1.0 200 OK
-Cache-Control: no-cache
-Content-Type: application/json;charset=UTF-8
-Date: Thu, 18 Jun 2020 08:01:15 GMT
-Server: BWS
-X-Bce-Request-Id: 50cbd47c-6f13-44dc-a2cb-a83ceb4bbb2a
-
-I (6950) HTTP_TASK: 193 bytes read
-{"broker":"azsgqzj.iot.gz.baidubce.com","user":"thingidp@azsgqzj|cabcaad9358dd1623427701be534f578|0|MD5","pass":"d57ce60bed6a3243fc12c0cd7dc30906","clientID":"cabcaad9358dd1623427701be534f578"}I (6952) HTTP_TASK: connection closed
-I (6957) AUTH_TASK: recv body: {"broker":"azsgqzj.iot.gz.baidubce.com","user":"thingidp@azsgqzj|cabcaad9358dd1623427701be534f578|0|MD5","pass":"d57ce60bed6a3243fc12c0cd7dc30906","clientID":"cabcaad9358dd1623427701be534f578"}
-I (6958) BDSC_ENGINE: auth restul: broker: azsgqzj.iot.gz.baidubce.com, clientID: cabcaad9358dd1623427701be534f578, username: thingidp@azsgqzj|cabcaad9358dd1623427701be534f578|0|MD5, pwd: d57ce60bed6a3243fc12c0cd7dc30906
-
-I (7006) BDSC_ENGINE: profile save OK
-I (7007) gpio: GPIO[27]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
-I (7007) ESP32_GPIO_DRIVER: Initializing GPIO reset is successful.
-I (7008) dsp_download_imp: esp32_spi_init...
-I (7009) ESP32_SPI_DRIVER: Initializing SPI is successful,clock speed is 16MHz,mode 0.
-I (7010) bds_connection:[bds_connection_create]: enter
-I (7012) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:1
-E (7012) gpio: gpio_install_isr_service(412): GPIO isr service already installed
-esp32_intr_gpio_init is here.
-I (7013) wakeup_hal: esp32_intr_gpio_init, ret:0
-I (7014) GEN_PAM: ==> generate_dcs_pam
-I (7015) connect_strategy:[set_params]: conifg connect params
-I (7016) client_adapter:[bdsc_adapter_start]: bdsc_adapter_start
-I (7016) client_adapter:[bdsc_adapter_start]: dsp uploading ...
+I (15070) ESP_DECODER: Detect audio type is MP3
+I (15071) MP3_DECODER: MP3 opened
+I (15080) RSP_FILTER: reset sample rate of source data : 44100, reset channel of source data : 1
+I (15081) AUDIO_THREAD: The resample task allocate stack on external memory
+I (15082) AUDIO_THREAD: The OUT_iis task allocate stack on external memory
+I (15084) I2S_STREAM: AUDIO_STREAM_WRITER
+I (15257) RSP_FILTER: sample rate of source data : 44100, channel of source data : 1, sample rate of destination data : 48000, channel of destination data : 2
+W (15258) DU1910_APP: AUDIO_PLAYER_CALLBACK send OK, status:1, err_msg:0, media_src:203, ctx:0x0
+W (15259) AUDIO_MANAGER: AP_MANAGER_PLAY, Unblock playing timeout occurred
+W (15267) TAS5805M: volume = 0x58
+I (15268) SNTP_INIT: ------------Initializing SNTP
+I (15270) PROFILE: 55: type[0x1]
+I (15270) PROFILE: 56: subtype[0x29]
+I (15271) PROFILE: 57: address:0x790000
+I (15271) PROFILE: 58: size:0x1000
+I (15271) PROFILE: 59: label:profile
+I (15286) PROFILE: fc            = your_fc
+I (15286) PROFILE: pk            = your_pk
+I (15287) PROFILE: ak            = your_ak
+I (15287) PROFILE: sk            = your_sk
+I (15288) PROFILE: mqtt_broker   =
+I (15289) PROFILE: mqtt_username =
+I (15290) PROFILE: mqtt_password =
+I (15291) PROFILE: mqtt_cid      = 
+I (15291) PROFILE: cur_version_num = 100
+I (15292) PROFILE: tone_sub_ver    = 1.1.1
+I (15293) PROFILE: dsp_sub_ver     = 1.1.1
+I (15293) PROFILE: app_sub_ver     = 1.1.1
+I (15294) BLUFI_CONFIG: Set blufi customized data: your_fc#your_pk#your_ak#your_sk, length: 56
+I (15296) gpio: GPIO[27]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (15296) ESP32_GPIO_DRIVER: Initializing GPIO reset is successful.
+I (15297) dsp_download_imp: esp32_spi_init...
+I (15298) ESP32_SPI_DRIVER: Initializing SPI is successful,clock speed is 16MHz,mode 0.
+I (15299) gpio: GPIO[38]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:1 
+E (15300) gpio: gpio_install_isr_service(412): GPIO isr service already installed
+esp32_intr_gpio_init 38.
+I (15301) wakeup_hal: esp32_intr_gpio_init, ret:0
+I (15302) BDSC_ENGINE: cuid: your_fcyour_pkyour_ak
+ [1595215022.681 I (bdsc-client_adapter:bdsc_adapter_send:363)] send key=103, length=141, content=0x3fff2004
+ [1595215022.682 I (bdsc-client_adapter:bdsc_adapter_start:273)] bdsc_adapter_start
+ [1595215022.682 I (bdsc-client_adapter:bdsc_adapter_start:277)] dsp uploading ...
 GPIO_DSP_RST is high.
-I (7227) BDDSP_SPI_DRIVER: bddsp_load_bin_slave: entering...
-I (7227) BDDSP_SPI_DRIVER: type: 55, load dst:5ff60000 src:60000000 storage src:00000240 len:131072.
-I (7227) BDDSP_SPI_DRIVER: index :0 total:8.
-md5:2675DC9799DD5E211B3EC04E78AB10A3.
-I (7920) BDDSP_SPI_DRIVER: md5 wait time 78.
-I (7990) BDDSP_SPI_DRIVER: type: 55, load dst:5ff80000 src:60000000 storage src:00020240 len:507904.
-I (7990) BDDSP_SPI_DRIVER: index :1 total:8.
-md5:78B4858292EAB00224440192FF79569E.
-I (10416) BDDSP_SPI_DRIVER: md5 wait time 304.
-I (10656) BDDSP_SPI_DRIVER: type: 55, load dst:60050000 src:60050000 storage src:0009c240 len:536576.
-I (10656) BDDSP_SPI_DRIVER: index :2 total:8.
-md5:4DB293568E4BE8AA442EAF0F0F529F08.
-I (13246) BDDSP_SPI_DRIVER: md5 wait time 321.
-I (13496) BDDSP_SPI_DRIVER: type: aa, load dst:5ff60000 src:50000000 storage src:0011f240 len:16.
-I (13496) BDDSP_SPI_DRIVER: index :3 total:8.
-I (13497) BDDSP_SPI_DRIVER: core boot addr: 0x5ff60000 0x50000000
+I (15525) BDDSP_SPI_DRIVER: bddsp_load_bin_slave: entering...
+I (15526) BDDSP_SPI_DRIVER: type: 55, load dst:5ff60000 src:60000000 storage src:00000240 len:131072.
+I (15526) BDDSP_SPI_DRIVER: index :0 total:8.
+md5:92B8C60C4122D986D8C166BEBF1E5F22.
+I (15791) BDDSP_SPI_DRIVER: md5 wait time 78.
+I (15861) BDDSP_SPI_DRIVER: type: 55, load dst:5ff80000 src:60000000 storage src:00020240 len:507904.
+I (15862) BDDSP_SPI_DRIVER: index :1 total:8.
+md5:806C15442352D6F7E3968195E5D16E84.
+I (16898) BDDSP_SPI_DRIVER: md5 wait time 304.
+I (17137) BDDSP_SPI_DRIVER: type: 55, load dst:60050000 src:60050000 storage src:0009c240 len:536576.
+I (17138) BDDSP_SPI_DRIVER: index :2 total:8.
+md5:E37F61A507D025162AC3AC01888491A9.
+I (18231) BDDSP_SPI_DRIVER: md5 wait time 321.
+I (18481) BDDSP_SPI_DRIVER: type: aa, load dst:5ff60000 src:50000000 storage src:0011f240 len:16.
+I (18482) BDDSP_SPI_DRIVER: index :3 total:8.
+I (18482) BDDSP_SPI_DRIVER: core boot addr: 0x5ff60000 0x50000000
 
-I (13498) BDDSP_SPI_DRIVER: type: 55, load dst:5ff60000 src:a0000000 storage src:0011f250 len:131072.
-I (13499) BDDSP_SPI_DRIVER: index :4 total:8.
-md5:4EC0706C8D6A17D6A5F5589C2CF51121.
-I (14141) BDDSP_SPI_DRIVER: md5 wait time 78.
-I (14141) BDDSP_SPI_DRIVER: type: 55, load dst:5ff80000 src:a0000000 storage src:0013f250 len:507904.
-I (14142) BDDSP_SPI_DRIVER: index :5 total:8.
-md5:CA47B800EE4C95967A87328DAB12C364.
-I (16616) BDDSP_SPI_DRIVER: md5 wait time 304.
-I (16616) BDDSP_SPI_DRIVER: type: 55, load dst:a0000000 src:a0000000 storage src:001bb250 len:487424.
-I (16617) BDDSP_SPI_DRIVER: index :6 total:8.
+I (18484) BDDSP_SPI_DRIVER: type: 55, load dst:5ff60000 src:a0000000 storage src:0011f250 len:131072.
+I (18484) BDDSP_SPI_DRIVER: index :4 total:8.
+md5:9F5D31CF954149A4D77539BAFEAC820A.
+I (18751) BDDSP_SPI_DRIVER: md5 wait time 78.
+I (18822) BDDSP_SPI_DRIVER: type: 55, load dst:5ff80000 src:a0000000 storage src:0013f250 len:507904.
+I (18822) BDDSP_SPI_DRIVER: index :5 total:8.
+md5:1D19794309F5AE4C5B0BE39CC85B1482.
+I (19849) BDDSP_SPI_DRIVER: md5 wait time 304.
+W (20028) TONE_STREAM: No more data,ret:0 ,info.byte_pos:39019
+I (20082) BDDSP_SPI_DRIVER: type: 55, load dst:a0000000 src:a0000000 storage src:001bb250 len:487424.
+I (20083) BDDSP_SPI_DRIVER: index :6 total:8.
 md5:80CA6C2A586F552A7BA1203E0BC45281.
-I (19030) BDDSP_SPI_DRIVER: md5 wait time 292.
-I (19030) BDDSP_SPI_DRIVER: type: 55, load dst:60010000 src:60010000 storage src:00232250 len:189264.
-I (19031) BDDSP_SPI_DRIVER: index :7 total:8.
-md5:FB5B58F142826F181F8C8BB62CA8F322.
-I (19947) BDDSP_SPI_DRIVER: md5 wait time 113.
-I (19947) BDDSP_SPI_DRIVER: type: aa, load dst:5ff60000 src:50000000 storage src:002605a0 len:16.
-I (19948) BDDSP_SPI_DRIVER: index :8 total:8.
-I (19948) BDDSP_SPI_DRIVER: core1 boot addr: 0x5ff60000 0x50000000
+I (21068) BDDSP_SPI_DRIVER: md5 wait time 292.
+I (21298) BDDSP_SPI_DRIVER: type: 55, load dst:60010000 src:60010000 storage src:00232250 len:195616.
+I (21299) BDDSP_SPI_DRIVER: index :7 total:8.
+md5:6B7424978E55D90F986D83B2F683F5BF.
+I (21697) BDDSP_SPI_DRIVER: md5 wait time 117.
+I (21797) BDDSP_SPI_DRIVER: type: aa, load dst:5ff60000 src:50000000 storage src:00261e70 len:16.
+I (21798) BDDSP_SPI_DRIVER: index :8 total:8.
+I (21798) BDDSP_SPI_DRIVER: core1 boot addr: 0x5ff60000 0x50000000
 
-I (19949) BDDSP_SPI_DRIVER: Loading DSP bins is successful.
-I (19950) dsp_download_imp: check dsp status before
-I (19958) dsp_download_imp: check dsp status end : 0
-I (19958) BDDSP_SPI_DRIVER: <bddsp_get_dsp_version>The version of DSP is 1.4.0C
-I (19958) client_adapter:[bdsc_adapter_start]: dsp upload ret:0
-E (19959) BDSC_ENGINE: !!! unknow event 7000!!!
-I (19960) client_adapter:[bdsc_adapter_send]: send key=700, length=15, content=0x3ffe7e04
-I (19961) client_adapter:[bdsc_adapter_send]: send key=500, length=0, content=0x0
-I (19961) BDDSP_SPI_DRIVER: write_asr_mode_feature
-I (19962) client_adapter:[bdsc_adapter_send]: send key=200, length=0, content=0x0
-I (19963) nqe_result:[update_dsp_current_audio_mode]: write asr mode ret=0
-I (19964) MQTT_TASK: mqtt_app_start ==>
- clientid: cabcaad9358dd1623427701be534f578, sub: $iot/cabcaad9358dd1623427701be534f578/user/your_fc/your_pk/your_ak/down, pub: $iot/cabcaad9358dd1623427701be534f578/user/your_fc/your_pk/your_ak/up
-I (19965) bds_base_online:[bds_start_net_env]: start connect
-I (19968) net_machine:[machine_connect]: +++
-I (19968) MQTT_TASK: Other event id:7
-I (19969) disconnected_state:[state_connect]: +++
-I (19970) strategy_mbedtls:[tls_init]: Seeding the random number generator
-I (19971) net_machine:[switch_state]: +++ 2
-I (19972) net_machine:[switch_state]: ----
-I (19972) disconnected_state:[state_connect]: ----
-I (19973) net_machine:[machine_connect]: ---
-I (19974) client_wakeup:[bdsc_wakeup_start]: wakeup=0x3f8222d0, machine=0x3f823df4, listen=0x4022b1c8
-0x4022b1c8: start_listen at /home/meng/work_bench/1.2.4/light-asr-sdk/light-bdspeech-sdk/main_build/wp_asr/components/bds_light_sdk/wakeup/bdsc_wakeup_machine.c:32
+I (21800) BDDSP_SPI_DRIVER: Loading DSP bins is successful.
+ [1595215029.174 I (bdsc-upload_slave:exec_mode_slave:35)] dsp load success!
+I (21801) dsp_download_imp: check dsp status before
+ [1595215029.176 D (bdsc-dsp_reg_info:init_dsp_reg_info:24)] ++
+ [1595215029.182 D (bdsc-dsp_reg_info:init_dsp_reg_info:31)] struct magic_number :0x0
+ [1595215029.182 D (bdsc-dsp_reg_info:init_dsp_reg_info:33)] struct reg 1 group:0x0, 0x0
+ [1595215029.183 D (bdsc-dsp_reg_info:init_dsp_reg_info:37)] struct reg 2 group:0x0, 0x0, 0x0, 0x0
+ [1595215029.184 D (bdsc-dsp_reg_info:init_dsp_reg_info:41)] struct reg 3 group:0x0, 0x0, 0x0, 0x0
+ [1595215029.185 D (bdsc-dsp_reg_info:init_dsp_reg_info:45)] struct reg 4 group:0x0, 0x0, 0x0, 0x0
+ [1595215029.186 D (bdsc-dsp_reg_info:init_dsp_reg_info:46)] dci_base_addr:0x0
+ [1595215029.187 D (bdsc-dsp_reg_info:init_dsp_reg_info:47)] ver_base_addr:0x0
+ [1595215029.188 D (bdsc-dsp_reg_info:init_dsp_reg_info:48)] ver_info_len:0
+ [1595215029.189 D (bdsc-dsp_reg_info:init_dsp_reg_info:49)] dci_info_len:0
+ [1595215029.190 D (bdsc-dsp_reg_info:init_dsp_reg_info:50)] asr_mode_base_addr:0
+ [1595215029.191 D (bdsc-dsp_reg_info:init_dsp_reg_info:51)] asr backoff, opus 0, feat 0
+ [1595215029.192 D (bdsc-dsp_reg_info:init_dsp_reg_info:53)] get_asr_mode_cmd_reg, 0x0
+ [1595215029.193 D (bdsc-dsp_reg_info:init_dsp_reg_info:54)] --
+ [1595215029.293 D (bdsc-dsp_reg_info:init_dsp_reg_info:24)] ++
+ [1595215029.299 D (bdsc-dsp_reg_info:init_dsp_reg_info:31)] struct magic_number :0x55aabeef
+ [1595215029.299 D (bdsc-dsp_reg_info:init_dsp_reg_info:33)] struct reg 1 group:0x31343845, 0x80003814
+ [1595215029.300 D (bdsc-dsp_reg_info:init_dsp_reg_info:37)] struct reg 2 group:0x60000000, 0x80003830, 0x8, 0x800
+ [1595215029.301 D (bdsc-dsp_reg_info:init_dsp_reg_info:41)] struct reg 3 group:0xa0077000, 0x80003818, 0x80, 0x40
+ [1595215029.302 D (bdsc-dsp_reg_info:init_dsp_reg_info:45)] struct reg 4 group:0x60040000, 0x80003824, 0xc0, 0x100
+ [1595215029.304 D (bdsc-dsp_reg_info:init_dsp_reg_info:46)] dci_base_addr:0x60056900
+ [1595215029.305 D (bdsc-dsp_reg_info:init_dsp_reg_info:47)] ver_base_addr:0x60056800
+ [1595215029.306 D (bdsc-dsp_reg_info:init_dsp_reg_info:48)] ver_info_len:128
+ [1595215029.309 D (bdsc-dsp_reg_info:init_dsp_reg_info:49)] dci_info_len:1200
+ [1595215029.310 D (bdsc-dsp_reg_info:init_dsp_reg_info:50)] asr_mode_base_addr:2147498024
+ [1595215029.311 D (bdsc-dsp_reg_info:init_dsp_reg_info:51)] asr backoff, opus 150, feat 150
+ [1595215029.312 D (bdsc-dsp_reg_info:init_dsp_reg_info:53)] get_asr_mode_cmd_reg, 0x8000381c
+ [1595215029.313 D (bdsc-dsp_reg_info:init_dsp_reg_info:54)] --
+I (21945) dsp_download_imp: check dsp status end : 0
+I (21945) BDDSP_SPI_DRIVER: <bddsp_get_dsp_version>The version of DSP is 1.4.8E
+ [1595215029.319 I (bdsc-client_adapter:bdsc_adapter_start:279)] dsp upload ret:0
+ [1595215029.321 D (bdsc-client_adapter:callback_task:100)] + event pop
+ [1595215029.321 D (bdsc-client_adapter:command_task:221)] + bdsc_condition_queue_pop
+ [1595215029.322 D (bdsc-client_adapter:command_task:223)] - bdsc_condition_queue_pop key=103
+ [1595215029.323 I (bdsc-asr_engine:bds_asr_config:550)] config_params={"host":"111.202.114.98","head_host":"vse.baidu.com","port":443,"engine_uri":"wss://111.202.114.98:443/ws/long_asr?sn=1","qnet_log_level":1}
+ [1595215029.324 D (bdsc-basic_adapter:callback_event:44)] callback key=7000, length=0, content=0x0
+ [1595215029.326 D (bdsc-client_adapter:command_task:221)] + bdsc_condition_queue_pop
+ [1595215029.328 D (bdsc-client_adapter:callback_task:102)] - event pop key=7000
+ [1595215029.329 D (bdsc-client_adapter:callback_task:100)] + event pop
+I (21956) EVENT_IN: Handle sdk event start.
+I (21956) ==========: ---> EVENT_SDK_START_COMPLETED
+I (21957) EVENT_OUT: Handle sdk event end.
+ [1595215029.331 I (bdsc-client_adapter:bdsc_adapter_send:363)] send key=700, length=15, content=0x3fff2190
+W (21957) ==========: Stack: 2352
+ [1595215029.333 D (bdsc-client_adapter:command_task:223)] - bdsc_condition_queue_pop key=700
+ [1595215029.334 D (bdsc-basic_adapter:dynamic_config:121)] config_str={"nqe_mode":1}, length=15
+ [1595215029.336 I (bdsc-client_adapter:bdsc_adapter_send:363)] send key=500, length=0, content=0x0
+ [1595215029.336 I (bdsc-nqe_result:update_dsp_current_audio_mode:65)] dsp mode equal! up mode:dsp mode=3:3
+ [1595215029.338 D (bdsc-client_adapter:command_task:221)] + bdsc_condition_queue_pop
+ [1595215029.339 D (bdsc-client_adapter:command_task:223)] - bdsc_condition_queue_pop key=500
+ [1595215029.340 D (bdsc-client_adapter:command_task:221)] + bdsc_condition_queue_pop
+ [1595215029.341 I (bdsc-client_adapter:bdsc_adapter_send:363)] send key=200, length=0, content=0x0
+ [1595215029.342 D (bdsc-client_adapter:command_task:223)] - bdsc_condition_queue_pop key=200
+ [1595215029.343 D (bdsc-wakeup_adapter:wakeup_start:55)] command=0x3f890cc0
+ [1595215029.344 I (bdsc-client_wakeup:bdsc_wakeup_start:47)] wakeup=0x3f86fc90, machine=0x3f88b71c, listen=0x4022d58c
+0x4022d58c: start_listen at /home/qiyanpeng/light-asr-sdk/light-bdspeech-sdk/main_build/wp_asr/components/bds_light_sdk/wakeup/bdsc_wakeup_machine.c:32
 
-I (19974) strategy_mbedtls:[tls_init]: Setting up the SSL/TLS structure...
-I (19975) wakeup_uninitial_state:[start_listen]: start_listen
-I (19976) wakeup_stop_state:[start_listen]: start_listen
-I (19977) wakeup_start_state:[start_listen]: start_listen
+ [1595215029.345 I (bdsc-wakeup_uninitial_state:start_listen:17)] start_listen
+ [1595215029.347 I (bdsc-wakeup_stop_state:start_listen:17)] start_listen
+I (21973) MQTT_TASK: mqtt_app_start ==> 
+ [1595215029.348 I (bdsc-wakeup_start_state:start_listen:92)] start_listen
+I (21977) MQTT_TASK: Other event id:7
 esp32_intr_gpio_add, ret 0.
-I (19978) strategy_mbedtls:[tcp_connect]: host = leetest.baidu.com, port=443
-E (19978) wakeup_hal: wakeup cmd 0x57414b45+++
-E (19982) wakeup_hal: wakeup cmd---
-I (20066) strategy_mbedtls:[tcp_connect]: create socket success
-I (20100) strategy_mbedtls:[tcp_connect]: connect sucess
-I (20101) strategy_mbedtls:[tls_connect]: Performing the SSL/TLS handshake...
-I (20110) MQTT_TASK: MQTT_EVENT_CONNECTED
-I (20111) MQTT_TASK: sent subscribe successful, msg_id=43775
-I (20177) MQTT_TASK: MQTT_EVENT_SUBSCRIBED, msg_id=43775
-I (20725) strategy_mbedtls:[net_connect]: tls connect success
-I (20725) disconnected_state:[do_connect_exec]: open I/O stream
-I (20726) io_watch_dog:[bds_io_watchdog_start]: start watch dog
-I (20726) bds_socket_stream:[open_stream]: start read task
-I (20728) bds_socket_stream:[open_stream]: start write task
-I (20782) net_machine:[switch_state]: +++ 1
-I (20782) EVENT_IN: Handle sdk event start.
-I (20782) AUDIO_PLAYER: tone play, type:203, cur media type:203
-I (20783) net_machine:[switch_state]: ----
-I (20783) disconnected_state:[do_connect_exec]: connect exec finish
-I (20784) bds_socket_stream:[send_msg_impl]: write len = 447, id: 1392302861, type = 0x2, idx = -1
-I (20784) AP_HELPER: audio_player_helper_default_play, type:203,url:flash://tone/0_linked.mp3,pos:0,block:0,auto:0,mixed:0,inter:1
-I (20787) AUDIO_MANAGER: ap_manager_play, 620, inter:1, type:203, auto:0, block:0, UNKNOWN
-W (20788) AUDIO_MANAGER: ap_manager_backup_audio_info, not found the current operations
-W (20789) AUDIO_MANAGER: ap_manager_play, 669, type:203,auto:0,block:0
-I (20790) ESP_AUDIO_TASK: It's a decoder
-I (20790) ESP_AUDIO_TASK: 1.CUR IN:[IN_flash],CODEC:[DEC_auto],RESAMPLE:[48000],OUT:[OUT_iis],rate:0, ch:0
-I (20792) ESP_AUDIO_TASK: 2.Handles,IN:0x3f81ef5c,CODEC:0x3f8224e8,FILTER:0x3f836674,OUT:0x3f822664
-I (20793) ESP_AUDIO_TASK: 2.2 Update all pipeline
-I (20794) ESP_AUDIO_TASK: 2.3 Linked new pipeline
-I (20796) ESP_AUDIO_TASK: 3. Previous starting...
-I (20797) AUDIO_THREAD: The DEC_auto task allocate stack on external memory
-I (20798) ESP_DECODER: Ready to do audio type check, pos:0, (line 104)
-I (20798) flashPartition: 146: label:flash_tone
-I (20798) TONE_STREAM: header tag 2053, format 1
-I (20799) TONE_STREAM: audio tone's tail is DFAC
-I (20800) TONE_STREAM: Wanted read flash tone index is 0
-I (20800) TONE_STREAM: Tone offset:00000248, Tone length:3960, total num:5  pos:0
-
-W (20811) TONE_STREAM: No more data,ret:0 ,info.byte_pos:3960
-I (20812) ESP_DECODER: Detect audio type is MP3
-I (20812) MP3_DECODER: MP3 opened
-I (20818) RSP_FILTER: reset sample rate of source data : 16000, reset channel of source data : 1
-I (20818) ESP_AUDIO_TASK: Received muisc info then send MEDIA_CTRL_EVT_PLAY
-I (20819) ESP_AUDIO_TASK: MEDIA_CTRL_EVT_PLAY, status:UNKNOWN, 0
-I (20820) AUDIO_THREAD: The resample task allocate stack on external memory
-I (20822) AUDIO_THREAD: The OUT_iis task allocate stack on external memory
-I (20823) I2S_STREAM: AUDIO_STREAM_WRITER
-I (20826) RSP_FILTER: sample rate of source data : 16000, channel of source data : 1, sample rate of destination data : 48000, channel of destination data : 2
-I (20827) ESP_AUDIO_TASK: ESP_AUDIO status is AEL_STATUS_STATE_RUNNING
-I (20828) ESP_AUDIO_TASK: Func:media_ctrl_task, Line:801, MEM Total:3935184 Bytes, Inter:99372 Bytes, Dram:79076 Bytes
-
-I (20830) ==========: ---> ---> EVENT_LINK_CONNECTED buffer_length=24, buffer={"????flash://tone/0_linked.mp3
-I (20831) MAIN: ==> Got BDSC_EVENT_ON_LINK_CONNECTED
-I (20832) EVENT_OUT: Handle sdk event end.
-W (20832) ==========: Stack: 1992
-I (20833) AUDIO_MANAGER: AUDIO MANAGER RECV STATUS:RUNNING, err:0, media_src:203
-W (20834) DU1910_APP: AUDIO_PLAYER_CALLBACK send OK, status:1, err_msg:0, media_src:203, ctx:0x0
-I (21160) bds_handle_data:[do_logic_connected]: verify value : {"status":0,"msg":"OK","data":[]}
-I (22479) MP3_DECODER: Closed
-I (22479) ESP_AUDIO_TASK: Received last pos: 3960 bytes
-I (22835) ESP_AUDIO_TASK: Received last time: 1984 ms
-I (22835) ESP_AUDIO_TASK: ESP_AUDIO status is AEL_STATUS_STATE_FINISHED
-I (22836) ESP_AUDIO_TASK: Func:media_ctrl_task, Line:801, MEM Total:3976456 Bytes, Inter:100108 Bytes, Dram:79812 Bytes
-
-W (22837) ESP_AUDIO_TASK: Destroy the old pipeline
-W (22838) ESP_AUDIO_TASK: The old pipeline destroyed
-I (22838) AUDIO_MANAGER: AUDIO MANAGER RECV STATUS:FINISHED, err:0, media_src:203
-W (22839) DU1910_APP: AUDIO_PLAYER_CALLBACK send OK, status:4, err_msg:0, media_src:203, ctx:0x0
-I (22841) AUDIO_MANAGER: AUDIO_STATUS_FINISHED, resume:0, is_backup:0
-I (22842) AUDIO_MANAGER: AUDIO_PLAYER_MODE_ONE_SONG
+E (21978) wakeup_hal: wakeup cmd 0x57414b45+++
+E (21980) wakeup_hal: wakeup cmd---
+ [1595215029.354 D (bdsc-wakeup_start_state:start_listen:106)] create wakeup task
+ [1595215029.355 D (bdsc-client_adapter:command_task:221)] + bdsc_condition_queue_pop
+I (22197) MQTT_TASK: MQTT_EVENT_CONNECTED
+I (22198) MQTT_TASK: sent subscribe successful, msg_id=43866
+I (22242) MQTT_TASK: MQTT_EVENT_SUBSCRIBED, msg_id=43866
+I (22894) MP3_DECODER: Closed
+W (23075) ESP_AUDIO_TASK: Destroy the old pipeline
+W (23076) ESP_AUDIO_TASK: The old pipeline destroyed
+W (23076) DU1910_APP: AUDIO_PLAYER_CALLBACK send OK, status:4, err_msg:0, media_src:203, ctx:0x0
+W (26977) MQTT_TASK: Stack: 2292
+W (31977) MQTT_TASK: Stack: 2292
 ```
 
 ## Troubleshooting
