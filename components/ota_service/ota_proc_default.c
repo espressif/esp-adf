@@ -223,6 +223,13 @@ static ota_service_err_reason_t ota_data_partition_exec_upgrade(void *handle, ot
     ota_data_upgrade_ctx_t *context = (ota_data_upgrade_ctx_t *)handle;
     AUDIO_NULL_CHECK(TAG, context, return OTA_SERV_ERR_REASON_NULL_POINTER);
     AUDIO_NULL_CHECK(TAG, context->r_stream, return OTA_SERV_ERR_REASON_NULL_POINTER);
+    AUDIO_NULL_CHECK(TAG, context->partition, return OTA_SERV_ERR_REASON_NULL_POINTER);
+    esp_err_t ret = ESP_OK;
+
+    if ((ret = esp_partition_erase_range(context->partition, 0, context->partition->size)) != ESP_OK) {
+        ESP_LOGE(TAG, "Erase [%s] partition failed, return value: %d", node->label, ret);
+        return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
+    }
 
     while ((r_size = audio_element_input(context->r_stream, context->read_buf, READER_BUF_LEN)) > 0) {
         ESP_LOGI(TAG, "write_offset %d, r_size %d", context->write_offset, r_size);
@@ -244,6 +251,7 @@ static ota_service_err_reason_t ota_data_partition_finish(void *handle, ota_node
 {
     ota_data_upgrade_ctx_t *context = (ota_data_upgrade_ctx_t *)handle;
     AUDIO_NULL_CHECK(TAG, context->r_stream, return ESP_FAIL);
+    audio_element_process_deinit(context->r_stream);
     audio_element_deinit(context->r_stream);
 
     audio_free(handle);
