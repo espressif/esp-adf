@@ -30,16 +30,16 @@ static struct marker {
 } file_marker;
 
 // low rate mp3 audio
-extern const uint8_t lr_mp3_start[] asm("_binary_16b_2c_8000hz_mp3_start");
-extern const uint8_t lr_mp3_end[]   asm("_binary_16b_2c_8000hz_mp3_end");
+extern const uint8_t lr_mp3_start[] asm("_binary_music_16b_2c_8000hz_mp3_start");
+extern const uint8_t lr_mp3_end[]   asm("_binary_music_16b_2c_8000hz_mp3_end");
 
 // medium rate mp3 audio
-extern const uint8_t mr_mp3_start[] asm("_binary_16b_2c_22050hz_mp3_start");
-extern const uint8_t mr_mp3_end[]   asm("_binary_16b_2c_22050hz_mp3_end");
+extern const uint8_t mr_mp3_start[] asm("_binary_music_16b_2c_22050hz_mp3_start");
+extern const uint8_t mr_mp3_end[]   asm("_binary_music_16b_2c_22050hz_mp3_end");
 
 // high rate mp3 audio
-extern const uint8_t hr_mp3_start[] asm("_binary_16b_2c_44100hz_mp3_start");
-extern const uint8_t hr_mp3_end[]   asm("_binary_16b_2c_44100hz_mp3_end");
+extern const uint8_t hr_mp3_start[] asm("_binary_music_16b_2c_44100hz_mp3_start");
+extern const uint8_t hr_mp3_end[]   asm("_binary_music_16b_2c_44100hz_mp3_end");
 
 static void set_next_file_marker()
 {
