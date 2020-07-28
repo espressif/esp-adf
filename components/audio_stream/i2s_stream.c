@@ -215,11 +215,11 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
     if (bytes_read > 0) {
+#ifdef CONFIG_IDF_TARGET_ESP32
         if (info.channels == 1) {
             i2s_mono_fix(info.bits, (uint8_t *)buffer, bytes_read);
         }
-        info.byte_pos += bytes_read;
-        audio_element_setinfo(self, &info);
+#endif
     }
     return bytes_read;
 }
@@ -229,6 +229,20 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
     len = len >> 2 << 2;
     size_t bytes_written = 0;
+    audio_element_info_t info;
+    audio_element_getinfo(self, &info);
+    if (len > 0) {
+#ifdef CONFIG_IDF_TARGET_ESP32
+        if (info.channels == 1) {
+            i2s_mono_fix(info.bits, (uint8_t *)buffer, len);
+        }
+#endif
+#if SOC_I2S_SUPPORTS_ADC_DAC
+        if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+            i2s_dac_data_scale(info.bits, (uint8_t *)buffer, len);
+        }
+#endif
+    }
     i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
     return bytes_written;
 }
@@ -238,6 +252,7 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
     int r_size = audio_element_input(self, in_buffer, in_len);
     int w_size = 0;
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    audio_element_info_t i2s_info = {0};
     if (r_size == AEL_IO_TIMEOUT) {
 #if SOC_I2S_SUPPORTS_ADC_DAC
         if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
@@ -251,27 +266,14 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
     }
     if ((r_size > 0)) {
         if (i2s->use_alc) {
-            audio_element_info_t i2s_info = {0};
             audio_element_getinfo(self, &i2s_info);
             alc_volume_setup_process(in_buffer, r_size, i2s_info.channels, i2s->volume_handle, i2s->volume);
         }
         audio_element_multi_output(self, in_buffer, r_size, 0);
-        // Fix output by I2S only
-        audio_element_info_t info;
-        audio_element_getinfo(self, &info);
-        if (info.channels == 1) {
-            i2s_mono_fix(info.bits, (uint8_t *)in_buffer, r_size);
-        }
-#if SOC_I2S_SUPPORTS_ADC_DAC
-        if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
-            i2s_dac_data_scale(info.bits, (uint8_t *)in_buffer, r_size);
-        }
-#endif
-        w_size = audio_element_output(self, in_buffer, r_size);
-
-        audio_element_getinfo(self, &info);
-        info.byte_pos += w_size;
-        audio_element_setinfo(self, &info);
+        w_size = audio_element_output(self, in_buffer, r_size);   
+        audio_element_getinfo(self, &i2s_info);
+        i2s_info.byte_pos += w_size;
+        audio_element_setinfo(self, &i2s_info);
     } else {
         esp_err_t ret = i2s_stream_clear_dma_buffer(self);
         if (ret != ESP_OK) {
