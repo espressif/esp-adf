@@ -130,7 +130,7 @@ audio_err_t audio_player_raw_waiting_finished(void)
         ESP_LOGW(TAG, "%s, not found the current operations", __func__);
         return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
     }
-    audio_player_helper_raw_waiting_finished(&cur_ops->attr, &cur_ops->para);
+    ret = audio_player_helper_raw_waiting_finished(&cur_ops->attr, &cur_ops->para);
     return ret;
 }
 

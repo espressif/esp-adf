@@ -195,7 +195,7 @@ audio_err_t audio_player_helper_default_next(ap_ops_attr_t *at, ap_ops_para_t *p
     }
     char *url = NULL;
     playlist_next(music_list, 1, &url);
-    audio_player_music_play(url, 0, MEDIA_SRC_TYPE_MUSIC_SD);
+    ret = audio_player_music_play(url, 0, MEDIA_SRC_TYPE_MUSIC_SD);
     ESP_LOGI(TAG, "%s, %d", __func__, __LINE__);
     return ret;
 }
@@ -211,7 +211,7 @@ audio_err_t audio_player_helper_default_prev(ap_ops_attr_t *at, ap_ops_para_t *p
     }
     char *url = NULL;
     playlist_prev(music_list, 1, &url);
-    audio_player_music_play(url, 0, MEDIA_SRC_TYPE_MUSIC_SD);
+    ret = audio_player_music_play(url, 0, MEDIA_SRC_TYPE_MUSIC_SD);
     ESP_LOGI(TAG, "%s, %d", __func__, __LINE__);
     return ret;
 }
