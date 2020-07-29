@@ -36,7 +36,7 @@ bool need_skip_current_playing()
 esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
 {
     cJSON *json;
-    
+
     switch (evt->event_id) {
     case BDSC_EVENT_ERROR:
         ESP_LOGI(TAG, "==> Got BDSC_EVENT_ERROR");
@@ -138,7 +138,7 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
          * evt->data     为 nlp 结果 json 字符串
          * evt->data_len 为 nlp 结果 json 字符串长度
          * evt->client   为 全局 bdsc_engine_handle_t 实例对象
-         * 
+         *
          * 返回的 nlp 数据为 JSON 格式。格式如下：
          * 以下以电视控制技能为例（比如，“小度小度，湖南卫视”），返回：
          *
@@ -198,7 +198,7 @@ void app_main(void)
     tcpip_adapter_init();
 
     bdsc_engine_config_t cfg = {
-        .log_level = 3,
+        .log_level = 0,
         .bdsc_host = "leetest.baidu.com",
         .bdsc_port = 443,
         .bdsc_methods = BDSC_METHODS_DEFAULT,

@@ -30,14 +30,14 @@ index 21d8e727..9f7ad68e 100644
 +    size_t cus_bin_len;
 +    char *cus_checksum;
  } ota_node_attr_t;
- 
+
  typedef enum {
      OTA_SERV_EVENT_TYPE_RESULT,
 -    OTA_SERV_EVENT_TYPE_FINISH
 +    OTA_SERV_EVENT_TYPE_OK_FINISH,
 +    OTA_SERV_EVENT_TYPE_FAIL_FINISH
  } ota_service_event_type_t;
- 
+
  typedef enum {
 diff --git a/components/ota_service/ota_proc_default.c b/components/ota_service/ota_proc_default.c
 index 306ece36..27e1fdc2 100644
@@ -48,7 +48,7 @@ index 306ece36..27e1fdc2 100644
              .http_config = &config,
          };
 -        esp_err_t err = esp_https_ota_begin(&ota_config, &context->ota_handle);
-+        esp_err_t err = esp_https_ota_begin(&ota_config, &context->ota_handle, 0);
++        esp_err_t err = esp_https_ota_begin_with_pos(&ota_config, &context->ota_handle, 0);
          if (err != ESP_OK) {
              ESP_LOGE(TAG, "ESP HTTPS OTA Begin failed");
              return OTA_SERV_ERR_REASON_UNKNOWN;
@@ -59,7 +59,7 @@ index 907f6201..e029c3f8 100644
 @@ -80,34 +80,47 @@ static void ota_service_cmd_send(void *que, int cmd, void *data, int dir)
      }
  }
- 
+
 -static ota_service_err_reason_t ota_service_process(ota_upgrade_ops_t *upgrade_info)
 +static esp_err_t ota_service_process(ota_upgrade_ops_t *upgrade_info)
  {
@@ -67,7 +67,7 @@ index 907f6201..e029c3f8 100644
 +    esp_err_t ret = ESP_FAIL;
 +    bool need_upgrade;
      void *handle = NULL;
- 
+
 -    AUDIO_NULL_CHECK(TAG, upgrade_info, return OTA_SERV_ERR_REASON_NULL_POINTER);
 -    AUDIO_NULL_CHECK(TAG, upgrade_info->prepare, return OTA_SERV_ERR_REASON_NULL_POINTER);
 -    AUDIO_NULL_CHECK(TAG, upgrade_info->need_upgrade, return OTA_SERV_ERR_REASON_NULL_POINTER);
@@ -117,20 +117,20 @@ index 907f6201..e029c3f8 100644
 +            return ESP_FAIL;
 +        }
      }
- 
+
 -    AUDIO_CHECK(TAG, upgrade_info->finished_check != NULL, return OTA_SERV_ERR_REASON_NULL_POINTER, "finished_check should not be NULL");
 -    return upgrade_info->finished_check(handle, &upgrade_info->node, ret);
 +    return  ESP_OK;
 +
  }
- 
+
  static void ota_task(void *pvParameters)
 @@ -117,6 +130,7 @@ static void ota_task(void *pvParameters)
      ota_msg_t msg = { 0 };
      periph_service_event_t ser_evt = { 0 };
      ota_result_t result_data = { 0 };
 +    ota_service_event_type_t final_result = OTA_SERV_EVENT_TYPE_OK_FINISH;
- 
+
      ota->state = OTA_IDLE;
      while (true) {
 @@ -161,6 +175,7 @@ static void ota_task(void *pvParameters)
@@ -148,7 +148,7 @@ index 907f6201..e029c3f8 100644
 -                ser_evt.type = OTA_SERV_EVENT_TYPE_FINISH;
 +                ser_evt.type = final_result;
                  periph_service_callback(serv_handle, &ser_evt);
- 
+
                  ota->state = OTA_IDLE;
 diff --git a/examples/korvo_du1906/main/app_control.c b/examples/korvo_du1906/main/app_control.c
 index 1aec622c..bf9add51 100755
@@ -191,13 +191,13 @@ index 989d0b2b..11514e47 100644
 +#include "audio_player.h"
 +#include "display_service.h"
 +#include "audio_mem.h"
- 
+
  static const char *TAG = "APP_OTA_UPGRADE";
- 
+
 @@ -41,111 +45,151 @@ static EventGroupHandle_t OTA_FLAG;
  #define OTA_FINISH (BIT0)
  #define OTA_SERVICE_STACK_SIZE  (4 * 1024)
- 
+
 -static ota_service_err_reason_t ota_sdcard_image_need_upgrade(void *handle, ota_node_attr_t *node)
 +#define DUL1906_OTA_BIN_DEF_URL             "https://jinzhong.bj.bcebos.com/dul1906_new_ota.bin"
 +#define DUL1906_NEED_OTA_PARTITION_NUM      3
@@ -218,7 +218,7 @@ index 989d0b2b..11514e47 100644
 +
 +typedef struct {
 +    int version;
-+    
++
 +    char   *tone_sub_version;
 +    size_t tone_offset;
 +    size_t tone_len;
@@ -249,7 +249,7 @@ index 989d0b2b..11514e47 100644
 -    }
 +    int err;
 +    vendor_info_t *g_vendor_info = g_bdsc_engine->g_vendor_info;
- 
+
 -    char *uri = strstr(node->uri, "/sdcard/");
 -    if (access(uri, 0) == 0) {
 -        ESP_LOGI(TAG, "Found ota file in sdcard, uri: %s", uri);
@@ -276,7 +276,7 @@ index 989d0b2b..11514e47 100644
 +    ESP_LOGI(TAG, "profile save OK");
 +    return ESP_OK;
  }
- 
+
 -static ota_service_err_reason_t ota_http_tone_image_need_upgrade(void *handle, ota_node_attr_t *node)
 +static int save_dsp_subver_to_profile(char *sub_ver)
  {
@@ -288,7 +288,7 @@ index 989d0b2b..11514e47 100644
 -    esp_err_t           err             = ESP_OK;
 +    int err;
 +    vendor_info_t *g_vendor_info = g_bdsc_engine->g_vendor_info;
- 
+
 -    /* try to get the tone partition*/
 -    const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, node->label);
 -    if (partition == NULL) {
@@ -314,7 +314,7 @@ index 989d0b2b..11514e47 100644
 +    ESP_LOGI(TAG, "profile save OK");
 +    return ESP_OK;
 +}
- 
+
 -    /* Read tone header from partition */
 -    if (esp_partition_read(partition, 0, (char *)&cur_header, sizeof(flash_tone_header_t)) != ESP_OK) {
 -        return OTA_SERV_ERR_REASON_PARTITION_RD_FAIL;
@@ -323,7 +323,7 @@ index 989d0b2b..11514e47 100644
 +{
 +    int err;
 +    vendor_info_t *g_vendor_info = g_bdsc_engine->g_vendor_info;
- 
+
 -    /* Read tone header from incoming stream */
 -    if (ota_data_image_stream_read(handle, (char *)&incoming_header, sizeof(flash_tone_header_t)) != ESP_OK) {
 -        return OTA_SERV_ERR_REASON_STREAM_RD_FAIL;
@@ -343,7 +343,7 @@ index 989d0b2b..11514e47 100644
 +        if (g_bdsc_engine->profile_json) {
 +            cJSON_DeleteItemFromObject(g_bdsc_engine->profile_json, "app_sub_ver");
 +            cJSON_AddStringToObject(g_bdsc_engine->profile_json, "app_sub_ver", sub_ver);
- 
+
 -    /* read the app desc from incoming stream when bin format is 1*/
 -    if (ota_data_image_stream_read(handle, (char *)&incoming_desc, sizeof(esp_app_desc_t)) != ESP_OK) {
 -        return OTA_SERV_ERR_REASON_STREAM_RD_FAIL;
@@ -366,7 +366,7 @@ index 989d0b2b..11514e47 100644
 +    ESP_LOGI(TAG, "profile save OK");
 +    return ESP_OK;
 +}
- 
+
 -    /* compare current app desc with the incoming one if the current bin's format is 1*/
 -    if (cur_header.format == 1) {
 -        if (tone_partition_get_app_desc(&current_desc) != ESP_OK) {
@@ -402,7 +402,7 @@ index 989d0b2b..11514e47 100644
 +        g_custom_ota_bin_desc = NULL;
      }
 +}
- 
+
 -    /* incoming bin's format is 1, and the current bin's format is 0, upgrade the incoming one */
 -    need_write_desc = true;
 -
@@ -424,10 +424,10 @@ index 989d0b2b..11514e47 100644
 +        bdsc_play_hint(BDSC_HINT_OTA_ALREADY_NEWEST);
      }
 -    return OTA_SERV_ERR_REASON_SUCCESS;
-+    
++
 +    return 0;
  }
- 
+
  static esp_err_t ota_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
 @@ -153,18 +197,345 @@ static esp_err_t ota_service_cb(periph_service_handle_t handle, periph_service_e
      if (evt->type == OTA_SERV_EVENT_TYPE_RESULT) {
@@ -438,7 +438,7 @@ index 989d0b2b..11514e47 100644
 +            switch (result_data->id) {
 +            case DUL1906_OTA_PARTITION_ID_FLASH_TONE:
 +            case DUL1906_OTA_PARTITION_ID_DSP_BIN:
-+            case DUL1906_OTA_PARTITION_ID_APP: 
++            case DUL1906_OTA_PARTITION_ID_APP:
 +                _return_ota_error(-1);
 +                break;
 +            default:
@@ -459,7 +459,7 @@ index 989d0b2b..11514e47 100644
 +                    save_dsp_subver_to_profile(g_custom_ota_bin_desc->dsp_sub_version);
 +                }
 +                break;
-+            case DUL1906_OTA_PARTITION_ID_APP: 
++            case DUL1906_OTA_PARTITION_ID_APP:
 +                if (g_custom_ota_bin_desc->app_sub_version) {
 +                    ESP_LOGE(TAG, "save app sub_ver: %s", g_custom_ota_bin_desc->app_sub_version);
 +                    save_app_subver_to_profile(g_custom_ota_bin_desc->app_sub_version, g_custom_ota_bin_desc->version);
@@ -482,7 +482,7 @@ index 989d0b2b..11514e47 100644
      }
      return ESP_OK;
  }
- 
+
 -void app_ota_start()
 +
 +static char *get_last_ota_url()
@@ -513,7 +513,7 @@ index 989d0b2b..11514e47 100644
 +    cJSON *desc_j = NULL;
 +    char *last_url;
 +
-+    // if has url, use it 
++    // if has url, use it
 +    if (!ota_url) {
 +        // if no url, use last
 +        if ((last_url = get_last_ota_url())) {
@@ -579,7 +579,7 @@ index 989d0b2b..11514e47 100644
 +        offsetJ   = cJSON_GetObjectItem(tone_j, "offset");
 +        lengthJ   = cJSON_GetObjectItem(tone_j, "length");
 +        checksumJ = cJSON_GetObjectItem(tone_j, "checksum");
-+        
++
 +        if (sub_verJ && offsetJ && lengthJ && checksumJ) {
 +            ESP_LOGE(TAG, "sub_verJ->valuestring: %s", sub_verJ->valuestring);
 +            bin_desc->tone_sub_version = audio_strdup(sub_verJ->valuestring);
@@ -596,7 +596,7 @@ index 989d0b2b..11514e47 100644
 +        offsetJ   = cJSON_GetObjectItem(dsp_j, "offset");
 +        lengthJ   = cJSON_GetObjectItem(dsp_j, "length");
 +        checksumJ = cJSON_GetObjectItem(dsp_j, "checksum");
-+        
++
 +        if (sub_verJ && offsetJ && lengthJ && checksumJ) {
 +            ESP_LOGE(TAG, "sub_verJ->valuestring: %s", sub_verJ->valuestring);
 +            bin_desc->dsp_sub_version = audio_strdup(sub_verJ->valuestring);
@@ -613,7 +613,7 @@ index 989d0b2b..11514e47 100644
 +        offsetJ   = cJSON_GetObjectItem(app_j, "offset");
 +        lengthJ   = cJSON_GetObjectItem(app_j, "length");
 +        checksumJ = cJSON_GetObjectItem(app_j, "checksum");
-+        
++
 +        if (sub_verJ && offsetJ && lengthJ && checksumJ) {
 +            ESP_LOGE(TAG, "sub_verJ->valuestring: %s", sub_verJ->valuestring);
 +            bin_desc->app_sub_version = audio_strdup(sub_verJ->valuestring);
@@ -638,7 +638,7 @@ index 989d0b2b..11514e47 100644
 +    return bin_desc;
 +}
 +
-+static int version_cmp(char *version1, char *version2) 
++static int version_cmp(char *version1, char *version2)
 +{
 +    unsigned major1 = 0, minor1 = 0, bugfix1 = 0;
 +    unsigned major2 = 0, minor2 = 0, bugfix2 = 0;
@@ -826,7 +826,7 @@ index 989d0b2b..11514e47 100644
 -            false
 -        }
 -    };
- 
+
 -    for (int i = 0; i < sizeof(upgrade_list) / sizeof(upgrade_list[0]); i++) {
 -        if (upgrade_list[i].node.type == ESP_PARTITION_TYPE_DATA) {
 -            ota_data_get_default_proc(&upgrade_list[i]);
@@ -847,7 +847,7 @@ index 989d0b2b..11514e47 100644
 +        return;
      }
 -    ota_service_set_upgrade_param(ota_service, upgrade_list, sizeof(upgrade_list) / sizeof(upgrade_list[0]));
-+    
++
 +    ota_service_set_upgrade_param(ota_service, upgrade_list, DUL1906_NEED_OTA_PARTITION_NUM);
      ESP_LOGI(TAG, "Start OTA service");
      periph_service_start(ota_service);
@@ -921,7 +921,7 @@ index 33154e08..2af90aa9 100644
 @@ -35,6 +35,8 @@ extern "C" {
   */
  void app_ota_start();
- 
+
 +int bdsc_ota_start(char *url, int version);
 +
  #ifdef __cplusplus
@@ -1023,7 +1023,7 @@ index 00000000..6ff109b4
 +        esp_https_ota_config_t ota_config = {
 +            .http_config = &config,
 +        };
-+        esp_err_t err = esp_https_ota_begin(&ota_config, &context->ota_handle);
++        esp_err_t err = esp_https_ota_begin_with_pos(&ota_config, &context->ota_handle);
 +        if (err != ESP_OK) {
 +            ESP_LOGE(TAG, "ESP HTTPS OTA Begin failed");
 +            return err;
@@ -1052,7 +1052,7 @@ index 00000000..6ff109b4
 +    esp_https_ota_config_t ota_config = {
 +        .http_config = &config,
 +    };
-+    err = esp_https_ota_begin(&ota_config, &context->ota_handle, node->cus_offset);
++    err = esp_https_ota_begin_with_pos(&ota_config, &context->ota_handle, node->cus_offset);
 +    if (err != ESP_OK) {
 +        ESP_LOGE(TAG, "ESP HTTPS OTA Begin failed");
 +        return err;
@@ -1148,10 +1148,10 @@ index 00000000..6ff109b4
 +        ESP_LOGE(TAG, "reader stream init failed");
 +        return ESP_FAIL;
 +    }
-+    
++
 +    // start reading
 +    while ((r_size = audio_element_input(context->r_stream, context->read_buf, READER_BUF_LEN)) > 0) {
-+        ESP_LOGI(TAG, "write_offset %d, r_size %d, %x %x %x %x", context->write_offset, r_size, 
++        ESP_LOGI(TAG, "write_offset %d, r_size %d, %x %x %x %x", context->write_offset, r_size,
 +                        context->read_buf[0], context->read_buf[1],
 +                        context->read_buf[2], context->read_buf[3]);
 +        if (context->write_offset + r_size > node->cus_bin_len) {
@@ -1163,7 +1163,7 @@ index 00000000..6ff109b4
 +                return ESP_FAIL;
 +            }
 +        }
-+        
++
 +        if (esp_partition_write(context->partition, context->write_offset, context->read_buf, r_size) == ESP_OK) {
 +            context->write_offset += r_size;
 +        } else {
@@ -1324,6 +1324,6 @@ index 00000000..d78ce4d4
 +
 +#endif /*__OTA_PROC_DEFAULT__*/
 \ No newline at end of file
--- 
+--
 2.17.1
 
