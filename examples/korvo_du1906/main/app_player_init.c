@@ -85,7 +85,7 @@ static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, esp
 
     tone_stream_cfg_t tn_reader = TONE_STREAM_CFG_DEFAULT();
     tn_reader.type = AUDIO_STREAM_READER;
-
+    tn_reader.task_prio = 12;
     esp_audio_input_stream_add(handle, tone_stream_init(&tn_reader));
     esp_audio_input_stream_add(handle, fatfs_stream_init(&fs_reader));
     a2dp_stream_config_t a2dp_config = {
@@ -134,6 +134,7 @@ static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, esp
         DEFAULT_ESP_PCM_DECODER_CONFIG(),
     };
     esp_decoder_cfg_t auto_dec_cfg = DEFAULT_ESP_DECODER_CONFIG();
+    auto_dec_cfg.task_prio = 12;
     esp_audio_codec_lib_add(handle, AUDIO_CODEC_TYPE_DECODER, esp_decoder_init(&auto_dec_cfg, auto_decode, sizeof(auto_decode) / sizeof(audio_decoder_t)));
 
     audio_element_handle_t m4a_dec_cfg = aac_decoder_init(&aac_cfg);
@@ -143,8 +144,6 @@ static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, esp
     audio_element_handle_t ts_dec_cfg = aac_decoder_init(&aac_cfg);
     audio_element_set_tag(ts_dec_cfg, "ts");
     esp_audio_codec_lib_add(handle, AUDIO_CODEC_TYPE_DECODER, ts_dec_cfg);
-
-    
 
     // Set default volume
     esp_audio_vol_set(handle, 60);

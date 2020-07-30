@@ -100,7 +100,7 @@ audio_err_t ap_helper_raw_play_stop(ap_ops_attr_t *at, ap_ops_para_t *para)
     audio_element_abort_output_ringbuf(raw_write_hd);
     // audio_element_set_ringbuf_done(raw_write_hd);
     audio_element_finish_state(raw_write_hd);
-    audio_player_helper_default_stop(at, para);
+    ret = audio_player_helper_default_stop(at, para);
     ESP_LOGW(TAG, "%s", __func__);
 
     return ret;
