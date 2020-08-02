@@ -2,7 +2,7 @@ set(COMPONENT_ADD_INCLUDEDIRS ./include)
 
 # Edit following two lines to set component requirements (see docs)
 set(COMPONENT_REQUIRES )
-set(COMPONENT_PRIV_REQUIRES audio_sal audio_hal esp_dispatcher esp_peripherals display_service)
+set(COMPONENT_PRIV_REQUIRES esp_peripherals audio_sal audio_hal esp_dispatcher display_service)
 
 
 if (CONFIG_ESP_LYRAT_V4_2_BOARD)
