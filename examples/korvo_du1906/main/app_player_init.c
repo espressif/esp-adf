@@ -107,6 +107,7 @@ static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, esp
     http_cfg.type = AUDIO_STREAM_READER;
     http_cfg.enable_playlist_parser = true;
     http_cfg.task_prio = 12;
+    http_cfg.task_core = 1;
     http_cfg.stack_in_ext = true;
     audio_element_handle_t http_stream_reader = http_stream_init(&http_cfg);
     esp_audio_input_stream_add(handle, http_stream_reader);
@@ -175,6 +176,7 @@ esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_p
     default_cfg.prefer_type = ESP_AUDIO_PREFER_MEM;
     default_cfg.evt_que = NULL;
     default_cfg.resample_rate = 48000;
+    default_cfg.in_stream_buf_size = 500 * 1024;
 
     audio_player_cfg_t cfg = DEFAULT_AUDIO_PLAYER_CONFIG();
     cfg.external_ram_stack = true;

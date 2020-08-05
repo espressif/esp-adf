@@ -123,9 +123,9 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
         }
 
         if (err_value == -3005) {
-            bdsc_play_hint(BDSC_HINT_NOT_FIND);
+            // bdsc_play_hint(BDSC_HINT_NOT_FIND);
             BdsJsonPut(json);
-            return BDSC_CUSTOM_DESIRE_DEFAULT;
+            return BDSC_CUSTOM_DESIRE_RESUME;
         }
 
         BdsJsonPut(json);
