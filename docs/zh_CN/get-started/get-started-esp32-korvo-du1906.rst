@@ -182,5 +182,6 @@ ESP32-Korvo-DU1906 的主要组件和连接方式如下图所示。
 * `ESP32-Korvo-DU1906 原理图`_ (PDF)
 * `ESP32 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_cn.pdf>`_ (PDF)
 * `百度 IOT 技能后台 <https://cloud.baidu.com/doc/SHC/s/Gk7bh9rxo>`_
+* `ESP32-DU1906 & ESP32-DU1906-U 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-du1906_esp32-du1906-u_datasheet_cn.pdf>`_ (PDF)
 
 .. _ESP32-Korvo-DU1906 原理图: https://dl.espressif.com/dl/schematics/ESP32-Korvo-DU1906-schematics.pdf
