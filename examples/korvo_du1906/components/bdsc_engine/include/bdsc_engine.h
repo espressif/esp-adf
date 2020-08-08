@@ -59,6 +59,7 @@ typedef enum {
 
 typedef enum {
     BDSC_CUSTOM_DESIRE_SKIP_DEFAULT,
+    BDSC_CUSTOM_DESIRE_RESUME,
     BDSC_CUSTOM_DESIRE_DEFAULT,
 } bdsc_custom_desire_action_t;
 

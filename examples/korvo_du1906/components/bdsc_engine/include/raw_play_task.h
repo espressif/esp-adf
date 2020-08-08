@@ -29,6 +29,8 @@ typedef enum _play_task_cmd {
 
     CMD_HTTP_PLAY_START = '4',
     CMD_A2DP_PLAY_START = '5',
+    CMD_HTTP_PLAY_PAUSE = '6',
+    CMD_HTTP_PLAY_RESUME = '7',
 } play_task_cmd_t;
 
 

@@ -140,6 +140,13 @@ git submodule update --init --recursive
 ```
 The latest commit ID is `0c1859a5a5a5eded5af1b9423c290781e3973915`
 
+### ADF Patches
+For now, we need an ADF patch as follow.
+```bash
+cd $ADF_PATH
+git apply ./idf_patches/adf_http_stream.patch
+```
+
 ###  Menuconfig
 
 Select the default sdkconfig for build

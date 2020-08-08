@@ -32,6 +32,8 @@
 
 static const char *TAG = "RAW_HELPER";
 static audio_element_handle_t raw_write_hd;
+static bool is_feed_done;
+
 
 audio_err_t ap_helper_raw_handle_set(void *handle)
 {
@@ -46,6 +48,7 @@ audio_err_t ap_helper_raw_play(ap_ops_attr_t *at, ap_ops_para_t *para)
     xQueueHandle que = para->ctx;
     ESP_LOGI(TAG, "ap_helper_raw_play,%p", que);
     ret = audio_player_helper_default_play(at, para);
+    is_feed_done = false;
     audio_player_state_t dummy;
     while (xQueueReceive(que, &dummy, 0) == pdTRUE);
     return ret;
@@ -55,6 +58,9 @@ audio_err_t audio_player_helper_raw_feed_data(void *buff, int buffer_length)
 {
     audio_err_t ret = ESP_OK;
     AUDIO_NULL_CHECK(TAG, raw_write_hd, return ESP_ERR_AUDIO_INVALID_PARAMETER);
+    if (is_feed_done) {
+        return ESP_ERR_AUDIO_NOT_READY;
+    }
     ret = raw_stream_write(raw_write_hd, buff, buffer_length);
     return ret;
 }
@@ -65,6 +71,8 @@ audio_err_t audio_player_helper_raw_feed_done()
     AUDIO_NULL_CHECK(TAG, raw_write_hd, return ESP_ERR_AUDIO_INVALID_PARAMETER);
     audio_element_set_ringbuf_done(raw_write_hd);
     audio_element_finish_state(raw_write_hd);
+    is_feed_done = true;
+    ESP_LOGD(TAG, "%s", __func__);
     return ret;
 }
 
@@ -86,10 +94,14 @@ audio_err_t audio_player_helper_raw_waiting_finished(ap_ops_attr_t *at, ap_ops_p
             && ((st.status == AUDIO_PLAYER_STATUS_STOPPED)
                 || (st.status == AUDIO_PLAYER_STATUS_FINISHED)
                 || (st.status == AUDIO_PLAYER_STATUS_ERROR))) {
+            if (st.status == AUDIO_PLAYER_STATUS_STOPPED) {
+                // Use this status to break mix play
+                ret = ESP_ERR_AUDIO_STOP_BY_USER;
+            }
             break;
         }
     }
-    ESP_LOGI(TAG, "waiting raw finish [exit],%x", st.status);
+    ESP_LOGI(TAG, "waiting raw finish [exit], st:%x, ret:%x", st.status, ret);
     return ret;
 }
 
@@ -97,12 +109,12 @@ audio_err_t ap_helper_raw_play_stop(ap_ops_attr_t *at, ap_ops_para_t *para)
 {
     AUDIO_NULL_CHECK(TAG, raw_write_hd, return ESP_ERR_AUDIO_INVALID_PARAMETER);
     audio_err_t ret = ESP_OK;
+    is_feed_done = true;
+    ESP_LOGI(TAG, "%s [enter]", __func__);
     audio_element_abort_output_ringbuf(raw_write_hd);
-    // audio_element_set_ringbuf_done(raw_write_hd);
     audio_element_finish_state(raw_write_hd);
     ret = audio_player_helper_default_stop(at, para);
-    ESP_LOGW(TAG, "%s", __func__);
-
+    ESP_LOGI(TAG, "%s [exit]", __func__);
     return ret;
 }
 
