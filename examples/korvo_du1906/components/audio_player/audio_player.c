@@ -73,7 +73,7 @@ audio_err_t audio_player_music_play(const char *url, uint32_t pos, media_source_
         .ctx = cur_ops->para.ctx,
     };
 
-    if (cur_ops->stop) {
+    if (cur_ops->play) {
         ESP_LOGI(TAG, "music play, type:%x, cur media type:%x", type, cur_ops->para.media_src);
         ret = cur_ops->play(&attr, &para);
     }

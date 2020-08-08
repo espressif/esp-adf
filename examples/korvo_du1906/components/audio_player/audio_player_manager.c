@@ -50,7 +50,7 @@ const static int EP_TSK_PLAY_SYNC_FINISHED_BIT  = BIT6;
 const static int EP_TSK_PLAY_SYNC_ERROR_BIT     = BIT7;
 
 
-#define AM_ACTION_TIMEOUT                       (3000)
+#define AM_ACTION_TIMEOUT                       (4000)
 
 
 typedef struct ap_ops_item {
@@ -188,27 +188,28 @@ static void audio_player_manager_task (void *para)
                         break;
                     }
                 case AUDIO_STATUS_STOPPED: {
-                        ESP_LOGI(TAG, "AUDIO_STATUS_STOPPED, resume:%d, is_backup:%d", player->cur_ops->attr.auto_resume, player->is_backup);
-                        if (player->cur_ops->attr.blocked) {
+                        ESP_LOGI(TAG, "AUDIO_STATUS_STOPPED, resume:%d, is_backup:%d, prepare_playing:%d", player->cur_ops->attr.auto_resume, player->is_backup, s_player->prepare_playing);
+                        if (player->cur_ops->attr.blocked == true) {
                             xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT);
                         }
                         xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_STOPPED_BIT);
                         break;
                     }
                 case AUDIO_STATUS_ERROR:
-                    if (player->cur_ops->attr.blocked) {
+                    if (player->cur_ops->attr.blocked == true) {
                         xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT);
                     }
                     xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_ERROR_BIT);
-                    ESP_LOGI(TAG, "AUDIO_STATUS_ERROR, resume:%d, is_backup:%d", player->cur_ops->attr.auto_resume, player->is_backup);
+                    ESP_LOGI(TAG, "AUDIO_STATUS_ERROR, resume:%d, is_backup:%d, prepare_playing:%d", player->cur_ops->attr.auto_resume, player->is_backup, s_player->prepare_playing);
                     is_done = true;
                     break;
                 case AUDIO_STATUS_FINISHED:
-                    if (player->cur_ops->attr.blocked) {
+                    if (player->cur_ops->attr.blocked == true) {
                         xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT);
                     }
                     xEventGroupSetBits(player->sync_state, EP_TSK_PLAY_SYNC_FINISHED_BIT);
-                    ESP_LOGI(TAG, "AUDIO_STATUS_FINISHED, resume:%d, is_backup:%d", player->cur_ops->attr.auto_resume, player->is_backup);
+
+                    ESP_LOGI(TAG, "AUDIO_STATUS_FINISHED, resume:%d, is_backup:%d, prepare_playing:%d", player->cur_ops->attr.auto_resume, player->is_backup, s_player->prepare_playing);
                     is_done = true;
                     break;
                 default: break;
@@ -430,65 +431,61 @@ audio_err_t ap_manager_backup_audio_info(void)
     esp_audio_prefer_type_get(s_player->audio_handle, &type);
     esp_audio_state_t st = {0};
     esp_audio_state_get(s_player->audio_handle, &st);
+    ESP_LOGE(TAG, "BACKUP Enter, prefer_type:%d, st:%d", type, st.status);
     if (type == ESP_AUDIO_PREFER_MEM) {
         if ((st.status == AUDIO_STATUS_RUNNING)
             || (st.status == AUDIO_STATUS_PAUSED)) {
-            ESP_LOGI(TAG, "BACKUP audio info, ESP_AUDIO_PREFER_MEM");
-            if (s_player->is_backup == false) {
-                esp_audio_info_get(s_player->audio_handle, &s_player->backup_info);
-                s_player->is_backup = true;
-                ESP_LOGI(TAG, "BACKUP, ret:%x, i:%p, c:%p, f:%p, o:%p,status:%d", ret,
-                         s_player->backup_info.in_el,
-                         s_player->backup_info.codec_el,
-                         s_player->backup_info.filter_el,
-                         s_player->backup_info.out_el, s_player->backup_info.st.status);
-            } else {
-                ESP_LOGW(TAG, "BACKUP, the audio information is exists, ret:%x, i:%p, c:%p, f:%p, o:%p,status:%d", ret,
-                         s_player->backup_info.in_el,
-                         s_player->backup_info.codec_el,
-                         s_player->backup_info.filter_el,
-                         s_player->backup_info.out_el, s_player->backup_info.st.status);
-            }
+            esp_audio_info_get(s_player->audio_handle, &s_player->backup_info);
+            s_player->is_backup = true;
+            ESP_LOGI(TAG, "BACKUP, ret:%x, i:%p, c:%p, f:%p, o:%p,status:%d", ret,
+                     s_player->backup_info.in_el,
+                     s_player->backup_info.codec_el,
+                     s_player->backup_info.filter_el,
+                     s_player->backup_info.out_el, s_player->backup_info.st.status);
+
         }
         ap_ops_t *cur_ops = ap_manager_get_cur_ops();
         if (cur_ops == NULL) {
             ESP_LOGW(TAG, "%s, not found the current operations", __func__);
         }
         if (cur_ops && cur_ops->stop) {
-            ESP_LOGI(TAG, "stop, cur media type:%x", cur_ops->para.media_src);
+            ESP_LOGI(TAG, "Call stop in backup, cur media type:%x", cur_ops->para.media_src);
             xEventGroupClearBits(s_player->sync_state, EP_TSK_PLAY_SYNC_STOPPED_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT | EP_TSK_PLAY_SYNC_FINISHED_BIT);
-
             ret = cur_ops->stop(&cur_ops->attr, &cur_ops->para);
             if (ret == ESP_ERR_AUDIO_NO_ERROR) {
-                // EventBits_t uxBits =  xEventGroupWaitBits(s_player->sync_state,
-                //                       EP_TSK_PLAY_SYNC_STOPPED_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT | EP_TSK_PLAY_SYNC_FINISHED_BIT, false, false, AM_ACTION_TIMEOUT / portTICK_PERIOD_MS);
+                xEventGroupWaitBits(s_player->sync_state,
+                                    EP_TSK_PLAY_SYNC_STOPPED_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT | EP_TSK_PLAY_SYNC_FINISHED_BIT, false, false, AM_ACTION_TIMEOUT / portTICK_PERIOD_MS);
             } else {
                 ESP_LOGW(TAG, "AP_MANAGER_PLAY, Call esp_audio_stop error, ret:%x", ret);
             }
         }
     } else if (type == ESP_AUDIO_PREFER_SPEED) {
-        ESP_LOGW(TAG, "Call esp_audio_pause before BACKUP,%d", __LINE__);
+        ESP_LOGW(TAG, "Call esp_audio_pause in BACKUP");
         esp_audio_pause(s_player->audio_handle);
         if ((st.status == AUDIO_STATUS_RUNNING)
             || (st.status == AUDIO_STATUS_PAUSED)) {
-            ESP_LOGW(TAG, "BACKUP audio info, ESP_AUDIO_PREFER_SPEED");
             esp_audio_info_get(s_player->audio_handle, &s_player->backup_info);
-            if (s_player->is_backup == false) {
-                esp_audio_info_get(s_player->audio_handle, &s_player->backup_info);
-                s_player->is_backup = true;
-                ESP_LOGI(TAG, "BACKUP, ret:%x,i:%p, c:%p, f:%p, o:%p,status:%d", ret,
-                         s_player->backup_info.in_el,
-                         s_player->backup_info.codec_el,
-                         s_player->backup_info.filter_el,
-                         s_player->backup_info.out_el, s_player->backup_info.st.status);
-            } else {
-                ESP_LOGW(TAG, "BACKUP, the audio information is exists, ret:%x, i:%p, c:%p, f:%p, o:%p,status:%d", ret,
-                         s_player->backup_info.in_el,
-                         s_player->backup_info.codec_el,
-                         s_player->backup_info.filter_el,
-                         s_player->backup_info.out_el, s_player->backup_info.st.status);
-            }
+            s_player->is_backup = true;
+            ESP_LOGI(TAG, "BACKUP, ret:%x,i:%p, c:%p, f:%p, o:%p,status:%d", ret,
+                     s_player->backup_info.in_el,
+                     s_player->backup_info.codec_el,
+                     s_player->backup_info.filter_el,
+                     s_player->backup_info.out_el, s_player->backup_info.st.status);
+
         }
+    }
+    ESP_LOGI(TAG, "BACKUP Exit");
+    return ret;
+}
+
+audio_err_t ap_manager_clear_audio_info(void)
+{
+    audio_err_t ret = ESP_OK;
+    ESP_LOGW(TAG, "%s, is_backup:%d", __func__, s_player->is_backup);
+    if (s_player->is_backup == true) {
+        free(s_player->backup_info.codec_info.uri);
+        s_player->backup_info.codec_info.uri = NULL;
+        s_player->is_backup = false;
     }
     return ret;
 }
@@ -496,7 +493,7 @@ audio_err_t ap_manager_backup_audio_info(void)
 audio_err_t ap_manager_restore_audio_info(void)
 {
     audio_err_t ret = ESP_OK;
-    ESP_LOGW(TAG, "%s, %d", __func__, s_player->is_backup);
+    ESP_LOGW(TAG, "%s, is_backup:%d", __func__, s_player->is_backup);
     if (s_player->is_backup == true) {
         ap_ops_t *tmp = ap_manager_find_ops_by_src(s_player->backup_info.st.media_src);
         if (tmp == NULL) {
@@ -504,10 +501,10 @@ audio_err_t ap_manager_restore_audio_info(void)
             return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;
         }
         s_player->cur_ops = tmp;
-        ret |= esp_audio_info_set(s_player->audio_handle, &s_player->backup_info);
+        ret = esp_audio_info_set(s_player->audio_handle, &s_player->backup_info);
         s_player->is_backup = false;
     } else {
-        ESP_LOGW(TAG, "Audio information not restored");
+        ESP_LOGW(TAG, "No audio information stored");
     }
     return ret;
 }
@@ -688,30 +685,22 @@ audio_err_t ap_manager_play(const char *url, uint32_t pos, bool blocked, bool au
         ESP_LOGW(TAG, "AP_MANAGER_PLAY, Blocked playing, %s, type:%x", s_player->cur_ops->para.url, type);
         xEventGroupClearBits(s_player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT);
         mutex_unlock(s_player->lock_handle);
-        ret = esp_audio_play(s_player->audio_handle, AUDIO_CODEC_TYPE_DECODER, s_player->cur_ops->para.url, 0);
-        if (ret == ESP_ERR_AUDIO_NO_ERROR) {
-            EventBits_t uxBits = xEventGroupWaitBits(s_player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT, false, false, portMAX_DELAY);
-            if ((uxBits | EP_TSK_PLAY_SYNC_ERROR_BIT) == EP_TSK_PLAY_SYNC_ERROR_BIT) {
-                esp_audio_state_t st = {0};
-                esp_audio_state_get(s_player->audio_handle, &st);
-                ESP_LOGW(TAG, "AP_MANAGER_PLAY, Blocked playing occur an error, src:%x, err:%x", st.media_src, st.err_msg);
-                ret = st.err_msg;
-            }
-        } else {
+        ret = esp_audio_sync_play(s_player->audio_handle, s_player->cur_ops->para.url, 0);
+        if (ret != ESP_ERR_AUDIO_NO_ERROR) {
             ESP_LOGW(TAG, "AP_MANAGER_PLAY, Blocked playing, esp_audio_play return error:%x", ret);
         }
     } else {
         ESP_LOGW(TAG, "AP_MANAGER_PLAY, Unblock playing, type:%x, auto:%d, block:%d", type, s_player->cur_ops->attr.auto_resume, s_player->cur_ops->attr.blocked);
-        mutex_unlock(s_player->lock_handle);
         ret = esp_audio_play(s_player->audio_handle, AUDIO_CODEC_TYPE_DECODER, s_player->cur_ops->para.url, s_player->cur_ops->para.pos);
+        mutex_unlock(s_player->lock_handle);
         if (ret == ESP_ERR_AUDIO_NO_ERROR) {
             EventBits_t uxBits = xEventGroupWaitBits(s_player->sync_state, EP_TSK_PLAY_SYNC_RUNNING_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT, false, false,  AM_ACTION_TIMEOUT / portTICK_PERIOD_MS);
-            if ((uxBits | EP_TSK_PLAY_SYNC_ERROR_BIT) == EP_TSK_PLAY_SYNC_ERROR_BIT) {
+            if ((uxBits & EP_TSK_PLAY_SYNC_ERROR_BIT) == EP_TSK_PLAY_SYNC_ERROR_BIT) {
                 esp_audio_state_t st = {0};
                 esp_audio_state_get(s_player->audio_handle, &st);
                 ESP_LOGW(TAG, "AP_MANAGER_PLAY, Unblock playing occur an error, src:%x, err:%x", st.media_src, st.err_msg);
                 ret = st.err_msg;
-            } else if ((uxBits | EP_TSK_PLAY_SYNC_RUNNING_BIT) == EP_TSK_PLAY_SYNC_RUNNING_BIT) {
+            } else if ((uxBits & EP_TSK_PLAY_SYNC_RUNNING_BIT) == EP_TSK_PLAY_SYNC_RUNNING_BIT) {
 
             } else {
                 ret = ESP_ERR_AUDIO_TIMEOUT;
