@@ -34,6 +34,7 @@ static const char *TAG = "APP_BT_INIT";
 
 esp_periph_handle_t app_bluetooth_init(esp_periph_set_handle_t set)
 {
+#if CONFIG_BT_ENABLED
     ESP_LOGI(TAG, "Init Bluetooth module");
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
@@ -53,10 +54,14 @@ esp_periph_handle_t app_bluetooth_init(esp_periph_set_handle_t set)
 
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
     return bt_periph;
+#else
+    return NULL;
+#endif
 }
 
 void app_bluetooth_deinit(void)
 {
+#if CONFIG_BT_ENABLED
     ESP_LOGI(TAG, "Deinit Bluetooth module");
     ESP_ERROR_CHECK(esp_bluedroid_disable());
     ESP_ERROR_CHECK(esp_bluedroid_deinit());
@@ -64,4 +69,5 @@ void app_bluetooth_deinit(void)
     ESP_ERROR_CHECK(esp_bt_controller_deinit());
 
     ble_gatts_module_deinit();
+#endif
 }
