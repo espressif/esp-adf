@@ -181,7 +181,7 @@ void audio_player_callback(audio_player_state_t *audio, void *ctx)
     ESP_LOGW(TAG, "AUDIO_PLAYER_CALLBACK send OK, status:%d, err_msg:%x, media_src:%x, ctx:%p",
              audio->status, audio->err_msg, audio->media_src, ctx);
 }
-
+#if CONFIG_BT_ENABLED
 static void user_a2dp_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
 {
     ESP_LOGI(TAG, "A2DP sink user cb");
@@ -201,6 +201,7 @@ static void user_a2dp_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *para
             break;
     }
 }
+#endif
 
 void app_init(void)
 {
@@ -284,6 +285,11 @@ void app_init(void)
     periph_service_set_callback(input_key_handle, input_key_service_cb, NULL);
 
     // step 7. setup the esp_player
+#if CONFIG_BT_ENABLED
     app_player_init(NULL, audio_player_callback, set, user_a2dp_sink_cb);
+#else
+    app_player_init(NULL, audio_player_callback, set, NULL);
+#endif
+
     audio_player_vol_set(40);
 }
