@@ -416,6 +416,7 @@ _stream_redirect:
     * Due to the total byte of content has been changed after seek, set info.total_bytes at beginning only.
     */
     int64_t cur_pos = esp_http_client_fetch_headers(http->client);
+    audio_element_getinfo(self, &info);
     if (info.byte_pos <= 0) {
         info.total_bytes = cur_pos;
     }
@@ -544,6 +545,7 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         }
         return ESP_OK;
     } else {
+        audio_element_getinfo(self, &info);
         info.byte_pos += rlen;
         audio_element_setinfo(self, &info);
     }
