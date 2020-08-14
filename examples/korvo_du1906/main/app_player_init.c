@@ -64,7 +64,7 @@ static int _http_stream_event_handle(http_stream_event_msg_t *msg)
     return ESP_OK;
 }
 
-static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, esp_a2d_cb_t a2dp_cb)
+static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, void *a2dp_cb)
 {
     if (cfg == NULL) {
         esp_audio_cfg_t default_cfg = DEFAULT_ESP_AUDIO_CONFIG();
@@ -88,6 +88,7 @@ static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, esp
     tn_reader.task_prio = 12;
     esp_audio_input_stream_add(handle, tone_stream_init(&tn_reader));
     esp_audio_input_stream_add(handle, fatfs_stream_init(&fs_reader));
+#if CONFIG_BT_ENABLED
     a2dp_stream_config_t a2dp_config = {
         .type = AUDIO_STREAM_READER,
         .user_callback.user_a2d_cb = a2dp_cb,
@@ -95,7 +96,7 @@ static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, esp
     audio_element_handle_t bt_stream_reader = a2dp_stream_init(&a2dp_config);
     esp_audio_input_stream_add(handle, bt_stream_reader);
     ap_helper_a2dp_handle_set(bt_stream_reader);
-
+#endif
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_WRITER;
     audio_element_handle_t raw_play_handle = raw_stream_init(&raw_cfg);
@@ -154,7 +155,7 @@ static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, esp
     return handle;
 }
 
-esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_periph_set_handle_t set, esp_a2d_cb_t a2dp_cb)
+esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_periph_set_handle_t set, void *a2dp_cb)
 {
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();

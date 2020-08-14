@@ -47,7 +47,7 @@ extern "C" {
         - Others: fail
  *
  */
-esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_periph_set_handle_t set, esp_a2d_cb_t a2dp_cb);
+esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_periph_set_handle_t set, void* a2dp_cb);
 
 #ifdef __cplusplus
 }

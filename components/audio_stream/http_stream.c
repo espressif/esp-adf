@@ -96,15 +96,17 @@ static esp_codec_type_t get_audio_type(const char *content_type)
 
 static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
 {
-    audio_element_info_t *info = (audio_element_info_t *)evt->user_data;
-
+    audio_element_handle_t el = (audio_element_handle_t)evt->user_data;
     if (evt->event_id != HTTP_EVENT_ON_HEADER) {
         return ESP_OK;
     }
 
     if (strcasecmp(evt->header_key, "Content-Type") == 0) {
         ESP_LOGD(TAG, "%s = %s", evt->header_key, evt->header_value);
-        info->codec_fmt = get_audio_type(evt->header_value);
+        audio_element_info_t info = { 0 };
+        audio_element_getinfo(el, &info);
+        info.codec_fmt = get_audio_type(evt->header_value);
+        audio_element_setinfo(el, &info);
     }
 
     return ESP_OK;
@@ -356,7 +358,7 @@ _stream_open_begin:
         esp_http_client_config_t http_cfg = {
             .url = uri,
             .event_handler = _http_event_handle,
-            .user_data = &info,
+            .user_data = self,
             .timeout_ms = 30 * 1000,
             .buffer_size = HTTP_STREAM_BUFFER_SIZE,
         };
@@ -416,6 +418,7 @@ _stream_redirect:
     * Due to the total byte of content has been changed after seek, set info.total_bytes at beginning only.
     */
     int64_t cur_pos = esp_http_client_fetch_headers(http->client);
+    audio_element_getinfo(self, &info);
     if (info.byte_pos <= 0) {
         info.total_bytes = cur_pos;
     }
@@ -544,6 +547,7 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         }
         return ESP_OK;
     } else {
+        audio_element_getinfo(self, &info);
         info.byte_pos += rlen;
         audio_element_setinfo(self, &info);
     }
