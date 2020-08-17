@@ -525,6 +525,7 @@ char *audio_element_get_tag(audio_element_handle_t el)
 
 esp_err_t audio_element_set_uri(audio_element_handle_t el, const char *uri)
 {
+    mutex_lock(el->lock);
     if (el->info.uri) {
         audio_free(el->info.uri);
         el->info.uri = NULL;
@@ -533,15 +534,20 @@ esp_err_t audio_element_set_uri(audio_element_handle_t el, const char *uri)
     if (uri) {
         el->info.uri = audio_strdup(uri);
         AUDIO_MEM_CHECK(TAG, el->info.uri, {
+            mutex_unlock(el->lock);
             return ESP_ERR_NO_MEM;
         });
     }
+    mutex_unlock(el->lock);
     return ESP_OK;
 }
 
 char *audio_element_get_uri(audio_element_handle_t el)
 {
-    return el->info.uri;
+    mutex_lock(el->lock);
+    char *uri = el->info.uri;
+    mutex_unlock(el->lock);
+    return uri;
 }
 
 esp_err_t audio_element_set_event_callback(audio_element_handle_t el, event_cb_func cb_func, void *ctx)
@@ -1280,4 +1286,150 @@ bool audio_element_is_stopping(audio_element_handle_t el)
         return el->stopping;
     }
     return false;
+}
+
+esp_err_t audio_element_update_byte_pos(audio_element_handle_t el, int pos)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.byte_pos += pos;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_byte_pos(audio_element_handle_t el, int pos)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.byte_pos = pos;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_update_total_bytes(audio_element_handle_t el, int total_bytes)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.total_bytes += total_bytes;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_total_bytes(audio_element_handle_t el, int total_bytes)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.total_bytes = total_bytes;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_bps(audio_element_handle_t el, int bit_rate)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.bps = bit_rate;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_codec_fmt(audio_element_handle_t el, int format)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.codec_fmt = format;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_music_info(audio_element_handle_t el, int sample_rates, int channels, int bits)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.sample_rates = sample_rates;
+        el->info.channels = channels;
+        el->info.bits = bits;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_duration(audio_element_handle_t el, int duration)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.duration = duration;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_reserve_user0(audio_element_handle_t el, int user_data0)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.reserve_data.user_data_0 = user_data0;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_reserve_user1(audio_element_handle_t el, int user_data1)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.reserve_data.user_data_1 = user_data1;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_reserve_user2(audio_element_handle_t el, int user_data2)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.reserve_data.user_data_2 = user_data2;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+
+esp_err_t audio_element_set_reserve_user3(audio_element_handle_t el, int user_data3)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.reserve_data.user_data_3 = user_data3;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+esp_err_t audio_element_set_reserve_user4(audio_element_handle_t el, int user_data4)
+{
+    if (el) {
+        mutex_lock(el->lock);
+        el->info.reserve_data.user_data_4 = user_data4;
+        mutex_unlock(el->lock);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
 }
