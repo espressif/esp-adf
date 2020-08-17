@@ -83,10 +83,9 @@ static esp_err_t _tone_open(audio_element_handle_t self)
     }
 
     audio_element_info_t info = { 0 };
-    audio_element_getinfo(self, &info);
     info.total_bytes = stream->cur_file.song_len;
     audio_element_setdata(self, stream);
-    audio_element_setinfo(self, &info);
+    audio_element_set_total_bytes(self, info.total_bytes);
 
     stream->is_open = true;
     return ESP_OK;
@@ -107,13 +106,11 @@ static int _tone_read(audio_element_handle_t self, char *buffer, int len, TickTy
         ESP_LOGE(TAG, "get tone data error, line:%d", __LINE__);
         return ESP_FAIL;
     }
-
-    info.byte_pos += len;
     if (len <= 0) {
         ESP_LOGW(TAG, "No more data,ret:%d ,info.byte_pos:%llu", len, info.byte_pos);
         return ESP_OK;
     }
-    audio_element_setinfo(self, &info);
+    audio_element_update_byte_pos(self, len);
 
     return len;
 }
@@ -139,10 +136,7 @@ static esp_err_t _tone_close(audio_element_handle_t self)
     tone_partition_deinit(stream->tone_handle);
     stream->tone_handle = NULL;
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
-        audio_element_info_t info = { 0 };
-        audio_element_getinfo(self, &info);
-        info.byte_pos = 0;
-        audio_element_setinfo(self, &info);
+        audio_element_set_byte_pos(self, 0);
     }
     return ESP_OK;
 }

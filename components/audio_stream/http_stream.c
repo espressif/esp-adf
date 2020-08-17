@@ -103,10 +103,7 @@ static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
 
     if (strcasecmp(evt->header_key, "Content-Type") == 0) {
         ESP_LOGD(TAG, "%s = %s", evt->header_key, evt->header_value);
-        audio_element_info_t info = { 0 };
-        audio_element_getinfo(el, &info);
-        info.codec_fmt = get_audio_type(evt->header_value);
-        audio_element_setinfo(el, &info);
+        audio_element_set_codec_fmt(el, get_audio_type(evt->header_value));
     }
 
     return ESP_OK;
@@ -445,7 +442,7 @@ _stream_redirect:
      * `audio_element_setinfo` is risky affair.
      * It overwrites URI pointer as well. Pay attention to that!
      */
-    audio_element_setinfo(self, &info);
+    audio_element_set_total_bytes(self, info.total_bytes);
 
     if (_is_playlist(&info, uri) == true) {
         /**
@@ -498,10 +495,7 @@ static esp_err_t _http_close(audio_element_handle_t self)
     }
     if (AEL_STATE_PAUSED != audio_element_get_state(self) && (errno == 0)) {
         audio_element_report_pos(self);
-        audio_element_info_t info = {0};
-        audio_element_getinfo(self, &info);
-        info.byte_pos = 0;
-        audio_element_setinfo(self, &info);
+        audio_element_set_byte_pos(self, 0);
     }
     return ESP_OK;
 }
@@ -547,9 +541,7 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         }
         return ESP_OK;
     } else {
-        audio_element_getinfo(self, &info);
-        info.byte_pos += rlen;
-        audio_element_setinfo(self, &info);
+        audio_element_update_byte_pos(self, rlen);
     }
     ESP_LOGD(TAG, "req lengh=%d, read=%d, pos=%d/%d", len, rlen, (int)info.byte_pos, (int)info.total_bytes);
     return rlen;
@@ -693,11 +685,8 @@ esp_err_t http_stream_next_track(audio_element_handle_t el)
         return ESP_OK;
     }
     audio_element_reset_state(el);
-    audio_element_info_t info;
-    audio_element_getinfo(el, &info);
-    info.byte_pos = 0;
-    info.total_bytes = 0;
-    audio_element_setinfo(el, &info);
+    audio_element_set_byte_pos(el, 0);
+    audio_element_set_total_bytes(el, 0);
     http->is_open = false;
     return ESP_OK;
 }

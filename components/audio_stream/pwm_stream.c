@@ -198,7 +198,7 @@ static esp_err_t pwm_data_list_write_byte(pwm_data_handle_t data, const uint8_t 
 
 static esp_err_t pwm_data_list_wait_semaphore(pwm_data_handle_t data, TickType_t ticks_to_wait)
 {
-    data->is_give = 0; 
+    data->is_give = 0;
     if (xSemaphoreTake(data->semaphore, ticks_to_wait) == pdTRUE) {
         return ESP_OK;
     }
@@ -443,7 +443,7 @@ static esp_err_t pwm_data_convert(pwm_data_handle_t data, uint8_t *inbuf, int32_
 {
     int8_t shift = bits_per - duty;
     uint32_t len = bytes;
-   
+
     if (bits_per == 16) {
         len >>= 1;
         uint16_t *buf_16b = (uint16_t *)inbuf;
@@ -576,7 +576,7 @@ static int _pwm_write(audio_element_handle_t self, char *buffer, int len, TickTy
 {
     size_t bytes_written = 0;
     audio_pwm_write((uint8_t *)buffer, len, &bytes_written, ticks_to_wait);
-    return bytes_written;   
+    return bytes_written;
 }
 
 static esp_err_t _pwm_destroy(audio_element_handle_t self)
@@ -584,7 +584,7 @@ static esp_err_t _pwm_destroy(audio_element_handle_t self)
     esp_err_t res = ESP_OK;
     pwm_stream_t *pwm = (pwm_stream_t *)audio_element_getdata(self);
     if (pwm->uninstall_drv) {
-       res = audio_pwm_deinit();
+        res = audio_pwm_deinit();
     }
     audio_free(pwm);
     return res;
@@ -609,10 +609,7 @@ static esp_err_t _pwm_close(audio_element_handle_t self)
     pwm->is_open = false;
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
         audio_element_report_pos(self);
-        audio_element_info_t info = {0};
-        audio_element_getinfo(self, &info);
-        info.byte_pos = 0;
-        audio_element_setinfo(self, &info);
+        audio_element_set_byte_pos(self, 0);
         res = audio_pwm_stop();
     }
     return res;
@@ -626,12 +623,9 @@ static int _pwm_process(audio_element_handle_t self, char *in_buffer, int in_len
         memset(in_buffer, 0x00, in_len);
         r_size = in_len;
     }
-    if ((r_size > 0)) {
-        audio_element_info_t info;
+    if (r_size > 0) {
         w_size = audio_element_output(self, in_buffer, r_size);
-        audio_element_getinfo(self, &info);
-        info.byte_pos += w_size;
-        audio_element_setinfo(self, &info);
+        audio_element_update_byte_pos(self, w_size);
     } else {
         w_size = r_size;
     }
@@ -658,14 +652,14 @@ audio_element_handle_t pwm_stream_init(pwm_stream_cfg_t *config)
     if (config->type == AUDIO_STREAM_WRITER) {
         cfg.write = _pwm_write;
     } else {
-        ESP_LOGE(TAG, "PWM stream only support AUDIO_STREAM_WRITER mode, not support %d", config->type); 
+        ESP_LOGE(TAG, "PWM stream only support AUDIO_STREAM_WRITER mode, not support %d", config->type);
         return NULL;
     }
 
     pwm_stream_t *pwm = audio_calloc(1, sizeof(pwm_stream_t));
     AUDIO_NULL_CHECK(TAG, pwm, return NULL);
     memcpy(&pwm->config, config, sizeof(pwm_stream_cfg_t));
-    
+
     pwm->type = AUDIO_STREAM_WRITER;
     pwm->uninstall_drv = true;
 
