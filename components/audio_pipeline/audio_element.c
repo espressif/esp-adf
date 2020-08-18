@@ -961,6 +961,7 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
     el->events_type = EVENTS_TYPE_Q;
     return el;
 _element_init_failed:
+    audio_element_set_uri(el, NULL);
     if (el->lock) {
         mutex_destroy(el->lock);
     }
@@ -981,7 +982,6 @@ _element_init_failed:
         audio_free(el->multi_out.rb);
         el->multi_out.rb = NULL;
     }
-    audio_element_set_uri(el, NULL);
     audio_free(el);
     return NULL;
 }
@@ -992,7 +992,7 @@ esp_err_t audio_element_deinit(audio_element_handle_t el)
     audio_element_wait_for_stop(el);
     audio_element_terminate(el);
     vEventGroupDelete(el->state_event);
-    mutex_destroy(el->lock);
+
     audio_event_iface_destroy(el->iface_event);
     if (el->destroy) {
         el->destroy(el);
@@ -1013,6 +1013,8 @@ esp_err_t audio_element_deinit(audio_element_handle_t el)
     if (el->audio_thread) {
         audio_thread_cleanup(&el->audio_thread);
     }
+    mutex_destroy(el->lock);
+    el->lock = NULL;
     audio_free(el);
     return ESP_OK;
 }
