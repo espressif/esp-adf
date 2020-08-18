@@ -32,23 +32,6 @@
 extern "C" {
 #endif
 
-#define FLASH_TONE_HEADER       (0x2053)
-#define FLASH_TONE_TAIL         (0xDFAC)
-#define FLASH_TONE_MAGIC_WORD   (0xF55F9876)
-#define FLASH_TONE_PROJECT_NAME "ESP_TONE_BIN"
-
-/**
- * @brief  The fone bin head
- */
-#pragma pack(1)
-typedef struct flash_tone_header
-{
-    uint16_t header_tag;   /*!< File header tag is 0x2053 */
-    uint16_t total_num;    /*!< Number of all tones */
-    uint32_t format;       /*!< The version of the bin file */
-} flash_tone_header_t;
-#pragma pack()
-
 /**
  * @brief   TONE Stream configurations, if any entry is zero then the configuration will be set to default values
  */
@@ -60,6 +43,8 @@ typedef struct
     int task_stack;           /*!< Task stack size */
     int task_core;            /*!< Task running in core (0 or 1) */
     int task_prio;            /*!< Task priority (based on freeRTOS priority) */
+    bool extern_stack;        /*!< Task stack allocate on the extern ram */
+    bool use_delegate;        /*!< Read tone partition with esp_delegate. If task stack is on extern ram, this MUST be TRUE */
 } tone_stream_cfg_t;
 
 #define TONE_STREAM_BUF_SIZE        (2048)
@@ -67,6 +52,8 @@ typedef struct
 #define TONE_STREAM_TASK_CORE       (0)
 #define TONE_STREAM_TASK_PRIO       (4)
 #define TONE_STREAM_RINGBUFFER_SIZE (2 * 1024)
+#define TONE_STREAM_EXT_STACK       (true)
+#define TONE_STREAM_USE_DELEGATE    (true)
 
 #define TONE_STREAM_CFG_DEFAULT()               \
 {                                               \
@@ -76,6 +63,8 @@ typedef struct
     .task_stack = TONE_STREAM_TASK_STACK,       \
     .task_core = TONE_STREAM_TASK_CORE,         \
     .task_prio = TONE_STREAM_TASK_PRIO,         \
+    .extern_stack = TONE_STREAM_EXT_STACK,      \
+    .use_delegate = TONE_STREAM_USE_DELEGATE,   \
 }
 
 /**
@@ -88,28 +77,6 @@ typedef struct
  * @return     The Audio Element handle
  */
 audio_element_handle_t tone_stream_init(tone_stream_cfg_t *config);
-
-/**
- * @brief      Verify the flash tone partition
- *
- * @param
- *
- * @return
- *      - ESP_OK: Success
- *      - others: Failed
- */
-esp_err_t tone_partition_verify(void);
-
-/**
- * @brief      Get the 'esp_app_desc_t' structure in 'flash_tone' partition.
- *
- * @param      desc  Pointer to 'esp_app_desc_t'
- *
- * @return
- *      - ESP_OK: Success
- *      - others: Failed
- */
-esp_err_t tone_partition_get_app_desc(esp_app_desc_t *desc);
 
 #ifdef __cplusplus
 }

@@ -129,25 +129,21 @@ TEST_CASE("Choose the SSID with the best signal", "[WIFI_SSID_MANAGER]")
         TEST_ASSERT_FALSE(wifi_ssid_manager_save(ssid_manager, nvs_ssid[i].ssid, nvs_ssid[i].pwd));
     }
 
-    while (1) {
-        wifi_config_t config = {0};
-        if (ESP_OK == wifi_ssid_manager_get_best_config(ssid_manager, &config)) {
-            ESP_LOGW(TAG, "get the best configuration, ssid: %s, password: %s", config.sta.ssid, config.sta.password);
-        } else {
-            break;
-        }
+    wifi_config_t config = {0};
+    if (ESP_OK == wifi_ssid_manager_get_best_config(ssid_manager, &config)) {
+        ESP_LOGW(TAG, "get the best configuration, ssid: %s, password: %s", config.sta.ssid, config.sta.password);
+    } else {
+        ESP_LOGE(TAG, "get best config failed!");
     }
 
     // The choosen flag will be reset if save a new ssid or call create() function
     TEST_ASSERT_FALSE(wifi_ssid_manager_save(ssid_manager, nvs_ssid[0].ssid, nvs_ssid[0].pwd));
 
-    while (1) {
-        wifi_config_t config = {0};
-        if (ESP_OK == wifi_ssid_manager_get_best_config(ssid_manager, &config)) {
-            ESP_LOGW(TAG, "=>get the best configuration, ssid: %s, password: %s", config.sta.ssid, config.sta.password);
-        } else {
-            break;
-        }
+    memset(&config, 0x00, sizeof(wifi_config_t));
+    if (ESP_OK == wifi_ssid_manager_get_best_config(ssid_manager, &config)) {
+        ESP_LOGW(TAG, "=>get the best configuration, ssid: %s, password: %s", config.sta.ssid, config.sta.password);
+    } else {
+        ESP_LOGE(TAG, "=>get best config failed!");
     }
 
     TEST_ASSERT_FALSE(esp_periph_set_stop_all(set));

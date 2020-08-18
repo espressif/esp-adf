@@ -4,6 +4,6 @@ set(COMPONENT_ADD_INCLUDEDIRS include)
 set(COMPONENT_REQUIRES )
 set(COMPONENT_PRIV_REQUIRES audio_sal)
 
-set(COMPONENT_SRCS ./audio_service.c ./esp_dispatcher.c ./periph_service.c)
+set(COMPONENT_SRCS ./audio_service.c ./esp_dispatcher.c ./periph_service.c ./esp_delegate.c)
 
 register_component()

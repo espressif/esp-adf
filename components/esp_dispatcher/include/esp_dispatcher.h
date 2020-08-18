@@ -25,11 +25,14 @@
 #ifndef __ESP_DISPATCHER_H__
 #define __ESP_DISPATCHER_H__
 
+#include <stdbool.h>
+
+#include "esp_err.h"
+#include "esp_action_def.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "esp_action_def.h"
 
 #define DEFAULT_ESP_DISPATCHER_STACK_SIZE      (4*1024)
 #define DEFAULT_ESP_DISPATCHER_TASK_PRIO       (10)
@@ -42,14 +45,21 @@ typedef struct {
     int                         task_stack;             /*!< >0 Task stack; =0 with out task created */
     int                         task_prio;              /*!< Task priority (based on freeRTOS priority) */
     int                         task_core;              /*!< Task running in core (0 or 1) */
+    bool                        stack_in_ext;           /*!< Try to allocate stack in external memory */
 } esp_dispatcher_config_t;
 
 typedef struct esp_dispatcher *esp_dispatcher_handle_t;
+
+/**
+ * @brief the delegate result callback type
+ */
+typedef void (*func_ret_cb_t)(action_result_t ret, void *user_data);
 
 #define ESP_DISPATCHER_CONFIG_DEFAULT() { \
     .task_stack = DEFAULT_ESP_DISPATCHER_STACK_SIZE, \
     .task_prio = DEFAULT_ESP_DISPATCHER_TASK_PRIO, \
     .task_core = DEFAULT_ESP_DISPATCHER_TASK_CORE, \
+    .stack_in_ext = false, \
 }
 
 /**
@@ -106,6 +116,68 @@ esp_err_t esp_dispatcher_reg_exe_func(esp_dispatcher_handle_t handle, void *exe_
  */
 esp_err_t esp_dispatcher_execute(esp_dispatcher_handle_t handle, int sub_event_index,
                                     action_arg_t *arg, action_result_t *result);
+
+/**
+ * brief      Execution function with specific index of event.
+ *            This is a asynchronous interface.
+ *
+ * @param handle            The ESP dispatcher instance
+ * @param sub_event_index   The index of event
+ * @param arg               The arguments of execution function
+ * @param ret_cb            The call back used to receive the function execute result
+ * @param user_data         The data used in callback
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_ERR_INVALID_ARG
+ *     - ESP_ERR_ADF_TIMEOUT, send request command timeout.
+ *     - Others, execute function result.
+ */
+esp_err_t esp_dispatcher_execute_async(esp_dispatcher_handle_t dh, int sub_event_index,
+                                    action_arg_t *in_para, func_ret_cb_t ret_cb, void* user_data);
+/**
+ * @brief      Synchronize invoke functions in ESP dispatcher
+ *
+ * @param handle            The ESP dispatcher instance
+ * @param func              The function to invoke
+ * @param exe_inst          The execution instance
+ * @param arg               The arguments of execution function
+ * @param result            The result of execution function
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_ERR_INVALID_ARG
+ *     - ESP_ERR_ADF_TIMEOUT, send request command timeout.
+ *     - Others, execute function result.
+ */
+esp_err_t esp_dispatcher_execute_with_func(esp_dispatcher_handle_t handle,
+                                        esp_action_exe func,
+                                        void *exe_inst,
+                                        action_arg_t *arg,
+                                        action_result_t *ret);
+/**
+ * @brief      Asynchronous invoke functions in ESP dispatcher
+ *
+ * @param handle            The ESP dispatcher instance
+ * @param func              The function to invoke
+ * @param exe_inst          The execution instance
+ * @param arg               The arguments of execution function
+ * @param ret_cb            The call back used to receive the function execute result
+ * @param user_data         The data used in callback
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_ERR_INVALID_ARG
+ *     - ESP_ERR_ADF_TIMEOUT, send request command timeout.
+ *     - Others, execute function result.
+ */
+esp_err_t esp_dispatcher_execute_with_func_async(esp_dispatcher_handle_t handle,
+                                        esp_action_exe func,
+                                        void *exe_inst,
+                                        action_arg_t *arg,
+                                        func_ret_cb_t ret_cb,
+                                        void* user_data);
+
 #ifdef __cplusplus
 }
 #endif

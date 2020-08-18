@@ -79,7 +79,7 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                     cx_handle->work_mode = WIFI_MODE;
                     if (g_a2dp_connect_state == true) {
                        periph_bt_pause(cx_handle->bt_periph);
-                       vTaskDelay(300/portTICK_RATE_MS); 
+                       vTaskDelay(300/portTICK_RATE_MS);
                     }
                     esp_audio_stop(cx_handle->player, TERMINATION_TYPE_NOW);
                     if (g_wifi_connect_state == true) {
@@ -139,6 +139,7 @@ static void wifi_server_init(void)
     strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, strlen(CONFIG_WIFI_PASSWORD));
 
     wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
+    cfg.extern_stack = true;
     cfg.evt_cb = wifi_service_cb;
     cfg.cb_ctx = NULL;
     cfg.setting_timeout_s = 60;
@@ -233,7 +234,7 @@ static void a2dp_sink_blufi_start(coex_handle_t *handle)
 
     ble_gatts_module_init();
     wifi_server_init();
-    
+
     esp_err_t set_dev_name_ret = esp_bt_dev_set_device_name(SAMPLE_DEVICE_NAME);
     if (set_dev_name_ret){
         ESP_LOGE(TAG, "set device name failed, error code = %x", set_dev_name_ret);
@@ -257,7 +258,7 @@ void app_main(void)
         err = nvs_flash_init();
     }
     tcpip_adapter_init();
-    
+
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
 
@@ -266,16 +267,16 @@ void app_main(void)
 
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     handle->set = esp_periph_set_init(&periph_cfg);
-    
+
     ESP_LOGI(TAG, "create and start input key service");
     audio_board_key_init(handle->set);
     input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
     input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
     input_cfg.handle = handle->set;
     periph_service_handle_t input_ser = input_key_service_create(&input_cfg);
- 
+
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
     periph_service_set_callback(input_ser, &input_key_service_cb, (void *)handle);
 
-    a2dp_sink_blufi_start(handle); 
+    a2dp_sink_blufi_start(handle);
 }

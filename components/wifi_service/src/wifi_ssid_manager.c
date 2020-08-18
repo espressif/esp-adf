@@ -29,6 +29,9 @@
 #include "nvs_flash.h"
 #include "wifi_ssid_manager.h"
 
+#include "esp_delegate.h"
+#include "nvs_action.h"
+
 #define WIFI_CONF_NVS_NAMESPACE  "WIFI_CONF_NVS"
 #define WIFI_INFO_NVS_NAMESPACE  "WIFI_INFO_NVS"
 
@@ -65,6 +68,7 @@ typedef struct {
  * @breif Management unit of wifi ssid
  */
 struct wifi_ssid_manager {
+    esp_dispatcher_handle_t dispatcher; /*!< dispatcher handle to run the nvs actions */
     nvs_handle conf_nvs;      /*!< Nvs handle to save the ssid manager configuration */
     nvs_handle info_nvs;      /*!< Nvs handle to save the wifi information */
 };
@@ -80,11 +84,25 @@ static char *get_key_by_id(uint8_t id)
 static esp_err_t nvs_ssid_list_conf_save(wifi_ssid_manager_handle_t handle, nvs_ssid_conf_t *conf)
 {
     esp_err_t ret = ESP_OK;
-    ret |= nvs_set_blob(handle->conf_nvs, SSID_MANAGER_CONF_KEY, (const void *)conf, sizeof(nvs_ssid_conf_t));
-    ret |= nvs_commit(handle->conf_nvs);
-
+    nvs_action_set_args_t set_blob = {
+        .key = SSID_MANAGER_CONF_KEY,
+        .type = NVS_TYPE_BLOB,
+        .value.blob = conf,
+        .len = sizeof(nvs_ssid_conf_t),
+    };
+    action_arg_t set_blob_arg = {
+        .data = &set_blob,
+        .len = sizeof(nvs_action_set_args_t),
+    };
+    action_result_t result = { 0 };
+    ret = esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_set, (void *)handle->conf_nvs, &set_blob_arg, &result);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Fail to save configuration to nvs flash: %d", ret);
+    }
+    memset(&result, 0x00, sizeof(action_result_t));
+    ret = esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_commit, (void *)handle->conf_nvs, NULL, &result);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Fail to commit changes to nvs flash: %d", ret);
     }
     return ret;
 }
@@ -92,9 +110,22 @@ static esp_err_t nvs_ssid_list_conf_save(wifi_ssid_manager_handle_t handle, nvs_
 static esp_err_t nvs_ssid_list_conf_get(wifi_ssid_manager_handle_t handle, nvs_ssid_conf_t *conf)
 {
     esp_err_t ret = ESP_OK;
-    size_t length = sizeof(nvs_ssid_conf_t);
-    ret = nvs_get_blob(handle->conf_nvs, SSID_MANAGER_CONF_KEY, conf, &length);
-    if (ret != ESP_OK && ret != ESP_ERR_NVS_NOT_FOUND) {
+    nvs_action_get_args_t get_blob = {
+        .key = SSID_MANAGER_CONF_KEY,
+        .type = NVS_TYPE_BLOB,
+        .wanted_size = sizeof(nvs_ssid_conf_t),
+    };
+    action_arg_t get_blob_arg = {
+        .data = &get_blob,
+        .len = sizeof(nvs_action_get_args_t),
+    };
+    action_result_t result = { 0 };
+    ret = esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_get, (void *)handle->conf_nvs, &get_blob_arg, &result);
+    if (ret == ESP_OK) {
+        memcpy(conf, result.data, sizeof(nvs_ssid_conf_t));
+        free(result.data);
+        result.data = NULL;
+    } else {
         ESP_LOGE(TAG, "Fail to get configuration from nvs flash");
     }
     return ret;
@@ -104,25 +135,57 @@ static esp_err_t nvs_wifi_info_save(wifi_ssid_manager_handle_t handle, uint8_t k
 {
     esp_err_t ret = ESP_OK;
     char *key = get_key_by_id(key_id);
-    ret |= nvs_set_blob(handle->info_nvs, (const char *)key, (const void *)info, sizeof(nvs_stored_info_t));
-    ret |= nvs_commit(handle->info_nvs);
-    audio_free(key);
+
+    nvs_action_set_args_t set_blob = {
+        .key = key,
+        .type = NVS_TYPE_BLOB,
+        .value.blob = info,
+        .len = sizeof(nvs_stored_info_t),
+    };
+    action_arg_t set_blob_arg = {
+        .data = &set_blob,
+        .len = sizeof(nvs_action_set_args_t),
+    };
+    action_result_t result = { 0 };
+    ret = esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_set, (void *)handle->info_nvs, &set_blob_arg, &result);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Fail to save wifi information, key id: %d", key_id);
     }
+    memset(&result, 0x00, sizeof(action_result_t));
+    ret = esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_commit, (void *)handle->info_nvs, NULL, &result);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Fail to commit wifi information, key id: %d", key_id);
+    }
+
+    audio_free(key);
     return ret;
 }
 
 static esp_err_t nvs_wifi_info_get(wifi_ssid_manager_handle_t handle, uint8_t key_id, nvs_stored_info_t *info)
 {
     esp_err_t ret = ESP_OK;
-    size_t length = sizeof(nvs_stored_info_t);
     char *key = get_key_by_id(key_id);
-    ret = nvs_get_blob(handle->info_nvs, (const char *)key, info, &length);
-    audio_free(key);
-    if (ret != ESP_OK && ret != ESP_ERR_NVS_NOT_FOUND) {
-        ESP_LOGE(TAG, "Fail to get configuration from nvs flash");
+
+    nvs_action_get_args_t get_blob = {
+        .key = key,
+        .type = NVS_TYPE_BLOB,
+        .wanted_size = sizeof(nvs_stored_info_t),
+    };
+    action_arg_t get_blob_arg = {
+        .data = &get_blob,
+        .len = sizeof(nvs_action_get_args_t),
+    };
+    action_result_t result = { 0 };
+    ret = esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_get, (void *)handle->info_nvs, &get_blob_arg, &result);
+    if (ret == ESP_OK) {
+        memcpy(info, result.data, sizeof(nvs_stored_info_t));
+        free(result.data);
+        result.data = NULL;
+    } else {
+        ESP_LOGE(TAG, "Fail to get info from nvs flash");
     }
+    audio_free(key);
+
     return ret;
 }
 
@@ -190,35 +253,49 @@ static esp_err_t nvs_reset_choosen_flag(wifi_ssid_manager_handle_t handle, nvs_s
     return ret;
 }
 
-wifi_ssid_manager_handle_t wifi_ssid_manager_create(uint8_t max_ssid_num)
+static esp_err_t wifi_ssid_manager_init_nvs(void *instance, action_arg_t *arg, action_result_t *result)
 {
+    wifi_ssid_manager_handle_t mng_handle = (wifi_ssid_manager_handle_t)instance;
+
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES) {
-        // NVS partition was truncated and needs to be erased
-        // Retry nvs_flash_init
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
-
-    wifi_ssid_manager_handle_t mng_handle = audio_calloc(1, sizeof(struct wifi_ssid_manager));
-    AUDIO_NULL_CHECK(TAG, mng_handle, return NULL);
-
+    if (ret != ESP_OK) {
+        return ret;
+    }
     ret = nvs_open(WIFI_CONF_NVS_NAMESPACE, NVS_READWRITE, &mng_handle->conf_nvs);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Fail to open conf nvs namespace");
-        audio_free(mng_handle);
-        return NULL;
+        return ret;
     }
     ret = nvs_open(WIFI_INFO_NVS_NAMESPACE, NVS_READWRITE, &mng_handle->info_nvs);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Fail to open info nvs namespace");
         nvs_close(mng_handle->conf_nvs);
-        audio_free(mng_handle);
+        return ret;
+    }
+    return ret;
+}
+
+wifi_ssid_manager_handle_t wifi_ssid_manager_create(uint8_t max_ssid_num)
+{
+    wifi_ssid_manager_handle_t mng_handle = audio_calloc(1, sizeof(struct wifi_ssid_manager));
+    AUDIO_NULL_CHECK(TAG, mng_handle, return NULL);
+
+    mng_handle->dispatcher = esp_dispatcher_get_delegate_handle();
+    AUDIO_NULL_CHECK(TAG, mng_handle, {
+        free(mng_handle);
+        return NULL;
+    });
+    action_result_t init_result = { 0 };
+    if (esp_dispatcher_execute_with_func(mng_handle->dispatcher, wifi_ssid_manager_init_nvs, (void *)mng_handle, NULL, &init_result) != ESP_OK) {
+        esp_dispatcher_destroy(mng_handle->dispatcher);
+        free(mng_handle);
         return NULL;
     }
 
     nvs_ssid_conf_t conf = {0};
-    ret = nvs_ssid_list_conf_get(mng_handle, &conf);
+    esp_err_t ret = nvs_ssid_list_conf_get(mng_handle, &conf);
     if (ret == ESP_ERR_NVS_NOT_FOUND) {
         conf.max_ssid_num = max_ssid_num;
         nvs_ssid_list_conf_save(mng_handle, &conf);
@@ -397,8 +474,9 @@ esp_err_t wifi_ssid_manager_erase_all(wifi_ssid_manager_handle_t handle)
     max_ssid_num = conf.max_ssid_num;
     memset(&conf, 0, sizeof(nvs_ssid_conf_t));
     conf.max_ssid_num = max_ssid_num;
-    ret |= nvs_erase_all(handle->info_nvs);
-    ret |= nvs_erase_all(handle->conf_nvs);
+    action_result_t result = { 0 };
+    ret |= esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_erase_all, (void *)handle->info_nvs, NULL, &result);
+    ret |= esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_erase_all, (void *)handle->conf_nvs, NULL, &result);
     ret |= nvs_ssid_list_conf_save(handle, &conf);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Fail to erase nvs flash");
@@ -410,10 +488,12 @@ esp_err_t wifi_ssid_manager_destroy(wifi_ssid_manager_handle_t handle)
 {
     esp_err_t ret = ESP_OK;
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
-    ret |= nvs_erase_all(handle->info_nvs);
-    ret |= nvs_erase_all(handle->conf_nvs);
-    nvs_close(handle->info_nvs);
-    nvs_close(handle->conf_nvs);
+    action_result_t result = { 0 };
+    ret |= esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_erase_all, (void *)handle->info_nvs, NULL, &result);
+    ret |= esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_erase_all, (void *)handle->conf_nvs, NULL, &result);
+    esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_close, (void *)handle->info_nvs, NULL, &result);
+    esp_dispatcher_execute_with_func(handle->dispatcher, nvs_action_close, (void *)handle->conf_nvs, NULL, &result);
+    esp_dispatcher_destroy(handle->dispatcher);
     audio_free(handle);
     return ret;
 }
