@@ -1,5 +1,5 @@
 diff --git a/components/audio_stream/http_stream.c b/components/audio_stream/http_stream.c
-index 927de394..a1a37a2b 100644
+index 8265aaca..37b1c00f 100644
 --- a/components/audio_stream/http_stream.c
 +++ b/components/audio_stream/http_stream.c
 @@ -32,7 +32,6 @@
@@ -27,7 +27,7 @@ index 927de394..a1a37a2b 100644
  } http_stream_t;
  
  static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
-@@ -330,7 +332,7 @@ static esp_err_t _http_open(audio_element_handle_t self)
+@@ -329,7 +331,7 @@ static esp_err_t _http_open(audio_element_handle_t self)
          ESP_LOGE(TAG, "already opened");
          return ESP_FAIL;
      }
@@ -43,9 +43,9 @@ index 927de394..a1a37a2b 100644
 -    if (AEL_STATE_PAUSED != audio_element_get_state(self) && (errno == 0)) {
 +    if (AEL_STATE_PAUSED != audio_element_get_state(self) && http->_errno == 0) {
          audio_element_report_pos(self);
-         audio_element_info_t info = {0};
-         audio_element_getinfo(self, &info);
-@@ -519,17 +521,11 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
+         audio_element_set_byte_pos(self, 0);
+     }
+@@ -516,17 +518,11 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
          }
      }
      if (rlen <= 0) {
@@ -68,7 +68,7 @@ index 927de394..a1a37a2b 100644
          }
          if (http->auto_connect_next_track) {
              if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
-@@ -564,7 +560,8 @@ static int _http_write(audio_element_handle_t self, char *buffer, int len, TickT
+@@ -560,7 +556,8 @@ static int _http_write(audio_element_handle_t self, char *buffer, int len, TickT
      }
  
      if ((wrlen = esp_http_client_write(http->client, buffer, len)) <= 0) {
@@ -78,7 +78,7 @@ index 927de394..a1a37a2b 100644
      }
      return wrlen;
  }
-@@ -574,10 +571,23 @@ static int _http_process(audio_element_handle_t self, char *in_buffer, int in_le
+@@ -570,10 +567,23 @@ static int _http_process(audio_element_handle_t self, char *in_buffer, int in_le
      int r_size = audio_element_input(self, in_buffer, in_len);
      int w_size = 0;
      if (r_size > 0) {
@@ -105,9 +105,11 @@ index 927de394..a1a37a2b 100644
              w_size = audio_element_output(self, in_buffer, r_size);
              audio_element_multi_output(self, in_buffer, r_size, 0);
          }
-diff --git a/esp-idf b/esp-idf
---- a/esp-idf
-+++ b/esp-idf
-@@ -1 +1 @@
--Subproject commit 722043f734fa556d66d57473ac266fb1d0ec5ad2
-+Subproject commit 722043f734fa556d66d57473ac266fb1d0ec5ad2-dirty
+@@ -685,6 +695,7 @@ esp_err_t http_stream_next_track(audio_element_handle_t el)
+         return ESP_OK;
+     }
+     audio_element_reset_state(el);
++
+     audio_element_set_byte_pos(el, 0);
+     audio_element_set_total_bytes(el, 0);
+     http->is_open = false;
