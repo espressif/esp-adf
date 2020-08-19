@@ -34,12 +34,11 @@
 #include "audio_mutex.h"
 #include "audio_mem.h"
 #include "audio_error.h"
+#include "audio_thread.h"
 
 static const char *TAG = "DISPATCHER";
-#define  ESP_DISPATCHER_EVENT_SIZE                              3
 
-#define ESP_DISPATCHER_TASK_DESTROY_BIT                 BIT(4)
-#define ESP_DISPATCHER_UPDATE_EXE_FUNC_RETURN_BIT       BIT(5)
+#define  ESP_DISPATCHER_EVENT_SIZE  (3)
 
 typedef enum {
     ESP_DISPCH_EVENT_TYPE_UNKNOWN,
@@ -48,9 +47,13 @@ typedef enum {
 } esp_dispatcher_event_type_t;
 
 typedef struct {
-    esp_dispatcher_event_type_t             type;
-    int                                     sub_index;
-    action_arg_t                            arg;
+    esp_dispatcher_event_type_t     type;
+    int                             sub_index;
+    esp_action_exe                  pfunc;
+    void                            *instance;
+    action_arg_t                    arg;
+    func_ret_cb_t                   ret_cb;
+    void                            *user_data;
 } esp_dispatcher_info_t;
 
 typedef struct evt_exe_item {
@@ -61,6 +64,7 @@ typedef struct evt_exe_item {
 } esp_action_exe_item_t;
 
 typedef struct esp_dispatcher {
+    audio_thread_t                                 thread;
     QueueHandle_t                                  exe_que;
     QueueHandle_t                                  result_que;
     SemaphoreHandle_t                              mutex;
@@ -104,29 +108,44 @@ static void dispatcher_event_task(void *parameters)
     while (task_run) {
         if (xQueueReceive(dispch->exe_que, &msg, portMAX_DELAY) == pdTRUE) {
             if (msg.type == ESP_DISPCH_EVENT_TYPE_EXE) {
-                exe_item = found_exe_func(dispch, msg.sub_index);
-                if (exe_item) {
-                    result.err = ESP_OK;
-                    result.data = 0;
-                    result.len = 0;
-                    ESP_LOGD(TAG, "EXE type:%d, index:%x,%p,%d",
-                             msg.type, msg.sub_index, msg.arg.data, msg.arg.len);
-                    result.err = exe_item->exe_func(exe_item->exe_instance, &msg.arg, &result);
-                    if (xQueueSend(dispch->result_que, &result, 0 / portTICK_PERIOD_MS) == pdFALSE) {
-                        ESP_LOGW(TAG, "Sending result failed, index:%x", msg.sub_index);
+                esp_action_exe exe_func = NULL;
+                void *exe_handle = NULL;
+                result.err = ESP_OK;
+                result.data = 0;
+                result.len = 0;
+                ESP_LOGD(TAG, "EXE type:%d, index:%x, pfunc:%p, %p, %d",
+                        msg.type, msg.sub_index, msg.pfunc, msg.arg.data, msg.arg.len);
+                if (msg.sub_index != -1) {
+                    exe_item = found_exe_func(dispch, msg.sub_index);
+                    if (exe_item) {
+                        exe_func = exe_item->exe_func;
+                        exe_handle = exe_item->exe_instance;
+                    } else {
+                        result.err = ESP_ERR_ADF_NOT_SUPPORT;
+                        ESP_LOGW(TAG, "Not found index:%x", msg.sub_index);
                     }
+                } else if (msg.sub_index == -1 && msg.pfunc != NULL) {
+                    exe_func = msg.pfunc;
+                    exe_handle = msg.instance;
                 } else {
                     result.err = ESP_ERR_ADF_NOT_SUPPORT;
-                    result.data = 0;
-                    result.len = 0;
-                    ESP_LOGW(TAG, "Not found index:%x", msg.sub_index);
-                    if (xQueueSend(dispch->result_que, &result, 0 / portTICK_PERIOD_MS) == pdFALSE) {
-                        ESP_LOGW(TAG, "Send result failed, index:%x", msg.sub_index);
+                    ESP_LOGW(TAG, "Unsupported type index:%x, pfunc:%p", msg.sub_index, msg.pfunc);
+                }
+                if (exe_func) {
+                    result.err = exe_func(exe_handle, &msg.arg, &result);
+                }
+                if (msg.ret_cb) {
+                    msg.ret_cb(result, msg.user_data);
+                } else {
+                    if (xQueueSend(dispch->result_que, &result, pdMS_TO_TICKS(0)) == pdFALSE) {
+                        ESP_LOGW(TAG, "Send result failed, pfunc: %p, index:%x", msg.pfunc, msg.sub_index);
                     }
                 }
             } else if (msg.type == ESP_DISPCH_EVENT_TYPE_CMD) {
                 task_run = false;
             }
+        } else {
+            ESP_LOGE(TAG, "Unknown queue or receive error");
         }
     }
     result.err = ESP_OK;
@@ -183,6 +202,103 @@ esp_err_t esp_dispatcher_execute(esp_dispatcher_handle_t dh, int sub_event_index
     return ret.err;
 }
 
+esp_err_t esp_dispatcher_execute_async(esp_dispatcher_handle_t dh, int sub_event_index,
+                                    action_arg_t *in_para, func_ret_cb_t ret_cb, void* user_data)
+{
+    esp_dispatcher_t *impl = (esp_dispatcher_t *)dh;
+    AUDIO_NULL_CHECK(TAG, impl, return ESP_ERR_INVALID_ARG);
+    esp_dispatcher_info_t info = {0};
+    info.type = ESP_DISPCH_EVENT_TYPE_EXE;
+    info.sub_index = sub_event_index;
+    info.ret_cb = ret_cb;
+    info.user_data = user_data;
+
+    if (in_para) {
+        memcpy(&info.arg, in_para, sizeof(action_arg_t));
+    }
+    ESP_LOGI(TAG, "EXE IN, cmd type:%d, index:%x, data:%p, len:%d",
+             info.type, info.sub_index, info.arg.data, info.arg.len);
+
+    mutex_lock(impl->mutex);
+    if (xQueueSend(impl->exe_que, &info, pdMS_TO_TICKS(5000)) != pdPASS) {
+        ESP_LOGE(TAG, "Message send timeout");
+        action_result_t result = {0};
+        result.err = ESP_FAIL;
+        ret_cb(result, user_data);
+        mutex_unlock(impl->mutex);
+        return ESP_ERR_ADF_TIMEOUT;
+    }
+    mutex_unlock(impl->mutex);
+    return ESP_OK;
+}
+
+esp_err_t esp_dispatcher_execute_with_func(esp_dispatcher_handle_t dh,
+                                        esp_action_exe func,
+                                        void *instance,
+                                        action_arg_t *arg,
+                                        action_result_t *ret)
+{
+    esp_dispatcher_t *impl = (esp_dispatcher_t *)dh;
+    AUDIO_NULL_CHECK(TAG, impl, return ESP_ERR_INVALID_ARG);
+    AUDIO_NULL_CHECK(TAG, ret, return ESP_ERR_INVALID_ARG);
+
+    esp_dispatcher_info_t delegate = { 0 };
+    delegate.type = ESP_DISPCH_EVENT_TYPE_EXE;
+    delegate.sub_index = -1;
+    delegate.pfunc = func;
+    delegate.instance = instance;
+    delegate.ret_cb = NULL;
+    delegate.user_data = NULL;
+    if (arg) {
+        memcpy(&delegate.arg, arg, sizeof(action_arg_t));
+    }
+    mutex_lock(impl->mutex);
+    if (xQueueSend(impl->exe_que, &delegate, pdMS_TO_TICKS(5000)) != pdPASS) {
+        ret->err = ESP_FAIL;
+        ESP_LOGE(TAG, "Message send timeout");
+        mutex_lock(impl->mutex);
+        return ESP_ERR_ADF_TIMEOUT;
+    }
+    xQueueReceive(impl->result_que, ret, portMAX_DELAY);
+    mutex_unlock(impl->mutex);
+    return ret->err;
+}
+
+esp_err_t esp_dispatcher_execute_with_func_async(esp_dispatcher_handle_t dh,
+                                        esp_action_exe func,
+                                        void *instance,
+                                        action_arg_t *arg,
+                                        func_ret_cb_t ret_cb,
+                                        void* user_data)
+{
+    esp_dispatcher_t *impl = (esp_dispatcher_t *)dh;
+    AUDIO_NULL_CHECK(TAG, impl, return ESP_ERR_INVALID_ARG);
+
+    esp_dispatcher_info_t delegate = { 0 };
+    delegate.type = ESP_DISPCH_EVENT_TYPE_EXE;
+    delegate.sub_index = -1;
+    delegate.pfunc = func;
+    delegate.instance = instance;
+    delegate.ret_cb = ret_cb;
+    delegate.user_data = user_data;
+
+    if (arg) {
+        memcpy(&delegate.arg, arg, sizeof(action_arg_t));
+    }
+
+    mutex_lock(impl->mutex);
+    if (xQueueSend(impl->exe_que, &delegate, pdMS_TO_TICKS(5000)) != pdPASS) {
+        ESP_LOGE(TAG, "Message send timeout");
+        action_result_t result = {0};
+        result.err = ESP_FAIL;
+        ret_cb(result, user_data);
+        mutex_unlock(impl->mutex);
+        return ESP_ERR_ADF_TIMEOUT;
+    }
+    mutex_unlock(impl->mutex);
+    return ESP_OK;
+}
+
 esp_dispatcher_handle_t esp_dispatcher_create(esp_dispatcher_config_t *cfg)
 {
     AUDIO_NULL_CHECK(TAG, cfg, return NULL);
@@ -197,12 +313,13 @@ esp_dispatcher_handle_t esp_dispatcher_create(esp_dispatcher_config_t *cfg)
     STAILQ_INIT(&impl->exe_list);
     ESP_LOGE(TAG, "exe first list: %p", STAILQ_FIRST(&impl->exe_list));
 
-    if (pdPASS != xTaskCreatePinnedToCore(dispatcher_event_task,
+    if (ESP_OK != audio_thread_create(&impl->thread,
                                           "esp_dispatcher",
-                                          cfg->task_stack,
+                                          dispatcher_event_task,
                                           impl,
+                                          cfg->task_stack,
                                           cfg->task_prio,
-                                          &impl->task_handle,
+                                          cfg->stack_in_ext,
                                           cfg->task_core)) {
         ESP_LOGE(TAG, "Create task failed on %s", __func__);
         goto _failed;

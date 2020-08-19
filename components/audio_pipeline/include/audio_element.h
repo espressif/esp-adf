@@ -879,6 +879,164 @@ esp_err_t audio_element_seek(audio_element_handle_t el, void *in_data, int in_si
  */
 bool audio_element_is_stopping(audio_element_handle_t el);
 
+/**
+ * @brief      Update the byte position of element information
+ *
+ * @param[in]  el    The audio element handle
+ * @param[in]  pos   The byte_pos accumulated by this value
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_update_byte_pos(audio_element_handle_t el, int pos);
+
+/**
+ * @brief      Set the byte position of element information
+ *
+ * @param[in]  el    The audio element handle
+ * @param[in]  pos   This value is assigned to byte_pos
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_byte_pos(audio_element_handle_t el, int pos);
+
+/**
+ * @brief      Update the total bytes of element information
+ *
+ * @param[in]  el               The audio element handle
+ * @param[in]  total_bytes      The total_bytes accumulated by this value
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_update_total_bytes(audio_element_handle_t el, int total_bytes);
+
+/**
+ * @brief      Set the total bytes of element information
+ *
+ * @param[in]  el               The audio element handle
+ * @param[in]  total_bytes      This value is assigned to total_bytes
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_total_bytes(audio_element_handle_t el, int total_bytes);
+
+/**
+ * @brief      Set the bps of element information
+ *
+ * @param[in]  el           The audio element handle
+ * @param[in]  bit_rate     This value is assigned to bps
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_bps(audio_element_handle_t el, int bit_rate);
+
+/**
+ * @brief      Set the codec format of element information
+ *
+ * @param[in]  el       The audio element handle
+ * @param[in]  format   This value is assigned to codec_fmt
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_codec_fmt(audio_element_handle_t el, int format);
+
+/**
+ * @brief      Set the sample_rate, channels, bits of element information
+ *
+ * @param[in]  el             The audio element handle
+ * @param[in]  sample_rates   Sample_rates of music information
+ * @param[in]  channels       Channels of music information
+ * @param[in]  bits           Bits of music information
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_music_info(audio_element_handle_t el, int sample_rates, int channels, int bits);
+
+/**
+ * @brief      Set the duration of element information
+ *
+ * @param[in]  el           The audio element handle
+ * @param[in]  duration     This value is assigned to duration
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_duration(audio_element_handle_t el, int duration);
+
+/**
+ * @brief      Set the user_data_0 of element information
+ *
+ * @param[in]  el               The audio element handle
+ * @param[in]  user_data0       This value is assigned to user_data_0
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_reserve_user0(audio_element_handle_t el, int user_data0);
+
+/**
+ * @brief      Set the user_data_1 of element information
+ *
+ * @param[in]  el               The audio element handle
+ * @param[in]  user_data1       This value is assigned to user_data_1
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_reserve_user1(audio_element_handle_t el, int user_data1);
+
+/**
+ * @brief      Set the user_data_2 of element information
+ *
+ * @param[in]  el               The audio element handle
+ * @param[in]  user_data2       This value is assigned to user_data_2
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_reserve_user2(audio_element_handle_t el, int user_data2);
+
+/**
+ * @brief      Set the user_data_3 of element information
+ *
+ * @param[in]  el               The audio element handle
+ * @param[in]  user_data3       This value is assigned to user_data_3
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_reserve_user3(audio_element_handle_t el, int user_data3);
+
+/**
+ * @brief      Set the user_data_4 of element information
+ *
+ * @param[in]  el               The audio element handle
+ * @param[in]  user_data4       This value is assigned to user_data_4
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_set_reserve_user4(audio_element_handle_t el, int user_data4);
+
 
 #ifdef __cplusplus
 }

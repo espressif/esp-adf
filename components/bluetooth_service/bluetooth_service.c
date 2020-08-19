@@ -100,7 +100,7 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
             a2d = (esp_a2d_cb_param_t *)(p_param);
             uint8_t *bda = a2d->conn_stat.remote_bda;
             ESP_LOGD(TAG, "A2DP connection state: %s, [%02x:%02x:%02x:%02x:%02x:%02x]",
-                conn_state_str[a2d->conn_stat.state], bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
+                     conn_state_str[a2d->conn_stat.state], bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
 
             if (g_bt_service->connection_state == ESP_A2D_CONNECTION_STATE_DISCONNECTED
                 && a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
@@ -165,12 +165,7 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
                     break;
                 }
 
-                audio_element_info_t bt_info = { 0 };
-                audio_element_getinfo(g_bt_service->stream, &bt_info);
-                bt_info.sample_rates = sample_rate;
-                bt_info.channels = 2;
-                bt_info.bits = 16;
-                audio_element_setinfo(g_bt_service->stream, &bt_info);
+                audio_element_set_music_info(g_bt_service->stream, sample_rate, 2, 16);
                 audio_element_report_info(g_bt_service->stream);
             }
             break;
@@ -217,7 +212,7 @@ static char *bda2str(esp_bd_addr_t bda, char *str, size_t size)
 
     uint8_t *p = bda;
     sprintf(str, "%02x:%02x:%02x:%02x:%02x:%02x",
-        p[0], p[1], p[2], p[3], p[4], p[5]);
+            p[0], p[1], p[2], p[3], p[4], p[5]);
     return str;
 }
 
@@ -309,59 +304,59 @@ static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
 {
     switch (event) {
         case ESP_BT_GAP_DISC_RES_EVT: {
-            filter_inquiry_scan_result(param);
-            break;
-        }
-        case ESP_BT_GAP_DISC_STATE_CHANGED_EVT: {
-            if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STOPPED) {
-                if (g_bt_service->source_a2d_state == BT_SOURCE_STATE_DISCOVERED) {
-                    g_bt_service->source_a2d_state = BT_SOURCE_STATE_CONNECTING;
-                    ESP_LOGI(TAG, "Device discovery stopped.");
-                    ESP_LOGI(TAG, "a2dp connecting to peer: %s", g_bt_service->peer_bdname);
-                    esp_a2d_source_connect(g_bt_service->remote_bda);
-                } else if (g_bt_service->source_a2d_state != BT_SOURCE_STATE_IDLE) {
-                    // not discovered, continue to discover
-                    ESP_LOGI(TAG, "Device discovery failed, continue to discover...");
-                    esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
-                }
-            } else if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STARTED) {
-                ESP_LOGI(TAG, "Discovery started.");
+                filter_inquiry_scan_result(param);
+                break;
             }
-            break;
-        }
+        case ESP_BT_GAP_DISC_STATE_CHANGED_EVT: {
+                if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STOPPED) {
+                    if (g_bt_service->source_a2d_state == BT_SOURCE_STATE_DISCOVERED) {
+                        g_bt_service->source_a2d_state = BT_SOURCE_STATE_CONNECTING;
+                        ESP_LOGI(TAG, "Device discovery stopped.");
+                        ESP_LOGI(TAG, "a2dp connecting to peer: %s", g_bt_service->peer_bdname);
+                        esp_a2d_source_connect(g_bt_service->remote_bda);
+                    } else if (g_bt_service->source_a2d_state != BT_SOURCE_STATE_IDLE) {
+                        // not discovered, continue to discover
+                        ESP_LOGI(TAG, "Device discovery failed, continue to discover...");
+                        esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
+                    }
+                } else if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STARTED) {
+                    ESP_LOGI(TAG, "Discovery started.");
+                }
+                break;
+            }
         case ESP_BT_GAP_RMT_SRVCS_EVT:
         case ESP_BT_GAP_RMT_SRVC_REC_EVT:
             break;
         case ESP_BT_GAP_AUTH_CMPL_EVT: {
-            if (param->auth_cmpl.stat == ESP_BT_STATUS_SUCCESS) {
-                ESP_LOGI(TAG, "authentication success: %s", param->auth_cmpl.device_name);
-                esp_log_buffer_hex(TAG, param->auth_cmpl.bda, ESP_BD_ADDR_LEN);
-            } else {
-                ESP_LOGI(TAG, "authentication failed, status:%d", param->auth_cmpl.stat);
+                if (param->auth_cmpl.stat == ESP_BT_STATUS_SUCCESS) {
+                    ESP_LOGI(TAG, "authentication success: %s", param->auth_cmpl.device_name);
+                    esp_log_buffer_hex(TAG, param->auth_cmpl.bda, ESP_BD_ADDR_LEN);
+                } else {
+                    ESP_LOGI(TAG, "authentication failed, status:%d", param->auth_cmpl.stat);
+                }
+                break;
             }
-            break;
-        }
         case ESP_BT_GAP_PIN_REQ_EVT: {
-            ESP_LOGI(TAG, "ESP_BT_GAP_PIN_REQ_EVT min_16_digit:%d", param->pin_req.min_16_digit);
-            if (param->pin_req.min_16_digit) {
-                ESP_LOGI(TAG, "Input pin code: 0000 0000 0000 0000");
-                esp_bt_pin_code_t pin_code = { 0 };
-                esp_bt_gap_pin_reply(param->pin_req.bda, true, 16, pin_code);
-            } else {
-                ESP_LOGI(TAG, "Input pin code: 1234");
-                esp_bt_pin_code_t pin_code;
-                pin_code[0] = '1';
-                pin_code[1] = '2';
-                pin_code[2] = '3';
-                pin_code[3] = '4';
-                esp_bt_gap_pin_reply(param->pin_req.bda, true, 4, pin_code);
+                ESP_LOGI(TAG, "ESP_BT_GAP_PIN_REQ_EVT min_16_digit:%d", param->pin_req.min_16_digit);
+                if (param->pin_req.min_16_digit) {
+                    ESP_LOGI(TAG, "Input pin code: 0000 0000 0000 0000");
+                    esp_bt_pin_code_t pin_code = { 0 };
+                    esp_bt_gap_pin_reply(param->pin_req.bda, true, 16, pin_code);
+                } else {
+                    ESP_LOGI(TAG, "Input pin code: 1234");
+                    esp_bt_pin_code_t pin_code;
+                    pin_code[0] = '1';
+                    pin_code[1] = '2';
+                    pin_code[2] = '3';
+                    pin_code[3] = '4';
+                    esp_bt_gap_pin_reply(param->pin_req.bda, true, 4, pin_code);
+                }
+                break;
             }
-            break;
-        }
         default: {
-            ESP_LOGI(TAG, "event: %d", event);
-            break;
-        }
+                ESP_LOGI(TAG, "event: %d", event);
+                break;
+            }
     }
     return;
 }
@@ -561,52 +556,52 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
     esp_avrc_ct_cb_param_t *rc = p_param;
     switch (event) {
         case ESP_AVRC_CT_CONNECTION_STATE_EVT: {
-            uint8_t *bda = rc->conn_stat.remote_bda;
-            g_bt_service->avrc_connected = rc->conn_stat.connected;
-            if (rc->conn_stat.connected) {
-                ESP_LOGD(TAG, "ESP_AVRC_CT_CONNECTION_STATE_EVT");
-                bt_key_act_sm_init();
-            } else if (0 == rc->conn_stat.connected) {
-                bt_key_act_sm_deinit();
-            }
+                uint8_t *bda = rc->conn_stat.remote_bda;
+                g_bt_service->avrc_connected = rc->conn_stat.connected;
+                if (rc->conn_stat.connected) {
+                    ESP_LOGD(TAG, "ESP_AVRC_CT_CONNECTION_STATE_EVT");
+                    bt_key_act_sm_init();
+                } else if (0 == rc->conn_stat.connected) {
+                    bt_key_act_sm_deinit();
+                }
 
-            ESP_LOGD(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
-                rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
-            break;
-        }
-        case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT: {
-            if (g_bt_service->avrc_connected) {
-                ESP_LOGD(TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
-                bt_key_act_param_t param;
-                memset(&param, 0, sizeof(bt_key_act_param_t));
-                param.evt = event;
-                param.tl = rc->psth_rsp.tl;
-                param.key_code = rc->psth_rsp.key_code;
-                param.key_state = rc->psth_rsp.key_state;
-                bt_key_act_state_machine(&param);
+                ESP_LOGD(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
+                         rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
+                break;
             }
-            break;
-        }
+        case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT: {
+                if (g_bt_service->avrc_connected) {
+                    ESP_LOGD(TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
+                    bt_key_act_param_t param;
+                    memset(&param, 0, sizeof(bt_key_act_param_t));
+                    param.evt = event;
+                    param.tl = rc->psth_rsp.tl;
+                    param.key_code = rc->psth_rsp.key_code;
+                    param.key_state = rc->psth_rsp.key_state;
+                    bt_key_act_state_machine(&param);
+                }
+                break;
+            }
         case ESP_AVRC_CT_METADATA_RSP_EVT: {
-            ESP_LOGD(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", rc->meta_rsp.attr_id, rc->meta_rsp.attr_text);
-            // free(rc->meta_rsp.attr_text);
-            break;
-        }
+                ESP_LOGD(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", rc->meta_rsp.attr_id, rc->meta_rsp.attr_text);
+                // free(rc->meta_rsp.attr_text);
+                break;
+            }
         case ESP_AVRC_CT_CHANGE_NOTIFY_EVT: {
-            ESP_LOGD(TAG, "AVRC event notification: %d", rc->change_ntf.event_id);
-            break;
-        }
+                ESP_LOGD(TAG, "AVRC event notification: %d", rc->change_ntf.event_id);
+                break;
+            }
         case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
-            ESP_LOGD(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
-            break;
-        }
+                ESP_LOGD(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
+                break;
+            }
 
 #if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
         case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {
-            ESP_LOGD(TAG, "remote rn_cap: count %d, bitmask 0x%x", rc->get_rn_caps_rsp.cap_count,
-                rc->get_rn_caps_rsp.evt_set.bits);
-            break;
-        }
+                ESP_LOGD(TAG, "remote rn_cap: count %d, bitmask 0x%x", rc->get_rn_caps_rsp.cap_count,
+                         rc->get_rn_caps_rsp.evt_set.bits);
+                break;
+            }
 #endif
 
         default:

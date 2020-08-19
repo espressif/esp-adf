@@ -118,9 +118,7 @@ static esp_err_t _tcp_read(audio_element_handle_t self, char *buffer, int len, T
     } else if (rlen == 0) {
         ESP_LOGI(TAG, "Get end of the file");
     } else {
-        audio_element_getinfo(self, &info);
-        info.byte_pos += rlen;
-        audio_element_setinfo(self, &info);
+        audio_element_update_byte_pos(self, rlen);
     }
     return rlen;
 }
@@ -142,12 +140,11 @@ static esp_err_t _tcp_process(audio_element_handle_t self, char *in_buffer, int 
 {
     int r_size = audio_element_input(self, in_buffer, in_len);
     int w_size = 0;
-    audio_element_info_t info = { 0 };
-    audio_element_getinfo(self, &info);
-    info.byte_pos += r_size;
-    audio_element_setinfo(self, &info);
     if (r_size > 0) {
         w_size = audio_element_output(self, in_buffer, r_size);
+        if (w_size > 0) {
+            audio_element_update_byte_pos(self, r_size);
+        }
     } else {
         w_size = r_size;
     }
@@ -170,10 +167,7 @@ static esp_err_t _tcp_close(audio_element_handle_t self)
     }
     tcp->is_open = false;
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
-        audio_element_info_t info = {0};
-        audio_element_getinfo(self, &info);
-        info.byte_pos = 0;
-        audio_element_setinfo(self, &info);
+        audio_element_set_byte_pos(self, 0);
     }
     return ESP_OK;
 }
@@ -210,7 +204,7 @@ audio_element_handle_t tcp_stream_init(tcp_stream_cfg_t *config)
     if (cfg.buffer_len == 0) {
         cfg.buffer_len = TCP_STREAM_BUF_SIZE;
     }
-    
+
     tcp_stream_t *tcp = audio_calloc(1, sizeof(tcp_stream_t));
     AUDIO_MEM_CHECK(TAG, tcp, return NULL);
 

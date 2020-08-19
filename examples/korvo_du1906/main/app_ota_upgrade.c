@@ -33,7 +33,7 @@
 #include "esp_partition.h"
 #include "ota_service.h"
 #include "ota_proc_default.h"
-#include "tone_stream.h"
+#include "tone_partition.h"
 
 static const char *TAG = "APP_OTA_UPGRADE";
 
@@ -80,8 +80,8 @@ static ota_service_err_reason_t ota_http_tone_image_need_upgrade(void *handle, o
         ESP_LOGE(TAG, "data partition [%s] not found", node->label);
         return OTA_SERV_ERR_REASON_PARTITION_NOT_FOUND;
     }
-
-    if (tone_partition_verify() == ESP_FAIL) {
+    tone_partition_handle_t tone = tone_partition_init(node->label, false);
+    if (tone == NULL) {
         esp_partition_erase_range(partition, 0, partition->size);
         return OTA_SERV_ERR_REASON_SUCCESS;
     }
@@ -119,8 +119,8 @@ static ota_service_err_reason_t ota_http_tone_image_need_upgrade(void *handle, o
     }
 
     /* compare current app desc with the incoming one if the current bin's format is 1*/
-    if (cur_header.format == 1) {
-        if (tone_partition_get_app_desc(&current_desc) != ESP_OK) {
+    if (cur_header.format == TONE_VERSION_1) {
+        if (tone_partition_get_app_desc(tone, &current_desc) != ESP_OK) {
             return OTA_SERV_ERR_REASON_PARTITION_RD_FAIL;
         }
         if (ota_get_version_number(incoming_desc.version) < 0) {

@@ -63,6 +63,7 @@ typedef struct {
     int                         task_stack;             /*!< >0 Service task stack; =0 with out task created */
     int                         task_prio;              /*!< Service task priority (based on freeRTOS priority) */
     int                         task_core;              /*!< Service task running in core (0 or 1) */
+    bool                        extern_stack;           /*!< Task stack allocate on the extern ram */
     periph_service_cb           evt_cb;                 /*!< Service callback function */
     void                        *cb_ctx;                /*!< Callback context */
     char                        *user_data;             /*!< User data */
@@ -75,6 +76,7 @@ typedef struct {
     .task_stack = 3*1024, \
     .task_prio = 6, \
     .task_core = 0, \
+    .extern_stack = true, \
     .evt_cb = NULL, \
     .cb_ctx = NULL, \
     .user_data = NULL, \
@@ -219,7 +221,7 @@ wifi_service_disconnect_reason_t wifi_service_disconnect_reason_get(periph_servi
  *
  * @param handle  The periph_service_handle_t instance
  *
- * @return 
+ * @return
  *     - ESP_OK, Success
  *     - Others, Fail
  */

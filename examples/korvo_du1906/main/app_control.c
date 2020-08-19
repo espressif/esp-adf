@@ -233,6 +233,7 @@ void app_init(void)
     strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, strlen(CONFIG_WIFI_SSID));
     strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, strlen(CONFIG_WIFI_PASSWORD));
     wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
+    cfg.extern_stack = true;
     cfg.evt_cb = wifi_service_cb;
     cfg.cb_ctx = NULL;
     cfg.setting_timeout_s = 3600;
