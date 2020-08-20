@@ -1056,6 +1056,24 @@ esp_err_t audio_element_run(audio_element_handle_t el)
     return ret;
 }
 
+static inline esp_err_t __audio_element_term(audio_element_handle_t el, TickType_t ticks_to_wait)
+{
+    xEventGroupClearBits(el->state_event, TASK_DESTROYED_BIT);
+    if (audio_element_cmd_send(el, AEL_MSG_CMD_DESTROY) != ESP_OK) {
+        ESP_LOGE(TAG, "[%s] Element destroy CMD failed", el->tag);
+        return ESP_FAIL;
+    }
+    EventBits_t uxBits = xEventGroupWaitBits(el->state_event, TASK_DESTROYED_BIT, false, true, ticks_to_wait);
+    esp_err_t ret = ESP_FAIL;
+    if (uxBits & TASK_DESTROYED_BIT ) {
+        ESP_LOGD(TAG, "[%s] Element task destroyed", el->tag);
+        ret = ESP_OK;
+    } else {
+        ESP_LOGW(TAG, "[%s] Element task destroy timeout[%d]", el->tag, ticks_to_wait);
+    }
+    return ret;
+}
+
 esp_err_t audio_element_terminate(audio_element_handle_t el)
 {
     if (!el->task_run) {
@@ -1067,20 +1085,21 @@ esp_err_t audio_element_terminate(audio_element_handle_t el)
         el->is_running = false;
         return ESP_OK;
     }
-    xEventGroupClearBits(el->state_event, TASK_DESTROYED_BIT);
-    if (audio_element_cmd_send(el, AEL_MSG_CMD_DESTROY) != ESP_OK) {
-        ESP_LOGE(TAG, "[%s] Element destroy CMD failed", el->tag);
-        return ESP_FAIL;
+    return __audio_element_term(el, DEFAULT_MAX_WAIT_TIME);
+}
+
+esp_err_t audio_element_terminate_with_ticks(audio_element_handle_t el, TickType_t ticks_to_wait)
+{
+    if (!el->task_run) {
+        ESP_LOGW(TAG, "[%s] Element has not create when AUDIO_ELEMENT_TERMINATE, tick:%d", el->tag, ticks_to_wait);
+        return ESP_OK;
     }
-    EventBits_t uxBits = xEventGroupWaitBits(el->state_event, TASK_DESTROYED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
-    esp_err_t ret = ESP_FAIL;
-    if (uxBits & TASK_DESTROYED_BIT ) {
-        ESP_LOGD(TAG, "[%s] Element task destroyed", el->tag);
-        ret = ESP_OK;
-    } else {
-        ESP_LOGW(TAG, "[%s] Element task destroy timeout", el->tag);
+    if (el->task_stack <= 0) {
+        el->task_run = false;
+        el->is_running = false;
+        return ESP_OK;
     }
-    return ret;
+    return __audio_element_term(el, ticks_to_wait);
 }
 
 esp_err_t audio_element_pause(audio_element_handle_t el)

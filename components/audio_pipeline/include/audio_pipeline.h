@@ -131,6 +131,21 @@ esp_err_t audio_pipeline_run(audio_pipeline_handle_t pipeline);
 esp_err_t audio_pipeline_terminate(audio_pipeline_handle_t pipeline);
 
 /**
+ * @brief    Stop Audio Pipeline with specific ticks for timeout
+ *
+ *           With this function audio_pipeline will destroy tasks of all elements,
+ *           that have been linked using the linking functions.
+ *
+ * @param[in]  pipeline         The Audio Pipeline Handle
+ * @param[in]  ticks_to_wait    The maximum amount of time to block wait for element destroy
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_pipeline_terminate_with_ticks(audio_pipeline_handle_t pipeline, TickType_t ticks_to_wait);
+
+/**
  * @brief      This function will set all the elements to the `RUNNING` state and process the audio data as an inherent feature of audio_pipeline.
  *
  * @param[in]  pipeline   The Audio Pipeline Handle
@@ -177,6 +192,20 @@ esp_err_t audio_pipeline_stop(audio_pipeline_handle_t pipeline);
  *     - ESP_FAIL when any errors
  */
 esp_err_t audio_pipeline_wait_for_stop(audio_pipeline_handle_t pipeline);
+
+/**
+ * @brief      The `audio_pipeline_stop` function sends requests to the elements and exits.
+ *             But they need time to get rid of time-blocking tasks.
+ *             This function will wait `ticks_to_wait` until all the Elements in the pipeline actually stop
+ *
+ * @param[in]  pipeline         The Audio Pipeline Handle
+ * @param[in]  ticks_to_wait    The maximum amount of time to block wait for stop
+ *
+ * @return
+ *     - ESP_OK on success
+ *     - ESP_FAIL when any errors
+ */
+esp_err_t audio_pipeline_wait_for_stop_with_ticks(audio_pipeline_handle_t pipeline, TickType_t ticks_to_wait);
 
 /**
  * @brief      The audio_element added to audio_pipeline will be unconnected before it is called by this function.
