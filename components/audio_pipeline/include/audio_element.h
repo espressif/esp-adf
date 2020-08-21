@@ -326,6 +326,19 @@ esp_err_t audio_element_run(audio_element_handle_t el);
 esp_err_t audio_element_terminate(audio_element_handle_t el);
 
 /**
+ * @brief      Terminate Audio Element with specific ticks for timeout.
+ *             With this function, audio_element will exit the task function.
+ *             Note: this API only sends request. It does not actually terminate immediately when this function returns.
+ *
+ * @param[in]  el               The audio element handle
+ * @param[in]  ticks_to_wait    The maximum amount of time to blocking
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t audio_element_terminate_with_ticks(audio_element_handle_t el, TickType_t ticks_to_wait);
+
+/**
  * @brief      Request stop of the Audio Element.
  *             After receiving the stop request, the element will ignore the actions being performed
  *             (read/write, wait for the ringbuffer ...) and close the task, reset the state variables.

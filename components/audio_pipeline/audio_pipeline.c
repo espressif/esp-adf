@@ -382,6 +382,19 @@ esp_err_t audio_pipeline_terminate(audio_pipeline_handle_t pipeline)
     return ESP_OK;
 }
 
+esp_err_t audio_pipeline_terminate_with_ticks(audio_pipeline_handle_t pipeline, TickType_t ticks_to_wait)
+{
+    audio_element_item_t *el_item;
+    esp_err_t ret = ESP_OK;
+    ESP_LOGD(TAG, "Destroy audio_pipeline elements with ticks[%d]", ticks_to_wait);
+    STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
+        if (el_item->linked) {
+            ret |= audio_element_terminate_with_ticks(el_item->el, ticks_to_wait);
+        }
+    }
+    return ret;
+}
+
 esp_err_t audio_pipeline_stop(audio_pipeline_handle_t pipeline)
 {
     audio_element_item_t *el_item;
@@ -398,18 +411,18 @@ esp_err_t audio_pipeline_stop(audio_pipeline_handle_t pipeline)
     return ESP_OK;
 }
 
-esp_err_t audio_pipeline_wait_for_stop(audio_pipeline_handle_t pipeline)
+static inline esp_err_t __audio_pipeline_wait_stop(audio_pipeline_handle_t pipeline, TickType_t ticks_to_wait)
 {
     audio_element_item_t *el_item;
-    if (pipeline->state != AEL_STATE_RUNNING) {
-        ESP_LOGW(TAG, "Without wait stop, st:%d", pipeline->state);
-        return ESP_FAIL;
-    }
-    ESP_LOGD(TAG, "audio_pipeline_wait_for_stop - IN");
     esp_err_t ret = ESP_OK;
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
-            ret |= audio_element_wait_for_stop_ms(el_item->el, portMAX_DELAY);
+            esp_err_t res = audio_element_wait_for_stop_ms(el_item->el, ticks_to_wait);
+            if (res != ESP_OK) {
+                ESP_LOGW(TAG, "Wait stop timeout, el:%p, tag:%s",
+                         el_item->el, audio_element_get_tag(el_item->el) == NULL ? "NULL" : audio_element_get_tag(el_item->el));
+            }
+            ret |= res;
         }
     }
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
@@ -420,7 +433,32 @@ esp_err_t audio_pipeline_wait_for_stop(audio_pipeline_handle_t pipeline)
         }
     }
     audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
-    ESP_LOGD(TAG, "audio_pipeline_wait_for_stop - OUT");
+    return ret;
+}
+
+esp_err_t audio_pipeline_wait_for_stop(audio_pipeline_handle_t pipeline)
+{
+    if (pipeline->state != AEL_STATE_RUNNING) {
+        ESP_LOGW(TAG, "Without wait stop, st:%d", pipeline->state);
+        return ESP_FAIL;
+    }
+
+    ESP_LOGD(TAG, "%s - IN", __func__);
+    esp_err_t ret = __audio_pipeline_wait_stop(pipeline, portMAX_DELAY);
+    ESP_LOGD(TAG, "%s - OUT", __func__);
+    return ret;
+}
+
+esp_err_t audio_pipeline_wait_for_stop_with_ticks(audio_pipeline_handle_t pipeline, TickType_t ticks_to_wait)
+{
+    if (pipeline->state != AEL_STATE_RUNNING) {
+        ESP_LOGW(TAG, "Without wait stop, st:%d", pipeline->state);
+        return ESP_FAIL;
+    }
+
+    ESP_LOGD(TAG, "%s - IN", __func__);
+    esp_err_t ret = __audio_pipeline_wait_stop(pipeline, ticks_to_wait);
+    ESP_LOGD(TAG, "%s - OUT", __func__);
     return ret;
 }
 
