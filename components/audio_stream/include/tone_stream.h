@@ -52,8 +52,8 @@ typedef struct
 #define TONE_STREAM_TASK_CORE       (0)
 #define TONE_STREAM_TASK_PRIO       (4)
 #define TONE_STREAM_RINGBUFFER_SIZE (2 * 1024)
-#define TONE_STREAM_EXT_STACK       (true)
-#define TONE_STREAM_USE_DELEGATE    (true)
+#define TONE_STREAM_EXT_STACK       (false)
+#define TONE_STREAM_USE_DELEGATE    (false)
 
 #define TONE_STREAM_CFG_DEFAULT()               \
 {                                               \
