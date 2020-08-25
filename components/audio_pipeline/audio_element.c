@@ -469,6 +469,8 @@ void audio_element_task(void *pv)
     el->stopping = false;
     el->task_run = false;
     ESP_LOGD(TAG, "[%s-%p] el task deleted,%d", el->tag, el, uxTaskGetStackHighWaterMark(NULL));
+    xEventGroupSetBits(el->state_event, STOPPED_BIT);
+    xEventGroupSetBits(el->state_event, RESUMED_BIT);
     xEventGroupSetBits(el->state_event, TASK_DESTROYED_BIT);
     audio_thread_delete_task(&el->audio_thread);
 }
@@ -619,12 +621,15 @@ esp_err_t audio_element_report_codec_fmt(audio_element_handle_t el)
 
 esp_err_t audio_element_report_status(audio_element_handle_t el, audio_element_status_t status)
 {
-    audio_event_iface_msg_t msg = { 0 };
-    msg.cmd = AEL_MSG_CMD_REPORT_STATUS;
-    msg.data = (void *)status;
-    msg.data_len = sizeof(status);
-    ESP_LOGD(TAG, "REPORT_STATUS,[%s]evt out cmd = %d,status:%d", el->tag, msg.cmd, status);
-    return audio_element_msg_sendout(el, &msg);
+    if (el) {
+        audio_event_iface_msg_t msg = { 0 };
+        msg.cmd = AEL_MSG_CMD_REPORT_STATUS;
+        msg.data = (void *)status;
+        msg.data_len = sizeof(status);
+        ESP_LOGD(TAG, "REPORT_STATUS,[%s]evt out cmd = %d,status:%d", el->tag, msg.cmd, status);
+        return audio_element_msg_sendout(el, &msg);
+    }
+    return ESP_FAIL;
 }
 
 esp_err_t audio_element_report_pos(audio_element_handle_t el)
@@ -854,7 +859,7 @@ esp_err_t audio_element_wait_for_stop(audio_element_handle_t el)
         return ESP_FAIL;
     }
     EventBits_t uxBits = xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
-    esp_err_t ret = ESP_FAIL;
+    esp_err_t ret = ESP_ERR_TIMEOUT;
     if (uxBits & STOPPED_BIT) {
         ret = ESP_OK;
     }
@@ -1225,7 +1230,7 @@ esp_err_t audio_element_wait_for_stop_ms(audio_element_handle_t el, TickType_t t
         return ESP_FAIL;
     }
     EventBits_t uxBits = xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, ticks_to_wait);
-    esp_err_t ret = ESP_FAIL;
+    esp_err_t ret = ESP_ERR_TIMEOUT;
     if (uxBits & STOPPED_BIT) {
         ret = ESP_OK;
     }
