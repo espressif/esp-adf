@@ -44,6 +44,7 @@ typedef struct {
     int                     task_core;      /*!< Task running in core (0 or 1) */
     int                     task_prio;      /*!< Task priority (based on freeRTOS priority) */
     bool                    ext_stack;      /*!< Allocate stack on extern ram */
+    bool                    write_header;   /*!< Choose to write amrnb/amrwb header in fatfs whether or not (true or false, true means choose to write amrnb header) */
 } fatfs_stream_cfg_t;
 
 
@@ -60,7 +61,8 @@ typedef struct {
     .task_stack = FATFS_STREAM_TASK_STACK,       \
     .task_core = FATFS_STREAM_TASK_CORE,         \
     .task_prio = FATFS_STREAM_TASK_PRIO,         \
-    .ext_stack = false                           \
+    .ext_stack = false,                          \
+    .write_header = true,                        \
 }
 
 /**

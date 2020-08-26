@@ -60,6 +60,7 @@ typedef struct fatfs_stream {
     bool is_open;
     FILE *file;
     wr_stream_type_t w_type;
+    bool write_header;
 } fatfs_stream_t;
 
 
@@ -126,10 +127,10 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
             wav_header_t info = {0};
             fwrite(&info, 1, sizeof(wav_header_t), fatfs->file);
             fsync(fileno(fatfs->file));
-        } else if (fatfs->file && (STREAM_TYPE_AMR == fatfs->w_type)) {
+        } else if (fatfs->file && (STREAM_TYPE_AMR == fatfs->w_type) && (fatfs->write_header == true)) {
             fwrite("#!AMR\n", 1, 6, fatfs->file);
             fsync(fileno(fatfs->file));
-        } else if (fatfs->file && (STREAM_TYPE_AMRWB == fatfs->w_type)) {
+        } else if (fatfs->file && (STREAM_TYPE_AMRWB == fatfs->w_type) && (fatfs->write_header == true)) {
             fwrite("#!AMR-WB\n", 1, 9, fatfs->file);
             fsync(fileno(fatfs->file));
         }
@@ -257,6 +258,7 @@ audio_element_handle_t fatfs_stream_init(fatfs_stream_cfg_t *config)
 
     cfg.tag = "file";
     fatfs->type = config->type;
+    fatfs->write_header = config->write_header;
 
     if (config->type == AUDIO_STREAM_WRITER) {
         cfg.write = _fatfs_write;
