@@ -60,6 +60,7 @@ typedef struct spiffs_stream {
     bool is_open;
     FILE *file;
     wr_stream_type_t w_type;
+    bool write_header;
 } spiffs_stream_t;
 
 static wr_stream_type_t get_type(const char *str)
@@ -120,10 +121,10 @@ static esp_err_t _spiffs_open(audio_element_handle_t self)
             wav_header_t info = {0};
             fwrite(&info, 1, sizeof(wav_header_t), spiffs->file);
             fsync(fileno(spiffs->file));
-        } else if (spiffs->file && (STREAM_TYPE_AMR == spiffs->w_type)) {
+        } else if (spiffs->file && (STREAM_TYPE_AMR == spiffs->w_type) && (spiffs->write_header == true)) {
             fwrite("#!AMR\n", 1, 6, spiffs->file);
             fsync(fileno(spiffs->file));
-        } else if (spiffs->file && (STREAM_TYPE_AMRWB == spiffs->w_type)) {
+        } else if (spiffs->file && (STREAM_TYPE_AMRWB == spiffs->w_type) && (spiffs->write_header == true)) {
             fwrite("#!AMR-WB\n", 1, 9, spiffs->file);
             fsync(fileno(spiffs->file));
         }
@@ -251,6 +252,7 @@ audio_element_handle_t spiffs_stream_init(spiffs_stream_cfg_t *config)
 
     cfg.tag = "spiffs";
     spiffs->type = config->type;
+    spiffs->write_header = config->write_header;
 
     if (config->type == AUDIO_STREAM_WRITER) {
         cfg.write = _spiffs_write;

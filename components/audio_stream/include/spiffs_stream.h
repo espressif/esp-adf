@@ -43,6 +43,7 @@ typedef struct {
     int                     task_stack;     /*!< Task stack size */
     int                     task_core;      /*!< Task running in core (0 or 1) */
     int                     task_prio;      /*!< Task priority (based on freeRTOS priority) */
+    bool                    write_header;   /*!< Choose to write amrnb/armwb header in spiffs whether or not (true or false, true means choose to write amrnb header) */
 } spiffs_stream_cfg_t;
 
 #define SPIFFS_STREAM_BUF_SIZE            (2048)
@@ -58,6 +59,7 @@ typedef struct {
     .task_stack = SPIFFS_STREAM_TASK_STACK,       \
     .task_core = SPIFFS_STREAM_TASK_CORE,         \
     .task_prio = SPIFFS_STREAM_TASK_PRIO,         \
+    .write_header = true,                         \
 }
 
 /**

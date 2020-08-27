@@ -359,8 +359,9 @@ esp_err_t audio_element_stop(audio_element_handle_t el);
  * @param[in]  el    The audio element handle
  *
  * @return
- *     - ESP_OK
- *     - ESP_FAIL
+ *     - ESP_OK, Success
+ *     - ESP_FAIL, The state is not AEL_STATE_RUNNING
+ *     - ESP_ERR_TIMEOUT, Timeout
  */
 esp_err_t audio_element_wait_for_stop(audio_element_handle_t el);
 
@@ -373,7 +374,8 @@ esp_err_t audio_element_wait_for_stop(audio_element_handle_t el);
  *
  * @return
  *     - ESP_OK, Success
- *     - ESP_FAIL, Timeout
+ *     - ESP_FAIL, The state is not AEL_STATE_RUNNING
+ *     - ESP_ERR_TIMEOUT, Timeout
  */
 esp_err_t audio_element_wait_for_stop_ms(audio_element_handle_t el, TickType_t ticks_to_wait);
 
