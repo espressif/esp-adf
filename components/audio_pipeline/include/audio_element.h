@@ -714,6 +714,28 @@ esp_err_t audio_element_set_read_cb(audio_element_handle_t el, stream_func fn, v
 esp_err_t audio_element_set_write_cb(audio_element_handle_t el, stream_func fn, void *context);
 
 /**
+ * @brief     Get callback write function that register to the element
+ *
+ * @param[in]  el        The audio element
+ *
+ * @return
+ *     - Callback write function pointer
+ *     - NULL     Failed
+ */
+stream_func audio_element_get_write_cb(audio_element_handle_t el);
+
+/**
+ * @brief     Get callback read function that register to the element
+ *
+ * @param[in]  el        The audio element
+ *
+ * @return
+ *     - Callback read function pointer
+ *     - NULL     Failed
+ */
+stream_func audio_element_get_read_cb(audio_element_handle_t el);
+
+/**
  * @brief      Get External queue of Emitter.
  *             We can read any event that has been send out of Element from this `QueueHandle_t`.
  *
