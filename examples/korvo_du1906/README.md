@@ -40,6 +40,7 @@ Flash address | Bin Path
 ---|---
 0x1000 | bootloader.bin
 0x8000 | partitions.bin
+0xf000 | phy_init_data.bin
 0x10000 | app.bin
 0x510000 | DU1906_slave_v1.4.8.E.bin
 0x790000 | profile.bin
@@ -57,6 +58,7 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect \
 0x1000   ./firmware/bootloader.bin \
 0x8000   ./firmware/partitions.bin \
+0xf000   ./firmware/phy_init_data.bin \
 0x10000  ./firmware/app.bin \
 0x510000 ./firmware/DU1906_slave_v1.4.8.E.bin \
 0x790000 ./profiles/profile.bin \
@@ -585,4 +587,121 @@ I (6112) HTTP_TASK: 57 bytes read
 I (6117) AUTH_TASK: recv body: {"error_code":1,"err_msg":"fc:xx, pk:xx not registered."}
 E (6118) AUTH_TASK: auth failed, retry!
 ==> generate_auth_pam
+```
+
+### Missing `phy_init_data.bin`
+
+```c
+I (64) boot: Chip Revision: 3
+I (35) boot: ESP-IDF v3.3.1-203-g0c1859a5a 2nd stage bootloader
+I (35) boot: compile time 21:43:15
+I (35) boot: Enabling RNG early entropy source...
+I (41) qio_mode: Enabling default flash chip QIO
+I (46) boot: SPI Speed      : 80MHz
+I (50) boot: SPI Mode       : QIO
+I (54) boot: SPI Flash Size : 8MB
+I (58) boot: Partition Table:
+I (62) boot: ## Label            Usage          Type ST Offset   Length
+I (69) boot:  0 nvs              WiFi data        01 02 00009000 00004000
+I (76) boot:  1 otadata          OTA data         01 00 0000d000 00002000
+I (84) boot:  2 phy_init         RF data          01 01 0000f000 00001000
+I (91) boot:  3 ota_0            OTA app          00 10 00010000 00280000
+I (99) boot:  4 ota_1            OTA app          00 11 00290000 00280000
+I (106) boot:  5 dsp_bin          Unknown data     01 24 00510000 00280000
+I (114) boot:  6 profile          Unknown data     01 29 00790000 00001000
+I (121) boot:  7 flash_tone       Unknown data     01 27 00791000 00060000
+I (129) boot: End of partition table
+I (133) esp_image: segment 0: paddr=0x00010020 vaddr=0x3f400020 size=0xaabbc (699324) map
+I (318) esp_image: segment 1: paddr=0x000babe4 vaddr=0x3ffbdb60 size=0x0542c ( 21548) load
+I (325) esp_image: segment 2: paddr=0x000c0018 vaddr=0x400d0018 size=0x1aaf90 (1748880) map
+0x400d0018: _stext at ??:?
+
+I (765) esp_image: segment 3: paddr=0x0026afb0 vaddr=0x3ffc2f8c size=0x012c8 (  4808) load
+I (767) esp_image: segment 4: paddr=0x0026c280 vaddr=0x40080000 size=0x00400 (  1024) load
+0x40080000: _WindowOverflow4 at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/freertos/xtensa_vectors.S:1779
+
+I (772) esp_image: segment 5: paddr=0x0026c688 vaddr=0x40080400 size=0x1d064 (118884) load
+I (836) boot: Loaded app from partition at offset 0x10000
+I (836) boot: Disabling RNG early entropy source...
+I (836) psram: This chip is ESP32-D0WD
+I (841) spiram: Found 64MBit SPI RAM device
+I (845) spiram: SPI RAM mode: flash 80m sram 80m
+I (851) spiram: PSRAM initialized, cache is in low/high (2-core) mode.
+I (858) cpu_start: Pro cpu up.
+I (862) cpu_start: Application information:
+I (866) cpu_start: Project name:     korvo_du1906
+I (872) cpu_start: App version:      v1.2.0
+I (877) cpu_start: ELF file SHA256:  36613ad813caa06e...
+I (883) cpu_start: ESP-IDF:          v3.3.1-203-g0c1859a5a
+I (889) cpu_start: Starting app cpu, entry point is 0x400818dc
+0x400818dc: esp_timer_get_time at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/esp32/esp_timer.c:508
+
+I (0) cpu_start: App cpu up.
+I (1378) spiram: SPI SRAM memory test OK
+I (1380) heap_init: Initializing. RAM available for dynamic allocation:
+I (1380) heap_init: At 3FFAFF10 len 000000F0 (0 KiB): DRAM
+I (1385) heap_init: At 3FFB6388 len 00001C78 (7 KiB): DRAM
+I (1391) heap_init: At 3FFB9A20 len 00004108 (16 KiB): DRAM
+I (1397) heap_init: At 3FFBDB5C len 00000004 (0 KiB): DRAM
+I (1403) heap_init: At 3FFC7C18 len 000183E8 (96 KiB): DRAM
+I (1409) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
+I (1416) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
+I (1422) heap_init: At 4009D464 len 00002B9C (10 KiB): IRAM
+585021cb 6e9b2a58 054d0131 cdfeb46a daac6607 a765f41b 4947abed 10cb68c3
+45fb9cc7 f7f9e6df 90811a4b edbec097 14ba7699 bb3a44c2 d4cf6eb0 f7aa68f1
+9e2078ea 2eb1c816 302233d7 3c982e6c 85a12eb1 ffeb0c67 e9739697 a1d7c241
+61b5e39f 7e6b701c 7b84d8dd a5f59102 9da2f637 6f7b076c c42f89ff bff955d4
+8ff99e41 8e7acae6 0c29f5b4 b4effe17 7104f46e 7775368a 23859f18 358e205f
+a66ce838 c9497663 eeb0ccd2 f9f3425a d2e3c5c9 9796ca48 4346d69a 799624dd
+d20d4493 8e6f45a3 5de9cf8b f49f982c 2730e83a 98df83a9 732cd3d5 b73f5f80
+2e364c3b aef67184 c5b0d6b1 421a2d3d 74309871 76f1911b 7808f1ed d2ff1118
+I (1479) cpu_start: Pro cpu start user code
+I (1484) spiram: Adding pool of 4060K of external SPI memory to heap allocator
+I (163) esp_core_dump_common: Init core dump to UART
+E (168) esp_core_dump_common: No core dump partition found!
+I (168) cpu_start: Starting scheduler on PRO CPU.
+I (0) cpu_start: Starting scheduler on APP CPU.
+I (179) spiram: Reserving pool of 18K of internal memory for DMA/internal allocations
+I (208) AUDIO_THREAD: The esp_periph task allocate stack on external memory
+E (209) PERIPH_SDCARD: no sdcard detect
+E (2709) AUDIO_BOARD: Sdcard mount failed
+I (2712) wifi: wifi driver task: 3ffd1a08, prio:23, stack:3584, core=0
+I (2712) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
+I (2718) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
+I (2743) wifi: wifi firmware version: 0df1a2a
+I (2743) wifi: config NVS flash: enabled
+I (2743) wifi: config nano formating: disabled
+I (2744) wifi: Init dynamic tx buffer num: 32
+I (2748) wifi: Init data frame dynamic rx buffer num: 512
+I (2753) wifi: Init management frame dynamic rx buffer num: 512
+I (2759) wifi: Init management short buffer num: 32
+I (2763) wifi: Init static tx buffer num: 16
+I (2768) wifi: Init static rx buffer size: 1600
+I (2772) wifi: Init static rx buffer num: 16
+I (2776) wifi: Init dynamic rx buffer num: 512
+I (2780) wifi: init cache tx buffer number 32
+E (2785) phy_init: failed to validate PHY data partition
+E (2790) phy_init: failed to obtain PHY init data
+abort() was called at PC 0x400d2117 on core 0
+0x400d2117: esp_modem_sleep_deregister at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/esp32/phy_init.c:570
+
+
+ELF file SHA256: 
+
+Backtrace: 0x40092d4b:0x3ffd1840 0x40092fe1:0x3ffd1860 0x400d2117:0x3ffd1880 0x400dfc1c:0x3ffd18b0 0x400dfd0d:0x3ffd18e0 0x400e000a:0x3ffd1910 0x400dbdd2:0x3ffd1940 0x400f77e5:0x3ffd1960
+0x40092d4b: rtc_clk_cpu_freq_to_pll_mhz at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/soc/esp32/rtc_clk.c:517
+
+0x40092fe1: rtc_clk_apll_enable at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/soc/esp32/rtc_clk.c:517
+
+0x400d2117: esp_modem_sleep_deregister at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/esp32/phy_init.c:570
+
+0x400dfc1c: ieee80211_output_process at ??:?
+
+0x400dfd0d: ieee80211_output_process at ??:?
+
+0x400e000a: ieee80211_output_process at ??:?
+
+0x400dbdd2: wifi_set_config_process at ??:?
+
+0x400f77e5: wpa_remove_ptk at ??:?
 ```
