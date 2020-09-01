@@ -162,6 +162,9 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
 static bool console_exec(esp_periph_handle_t self, char *cmd, int argc, char *argv[])
 {
     periph_console_handle_t console = (periph_console_handle_t)esp_periph_get_data(self);
+    if (cmd == NULL) {
+        return false;
+    }
     int i;
     for (i = 0; i < console->command_num; i++) {
         if (strcasecmp(cmd, console->commands[i].cmd) == 0) {
