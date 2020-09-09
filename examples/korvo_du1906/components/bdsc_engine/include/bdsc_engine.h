@@ -253,7 +253,6 @@ void bdsc_engine_net_connected_cb();
  *
  * @return
  */
-void bdsc_engine_set_connect_flag(bool connected);
 
 int bdsc_engine_get_internal_state(bdsc_engine_handle_t client);
 
