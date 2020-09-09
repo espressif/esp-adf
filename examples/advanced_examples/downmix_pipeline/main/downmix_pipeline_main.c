@@ -47,7 +47,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[2.0] Start and wait for SDCARD to mount");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
-    audio_board_sdcard_init(set);
+    audio_board_sdcard_init(set, SD_MODE_1_LINE);
     audio_board_key_init(set);
 
     ESP_LOGI(TAG, "[3.0] Create pipeline_mix to mix");

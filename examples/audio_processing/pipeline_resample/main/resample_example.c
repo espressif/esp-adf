@@ -256,7 +256,7 @@ void app_main(void)
     set = esp_periph_set_init(&periph_cfg);
 
     // Initialize SD Card peripheral
-    audio_board_sdcard_init(set);
+    audio_board_sdcard_init(set, SD_MODE_1_LINE);
 
     // Initialize Button peripheral
     audio_board_key_init(set);

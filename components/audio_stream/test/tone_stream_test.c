@@ -91,7 +91,7 @@ TEST_CASE("tone stream read test", "esp-adf-stream")
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     TEST_ASSERT_NOT_NULL(set);
 
-    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set, SD_MODE_1_LINE));
 
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     pipeline = audio_pipeline_init(&pipeline_cfg);

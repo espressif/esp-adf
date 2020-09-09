@@ -26,6 +26,7 @@
 #define _ESP_SDCARD_H_
 
 #include "audio_error.h"
+#include "periph_sdcard.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,7 +55,7 @@ esp_err_t sdcard_init(int gpio, void (*detect_intr_handler)(void *), void *isr_c
   *      - ESP_FAIL if partition can not be mounted
   *      - other error codes from SDMMC or SPI drivers, SDMMC protocol, or FATFS drivers
   */
-esp_err_t sdcard_mount(const char* base_path);
+esp_err_t sdcard_mount(const char* base_path, periph_sdcard_mode_t mode);
 
 /**
  * @brief Unmount FAT filesystem and release resources acquired using esp_vfs_fat_sdmmc_mount

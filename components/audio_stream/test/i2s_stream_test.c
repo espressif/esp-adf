@@ -112,7 +112,7 @@ TEST_CASE("i2s_stream alc test", "[esp-adf-stream]")
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     TEST_ASSERT_NOT_NULL(set);
 
-    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set, SD_MODE_1_LINE));
 
     audio_board_handle_t board_handle = audio_board_init();
     TEST_ASSERT_EQUAL(ESP_OK, audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START));

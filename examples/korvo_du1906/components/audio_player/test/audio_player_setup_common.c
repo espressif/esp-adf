@@ -130,7 +130,7 @@ void setup_sdcard()
             esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
             set = esp_periph_set_init(&periph_cfg);
         }
-        audio_board_sdcard_init(set);
+        audio_board_sdcard_init(set, SD_MODE_1_LINE);
         sdcard_handle = esp_periph_set_get_by_id(set, PERIPH_ID_SDCARD);
     }
 }
