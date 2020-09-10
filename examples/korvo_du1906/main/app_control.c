@@ -124,7 +124,6 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
             blufi_set_sta_connected_flag(h, false);
 #endif
             if (evt->type == INPUT_KEY_SERVICE_ACTION_PRESS) {
-                bdsc_engine_set_connect_flag(false);
                 if (wifi_setting_flag == false) {
                     audio_player_state_get(&st);
                     if (((int)st.status == AUDIO_STATUS_RUNNING)) {
