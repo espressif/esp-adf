@@ -852,6 +852,24 @@ esp_err_t audio_element_set_write_cb(audio_element_handle_t el, stream_func fn, 
     return ESP_FAIL;
 }
 
+stream_func audio_element_get_write_cb(audio_element_handle_t el)
+{
+    if (el && el->write_type == IO_TYPE_CB) {
+        return el->out.write_cb.cb;
+    }
+    ESP_LOGE(TAG, "Fail to get write callback");
+    return NULL;
+}
+
+stream_func audio_element_get_read_cb(audio_element_handle_t el)
+{
+    if (el && el->read_type == IO_TYPE_CB) {
+        return el->in.read_cb.cb;
+    }
+    ESP_LOGE(TAG, "Fail to get read callback");
+    return NULL;
+}
+
 esp_err_t audio_element_wait_for_stop(audio_element_handle_t el)
 {
     if (el->is_running == false) {
