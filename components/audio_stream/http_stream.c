@@ -194,9 +194,11 @@ static char *_client_read_line(http_stream_t *http)
             if (_get_line_in_buffer(http, &line)) {
                 return line;
             }
+        } else {
+            ESP_LOGD(TAG, "Finish reading data, rlen:%d", rlen);
+            line = NULL;
         }
     }
-
     return line;
 }
 
