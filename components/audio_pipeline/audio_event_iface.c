@@ -104,8 +104,10 @@ static esp_err_t audio_event_iface_cleanup_listener(audio_event_iface_handle_t l
     audio_event_iface_item_t *item, *tmp;
     audio_event_iface_discard(listen);
     STAILQ_FOREACH_SAFE(item, &listen->listening_queues, next, tmp) {
+        audio_event_iface_msg_t dummy;
+        while (xQueueReceive(item->queue, &dummy, 0) == pdTRUE);
         if (listen->queue_set && xQueueRemoveFromSet(item->queue, listen->queue_set) != pdPASS) {
-            ESP_LOGE(TAG, "Error remove listener");
+            ESP_LOGE(TAG, "Error remove listener,%p", item->queue);
             return ESP_FAIL;
         }
     }
@@ -241,8 +243,8 @@ esp_err_t audio_event_iface_waiting_cmd_msg(audio_event_iface_handle_t evt)
 {
     audio_event_iface_msg_t msg;
     if (evt->internal_queue && (xQueueReceive(evt->internal_queue, (void *)&msg, evt->wait_time) == pdTRUE)) {
-        if (evt->on_cmd && evt->on_cmd((void *)&msg, evt->context) != ESP_OK) {
-            return ESP_FAIL;
+        if (evt->on_cmd) {
+            return evt->on_cmd((void *)&msg, evt->context);
         }
     }
     return ESP_OK;
