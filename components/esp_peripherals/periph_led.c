@@ -29,6 +29,7 @@
 #include "audio_sys.h"
 #include "periph_led.h"
 #include "esp_peripherals.h"
+#include "audio_mutex.h"
 
 #define MAX_LED_CHANNEL (8)
 
@@ -57,6 +58,7 @@ typedef struct periph_led {
     ledc_timer_bit_t led_duty_resolution;
     ledc_timer_t     led_timer_num;
     uint32_t         led_freq_hz;
+    QueueHandle_t    led_mutex;
     periph_led_channel_t   channels[MAX_LED_CHANNEL];
 } periph_led_t;
 
@@ -93,6 +95,7 @@ static esp_err_t _led_destroy(esp_periph_handle_t self)
     }
     esp_periph_stop_timer(self);
     ledc_fade_func_uninstall();
+    mutex_destroy(periph_led->led_mutex);
     audio_free(periph_led);
     return ESP_OK;
 }
@@ -107,6 +110,7 @@ esp_periph_handle_t periph_led_init(periph_led_cfg_t *config)
     periph_led->led_duty_resolution = config->led_duty_resolution;
     periph_led->led_timer_num       = config->led_timer_num;
     periph_led->led_freq_hz         = config->led_freq_hz;
+    periph_led->led_mutex           = mutex_create();
     if (periph_led->led_freq_hz == 0) {
         periph_led->led_freq_hz = 5000;
     }
@@ -137,6 +141,7 @@ static void led_timer_handler(xTimerHandle tmr)
     esp_periph_handle_t periph = (esp_periph_handle_t) pvTimerGetTimerID(tmr);
 
     periph_led_t *periph_led = esp_periph_get_data(periph);
+    mutex_lock(periph_led->led_mutex);
     for (int i = 0; i < MAX_LED_CHANNEL; i++) {
         periph_led_channel_t *ch = &periph_led->channels[i];
         if (ch->pin < 0 || ch->stop == true) {
@@ -184,6 +189,7 @@ static void led_timer_handler(xTimerHandle tmr)
             ch->tick = audio_sys_get_time_ms();
         }
     }
+    mutex_unlock(periph_led->led_mutex);
 }
 
 esp_err_t periph_led_blink(esp_periph_handle_t periph, int gpio_num, int time_on_ms, int time_off_ms, bool fade, int loop, periph_led_idle_level_t level)
@@ -228,7 +234,10 @@ esp_err_t periph_led_stop(esp_periph_handle_t periph, int gpio_num)
         return ESP_OK;
     }
 
-    ledc_stop(periph_led->led_speed_mode, ch->index, ch->level);
+    mutex_lock(periph_led->led_mutex);
     ch->stop = true;
+    ledc_stop(periph_led->led_speed_mode, ch->index, ch->level);
+    mutex_unlock(periph_led->led_mutex);
+
     return ESP_OK;
 }

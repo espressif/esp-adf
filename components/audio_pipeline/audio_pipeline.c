@@ -309,7 +309,8 @@ esp_err_t audio_pipeline_resume(audio_pipeline_handle_t pipeline)
     bool wait_first_el = true;
     esp_err_t ret = ESP_OK;
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
-        ESP_LOGD(TAG, "resume,linked:%d, state:%d,[%p]", el_item->linked, audio_element_get_state(el_item->el), el_item->el);
+        ESP_LOGD(TAG, "resume,linked:%d, state:%d,[%s-%p]", el_item->linked,
+                 audio_element_get_state(el_item->el), audio_element_get_tag(el_item->el), el_item->el);
         if (false == el_item->linked) {
             continue;
         }
@@ -421,15 +422,10 @@ static inline esp_err_t __audio_pipeline_wait_stop(audio_pipeline_handle_t pipel
             if (res == ESP_ERR_TIMEOUT) {
                 ESP_LOGW(TAG, "Wait stop timeout, el:%p, tag:%s",
                          el_item->el, audio_element_get_tag(el_item->el) == NULL ? "NULL" : audio_element_get_tag(el_item->el));
+            } else {
+                audio_element_reset_state(el_item->el);
             }
             ret |= res;
-        }
-    }
-    STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
-        if (el_item->linked) {
-            audio_element_reset_input_ringbuf(el_item->el);
-            audio_element_reset_output_ringbuf(el_item->el);
-            audio_element_reset_state(el_item->el);
         }
     }
     audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
@@ -539,7 +535,7 @@ esp_err_t audio_pipeline_unlink(audio_pipeline_handle_t pipeline)
         }
     }
     STAILQ_FOREACH_SAFE(rb_item, &pipeline->rb_list, next, tmp) {
-        ESP_LOGD(TAG, "audio_pipeline_unlink, RB, %p,", rb_item->rb);
+        ESP_LOGD(TAG, "audio_pipeline_unlink, RB:%p,host_el:%p", rb_item->rb, rb_item->host_el);
         STAILQ_REMOVE(&pipeline->rb_list, rb_item, ringbuf_item, next);
         rb_destroy(rb_item->rb);
         rb_item->linked = false;
@@ -834,7 +830,8 @@ esp_err_t audio_pipeline_breakup_elements(audio_pipeline_handle_t pipeline, audi
                         rb_item->kept_ctx = true;
                         ESP_LOGD(TAG, "found kept_ctx_el:%p and ringbuf:%p", el_item->el, rb_item->rb);
                     } else {
-                        ESP_LOGW(TAG, "found kept_ctx_el and ringbuf, but not set kept");
+                        ESP_LOGW(TAG, "found kept_ctx_el and ringbuf, but not set kept, el:%p, rb:%p", el_item->el, rb_item->rb);
+                        audio_element_set_output_ringbuf(el_item->el, NULL);
                     }
                     kept = false;
                     audio_element_set_input_ringbuf(el_item->el, NULL);

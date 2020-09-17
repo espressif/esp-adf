@@ -134,7 +134,10 @@ int rb_bytes_available(ringbuf_handle_t rb)
 
 int rb_bytes_filled(ringbuf_handle_t rb)
 {
-    return rb->fill_cnt;
+    if (rb) {
+        return rb->fill_cnt;
+    }
+    return ESP_FAIL;
 }
 
 static void rb_release(SemaphoreHandle_t handle)

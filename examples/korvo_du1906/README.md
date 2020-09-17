@@ -42,9 +42,9 @@ Flash address | Bin Path
 0x8000 | partitions.bin
 0xf000 | phy_init_data.bin
 0x10000 | app.bin
-0x510000 | DU1906_slave_v1.4.8.E.bin
-0x790000 | profile.bin
-0x791000 | audio_tone.bin
+0x570000 | DU1906_slave_v1.4.8.E.bin
+0x7d9000 | audio_tone.bin
+0x7FF000 | profile.bin
 
 ### Download firmware
 
@@ -60,13 +60,13 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 0x8000   ./firmware/partitions.bin \
 0xf000   ./firmware/phy_init_data.bin \
 0x10000  ./firmware/app.bin \
-0x510000 ./firmware/DU1906_slave_v1.4.8.E.bin \
-0x790000 ./profiles/profile.bin \
-0x791000 ./tone/audio_tone.bin
+0x570000 ./firmware/DU1906_slave_v1.4.8.E.bin \
+0x7d9000 ./tone/audio_tone.bin \
+0x7FF000 ./profiles/profile.bin
 ```
 #### Windows operating system
 
-- **step 1:** [Download the firmware download tool](https://www.espressif.com/sites/default/files/tools/flash_download_tool_v3.8.5_0.zip) and unzip the compressed package, then run the executable file with ".exe" suffix.
+- **step 1:** [Download the Flash Download Tool](https://www.espressif.com/en/support/download/other-tools) and unzip the compressed package, then run the executable file with ".exe" suffix.
 - **step 2:** Choose download mode (Developer Mode)
 
     <img src="./docs/pictures/tool_choose_mode.jpg" height="320" width="480" alt="Tool choose mode">
@@ -195,9 +195,9 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 --port PORT --baud 921600 \
 --before default_reset \
 --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect \
-0x510000 ./firmware/DU1906_slave_v1.4.8.E.bin \
-0x790000 ./profiles/profile.bin \
-0x791000 ./tone/audio_tone.bin
+0x570000 ./firmware/DU1906_slave_v1.4.8.E.bin \
+0x7d9000 ./tone/audio_tone.bin \
+0x7FF000 ./profiles/profile.bin
 ```
 
 The firmware downloading flash address refer to above table in jumpstart part.
@@ -686,7 +686,7 @@ abort() was called at PC 0x400d2117 on core 0
 0x400d2117: esp_modem_sleep_deregister at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/esp32/phy_init.c:570
 
 
-ELF file SHA256: 
+ELF file SHA256:
 
 Backtrace: 0x40092d4b:0x3ffd1840 0x40092fe1:0x3ffd1860 0x400d2117:0x3ffd1880 0x400dfc1c:0x3ffd18b0 0x400dfd0d:0x3ffd18e0 0x400e000a:0x3ffd1910 0x400dbdd2:0x3ffd1940 0x400f77e5:0x3ffd1960
 0x40092d4b: rtc_clk_cpu_freq_to_pll_mhz at /home/donglianghao/esp/esp-adf-dlh/esp-idf/components/soc/esp32/rtc_clk.c:517

@@ -194,9 +194,11 @@ static char *_client_read_line(http_stream_t *http)
             if (_get_line_in_buffer(http, &line)) {
                 return line;
             }
+        } else {
+            ESP_LOGD(TAG, "Finish reading data, rlen:%d", rlen);
+            line = NULL;
         }
     }
-
     return line;
 }
 
@@ -488,14 +490,14 @@ static esp_err_t _http_close(audio_element_handle_t self)
         http->is_variant_playlist = false;
         http->is_playlist_resolved = false;
     }
+    if (AEL_STATE_PAUSED != audio_element_get_state(self) && (errno == 0)) {
+        audio_element_report_pos(self);
+        audio_element_set_byte_pos(self, 0);
+    }
     if (http->client) {
         esp_http_client_close(http->client);
         esp_http_client_cleanup(http->client);
         http->client = NULL;
-    }
-    if (AEL_STATE_PAUSED != audio_element_get_state(self) && (errno == 0)) {
-        audio_element_report_pos(self);
-        audio_element_set_byte_pos(self, 0);
     }
     return ESP_OK;
 }
@@ -568,6 +570,10 @@ static int _http_write(audio_element_handle_t self, char *buffer, int len, TickT
 static int _http_process(audio_element_handle_t self, char *in_buffer, int in_len)
 {
     int r_size = audio_element_input(self, in_buffer, in_len);
+    if (audio_element_is_stopping(self) == true) {
+        ESP_LOGW(TAG, "No output due to stopping");
+        return AEL_IO_ABORT;
+    }
     int w_size = 0;
     if (r_size > 0) {
         if (errno != 0) {
