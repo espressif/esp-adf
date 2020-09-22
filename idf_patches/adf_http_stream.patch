@@ -1,5 +1,14 @@
+From ee6fd0d1c4f49a44af1ee2d5eb069568265df730 Mon Sep 17 00:00:00 2001
+From: donglianghao <donglianghao@espressif.com>
+Date: Fri, 18 Sep 2020 15:26:04 +0800
+Subject: [PATCH] Modify http stream reconnect patch
+
+---
+ components/audio_stream/http_stream.c | 59 +++++++++++++++++++--------
+ 1 file changed, 41 insertions(+), 18 deletions(-)
+
 diff --git a/components/audio_stream/http_stream.c b/components/audio_stream/http_stream.c
-index b0e9957e..28c1ddd6 100644
+index ea62c4cf..f43c4830 100644
 --- a/components/audio_stream/http_stream.c
 +++ b/components/audio_stream/http_stream.c
 @@ -32,7 +32,6 @@
@@ -27,7 +36,7 @@ index b0e9957e..28c1ddd6 100644
  } http_stream_t;
  
  static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
-@@ -329,7 +331,7 @@ static esp_err_t _http_open(audio_element_handle_t self)
+@@ -331,7 +333,7 @@ static esp_err_t _http_open(audio_element_handle_t self)
          ESP_LOGE(TAG, "already opened");
          return ESP_FAIL;
      }
@@ -36,16 +45,36 @@ index b0e9957e..28c1ddd6 100644
  _stream_open_begin:
  
      uri = _playlist_get_next_track(self);
-@@ -488,7 +490,7 @@ static esp_err_t _http_close(audio_element_handle_t self)
+@@ -490,7 +492,7 @@ static esp_err_t _http_close(audio_element_handle_t self)
          http->is_variant_playlist = false;
          http->is_playlist_resolved = false;
      }
 -    if (AEL_STATE_PAUSED != audio_element_get_state(self) && (errno == 0)) {
-+    if (AEL_STATE_PAUSED != audio_element_get_state(self) && (http->_errno == 0)) {
++    if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
          audio_element_report_pos(self);
          audio_element_set_byte_pos(self, 0);
      }
-@@ -516,17 +518,11 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
+@@ -502,6 +504,19 @@ static esp_err_t _http_close(audio_element_handle_t self)
+     return ESP_OK;
+ }
+ 
++static esp_err_t _http_reconnect(audio_element_handle_t self)
++{
++    esp_err_t err = ESP_OK;
++    audio_element_info_t info = {0};
++    AUDIO_NULL_CHECK(TAG, self, return ESP_FAIL);
++    err |= audio_element_getinfo(self, &info);
++    err |= _http_close(self);
++    err |= audio_element_set_byte_pos(self, info.byte_pos);
++    err |= _http_open(self);
++    return err;
++}
++
++
+ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
+ {
+     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
+@@ -518,17 +533,11 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
          }
      }
      if (rlen <= 0) {
@@ -68,7 +97,7 @@ index b0e9957e..28c1ddd6 100644
          }
          if (http->auto_connect_next_track) {
              if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
-@@ -560,7 +556,8 @@ static int _http_write(audio_element_handle_t self, char *buffer, int len, TickT
+@@ -562,7 +571,8 @@ static int _http_write(audio_element_handle_t self, char *buffer, int len, TickT
      }
  
      if ((wrlen = esp_http_client_write(http->client, buffer, len)) <= 0) {
@@ -78,7 +107,7 @@ index b0e9957e..28c1ddd6 100644
      }
      return wrlen;
  }
-@@ -574,10 +571,23 @@ static int _http_process(audio_element_handle_t self, char *in_buffer, int in_le
+@@ -576,10 +586,23 @@ static int _http_process(audio_element_handle_t self, char *in_buffer, int in_le
      }
      int w_size = 0;
      if (r_size > 0) {
@@ -93,15 +122,18 @@ index b0e9957e..28c1ddd6 100644
 +                return ESP_FAIL;
 +            };
 +            http->connect_times++;
-+            ret |= _http_close(self);
-+            ret |= _http_open(self);
++            ret = _http_reconnect(self);
 +            if (ret != ESP_OK) {
 +                ESP_LOGE(TAG, "Failed to reset connection");
 +                return ret;
 +            }
 +            ESP_LOGW(TAG, "reconnect to peer successful");
++            return ESP_ERR_INVALID_STATE;
          } else {
 +            http->connect_times = 0;
              w_size = audio_element_output(self, in_buffer, r_size);
              audio_element_multi_output(self, in_buffer, r_size, 0);
          }
+-- 
+2.17.1
+
