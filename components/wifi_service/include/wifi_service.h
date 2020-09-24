@@ -42,6 +42,7 @@ typedef enum {
     WIFI_SERV_EVENT_CONNECTED,
     WIFI_SERV_EVENT_DISCONNECTED,
     WIFI_SERV_EVENT_SETTING_TIMEOUT,
+    WIFI_SERV_EVENT_SETTING_FAILED,
     WIFI_SERV_EVENT_SETTING_FINISHED,
 } wifi_service_event_t;
 
@@ -54,6 +55,7 @@ typedef enum {
     WIFI_SERV_STA_AUTH_ERROR,
     WIFI_SERV_STA_AP_NOT_FOUND,
     WIFI_SERV_STA_BY_USER,
+    WIFI_SERV_STA_SET_INFO,
 } wifi_service_disconnect_reason_t;
 
 /**
@@ -69,6 +71,7 @@ typedef struct {
     char                        *user_data;             /*!< User data */
     int                         setting_timeout_s;      /*!< Timeout of setting WiFi */
     int                         max_retry_time;         /*!< Maximum times of reconnection */
+    int                         max_prov_retry_time;    /*!< Maximum times of reconnection after wifi provision*/
     uint8_t                     max_ssid_num;           /*!< Maximum ssid that can be stored */
 } wifi_service_config_t;
 
@@ -82,6 +85,7 @@ typedef struct {
     .user_data = NULL, \
     .setting_timeout_s = 60, \
     .max_retry_time = 5,\
+    .max_prov_retry_time = 3, \
     .max_ssid_num = 5, \
 }
 

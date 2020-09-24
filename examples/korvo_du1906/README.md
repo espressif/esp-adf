@@ -136,8 +136,9 @@ After the experience, it's time to build the example now! you can also add some 
 For now, we need to select audio IDF branch as follow.
 ```bash
 cd $IDF_PATH
+git checkout master
 git pull
-git checkout -b audio/stack_on_psram_v3.3 origin/audio/stack_on_psram_v3.3
+git checkout audio/stack_on_psram_v3.3
 git submodule update --init --recursive
 ```
 The latest commit ID is `0c1859a5a5a5eded5af1b9423c290781e3973915`
