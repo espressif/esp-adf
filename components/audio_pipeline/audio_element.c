@@ -251,6 +251,7 @@ static esp_err_t audio_element_on_cmd(audio_event_iface_msg_t *msg, void *contex
                 // Except AEL_STATE_STOPPED and is not running
                 ESP_LOGD(TAG, "[%s] AEL_MSG_CMD_STOP, state:%d", el->tag, el->state);
                 if ((el->is_running == false) && (el->state == AEL_STATE_STOPPED)) {
+                    el->stopping = false;
                     break;
                 }
                 el->state = AEL_STATE_STOPPED;
@@ -315,7 +316,6 @@ static esp_err_t audio_element_process_running(audio_element_handle_t el)
             case AEL_IO_OK:
                 // Re-open if reset_state function called
                 if (audio_element_get_state(el) == AEL_STATE_INIT) {
-                    el->is_running = false;
                     audio_element_cmd_send(el, AEL_MSG_CMD_RESUME);
                     return ESP_OK;
                 }
@@ -921,7 +921,7 @@ audio_element_handle_t audio_element_init(audio_element_cfg_t *config)
     evt_cfg.on_cmd = audio_element_on_cmd;
     evt_cfg.context = el;
     evt_cfg.queue_set_size = 0; // Element have no queue_set by default.
-    evt_cfg.external_queue_size = 3;
+    evt_cfg.external_queue_size = 5;
     evt_cfg.internal_queue_size = 5;
     bool _success =
         (
