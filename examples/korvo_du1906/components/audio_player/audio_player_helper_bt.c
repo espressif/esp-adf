@@ -69,7 +69,7 @@ audio_err_t ap_helper_a2dp_stop(ap_ops_attr_t *at, ap_ops_para_t *para)
     audio_element_finish_state(a2dp_stream_hd);
     audio_element_stop(a2dp_stream_hd);
 #if CONFIG_BT_ENABLED
-    ret = periph_bt_stop((esp_periph_handle_t)para->ctx);
+    ret = periph_bt_pause((esp_periph_handle_t)para->ctx);
 #endif
     ret = esp_audio_helper_stop(TERMINATION_TYPE_NOW);
     return ret;
