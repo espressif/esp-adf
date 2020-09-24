@@ -253,7 +253,7 @@ esp_err_t audio_event_iface_waiting_cmd_msg(audio_event_iface_handle_t evt)
 esp_err_t audio_event_iface_cmd(audio_event_iface_handle_t evt, audio_event_iface_msg_t *msg)
 {
     if (evt->internal_queue && (xQueueSend(evt->internal_queue, (void *)msg, 0) != pdPASS)) {
-        ESP_LOGD(TAG, "There are no space to dispatch queue");
+        ESP_LOGW(TAG, "There are no space to dispatch queue");
         return ESP_FAIL;
     }
     return ESP_OK;
@@ -271,7 +271,7 @@ esp_err_t audio_event_iface_sendout(audio_event_iface_handle_t evt, audio_event_
 {
     if (evt->external_queue) {
         if (xQueueSend(evt->external_queue, (void *)msg, 0) != pdPASS) {
-            ESP_LOGD(TAG, "There is no space in external queue");
+            ESP_LOGW(TAG, "There is no space in external queue");
             return ESP_FAIL;
         }
     }
