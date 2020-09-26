@@ -81,6 +81,11 @@ char* bdsc_strnstr(const char *buffer, const char *token, size_t n);
  */
 esp_err_t bdsc_get_sn(char* outSn, size_t* length);
 
+/**
+ * @brief Generate md5 checksum for buffer
+ */
+const char* generate_md5_checksum_needfree(uint8_t *buf, size_t buf_len);
+
 #ifdef __cplusplus
 }
 #endif

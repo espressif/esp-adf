@@ -32,7 +32,6 @@ bool need_skip_current_playing()
     return false;
 }
 
-
 esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
 {
     cJSON *json;
@@ -68,8 +67,8 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
         /*
          * 用户通过 “唤醒词 + 命令” 进行交互时，云端返回的ASR结果。
          * 返回的 evt 类型如下：
-         * evt->data     为 bdsc_engine_event_data_t 结构体指针
-         * evt->data_len 为 bdsc_engine_event_data_t 结构体大小
+         * evt->data     为 bdsc_event_data_t 结构体指针
+         * evt->data_len 为 bdsc_event_data_t 结构体大小
          * evt->client   为 全局 bdsc_engine_handle_t 实例对象
          * 结构体定义如下：
          *
@@ -77,8 +76,8 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
             char sn[SN_LENGTH];      // 在语音链路中，每个request都对应一个sn码，方便追溯问题。
             int16_t idx;             // 序号
             uint16_t buffer_length;  // 数据包长度
-            uint8_t *buffer;        // 数据
-        } bdsc_engine_event_data_t;
+            uint8_t buffer[];        // 数据
+        } bdsc_event_data_t;
          *
          * 返回的 buffer 数据为 JSON 格式。格式如下：
          * 以“问：今天天气”为例，返回：
@@ -96,7 +95,7 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
          */
 
         /* 通过语音控制蓝牙打开 */
-        bdsc_engine_event_data_t *asr_result = (bdsc_engine_event_data_t *)evt->data;
+        bdsc_event_data_t *asr_result = (bdsc_event_data_t *)evt->data;
         if (!asr_result->buffer) {
             ESP_LOGE(TAG, "BUG!!!\n");
             return BDSC_CUSTOM_DESIRE_DEFAULT;

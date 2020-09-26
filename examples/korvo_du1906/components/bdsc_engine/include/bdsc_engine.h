@@ -84,16 +84,6 @@ typedef enum {
     BDSC_TRANSPORT_OVER_WSS,        /*!< Transport over wss */
 } bdsc_engine_transport_t;
 
-/**
- * @brief      Bdsc Engine  event data type
- */
-typedef struct {
-    char sn[SN_LENGTH];
-    int16_t idx;
-    uint16_t buffer_length;
-    uint8_t *buffer;
-} bdsc_engine_event_data_t;
-
 typedef esp_err_t (*bdsc_engine_event_handle_cb)(bdsc_engine_event_t *evt);
 
 /**
@@ -133,12 +123,8 @@ struct bdsc_engine {
     bdsc_auth_cb            g_auth_cb;
     QueueHandle_t           g_engine_queue;
     SemaphoreHandle_t       enqueue_mutex;
-    TimerHandle_t           asr_timer;
 
     bdsc_engine_internal_st g_asr_tts_state;
-
-    bool                    asr_timeout_once;
-    bool                    has_connected;
     char                    *g_movie_url;
 
     QueueHandle_t           g_mixed_wait_queue;
@@ -244,15 +230,6 @@ esp_err_t bdsc_engine_http_play();
  */
 void bdsc_engine_net_connected_cb();
 
-/**
- * @brief      Set Bdsc Engine net connected flag
- *
- * @param[in]  connected    flag to set
- *
- * @note       This func MUST be called manually to notify Bdsc Engine connection status
- *
- * @return
- */
 
 int bdsc_engine_get_internal_state(bdsc_engine_handle_t client);
 
