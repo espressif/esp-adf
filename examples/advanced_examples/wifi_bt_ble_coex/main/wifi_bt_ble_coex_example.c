@@ -78,8 +78,8 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                     ESP_LOGI(TAG, "[ * ] Enter WIFI mode");
                     cx_handle->work_mode = WIFI_MODE;
                     if (g_a2dp_connect_state == true) {
-                       periph_bt_pause(cx_handle->bt_periph);
-                       vTaskDelay(300/portTICK_RATE_MS);
+                        periph_bt_pause(cx_handle->bt_periph);
+                        vTaskDelay(300 / portTICK_RATE_MS);
                     }
                     esp_audio_stop(cx_handle->player, TERMINATION_TYPE_NOW);
                     if (g_wifi_connect_state == true) {
@@ -135,8 +135,8 @@ static void wifi_server_init(void)
 {
     ESP_LOGI(TAG, "Blufi module init");
     wifi_config_t sta_cfg = {0};
-    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, strlen(CONFIG_WIFI_SSID));
-    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, strlen(CONFIG_WIFI_PASSWORD));
+    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, sizeof(sta_cfg.sta.ssid));
+    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, sizeof(sta_cfg.sta.password));
 
     wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
     cfg.extern_stack = true;
@@ -236,7 +236,7 @@ static void a2dp_sink_blufi_start(coex_handle_t *handle)
     wifi_server_init();
 
     esp_err_t set_dev_name_ret = esp_bt_dev_set_device_name(SAMPLE_DEVICE_NAME);
-    if (set_dev_name_ret){
+    if (set_dev_name_ret) {
         ESP_LOGE(TAG, "set device name failed, error code = %x", set_dev_name_ret);
     }
     ESP_LOGI(TAG, "Create Bluetooth peripheral");
@@ -244,7 +244,12 @@ static void a2dp_sink_blufi_start(coex_handle_t *handle)
     ESP_LOGI(TAG, "Start peripherals");
     esp_periph_start(handle->set, handle->bt_periph);
 
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+    esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+#else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+#endif
+
     handle->player = setup_player();
 }
 

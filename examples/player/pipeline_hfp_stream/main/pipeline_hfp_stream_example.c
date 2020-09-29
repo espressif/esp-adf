@@ -87,7 +87,11 @@ void app_main(void)
     esp_bt_dev_set_device_name("ESP-ADF-HFP");
     hfp_open_and_close_evt_cb_register(bt_app_hf_client_audio_open, bt_app_hf_client_audio_close);
     hfp_service_init();
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+    esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+#else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+#endif
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();

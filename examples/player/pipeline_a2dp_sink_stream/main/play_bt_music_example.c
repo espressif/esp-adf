@@ -86,7 +86,11 @@ void app_main(void)
 
     esp_bt_dev_set_device_name("ESP_SINK_STREAM_DEMO");
 
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+    esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+#else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+#endif
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
@@ -224,7 +228,6 @@ void app_main(void)
     audio_element_deinit(i2s_stream_writer);
     esp_periph_set_destroy(set);
     periph_service_destroy(input_ser);
-    a2dp_destroy();
     esp_bluedroid_disable();
     esp_bluedroid_deinit();
     esp_bt_controller_disable();
