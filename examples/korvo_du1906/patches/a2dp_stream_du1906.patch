@@ -1,0 +1,154 @@
+From f8cb749267224cd488c72299eaae6911372e4c3e Mon Sep 17 00:00:00 2001
+From: donglianghao <donglianghao@espressif.com>
+Date: Wed, 30 Sep 2020 11:54:36 +0800
+Subject: [PATCH] a2dp_stream_1906
+
+---
+ components/bluetooth_service/a2dp_stream.c | 82 ++++++++++++++++++++--
+ 1 file changed, 77 insertions(+), 5 deletions(-)
+
+diff --git a/components/bluetooth_service/a2dp_stream.c b/components/bluetooth_service/a2dp_stream.c
+index 76868950..37347047 100644
+--- a/components/bluetooth_service/a2dp_stream.c
++++ b/components/bluetooth_service/a2dp_stream.c
+@@ -32,9 +32,16 @@
+ #include "sdkconfig.h"
+ 
+ #include "a2dp_stream.h"
++#include "esp_avrc_api.h"
+ 
+ #if CONFIG_BT_ENABLED
+ 
++#define APP_RC_CT_TL_GET_CAPS            (0)
++#define APP_RC_CT_TL_GET_META_DATA       (1)
++#define APP_RC_CT_TL_RN_TRACK_CHANGE     (2)
++#define APP_RC_CT_TL_RN_PLAYBACK_CHANGE  (3)
++#define APP_RC_CT_TL_RN_PLAY_POS_CHANGE  (4)
++
+ static const char *TAG = "A2DP_STREAM";
+ 
+ static audio_element_handle_t a2dp_sink_stream_handle = NULL;
+@@ -44,6 +51,7 @@ static esp_periph_handle_t bt_avrc_periph = NULL;
+ static bool avrcp_conn_state = false;
+ static audio_stream_type_t a2d_stream_type = 0;
+ static uint8_t trans_label = 0;
++static esp_avrc_rn_evt_cap_mask_t s_avrc_peer_rn_cap;
+ 
+ static const char *audio_state_str[] = { "Suspended", "Stopped", "Started" };
+ 
+@@ -247,6 +255,56 @@ esp_err_t a2dp_destroy()
+     return ESP_OK;
+ }
+ 
++static void bt_av_new_track(void)
++{
++    // request metadata
++    uint8_t attr_mask = ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST | ESP_AVRC_MD_ATTR_ALBUM | ESP_AVRC_MD_ATTR_GENRE;
++    esp_avrc_ct_send_metadata_cmd(APP_RC_CT_TL_GET_META_DATA, attr_mask);
++
++    // register notification if peer support the event_id
++    if (esp_avrc_rn_evt_bit_mask_operation(ESP_AVRC_BIT_MASK_OP_TEST, &s_avrc_peer_rn_cap,
++                                           ESP_AVRC_RN_TRACK_CHANGE)) {
++        esp_avrc_ct_send_register_notification_cmd(APP_RC_CT_TL_RN_TRACK_CHANGE, ESP_AVRC_RN_TRACK_CHANGE, 0);
++    }
++}
++
++static void bt_av_playback_changed(void)
++{
++    if (esp_avrc_rn_evt_bit_mask_operation(ESP_AVRC_BIT_MASK_OP_TEST, &s_avrc_peer_rn_cap,
++                                           ESP_AVRC_RN_PLAY_STATUS_CHANGE)) {
++        esp_avrc_ct_send_register_notification_cmd(APP_RC_CT_TL_RN_PLAYBACK_CHANGE, ESP_AVRC_RN_PLAY_STATUS_CHANGE, 0);
++    }
++}
++
++static void bt_av_play_pos_changed(void)
++{
++    if (esp_avrc_rn_evt_bit_mask_operation(ESP_AVRC_BIT_MASK_OP_TEST, &s_avrc_peer_rn_cap,
++                                           ESP_AVRC_RN_PLAY_POS_CHANGED)) {
++        esp_avrc_ct_send_register_notification_cmd(APP_RC_CT_TL_RN_PLAY_POS_CHANGE, ESP_AVRC_RN_PLAY_POS_CHANGED, 10);
++    }
++}
++
++extern esp_err_t bdsc_engine_open_bt();
++void bt_av_notify_evt_handler(uint8_t event_id, esp_avrc_rn_param_t *event_parameter)
++{
++    switch (event_id) {
++    case ESP_AVRC_RN_TRACK_CHANGE:
++        bt_av_new_track();
++        break;
++    case ESP_AVRC_RN_PLAY_STATUS_CHANGE:
++        ESP_LOGI(TAG, "Playback status changed: 0x%x", event_parameter->playback);
++        if (event_parameter->playback == ESP_AVRC_PLAYBACK_PLAYING) {
++            bdsc_engine_open_bt();
++        }
++        bt_av_playback_changed();
++        break;
++    case ESP_AVRC_RN_PLAY_POS_CHANGED:
++        ESP_LOGI(TAG, "Play position changed: %d-ms", event_parameter->play_pos);
++        bt_av_play_pos_changed();
++        break;
++    }
++}
++
+ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *p_param)
+ {
+     esp_avrc_ct_cb_param_t *rc = p_param;
+@@ -257,17 +315,21 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
+                 if (rc->conn_stat.connected) {
+                     ESP_LOGD(TAG, "ESP_AVRC_CT_CONNECTION_STATE_EVT");
+                     bt_key_act_sm_init();
++                    // get remote supported event_ids of peer AVRCP Target
++                    esp_avrc_ct_send_get_rn_capabilities_cmd(APP_RC_CT_TL_GET_CAPS);
+                 } else if (0 == rc->conn_stat.connected) {
+                     bt_key_act_sm_deinit();
++                    // clear peer notification capability record
++                    s_avrc_peer_rn_cap.bits = 0;
+                 }
+ 
+-                ESP_LOGD(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
++                ESP_LOGI(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
+                          rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
+                 break;
+             }
+         case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT: {
+                 if (avrcp_conn_state) {
+-                    ESP_LOGD(TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
++                    ESP_LOGI(TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
+                     bt_key_act_param_t param;
+                     memset(&param, 0, sizeof(bt_key_act_param_t));
+                     param.evt = event;
+@@ -279,18 +341,28 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
+                 break;
+             }
+         case ESP_AVRC_CT_METADATA_RSP_EVT: {
+-                ESP_LOGD(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", rc->meta_rsp.attr_id, rc->meta_rsp.attr_text);
++                ESP_LOGI(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", rc->meta_rsp.attr_id, rc->meta_rsp.attr_text);
+                 // free(rc->meta_rsp.attr_text);
+                 break;
+             }
+         case ESP_AVRC_CT_CHANGE_NOTIFY_EVT: {
+-                // ESP_LOGD(TAG, "AVRC event notification: %u, param: %u", rc->change_ntf.event_id, rc->change_ntf.event_parameter);
++                ESP_LOGI(TAG, "AVRC event notification: %d", rc->change_ntf.event_id);
++                bt_av_notify_evt_handler(rc->change_ntf.event_id, &rc->change_ntf.event_parameter);
+                 break;
+             }
+         case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
+-                ESP_LOGD(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
++                ESP_LOGI(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
+                 break;
+             }
++        case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {
++            ESP_LOGI(TAG, "remote rn_cap: count %d, bitmask 0x%x", rc->get_rn_caps_rsp.cap_count,
++                     rc->get_rn_caps_rsp.evt_set.bits);
++            s_avrc_peer_rn_cap.bits = rc->get_rn_caps_rsp.evt_set.bits;
++            bt_av_new_track();
++            bt_av_playback_changed();
++            bt_av_play_pos_changed();
++            break;
++        }
+         default:
+             ESP_LOGE(TAG, "%s unhandled evt %d", __func__, event);
+             break;
+-- 
+2.17.1
+

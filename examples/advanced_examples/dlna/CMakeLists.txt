@@ -14,3 +14,4 @@ target_add_binary_data(dlna_example.elf "./components/esp_dlna/xml/rootDescLogo.
 target_add_binary_data(dlna_example.elf "./components/esp_dlna/xml/rootDescService.xml" TEXT)
 target_add_binary_data(dlna_example.elf "./components/esp_dlna/xml/SoapResponseErr.xml" TEXT)
 target_add_binary_data(dlna_example.elf "./components/esp_dlna/xml/SoapResponseOk.xml" TEXT)
+target_add_binary_data(dlna_example.elf "./components/esp_dlna/xml/devicelist.xml" TEXT)

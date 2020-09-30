@@ -32,6 +32,12 @@ static const char *TAG = "APP_BT_INIT";
 
 #define BT_DEVICE_NAME  "ESP_BT_COEX_DEV"
 
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch)  0
+#endif
+
 esp_periph_handle_t app_bluetooth_init(esp_periph_set_handle_t set)
 {
 #if CONFIG_BT_ENABLED
@@ -52,7 +58,12 @@ esp_periph_handle_t app_bluetooth_init(esp_periph_set_handle_t set)
     esp_periph_start(set, bt_periph);
     ESP_LOGI(TAG, "Start Bluetooth peripherals");
 
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+    esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+#else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+#endif
+
     return bt_periph;
 #else
     return NULL;

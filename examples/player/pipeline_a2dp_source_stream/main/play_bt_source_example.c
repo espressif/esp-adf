@@ -88,22 +88,22 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
     for (int i = 0; i < param->disc_res.num_prop; i++) {
         p = param->disc_res.prop + i;
         switch (p->type) {
-        case ESP_BT_GAP_DEV_PROP_COD:
-            cod = *(uint32_t *)(p->val);
-            ESP_LOGI(TAG, "--Class of Device: 0x%x", cod);
-            break;
-        case ESP_BT_GAP_DEV_PROP_RSSI:
-            rssi = *(int8_t *)(p->val);
-            ESP_LOGI(TAG, "--RSSI: %d", rssi);
-            break;
-        case ESP_BT_GAP_DEV_PROP_EIR:
-            eir = (uint8_t *)(p->val);
-            get_name_from_eir(eir, (uint8_t *)&peer_bdname, NULL);
-            ESP_LOGI(TAG, "--Name: %s", peer_bdname);
-            break;
-        case ESP_BT_GAP_DEV_PROP_BDNAME:
-        default:
-            break;
+            case ESP_BT_GAP_DEV_PROP_COD:
+                cod = *(uint32_t *)(p->val);
+                ESP_LOGI(TAG, "--Class of Device: 0x%x", cod);
+                break;
+            case ESP_BT_GAP_DEV_PROP_RSSI:
+                rssi = *(int8_t *)(p->val);
+                ESP_LOGI(TAG, "--RSSI: %d", rssi);
+                break;
+            case ESP_BT_GAP_DEV_PROP_EIR:
+                eir = (uint8_t *)(p->val);
+                get_name_from_eir(eir, (uint8_t *)&peer_bdname, NULL);
+                ESP_LOGI(TAG, "--Name: %s", peer_bdname);
+                break;
+            case ESP_BT_GAP_DEV_PROP_BDNAME:
+            default:
+                break;
         }
     }
 
@@ -127,38 +127,38 @@ static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
 {
     switch (event) {
         case ESP_BT_GAP_DISC_RES_EVT: {
-            filter_inquiry_scan_result(param);
-            break;
-        }
+                filter_inquiry_scan_result(param);
+                break;
+            }
         case ESP_BT_GAP_DISC_STATE_CHANGED_EVT: {
-            if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STOPPED) {
-                if (device_found) {
-                    ESP_LOGI(TAG, "Device discovery stopped.");
-                    ESP_LOGI(TAG, "a2dp connecting to peer: %s", remote_bt_device_name);
-                    device_found = false;
-                    esp_a2d_source_connect(remote_bd_addr);
-                } else {
-                    // not discovered, continue to discover
-                    ESP_LOGI(TAG, "Device discovery failed, continue to discover...");
-                    esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
+                if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STOPPED) {
+                    if (device_found) {
+                        ESP_LOGI(TAG, "Device discovery stopped.");
+                        ESP_LOGI(TAG, "a2dp connecting to peer: %s", remote_bt_device_name);
+                        device_found = false;
+                        esp_a2d_source_connect(remote_bd_addr);
+                    } else {
+                        // not discovered, continue to discover
+                        ESP_LOGI(TAG, "Device discovery failed, continue to discover...");
+                        esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
+                    }
+                } else if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STARTED) {
+                    ESP_LOGI(TAG, "Discovery started.");
                 }
-            } else if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STARTED) {
-                ESP_LOGI(TAG, "Discovery started.");
+                break;
             }
-            break;
-        }
         case ESP_BT_GAP_PIN_REQ_EVT: {
-            ESP_LOGI(TAG, "ESP_BT_GAP_PIN_REQ_EVT min_16_digit:%d", param->pin_req.min_16_digit);
-            if (param->pin_req.min_16_digit) {
-                ESP_LOGI(TAG, "Input pin code: 0000 0000 0000 0000");
-                esp_bt_pin_code_t pin_code = {0};
-                esp_bt_gap_pin_reply(param->pin_req.bda, true, 16, pin_code);
-            } else {
-                esp_bt_pin_code_t pin_code = {'1', '2', '3', '4'};
-                esp_bt_gap_pin_reply(param->pin_req.bda, true, 4, pin_code);
+                ESP_LOGI(TAG, "ESP_BT_GAP_PIN_REQ_EVT min_16_digit:%d", param->pin_req.min_16_digit);
+                if (param->pin_req.min_16_digit) {
+                    ESP_LOGI(TAG, "Input pin code: 0000 0000 0000 0000");
+                    esp_bt_pin_code_t pin_code = {0};
+                    esp_bt_gap_pin_reply(param->pin_req.bda, true, 16, pin_code);
+                } else {
+                    esp_bt_pin_code_t pin_code = {'1', '2', '3', '4'};
+                    esp_bt_gap_pin_reply(param->pin_req.bda, true, 4, pin_code);
+                }
+                break;
             }
-            break;
-        }
         default:
             break;
     }
@@ -227,7 +227,7 @@ void app_main(void)
     if (remote_name) {
         memcpy(&remote_bt_device_name, remote_name, strlen(remote_name) + 1);
     } else {
-        memcpy(&remote_bt_device_name, "ESP_SINK_STREAM_DEMO", ESP_BT_GAP_MAX_BDNAME_LEN + 1);
+        memcpy(&remote_bt_device_name, "ESP_SINK_STREAM_DEMO", ESP_BT_GAP_MAX_BDNAME_LEN);
     }
 
     a2dp_stream_config_t a2dp_config = {
@@ -237,7 +237,12 @@ void app_main(void)
     bt_stream_writer = a2dp_stream_init(&a2dp_config);
 
     esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+    esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+#else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+#endif
+
 
     ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, fatfs_stream_reader, "file");
@@ -290,7 +295,7 @@ void app_main(void)
             continue;
         }
         if (msg.source_type == PERIPH_ID_BLUETOOTH
-                && msg.source == (void *)bt_periph) {
+            && msg.source == (void *)bt_periph) {
             if ((msg.cmd == PERIPH_BLUETOOTH_DISCONNECTED) || (msg.cmd == PERIPH_BLUETOOTH_AUDIO_SUSPENDED)) {
                 ESP_LOGW(TAG, "[ * ] Bluetooth disconnected or suspended");
                 periph_bt_stop(bt_periph);
@@ -323,7 +328,6 @@ void app_main(void)
     audio_element_deinit(fatfs_stream_reader);
     audio_element_deinit(mp3_decoder);
     esp_periph_set_destroy(set);
-    a2dp_destroy();
     esp_bluedroid_disable();
     esp_bluedroid_deinit();
     esp_bt_controller_disable();
