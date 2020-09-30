@@ -78,6 +78,12 @@ static audio_element_handle_t raw_read_h;
 static audio_element_handle_t raw_write_h;
 static bool raw_task_run_flag = 0;
 
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch)  0
+#endif
+
 void setup_wifi()
 {
     if (wifi_handle == NULL) {
@@ -662,7 +668,12 @@ esp_periph_handle_t a2dp_init()
     esp_periph_start(set, bt_periph);
     ESP_LOGI(TAG, "Start Bluetooth peripherals");
 
+#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+    esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+#else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+#endif
+
     return bt_periph;
 }
 
