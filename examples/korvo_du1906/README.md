@@ -148,6 +148,7 @@ For now, we need an ADF patch as follow.
 ```bash
 cd $ADF_PATH
 git apply ./idf_patches/adf_http_stream.patch
+git apply ./examples/korvo_du1906/patches/a2dp_stream_du1906.patch
 ```
 
 ###  Menuconfig
