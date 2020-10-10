@@ -112,6 +112,32 @@ typedef struct {
     .uninstall_drv = false,                                                     \
 }
 
+#define I2S_STREAM_TX_PDM_CFG_DEFAULT() {                                       \
+    .type = AUDIO_STREAM_WRITER,                                                \
+    .i2s_config = {                                                             \
+        .mode = I2S_MODE_MASTER | I2S_MODE_PDM | I2S_MODE_TX,                   \
+        .sample_rate = 44100,                                                   \
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,                           \
+        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           \
+        .communication_format = I2S_COMM_FORMAT_I2S_MSB,                        \
+        .dma_buf_count = 3,                                                     \
+        .dma_buf_len = 300,                                                     \
+        .use_apll = true,                                                       \
+        .tx_desc_auto_clear = true,                                             \
+        .fixed_mclk = 0                                                         \
+    },                                                                          \
+    .i2s_port = I2S_NUM_0,                                                      \
+    .use_alc = false,                                                           \
+    .volume = 0,                                                                \
+    .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
+    .task_stack = I2S_STREAM_TASK_STACK,                                        \
+    .task_core = I2S_STREAM_TASK_CORE,                                          \
+    .task_prio = I2S_STREAM_TASK_PRIO,                                          \
+    .stack_in_ext = false,                                                      \
+    .multi_out_num = 0,                                                         \
+    .uninstall_drv = false,                                                     \
+}
+
 /**
  * @brief      Create a handle to an Audio Element to stream data from I2S to another Element
  *             or get data from other elements sent to I2S, depending on the configuration of stream type
