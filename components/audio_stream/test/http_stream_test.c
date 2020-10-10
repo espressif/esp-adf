@@ -187,7 +187,7 @@ TEST_CASE("http stream read", "[esp-adf-stream]")
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     TEST_ASSERT_NOT_NULL(set);
 
-    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set, SD_MODE_1_LINE));
 
     periph_wifi_cfg_t wifi_cfg = {
         .ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
@@ -280,7 +280,7 @@ TEST_CASE("http stream write", "[esp-adf-stream]")
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     TEST_ASSERT_NOT_NULL(set);
 
-    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set, SD_MODE_1_LINE));
 
     periph_wifi_cfg_t wifi_cfg = {
         .ssid = UNITETS_HTTP_STREAM_WIFI_SSID,

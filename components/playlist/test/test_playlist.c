@@ -47,7 +47,7 @@ static esp_err_t initialize_sdcard(esp_periph_set_handle_t *set_in)
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     TEST_ASSERT_NOT_NULL(set);
     *set_in = set;
-    ret = audio_board_sdcard_init(set);
+    ret = audio_board_sdcard_init(set, SD_MODE_1_LINE);
     return ret;
 }
 

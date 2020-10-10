@@ -123,7 +123,7 @@ void app_main(void)
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 
     ESP_LOGI(TAG, "[4.1] Start and wait for SDCARD to mount");
-    audio_board_sdcard_init(set);
+    audio_board_sdcard_init(set, SD_MODE_1_LINE);
 
     ESP_LOGI(TAG, "[ 5 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();

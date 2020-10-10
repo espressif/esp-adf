@@ -157,7 +157,7 @@ void app_main()
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 
     ESP_LOGI(TAG, "[1.2] Mount SDCard");
-    audio_board_sdcard_init(set);
+    audio_board_sdcard_init(set, SD_MODE_1_LINE);
 
     ESP_LOGI(TAG, "[2.0] Create OTA service");
     ota_service_config_t ota_service_cfg = OTA_SERVICE_DEFAULT_CONFIG();

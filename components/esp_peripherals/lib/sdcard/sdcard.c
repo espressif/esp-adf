@@ -41,6 +41,11 @@
 static const char *TAG = "SDCARD";
 int g_gpio = -1;
 
+#define PIN_NUM_MISO 2
+#define PIN_NUM_MOSI 15
+#define PIN_NUM_CLK  14
+#define PIN_NUM_CS   13
+
 static void sdmmc_card_print_info(const sdmmc_card_t *card)
 {
     ESP_LOGD(TAG, "Name: %s\n", card->cid.name);
@@ -53,23 +58,50 @@ static void sdmmc_card_print_info(const sdmmc_card_t *card)
     ESP_LOGD(TAG, "SCR: sd_spec=%d, bus_width=%d\n", card->scr.sd_spec, card->scr.bus_width);
 }
 
-esp_err_t sdcard_mount(const char *base_path)
+esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 {
-    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-    // To use 1-line SD mode, uncomment the following line:
-    host.flags = SDMMC_HOST_FLAG_1BIT;
-    host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
-    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-    slot_config.gpio_cd = g_gpio;
-    slot_config.width = 1;
+    if (mode >= SD_MODE_MAX) {
+        ESP_LOGE(TAG, "PLease select the correct sd mode: 1-line SD mode, 4-line SD mode or SPI mode!, current mode is %d", mode);
+        return ESP_FAIL;
+    }
+
+    sdmmc_card_t *card = NULL;
+    esp_err_t ret;
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
         .max_files = get_sdcard_open_file_num_max()
     };
 
-    sdmmc_card_t *card;
-    ESP_LOGI(TAG, "Trying to mount with base path=%s", base_path);
-    esp_err_t ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
+    if (mode != SD_MODE_SPI) {
+        ESP_LOGI(TAG, "Using 1-line SD mode, 4-line SD mode,  base path=%s", base_path);
+        sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+        host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
+
+        sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+        slot_config.gpio_cd = g_gpio;
+        slot_config.width = mode & 0X01;
+
+        gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);  
+        gpio_set_pull_mode(GPIO_NUM_2,  GPIO_PULLUP_ONLY);   
+        gpio_set_pull_mode(GPIO_NUM_13, GPIO_PULLUP_ONLY);
+
+        if (mode == SD_MODE_4_LINE) {
+            gpio_set_pull_mode(GPIO_NUM_4,  GPIO_PULLUP_ONLY);
+            gpio_set_pull_mode(GPIO_NUM_12, GPIO_PULLUP_ONLY);
+        }
+
+        ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
+    } else {
+        ESP_LOGI(TAG, "Using SPI mode, base path=%s", base_path);
+        sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+        sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
+        slot_config.gpio_miso = PIN_NUM_MISO;
+        slot_config.gpio_mosi = PIN_NUM_MOSI;
+        slot_config.gpio_sck  = PIN_NUM_CLK;
+        slot_config.gpio_cs   = PIN_NUM_CS;
+
+        ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
+    }
 
     switch (ret) {
         case ESP_OK:

@@ -623,7 +623,7 @@ void app_main(void)
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     set = esp_periph_set_init(&periph_cfg);
 
-    audio_board_sdcard_init(set);
+    audio_board_sdcard_init(set, SD_MODE_1_LINE);
     cli_setup_wifi();
     cli_setup_player();
 
