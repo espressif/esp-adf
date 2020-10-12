@@ -99,7 +99,7 @@ periph_wifi_state_t periph_wifi_is_connected(esp_periph_handle_t periph)
     return wifi->wifi_state;
 }
 
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
 static void _wifi_smartconfig_event_callback(void *arg, esp_event_base_t event_base,
         int32_t event_id, void *event_data)
 {
@@ -239,7 +239,7 @@ esp_err_t periph_wifi_config_start(esp_periph_handle_t periph, periph_wifi_confi
         // esp_wifi_start();
         err |= esp_smartconfig_set_type(mode);
         err |= esp_smartconfig_fast_mode(true);
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
         smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
         err |= esp_smartconfig_start(&cfg);
         esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, &_wifi_smartconfig_event_callback, NULL);
@@ -289,7 +289,7 @@ static void wifi_reconnect_timer(xTimerHandle tmr)
     }
 }
 
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
 static void _wifi_event_callback(void *arg, esp_event_base_t event_base,
                                  int32_t event_id, void *event_data)
 {
@@ -388,7 +388,7 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         return ESP_FAIL;
     }
 
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_wifi_event_callback, self));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &_wifi_event_callback, self));
@@ -430,7 +430,7 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
             ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_password((uint8_t *)periph_wifi->wpa2_e_cfg->eap_password, strlen(periph_wifi->wpa2_e_cfg->eap_password)));
         }
 
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
         ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_enable());
 #else
         esp_wpa2_config_t wpa2_config = WPA2_CONFIG_INIT_DEFAULT();

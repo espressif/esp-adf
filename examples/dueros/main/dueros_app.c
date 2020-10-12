@@ -65,7 +65,7 @@
 #define ESP_IDF_VERSION_VAL(major, minor, patch) 0
 #endif
 
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
 #include "driver/touch_pad.h"
 #endif
 
