@@ -25,6 +25,8 @@
 #ifndef _AUDIO_SYS_H_
 #define _AUDIO_SYS_H_
 
+#include "esp_err.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,6 +51,27 @@ int audio_sys_get_tick_by_time_ms(int ms);
  *     -  time with millisecond
  */
 int64_t audio_sys_get_time_ms(void);
+
+/**
+ * @brief   Function to print the CPU usage of tasks over a given AUDIO_SYS_TASKS_ELAPSED_TIME_MS.
+ *
+ * This function will measure and print the CPU usage of tasks over a specified
+ * number of ticks (i.e. real time stats). This is implemented by simply calling
+ * uxTaskGetSystemState() twice separated by a delay, then calculating the
+ * differences of task run times before and after the delay.
+ *
+ * @note    If any tasks are added or removed during the delay, the stats of
+ *          those tasks will not be printed.
+ * @note    This function should be called from a high priority task to minimize
+ *          inaccuracies with delays.
+ * @note    When running in dual core mode, each core will correspond to 50% of
+ *          the run time.
+ *
+ * @return
+ *  - ESP_OK
+ *  - ESP_FIAL
+ */
+esp_err_t audio_sys_get_real_time_stats(void);
 
 #ifdef __cplusplus
 }
