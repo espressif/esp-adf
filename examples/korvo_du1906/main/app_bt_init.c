@@ -58,7 +58,7 @@ esp_periph_handle_t app_bluetooth_init(esp_periph_set_handle_t set)
     esp_periph_start(set, bt_periph);
     ESP_LOGI(TAG, "Start Bluetooth peripherals");
 
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
 #else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);

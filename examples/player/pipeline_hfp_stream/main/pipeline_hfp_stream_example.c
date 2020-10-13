@@ -87,7 +87,7 @@ void app_main(void)
     esp_bt_dev_set_device_name("ESP-ADF-HFP");
     hfp_open_and_close_evt_cb_register(bt_app_hf_client_audio_open, bt_app_hf_client_audio_close);
     hfp_service_init();
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
 #else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
