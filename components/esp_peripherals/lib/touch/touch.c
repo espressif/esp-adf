@@ -173,11 +173,11 @@ static touch_status_t touch_get_state(esp_touch_handle_t touch, esp_touch_item_t
     }
 
     touch_item->last_read_tick = tick;
-
-#if CONFIG_IDF_TARGET_ESP32
-    esp_err_t err = touch_pad_read_filtered(touch_item->touch_num, &touch_item->last_read_value);
-#elif CONFIG_IDF_TARGET_ESP32S2
     esp_err_t err = ESP_OK;
+#if CONFIG_IDF_TARGET_ESP32
+    err = touch_pad_read_filtered(touch_item->touch_num, &touch_item->last_read_value);
+#elif CONFIG_IDF_TARGET_ESP32S2
+    err = ESP_OK;
 #endif
 
 

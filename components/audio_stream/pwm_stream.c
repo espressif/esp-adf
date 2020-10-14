@@ -299,7 +299,7 @@ static void IRAM_ATTR timer_group_isr(void *para)
 static esp_err_t audio_pwm_init(const audio_pwm_config_t *cfg)
 {
     esp_err_t res = ESP_OK;
-    AUDIO_NULL_CHECK(TAG, cfg, return NULL);
+    AUDIO_NULL_CHECK(TAG, cfg, return ESP_ERR_INVALID_ARG);
     if (!(cfg->tg_num < TIMER_GROUP_MAX)) {
         ESP_LOGE(TAG, "%s:%d (%s): AUDIO PWM TIMER GROUP NUMBER IS %d AND SHOULD BE 0 OR 1", __FILENAME__, __LINE__, __FUNCTION__, cfg->tg_num);
     }

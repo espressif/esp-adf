@@ -1,4 +1,5 @@
-# Espressif ESP32 Partition Table
-# Name,  Type, SubType, Offset,  Size
-factory, app,  factory, 0x010000, 3840k
-nvs,     data, nvs,     0x3D0000, 16K
+# Name,   Type, SubType, Offset,  Size, Flags
+# Note: if you change the phy_init or app partition offset, make sure to change the offset in Kconfig.projbuild
+nvs,      data, nvs,     0x9000,  0x6000,
+phy_init, data, phy,     0xf000,  0x1000,
+factory,  app,  factory, 0x10000, 0x300000,
