@@ -244,7 +244,7 @@ static void a2dp_sink_blufi_start(coex_handle_t *handle)
     ESP_LOGI(TAG, "Start peripherals");
     esp_periph_start(handle->set, handle->bt_periph);
 
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
 #else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);

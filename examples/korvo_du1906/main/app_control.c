@@ -222,7 +222,7 @@ void app_init(void)
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     // step 2. initialize sdcard
-    audio_board_sdcard_init(set);
+    audio_board_sdcard_init(set, SD_MODE_1_LINE);
 
     // step 3. setup display service
     disp_serv = audio_board_led_init();

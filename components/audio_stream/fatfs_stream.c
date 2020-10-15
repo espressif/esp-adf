@@ -158,7 +158,8 @@ static int _fatfs_read(audio_element_handle_t self, char *buffer, int len, TickT
     audio_element_getinfo(self, &info);
 
     ESP_LOGD(TAG, "read len=%d, pos=%d/%d", len, (int)info.byte_pos, (int)info.total_bytes);
-    int rlen = fread(buffer, 1, len, fatfs->file);
+    /* use file descriptors to access files */
+    int rlen = read(fileno(fatfs->file), buffer, len);
     if (rlen <= 0) {
         ESP_LOGW(TAG, "No more data,ret:%d", rlen);
     } else {

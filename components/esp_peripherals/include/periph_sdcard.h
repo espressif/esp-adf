@@ -47,11 +47,23 @@ typedef enum  {
 } periph_sdcard_event_id_t;
 
 /**
+ * @brief  SD card mode, SPI, 1-line SD mode, 4-line SD mode
+ *
+ */
+typedef enum {
+    SD_MODE_SPI    = 0x0,  /*!< sd_card SPI*/
+    SD_MODE_1_LINE = 0x1,  /*!< sd_card 1-line SD mode*/
+    SD_MODE_4_LINE = 0x2,  /*!< sd_card 4-line SD mode*/
+    SD_MODE_MAX,
+} periph_sdcard_mode_t;
+
+/**
  * @brief   The SD Card Peripheral configuration
  */
 typedef struct {
-    int card_detect_pin;    /*!< Card detect gpio number */
-    const char* root;       /*!< Base path for vfs */
+    int card_detect_pin;        /*!< Card detect gpio number */
+    const char* root;           /*!< Base path for vfs */
+    periph_sdcard_mode_t mode;  /*!< card mode*/
 } periph_sdcard_cfg_t;
 
 

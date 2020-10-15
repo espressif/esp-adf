@@ -130,7 +130,7 @@ void setup_sdcard()
             esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
             set = esp_periph_set_init(&periph_cfg);
         }
-        audio_board_sdcard_init(set);
+        audio_board_sdcard_init(set, SD_MODE_1_LINE);
         sdcard_handle = esp_periph_set_get_by_id(set, PERIPH_ID_SDCARD);
     }
 }
@@ -668,7 +668,7 @@ esp_periph_handle_t a2dp_init()
     esp_periph_start(set, bt_periph);
     ESP_LOGI(TAG, "Start Bluetooth peripherals");
 
-#if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(3, 3, 2))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
 #else
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);

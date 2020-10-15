@@ -151,7 +151,7 @@ void app_main()
 
     ESP_LOGI(TAG, "[ 1 ] Start codec chip");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
-    audio_board_sdcard_init(esp_periph_set_init(&periph_cfg));
+    audio_board_sdcard_init(esp_periph_set_init(&periph_cfg), SD_MODE_1_LINE);
 
     ESP_LOGI(TAG, "[ 2.0 ] Create audio pipeline for recording");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();

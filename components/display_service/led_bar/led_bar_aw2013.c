@@ -235,7 +235,7 @@ esp_err_t led_bar_aw2013_pattern(void *handle, int pat, int value)
 
 esp_err_t led_bar_aw2013_set_blink_time(void *handle, uint8_t time, int period)
 {
-    AUDIO_NULL_CHECK(TAG, handle, return NULL);
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
 
     led_bar_aw2013_cmd_t cmd = {
         .instance = handle,

@@ -230,7 +230,7 @@ void duer_app_init(void)
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     audio_board_key_init(set);
-    audio_board_sdcard_init(set);
+    audio_board_sdcard_init(set, SD_MODE_1_LINE);
 
     ESP_LOGI(TAG, "[Step 2.1] Initialize input key service");
     input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();

@@ -168,7 +168,7 @@ error:
 
 esp_err_t vol_monitor_destroy(vol_monitor_handle_t handle)
 {
-    AUDIO_NULL_CHECK(TAG, handle, return NULL);
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
     vol_monitor_ctx_t *vol_monitor = (vol_monitor_ctx_t *)handle;
     if (vol_monitor->check_timer != NULL) {
         esp_timer_stop(vol_monitor->check_timer);
@@ -200,7 +200,7 @@ esp_err_t vol_monitor_set_event_cb(vol_monitor_handle_t handle, vol_monitor_even
 
 esp_err_t vol_monitor_start_freq_report(vol_monitor_handle_t handle)
 {
-    AUDIO_NULL_CHECK(TAG, handle, return NULL);
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
     vol_monitor_ctx_t *vol_monitor = (vol_monitor_ctx_t *)handle;
     esp_err_t ret = ESP_OK;
     mutex_lock(vol_monitor->mutex);
@@ -217,7 +217,7 @@ esp_err_t vol_monitor_start_freq_report(vol_monitor_handle_t handle)
 
 esp_err_t vol_monitor_stop_freq_report(vol_monitor_handle_t handle)
 {
-    AUDIO_NULL_CHECK(TAG, handle, return NULL);
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
     vol_monitor_ctx_t *vol_monitor = (vol_monitor_ctx_t *)handle;
     mutex_lock(vol_monitor->mutex);
     vol_monitor->report_start = 0;
@@ -227,7 +227,7 @@ esp_err_t vol_monitor_stop_freq_report(vol_monitor_handle_t handle)
 
 esp_err_t vol_monitor_set_report_freq(vol_monitor_handle_t handle, int freq)
 {
-    AUDIO_NULL_CHECK(TAG, handle, return NULL);
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
     vol_monitor_ctx_t *vol_monitor = (vol_monitor_ctx_t *)handle;
     mutex_lock(vol_monitor->mutex);
     vol_monitor->config->report_freq = freq;
