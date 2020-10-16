@@ -81,7 +81,7 @@ static bool raw_task_run_flag = 0;
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
 #else
-#define ESP_IDF_VERSION_VAL(major, minor, patch)  0
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
 #endif
 
 void setup_wifi()

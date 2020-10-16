@@ -62,7 +62,7 @@
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
 #else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 0
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
 #endif
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
