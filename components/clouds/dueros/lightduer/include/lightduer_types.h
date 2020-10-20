@@ -52,10 +52,14 @@ typedef size_t   duer_size_t;
 typedef unsigned int   duer_size_t;
 #endif
 typedef unsigned int   duer_u32_t;
-typedef unsigned short duer_u16_t;
-typedef unsigned char  duer_u8_t;
 typedef signed int     duer_s32_t;
+typedef unsigned short duer_u16_t;
+typedef signed int     duer_s16_t;
+typedef unsigned char  duer_u8_t;
+typedef signed char    duer_s8_t;
 typedef char           duer_bool;
+
+typedef duer_status_t (*duer_data_callback)(duer_context, const void *, duer_size_t);
 
 enum _baidu_ca_bool_e {
     DUER_FALSE,
@@ -86,6 +90,8 @@ typedef enum _duer_errcode_enum {
     DUER_ERR_TRANS_TIMEOUT           = -0x0032, // send timeout
     DUER_ERR_REG_FAIL                = -0x0033,
     DUER_ERR_TRANS_DNS_FAIL          = -0x0034,
+    DUER_ERR_WIFI_SIGNAL_WEAK        = -0x0035,
+    DUER_ERR_WIFI_DISCONNECTED       = -0x0036,
 
     DUER_ERR_MBEDTLS_NET_MAX         = -0x0040,
     // -0x0040 - -0x0060 reserved for mbed net error code , see mbedtls/net.h for more info

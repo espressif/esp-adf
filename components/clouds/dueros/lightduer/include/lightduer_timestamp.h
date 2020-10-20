@@ -26,6 +26,22 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Macros used to compare time values
+ *
+ *  These inlines deal with timer wrapping correctly. You are
+ *  strongly encouraged to use them
+ *  1. Because people otherwise forget
+ *  2. Because if the timer wrap changes in future you won't have to
+ *     alter your code.
+ *
+ * DUER_TIME_AFTER(a,b) returns true if the time a is after time b.
+ */
+#define DUER_TIME_AFTER(a, b)              ((duer_s32_t)(b) - (duer_s32_t)(a) < 0)
+#define DUER_TIME_BEFORE(a, b)             DUER_TIME_AFTER(b, a)
+#define DUER_TIME_AFTER_EQUAL(a, b)        ((duer_s32_t)(a) - (duer_s32_t)(b) >= 0)
+#define DUER_TIME_BEFORE_EQUAL(a, b)       DUER_TIME_AFTER_EQUAL(b, a)
+
 /*
  * Obtain the system timestamp by milliseconds
  *

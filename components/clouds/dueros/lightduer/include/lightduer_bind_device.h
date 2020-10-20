@@ -23,6 +23,7 @@
 #define BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_BIND_DEVICE_H
 
 #include "lightduer_types.h"
+#include "lightduer_dcs_router.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,11 +34,14 @@ extern "C" {
  * Start the task to bind device.
  *
  * PARAM:
+ * @param[in] uuid: the uuid of device
+ * @param[in] bind_token: the bind token of device
  * @param[in] lifecycle: the lifecycle of task in seconds, at least 60s
  *
  * @RETURN: success return DUER_OK, failed return DUER_ERR_FAILED.
  */
-duer_status_t duer_start_bind_device_task(size_t lifecycle);
+duer_status_t duer_start_bind_device_task(const char *uuid,
+        const char *bind_token, size_t lifecycle);
 
 /**
  * DESC:
@@ -49,9 +53,20 @@ duer_status_t duer_start_bind_device_task(size_t lifecycle);
  */
 duer_status_t duer_stop_bind_device_task(void);
 
+/**
+ * DESC:
+ * Send utoken to cloud to bind device.
+ *
+ * PARAM:
+ * @param[in] utoken: the token passed from App
+ * @param[in] callback: the callback function to receive the bind result
+ *
+ * @RETURN: success return DUER_OK, failed return other.
+ */
+duer_status_t duer_bind_device_use_utoken(const char *utoken, dcs_directive_handler callback);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_BIND_DEVICE_H */
-

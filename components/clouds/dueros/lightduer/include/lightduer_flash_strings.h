@@ -11,48 +11,18 @@
 extern "C" {
 #endif
 
-#include "lightduer_types.h"
-
-#define FLASH_MAGIC                     0x56BD50C4
-#define FLASH_MAGIC_BITMASK             0xffffffff
-#define FLASH_LEN_BITMASK               0xffffffff
-#define FLASH_INVALID_ADDR              0xffffffff
+#include "lightduer_flash.h"
 
 typedef enum {
     ALARM_FLASH             = 0,
     MAX_FLASH_MODULE        = 1,
 }duer_flash_module;
 
-typedef enum {
-    DUER_ERR_FLASH_CORRUPT = -2,
-    DUER_ERR_FLASH_FULL = -3,
-}duer_flash_errcode;
-
-/*
- * Configuration of flash operations.
- * xxx_align_bits: Number of last bits of address to be aligned. 
- *          For example, Bits=5 indicates header's last 5 bits are '0'.
- */
 typedef struct {
-    // For erase.
-    int sector_align_bits;
-    // For write.
-    int page_align_bits;
-    // For read.
-    int word_align_bits;
-} duer_flash_config_t;
-
-typedef struct {
-    void *handle;
-    unsigned int len;
+    duer_flash_context_t ctx;
     int max_ele_count;
     unsigned int *ele_list;
-} duer_flash_context_t;
-
-typedef struct {
-    unsigned int magic;         // Magic number to check data valid;
-    unsigned int len;           // Length of payload string;
-} duer_flash_data_header;
+} duer_flash_string_context_t;
 
 typedef char *(*duer_raw2string_func)(void *);
 typedef void (*duer_free_string_func)(char *);
@@ -67,56 +37,7 @@ typedef void (*duer_free_string_func)(char *);
  *
  * @RETURN: pointer of created context.
  */
-extern duer_flash_context_t *duer_flash_init(duer_flash_module module);
-
-/**
- * DESC:
- * Developer needs to implement this interface to read flash.
- * 
- * @PARAM[in] ctx: pointer of context.
- * @PARAM[in] addr: the address offset of flash to read.
- * @PARAM[out] buf: the buffer to store read data.
- * @PARAM[in] len: length of byte to read.
- *
- * @RETURN: 0 when success, else when fail.
- */
-extern int duer_flash_read(
-        duer_flash_context_t *ctx,
-        unsigned int addr,
-        void *buf,
-        unsigned int len);
-
-/**
- * DESC:
- * Developer needs to implement this interface to write flash.
- * 
- * @PARAM[in] ctx: pointer of context.
- * @PARAM[in] addr: the address offset of flash to write.
- * @PARAM[in] buf: the buffer stored writing data.
- * @PARAM[in] len: length of byte to write.
- *
- * @RETURN: 0 when success, else when fail.
- */
-extern int duer_flash_write(
-        duer_flash_context_t *ctx,
-        unsigned int addr,
-        void *buf,
-        unsigned int len);
-
-/**
- * DESC:
- * Developer needs to implement this interface to erase flash.
- * 
- * @PARAM[in] ctx: pointer of context.
- * @PARAM[in] addr: the address offset start of flash to erase.
- * @PARAM[in] len: length of byte to erase.
- *
- * @RETURN: 0 when success, else when fail.
- */
-extern int duer_flash_erase(
-        duer_flash_context_t *ctx,
-        unsigned int addr,
-        unsigned int len);
+extern duer_flash_string_context_t *duer_flash_init(duer_flash_module module);
 
 /**
  * DESC:
@@ -145,7 +66,7 @@ extern void duer_set_flash_config(const duer_flash_config_t *config);
  * @RETURN: 0 when success, else when fail.
  */
 extern int duer_append_to_flash(
-        duer_flash_context_t *ctx,
+        duer_flash_string_context_t *ctx,
         void *raw_data,
         duer_raw2string_func raw2string_func,
         duer_free_string_func free_string_func);
@@ -162,7 +83,7 @@ extern int duer_append_to_flash(
  * @RETURN: none
  */
 extern void duer_update_to_flash_prepare(
-        duer_flash_context_t *ctx,
+        duer_flash_string_context_t *ctx,
         unsigned int *p_first_ele_addr,
         unsigned int *p_last_ele_addr);
 
@@ -183,7 +104,7 @@ extern void duer_update_to_flash_prepare(
  * @RETURN: 0 when success, else when fail.
  */
 extern int duer_update_to_flash(
-        duer_flash_context_t *ctx,
+        duer_flash_string_context_t *ctx,
         void *raw_data,
         duer_raw2string_func raw2string_func,
         duer_free_string_func free_string_func,
@@ -211,7 +132,7 @@ extern int duer_update_to_flash(
  * @RETURN: 0 when success, else when fail.
  */
 extern void duer_update_flash_header(
-        duer_flash_context_t *ctx,
+        duer_flash_string_context_t *ctx,
         unsigned int first_ele_addr);
 
 /**
@@ -223,7 +144,7 @@ extern void duer_update_flash_header(
  * @RETURN: none
  */
 extern void duer_get_all_ele_from_flash(
-        duer_flash_context_t *ctx);
+        duer_flash_string_context_t *ctx);
 
 /**
  * DESC:
@@ -237,7 +158,7 @@ extern void duer_get_all_ele_from_flash(
  * @RETURN: 0 when success, else when fail.
  */
 extern int duer_get_flash_header(
-        duer_flash_context_t *ctx,
+        duer_flash_string_context_t *ctx,
         unsigned int flash_index,
         duer_flash_data_header *p_header);
 
@@ -254,7 +175,7 @@ extern int duer_get_flash_header(
  * @RETURN: 0 when success, else when fail.
  */
 extern void duer_parse_flash_ele_to_string(
-        duer_flash_context_t *ctx,
+        duer_flash_string_context_t *ctx,
         unsigned int flash_index,
         duer_flash_data_header data,
         char *payload_string);

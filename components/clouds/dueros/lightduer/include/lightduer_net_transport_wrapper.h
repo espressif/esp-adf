@@ -48,6 +48,13 @@ DUER_INT duer_status_t duer_trans_set_pk(duer_trans_handler hdlr,
                                          duer_size_t size);
 
 /*
+ * clear the public key or certificate, release the buffer
+ *
+ * @Param hdlr, in, the context for the transport
+ */
+DUER_INT duer_status_t duer_trans_unset_pk(duer_trans_handler hdlr);
+
+/*
  * Set the timeout for receiving data.
  *
  * @Param hdlr, in, the context for the transport
@@ -95,6 +102,11 @@ DUER_INT duer_status_t duer_trans_recv(duer_trans_handler hdlr,
                                        duer_size_t size,
                                        duer_addr_t* addr);
 
+
+DUER_INT duer_status_t duer_trans_recv_timeout(duer_trans_handler hdlr,
+                                       void* data,
+                                       duer_size_t size,
+                                       duer_addr_t* addr);
 /*
  * Disconnect from the remote host.
  *

@@ -57,6 +57,9 @@ DUER_INT void duer_debug_print(duer_u32_t level, const char* file,
 DUER_INT void duer_debug(duer_u32_t level, const char* file, duer_u32_t line,
                        const char* fmt, ...);
 
+DUER_INT void duer_dump(duer_u32_t level, const char* file, duer_u32_t line,
+                        const char *tag, const void *data, duer_size_t size);
+
 #ifdef __cplusplus
 }
 #endif

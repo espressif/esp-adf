@@ -46,7 +46,8 @@ typedef enum {
     DUER_HTTP_ERR_CONNECT,       // Connection error
     DUER_HTTP_CLOSED,            // Connection was closed by remote host
     DUER_HTTP_ERR_NOT_SUPPORT,   // not supported feature
-    DUER_HTTP_REDIRECTTION,      //take a redirection when http header contains 'Location'
+    DUER_HTTP_REDIRECTTION,      // take a redirection when http header contains 'Location'
+    DUER_HTTP_TOO_MANY_REDIRECT, // redirect too many times
 } duer_http_result_t;
 
 typedef enum {
@@ -58,16 +59,16 @@ typedef enum {
 } duer_http_method_t;
 
 typedef struct {
-    int  n_handle;
-    int  (*init)(void *socket_args);
-    int  (*open)(int socket_handle);
-    int  (*connect)(int socket_handle, const char *host, const int port);
-    void (*set_blocking)(int socket_handle, int blocking);
-    void (*set_timeout)(int socket_handle, int timeout);
-    int  (*recv)(int socket_handle, void *data, unsigned size);
-    int  (*send)(int socket_handle, const void *data, unsigned size);
-    int  (*close)(int socket_handle);
-    void (*destroy)(int socket_handle);
+    duer_handler n_handle;
+    duer_handler (*init)(void *socket_args);
+    int  (*open)(duer_handler socket_handle);
+    int  (*connect)(duer_handler socket_handle, const char *host, const int port);
+    void (*set_blocking)(duer_handler socket_handle, int blocking);
+    void (*set_timeout)(duer_handler socket_handle, int timeout);
+    int  (*recv)(duer_handler socket_handle, void *data, unsigned size);
+    int  (*send)(duer_handler socket_handle, const void *data, unsigned size);
+    int  (*close)(duer_handler socket_handle);
+    void (*destroy)(duer_handler socket_handle);
 } duer_http_socket_ops_t;
 
 //to tell data output callback user that if the current data block is first block or last block
@@ -93,15 +94,6 @@ typedef enum {
  */
 typedef int (*duer_http_data_handler)(void *p_user_ctx, duer_http_data_pos_t pos,
                                       const char *buf, size_t len, const char *type);
-/**
- * DESC:
- * callback to check whether need to stop getting data
- *
- * PARAM: none
- *
- * @RETURN 1: to stop; 0: no stop
- */
-typedef int (*duer_http_stop_notify_cb_t)();
 
 /**
  * DESC:
@@ -109,25 +101,26 @@ typedef int (*duer_http_stop_notify_cb_t)();
  * this callback is used to get the url
  *
  * PARAM:
+ * @param[in] p_user_ctx: usr ctx registed by user
  * @param[in] url: the url used by http to download data
  *
  * RETURN: none
  */
-typedef void (*duer_http_get_url_cb_t)(const char *url);
+typedef void (*duer_http_get_url_cb_t)(void *p_user_ctx, const char *url);
 
 typedef struct {
     const char               **pps_custom_headers;
     size_t                     sz_headers_count;
     int                        n_http_response_code; // http response code
     duer_http_socket_ops_t     ops;                  // socket operations
+    int                        scheme;               // http or https type,1 is https, 0 is http
     duer_http_data_handler     data_hdlr_cb;         // callback for output data
     void                      *p_data_hdlr_ctx;      // users args for data_hdlr_cb
     int                        n_http_content_len;   // http content length
     // http content type
     char                       p_http_content_type[DUER_HTTP_CONTENT_TYPE_LEN_MAX];
     char                      *p_location;           // http header "Location"
-    // a callback to check that stopping http client getting data or not
-    duer_http_stop_notify_cb_t check_stop_notify_cb;
+    int                        stop_flag;
     // to get the url used to download, the last url will be returned if 302 location happen
     duer_http_get_url_cb_t     get_url_cb;
     int                        n_is_chunked;
@@ -264,15 +257,13 @@ int duer_http_get_rsp_code(duer_http_client_t *p_client);
 
 /**
  * DESC:
- * register callback to check stop flag
+ * Notify the http module to stop download.
  *
  * @param[in] p_client:   pointer of the http client
- * @param[in] chk_stp_cb: to notify httpclient to stop
  *
  * @RETURN    none
  */
-void duer_http_reg_stop_notify_cb(duer_http_client_t *p_client,
-                                  duer_http_stop_notify_cb_t chk_stp_cb);
+void duer_http_stop_notify(duer_http_client_t *p_client);
 
 /**
  * DESC:

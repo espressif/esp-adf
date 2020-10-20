@@ -52,6 +52,7 @@ typedef struct _duer_trans_s {
     duer_u32_t          read_timeout;
     duer_addr_t         addr;
     const void          *key_info;
+    duer_bool           is_encrypted;
 #ifdef NET_TRANS_ENCRYPTED_BY_AES_CBC
     unsigned char       received_header[DUER_SIZEOF_TCPHEADER]; // header info
     duer_size_t         received_header_bytes; // received header bytes[0-DUER_SIZEOF_TCPHEADER]

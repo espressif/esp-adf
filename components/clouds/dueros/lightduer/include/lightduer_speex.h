@@ -32,7 +32,7 @@ typedef void *duer_speex_handler;
 
 typedef void (*duer_encoded_func)(const void *, size_t);
 
-duer_speex_handler duer_speex_create(int rate);
+duer_speex_handler duer_speex_create(int rate, int quality);
 
 void duer_speex_encode(duer_speex_handler handler, const void *data, size_t size, duer_encoded_func func);
 

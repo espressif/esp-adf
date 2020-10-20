@@ -74,6 +74,12 @@ DUER_INT duer_status_t duer_trans_encrypted_recv(duer_trans_ptr trans,
                                                  duer_size_t size,
                                                  duer_addr_t* addr);
 
+
+DUER_INT duer_status_t duer_trans_encrypted_recv_timeout(duer_trans_ptr trans,
+                                                 void* data,
+                                                 duer_size_t size,
+                                                 duer_u32_t timeout,
+                                                 duer_addr_t* addr);
 /*
  * Disconnect from the remote host.
  *

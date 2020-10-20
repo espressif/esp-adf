@@ -22,7 +22,7 @@
 #ifndef BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_OTA_UPDATER_H
 #define BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_OTA_UPDATER_H
 
-#include "lightduer_ota_unpack.h"
+#include "lightduer_ota_unpacker.h"
 #include "lightduer_ota_downloader.h"
 #include "mbedtls/md5.h"
 
@@ -59,22 +59,21 @@ typedef struct _duer_ota_updater_s {
     duer_ota_unpacker_t *unpacker;
     duer_ota_downloader_t *downloader;
     duer_ota_update_command_t *update_cmd;
-    size_t received_data_size;
+    int received_data_size;
+    int progress;
     mbedtls_md5_context md5_ctx;
 } duer_ota_updater_t;
 
 typedef struct _duer_ota_init_ops_s {
 /*
- * You need to call duer_ota_unpack_register_updater()
- * to implement duer_ota_installer_t in init_updater callback function
- * Call duer_ota_unpack_set_private_data() to set your privater data
+ * Call duer_ota_installer_register_installer() to register the
+ * OTA installer
  */
-    int (*init_updater)(duer_ota_updater_t *updater);
+    int (*register_installer)(void);
 /*
- * You can free the resource which you create in init_updater callback function
- *
+ * Unregister OTA installer
  */
-    int (*uninit_updater)(duer_ota_updater_t *updater);
+    int (*unregister_installer)(void);
 /*
  * Implement reboot system function
  */
@@ -91,7 +90,7 @@ typedef void (*OTA_Updater)(int arg, void *update_cmd);
  * @return int: Success: DUER_OK
  *              Failed:  Other
  */
-extern int duer_init_ota(duer_ota_init_ops_t *ops);
+extern int duer_init_ota(duer_ota_init_ops_t const *ops);
 
 /*
  * User Call it to enable/disable OTA
@@ -136,12 +135,12 @@ extern int duer_ota_get_reboot(void);
 /*
  * get the OTA update command
  *
- * @param void: duer_ota_updater_t *
+ * @param void:
  *
- * @return Success: duer_ota_update_command_t*
+ * @return Success: duer_ota_update_command_t const *
  *         Failed:  NULL
  */
-extern duer_ota_update_command_t *duer_ota_get_update_cmd(const duer_ota_updater_t *updater);
+extern duer_ota_update_command_t const *duer_ota_get_update_cmd(void);
 
 /*
  * Create a OTA updater to update the firmware
@@ -151,7 +150,7 @@ extern duer_ota_update_command_t *duer_ota_get_update_cmd(const duer_ota_updater
  * @return int: Success: DUER_OK
  *              Failed:  Other
  */
-extern int duer_ota_update_firmware(duer_ota_update_command_t *update_cmd);
+extern int duer_ota_update_firmware(duer_ota_update_command_t const *update_cmd);
 
 #ifdef __cplusplus
 }

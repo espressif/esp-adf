@@ -41,6 +41,8 @@ typedef enum {
     DCS_AUDIO_FINISHED,
     DCS_AUDIO_STOPPED,
     DCS_NEED_OPEN_MIC,
+    DCS_ALERT_STARTED,
+    DCS_ALERT_FINISHED,
 } duer_dcs_channel_switch_event_t;
 
 #ifdef DCS_CRITICAL_LOCK_DEBUG
@@ -75,6 +77,8 @@ extern const char *DCS_VOICE_INPUT_NAMESPACE;
 extern const char *DCS_SCREEN_NAMESPACE;
 extern const char *DCS_SCREEN_EXTENDED_CARD_NAMESPACE;
 extern const char *DCS_IOT_CLOUD_SYSTEM_NAMESPACE;
+extern const char *DCS_PLAYBACK_CONTROL_NAMESPACE;
+extern const char *DCS_RECOMMEND_NAMESPACE;
 
 // message keys
 extern const char *DCS_DIRECTIVE_KEY;
@@ -119,6 +123,10 @@ extern const char *DCS_UNPARSED_DIRECTIVE_KEY;
 extern const char *DCS_FORMAT_KEY;
 extern const char *DCS_MESSAGE_KEY;
 extern const char *DCS_QUERY_KEY;
+extern const char *DCS_TIME_OF_RECOMMEND;
+extern const char *DCS_STUTTER_DURATION;
+extern const char *DCS_PREVIOUS_DIALOG_ID_KEY;
+extern const char *DCS_ACTIVE_DIALOG_ID_KEY;
 
 // directive name
 extern const char *DCS_SPEAK_NAME;
@@ -143,6 +151,7 @@ extern const char *DCS_RENDER_WEATHER;
 extern const char *DCS_RENDER_PLAYER_INFO;
 extern const char *DCS_RENDER_AUDIO_LIST;
 extern const char *DCS_RENDER_ALBUM_LIST;
+extern const char *DCS_SET_ACTIVE_DIALOG;
 
 // internal directive.
 extern const char *DCS_DIALOGUE_FINISHED_NAME;
@@ -166,6 +175,7 @@ extern const char *DCS_VOLUME_CHANGED_NAME;
 extern const char *DCS_MUTE_CHANGED_NAME;
 extern const char *DCS_SPEECH_STATE_NAME;
 extern const char *DCS_LINK_CLICKED_NAME;
+extern const char *DCS_RECOMMEND_NAME;
 
 // internal exception type
 extern const char *DCS_UNEXPECTED_INFORMATION_RECEIVED_TYPE;
@@ -244,15 +254,41 @@ void duer_speech_on_stop_internal(void);
 
 /**
  * DESC:
+ * Notify that audio is stopped.
+ *
+ * PARAM: none
+ *
+ * @RETURN: none.
+ */
+void duer_dcs_audio_on_stopped_internal(void);
+
+/**
+ * DESC:
  * Report exception.
  *
  * @PARAM[in] directive: which directive cause to the exception
+ * @PARAM[in] directive_len: the length of directive, if directive_len <=0, the value got from strlen
  * @PARAM[in] type: exception type
  * @PARAM[in] msg: excetpion content
  *
  * @RETURN: 0 if success, negative if failed.
  */
-int duer_report_exception_internal(const char* directive, const char* type, const char* msg);
+int duer_report_exception_internal(const char* directive, size_t directive_len,
+                                   const char* type, const char* msg);
+
+/**
+ * DESC:
+ * get Report exception in baidu_json format.
+ *
+ * @PARAM[in] directive: which directive cause to the exception
+ * @PARAM[in] directive_len: the length of directive, if directive_len <=0, the value got from strlen
+ * @PARAM[in] type: exception type
+ * @PARAM[in] msg: excetpion content
+ *
+ * @RETURN: NULL if failed.
+ */
+baidu_json *duer_get_exception_internal(const char *directive, size_t directive_len,
+                                        const char *type, const char *msg);
 
 /**
  * DESC:
@@ -514,6 +550,16 @@ void duer_dcs_device_control_uninitialize_internal(void);
 
 /**
  * DESC:
+ * Uninitialize the DCS infrared control interface.
+ *
+ * @PARAM: none.
+ *
+ * @RETURN: none.
+ */
+void duer_dcs_infrared_control_uninitialize_internal(void);
+
+/**
+ * DESC:
  * Uninitialize the DCS audio player interface.
  *
  * @PARAM: none.
@@ -582,6 +628,54 @@ duer_status_t duer_add_dcs_directive_internal(const duer_directive_list *directi
  * @return 0 if success, negative if failed.
  */
 duer_status_t duer_reg_client_context_cb_internal(dcs_client_context_handler cb);
+
+/**
+ * DESC:
+ * Checking whether local player is paused by higher play channel.
+ *
+ * @RETURN: Reture DUER_TRUE if local player is paused, else returen DUER_FALSE.
+ */
+duer_bool duer_local_player_is_paused_internal(void);
+
+/**
+ * DESC:
+ * Checking whether local player is playing.
+ *
+ * @RETURN: Reture DUER_TRUE if local player is playing, else returen DUER_FALSE.
+ */
+duer_bool duer_local_player_is_playing_internal(void);
+
+/**
+ * DESC:
+ * Pause the loacl player.
+ *
+ * @RETURN: none.
+ */
+void duer_pause_local_player_internal(void);
+
+/**
+ * DESC:
+ * Resume the loacl player.
+ *
+ * @RETURN: none.
+ */
+void duer_resume_local_player_internal(void);
+
+/**
+ * DESC:
+ * Stop the loacl player.
+ *
+ * @RETURN: none.
+ */
+void duer_stop_local_player_internal(void);
+
+/**
+ * Set dialog id.
+ *
+ * @param dialog_id: the new dialog id.
+ * @return 0 if success, negative if failed.
+ */
+duer_status_t duer_set_dialog_id_internal(const char *dialog_id);
 
 #ifdef __cplusplus
 }

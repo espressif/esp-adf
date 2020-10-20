@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * File: lightduer_dcs_router.h
+ * File: lightduer_dcs.h
  * Auth: Gang Chen (chengang12@baidu.com)
  * Desc: Light duer DCS APIS.
  */
@@ -45,6 +45,12 @@ typedef enum {
     DCS_MEDIA_ERROR_INTERNAL_DEVICE_ERROR, // device internal error
 } duer_dcs_audio_error_t;
 
+typedef enum {
+    DCS_RECOMMEND_POWER_ON,
+    DCS_RECOMMEND_OUT_OF_BOX,
+    DCS_RECOMMEND_TIME_NUMBER,
+} duer_dcs_recommend_time_t;
+
 typedef struct {
     const char *url;
     int offset;
@@ -55,6 +61,11 @@ enum duer_dcs_device_capability {
     DCS_TTS_HTTPS_PROTOCAL_SUPPORTED = 0x01, // the device support https protocal to playing tts
     DCS_WECHAT_SUPPORTED             = 0x02, // the device support wechat
 };
+
+/**
+ * Internal used private namespace.
+ */
+extern const char *DCS_PRIVATE_NAMESPACE;
 
 /**
  * Initialize the dcs framework.
@@ -390,7 +401,7 @@ int duer_dcs_sync_state(void);
  * DESC:
  * Sending an "Exited" event to close the multi dialogue.
  *
- * @RETURN: None.
+ * @RETURN: 0 if succuss, negative if failed.
  */
 int duer_dcs_close_multi_dialog(void);
 
@@ -470,6 +481,97 @@ void duer_dcs_device_control_init(void);
  * @RETURN:   DUER_OK if success, negative if failed.
  */
 duer_status_t duer_dcs_capability_declare(duer_u32_t capability);
+
+/**
+ * DESC:
+ * Sending RecommendationRequested event, and DCS server will recommend a resource to device.
+ * Currently, only the scene of "POWER_ON" is supported, that means this function should be called
+ * only one time(when device power_on).
+ *
+ * @PARAM[in] type: type of the scene.
+ * @RETURN: 0 if succuss, negative if failed.
+ */
+int duer_dcs_recommend_request(duer_dcs_recommend_time_t time);
+
+/**
+ * DESC:
+ * Similar to duer_dcs_on_listen_started, except not create new dialog id, but get current one.
+ *
+ * PARAM: none
+ *
+ * @RETURN: 0 when success, negative when fail.
+ */
+int duer_dcs_on_listen_started_with_current_dialogid(void);
+
+/**
+ * DESC:
+ * Developer needs to implement this interface to pause local player.
+ *
+ * PARAM: none
+ *
+ * @RETURN: None
+ */
+void duer_dcs_local_player_pause_handler(void);
+
+/**
+ * DESC:
+ * Developer needs to implement this interface to resume local player.
+ *
+ * PARAM: none
+ *
+ * @RETURN: None
+ */
+void duer_dcs_local_player_resume_handler(void);
+
+/**
+ * DESC:
+ * Developer needs to implement this interface to stop local player.
+ *
+ * PARAM: none
+ *
+ * @RETURN: None
+ */
+void duer_dcs_local_player_stop_handler(void);
+
+/**
+ * DESC:
+ * Notify DCS module when local player paused.
+ *
+ * PARAM: none
+ *
+ * @RETURN: None
+ */
+void duer_dcs_local_player_on_paused(void);
+
+/**
+ * DESC:
+ * Notify DCS module when local player playing.
+ *
+ * PARAM: none
+ *
+ * @RETURN: None
+ */
+void duer_dcs_local_player_on_played(void);
+
+/**
+ * DESC:
+ * Notify DCS module when local player stopped.
+ *
+ * PARAM: none
+ *
+ * @RETURN: None
+ */
+void duer_dcs_local_player_on_stopped(void);
+
+/**
+ * DESC:
+ * Get the client context.
+ *
+ * PARAM: none
+ *
+ * @RETURN: NULL if failed, pointer point to the client context if success.
+ */
+baidu_json *duer_dcs_get_client_context(void);
 
 #ifdef __cplusplus
 }

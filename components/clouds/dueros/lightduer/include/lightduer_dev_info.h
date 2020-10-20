@@ -37,7 +37,21 @@ struct DevInfoOps {
  * Provide firmware information about the current system
  */
     int (*get_firmware_version)(char *firmware_version);
+/*
+ * Set firmware information about the current system
+ */
+    int (*set_firmware_version)(char const *firmware_version);
 };
+
+/*
+ * Set the firmware version of the current system
+ *
+ * @param firmware_version:
+ *
+ * @return int: Success: DUER_OK
+ *              Failed:  Other
+ */
+extern int duer_set_firmware_version(char const *firmware_version);
 
 /*
  * Get the firmware version of the current system

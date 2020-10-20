@@ -27,7 +27,7 @@ endchoice
 choice ESP32_KORVO_DU1906_DAC
     prompt "ESP32 KORVO DU1906 Board DAC chip"
     depends on ESP32_KORVO_DU1906_BOARD
-    default ESP32_KORVO_DU1906_CODEC_TAS5805M
+    default ESP32_KORVO_DU1906_DAC_TAS5805M
     help
         Select DAC chip to use on ESP32_KORVO_DU1906 board
 

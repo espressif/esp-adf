@@ -29,6 +29,8 @@
 #define URL_LEN 301
 #endif
 
+#define ERR_MSG_LEN (60)
+
 typedef enum _duer_downloader_Protocol {
     HTTP = 0,
     COAP = 1,
@@ -42,6 +44,7 @@ typedef struct _duer_ota_downloader_s {
     duer_mutex_t lock;
     char url[URL_LEN + 1];
     struct _duer_ota_downloader_ops_s *ops;
+    char err_msg[ERR_MSG_LEN];
 } duer_ota_downloader_t ;
 
 typedef int (*data_handler)(
@@ -225,5 +228,38 @@ extern int duer_ota_downloader_set_private_data(
  *                 Failed:  NULL
  */
 extern void *duer_ota_downloader_get_private_data(duer_ota_downloader_t *downloader);
+
+/*
+ * Report error message
+ *
+ * @param downloader: OTA Downloader
+ *           err_msg: error message
+ *          err_code: error code
+ *
+ * @return void:
+ */
+extern void duer_ota_downloader_report_err(
+        duer_ota_downloader_t *downloader,
+        char const *err_msg,
+        int err_code);
+/*
+ * Get error message
+ *
+ * @param downloader: downloader object
+ *
+ * @return: Success: error message
+ *           Failed: NULL
+ */
+extern char const *duer_ota_downloader_get_err_msg(duer_ota_downloader_t const *downloader);
+
+/*
+ * Check wheater the error message exists
+ *
+ * @param downloader: downloader object
+ *
+ * @return: Success: 1
+ *           Failed: -1
+ */
+extern int duer_ota_downloader_check_err_msg(duer_ota_downloader_t *downloader);
 
 #endif // BAIDU_DUER_LIGHTDUER_INCLUDE_LIGHTDUER_OTA_DOWNLOADER_H

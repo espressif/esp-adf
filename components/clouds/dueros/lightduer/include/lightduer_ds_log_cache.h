@@ -41,6 +41,16 @@ duer_status_t duer_ds_log_cache_push(duer_u32_t code, const baidu_json *message,
  */
 duer_status_t duer_ds_log_cache_report(void);
 
+/**
+ * initialize the resource
+ */
+duer_status_t duer_ds_log_cache_initialize(void);
+
+/**
+ * release the resources
+ */
+duer_status_t duer_ds_log_cache_finalize(void);
+
 #ifdef __cplusplus
 }
 #endif
