@@ -29,6 +29,7 @@
 #include "audio_mem.h"
 #include "audio_error.h"
 #include "audio_sys.h"
+#include "soc/soc_memory_layout.h"
 
 static const char *TAG = "AUDIO_SYS";
 
