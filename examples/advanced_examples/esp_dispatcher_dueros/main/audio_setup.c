@@ -140,7 +140,7 @@ static esp_err_t recorder_pipeline_open(void **handle)
     i2s_cfg.i2s_port = 1;
     i2s_cfg.i2s_config.use_apll = 0;
     i2s_cfg.i2s_config.sample_rate = 16000;
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
     i2s_cfg.type = AUDIO_STREAM_READER;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 #else
