@@ -122,6 +122,15 @@ char *audio_strdup(const char *str);
  */
 bool audio_mem_spiram_is_enabled(void);
 
+/**
+ * @brief   Stack on external SPI ram is enabled or not
+ *
+ * @return
+ *     - true, stack on spi ram is enabled
+ *     - false, stack on spi ram is not enabled
+ */
+bool audio_mem_spiram_stack_is_enabled(void);
+
 #define AUDIO_MEM_SHOW(x)  audio_mem_print(x, __LINE__, __func__)
 
 #ifdef __cplusplus
