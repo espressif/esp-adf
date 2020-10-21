@@ -30,6 +30,7 @@
 #include "board_pins_config.h"
 #include "esp_peripherals.h"
 #include "display_service.h"
+#include "periph_sdcard.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,7 +93,7 @@ esp_err_t audio_board_key_init(esp_periph_set_handle_t set);
  *     - ESP_OK, success
  *     - Others, fail
  */
-esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set);
+esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set, periph_sdcard_mode_t mode);
 
 /**
  * @brief Query audio_board_handle

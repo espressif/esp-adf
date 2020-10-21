@@ -114,8 +114,13 @@ esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
     return ret;
 }
 
-esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set)
+esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set, periph_sdcard_mode_t mode)
 {
+    if (mode != SD_MODE_1_LINE) {
+        ESP_LOGE(TAG, "current board only support 1-line SD mode!");
+        return ESP_FAIL;
+    }
+
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
         .card_detect_pin = get_sdcard_intr_gpio(), // GPIO_NUM_34
