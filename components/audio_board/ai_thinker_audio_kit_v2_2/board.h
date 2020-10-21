@@ -40,7 +40,6 @@ extern "C" {
  */
 struct audio_board_handle {
     audio_hal_handle_t audio_hal; /*!< audio hardware abstract layer handle */
-    audio_hal_handle_t adc_hal;   /*!< adc hardware abstract layer handle */
 };
 
 typedef struct audio_board_handle *audio_board_handle_t;
@@ -60,18 +59,18 @@ audio_board_handle_t audio_board_init(void);
 audio_hal_handle_t audio_board_codec_init(void);
 
 /**
- * @brief Initialize adc
+ * @brief Initialize led peripheral and display service
  *
- * @return The adc hal handle
+ * @return The audio display service handle
  */
-audio_hal_handle_t audio_board_adc_init(void);
+display_service_handle_t audio_board_led_init(void);
 
 /**
  * @brief Initialize led peripheral and display service
  *
  * @return The audio display service handle
  */
-display_service_handle_t audio_board_led_init(void);
+display_service_handle_t audio_board_blue_led_init(void);
 
 /**
  * @brief Initialize key peripheral
@@ -84,7 +83,6 @@ display_service_handle_t audio_board_led_init(void);
  */
 esp_err_t audio_board_key_init(esp_periph_set_handle_t set);
 
-
 /**
  * @brief Initialize sdcard peripheral
  *
@@ -95,7 +93,6 @@ esp_err_t audio_board_key_init(esp_periph_set_handle_t set);
  *     - Others, fail
  */
 esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set);
-
 
 /**
  * @brief Query audio_board_handle

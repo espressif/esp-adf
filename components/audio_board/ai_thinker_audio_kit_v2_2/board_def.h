@@ -1,12 +1,4 @@
 /*
- * @Author: your name
- * @Date: 2020-01-26 10:13:06
- * @LastEditTime : 2020-01-28 19:24:42
- * @LastEditors  : Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: \esp-adf\components\audio_board\aithinker\board_def.h
- */
-/*
  * ESPRESSIF MIT License
  *
  * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
@@ -33,43 +25,70 @@
 #ifndef _AUDIO_BOARD_DEFINITION_H_
 #define _AUDIO_BOARD_DEFINITION_H_
 
-/* SD card related */
-#define SD_CARD_INTR_GPIO GPIO_NUM_34
-#define SD_CARD_INTR_SEL GPIO_SEL_34
-#define SD_CARD_OPEN_FILE_NUM_MAX 5
+#define SDCARD_OPEN_FILE_NUM_MAX  5
+#define SDCARD_INTR_GPIO          GPIO_NUM_34
 
-#define HEADPHONE_DETECT GPIO_NUM_5
-#define PA_ENABLE_GPIO GPIO_NUM_21
+#define BUTTON_VOLUP_ID           GPIO_NUM_18
+#define BUTTON_VOLDOWN_ID         GPIO_NUM_5
+#define BUTTON_SET_ID             GPIO_NUM_19
+#define BUTTON_PLAY_ID            GPIO_NUM_23
+#define BUTTON_MODE_ID            GPIO_NUM_13
+#define BUTTON_REC_ID             GPIO_NUM_36
 
-#define GREEN_LED_GPIO GPIO_NUM_22
-#define BLUE_LED_GPIO GPIO_NUM_19
 
-#define BUTTON_REC_ID GPIO_NUM_36
-#define BUTTON_MODE_ID GPIO_NUM_13
+#define HEADPHONE_DETECT          GPIO_NUM_5
+#define PA_ENABLE_GPIO            GPIO_NUM_21
 
-/* Touch pad related */
-#define TOUCH_SEL_SET GPIO_SEL_19
-#define TOUCH_SEL_PLAY GPIO_SEL_23
-#define TOUCH_SEL_VOLUP GPIO_SEL_18
-#define TOUCH_SEL_VOLDWN GPIO_SEL_5
-
-#define TOUCH_SET GPIO_NUM_19
-#define TOUCH_PLAY GPIO_NUM_23
-#define TOUCH_VOLUP GPIO_NUM_18
-#define TOUCH_VOLDWN GPIO_NUM_5
+#define BLUE_LED_GPIO             GPIO_NUM_19
+#define GREEN_LED_GPIO            GPIO_NUM_22
 
 extern audio_hal_func_t AUDIO_CODEC_AC101_CODEC_HANDLE;
 
-#define AUDIO_CODEC_DEFAULT_CONFIG() {       \
-    .adc_input = AUDIO_HAL_ADC_INPUT_LINE1,  \
-    .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,  \
-    .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH, \
-    .i2s_iface = {                           \
-        .mode = AUDIO_HAL_MODE_SLAVE,        \
-        .fmt = AUDIO_HAL_I2S_NORMAL,         \
-        .samples = AUDIO_HAL_48K_SAMPLES,    \
-        .bits = AUDIO_HAL_BIT_LENGTH_16BITS, \
-    },                                       \
+#define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
+        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
+        .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
+        .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
+        .i2s_iface = {                                  \
+            .mode = AUDIO_HAL_MODE_SLAVE,               \
+            .fmt = AUDIO_HAL_I2S_NORMAL,                \
+            .samples = AUDIO_HAL_48K_SAMPLES,           \
+            .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
+        },                                              \
 };
+
+#define INPUT_KEY_NUM     6
+
+#define INPUT_KEY_DEFAULT_INFO() {                      \
+     {                                                  \
+        .type = PERIPH_ID_ADC_BTN,                      \
+        .user_id = INPUT_KEY_USER_ID_REC,               \
+        .act_id = BUTTON_REC_ID,                        \
+    },                                                  \
+    {                                                   \
+        .type = PERIPH_ID_ADC_BTN,                      \
+        .user_id = INPUT_KEY_USER_ID_MODE,              \
+        .act_id = BUTTON_MODE_ID,                       \
+    },                                                  \
+    {                                                   \
+        .type = PERIPH_ID_ADC_BTN,                      \
+        .user_id = INPUT_KEY_USER_ID_SET,               \
+        .act_id = BUTTON_SET_ID,                        \
+    },                                                  \
+    {                                                   \
+        .type = PERIPH_ID_ADC_BTN,                      \
+        .user_id = INPUT_KEY_USER_ID_PLAY,              \
+        .act_id = BUTTON_PLAY_ID,                       \
+    },                                                  \
+    {                                                   \
+        .type = PERIPH_ID_ADC_BTN,                      \
+        .user_id = INPUT_KEY_USER_ID_VOLUP,             \
+        .act_id = BUTTON_VOLUP_ID,                      \
+    },                                                  \
+    {                                                   \
+        .type = PERIPH_ID_ADC_BTN,                      \
+        .user_id = INPUT_KEY_USER_ID_VOLDOWN,           \
+        .act_id = BUTTON_VOLDOWN_ID,                    \
+    }                                                   \
+}
 
 #endif
