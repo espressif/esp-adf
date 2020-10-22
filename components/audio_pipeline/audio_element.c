@@ -468,6 +468,7 @@ void audio_element_task(void *pv)
     if (el->is_open && el->close) {
         ESP_LOGD(TAG, "[%s-%p] el closed", el->tag, el);
         el->close(el);
+        audio_element_force_set_state(el, AEL_STATE_STOPPED);
     }
     el->is_open = false;
     audio_free(el->buf);
