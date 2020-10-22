@@ -348,6 +348,7 @@ static void wifi_task(void *pvParameters)
                             item->running = false;
                             esp_wifi_setting_teardown(item->on_handle, NULL);
                         }
+                        serv->is_setting = false;
                     }
                     wifi_ssid_manager_save(serv->ssid_manager, (const char *)wifi_cfg.sta.ssid,  (const char *)wifi_cfg.sta.password);
                 }
@@ -462,12 +463,16 @@ static void wifi_task(void *pvParameters)
                     ESP_LOGI(TAG, "DUER_CMD_DESTROY");
                 } else if (wifi_msg.type == WIFI_SERV_CMD_UPDATE) {
                     wifi_config_t *info = (wifi_config_t *)wifi_msg.pdata;
-                    ESP_LOGI(TAG, "WIFI_SERV_CMD_UPDATE got ssid: %s, pwd: %s", info->sta.ssid, info->sta.password);
-                    serv->reason = WIFI_SERV_STA_SET_INFO;
-                    memcpy(&wifi_cfg, info, sizeof(wifi_config_t));
-                    configure_wifi_sta_mode(&wifi_cfg);
-                    esp_wifi_connect();
-                    audio_free(info);
+                    if (serv->is_setting) {
+                        ESP_LOGI(TAG, "WIFI_SERV_CMD_UPDATE got ssid: %s, pwd: %s", info->sta.ssid, info->sta.password);
+                        serv->reason = WIFI_SERV_STA_SET_INFO;
+                        memcpy(&wifi_cfg, info, sizeof(wifi_config_t));
+                        configure_wifi_sta_mode(&wifi_cfg);
+                        esp_wifi_connect();
+                        audio_free(info);
+                    } else {
+                        ESP_LOGW(TAG, "Not setting state, ignore the wifi information, ssid: %s, pwd: %s", info->sta.ssid, info->sta.password);
+                    }
                 }
             } else {
                 ESP_LOGI(TAG, "Not supported event type");
