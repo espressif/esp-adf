@@ -266,3 +266,8 @@ audio_err_t audio_player_mode_get(audio_player_mode_t *mode)
     ret = ap_manager_get_mode(mode);
     return ret;
 }
+
+audio_err_t audio_player_clear_audio_info(void)
+{
+    return ap_manager_clear_audio_info();
+}

@@ -23,6 +23,8 @@
 #include "display_service.h"
 #include "bdsc_json.h"
 #include "audio_mem.h"
+#include "app_voice_control.h"
+#include "app_bt_init.h"
 
 #define TAG "MAIN"
 
@@ -100,13 +102,16 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
             ESP_LOGE(TAG, "BUG!!!\n");
             return BDSC_CUSTOM_DESIRE_DEFAULT;
         }
+
         if (strstr((char *)asr_result->buffer, "打开") && strstr((char *)asr_result->buffer, "蓝牙")) {
+            app_bt_start();
             bdsc_engine_open_bt();
             return BDSC_CUSTOM_DESIRE_DEFAULT;
         }
         /* 通过语音控制蓝牙关闭 */
         if (strstr((char *)asr_result->buffer, "关闭") && strstr((char *)asr_result->buffer, "蓝牙")) {
             bdsc_engine_close_bt();
+            app_bt_stop();
             return BDSC_CUSTOM_DESIRE_DEFAULT;
         }
 
@@ -122,7 +127,6 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
         }
 
         if (err_value == -3005) {
-            // bdsc_play_hint(BDSC_HINT_NOT_FIND);
             BdsJsonPut(json);
             return BDSC_CUSTOM_DESIRE_RESUME;
         }
@@ -164,6 +168,22 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
          *
          * TIPS: 随 NLP 一起下发的TTS语音流，由SDK自动播放，暂时不对用户开放。
          */
+
+        cJSON *j_content;
+        /* 某些情况下，需要跳过当前会话 */
+        if (need_skip_current_playing()) {
+            ESP_LOGI(TAG, "skip playing");
+            return BDSC_CUSTOM_DESIRE_SKIP_DEFAULT;
+        }
+        if (!(j_content = BdsJsonParse((const char *)evt->data))) {
+            ESP_LOGE(TAG, "json format error");
+            return BDSC_CUSTOM_DESIRE_SKIP_DEFAULT;
+        }
+        
+        app_voice_control_feed_data(j_content, NULL);
+
+        BdsJsonPut(j_content);
+
         return BDSC_CUSTOM_DESIRE_DEFAULT;
 
     case BDSC_EVENT_ON_CHANNEL_DATA:
@@ -210,5 +230,5 @@ void app_main(void)
 
     bdsc_engine_init(&cfg);
 
-    // start_sys_monitor();
+    start_sys_monitor();
 }

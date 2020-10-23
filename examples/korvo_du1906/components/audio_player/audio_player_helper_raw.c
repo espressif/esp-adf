@@ -33,7 +33,7 @@
 static const char *TAG = "RAW_HELPER";
 static audio_element_handle_t raw_write_hd;
 static bool is_feed_done;
-
+static xQueueHandle g_queue;
 
 audio_err_t ap_helper_raw_handle_set(void *handle)
 {
@@ -93,8 +93,9 @@ audio_err_t audio_player_helper_raw_waiting_finished(ap_ops_attr_t *at, ap_ops_p
         if ((st.media_src == MEDIA_SRC_TYPE_MUSIC_RAW)
             && ((st.status == AUDIO_PLAYER_STATUS_STOPPED)
                 || (st.status == AUDIO_PLAYER_STATUS_FINISHED)
-                || (st.status == AUDIO_PLAYER_STATUS_ERROR))) {
-            if (st.status == AUDIO_PLAYER_STATUS_STOPPED) {
+                || (st.status == AUDIO_PLAYER_STATUS_ERROR)
+                || (st.status == AUDIO_PLAYER_STATUS_PAUSED))) {
+            if (st.status == AUDIO_PLAYER_STATUS_STOPPED || AUDIO_PLAYER_STATUS_PAUSED == st.status) {
                 // Use this status to break mix play
                 ret = ESP_ERR_AUDIO_STOP_BY_USER;
             }
@@ -118,6 +119,19 @@ audio_err_t ap_helper_raw_play_stop(ap_ops_attr_t *at, ap_ops_para_t *para)
     return ret;
 }
 
+audio_err_t ap_helper_raw_play_abort_outbf()
+{
+    audio_element_abort_output_ringbuf(raw_write_hd);
+    audio_element_finish_state(raw_write_hd);
+    audio_player_state_t st = {0};
+    st.media_src = MEDIA_SRC_TYPE_MUSIC_RAW;
+    st.status = AUDIO_PLAYER_STATUS_PAUSED;
+    if (g_queue) {
+        xQueueSend(g_queue, &st, 0);
+    }
+    return ESP_OK;
+}
+
 audio_err_t default_raw_player_init(void)
 {
     ap_ops_t ops = {
@@ -134,6 +148,7 @@ audio_err_t default_raw_player_init(void)
     // TODO where to free the queue
     xQueueHandle que = xQueueCreate(3, sizeof(audio_player_state_t));
     AUDIO_MEM_CHECK(TAG, que, return ESP_ERR_AUDIO_MEMORY_LACK);
+    g_queue = que;
     ap_manager_event_register(que);
     ops.para.media_src = MEDIA_SRC_TYPE_MUSIC_RAW;
     ops.para.ctx = que;

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2020 Baidu.com, Inc. All Rights Reserved
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  *
@@ -24,7 +24,6 @@
 #include "bdsc_profile.h"
 #include "auth_task.h"
 #include "bdsc_event_dispatcher.h"
-#include "mixed_play_task.h"
 #include "mqtt_client.h"
 #include "cJSON.h"
 
@@ -97,7 +96,7 @@ typedef struct {
     int                         auth_port;         /*!< BDSC auth port */
     bdsc_engine_event_handle_cb event_handler;     /*!< BDSC Event Handle */
     bdsc_engine_transport_t     transport_type;    /*!< BDSC transport type, see `bdsc_engine_transport_t` */
-    int                         bdsc_methods;      /*!< BDSC configuable methods*/ 
+    int                         bdsc_methods;      /*!< BDSC configuable methods*/
 } bdsc_engine_config_t;
 
 typedef enum {
@@ -125,20 +124,6 @@ struct bdsc_engine {
     SemaphoreHandle_t       enqueue_mutex;
 
     bdsc_engine_internal_st g_asr_tts_state;
-    char                    *g_movie_url;
-
-    QueueHandle_t           g_mixed_wait_queue;
-    QueueHandle_t           g_mixed_url_queue;
-
-    char                    *g_mixed_play_url;
-    esp_http_client_handle_t g_mixed_client;
-    enum {
-        MIXED_PLAYER_ST_IDLE,
-        MIXED_PLAYER_ST_TTS_PLAYING,
-        MIXED_PLAYER_ST_TTS_PLAYED,
-        MIXED_PLAYER_ST_URL_PLAYING,
-        MIXED_PLAYER_ST_URL_PLAYED,
-    } mixed_st;
     int                     g_one_request_over;
 
     esp_mqtt_client_handle_t g_mqtt_client;
@@ -152,7 +137,7 @@ struct bdsc_engine {
 
     cJSON                   *user_app_dataJ;
     char                    *asrnlp_ttsurl;
-    
+
     bool                    g_has_greeted;
     char                    *current_asr_words;
     char                    *asr_block_words;
@@ -160,8 +145,8 @@ struct bdsc_engine {
     int                     ota_trans_num;
     bool                    skip_tts_playing_once;
     bool                    in_ota_process_flag;
-
-	void                    *userData;
+    bool                    dsp_detect_error;
+    void                    *userData;
 };
 
 /**
@@ -258,6 +243,9 @@ int bdsc_engine_channel_data_upload(uint8_t *upload_data, size_t upload_data_len
  *  - ESP_FAIL on error
  */
 esp_err_t bdsc_engine_deinit(bdsc_engine_handle_t client);
+
+void start_sdk();
+void stop_sdk();
 
 #ifdef __cplusplus
 }

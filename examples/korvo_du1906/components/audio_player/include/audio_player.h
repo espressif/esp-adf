@@ -376,6 +376,14 @@ audio_err_t audio_player_mode_set(audio_player_mode_t mode);
  */
 audio_err_t audio_player_mode_get(audio_player_mode_t *mode);
 
+/*
+ * @brief Clear backup audio info.
+ *
+ * @return
+ *      - ESP_ERR_AUDIO_NO_ERROR: on success
+ *      - ESP_ERR_AUDIO_INVALID_PARAMETER: invalid arguments
+ */
+audio_err_t audio_player_clear_audio_info(void);
 
 #ifdef __cplusplus
 }

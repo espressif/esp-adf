@@ -323,6 +323,15 @@ audio_err_t ap_manager_prev(void);
  */
 audio_err_t ap_manager_seek(int seek_time_sec);
 
+/*
+ * @brief Clear backup audio info.
+ *
+ * @return
+ *      - ESP_ERR_AUDIO_NO_ERROR: on success
+ *      - ESP_ERR_AUDIO_INVALID_PARAMETER: invalid arguments
+ */
+audio_err_t ap_manager_clear_audio_info(void);
+
 #ifdef __cplusplus
 }
 #endif

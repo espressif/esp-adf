@@ -42,7 +42,7 @@ Flash address | Bin Path
 0x8000 | partitions.bin
 0xf000 | phy_init_data.bin
 0x10000 | app.bin
-0x570000 | DU1906_slave_v1.4.8.E.bin
+0x570000 | DU1906_slave_v1.5.5.D.bin
 0x7d9000 | audio_tone.bin
 0x7FF000 | profile.bin
 
@@ -60,7 +60,7 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 0x8000   ./firmware/partitions.bin \
 0xf000   ./firmware/phy_init_data.bin \
 0x10000  ./firmware/app.bin \
-0x570000 ./firmware/DU1906_slave_v1.4.8.E.bin \
+0x570000 ./firmware/DU1906_slave_v1.5.5.D.bin \
 0x7d9000 ./tone/audio_tone.bin \
 0x7FF000 ./profiles/profile.bin
 ```
@@ -191,13 +191,13 @@ idf.py flash -p PORT
 
 **Note:** Replace `PORT` with USB port name where ESP32-Korvo-DU1906 board is connected to.
 
-In addition, ESP32-Korvo-DU1906 have three more bins, `./firmware/DU1906_slave_v1.4.8.E.bin`,  `./profiles/profile.bin` and `./tone/audio-esp.bin`.
+In addition, ESP32-Korvo-DU1906 have three more bins, `./firmware/DU1906_slave_v1.5.5.D.bin`,  `./profiles/profile.bin` and `./tone/audio-esp.bin`.
 ```bash
 python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 --port PORT --baud 921600 \
 --before default_reset \
 --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect \
-0x570000 ./firmware/DU1906_slave_v1.4.8.E.bin \
+0x570000 ./firmware/DU1906_slave_v1.5.5.D.bin \
 0x7d9000 ./tone/audio_tone.bin \
 0x7FF000 ./profiles/profile.bin
 ```

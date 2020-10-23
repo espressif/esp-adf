@@ -42,7 +42,7 @@ char* generate_dcs_pam_needfree();
  *      - 0 : on success
  *      - -1: fail
  */
-int generate_asr_thirdparty_pam(char* pam_prama, size_t max_len);
+int generate_asr_thirdparty_pam(char* pam_prama, size_t max_len, int option);
 
 /**
  * @brief Generate auth parameters

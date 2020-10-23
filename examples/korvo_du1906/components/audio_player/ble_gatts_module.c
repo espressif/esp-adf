@@ -299,7 +299,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             break;
 #endif
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
-            /* advertising start complete event to indicate advertising start successful or failed */
+            /* advertising start complete event to indicate advertising start successfully or failed */
             if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
                 ESP_LOGE(TAG, "Advertising start failed");
             } else {
