@@ -38,6 +38,8 @@
 #include "audio_element.h"
 #include "wav_head.h"
 #include "esp_log.h"
+#include "unistd.h"
+#include "fcntl.h"
 
 #define FILE_WAV_SUFFIX_TYPE  "wav"
 #define FILE_OPUS_SUFFIX_TYPE "opus"
@@ -58,7 +60,7 @@ typedef struct fatfs_stream {
     audio_stream_type_t type;
     int block_size;
     bool is_open;
-    FILE *file;
+    int file;
     wr_stream_type_t w_type;
     bool write_header;
 } fatfs_stream_t;
@@ -109,44 +111,44 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
         return ESP_FAIL;
     }
     if (fatfs->type == AUDIO_STREAM_READER) {
-        fatfs->file = fopen(path, "r");
+        fatfs->file = open(path, O_RDONLY);
+        if (fatfs->file == -1) {
+            ESP_LOGE(TAG, "Failed to open. File name: %s, error message: %s, line: %d", path, strerror(errno), __LINE__);
+            return ESP_FAIL;
+        }
         struct stat siz =  { 0 };
         stat(path, &siz);
         info.total_bytes = siz.st_size;
-        ESP_LOGI(TAG, "File size is %d byte,pos:%d", (int)siz.st_size, (int)info.byte_pos);
-        if (fatfs->file && (info.byte_pos > 0)) {
-            if (fseek(fatfs->file, info.byte_pos, SEEK_SET) != 0) {
-                ESP_LOGE(TAG, "Error seek file");
+        ESP_LOGI(TAG, "File size: %d byte, file position: %d", (int)siz.st_size, (int)info.byte_pos);
+        if (info.byte_pos > 0) {
+            if (lseek(fatfs->file, info.byte_pos, SEEK_SET) < 0) {
+                ESP_LOGE(TAG, "Error seek file. Error message: %s, line: %d", strerror(errno), __LINE__);
                 return ESP_FAIL;
             }
         }
     } else if (fatfs->type == AUDIO_STREAM_WRITER) {
-        fatfs->file = fopen(path, "w+");
+        fatfs->file = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+        if (fatfs->file == -1) {
+            ESP_LOGE(TAG, "Failed to open. File name: %s, error message: %s, line: %d", path, strerror(errno), __LINE__);
+            return ESP_FAIL;
+        }
         fatfs->w_type =  get_type(path);
-        if (fatfs->file && STREAM_TYPE_WAV == fatfs->w_type) {
+        if (STREAM_TYPE_WAV == fatfs->w_type) {
             wav_header_t info = {0};
-            fwrite(&info, 1, sizeof(wav_header_t), fatfs->file);
-            fsync(fileno(fatfs->file));
-        } else if (fatfs->file && (STREAM_TYPE_AMR == fatfs->w_type) && (fatfs->write_header == true)) {
-            fwrite("#!AMR\n", 1, 6, fatfs->file);
-            fsync(fileno(fatfs->file));
-        } else if (fatfs->file && (STREAM_TYPE_AMRWB == fatfs->w_type) && (fatfs->write_header == true)) {
-            fwrite("#!AMR-WB\n", 1, 9, fatfs->file);
-            fsync(fileno(fatfs->file));
+            write(fatfs->file, &info, sizeof(wav_header_t));
+            fsync(fatfs->file);
+        } else if ((STREAM_TYPE_AMR == fatfs->w_type) && (fatfs->write_header == true)) {
+            write(fatfs->file, "#!AMR\n", 6);
+            fsync(fatfs->file);
+        } else if ((STREAM_TYPE_AMRWB == fatfs->w_type) && (fatfs->write_header == true)) {
+            write(fatfs->file, "#!AMR-WB\n", 9);
+            fsync(fatfs->file);
         }
     } else {
         ESP_LOGE(TAG, "FATFS must be Reader or Writer");
         return ESP_FAIL;
     }
-    if (fatfs->file == NULL) {
-        ESP_LOGE(TAG, "Failed to open file %s", path);
-        return ESP_FAIL;
-    }
     fatfs->is_open = true;
-    if (info.byte_pos && fseek(fatfs->file, info.byte_pos, SEEK_SET) != 0) {
-        ESP_LOGE(TAG, "Failed to seek to %d/%d", (int)info.byte_pos, (int)info.total_bytes);
-        return ESP_FAIL;
-    }
     int ret = audio_element_set_total_bytes(self, info.total_bytes);
     return ret;
 }
@@ -159,9 +161,11 @@ static int _fatfs_read(audio_element_handle_t self, char *buffer, int len, TickT
 
     ESP_LOGD(TAG, "read len=%d, pos=%d/%d", len, (int)info.byte_pos, (int)info.total_bytes);
     /* use file descriptors to access files */
-    int rlen = read(fileno(fatfs->file), buffer, len);
-    if (rlen <= 0) {
-        ESP_LOGW(TAG, "No more data,ret:%d", rlen);
+    int rlen = read(fatfs->file, buffer, len);
+    if (rlen == 0) {
+        ESP_LOGW(TAG, "No more data, ret:%d", rlen);
+    } else if (rlen == -1) {
+        ESP_LOGE(TAG, "The error is happened in reading data. Error message: %s", strerror(errno));
     } else {
         audio_element_update_byte_pos(self, rlen);
     }
@@ -173,12 +177,14 @@ static int _fatfs_write(audio_element_handle_t self, char *buffer, int len, Tick
     fatfs_stream_t *fatfs = (fatfs_stream_t *)audio_element_getdata(self);
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
-    int wlen =  fwrite(buffer, 1, len, fatfs->file);
-    fsync(fileno(fatfs->file));
-    ESP_LOGD(TAG, "write,%d, errno:%d,pos:%d", wlen, errno, (int)info.byte_pos);
+    int wlen =  write(fatfs->file, buffer, len);
+    fsync(fatfs->file);
     if (wlen > 0) {
         audio_element_update_byte_pos(self, wlen);
+    } if (wlen == -1) {
+        ESP_LOGE(TAG, "The error is happened in writing data. Error message: %s", strerror(errno));
     }
+
     return wlen;
 }
 
@@ -199,26 +205,26 @@ static esp_err_t _fatfs_close(audio_element_handle_t self)
     fatfs_stream_t *fatfs = (fatfs_stream_t *)audio_element_getdata(self);
 
     if (AUDIO_STREAM_WRITER == fatfs->type
-        && fatfs->file
+        && (fatfs->file != -1)
         && STREAM_TYPE_WAV == fatfs->w_type) {
         wav_header_t *wav_info = (wav_header_t *) audio_malloc(sizeof(wav_header_t));
 
         AUDIO_MEM_CHECK(TAG, wav_info, return ESP_ERR_NO_MEM);
 
-        if (fseek(fatfs->file, 0, SEEK_SET) != 0) {
-            ESP_LOGE(TAG, "Error seek file ,line=%d", __LINE__);
+        if (lseek(fatfs->file, 0, SEEK_SET) < 0) {
+            ESP_LOGE(TAG, "Error seek file. Error message: %s, line: %d", strerror(errno), __LINE__);
         }
         audio_element_info_t info;
         audio_element_getinfo(self, &info);
         wav_head_init(wav_info, info.sample_rates, info.bits, info.channels);
         wav_head_size(wav_info, (uint32_t)info.byte_pos);
-        fwrite(wav_info, 1, sizeof(wav_header_t), fatfs->file);
-        fsync(fileno(fatfs->file));
+        write(fatfs->file, wav_info, sizeof(wav_header_t));
+        fsync(fatfs->file);
         audio_free(wav_info);
     }
 
     if (fatfs->is_open) {
-        fclose(fatfs->file);
+        close(fatfs->file);
         fatfs->is_open = false;
     }
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
