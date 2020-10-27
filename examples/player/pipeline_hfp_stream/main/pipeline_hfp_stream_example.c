@@ -114,12 +114,8 @@ void app_main(void)
     i2s_cfg2.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg2);
 
-
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_stream_set_clk(i2s_stream_reader, 8000, 16, 1);
-#endif
     i2s_stream_set_clk(i2s_stream_writer, 8000, 16, 1);
-
 
     ESP_LOGI(TAG, "[3.2] Get hfp stream");
     hfp_stream_config_t hfp_config;
