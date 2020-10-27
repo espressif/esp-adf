@@ -31,6 +31,7 @@ extern "C" {
 typedef enum _duer_ds_log_version_enum {
     DUER_DS_LOG_VERSION_UNKNOWN  = 0x00,
     DUER_DS_LOG_VERSION_1_0      = 0x01,
+    DUER_DS_LOG_VERSION_2_0      = 0x02,
     DUER_DS_LOG_VERSION_MAX      = 0x08
 } duer_ds_log_version_enum_t;
 
@@ -42,6 +43,11 @@ typedef enum _duer_ds_log_level_enum {
     DUER_DS_LOG_LEVEL_DEBUG = 0x05,
     DUER_DS_LOG_LEVEL_MAX   = 0x08
 } duer_ds_log_level_enum_t;
+
+typedef enum {
+    DUER_DS_LOG_IMPORTANCE_NORMAL      = 0x00,
+    DUER_DS_LOG_IMPORTANCE_MUST_REPORT = 0x01,
+} duer_ds_log_importance_enum_t;
 
 #ifndef DUER_DS_LOG_DEFAULT_REPORT_LEVEL
 #define DUER_DS_LOG_DEFAULT_REPORT_LEVEL DUER_DS_LOG_LEVEL_INFO
@@ -73,10 +79,15 @@ typedef enum _duer_ds_log_module_enum {
     DUER_DS_LOG_MODULE_MEDIA    = 0x03,
     DUER_DS_LOG_MODULE_HTTP     = 0x04,
     DUER_DS_LOG_MODULE_DCS      = 0x05,
-    DUER_DS_LOG_MODULE_SPEEX    = 0x06,
-    DUER_DS_LOG_MODULE_OTA      = 0x07,
+    DUER_DS_LOG_MODULE_APP      = 0x06,
+    DUER_DS_LOG_MODULE_WIFICFG  = 0x07,
     DUER_DS_LOG_MODULE_SYSTEM   = 0x08,
     DUER_DS_LOG_MODULE_ANALYSIS = 0x09,
+    DUER_DS_LOG_MODULE_BIND     = 0x0A,
+    DUER_DS_LOG_MODULE_SONIC    = 0x0B,
+    DUER_DS_LOG_MODULE_SMARTCFG = 0x0C,
+    DUER_DS_LOG_MODULE_AIRKISS  = 0x0D,
+    DUER_DS_LOG_MODULE_PM       = 0x0E,
     DUER_DS_LOG_MODULE_MAX      = 0x20
 } duer_ds_log_module_enum_t;
 
@@ -192,18 +203,25 @@ duer_status_t duer_ds_log_v_f(duer_ds_log_version_enum_t log_version,
                               duer_ds_log_module_enum_t  log_module,
                               duer_ds_log_family_enum_t  log_family,
                               int log_code,
-                              const baidu_json *log_message);
+                              const baidu_json *log_message,
+                              duer_ds_log_importance_enum_t importance);
 
 duer_status_t duer_ds_log_f(duer_ds_log_level_enum_t   log_level,
                             duer_ds_log_module_enum_t  log_module,
                             duer_ds_log_family_enum_t  log_family,
                             int log_code,
-                            const baidu_json *log_message);
+                            const baidu_json *log_message,
+                            duer_ds_log_importance_enum_t importance);
 
 duer_status_t duer_ds_log(duer_ds_log_level_enum_t   log_level,
                           duer_ds_log_module_enum_t  log_module,
                           int log_code,
                           const baidu_json *log_message);
+
+duer_status_t duer_ds_log_important(duer_ds_log_level_enum_t   log_level,
+                                    duer_ds_log_module_enum_t  log_module,
+                                    int log_code,
+                                    const baidu_json *log_message);
 
 #ifdef __cplusplus
 }

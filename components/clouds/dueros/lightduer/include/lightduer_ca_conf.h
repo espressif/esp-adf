@@ -22,6 +22,10 @@
 
 #include "lightduer_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void* duer_conf_handler;
 
 /*
@@ -66,5 +70,9 @@ DUER_INT duer_u32_t duer_conf_get_uint(duer_conf_handler hdlr, const char* key);
  * @Param hdlr, in, the handler for configuation
  */
 DUER_INT void duer_conf_destroy(duer_conf_handler hdlr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // BAIDU_IOT_TINYDU_IOT_OS_SRC_IOT_BAIDU_CA_SOURCE_BAIDU_CA_CONF_H

@@ -73,6 +73,8 @@ const char *duer_engine_get_uuid(void);
 
 const char *duer_engine_get_bind_token(void);
 
+const char *duer_engine_get_rsa_cacrt(void);
+
 #ifdef __cplusplus
 }
 #endif

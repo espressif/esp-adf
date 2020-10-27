@@ -32,7 +32,7 @@ extern "C" {
 #define NAME_LEN   24
 #define BATCH_LEN  4
 
-#define OTA_PROTOCOL_VERSION "0.9"
+#define OTA_PROTOCOL_VERSION "1.0"
 
 typedef enum _duer_ota_state {
     OTA_IDLE = 0,
@@ -79,6 +79,8 @@ typedef struct _duer_package_info_s {
     char product[NAME_LEN + 1];
     char batch[BATCH_LEN + 1];
     duer_os_info_t os_info;
+    char duer_os_sdk_version[FIRMWARE_VERSION_LEN + 1];
+    char ota_package_version[FIRMWARE_VERSION_LEN + 1];
 } duer_package_info_t;
 
 typedef struct _duer_package_info_ops_s {
@@ -113,7 +115,7 @@ extern int duer_ota_get_package_info(duer_package_info_t *info);
  * @return int: Success: DUER_OK
  *              Failed:  Other
  */
-extern int duer_ota_register_package_info_ops(duer_package_info_ops_t *ops);
+extern int duer_ota_register_package_info_ops(duer_package_info_ops_t const *ops);
 
 /*
  * Notifier the OTA state to Duer Cloud
@@ -125,7 +127,7 @@ extern int duer_ota_register_package_info_ops(duer_package_info_ops_t *ops);
  * @return int: Success: DUER_OK
  *              Failed:  Other
  */
-extern int duer_ota_notifier_state(duer_ota_updater_t *updater, duer_ota_state state);
+extern int duer_ota_notifier_state(duer_ota_updater_t const *updater, duer_ota_state state);
 
 /*
  * Notifier OTA event to Duer Cloud
@@ -141,10 +143,10 @@ extern int duer_ota_notifier_state(duer_ota_updater_t *updater, duer_ota_state s
  *              Failed:  Other
  */
 extern int duer_ota_notifier_event(
-        duer_ota_updater_t *updater,
+        duer_ota_updater_t const *updater,
         duer_ota_event event,
         double progress,
-        const char *desc);
+        char const *desc);
 
 #ifdef __cplusplus
 }

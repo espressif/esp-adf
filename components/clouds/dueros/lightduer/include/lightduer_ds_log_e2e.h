@@ -29,16 +29,21 @@ extern "C" {
 #endif
 
 typedef enum {
-    DUER_E2E_REQUEST,
+    DUER_E2E_1ST_WAKEUP,
     DUER_E2E_RECORD_FINISH,
     DUER_E2E_SEND,
     DUER_E2E_RESPONSE,
     DUER_E2E_PLAY,
     DUER_E2E_CODEC,
-    DUER_E2E_EVENT_TOTAL
+#ifdef DUER_SECOND_WAKEUP_ENABLE
+    DUER_E2E_WAKEUP_SEND_ENQUEUE,
+    DUER_E2E_WAKEUP_SEND,
+    DUER_E2E_2ND_WAKEUP,
+#endif//DUER_SECOND_WAKEUP_ENABLE
+    DUER_E2E_EVENT_TOTAL,
 } duer_ds_e2e_event_t;
 
-typedef char* (*duer_ds_e2e_get_dialog_id_cb)(void);
+typedef const char* (*duer_ds_e2e_get_dialog_id_cb)(void);
 
 #ifdef DUER_STATISTICS_E2E
 

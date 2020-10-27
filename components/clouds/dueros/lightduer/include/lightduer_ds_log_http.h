@@ -35,11 +35,11 @@ typedef enum {
     DUER_DS_LOG_HTTP_COMMON_ERROR                  =  0x103,
     DUER_DS_LOG_HTTP_PERSISTENT_CONN_TIMEOUT       =  0x104,
     DUER_DS_LOG_HTTP_DOWNLOAD_STARTED              =  0x105,
-    DUER_DS_LOG_HTTP_DOWNLOAD_STOPPED              =  0x106,
-    DUER_DS_LOG_HTTP_DOWNLOAD_FINISHED             =  0x107,
+    // Attention: 0x106, 0x107, 0x201 must be reserved, as they had been used in old version SDK
 
-    DUER_DS_LOG_HTTP_DOWNLOAD_URL                  =  0x201,
     DUER_DS_LOG_HTTP_ZERO_BYTE_DOWNLOAD            =  0x202,
+    DUER_DS_LOG_HTTP_DOWNLOAD_STOPPED              =  0x203,
+    DUER_DS_LOG_HTTP_DOWNLOAD_FINISHED             =  0x204,
 
     DUER_DS_LOG_HTTP_SOCKET_CONN_FAILED            =  0x301,
     DUER_DS_LOG_HTTP_URL_PARSE_FAILED              =  0x302,
@@ -58,6 +58,8 @@ typedef enum {
     DUER_DS_LOG_HTTP_PARAM_ERROR                   =  0x310,
     DUER_DS_LOG_HTTP_RECEIVE_FAILED                =  0x311,
     DUER_DS_LOG_HTTP_REDIRECT_FAILED               =  0x312,
+    DUER_DS_LOG_HTTP_DNS_GET_IP                    =  0x313,
+    DUER_DS_LOG_HTTP_TOO_MANY_REDIRECT             =  0x314,
 
     DUER_DS_LOG_HTTP_SOCKET_INIT_FAILED            =  0x401,
     DUER_DS_LOG_HTTP_SOCKET_OPEN_FAILED            =  0x402,
@@ -98,6 +100,7 @@ duer_status_t duer_ds_log_http_download_exit(duer_ds_log_http_code_t log_code,
  * Report ds log when http persistent is timeout and be closed.
  */
 duer_status_t duer_ds_log_http_persisten_conn_timeout(const char *host);
+
 /**
  * Report ds log with url:
  *        {
@@ -105,6 +108,7 @@ duer_status_t duer_ds_log_http_persisten_conn_timeout(const char *host);
  *        }
  */
 duer_status_t duer_ds_log_http_report_with_url(duer_ds_log_http_code_t log_code, const char *url);
+
 /**
  * Report ds log with error code:
  *        {
@@ -112,6 +116,7 @@ duer_status_t duer_ds_log_http_report_with_url(duer_ds_log_http_code_t log_code,
  *        }
  */
 duer_status_t duer_ds_log_http_report_err_code(duer_ds_log_http_code_t log_code, int err_code);
+
 /**
  * Report ds log when redirect failed, it include the redirect location:
  *        {
@@ -119,6 +124,14 @@ duer_status_t duer_ds_log_http_report_err_code(duer_ds_log_http_code_t log_code,
  *        }
  */
 duer_status_t duer_ds_log_http_redirect_fail(const char *location);
+
+/**
+ * Report ds log when redirect too many times, it include the redirect count:
+ *        {
+ *            "redirect_count" : 31
+ *        }
+ */
+duer_status_t duer_ds_log_http_too_many_redirect(int count);
 
 #define DUER_DS_LOG_REPORT_HTTP_MEMORY_ERROR() \
         duer_ds_log_http_report_with_dir(DUER_DS_LOG_HTTP_MEMORY_ERROR, __FILE__, __LINE__)

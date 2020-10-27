@@ -73,7 +73,7 @@ typedef struct baidu_json_Hooks
 
 /* Supply malloc, realloc and free functions to baidu_json */
 extern void baidu_json_InitHooks(baidu_json_Hooks* hooks);
-
+extern int baidu_json_Uninit(void);
 
 /* Supply a block of JSON, and this returns a baidu_json object you can interrogate. Call baidu_json_Delete when finished. */
 extern baidu_json *baidu_json_Parse(const char *value);
@@ -102,7 +102,8 @@ extern baidu_json *baidu_json_CreateTrue(void);
 extern baidu_json *baidu_json_CreateFalse(void);
 extern baidu_json *baidu_json_CreateBool(int b);
 extern baidu_json *baidu_json_CreateNumber(double num);
-extern baidu_json *baidu_json_CreateString(const char *string);
+// len indicate the length of string, if len <=0, the length will be got throuth strlen(string)
+extern baidu_json *baidu_json_CreateString(const char *string, size_t len);
 extern baidu_json *baidu_json_CreateArray(void);
 extern baidu_json *baidu_json_CreateObject(void);
 
@@ -151,7 +152,17 @@ extern void baidu_json_release(void *ptr);
 #define baidu_json_AddFalseToObject(object,name) baidu_json_AddItemToObject(object, name, baidu_json_CreateFalse())
 #define baidu_json_AddBoolToObject(object,name,b) baidu_json_AddItemToObject(object, name, baidu_json_CreateBool(b))
 #define baidu_json_AddNumberToObject(object,name,n) baidu_json_AddItemToObject(object, name, baidu_json_CreateNumber(n))
-#define baidu_json_AddStringToObject(object,name,s) baidu_json_AddItemToObject(object, name, baidu_json_CreateString(s))
+#define baidu_json_AddStringToObject(object,name,s) baidu_json_AddItemToObject(object, name, baidu_json_CreateString(s, 0))
+#define baidu_json_AddStringToObjectWithLength(object,name,s,len) baidu_json_AddItemToObject(object, name, baidu_json_CreateString(s, len))
+
+/* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the baidu_json object */
+#define baidu_json_AddNullToObjectCS(object,name) baidu_json_AddItemToObjectCS(object, name, baidu_json_CreateNull())
+#define baidu_json_AddTrueToObjectCS(object,name) baidu_json_AddItemToObjectCS(object, name, baidu_json_CreateTrue())
+#define baidu_json_AddFalseToObjectCS(object,name) baidu_json_AddItemToObjectCS(object, name, baidu_json_CreateFalse())
+#define baidu_json_AddBoolToObjectCS(object,name,b) baidu_json_AddItemToObjectCS(object, name, baidu_json_CreateBool(b))
+#define baidu_json_AddNumberToObjectCS(object,name,n) baidu_json_AddItemToObjectCS(object, name, baidu_json_CreateNumber(n))
+#define baidu_json_AddStringToObjectCS(object,name,s) baidu_json_AddItemToObjectCS(object, name, baidu_json_CreateString(s, 0))
+#define baidu_json_AddStringToObjectCSWithLength(object,name,s,len) baidu_json_AddItemToObjectCS(object, name, baidu_json_CreateString(s, len))
 
 /* When assigning an integer value, it needs to be propagated to valuedouble too. */
 #define baidu_json_SetIntValue(object,val) ((object) ? (object)->valueint = (object)->valuedouble = (val) : (val))

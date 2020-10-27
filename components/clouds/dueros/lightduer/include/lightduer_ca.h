@@ -56,6 +56,8 @@ DUER_EXT duer_status_t baidu_ca_add_resources(duer_handler hdlr,
  */
 DUER_EXT duer_status_t baidu_ca_load_configuration(duer_handler hdlr, const void *data, duer_size_t size);
 
+DUER_EXT duer_status_t baidu_ca_unload_configuration(duer_handler hdlr);
+
 /*
  * Start run the Baidu CA, prepare the environment.
  *
@@ -220,6 +222,14 @@ DUER_EXT duer_status_t baidu_ca_release(duer_handler hdlr);
  * @Return const char *, The UUID string
  */
 DUER_EXT const char *baidu_ca_get_uuid(duer_handler hdlr);
+
+/*
+ * Obtain the rsa cacrt
+ *
+ * @Param hdlr, in, the handler will be operated
+ * @Return const char *, The RSA CACRT string
+ */
+DUER_EXT const char *baidu_ca_get_rsa_cacrt(duer_handler hdlr);
 
 /*
  * Obtain the bindToken

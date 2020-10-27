@@ -33,7 +33,15 @@ typedef struct _duer_transmit_data_s {
 
 void duer_dcache_initialize(void);
 
-duer_status_t duer_dcache_push(const void *data, size_t size);
+/**
+ * @param data, the memory address
+ * @param size, the size of memory
+ * @param need_copy, indicate whether the memroy @data need another copy
+ *                   DUER_FALSE means the invoker transfer the memory ownership,
+ *                   DUER_TRUE is default value, which means invoker still own the memory,
+ *                   so invoker have the responsibility to release it when no long used.
+ */
+duer_status_t duer_dcache_push(const void *data, size_t size, duer_bool need_copy);
 
 duer_dcache_item *duer_dcache_top(void);
 

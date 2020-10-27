@@ -51,6 +51,7 @@
 #include "i2s_stream.h"
 #include "raw_stream.h"
 #include "filter_resample.h"
+#include "audio_sys.h"
 
 #include "display_service.h"
 #include "wifi_service.h"
@@ -371,6 +372,23 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
     return ESP_OK;
 }
 
+void sys_monitor_task(void *para)
+{
+    while (1) {
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        AUDIO_MEM_SHOW(TAG);
+#ifdef CONFIG_FREERTOS_USE_TRACE_FACILITY
+        audio_sys_get_real_time_stats();
+#endif
+    }
+    vTaskDelete(NULL);
+}
+
+void start_sys_monitor(void)
+{
+    xTaskCreatePinnedToCore(sys_monitor_task, "sys_monitor_task", (2 * 1024), NULL, 1, NULL, 1);
+}
+
 void duer_app_init(void)
 {
     esp_log_level_set("*", ESP_LOG_INFO);
@@ -435,4 +453,5 @@ void duer_app_init(void)
     wifi_service_connect(wifi_serv);
 
     duer_audio_wrapper_init();
+    start_sys_monitor();
 }

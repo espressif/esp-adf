@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define DUER_OS_VERSION "release-v3.0.7"
+#define DUER_OS_VERSION "release-v3.1.1"
 
 #define OS_VERSION_LEN          20
 #define SW_VERSION_LEN          20
