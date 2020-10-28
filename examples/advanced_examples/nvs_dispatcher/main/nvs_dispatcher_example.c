@@ -103,7 +103,7 @@ static void task(void *param)
     ESP_LOGI(TAG, "Write and Read NVS with dispatcher and actions.");
 
     ESP_LOGI(TAG, "Open");
-    nvs_handle nvs_sync_handle = NULL;
+    nvs_handle nvs_sync_handle = 0;
     nvs_action_open_args_t open = {
         .name = "action_sync",
         .open_mode = NVS_READWRITE,

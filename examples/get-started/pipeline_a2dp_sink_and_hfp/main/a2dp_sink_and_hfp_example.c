@@ -206,7 +206,6 @@ static void bt_app_hf_client_audio_open(void)
 
 static void bt_app_hf_client_audio_close(void)
 {
-
     ESP_LOGE(BT_HF_TAG, "bt_app_hf_client_audio_close");
     int sample_rate = a2dp_sample_rate;
     audio_element_info_t bt_info = {0};
@@ -216,15 +215,13 @@ static void bt_app_hf_client_audio_close(void)
     bt_info.bits = 16;
     audio_element_setinfo(bt_stream_reader, &bt_info);
     audio_element_report_info(bt_stream_reader);
-
-
 }
 
 static uint32_t bt_app_hf_client_outgoing_cb(uint8_t *p_buf, uint32_t sz)
 {
     int out_len_bytes = 0;
     char *enc_buffer = (char *)audio_malloc(sz);
-    AUDIO_MEM_CHECK(BT_HF_TAG, enc_buffer, return NULL);
+    AUDIO_MEM_CHECK(BT_HF_TAG, enc_buffer, return 0);
     out_len_bytes = raw_stream_read(raw_read, enc_buffer, sz);
     if (out_len_bytes == sz) {
         memcpy(p_buf, enc_buffer, out_len_bytes);
@@ -423,7 +420,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.3] Link it together [Bluetooth]-->bt_stream_reader-->i2s_stream_writer-->[codec_chip]");
     const char *link_d[2] = {"bt", "i2s"};
     audio_pipeline_link(pipeline_d, &link_d[0], 2);
-    
+
     const char *link_e[2] = {"i2s", "raw"};
     audio_pipeline_link(pipeline_e, &link_e[0], 2);
 
