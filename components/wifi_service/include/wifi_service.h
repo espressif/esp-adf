@@ -231,6 +231,19 @@ wifi_service_disconnect_reason_t wifi_service_disconnect_reason_get(periph_servi
  */
 esp_err_t wifi_service_erase_ssid_manager_info(periph_service_handle_t handle);
 
+
+/*
+ * @brief Get the last wifi configure
+ *
+ * @param handle    The periph_service_handle_t instance
+ * @param wifi_cfg  A pointer to wifi_config_t
+ *
+ * @return
+ *     - ESP_OK, Success
+ *     - Others, Fail
+ */
+esp_err_t wifi_service_get_last_ssid_cfg(periph_service_handle_t handle, wifi_config_t* wifi_cfg);
+
 #ifdef __cplusplus
 }
 #endif
