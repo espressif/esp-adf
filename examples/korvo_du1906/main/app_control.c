@@ -37,6 +37,7 @@
 #include "bdsc_event_dispatcher.h"
 #include "app_player_init.h"
 #include "app_ota_upgrade.h"
+#include "app_bt_init.h"
 #include "audio_player_helper.h"
 #include "audio_player_type.h"
 #include "audio_player.h"
@@ -44,6 +45,7 @@
 #include "ble_gatts_module.h"
 #include "bds_client_event.h"
 #include "bdsc_engine.h"
+#include "app_control.h"
 
 #define WIFI_CONNECTED_BIT (BIT0)
 #define WIFI_WAIT_CONNECT_TIME_MS  (15000 / portTICK_PERIOD_MS)
@@ -75,7 +77,6 @@ static esp_err_t wifi_service_cb(periph_service_handle_t handle, periph_service_
 #endif
         }
         // BDSC Engine need net connected notifier to restart link
-        bdsc_engine_net_connected_cb();
     } else if (evt->type == WIFI_SERV_EVENT_DISCONNECTED) {
         ESP_LOGW(TAG, "PERIPH_WIFI_DISCONNECTED [%d]", __LINE__);
 #ifdef CONFIG_ESP_BLUFI
@@ -88,6 +89,8 @@ static esp_err_t wifi_service_cb(periph_service_handle_t handle, periph_service_
 
     return ESP_OK;
 }
+int bdsc_ota_start(char *url, int version);
+
 
 static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
 {
@@ -180,27 +183,40 @@ void audio_player_callback(audio_player_state_t *audio, void *ctx)
     ESP_LOGW(TAG, "AUDIO_PLAYER_CALLBACK send OK, status:%d, err_msg:%x, media_src:%x, ctx:%p",
              audio->status, audio->err_msg, audio->media_src, ctx);
 }
-#if CONFIG_BT_ENABLED
+
+static const char *conn_state_str[] = { "Disconnected", "Connecting", "Connected", "Disconnecting" };
+
 static void user_a2dp_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
 {
     ESP_LOGI(TAG, "A2DP sink user cb");
     switch (event) {
-        case ESP_A2D_CONNECTION_STATE_EVT:
-            if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
-                ESP_LOGI(TAG, "A2DP disconnected");
-                bdsc_play_hint(BDSC_HINT_BT_DISCONNECTED);
-            } else if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
-                ESP_LOGI(TAG, "A2DP connected");
-                // Do not play hint to avoid interrupt BT player
-                //bdsc_play_hint(BDSC_HINT_BT_CONNECTED);
+        case ESP_A2D_CONNECTION_STATE_EVT: {
+                esp_a2d_cb_param_t *a2d = param;
+                uint8_t *bda = a2d->conn_stat.remote_bda;
+                app_bt_set_addr(&a2d->conn_stat.remote_bda);
+                ESP_LOGI(TAG, "A2DP connection state: %s, [%02x:%02x:%02x:%02x:%02x:%02x]",
+                         conn_state_str[a2d->conn_stat.state], bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
+                if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
+
+                    ESP_LOGI(TAG, "A2DP disconnected");
+                } else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
+                    ESP_LOGI(TAG, "A2DP connected");
+                    display_service_set_pattern(disp_serv, DISPLAY_PATTERN_BT_CONNECTED, 0);
+                } else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTING) {
+                }
+                break;
             }
-            break;
+        case ESP_A2D_AUDIO_STATE_EVT: {
+
+                // Some wrong actions occur if use this event to control
+                // playing in bluetooth source. So we use avrc control.
+                break;
+            }
         default:
             ESP_LOGI(TAG, "User cb A2DP event: %d", event);
             break;
     }
 }
-#endif
 
 void app_init(void)
 {
@@ -235,6 +251,7 @@ void app_init(void)
     cfg.extern_stack = true;
     cfg.evt_cb = wifi_service_cb;
     cfg.cb_ctx = NULL;
+    cfg.task_prio = 11;
     cfg.setting_timeout_s = 3600;
     cfg.max_retry_time = -1;
     wifi_serv = wifi_service_create(&cfg);

@@ -67,6 +67,20 @@ void event_engine_elem_EnQueque(int event, uint8_t *buffer, size_t len);
  */
 void event_engine_elem_FlushQueque();
 
+/**
+ * @brief Get flag judge whether the player need be resume
+ * @return
+ *      - true:  need to be resumed
+ *      - false: no need to be resumed
+ */
+bool bdsc_get_pre_player_flag();
+
+/**
+ * @brief Set flag judge whether the player need be resume
+ * @param[in] state  Set flag
+ */
+void bdsc_set_pre_player_flag(bool flag);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2020 Baidu.com, Inc. All Rights Reserved
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  *
@@ -34,7 +34,6 @@ typedef enum {
     EVENT_ASR_END,
     EVENT_ASR_CANCEL,
     EVENT_ASR_ERROR,
-    EVENT_ASR_GENERAL_INFO,
     EVENT_WAKEUP_TRIGGER = 2000,
     EVENT_WAKEUP_ERROR,
     EVENT_EVENTUPLOAD_BEGIN = 3000,
@@ -53,7 +52,14 @@ typedef enum {
     EVENT_SDK_START_COMPLETED = 7000,
     EVENT_RECV_MQTT_PUSH_URL,
     EVENT_RECV_A2DP_START_PLAY,
-    EVENT_DSP_FATAL_ERROR = 8000
+    EVENT_DSP_FATAL_ERROR = 8000,
+    EVENT_DSP_LOAD_FAILED = 8001,
+    EVENT_TTS_BEGIN = 9000,
+    EVENT_TTS_END,
+    EVENT_TTS_RESULT,
+    EVENT_TTS_CANCEL,
+    EVENT_TTS_ERROR,
+
 } bdsc_event_key_t;
 
 /**
@@ -100,6 +106,8 @@ typedef struct {
  */
 typedef struct {
     int status;
+    uint16_t dci_length;
+    uint8_t dci_buffer[];
 } bdsc_event_wakeup_t;
 
 /**
@@ -114,7 +122,7 @@ typedef struct {
  *     - `bdsc_event_error_t`
  *     - NULL if any errors
  */
-bdsc_event_error_t* bdsc_event_error_create(char *sn,
+bdsc_event_error_t *bdsc_event_error_create(char *sn,
         int32_t code, uint16_t info_length, char *info);
 
 /**
@@ -138,7 +146,7 @@ void bdsc_event_error_destroy(bdsc_event_error_t *error);
  *     - `bdsc_event_data_t`
  *     - NULL if any errors
  */
-bdsc_event_data_t* bdsc_event_data_create(char *sn,
+bdsc_event_data_t *bdsc_event_data_create(char *sn,
         int16_t idx, uint16_t buffer_length, uint8_t *buffer);
 
 /**
@@ -149,6 +157,10 @@ bdsc_event_data_t* bdsc_event_data_create(char *sn,
  * @return
  */
 void bdsc_event_data_destroy(bdsc_event_data_t *data);
+
+bdsc_event_wakeup_t *bdsc_wakeup_data_create(int status, uint16_t buffer_length, uint8_t *buffer);
+void bdsc_wakeup_data_destroy(bdsc_event_wakeup_t *data);
+
 
 /**
  * @brief      Deep copy bdsc event handle

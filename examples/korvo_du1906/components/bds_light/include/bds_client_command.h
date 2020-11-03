@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2020 Baidu.com, Inc. All Rights Reserved
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  *
@@ -39,12 +39,14 @@ typedef enum {
     CMD_EVENTUPLOAD_START = 300,
     CMD_EVENTUPLOAD_CANCEL,
     CMD_EVENTUPLOAD_DATA,
-    CMD_EVENTUPLOAD_CONFIG,
     CMD_LINK_START = 500,
     CMD_LINK_STOP,
     CMD_RECORDER_START = 600,
     CMD_RECORDER_STOP,
-    CMD_DYNAMIC_CONFIG = 700
+    CMD_DYNAMIC_CONFIG = 700,
+    CMD_TTS_HEADER = 701,
+    CMD_TTS_START = 800,
+    CMD_TTS_CANCEL
 } bdsc_cmd_key_t;
 
 /**
@@ -71,14 +73,14 @@ typedef struct {
  *
  * @param[in]  flag           Bdsc cmd flag
  * @param[in]  buffer_length  Bdsc cmd buffer length
- * @param[in]  buffer         Bdsc cmd buffer 
+ * @param[in]  buffer         Bdsc cmd buffer
  * @param[in]  sn             Bdsc cmd sn
  *
  * @return
  *  - bdsc_cmd_data_t handle
  *  - NULL if any errors
  */
-bdsc_cmd_data_t* bdsc_cmd_data_create(int32_t flag, uint16_t buffer_length, uint8_t *buffer, char* sn);
+bdsc_cmd_data_t *bdsc_cmd_data_create(int32_t flag, uint16_t buffer_length, uint8_t *buffer, char *sn);
 
 /**
  * @brief      Destory bdsc cmd data

@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 #include "esp_peripherals.h"
+#include "esp_gap_bt_api.h"
 
 /**
  * @brief          Initializes the bluetooth
@@ -46,6 +47,31 @@ esp_periph_handle_t app_bluetooth_init(esp_periph_set_handle_t set);
  *
  */
 void app_bluetooth_deinit(void);
+
+/**
+ * @brief          Enable a2dp function
+ *
+ * @return         ESP_OK      success
+ *                 ESP_FAIL    failed
+ */
+esp_err_t app_bt_start(void);
+
+/**
+ * @brief          Disable a2dp function
+ *
+ * @param[in]      bda                      remote bt adress (mac address)
+ *
+ * @return         ESP_OK      success
+ *                 ESP_FAIL    failed
+ */
+esp_err_t app_bt_stop(void);
+
+/**
+ * @brief          Set bt bda
+ *
+ * @param[in]      addr  remote bt adress (mac address)
+ */
+void app_bt_set_addr(esp_bd_addr_t *addr);
 
 #ifdef __cplusplus
 }

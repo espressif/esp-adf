@@ -157,7 +157,7 @@ sudo python \
 0x8000 /home/donglianghao/Baidu/baidu_dul1906/dul1906/build/partitions.bin \
 0x7FF000 ./profiles/profile.bin \
 0x7d9000 ./tone/audio_tone.bin \
-0x570000 ./firmware/DU1906_slave_v1.4.8.E.bin
+0x570000 ./firmware/DU1906_slave_v1.5.5.D.bin
 ````
 
 > 注意:串口的设备 /dev/ttyUSB0 根据电脑具体识别修改。
@@ -176,7 +176,7 @@ sudo python \
 |   4   |                 app.bin                | 0x10000  |   APP工程   |
 |   5   |              profile.bin               | 0x7FF000 |   证书许可   |
 |   6   |             audio\_tone.bin            | 0x7d9000 |    提示音    |
-|   7   |         DU1906\_slave\_v1.4.8.E.bin    | 0x570000 |    DSP固件  |
+|   7   |         DU1906\_slave\_v1.5.5.D.bin    | 0x570000 |    DSP固件  |
 |  配置  | SPI Mode DIO、SPI SPEED 80MHz、FLASH SIZE 64Mbit |||
 
 <br/>

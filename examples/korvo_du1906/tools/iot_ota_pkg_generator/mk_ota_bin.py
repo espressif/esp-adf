@@ -18,7 +18,7 @@ parser.add_argument("-sd", "--sub_dsp", help = "Sub version of dsp bin. example:
 parser.add_argument("-sa", "--sub_app", help = "Sub version of app bin. example: 1.0.0")
 parser.add_argument("-v", "--version", required = True, help = "OTA package version. example: 105")
 parser.add_argument("-p", "--path", default = ".", help = "Project abs or relative path.")
-parser.add_argument("-fd", "--file_dsp", default = "DU1906_slave_v1.4.8.E.bin", help = "Dsp firmware file.")
+parser.add_argument("-fd", "--file_dsp", default = "DU1906_slave_v1.5.5.D.bin", help = "Dsp firmware file.")
 args = parser.parse_args()
 #print(args.input)
 

@@ -46,8 +46,11 @@
 #include "audio_player_type.h"
 #include "audio_player.h"
 #include "app_player_init.h"
+#include "audio_player_pipeline_int_tone.h"
 
 static const char *TAG = "APP_PLAYER_INIT";
+
+static audio_element_handle_t g_player_i2s_write_handle;
 
 static int _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
@@ -120,7 +123,7 @@ static esp_audio_handle_t setup_app_esp_audio_instance(esp_audio_cfg_t *cfg, voi
     esp_audio_input_stream_add(handle, http_stream_reader);
     ESP_LOGI(TAG, "http_stream_reader2:%p", http_stream_reader);
 
-    // Add decoders and encoders to esp_audio
+    // Add esp_decoder
     audio_decoder_t auto_decode[] = {
         DEFAULT_ESP_AMRNB_DECODER_CONFIG(),
         DEFAULT_ESP_AMRWB_DECODER_CONFIG(),
@@ -177,7 +180,8 @@ esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_p
     cfg.music_list = NULL;
     cfg.handle = setup_app_esp_audio_instance(&default_cfg, a2dp_cb);
 
-    esp_audio_output_stream_add(cfg.handle, i2s_stream_init(&i2s_writer));
+    g_player_i2s_write_handle = i2s_stream_init(&i2s_writer);
+    esp_audio_output_stream_add(cfg.handle, g_player_i2s_write_handle);
 
     audio_err_t ret = audio_player_init(&cfg);
     ret |= default_http_player_init();
@@ -186,5 +190,11 @@ esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_p
     ret |= default_flash_tone_player_init();
     ret |= default_a2dp_player_init(bt_periph);
     ret |= default_raw_player_init();
+    ret |= audio_player_int_tone_init();
     return ESP_OK;
+}
+
+audio_element_handle_t app_player_get_i2s_handle(void)
+{
+    return g_player_i2s_write_handle;
 }
