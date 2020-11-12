@@ -34,7 +34,24 @@
 #include "mbedtls/aes.h"
 #include "mbedtls/dhm.h"
 #include "mbedtls/md5.h"
+
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+
+#ifdef CONFIG_IDF_TARGET_ESP32
+#include "esp32/rom/crc.h"
+#else
+#include "esp32s2beta/rom/crc.h"
+#endif // CONFIG_IDF_TARGET_ESP32
+
+#else
 #include "rom/crc.h"
+#endif //(ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
 
 #define BLUFI_SECURITY_TAG "BLUFI_SECURITY"
 /*

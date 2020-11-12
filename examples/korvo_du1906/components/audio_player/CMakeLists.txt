@@ -1,5 +1,4 @@
-set(COMPONENT_SRCS "audio_player.c" "audio_player_helper_bt.c" "audio_player_helper_default.c" "audio_player_helper_raw.c" "audio_player_helper_sd.c" "ble_gatts_module.c" "esp_audio_helper.c" "audio_player_manager.c")
-
+set(COMPONENT_SRCDIRS  .)
 set(COMPONENT_ADD_INCLUDEDIRS . include)
 
 
