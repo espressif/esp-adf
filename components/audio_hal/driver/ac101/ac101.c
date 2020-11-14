@@ -7,6 +7,7 @@
 #include "ac101.h"
 
 static char *TAG = "AC101";
+static int vol = 70;
 
 static i2c_config_t ac_i2c_cfg = {
 	.mode = I2C_MODE_MASTER,
@@ -290,7 +291,7 @@ esp_err_t AC101_start(ac_module_t mode)
 		//* Enable Speaker output
 		res |= ac101_write_reg(SPKOUT_CTRL, 0xeabd);
 		vTaskDelay(10 / portTICK_PERIOD_MS);
-		ac101_set_voice_volume(30);
+		ac101_set_voice_volume((int)(vol * 63 / 100 + 0.5));
 	}
 
 	return res;
@@ -446,20 +447,28 @@ esp_err_t ac101_set_voice_mute(bool enable)
 		res = ac101_set_earph_volume(0);
 		res |= ac101_set_spk_volume(0);
 	}
+	else
+	{
+		int vol_tmp = (int)(vol * 63 / 100 + 0.5);
+		res = ac101_set_earph_volume(vol_tmp);
+		res |= ac101_set_spk_volume(vol_tmp);
+	}
 	return res;
 }
 
 esp_err_t ac101_set_voice_volume(int volume)
 {
 	esp_err_t res;
-	res = ac101_set_earph_volume(volume);
-	res |= ac101_set_spk_volume(volume);
+	int vol_tmp = (int)(volume * 63 / 100 + 0.5);
+	res = ac101_set_earph_volume(vol_tmp);
+	res |= ac101_set_spk_volume(vol_tmp);
+	vol = volume;
 	return res;
 }
 
 esp_err_t ac101_get_voice_volume(int *volume)
 {
-	*volume = ac101_get_earph_volume();
+	*volume = vol;
 	return 0;
 }
 
