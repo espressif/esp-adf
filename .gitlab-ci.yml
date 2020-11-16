@@ -94,6 +94,63 @@ before_script:
     - mkdir -p ${LOG_PATH}
     - ${ADF_PATH}/tools/ci/build_examples.sh "${CI_JOB_NAME}"
 
+.build_examples_make: &build_examples_make
+  <<: *build_template
+  parallel: 4
+  # This is a workaround for a rarely encountered issue with building examples in CI.
+  # Probably related to building of Kconfig in 'make clean' stage
+  retry: 1
+  artifacts:
+    when: always
+    paths:
+      - build_examples/*/*/*/build/*.bin
+      - build_examples/*/*/*/sdkconfig
+      - build_examples/*/*/*/build/*.elf
+      - build_examples/*/*/*/build/*.map
+      - build_examples/*/*/*/build/download.config
+      - build_examples/*/*/*/build/bootloader/*.bin
+      - build_examples/*/*/*/*/build/partition_table/*.bin
+      - $LOG_PATH
+    expire_in: 4 days
+  variables:
+    IDF_CI_BUILD: "1"
+    LOG_PATH: "$CI_PROJECT_DIR/log_examples_make"
+  # This is IDF CI limits
+  # only:
+    # # Here both 'variables' and 'refs' conditions are given. They are combined with "AND" logic.
+    # variables:
+    #   - $BOT_TRIGGER_WITH_LABEL == null
+    #   - $BOT_LABEL_BUILD
+    #   - $BOT_LABEL_EXAMPLE_TEST
+    #   - $BOT_LABEL_REGULAR_TEST
+    #   - $BOT_LABEL_WEEKEND_TEST
+    # refs:
+    #   - master
+    #   - /^release\/v/
+    #   - /^v\d+\.\d+(\.\d+)?($|-)/
+    #   - triggers
+    #   - schedules
+    #   - pipelines
+    #   - web
+  script:
+    # it's not possible to build 100% out-of-tree and have the "artifacts"
+    # mechanism work, but this is the next best thing
+    - rm -rf build_examples
+    - mkdir build_examples
+    - cd build_examples
+    # build some of examples
+    - mkdir -p ${LOG_PATH}
+
+    # enable pedantic flags for compilation
+    - export PEDANTIC_CFLAGS="-Werror -Werror=deprecated-declarations -Werror=unused-variable -Werror=unused-but-set-variable -Werror=unused-function"
+    - export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
+
+    - ${ADF_PATH}/tools/ci/build_examples.sh
+    # Check if the tests demand Make built binaries. If not, delete them
+    - if [ "$EXAMPLE_TEST_BUILD_SYSTEM" == "make" ]; then exit 0; fi
+    - cd ..
+    - rm -rf build_examples
+
 # same as above, but for CMake
 .build_examples_cmake: &build_examples_cmake
   extends: .build_template
@@ -156,17 +213,8 @@ build_examples_v40_cmake:
     IDF_TARGET: esp32s2beta
     IDF_VERSION: release/v4.1
 
-build_examples_00:
-  <<: *build_examples_template
-
-build_examples_01:
-  <<: *build_examples_template
-
-.build_examples_02:
-  <<: *build_examples_template
-
-.build_examples_03:
-  <<: *build_examples_template
+build_examples_v33_make:
+  <<: *build_examples_make
 
 build_adf_test:
   <<: *build_template
@@ -231,7 +279,8 @@ assign_test:
   # we have a lot build example jobs. now we don't use dependencies, just download all artificats of build stage.
   dependencies:
     - build_adf_test
-    - build_examples_00
+    - build_examples_v33_make
+    - build_examples_v40_cmake
   variables:
     TEST_FW_PATH: "$CI_PROJECT_DIR/general_test_framework"
     EXAMPLE_CONFIG_OUTPUT_PATH: "$CI_PROJECT_DIR/examples/test_configs"
@@ -254,7 +303,8 @@ assign_test:
   when: on_success
   dependencies:
     - assign_test
-    - build_examples_00
+    - build_examples_v33_make
+    - build_examples_v40_cmake
     - build_adf_test
   artifacts:
     when: always
