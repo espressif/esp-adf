@@ -68,12 +68,12 @@ esp_err_t audio_thread_create(audio_thread_t *p_handle, const char *name, void(*
                 }
             }
         };
-        if (xTaskCreateRestrictedPinnedToCore(&xRegParameters, (xTaskHandle)&p_handle, core_id) != pdPASS) {
+        if (xTaskCreateRestrictedPinnedToCore(&xRegParameters, (xTaskHandle)p_handle, core_id) != pdPASS) {
             ESP_LOGE(TAG, "Error creating RestrictedPinnedToCore %s", name);
             goto audio_thread_create_error;
         }
     } else {
-        if (xTaskCreatePinnedToCore(main_func, name, stack, arg, prio, (xTaskHandle)&p_handle, core_id) != pdPASS) {
+        if (xTaskCreatePinnedToCore(main_func, name, stack, arg, prio, (xTaskHandle)p_handle, core_id) != pdPASS) {
             ESP_LOGE(TAG, "Error creating task %s", name);
             goto audio_thread_create_error;
         }
