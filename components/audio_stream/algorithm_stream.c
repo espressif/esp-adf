@@ -38,10 +38,6 @@
 #define AGC_FRAME_BYTES      320   // 10ms data frame (10 * 16 * 2)
 #define AEC_FRAME_BYTES      512   // 16ms data frame (16 * 16 * 2)
 
-#define ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ   16000 //Hz
-#define ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT       16
-#define ALGORITHM_STREAM_DEFAULT_CHANNEL          1
-
 #define ALGORITHM_STREAM_DEFAULT_AGC_MODE         3
 #define ALGORITHM_STREAM_DEFAULT_AGC_FRAME_LENGTH 10    //ms
 
@@ -63,6 +59,7 @@ typedef struct {
     ringbuf_handle_t input_rb;
     bool data_need_be_resampled;
     bool data_need_be_divided_after_rsp;  //The encode mode of resample function doesn't support change channels
+    bool is_after_reset_res_info;
 } algorithm_data_info_t;
 
 typedef struct {
@@ -78,6 +75,30 @@ typedef struct {
     algorithm_data_info_t reference;
     algorithm_stream_input_type_t input_type;
 } algo_stream_t;
+
+static esp_err_t create_record_rsp_handle(algo_stream_t *algo);
+static esp_err_t create_reference_rsp_handle(algo_stream_t *algo);
+static esp_err_t destroy_record_rsp_handle(algo_stream_t *algo);
+static esp_err_t destroy_reference_rsp_handle(algo_stream_t *algo);
+
+static esp_err_t is_valid_algorithm_rsp_samplerate(int samplerate)
+{
+    if (samplerate < 8000
+        || samplerate > 96000) {
+        ESP_LOGE(TAG, "The sample rate should be within range [8000,96000], here is %d Hz", samplerate);
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+static esp_err_t is_valid_algorithm_rsp_channel(int channel)
+{
+    if (channel != 1 && channel != 2) {
+        ESP_LOGE(TAG, "The number of channels should be either 1 or 2, here is %d", channel);
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
 
 static esp_err_t algorithm_data_info_destroy(algorithm_data_info_t *data_info)
 {
@@ -371,6 +392,29 @@ static audio_element_err_t _algo_process(audio_element_handle_t self, char *in_b
 {
     int ret = ESP_OK;
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
+
+    if (algo->record.is_after_reset_res_info) {
+        ret = destroy_record_rsp_handle(algo);
+        if (ret != ESP_OK) {
+            return AEL_PROCESS_FAIL;
+        }
+        ret = create_record_rsp_handle(algo);
+        if (ret != ESP_OK) {
+            return AEL_PROCESS_FAIL;
+        }
+    }
+    
+    if (algo->reference.is_after_reset_res_info) {
+        ret = destroy_reference_rsp_handle(algo);
+        if (ret != ESP_OK) {
+            return AEL_PROCESS_FAIL;
+        }
+        ret = create_reference_rsp_handle(algo);
+        if (ret != ESP_OK) {
+            return AEL_PROCESS_FAIL;
+        }
+    }
+
     if (algo->input_type == ALGORITHM_STREAM_INPUT_TYPE1) {
         ret = algorithm_data_process_for_type1(self);
     } else if (algo->input_type == ALGORITHM_STREAM_INPUT_TYPE2) {
@@ -382,11 +426,22 @@ static audio_element_err_t _algo_process(audio_element_handle_t self, char *in_b
     return ret;
 }
 
-static esp_err_t algorithm_resample_config(algorithm_data_info_t *data_info, algorithm_stream_input_type_t type, int src_fre, int src_ch)
+static esp_err_t algorithm_resample_config(resample_info_t *rsp_cfg, algorithm_data_info_t *data_info, algorithm_stream_input_type_t type)
 {
+    AUDIO_NULL_CHECK(TAG, rsp_cfg, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, data_info, return ESP_FAIL);
+
+    rsp_cfg->dest_rate        = ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ;
+    rsp_cfg->dest_ch          = ALGORITHM_STREAM_DEFAULT_CHANNEL;                  // The encode resample cannot process diffrent channel
+    rsp_cfg->mode             = RESAMPLE_ENCODE_MODE;
+    rsp_cfg->sample_bits      = ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT;
+    rsp_cfg->max_indata_bytes = ALGORITHM_STREAM_RESAMPE_DEFAULT_MAX_INPUT_SIZE;   // The max input data maybe 48K 2ch --> 16k 1ch; so max_data = AEC_FRAME_BYTES * 6
+    rsp_cfg->complexity       = ALGORITHM_STREAM_RESAMPE_DEFAULT_COMPLEXITY;
+    rsp_cfg->type             = ESP_RESAMPLE_TYPE_AUTO;
+    
     if (type == ALGORITHM_STREAM_INPUT_TYPE1) {
         data_info->data_need_be_divided_after_rsp = false;
-        if (src_fre != ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ) {
+        if (data_info->rsp_info.src_rate != ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ) {
             data_info->data_need_be_resampled = true;
         } else {
             data_info->data_need_be_resampled = false;
@@ -394,17 +449,17 @@ static esp_err_t algorithm_resample_config(algorithm_data_info_t *data_info, alg
         return ESP_OK;
     }
 
-    if ((src_fre == ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ) && (src_ch == ALGORITHM_STREAM_DEFAULT_CHANNEL)) {
+    if ((data_info->rsp_info.src_rate == ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ) && (data_info->rsp_info.src_ch == ALGORITHM_STREAM_DEFAULT_CHANNEL)) {
         data_info->data_need_be_resampled = false;
         data_info->data_need_be_divided_after_rsp = false;
-    } else if (src_fre == ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ) {
+    } else if (data_info->rsp_info.src_rate == ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ) {
         data_info->data_need_be_resampled = false;
         data_info->data_need_be_divided_after_rsp = true;
     } else {
         data_info->data_need_be_resampled = true;
-        if (src_ch == 2) {
+        if (data_info->rsp_info.src_ch == 2) {
             data_info->data_need_be_divided_after_rsp = true;
-        } else if (src_ch == 1) {
+        } else if (data_info->rsp_info.src_ch == 1) {
             data_info->data_need_be_divided_after_rsp = false;
         } else {
             ESP_LOGE(TAG, "The channel number should be 0 or 1");
@@ -414,114 +469,107 @@ static esp_err_t algorithm_resample_config(algorithm_data_info_t *data_info, alg
     return ESP_OK;
 }
 
-static esp_err_t create_rsp_handle(algo_stream_t *algo, algorithm_stream_cfg_t *cfg)
+static esp_err_t _esp_algorithm_resample_create(algorithm_data_info_t *info, resample_info_t *rsp_cfg, int src_rate, int src_ch, bool is_divided_after_rsp, int8_t mask)
+{
+    AUDIO_NULL_CHECK(TAG, info, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, rsp_cfg, return ESP_FAIL);
+    
+    rsp_cfg->src_rate = src_rate;
+    rsp_cfg->dest_ch = src_ch;
+    rsp_cfg->src_ch = src_ch;
+    if (is_divided_after_rsp) {
+        if (mask & ALGORITHM_STREAM_USE_AEC) {
+            rsp_cfg->out_len_bytes = AEC_FRAME_BYTES * 2;
+        } else {
+            rsp_cfg->out_len_bytes = AGC_FRAME_BYTES * 2;
+        }
+    } else {
+        if (mask & ALGORITHM_STREAM_USE_AEC) {
+            rsp_cfg->out_len_bytes = AEC_FRAME_BYTES;
+        } else {
+            rsp_cfg->out_len_bytes = AGC_FRAME_BYTES;
+        }
+    }
+
+    memcpy(&info->rsp_info, rsp_cfg, sizeof(resample_info_t));
+    info->rsp_handle = esp_resample_create(rsp_cfg, &info->rsp_in, &info->rsp_out);
+    AUDIO_NULL_CHECK(TAG, info->rsp_handle, {
+        ESP_LOGE(TAG, "Fail to create recorder resample handle");
+        return ESP_FAIL;
+    });
+    return ESP_OK;
+}
+
+static esp_err_t create_record_rsp_handle(algo_stream_t *algo)
 {
     AUDIO_NULL_CHECK(TAG, algo, return ESP_FAIL);
-    AUDIO_NULL_CHECK(TAG, cfg, return ESP_FAIL);
+    algorithm_data_info_t *record = &algo->record;
 
-    algorithm_data_info_t *record    = &algo->record;
-    algorithm_data_info_t *reference = &algo->reference;
-
-    resample_info_t rsp_cfg = {
-        .dest_rate        = ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ,
-        .dest_ch          = ALGORITHM_STREAM_DEFAULT_CHANNEL,                  // The encode resample cannot process diffrent channel
-        .mode             = RESAMPLE_ENCODE_MODE,
-        .sample_bits      = ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT,
-        .max_indata_bytes = ALGORITHM_STREAM_RESAMPE_DEFAULT_MAX_INPUT_SIZE,   // The max input data maybe 48K 2ch --> 16k 1ch, so max_data = AEC_FRAME_BYTES * 6
-        .complexity       = ALGORITHM_STREAM_RESAMPE_DEFAULT_COMPLEXITY,
-        .type             = ESP_RESAMPLE_TYPE_AUTO
-    };
-
-    algorithm_resample_config(record, cfg->input_type, cfg->rec_sample_rate, cfg->rec_ch);
-    algorithm_resample_config(reference, cfg->input_type, cfg->ref_sample_rate, cfg->ref_ch);
-
+    resample_info_t rsp_cfg;
+    algorithm_resample_config(&rsp_cfg, record, algo->input_type);    
+    
+    algo->record.is_after_reset_res_info = false;
     if (algo->input_type == ALGORITHM_STREAM_INPUT_TYPE1) {
         if (record->data_need_be_resampled) {
-            rsp_cfg.src_rate = cfg->rec_sample_rate;
-            rsp_cfg.src_ch   = 2;
-            rsp_cfg.dest_ch  = 2;
-            rsp_cfg.out_len_bytes = AEC_FRAME_BYTES * 2;
-            memcpy(&record->rsp_info, &rsp_cfg, sizeof(resample_info_t));
-            record->rsp_handle = esp_resample_create(&rsp_cfg, &record->rsp_in, &record->rsp_out);
-            AUDIO_NULL_CHECK(TAG, record->rsp_handle, {
-                ESP_LOGE(TAG, "Fail to create resample handle");
-                return ESP_FAIL;
-            });
-            return ESP_OK;
+            return _esp_algorithm_resample_create(record, &rsp_cfg, record->rsp_info.src_rate, 2, 1, ALGORITHM_STREAM_USE_AEC);
         } else {
             return ESP_OK;
         }
     }
 
     if (record->data_need_be_resampled) {
-        rsp_cfg.src_rate = cfg->rec_sample_rate;
-        rsp_cfg.dest_ch = cfg->rec_ch;
-        rsp_cfg.src_ch = cfg->rec_ch;
-        if (record->data_need_be_divided_after_rsp) {
-            if (cfg->algo_mask & ALGORITHM_STREAM_USE_AEC) {
-                rsp_cfg.out_len_bytes = AEC_FRAME_BYTES * 2;
-            } else {
-                rsp_cfg.out_len_bytes = AGC_FRAME_BYTES * 2;
-            }
-        } else {
-            if (cfg->algo_mask & ALGORITHM_STREAM_USE_AEC) {
-                rsp_cfg.out_len_bytes = AEC_FRAME_BYTES;
-            } else {
-                rsp_cfg.out_len_bytes = AGC_FRAME_BYTES;
-            }
-        }
-
-        memcpy(&record->rsp_info, &rsp_cfg, sizeof(resample_info_t));
-        record->rsp_handle = esp_resample_create(&rsp_cfg, &record->rsp_in, &record->rsp_out);
-        AUDIO_NULL_CHECK(TAG, record->rsp_handle, {
-            ESP_LOGE(TAG, "Fail to create recorder resample handle");
-            return ESP_FAIL;
-        });
-    } else {
-        return ESP_OK;
-    }
-    if (reference->data_need_be_resampled) {
-        rsp_cfg.src_rate = cfg->ref_sample_rate;
-        rsp_cfg.dest_ch = cfg->ref_ch;
-        rsp_cfg.src_ch = cfg->ref_ch;
-        if (reference->data_need_be_divided_after_rsp) {
-            if (cfg->algo_mask & ALGORITHM_STREAM_USE_AEC) {
-                rsp_cfg.out_len_bytes = AEC_FRAME_BYTES * 2;
-            } else {
-                rsp_cfg.out_len_bytes = AGC_FRAME_BYTES * 2;
-            }
-        } else {
-            if (cfg->algo_mask & ALGORITHM_STREAM_USE_AEC) {
-                rsp_cfg.out_len_bytes = AEC_FRAME_BYTES;
-            } else {
-                rsp_cfg.out_len_bytes = AGC_FRAME_BYTES;
-            }
-        }
-        memcpy(&reference->rsp_info, &rsp_cfg, sizeof(resample_info_t));
-        reference->rsp_handle = esp_resample_create(&rsp_cfg, &reference->rsp_in, &reference->rsp_out);
-        AUDIO_NULL_CHECK(TAG, reference->rsp_handle, {
-            esp_resample_destroy(record->rsp_handle);
-            record->rsp_handle = NULL;
-            ESP_LOGE(TAG, "Fail to create reference resample handle");
-            return ESP_FAIL;
-        });
-    } else {
-        return ESP_OK;
+        return _esp_algorithm_resample_create(record, &rsp_cfg, record->rsp_info.src_rate, record->rsp_info.src_ch, record->data_need_be_divided_after_rsp, algo->algo_mask);
     }
     return ESP_OK;
 }
 
-esp_err_t algo_stream_set_multi_input_rb(audio_element_handle_t algo_handle, ringbuf_handle_t input_rb)
+static esp_err_t create_reference_rsp_handle(algo_stream_t *algo)
 {
-    AUDIO_NULL_CHECK(TAG, algo_handle, return ESP_FAIL);
-    AUDIO_NULL_CHECK(TAG, input_rb, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, algo, return ESP_FAIL);
+    algorithm_data_info_t *reference = &algo->reference;
 
-    if (rb_get_size(input_rb) < ALGORITHM_STREAM_RESAMPE_DEFAULT_MAX_INPUT_SIZE) {
-        ESP_LOGE(TAG, "The ringbuffer size should be better than %d", ALGORITHM_STREAM_RESAMPE_DEFAULT_MAX_INPUT_SIZE);
-        return ESP_FAIL;
+    resample_info_t rsp_cfg;
+    algorithm_resample_config(&rsp_cfg, reference, algo->input_type);
+
+    algo->reference.is_after_reset_res_info = false;
+    if (reference->data_need_be_resampled) {
+        return _esp_algorithm_resample_create(reference, &rsp_cfg, reference->rsp_info.src_rate, reference->rsp_info.src_ch, reference->data_need_be_divided_after_rsp, algo->algo_mask);
+    }
+    return ESP_OK;
+}
+
+static esp_err_t destroy_record_rsp_handle(algo_stream_t *algo)
+{
+    AUDIO_NULL_CHECK(TAG, algo, return ESP_FAIL);
+    algorithm_data_info_t *record = &algo->record;
+    
+    AUDIO_NULL_CHECK(TAG, record, return ESP_FAIL);
+    if (record->rsp_handle != NULL) {
+        esp_resample_destroy(record->rsp_handle);
+        record->rsp_handle = NULL;
     }
 
-    return audio_element_set_multi_input_ringbuf(algo_handle, input_rb, 0);
+    return ESP_OK;
+}
+
+static esp_err_t destroy_reference_rsp_handle(algo_stream_t *algo)
+{
+    AUDIO_NULL_CHECK(TAG, algo, return ESP_FAIL);
+    algorithm_data_info_t *reference = &algo->reference;
+
+    AUDIO_NULL_CHECK(TAG, reference, return ESP_FAIL);
+    if (reference->rsp_handle != NULL) {
+        esp_resample_destroy(reference->rsp_handle);
+        reference->rsp_handle = NULL;
+    }
+
+    return ESP_OK;
+}
+
+ringbuf_handle_t algo_stream_get_multi_input_rb(audio_element_handle_t algo_handle)
+{
+    AUDIO_NULL_CHECK(TAG, algo_handle, return NULL);
+    return audio_element_get_multi_input_ringbuf(algo_handle, 0);
 }
 
 audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
@@ -568,13 +616,18 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     cfg.buffer_len = AEC_FRAME_BYTES;
     algo->input_type = config->input_type;
     algo->algo_mask = config->algo_mask;
+    algo->record.rsp_info.src_ch = config->rec_ch;
+    algo->record.rsp_info.src_rate = config->rec_sample_rate;
+    algo->reference.rsp_info.src_ch = config->ref_ch;
+    algo->reference.rsp_info.src_rate = config->ref_sample_rate;
     audio_element_handle_t el = audio_element_init(&cfg);
     AUDIO_NULL_CHECK(TAG, el, {
         audio_free(algo);
         return NULL;
     });
     bool _success = true;
-    _success &= (create_rsp_handle(algo, config) == ESP_OK);
+    _success &= (create_record_rsp_handle(algo) == ESP_OK);
+    _success &= (create_reference_rsp_handle(algo) == ESP_OK);
     _success &= ((algo->scale_buff = audio_calloc(1, AEC_FRAME_BYTES + AGC_FRAME_BYTES)) != NULL);
     if (algo->algo_mask & ALGORITHM_STREAM_USE_AEC) {
         _success &= (
@@ -599,4 +652,64 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
 
     audio_element_setdata(el, algo);
     return el;
+}
+
+esp_err_t algo_stream_set_record_rate(audio_element_handle_t algo_handle, int rec_ch, int rec_sample_rate)
+{
+    AUDIO_NULL_CHECK(TAG, algo_handle, return ESP_FAIL);
+    algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(algo_handle);
+   
+    if (algo->record.rsp_info.src_ch == rec_ch
+        && algo->record.rsp_info.src_rate == rec_sample_rate) {
+        return ESP_OK;
+    }
+
+    if (is_valid_algorithm_rsp_channel(rec_ch) != ESP_OK
+        || is_valid_algorithm_rsp_samplerate(rec_sample_rate) != ESP_OK
+        ) {
+        return ESP_ERR_INVALID_ARG;
+    } else {
+        if (algo->input_type == ALGORITHM_STREAM_INPUT_TYPE1) {
+            algo->reference.is_after_reset_res_info = true;
+            algo->reference.rsp_info.src_ch = rec_ch;
+            algo->reference.rsp_info.src_rate = rec_sample_rate;
+        }
+
+        algo->record.is_after_reset_res_info = true;
+        algo->record.rsp_info.src_ch = rec_ch;
+        algo->record.rsp_info.src_rate = rec_sample_rate;
+        ESP_LOGI(TAG, "reset channel number of record signal : %d, sample rate of record signal: %d",
+                 rec_ch, rec_sample_rate);
+    }
+    return ESP_OK;
+}
+
+esp_err_t algo_stream_set_reference_rate(audio_element_handle_t algo_handle, int ref_ch, int ref_sample_rate)
+{
+    AUDIO_NULL_CHECK(TAG, algo_handle, return ESP_FAIL);
+    algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(algo_handle);
+   
+    if (algo->reference.rsp_info.src_ch == ref_ch
+        && algo->reference.rsp_info.src_rate == ref_sample_rate) {
+        return ESP_OK;
+    }
+
+    if (is_valid_algorithm_rsp_channel(ref_ch) != ESP_OK
+        || is_valid_algorithm_rsp_samplerate(ref_sample_rate) != ESP_OK
+        ) {
+        return ESP_ERR_INVALID_ARG;
+    } else {
+        if (algo->input_type == ALGORITHM_STREAM_INPUT_TYPE1) {
+            algo->record.is_after_reset_res_info = true;
+            algo->record.rsp_info.src_ch = ref_ch;
+            algo->record.rsp_info.src_rate = ref_sample_rate;
+        }
+
+        algo->reference.is_after_reset_res_info = true;
+        algo->reference.rsp_info.src_ch = ref_ch;
+        algo->reference.rsp_info.src_rate = ref_sample_rate;
+        ESP_LOGI(TAG, "reset channel number of reference signal: %d, sample rate of reference signal %d",
+                 ref_ch, ref_sample_rate);
+    }
+    return ESP_OK;
 }
