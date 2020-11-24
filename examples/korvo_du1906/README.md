@@ -146,17 +146,11 @@ The latest commit ID is `0c1859a5a5a5eded5af1b9423c290781e3973915`
 ### ADF Patches
 For now, we need an ADF patch as follow.
 ```bash
+cd $IDF_PATH
+git apply $ADF_PATH/examples/korvo_du1906/patches/transport_ssl.patch
 cd $ADF_PATH
 git apply ./idf_patches/adf_http_stream.patch
 git apply ./examples/korvo_du1906/patches/a2dp_stream_du1906.patch
-```
-
-###  Menuconfig
-
-Select the default sdkconfig for build
-
-```bash
-cp sdkconfig.defaults sdkconfig
 ```
 
 ### Build
