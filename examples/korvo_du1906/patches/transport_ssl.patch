@@ -1,0 +1,24 @@
+diff --git a/components/tcp_transport/transport_ssl.c b/components/tcp_transport/transport_ssl.c
+index 310212afd..ed5eb4791 100644
+--- a/components/tcp_transport/transport_ssl.c
++++ b/components/tcp_transport/transport_ssl.c
+@@ -79,6 +79,7 @@ static int ssl_connect(esp_transport_handle_t t, const char *host, int port, int
+ 
+ static int ssl_poll_read(esp_transport_handle_t t, int timeout_ms)
+ {
++    int remain = 0;
+     transport_ssl_t *ssl = esp_transport_get_context_data(t);
+     fd_set readset;
+     FD_ZERO(&readset);
+@@ -86,6 +87,11 @@ static int ssl_poll_read(esp_transport_handle_t t, int timeout_ms)
+     struct timeval timeout;
+     esp_transport_utils_ms_to_timeval(timeout_ms, &timeout);
+ 
++    if ((remain = esp_tls_get_bytes_avail(ssl->tls) > 0)) {
++        ESP_LOGE(TAG, "remain data in cache, need to read again");
++        return remain;
++    }
++
+     return select(ssl->tls->sockfd + 1, &readset, NULL, NULL, &timeout);
+ }
+ 
