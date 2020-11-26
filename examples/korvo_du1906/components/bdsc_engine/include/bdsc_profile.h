@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2020 Baidu.com, Inc. All Rights Reserved
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  *
@@ -25,7 +25,7 @@ extern "C" {
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 #include "freertos/event_groups.h"
-#include "esp_event_loop.h"
+// #include "esp_event_loop.h"
 #include "esp_wifi.h"
 #include "nvs_flash.h"
 #include <string.h>

@@ -26,12 +26,10 @@
 #include <string.h>
 
 #include "lwip/sockets.h"
-#include "tcpip_adapter.h"
 #include "esp_transport_tcp.h"
 #include "esp_log.h"
 #include "esp_err.h"
 #include "audio_mem.h"
-
 #include "tcp_client_stream.h"
 
 static const char *TAG = "TCP_STREAM";

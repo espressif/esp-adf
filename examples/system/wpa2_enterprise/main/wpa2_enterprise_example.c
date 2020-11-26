@@ -13,7 +13,18 @@
 #include "periph_wifi.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+#include "esp_netif.h"
+#else
 #include "tcpip_adapter.h"
+#endif
 
 static const char *TAG = "wpa2_enterprise";
 
@@ -33,15 +44,19 @@ void app_main()
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+    ESP_ERROR_CHECK(esp_netif_init());
+#else
     tcpip_adapter_init();
-    
+#endif
+
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
-    
+
     ESP_LOGI(TAG, "[ 0 ] Initialize peripherals");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
-    
+
     ESP_LOGI(TAG, "[ 1 ] Set Wi-Fi config");
     periph_wifi_cfg_t wifi_cfg = {0};
     wifi_cfg.ssid = CONFIG_WIFI_SSID;
@@ -53,14 +68,14 @@ void app_main()
     wifi_cfg.wpa2_e_cfg.wpa2_e_cert_end = (char *)client_crt_end;
     wifi_cfg.wpa2_e_cfg.wpa2_e_key_start = (char *)client_key_start;
     wifi_cfg.wpa2_e_cfg.wpa2_e_key_end = (char *)client_key_end;
-    wifi_cfg.wpa2_e_cfg.eap_id = CONFIG_EAP_ID;   
-    wifi_cfg.wpa2_e_cfg.eap_username = CONFIG_EAP_USERNAME;    
+    wifi_cfg.wpa2_e_cfg.eap_id = CONFIG_EAP_ID;
+    wifi_cfg.wpa2_e_cfg.eap_username = CONFIG_EAP_USERNAME;
     wifi_cfg.wpa2_e_cfg.eap_password = CONFIG_EAP_PASSWORD;
-       
-    ESP_LOGI(TAG, "[ 2 ] Start bt peripheral"); 
+
+    ESP_LOGI(TAG, "[ 2 ] Start bt peripheral");
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);
-    
+
     ESP_LOGI(TAG, "[ 3 ] Get ip info");
     tcpip_adapter_ip_info_t ip_info;
     memset(&ip_info, 0, sizeof(tcpip_adapter_ip_info_t));
