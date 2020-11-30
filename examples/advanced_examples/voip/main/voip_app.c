@@ -13,7 +13,6 @@
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
-#include "esp_event_loop.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "audio_element.h"
@@ -32,6 +31,18 @@
 #include "esp_sip.h"
 #include "g711_decoder.h"
 #include "g711_encoder.h"
+
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+#include "esp_netif.h"
+#else
+#include "tcpip_adapter.h"
+#endif
 
 static const char *TAG = "VOIP_EXAMPLE";
 
@@ -272,7 +283,11 @@ void app_main()
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK(err);
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+    ESP_ERROR_CHECK(esp_netif_init());
+#else
     tcpip_adapter_init();
+#endif
 
     ESP_LOGI(TAG, "[1.0] Initialize peripherals management");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();

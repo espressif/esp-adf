@@ -29,6 +29,17 @@
 #include "esp_http_client.h"
 #include "baidu_access_token.h"
 
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+#include "esp_netif.h"
+#else
+#include "tcpip_adapter.h"
+#endif
 
 static const char *TAG = "BAIDU_SPEECH_EXAMPLE";
 
@@ -76,7 +87,11 @@ void app_main(void)
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+    ESP_ERROR_CHECK(esp_netif_init());
+#else
     tcpip_adapter_init();
+#endif
 
     ESP_LOGI(TAG, "[ 0 ] Start and wait for Wi-Fi network");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();

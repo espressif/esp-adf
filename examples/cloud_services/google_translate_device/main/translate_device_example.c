@@ -28,6 +28,18 @@
 #include "google_translate.h"
 #include "board.h"
 
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+#include "esp_netif.h"
+#else
+#include "tcpip_adapter.h"
+#endif
+
 static const char *TAG = "GOOGLE_TRANSLATION_EXAMPLE";
 
 #define GOOGLE_SR_LANG "cmn-Hans-CN"            // https://cloud.google.com/speech-to-text/docs/languages
@@ -55,7 +67,11 @@ void translate_task(void *pv)
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+    ESP_ERROR_CHECK(esp_netif_init());
+#else
     tcpip_adapter_init();
+#endif
 
     ESP_LOGI(TAG, "[ 1 ] Initialize Buttons & Connect to Wi-Fi network, ssid=%s", CONFIG_WIFI_SSID);
     // Initialize peripherals management

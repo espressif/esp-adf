@@ -26,6 +26,18 @@
 #include "app_voice_control.h"
 #include "app_bt_init.h"
 
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+#include "esp_netif.h"
+#else
+#include "tcpip_adapter.h"
+#endif
+
 #define TAG "MAIN"
 
 bool need_skip_current_playing()
@@ -179,7 +191,7 @@ esp_err_t my_bdsc_engine_event_handler(bdsc_engine_event_t *evt)
             ESP_LOGE(TAG, "json format error");
             return BDSC_CUSTOM_DESIRE_SKIP_DEFAULT;
         }
-        
+
         app_voice_control_feed_data(j_content, NULL);
 
         BdsJsonPut(j_content);
@@ -214,7 +226,11 @@ void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+    ESP_ERROR_CHECK(esp_netif_init());
+#else
     tcpip_adapter_init();
+#endif
 
     bdsc_engine_config_t cfg = {
         .log_level = 0,

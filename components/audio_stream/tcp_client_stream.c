@@ -26,12 +26,10 @@
 #include <string.h>
 
 #include "lwip/sockets.h"
-#include "tcpip_adapter.h"
 #include "esp_transport_tcp.h"
 #include "esp_log.h"
 #include "esp_err.h"
 #include "audio_mem.h"
-
 #include "tcp_client_stream.h"
 
 static const char *TAG = "TCP_STREAM";
@@ -108,10 +106,8 @@ static esp_err_t _tcp_open(audio_element_handle_t self)
 static esp_err_t _tcp_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
     tcp_stream_t *tcp = (tcp_stream_t *)audio_element_getdata(self);
-    audio_element_info_t info = { 0 };
-
     int rlen = esp_transport_read(tcp->t, buffer, len, tcp->timeout_ms);
-    ESP_LOGD(TAG, "read len=%d, rlen=%d, pos=%d", len, rlen, (int)info.byte_pos);
+    ESP_LOGD(TAG, "read len=%d, rlen=%d", len, rlen);
     if (rlen < 0) {
         _get_socket_error_code_reason("TCP read", tcp->sock);
         return ESP_FAIL;
@@ -126,13 +122,12 @@ static esp_err_t _tcp_read(audio_element_handle_t self, char *buffer, int len, T
 static esp_err_t _tcp_write(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
     tcp_stream_t *tcp = (tcp_stream_t *)audio_element_getdata(self);
-    audio_element_info_t info;
     int wlen = esp_transport_write(tcp->t, buffer, len, tcp->timeout_ms);
     if (wlen < 0) {
         _get_socket_error_code_reason("TCP write", tcp->sock);
         return ESP_FAIL;
     }
-    ESP_LOGD(TAG, "read len=%d, wlen=%d pos=%d", len, wlen, (int)info.byte_pos);
+    ESP_LOGD(TAG, "read len=%d, wlen=%d", len, wlen);
     return wlen;
 }
 

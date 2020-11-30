@@ -96,7 +96,7 @@ before_script:
 
 .build_examples_make: &build_examples_make
   <<: *build_template
-  parallel: 4
+  parallel: 8
   # This is a workaround for a rarely encountered issue with building examples in CI.
   # Probably related to building of Kconfig in 'make clean' stage
   retry: 1
@@ -154,7 +154,7 @@ before_script:
 # same as above, but for CMake
 .build_examples_cmake: &build_examples_cmake
   extends: .build_template
-  parallel: 4
+  parallel: 8
   artifacts:
     when: always
     paths:
@@ -201,11 +201,17 @@ build_examples_v40_cmake:
     IDF_TARGET: esp32
     IDF_VERSION: release/v4.0
 
-.build_examples_v41_cmake:
+build_examples_v41_cmake:
   extends: .build_examples_cmake
   variables:
     IDF_TARGET: esp32
     IDF_VERSION: release/v4.1
+
+build_examples_v42_cmake:
+  extends: .build_examples_cmake
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION: release/v4.2
 
 .build_examples_cmake_s2:
   extends: .build_examples_cmake

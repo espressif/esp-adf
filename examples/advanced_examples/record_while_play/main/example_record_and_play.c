@@ -11,7 +11,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
-#include "tcpip_adapter.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "sdkconfig.h"
@@ -34,6 +33,18 @@
 #include "periph_sdcard.h"
 #include "periph_wifi.h"
 #include "board.h"
+
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+#include "esp_netif.h"
+#else
+#include "tcpip_adapter.h"
+#endif
 
 static const char *TAG = "REC_AND_PLAY_EXAMPLE";
 
@@ -88,7 +99,7 @@ static audio_pipeline_handle_t example_create_play_pipeline(const char *url, out
                 audio_pipeline_register(pipeline, mp3_decoder, "mp3");
                 audio_pipeline_register(pipeline, resample_for_play, "filter");
                 audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
-                
+
                 const char *link_tag[4] = {"file", "mp3", "filter", "i2s"};
                 audio_pipeline_link(pipeline, &link_tag[0], 4);
                 audio_element_set_uri(fatfs_stream_reader, url);
@@ -114,7 +125,7 @@ static audio_pipeline_handle_t example_create_play_pipeline(const char *url, out
                 audio_pipeline_register(pipeline, mp3_decoder, "mp3");
                 audio_pipeline_register(pipeline, resample_for_play, "filter");
                 audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
-                
+
                 const char *link_tag[4] = {"http", "mp3", "filter", "i2s"};
                 audio_pipeline_link(pipeline, &link_tag[0], 4);
                 audio_element_set_uri(http_stream_reader, url);
@@ -162,7 +173,7 @@ static audio_pipeline_handle_t example_create_rec_pipeline(const char *url, int 
                 audio_pipeline_register(pipeline, wav_encoder, "wav");
                 audio_pipeline_register(pipeline, resample_for_rec, "filter");
                 audio_pipeline_register(pipeline, fatfs_stream_writer, "file");
-                
+
                 const char *link_tag[4] = {"i2s", "filter", "wav", "file"};
                 audio_pipeline_link(pipeline, &link_tag[0], 4);
                 audio_element_set_uri(fatfs_stream_writer, url);
@@ -195,7 +206,7 @@ static audio_pipeline_handle_t example_create_rec_pipeline(const char *url, int 
                 audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
                 audio_pipeline_register(pipeline, resample_for_rec, "filter");
                 audio_pipeline_register(pipeline, raw_reader, "raw_read");
-                
+
                 const char *link_tag[3] = {"i2s", "filter", "raw_read"};
                 audio_pipeline_link(pipeline, &link_tag[0], 3);
                 break;
@@ -289,7 +300,11 @@ void app_main(void)
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+    ESP_ERROR_CHECK(esp_netif_init());
+#else
     tcpip_adapter_init();
+#endif
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
