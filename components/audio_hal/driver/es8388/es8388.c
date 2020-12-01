@@ -479,6 +479,7 @@ esp_err_t es8388_set_mic_gain(es_mic_gain_t gain)
 {
     esp_err_t res, gain_n;
     gain_n = (int)gain / 3;
+    gain_n = (gain_n << 4) + gain_n;
     res = es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, gain_n); //MIC PGA
     return res;
 }
