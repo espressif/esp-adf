@@ -7,7 +7,8 @@ set(COMPONENT_SRCS "fatfs_stream.c"
                     "tone_stream.c"
                     "algorithm_stream.c"
                     "tcp_client_stream.c"
-                    "pwm_stream.c")
+                    "pwm_stream.c"
+                    "tts_stream.c")
 set(COMPONENT_ADD_INCLUDEDIRS "include")
 
 
