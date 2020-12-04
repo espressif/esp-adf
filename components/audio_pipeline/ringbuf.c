@@ -341,7 +341,6 @@ esp_err_t rb_abort(ringbuf_handle_t rb)
     }
     esp_err_t err = rb_abort_read(rb);
     err |= rb_abort_write(rb);
-    xSemaphoreGive(rb->lock);
     return err;
 }
 
