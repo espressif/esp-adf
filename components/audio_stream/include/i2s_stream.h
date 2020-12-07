@@ -61,7 +61,7 @@ typedef struct {
 #define I2S_STREAM_CFG_DEFAULT() {                                              \
     .type = AUDIO_STREAM_WRITER,                                                \
     .i2s_config = {                                                             \
-        .mode = (i2s_mode_t) I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX,       \
+        .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX),     \
         .sample_rate = 44100,                                                   \
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,                           \
         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           \
@@ -88,7 +88,7 @@ typedef struct {
 #define I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT() {                                 \
     .type = AUDIO_STREAM_WRITER,                                                \
     .i2s_config = {                                                             \
-        .mode = (i2s_mode_t) I2S_MODE_MASTER | I2S_MODE_DAC_BUILT_IN | I2S_MODE_TX, \
+        .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_DAC_BUILT_IN | I2S_MODE_TX), \
         .sample_rate = 44100,                                                   \
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,                           \
         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           \
@@ -115,7 +115,7 @@ typedef struct {
 #define I2S_STREAM_TX_PDM_CFG_DEFAULT() {                                       \
     .type = AUDIO_STREAM_WRITER,                                                \
     .i2s_config = {                                                             \
-        .mode = (i2s_mode_t) I2S_MODE_MASTER | I2S_MODE_PDM | I2S_MODE_TX,      \
+        .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_PDM | I2S_MODE_TX),    \
         .sample_rate = 44100,                                                   \
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,                           \
         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           \
