@@ -19,7 +19,7 @@
 #include "board.h"
 #include "hfp_stream.h"
 
-static const char *TAG = "BLUETOOTH_EXAMPLE";
+static const char *TAG = "HFP_EXAMPLE";
 
 static audio_element_handle_t hfp_in_stream, hfp_out_stream, i2s_stream_writer, i2s_stream_reader;
 static audio_pipeline_handle_t pipeline_in, pipeline_out;
@@ -34,13 +34,9 @@ static void bt_app_hf_client_audio_open(hfp_data_enc_type_t type)
         sample_rate = 16000;
     } else {
         ESP_LOGE(TAG, "error hfp enc type = %d", type);
-    }
-
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+        }
     i2s_stream_set_clk(i2s_stream_reader, sample_rate, 16, 1);
-#endif
     i2s_stream_set_clk(i2s_stream_writer, sample_rate, 16, 1);
-
     audio_pipeline_run(pipeline_out);
     audio_pipeline_resume(pipeline_out);
 }
@@ -106,16 +102,13 @@ void app_main(void)
     i2s_stream_cfg_t i2s_cfg1 = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg1.type = AUDIO_STREAM_READER;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    i2s_cfg1.i2s_config.use_apll = false;
     i2s_cfg1.i2s_port = 1;
 #endif
     i2s_stream_reader = i2s_stream_init(&i2s_cfg1);
-
     i2s_stream_cfg_t i2s_cfg2 = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg2.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg2);
-
-    i2s_stream_set_clk(i2s_stream_reader, 8000, 16, 1);
-    i2s_stream_set_clk(i2s_stream_writer, 8000, 16, 1);
 
     ESP_LOGI(TAG, "[3.2] Get hfp stream");
     hfp_stream_config_t hfp_config;
@@ -211,5 +204,3 @@ void app_main(void)
     audio_element_deinit(hfp_out_stream);
     esp_periph_set_destroy(set);
 }
-
-
