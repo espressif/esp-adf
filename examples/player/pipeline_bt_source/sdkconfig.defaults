@@ -17,6 +17,7 @@ CONFIG_BT_BLE_DYNAMIC_ENV_MEMORY=y
 CONFIG_ESP32_DEFAULT_CPU_FREQ_240=y
 CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ=240
 CONFIG_SPIRAM_SUPPORT=y
+CONFIG_BT_BLE_BLUFI_ENABLE=y
 
 # Increase default app partition size to accommodate BT
 # by providing new partition table in "partitions_bt_source_example.csv"
