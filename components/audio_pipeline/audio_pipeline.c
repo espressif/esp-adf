@@ -667,7 +667,7 @@ esp_err_t audio_pipeline_check_items_state(audio_pipeline_handle_t pipeline, aud
             if (st == AEL_STATE_ERROR) {
                 item->el_state = AEL_STATUS_ERROR_PROCESS;
             } else {
-                item->el_state = st + AEL_STATUS_OUTPUT_DONE;
+                item->el_state = st + AEL_STATUS_INPUT_BUFFERING;
             }
         }
         if (item->el_state == AEL_STATUS_NONE) {
