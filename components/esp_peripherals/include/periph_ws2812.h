@@ -45,6 +45,7 @@ typedef uint32_t periph_rgb_value;
 #define LED2812_COLOR_PURPLE  make_rgb_value(255, 0,   255)
 #define LED2812_COLOR_YELLOW  make_rgb_value(255, 255, 0)
 #define LED2812_COLOR_WHITE   make_rgb_value(255, 255, 255)
+#define LED2812_COLOR_ORANGE  make_rgb_value(255, 165, 0)
 
 /**
  * @brief   The ws2812 peripheral configuration

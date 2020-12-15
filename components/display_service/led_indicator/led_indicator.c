@@ -67,10 +67,16 @@ esp_err_t led_indicator_pattern(void *handle, int pat, int value)
             periph_led_blink(h->periph_handle, h->gpio_num, 200, 500, false, -1, value);
             break;
         case DISPLAY_PATTERN_TURN_ON:
+        case DISPLAY_PATTERN_WAKEUP_ON:
             periph_led_blink(h->periph_handle, h->gpio_num, 100, 0, false, -1, value);
             break;
         case DISPLAY_PATTERN_TURN_OFF:
+        case DISPLAY_PATTERN_WAKEUP_FINISHED:
+        case DISPLAY_PATTERN_SPEECH_OVER:
             periph_led_blink(h->periph_handle, h->gpio_num, 0, 100, false, -1, value);
+            break;
+        case DISPLAY_PATTERN_SPEECH_BEGIN:
+            periph_led_blink(h->periph_handle, h->gpio_num, 500, 500, false, -1, value);
             break;
         default:
             ESP_LOGW(TAG, "The led mode is invalid");
