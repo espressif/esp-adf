@@ -537,6 +537,10 @@ esp_err_t audio_pipeline_unlink(audio_pipeline_handle_t pipeline)
     STAILQ_FOREACH_SAFE(rb_item, &pipeline->rb_list, next, tmp) {
         ESP_LOGD(TAG, "audio_pipeline_unlink, RB:%p,host_el:%p", rb_item->rb, rb_item->host_el);
         STAILQ_REMOVE(&pipeline->rb_list, rb_item, ringbuf_item, next);
+        if (rb_item->host_el) {
+            audio_element_set_output_ringbuf(rb_item->host_el, NULL);
+            audio_element_set_input_ringbuf(rb_item->host_el, NULL);
+        }
         rb_destroy(rb_item->rb);
         rb_item->linked = false;
         rb_item->kept_ctx = false;
