@@ -45,42 +45,44 @@ extern "C" {
 //  AGC: Automatic Gain Control
 //  WWE: Wake Word Engine
 //  NS:  Noise Suppression
-                                                +-----------+
-                                                |           |
-                                                |  TYPE 1   |
-                                                |           |
-+-----------------------------------------------+-----------+---------------------------------------------------+
-|                                                                                                               |
-|                                       reference signal                                                        |
-|     +-----------+    +-----------+    +-----------\      +-----------+    +-----------+    +-----------+      |
-|     |           |    |           |    |            \     |           |    |           |    |           |      |
-|     | I2S read  |--->| Resample  |--->| Data split  |--->|    AEC    |--->|    NS     |--->|    AGC    |      |
-|     |           |    |           |    |            /     |           |    |           |    |           |      |
-|     +-----------+    +-----------+    +-----------/      +------------    +-----------+    +-----------+      |
-|                                       record signal                                                           |
-|                                                                                                               |
-+---------------------------------------------------------------------------------------------------------------+
 
-                                                +-----------+
-                                                |           |
-                                                |  TYPE 2   |
-                                                |           |
-+-----------------------------------------------+-----------+---------------------------------------------------+
-|                                                                                                               |
-|                                                                                                               |
-|     +-----------+    +-----------+    +-----------+    +-----------+    +-----------+    +-----------+        |
-|     |           |    |           |    |           |    |           |    |           |    |           |        |
-|     | I2S read  |--->| Resample  |--->| rec signal|--->|    AEC    |--->|    NS     |--->|    AGC    |        |
-|     |           |    |           |    |           |    |           |    |           |    |           |        |
-|     +-----------+    +-----------+    +-----------+    +-----^-----+    +-----------+    +-----------+        |
-|                                                              |                                                |
-|     +-----------+    +-----------+    +-----------+          |                                                |
-|     |           |    |           |    |           |          |                                                |
-|     | input_rb  |--->| Resample  |--->| ref signal|----------+                                                |
-|     |           |    |           |    |           |                                                           |
-|     +-----------+    +-----------+    +-----------+                                                           |
-|                                                                                                               |
-+---------------------------------------------------------------------------------------------------------------+
+
+                                                           +-----------+
+                                                           |           |
+                                                           |  TYPE 1   |
+                                                           |           |
+                    +--------------------------------------+-----------+----------------------------------------+
+                    |                                                                                           |
+                    |                   reference signal                                                        |
++-----------+       |  +-----------+    +-----------\      +-----------+    +-----------+    +-----------+      |
+|           |       |  |           |    |            \     |           |    |           |    |           |      |
+| I2S read  |-------|->| Resample  |--->| Data split  |--->|    AEC    |--->|    NS     |--->|    AGC    |      |
+|           |       |  |           |    |            /     |           |    |           |    |           |      |
++-----------+       |  +-----------+    +-----------/      +------------    +-----------+    +-----------+      |
+                    |                   record signal                                                           |
+                    |                                                                                           |
+                    +-------------------------------------------------------------------------------------------+
+                
+                                                           +-----------+
+                                                           |           |
+                                                           |  TYPE 2   |
+                                                           |           |
+                    +--------------------------------------+-----------+----------------------------------------+
+                    |                                                                                           |
+                    |                                                                                           |
++-----------+       |  +-----------+    +-----------+    +-----------+    +-----------+    +-----------+        |
+|           |       |  |           |    |           |    |           |    |           |    |           |        |
+| I2S read  |-------|->| Resample  |--->| rec signal|--->|    AEC    |--->|    NS     |--->|    AGC    |        |
+|           |       |  |           |    |           |    |           |    |           |    |           |        |
++-----------+       |  +-----------+    +-----------+    +-----^-----+    +-----------+    +-----------+        |
+                    |                                          |                                                |
++-----------+       |  +-----------+    +-----------+          |                                                |
+|           |       |  |           |    |           |          |                                                |
+| input_rb  |-------|->| Resample  |--->| ref signal|----------+                                                |
+|           |       |  |           |    |           |                                                           |
++-----------+       |  +-----------+    +-----------+                                                           |
+                    |                                                                                           |
+                    +-------------------------------------------------------------------------------------------+
 
 */
 
@@ -89,8 +91,9 @@ extern "C" {
  */
 typedef enum {
     ALGORITHM_STREAM_INPUT_TYPE1 = 0, /*!< Type 1 is default used by mini-board, the reference signal and the recording signal are respectively read in from the left channel and the right channel of the same I2S */
-    ALGORITHM_STREAM_INPUT_TYPE2 = 1, /*!< Type 2 read in record signal from I2S and when data be written, the data should be copy as a reference signal and input to the algorithm element by using multiple input buffer. */
-} algorithm_stream_input_type_t;      /*!< When use type2, you can combine arbitrarily the algorithm modules you want to use, use algo_mask parameters below to configure that. */
+    ALGORITHM_STREAM_INPUT_TYPE2 = 1, /*!< As the simple diagram above shows, when type2 is choosen, the recording signal and reference signal should be input by users. */
+} algorithm_stream_input_type_t;      /*!< The recording signal is inputted by I2S element by default, and the reference signal should be inputted to the algorithm element by using multiple input buffer. */
+                                      /*!< When use type2, you can combine arbitrarily the algorithm modules you want to use, use algo_mask parameters below to configure that. */
 
 /**
  * @brief Choose the algorithm to be used
