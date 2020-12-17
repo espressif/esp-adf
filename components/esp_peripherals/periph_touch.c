@@ -108,8 +108,10 @@ esp_periph_handle_t periph_touch_init(periph_touch_cfg_t *config)
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_TOUCH, "periph_touch");
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
     periph_touch_t *periph_touch = audio_calloc(1, sizeof(periph_touch_t));
-
-    AUDIO_MEM_CHECK(TAG, periph_touch, return NULL);
+    AUDIO_MEM_CHECK(TAG, periph_touch, {
+        audio_free(periph);
+        return NULL;
+    });
     periph_touch->touch_mask = config->touch_mask;
     periph_touch->long_tap_time_ms = config->long_tap_time_ms;
     periph_touch->tap_threshold_percent = config->tap_threshold_percent;

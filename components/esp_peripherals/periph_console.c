@@ -23,12 +23,7 @@
  */
 
 #include <string.h>
-// #include "freertos/FreeRTOS.h"
-// #include "freertos/semphr.h"
-// #include "freertos/task.h"
-// #include "freertos/event_groups.h"
 #include "driver/uart.h"
-
 #include "esp_log.h"
 #include "esp_console.h"
 #include "esp_vfs_dev.h"
@@ -43,10 +38,8 @@
 #define ESP_IDF_VERSION_VAL(major, minor, patch) 1
 #endif
 
-static const char *TAG = "PERIPH_CONSOLE";
-
 #define CONSOLE_MAX_ARGUMENTS (5)
-
+static const char *TAG = "PERIPH_CONSOLE";
 static const int STOPPED_BIT = BIT1;
 
 typedef struct periph_console *periph_console_handle_t;
@@ -293,7 +286,10 @@ esp_periph_handle_t periph_console_init(periph_console_cfg_t *config)
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_CONSOLE, "periph_console");
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
     periph_console_t *console = audio_calloc(1, sizeof(periph_console_t));
-    AUDIO_MEM_CHECK(TAG, console, return NULL);
+    AUDIO_MEM_CHECK(TAG, console, {
+        audio_free(periph);
+        return NULL;
+    });
     console->commands = config->commands;
     console->command_num = config->command_num;
     console->task_stack = CONSOLE_DEFAULT_TASK_STACK;
@@ -311,6 +307,7 @@ esp_periph_handle_t periph_console_init(periph_console_cfg_t *config)
     if (config->prompt_string) {
         console->prompt_string = audio_strdup(config->prompt_string);
         AUDIO_MEM_CHECK(TAG, console->prompt_string, {
+            audio_free(periph);
             audio_free(console);
             return NULL;
         });
