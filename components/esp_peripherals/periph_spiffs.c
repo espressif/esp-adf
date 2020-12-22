@@ -151,7 +151,10 @@ esp_periph_handle_t periph_spiffs_init(periph_spiffs_cfg_t *spiffs_cfg)
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
 
     periph_spiffs_t *spiffs = audio_calloc(1, sizeof(periph_spiffs_t));
-    AUDIO_MEM_CHECK(TAG, spiffs, return NULL);
+    AUDIO_MEM_CHECK(TAG, spiffs, {
+        audio_free(periph);
+        return NULL;
+    });
     if (spiffs_cfg->root) {
         spiffs->root = audio_strdup(spiffs_cfg->root);
     } else {
@@ -174,6 +177,7 @@ esp_periph_handle_t periph_spiffs_init(periph_spiffs_cfg_t *spiffs_cfg)
 
     AUDIO_MEM_CHECK(TAG, spiffs->root, {
         audio_free(spiffs);
+        audio_free(periph);
         return NULL;
     });
 

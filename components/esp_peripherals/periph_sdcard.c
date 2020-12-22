@@ -162,7 +162,11 @@ esp_periph_handle_t periph_sdcard_init(periph_sdcard_cfg_t *sdcard_cfg)
     AUDIO_MEM_CHECK(TAG, periph, return NULL);
 
     periph_sdcard_t *sdcard = audio_calloc(1, sizeof(periph_sdcard_t));
-    AUDIO_MEM_CHECK(TAG, sdcard, return NULL);
+    AUDIO_MEM_CHECK(TAG, sdcard, {
+        audio_free(periph);
+        return NULL;
+    });
+
     if (sdcard_cfg->root) {
         sdcard->root = audio_strdup(sdcard_cfg->root);
     } else {
@@ -170,6 +174,7 @@ esp_periph_handle_t periph_sdcard_init(periph_sdcard_cfg_t *sdcard_cfg)
     }
     AUDIO_MEM_CHECK(TAG, sdcard->root, {
         audio_free(sdcard);
+        audio_free(periph);
         return NULL;
     });
 

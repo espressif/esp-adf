@@ -436,7 +436,7 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         esp_wpa2_config_t wpa2_config = WPA2_CONFIG_INIT_DEFAULT();
         ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_enable(&wpa2_config));
 #endif
-        
+
     }
 
     ESP_ERROR_CHECK(esp_wifi_start());
@@ -458,7 +458,7 @@ static esp_err_t _wifi_destroy(esp_periph_handle_t self)
     esp_wifi_deinit();
     audio_free(periph_wifi->ssid);
     audio_free(periph_wifi->password);
-    
+
     vEventGroupDelete(periph_wifi->state_event);
     if (periph_wifi->wpa2_e_cfg != NULL) {
         audio_free(periph_wifi->wpa2_e_cfg);
@@ -487,9 +487,11 @@ esp_periph_handle_t periph_wifi_init(periph_wifi_cfg_t *config)
     }
     periph_wifi->disable_auto_reconnect = config->disable_auto_reconnect;
 
-
     periph_wifi->wpa2_e_cfg = audio_malloc(sizeof(periph_wpa2_enterprise_cfg_t));
-    AUDIO_NULL_CHECK(TAG, periph_wifi->wpa2_e_cfg, return NULL);
+    AUDIO_NULL_CHECK(TAG, periph_wifi->wpa2_e_cfg, {
+        audio_free(periph);
+        goto _periph_wifi_init_failed;
+    });
     memcpy(periph_wifi->wpa2_e_cfg, &config->wpa2_e_cfg, sizeof(periph_wpa2_enterprise_cfg_t));
 
     esp_periph_set_data(periph, periph_wifi);
