@@ -34,10 +34,10 @@
 #if CONFIG_BT_ENABLED
 static const char *TAG = "HFP_STREAM";
 
-#define ESP_HFP_RINGBUF_SIZE    3600
+#define ESP_HFP_RINGBUF_SIZE     3600
 #define ESP_HFP_TASK_SIZE        2048
 #define ESP_HFP_TASK_PRIORITY    23
-static uint32_t control_num = 0;
+static bool is_get_data = true;
 static hfp_stream_user_callback_t  hfp_stream_user_callback;
 static audio_element_handle_t hfp_incoming_stream = NULL;
 static audio_element_handle_t hfp_outgoing_stream = NULL;
@@ -196,12 +196,17 @@ esp_err_t hfp_open_and_close_evt_cb_register(esp_hf_audio_open_t open_cb, esp_hf
 static uint32_t bt_app_hf_client_outgoing_cb(uint8_t *p_buf, uint32_t sz)
 {
     int out_len_bytes = 0;
-     out_len_bytes = audio_element_input(hfp_outgoing_stream, (char *)p_buf, sz);
-     if (out_len_bytes == sz) {
-         return sz;
-     } else {
-         return 0;
-     }
+    if (is_get_data) {
+        out_len_bytes = audio_element_input(hfp_outgoing_stream, (char *)p_buf, sz);
+    }
+
+    if (out_len_bytes == sz) {
+        is_get_data = false;
+        return sz;
+    } else {
+        is_get_data = true;
+        return 0;
+    }
 }
 
 static void bt_app_hf_client_incoming_cb(const uint8_t *buf, uint32_t sz)
@@ -209,14 +214,8 @@ static void bt_app_hf_client_incoming_cb(const uint8_t *buf, uint32_t sz)
     if (hfp_incoming_stream) {
         if (audio_element_get_state(hfp_incoming_stream) == AEL_STATE_RUNNING) {
             audio_element_output(hfp_incoming_stream, (char *)buf, sz);
+            esp_hf_client_outgoing_data_ready();
         }
-    }
-
-    if (control_num < 5) {
-        control_num ++;
-    }else {
-        control_num = 0;
-        esp_hf_client_outgoing_data_ready();
     }
 }
 /* callback for HF_CLIENT */

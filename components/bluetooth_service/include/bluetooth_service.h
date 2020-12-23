@@ -35,6 +35,8 @@
 extern "C" {
 #endif
 
+#define ESP_A2DP_SAMPLE_RATE 44100
+
 /**
  * brief      Bluetooth service working mode
  */
@@ -213,6 +215,14 @@ esp_err_t periph_bluetooth_connect(esp_periph_handle_t periph, bluetooth_addr_t 
  *     - ESP_FAIL
  */
 esp_err_t bluetooth_service_destroy();
+
+/**
+ * @brief      Get a2dp sample rate.
+ *
+ * @return
+ *     - sample rate
+ */
+int periph_bluetooth_get_a2dp_sample_rate();
 
 #ifdef __cplusplus
 }
