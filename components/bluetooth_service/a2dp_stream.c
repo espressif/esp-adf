@@ -45,7 +45,17 @@ static bool avrcp_conn_state = false;
 static audio_stream_type_t a2d_stream_type = 0;
 static uint8_t trans_label = 0;
 
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+static audio_hal_handle_t audio_hal = NULL;
+static bool avrcp_conn_tg_state = false;
+static _lock_t g_volume_lock;
+static int16_t g_volume = 0;
+static bool g_volume_notify;
+static void bt_avrc_tg_cb(esp_avrc_tg_cb_event_t event, esp_avrc_tg_cb_param_t *param);
+#endif
+
 static const char *audio_state_str[] = { "Suspended", "Stopped", "Started" };
+static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *param);
 
 static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
 {
@@ -209,6 +219,20 @@ audio_element_handle_t a2dp_stream_init(a2dp_stream_config_t *config)
 
     cfg.task_stack = -1; // No need task
     cfg.tag = "aadp";
+    
+    esp_avrc_ct_init();
+    esp_avrc_ct_register_callback(bt_avrc_ct_cb);
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    if (audio_hal == NULL) {
+        audio_hal = config->audio_hal;
+    }
+    esp_avrc_tg_init();
+    esp_avrc_tg_register_callback(bt_avrc_tg_cb);
+    esp_avrc_rn_evt_cap_mask_t evt_set = {0};
+    esp_avrc_rn_evt_bit_mask_operation(ESP_AVRC_BIT_MASK_OP_SET, &evt_set, ESP_AVRC_RN_VOLUME_CHANGE);
+    esp_avrc_tg_set_rn_evt_cap(&evt_set);
+#endif
 
     if (config->type == AUDIO_STREAM_READER) {
         // A2DP sink
@@ -246,6 +270,37 @@ esp_err_t a2dp_destroy()
     }
     return ESP_OK;
 }
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+static void bt_avrc_volume_set_by_controller(int16_t volume)
+{
+    ESP_LOGI(TAG, "Volume is set by remote controller %d%%\n", (uint32_t)volume * 100 / 0x7f);
+    _lock_acquire(&g_volume_lock);
+    g_volume = volume;
+    if (audio_hal) {
+        audio_hal_set_volume(audio_hal, g_volume);
+    }
+    _lock_release(&g_volume_lock);
+}
+
+static void bt_avrc_volume_set_by_local(int16_t volume)
+{
+    ESP_LOGI(TAG, "Volume is set locally to: %d%%", (uint32_t)volume * 100 / 0x7f);
+    _lock_acquire(&g_volume_lock);
+    g_volume = volume;
+    _lock_release(&g_volume_lock);
+
+    if (g_volume_notify) {
+        esp_avrc_rn_param_t rn_param;
+        rn_param.volume = g_volume;
+        esp_avrc_tg_send_rn_rsp(ESP_AVRC_RN_VOLUME_CHANGE, ESP_AVRC_RN_RSP_CHANGED, &rn_param);
+        if (audio_hal) {
+        audio_hal_set_volume(audio_hal, g_volume);
+    }
+        g_volume_notify = false;
+    }
+}
+#endif
 
 static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *p_param)
 {
@@ -297,10 +352,51 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
     }
 }
 
-static esp_err_t _bt_avrc_periph_init(esp_periph_handle_t periph)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+static void bt_avrc_tg_cb(esp_avrc_tg_cb_event_t event, esp_avrc_tg_cb_param_t *param)
 {
-    esp_avrc_ct_init();
-    esp_avrc_ct_register_callback(bt_avrc_ct_cb);
+    ESP_LOGD(TAG, "%s evt %d", __func__, event);
+    esp_avrc_tg_cb_param_t *rc = (esp_avrc_tg_cb_param_t *)(param);
+    switch (event) {
+    case ESP_AVRC_TG_CONNECTION_STATE_EVT: {
+        uint8_t *bda = rc->conn_stat.remote_bda;
+        ESP_LOGI(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
+                 rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]); 
+        avrcp_conn_tg_state = rc->conn_stat.connected;
+        break;
+    }
+    case ESP_AVRC_TG_PASSTHROUGH_CMD_EVT: {
+        ESP_LOGI(TAG, "AVRC passthrough cmd: key_code 0x%x, key_state %d", rc->psth_cmd.key_code, rc->psth_cmd.key_state);
+        break;
+    }
+    case ESP_AVRC_TG_SET_ABSOLUTE_VOLUME_CMD_EVT: {
+        ESP_LOGI(TAG, "AVRC set absolute volume: %d%%", (int)rc->set_abs_vol.volume * 100/ 0x7f);
+        bt_avrc_volume_set_by_controller(rc->set_abs_vol.volume);
+        break;
+    }
+    case ESP_AVRC_TG_REGISTER_NOTIFICATION_EVT: {
+        ESP_LOGI(TAG, "AVRC register event notification: %d, param: 0x%x", rc->reg_ntf.event_id, rc->reg_ntf.event_parameter);
+        if (rc->reg_ntf.event_id == ESP_AVRC_RN_VOLUME_CHANGE) {
+            g_volume_notify = true;
+            esp_avrc_rn_param_t rn_param;
+            rn_param.volume = g_volume;
+            esp_avrc_tg_send_rn_rsp(ESP_AVRC_RN_VOLUME_CHANGE, ESP_AVRC_RN_RSP_INTERIM, &rn_param);
+        }
+        break;
+    }
+    case ESP_AVRC_TG_REMOTE_FEATURES_EVT: {
+        ESP_LOGI(TAG, "AVRC remote features %x, CT features %x", rc->rmt_feats.feat_mask, rc->rmt_feats.ct_feat_flag);
+        break;
+    }
+    default:
+        ESP_LOGE(TAG, "%s unhandled evt %d", __func__, event);
+        break;
+    }
+}
+#endif
+
+static esp_err_t _bt_avrc_periph_init(esp_periph_handle_t periph)
+{   
     return ESP_OK;
 }
 
@@ -330,6 +426,20 @@ esp_periph_handle_t bt_create_periph()
 static esp_err_t periph_bt_avrc_passthrough_cmd(esp_periph_handle_t periph, uint8_t cmd)
 {
     esp_err_t err = ESP_OK;
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    if(avrcp_conn_tg_state) {
+        if (cmd == ESP_AVRC_PT_CMD_VOL_DOWN) {
+            int16_t volume = (g_volume - 5) < 0 ? 0 : (g_volume - 5);
+            bt_avrc_volume_set_by_local(volume);
+            return err;
+        } else if (cmd == ESP_AVRC_PT_CMD_VOL_UP) {
+            int16_t volume = (g_volume + 5) > 0x7f ? 0x7f : (g_volume + 5);
+            bt_avrc_volume_set_by_local(volume);
+            return err;
+        }
+    }
+#endif
 
     if (avrcp_conn_state) {
         bt_key_act_param_t param;
@@ -404,5 +514,17 @@ esp_err_t periph_bt_discover(esp_periph_handle_t periph)
     }
     return ESP_OK;
 }
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+esp_err_t periph_bt_volume_up(esp_periph_handle_t periph)
+{
+    return periph_bt_avrc_passthrough_cmd(periph, ESP_AVRC_PT_CMD_VOL_UP);
+}
+
+esp_err_t periph_bt_volume_down(esp_periph_handle_t periph)
+{
+    return periph_bt_avrc_passthrough_cmd(periph, ESP_AVRC_PT_CMD_VOL_DOWN);
+}
+#endif
 
 #endif
