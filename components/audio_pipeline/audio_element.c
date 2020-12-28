@@ -168,6 +168,7 @@ esp_err_t audio_element_process_init(audio_element_handle_t el)
         return ESP_OK;
     }
     el->is_open = true;
+    audio_element_force_set_state(el, AEL_STATE_INITIALIZING);
     esp_err_t ret = el->open(el);
     if (ret == ESP_OK) {
         ESP_LOGD(TAG, "[%s] el opened", el->tag);

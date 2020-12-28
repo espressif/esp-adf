@@ -47,13 +47,14 @@ typedef enum {
  * @brief Audio element state
  */
 typedef enum {
-    AEL_STATE_NONE = 0,
-    AEL_STATE_INIT,
-    AEL_STATE_RUNNING,
-    AEL_STATE_PAUSED,
-    AEL_STATE_STOPPED,
-    AEL_STATE_FINISHED,
-    AEL_STATE_ERROR
+    AEL_STATE_NONE          = 0,
+    AEL_STATE_INIT          = 1,
+    AEL_STATE_INITIALIZING  = 2,
+    AEL_STATE_RUNNING       = 3,
+    AEL_STATE_PAUSED        = 4,
+    AEL_STATE_STOPPED       = 5,
+    AEL_STATE_FINISHED      = 6,
+    AEL_STATE_ERROR         = 7
 } audio_element_state_t;
 
 /**
