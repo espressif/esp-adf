@@ -49,15 +49,18 @@ void app_main(void)
     tone_stream_cfg_t tone_cfg = TONE_STREAM_CFG_DEFAULT();
     tone_cfg.type = AUDIO_STREAM_READER;
     tone_stream_reader = tone_stream_init(&tone_cfg);
+    AUDIO_NULL_CHECK(TAG, tone_stream_reader, return);
 
     ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
+    AUDIO_NULL_CHECK(TAG, i2s_stream_writer, return);
 
     ESP_LOGI(TAG, "[2.3] Create mp3 decoder to decode mp3 file");
     mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
     mp3_decoder = mp3_decoder_init(&mp3_cfg);
+    AUDIO_NULL_CHECK(TAG, mp3_decoder, return);
 
     ESP_LOGI(TAG, "[2.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, tone_stream_reader, "tone");
