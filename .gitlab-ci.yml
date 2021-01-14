@@ -286,7 +286,7 @@ before_script:
   - git apply $ADF_PATH/idf_patches/idf_v3.3_esp_http_client.patch
   - cd -
   - cd $IDF_PATH/tools/unit-test-app
-  - cp $ADF_UT/sdkconfig ./
+  - cp $ADF_UT/sdkconfig.defaults ./
   - rm -rf $IDF_PATH/tools/ci
   - cp -rf $ADF_UT/ci $IDF_PATH/tools
   - sed -i "s%CRITICAL_LEAK_THRESHOLD = 4096%CRITICAL_LEAK_THRESHOLD = 26240%" $IDF_PATH/tools/unit-test-app/components/test_utils/test_runner.c

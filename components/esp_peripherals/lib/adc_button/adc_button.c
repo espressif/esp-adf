@@ -26,15 +26,10 @@
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
 #include "driver/adc.h"
 #include "math.h"
 #include "audio_mem.h"
-
-#if CONFIG_IDF_TARGET_ESP32
 #include "esp_adc_cal.h"
-#endif
 #include "string.h"
 #include "adc_button.h"
 #include "esp_log.h"
@@ -49,6 +44,7 @@
 #define ADC_BTN_INVALID_ID              -1
 #define ADC_BTN_INVALID_ACT_ID          -2
 #define ADC_BTN_DETECT_TIME_MS          20
+#define ADC_BTN_DETECTED_CNT            2
 
 #ifndef ENABLE_ADC_VOLUME
 #define USER_KEY_MAX                    7
@@ -143,18 +139,17 @@ static int get_adc_voltage(int channel)
     uint32_t data[ADC_SAMPLES_NUM] = { 0 };
     uint32_t sum = 0;
     int tmp = 0;
-
-#if CONFIG_IDF_TARGET_ESP32
     esp_adc_cal_characteristics_t characteristics;
+#if CONFIG_IDF_TARGET_ESP32
     esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_11db, ADC_WIDTH_12Bit, V_REF, &characteristics);
+#elif CONFIG_IDF_TARGET_ESP32S2
+    esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_11db, ADC_WIDTH_BIT_13, 0, &characteristics);
+#else
+    esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_11db, ADC_WIDTH_12Bit, 0, &characteristics);
+#endif
     for (int i = 0; i < ADC_SAMPLES_NUM; ++i) {
         esp_adc_cal_get_voltage(channel, &characteristics, &data[i]);
     }
-#elif CONFIG_IDF_TARGET_ESP32S2
-    for (int i = 0; i < ADC_SAMPLES_NUM; i++) {
-        data[i] = adc1_get_raw((adc1_channel_t)channel);
-    }
-#endif
 
     for (int j = 0; j < ADC_SAMPLES_NUM - 1; j++) {
         for (int i = 0; i < ADC_SAMPLES_NUM - j - 1; i++) {
@@ -229,19 +224,31 @@ static adc_btn_state_t get_adc_btn_state(int adc_value, int act_id, adc_btn_list
     }
     // 2.ID and act ID are valid, but not equal.
     if (id != act_id) {
-        ESP_LOGW(TAG, "Old ID:%d, New ID:%d", act_id, id);
+        ESP_LOGW(TAG, "Old ID:%d, New ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
         // Invalid the act ID
         btn_dscp[act_id].active_id = -1;
         btn_dscp[act_id].long_click = 0;
-        btn_dscp[act_id].click_cnt = 0;
         // Set the new id act ID
         btn_dscp[id].active_id = id;
         // Maybe need to check release long pressed.
-        return ADC_BTN_STATE_IDLE;
+        if (btn_dscp[act_id].click_cnt < ADC_BTN_DETECTED_CNT) {
+            btn_dscp[act_id].click_cnt = 0;
+            return ADC_BTN_STATE_IDLE;
+        }
+        btn_dscp[act_id].click_cnt = 0;
+        // Have old act ID, new id is invalid
+        // Need to send release event
+        if (btn_dscp[act_id].click_cnt < (info->press_judge_time / ADC_BTN_DETECT_TIME_MS)) {
+            ESP_LOGD(TAG, "pressed: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
+            return ADC_BTN_STATE_RELEASE;
+        } else {
+            ESP_LOGD(TAG, "long press release: Act ID:%d, ID:%d, Cnt:%d", act_id, id, btn_dscp[act_id].click_cnt);
+            return ADC_BTN_STATE_LONG_RELEASE;
+        }
     }
     // 3.ID and act ID are valid, and equal.
     btn_dscp[act_id].click_cnt++;
-    if (btn_dscp[act_id].click_cnt == 3) {
+    if (btn_dscp[act_id].click_cnt == ADC_BTN_DETECTED_CNT) {
         return ADC_BTN_STATE_PRESSED;
     }
 
@@ -264,10 +271,10 @@ static void button_task(void *parameters)
     adc_btn_list *head = tag->head;
     adc_btn_list *find = head;
     xEventGroupClearBits(g_event_bit, DESTROY_BIT);
-#if CONFIG_IDF_TARGET_ESP32
-    adc1_config_width(ADC_WIDTH_BIT_12);
-#elif CONFIG_IDF_TARGET_ESP32S2
+#if CONFIG_IDF_TARGET_ESP32S2
     adc1_config_width(ADC_WIDTH_BIT_13);
+#else
+    adc1_config_width(ADC_WIDTH_BIT_12);
 #endif
 
     while (find) {
@@ -407,10 +414,10 @@ void adc_btn_init(void *user_data, adc_button_callback cb, adc_btn_list *head, a
 
     g_event_bit = xEventGroupCreate();
 
-    audio_thread_create(&tag->audio_thread, 
-                        "button_task", button_task, 
+    audio_thread_create(&tag->audio_thread,
+                        "button_task", button_task,
                         (void *)tag,
-                        task_cfg->task_stack, 
+                        task_cfg->task_stack,
                         task_cfg->task_prio,
                         task_cfg->ext_stack,
                         task_cfg->task_core);
