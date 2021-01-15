@@ -59,7 +59,6 @@ before_script:
     - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-
 .build_template: &build_template
   stage: build
   image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
@@ -299,6 +298,8 @@ assign_test:
     expire_in: 1 mos
   before_script: *add_gitlab_key_before
   script:
+    - source /opt/pyenv/activate
+    - pyenv global 3.5.5
     - git clone ${AUDIO_AUTO_REPO}
     - git clone ${TEST_FW_REPO}
     # assign example tests
