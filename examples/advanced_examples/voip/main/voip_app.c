@@ -31,6 +31,7 @@
 #include "esp_sip.h"
 #include "g711_decoder.h"
 #include "g711_encoder.h"
+#include "algorithm_stream.h"
 
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
@@ -46,7 +47,7 @@
 
 static const char *TAG = "VOIP_EXAMPLE";
 
-#define I2S_SAMPLE_RATE     48000
+#define I2S_SAMPLE_RATE     16000
 #define I2S_CHANNELS        2
 #define I2S_BITS            16
 
@@ -69,24 +70,33 @@ static esp_err_t recorder_pipeline_open()
     i2s_cfg.uninstall_drv = false;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_cfg.i2s_port = 1;
+    i2s_cfg.task_core = 1;
 #endif
+    i2s_cfg.i2s_config.sample_rate = I2S_SAMPLE_RATE;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
-    audio_element_info_t i2s_info = {0};
-    audio_element_getinfo(i2s_stream_reader, &i2s_info);
-    i2s_info.bits = I2S_BITS;
-    i2s_info.channels = I2S_CHANNELS;
-    i2s_info.sample_rates = I2S_SAMPLE_RATE;
-    audio_element_setinfo(i2s_stream_reader, &i2s_info);
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    algorithm_stream_cfg_t algo_config = ALGORITHM_STREAM_CFG_DEFAULT();
+    algo_config.input_type = ALGORITHM_STREAM_INPUT_TYPE1;
+    algo_config.task_core = 1;
+    audio_element_handle_t element_algo = algo_stream_init(&algo_config);
+#endif
 
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg.src_rate = I2S_SAMPLE_RATE;
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    rsp_cfg.src_ch = 1;
+#else
     rsp_cfg.src_ch = I2S_CHANNELS;
+#endif
     rsp_cfg.dest_rate = CODEC_SAMPLE_RATE;
     rsp_cfg.dest_ch = CODEC_CHANNELS;
     rsp_cfg.complexity = 5;
+    rsp_cfg.task_core = 1;
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
 
     g711_encoder_cfg_t g711_cfg = DEFAULT_G711_ENCODER_CONFIG();
+    g711_cfg.task_core = 1;
     audio_element_handle_t sip_encoder = g711_encoder_init(&g711_cfg);
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
@@ -98,8 +108,17 @@ static esp_err_t recorder_pipeline_open()
     audio_pipeline_register(recorder, filter, "filter");
     audio_pipeline_register(recorder, sip_encoder, "sip_enc");
     audio_pipeline_register(recorder, raw_read, "raw");
+
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    audio_pipeline_register(recorder, element_algo, "algo");
+    algo_stream_set_record_rate(element_algo, I2S_CHANNELS, I2S_SAMPLE_RATE);
+    const char *link_tag[5] = {"i2s", "algo", "filter", "sip_enc", "raw"};
+    audio_pipeline_link(recorder, &link_tag[0], 5);
+#else
     const char *link_tag[4] = {"i2s", "filter", "sip_enc", "raw"};
     audio_pipeline_link(recorder, &link_tag[0], 4);
+#endif
+
     audio_pipeline_run(recorder);
     ESP_LOGI(TAG, " SIP recorder has been created");
     return ESP_OK;
@@ -130,13 +149,8 @@ static esp_err_t player_pipeline_open()
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_cfg.uninstall_drv = false;
+    i2s_cfg.i2s_config.sample_rate = I2S_SAMPLE_RATE;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
-    audio_element_info_t i2s_info = {0};
-    audio_element_getinfo(i2s_stream_writer, &i2s_info);
-    i2s_info.bits = I2S_BITS;
-    i2s_info.channels = I2S_CHANNELS;
-    i2s_info.sample_rates = I2S_SAMPLE_RATE;
-    audio_element_setinfo(i2s_stream_writer, &i2s_info);
 
     audio_pipeline_register(player, raw_write, "raw");
     audio_pipeline_register(player, sip_decoder, "sip_dec");
@@ -145,7 +159,7 @@ static esp_err_t player_pipeline_open()
     const char *link_tag[4] = {"raw", "sip_dec", "filter", "i2s"};
     audio_pipeline_link(player, &link_tag[0], 4);
     audio_pipeline_run(player);
-    ESP_LOGI(TAG, "Speaker has been created");
+    ESP_LOGI(TAG, "SIP player has been created");
     return ESP_OK;
 }
 
@@ -189,8 +203,8 @@ static int _sip_event_handler(sip_event_msg_t *event)
             break;
         case SIP_EVENT_AUDIO_SESSION_BEGIN:
             ESP_LOGI(TAG, "SIP_EVENT_AUDIO_SESSION_BEGIN");
-            recorder_pipeline_open();
             player_pipeline_open();
+            recorder_pipeline_open();
             break;
         case SIP_EVENT_AUDIO_SESSION_END:
             ESP_LOGI(TAG, "SIP_EVENT_AUDIO_SESSION_END");
