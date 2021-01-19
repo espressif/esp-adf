@@ -62,7 +62,7 @@ typedef enum {
  */
 typedef enum {
     AEL_MSG_CMD_NONE                = 0,
-    AEL_MSG_CMD_ERROR               = 1,
+    // AEL_MSG_CMD_ERROR               = 1,
     AEL_MSG_CMD_FINISH              = 2,
     AEL_MSG_CMD_STOP                = 3,
     AEL_MSG_CMD_PAUSE               = 4,
