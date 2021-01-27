@@ -387,9 +387,11 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         ESP_LOGE(TAG, "Wifi has initialized");
         return ESP_FAIL;
     }
-
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+    esp_netif_create_default_wifi_sta();
+#endif
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_wifi_event_callback, self));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &_wifi_event_callback, self));
 #else
@@ -422,8 +424,8 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         unsigned int client_key_bytes = periph_wifi->wpa2_e_cfg->wpa2_e_key_end - periph_wifi->wpa2_e_cfg->wpa2_e_key_start;
 
         ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_ca_cert((const unsigned char *)periph_wifi->wpa2_e_cfg->ca_pem_start, ca_pem_bytes));
-        ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_cert_key((const unsigned char *)periph_wifi->wpa2_e_cfg->wpa2_e_cert_start, client_crt_bytes,\
-    		    (const unsigned char *)periph_wifi->wpa2_e_cfg->wpa2_e_key_start, client_key_bytes, NULL, 0));
+        ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_cert_key((const unsigned char *)periph_wifi->wpa2_e_cfg->wpa2_e_cert_start, client_crt_bytes, \
+                        (const unsigned char *)periph_wifi->wpa2_e_cfg->wpa2_e_key_start, client_key_bytes, NULL, 0));
         ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)periph_wifi->wpa2_e_cfg->eap_id, strlen(periph_wifi->wpa2_e_cfg->eap_id)));
         if (periph_wifi->wpa2_e_cfg->eap_method == EAP_PEAP || periph_wifi->wpa2_e_cfg->eap_method == EAP_TTLS) {
             ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_username((uint8_t *)periph_wifi->wpa2_e_cfg->eap_username, strlen(periph_wifi->wpa2_e_cfg->eap_username)));
