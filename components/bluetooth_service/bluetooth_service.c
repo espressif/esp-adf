@@ -433,7 +433,7 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
         return ESP_FAIL;
     }
 
-    if (esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT) != ESP_OK) {
+    if (esp_bt_controller_enable(ESP_BT_MODE_BTDM) != ESP_OK) {
         AUDIO_ERROR(TAG, "enable controller failed");
         return ESP_FAIL;
     }
