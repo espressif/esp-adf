@@ -73,6 +73,11 @@ See the Getting Started Guide for full steps to configure and use ESP-IDF to bui
     - Freeswitch v1.8.5
     - Yate v6.0
     - Kamailio v5.3
+- Acoustic Echo Cancellation (AEC) :
+    - Software AEC
+        - only support MINI board with our algorithm stream
+    - Hardware AEC
+        - You can use MSC board or other board that support AEC features
 
 ## Example Output
 
