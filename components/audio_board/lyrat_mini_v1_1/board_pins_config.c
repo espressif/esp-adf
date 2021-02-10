@@ -199,3 +199,8 @@ int8_t get_es8311_mclk_src(void)
 {
     return ES8311_MCLK_SOURCE;
 }
+
+int8_t get_es7243_mclk_gpio(void)
+{
+    return ES7243_MCLK_GPIO;
+}

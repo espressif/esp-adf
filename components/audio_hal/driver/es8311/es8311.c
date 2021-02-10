@@ -480,7 +480,6 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
     ret |= es8311_write_reg(ES8311_SYSTEM_REG13, 0x10);
     ret |= es8311_write_reg(ES8311_ADC_REG1B, 0x0A);
     ret |= es8311_write_reg(ES8311_ADC_REG1C, 0x6A);
-    ret |= es8311_write_reg(ES8311_GPIO_REG44, 0x08);
 
     es8311_pa_power(true);
     return ESP_OK;

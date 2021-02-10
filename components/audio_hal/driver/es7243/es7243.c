@@ -28,6 +28,7 @@
 #include "board.h"
 #include "esp_log.h"
 
+#define MCLK_PULSES_NUMBER    (20)
 #define ES_ASSERT(a, format, b, ...) \
     if ((a) != 0) { \
         ESP_LOGE(TAG, format, ##__VA_ARGS__); \
@@ -76,9 +77,28 @@ esp_err_t es7243_adc_set_addr(int addr)
     return ESP_OK;
 }
 
+static esp_err_t es7243_mclk_active(uint8_t mclk_gpio)
+{
+    gpio_pad_select_gpio(mclk_gpio);
+    gpio_set_direction(mclk_gpio, GPIO_MODE_OUTPUT);
+    /*
+        Before initializing es7243, it is necessary to output
+        mclk to es7243 to activate the I2C configuration.
+        So give some clocks to active es7243.
+    */
+    for (int i = 0; i < MCLK_PULSES_NUMBER; ++i) {
+        gpio_set_level(mclk_gpio, 0);
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+        gpio_set_level(mclk_gpio, 1);
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+    }
+    return ESP_OK;
+}
+
 esp_err_t es7243_adc_init(audio_hal_codec_config_t *codec_cfg)
 {
     esp_err_t ret = ESP_OK;
+    es7243_mclk_active(get_es7243_mclk_gpio());
     i2c_init();
     ret |= es7243_write_reg(0x00, 0x01);
     ret |= es7243_write_reg(0x06, 0x00);

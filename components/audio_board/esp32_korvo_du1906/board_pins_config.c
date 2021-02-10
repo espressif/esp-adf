@@ -148,3 +148,8 @@ int8_t get_pa_enable_gpio(void)
 {
     return PA_ENABLE_GPIO;
 }
+
+int8_t get_es7243_mclk_gpio(void)
+{
+    return ES7243_MCLK_GPIO;
+}
