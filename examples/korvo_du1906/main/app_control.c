@@ -282,7 +282,7 @@ void app_init(void)
     // step 5. wait for wifi connected, and start ota service
     EventBits_t bits = xEventGroupWaitBits(WIFI_CONNECTED_FLAG, WIFI_CONNECTED_BIT, true, false, WIFI_WAIT_CONNECT_TIME_MS);
     if (bits & WIFI_CONNECTED_BIT) {
-        app_ota_start();
+        // app_ota_start();
     } else {
         ESP_LOGW(TAG, "WIFI  connection timeout(%dms), skipped OTA service", WIFI_WAIT_CONNECT_TIME_MS);
     }

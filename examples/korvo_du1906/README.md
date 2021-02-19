@@ -141,13 +141,11 @@ git pull
 git checkout audio/stack_on_psram_v3.3
 git submodule update --init --recursive
 ```
-The latest commit ID is `0c1859a5a5a5eded5af1b9423c290781e3973915`
+The latest commit ID is `606dd2b629f264aa37a0d76fe23805d61bc6c712`
 
 ### ADF Patches
 For now, we need an ADF patch as follow.
 ```bash
-cd $IDF_PATH
-git apply $ADF_PATH/examples/korvo_du1906/patches/transport_ssl.patch
 cd $ADF_PATH
 git apply ./idf_patches/adf_http_stream.patch
 git apply ./examples/korvo_du1906/patches/a2dp_stream_du1906.patch
@@ -200,7 +198,7 @@ The firmware downloading flash address refer to above table in jumpstart part.
 
 ### Usage
 
-Please refer to jumpstart part.
+Please refer to jumpstart part. The device should connect to an AP around first.
 
 ### Upgrade function
 
