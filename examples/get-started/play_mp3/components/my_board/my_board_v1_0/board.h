@@ -29,6 +29,7 @@
 #include "board_def.h"
 #include "board_pins_config.h"
 #include "esp_peripherals.h"
+#include "periph_sdcard.h"
 
 #ifdef __cplusplus
 extern "C" {
