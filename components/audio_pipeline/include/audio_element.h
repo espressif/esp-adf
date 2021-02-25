@@ -47,13 +47,14 @@ typedef enum {
  * @brief Audio element state
  */
 typedef enum {
-    AEL_STATE_NONE = 0,
-    AEL_STATE_INIT,
-    AEL_STATE_RUNNING,
-    AEL_STATE_PAUSED,
-    AEL_STATE_STOPPED,
-    AEL_STATE_FINISHED,
-    AEL_STATE_ERROR
+    AEL_STATE_NONE          = 0,
+    AEL_STATE_INIT          = 1,
+    AEL_STATE_INITIALIZING  = 2,
+    AEL_STATE_RUNNING       = 3,
+    AEL_STATE_PAUSED        = 4,
+    AEL_STATE_STOPPED       = 5,
+    AEL_STATE_FINISHED      = 6,
+    AEL_STATE_ERROR         = 7
 } audio_element_state_t;
 
 /**
@@ -61,7 +62,7 @@ typedef enum {
  */
 typedef enum {
     AEL_MSG_CMD_NONE                = 0,
-    AEL_MSG_CMD_ERROR               = 1,
+    // AEL_MSG_CMD_ERROR               = 1,
     AEL_MSG_CMD_FINISH              = 2,
     AEL_MSG_CMD_STOP                = 3,
     AEL_MSG_CMD_PAUSE               = 4,
@@ -652,7 +653,7 @@ esp_err_t audio_element_change_cmd(audio_element_handle_t el, audio_element_msg_
 esp_err_t audio_element_reset_output_ringbuf(audio_element_handle_t el);
 
 /**
- * @brief      Call this function to provice Element input data.
+ * @brief      Call this function to provide Element input data.
  *             Depending on setup using ringbuffer or function callback, Element invokes read ringbuffer, or calls read callback funtion.
  *
  * @param[in]  el            The audio element handle

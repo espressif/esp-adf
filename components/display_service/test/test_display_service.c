@@ -63,6 +63,22 @@ TEST_CASE("Create a display service and set different pattern", "[display_servic
     TEST_ASSERT_FALSE(display_service_set_pattern(display_handle, DISPLAY_PATTERN_WIFI_SETTING_FINISHED, 0));
     vTaskDelay(2000 / portTICK_PERIOD_MS);
 
+    ESP_LOGI(TAG, "wakeup on");
+    TEST_ASSERT_FALSE(display_service_set_pattern(display_handle, DISPLAY_PATTERN_WAKEUP_ON, 0));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    ESP_LOGI(TAG, "wakeup finish");
+    TEST_ASSERT_FALSE(display_service_set_pattern(display_handle, DISPLAY_PATTERN_WAKEUP_FINISHED, 0));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    ESP_LOGI(TAG, "speech begin");
+    TEST_ASSERT_FALSE(display_service_set_pattern(display_handle, DISPLAY_PATTERN_SPEECH_BEGIN, 0));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    ESP_LOGI(TAG, "speech finish");
+    TEST_ASSERT_FALSE(display_service_set_pattern(display_handle, DISPLAY_PATTERN_WAKEUP_FINISHED, 0));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
     ESP_LOGW(TAG, "Display service will be destroyed");
     TEST_ASSERT_FALSE(display_destroy(display_handle));
 }
@@ -319,6 +335,22 @@ TEST_CASE("Create a display service on board with an ws2812 chip", "[display_ser
     TEST_ASSERT_FALSE(led_bar_ws2812_pattern(ws2812_handle, DISPLAY_PATTERN_BATTERY_FULL, 0));
     vTaskDelay(2000 / portTICK_PERIOD_MS);
 
+    ESP_LOGI(TAG, "poweron init");
+    TEST_ASSERT_FALSE(led_bar_ws2812_pattern(ws2812_handle, DISPLAY_PATTERN_POWERON_INIT, 0));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    ESP_LOGI(TAG, "wifi no cfg");
+    TEST_ASSERT_FALSE(led_bar_ws2812_pattern(ws2812_handle, DISPLAY_PATTERN_WIFI_NO_CFG, 0));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    ESP_LOGI(TAG, "speech begin");
+    TEST_ASSERT_FALSE(led_bar_ws2812_pattern(ws2812_handle, DISPLAY_PATTERN_SPEECH_BEGIN, 0));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    ESP_LOGI(TAG, "speech over");
+    TEST_ASSERT_FALSE(led_bar_ws2812_pattern(ws2812_handle, DISPLAY_PATTERN_SPEECH_OVER, 0));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
     ESP_LOGW(TAG, "Display service will be destroyed");
     led_bar_ws2812_deinit(ws2812_handle);
 }
@@ -332,7 +364,7 @@ TEST_CASE("Create a display service on board with an aw2013 chip", "[display_ser
     esp_periph_handle_t aw2013_handle = led_bar_aw2013_init();
     TEST_ASSERT_NOT_NULL(aw2013_handle);
     TEST_ASSERT_FALSE(led_bar_aw2013_set_blink_time(aw2013_handle, 5, 300));
-    
+
     display_service_config_t display = {
         .based_cfg = {
             .task_stack = 3 * 1024,

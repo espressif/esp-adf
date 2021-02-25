@@ -43,6 +43,7 @@ typedef struct
     int task_stack;           /*!< Task stack size */
     int task_core;            /*!< Task running in core (0 or 1) */
     int task_prio;            /*!< Task priority (based on freeRTOS priority) */
+    const char *label;        /*!< Label of tone stored in flash. The default value is `flash_tone`*/
     bool extern_stack;        /*!< Task stack allocate on the extern ram */
     bool use_delegate;        /*!< Read tone partition with esp_delegate. If task stack is on extern ram, this MUST be TRUE */
 } tone_stream_cfg_t;
@@ -57,12 +58,13 @@ typedef struct
 
 #define TONE_STREAM_CFG_DEFAULT()               \
 {                                               \
-    .type = AUDIO_STREAM_NONE,                  \
-    .buf_sz = TONE_STREAM_BUF_SIZE,             \
-    .out_rb_size = TONE_STREAM_RINGBUFFER_SIZE, \
-    .task_stack = TONE_STREAM_TASK_STACK,       \
-    .task_core = TONE_STREAM_TASK_CORE,         \
-    .task_prio = TONE_STREAM_TASK_PRIO,         \
+    .type         = AUDIO_STREAM_NONE,          \
+    .buf_sz       = TONE_STREAM_BUF_SIZE,       \
+    .out_rb_size  = TONE_STREAM_RINGBUFFER_SIZE,\
+    .task_stack   = TONE_STREAM_TASK_STACK,     \
+    .task_core    = TONE_STREAM_TASK_CORE,      \
+    .task_prio    = TONE_STREAM_TASK_PRIO,      \
+    .label        = "flash_tone",               \
     .extern_stack = TONE_STREAM_EXT_STACK,      \
     .use_delegate = TONE_STREAM_USE_DELEGATE,   \
 }

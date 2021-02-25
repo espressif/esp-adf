@@ -28,6 +28,7 @@
 #define SDCARD_OPEN_FILE_NUM_MAX  5
 #define SDCARD_INTR_GPIO          GPIO_NUM_34
 #define SDCARD_PWR_CTRL           GPIO_NUM_13
+#define ES7243_MCLK_GPIO          GPIO_NUM_0
 
 #define BUTTON_VOLUP_ID           0
 #define BUTTON_VOLDOWN_ID         1

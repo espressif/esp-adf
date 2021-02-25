@@ -48,15 +48,15 @@ const struct periph_ws2812_ctrl_cfg ws2812_display_pattern[DISPLAY_PATTERN_MAX][
     {
         {
             .mode = PERIPH_WS2812_FADE,
-            .color = LED2812_COLOR_WHITE,
-            .loop = 20,
+            .color = LED2812_COLOR_PURPLE,
+            .loop = 0xFFFFFFFF,
             .time_off_ms = 1500,
             .time_on_ms = 1500,
         },
         {
             .mode = PERIPH_WS2812_FADE,
-            .color = LED2812_COLOR_WHITE,
-            .loop = 20,
+            .color = LED2812_COLOR_PURPLE,
+            .loop = 0xFFFFFFFF,
             .time_off_ms = 1500,
             .time_on_ms = 1500,
         } // 1
@@ -65,14 +65,14 @@ const struct periph_ws2812_ctrl_cfg ws2812_display_pattern[DISPLAY_PATTERN_MAX][
         {
             .mode = PERIPH_WS2812_BLINK,
             .color = LED2812_COLOR_WHITE,
-            .loop = 100,
+            .loop = 0xFFFFFFFF,
             .time_off_ms = 200,
             .time_on_ms = 800,
         },
         {
             .mode = PERIPH_WS2812_BLINK,
             .color = LED2812_COLOR_WHITE,
-            .loop = 100,
+            .loop = 0xFFFFFFFF,
             .time_off_ms = 200,
             .time_on_ms = 800,
         } // 2
@@ -80,14 +80,14 @@ const struct periph_ws2812_ctrl_cfg ws2812_display_pattern[DISPLAY_PATTERN_MAX][
     {
         {
             .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_WHITE ,
+            .color = LED2812_COLOR_BLACK ,
             .loop = 0,
             .time_off_ms = 0,
             .time_on_ms = 0,
         },
         {
             .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_WHITE,
+            .color = LED2812_COLOR_BLACK,
             .loop = 0,
             .time_off_ms = 0,
             .time_on_ms = 0,
@@ -95,18 +95,18 @@ const struct periph_ws2812_ctrl_cfg ws2812_display_pattern[DISPLAY_PATTERN_MAX][
     },
     {
         {
-            .mode = PERIPH_WS2812_BLINK,
-            .color = LED2812_COLOR_WHITE,
-            .loop = 100,
-            .time_off_ms = 200,
-            .time_on_ms = 400,
+            .mode = PERIPH_WS2812_ONE,
+            .color = LED2812_COLOR_RED,
+            .loop = 1,
+            .time_off_ms = 1000,
+            .time_on_ms = 4000,
         },
         {
-            .mode = PERIPH_WS2812_BLINK,
-            .color = LED2812_COLOR_WHITE,
-            .loop = 100,
-            .time_off_ms = 200,
-            .time_on_ms = 400,
+            .mode = PERIPH_WS2812_ONE,
+            .color = LED2812_COLOR_RED,
+            .loop = 1,
+            .time_off_ms = 1000,
+            .time_on_ms = 4000,
         } // 4
     },
     {
@@ -143,34 +143,34 @@ const struct periph_ws2812_ctrl_cfg ws2812_display_pattern[DISPLAY_PATTERN_MAX][
     },
     {
         {
-            .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_BLUE,
-            .loop = 0,
-            .time_off_ms = 0,
-            .time_on_ms = 0,
+            .mode = PERIPH_WS2812_BLINK,
+            .color = LED2812_COLOR_PURPLE,
+            .loop = 4,
+            .time_off_ms = 100,
+            .time_on_ms = 100,
         },
         {
-            .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_BLUE,
-            .loop = 0,
-            .time_off_ms = 0,
-            .time_on_ms = 0,
+            .mode = PERIPH_WS2812_BLINK,
+            .color = LED2812_COLOR_PURPLE,
+            .loop = 4,
+            .time_off_ms = 100,
+            .time_on_ms = 100,
         } // 7
     },
     {
         {
             .mode = PERIPH_WS2812_BLINK,
-            .color = LED2812_COLOR_BLUE,
-            .loop = 100,
-            .time_off_ms = 200,
-            .time_on_ms = 400,
+            .color = LED2812_COLOR_PURPLE,
+            .loop = 4,
+            .time_off_ms = 100,
+            .time_on_ms = 100,
         },
         {
             .mode = PERIPH_WS2812_BLINK,
-            .color = LED2812_COLOR_BLUE,
-            .loop = 100,
-            .time_off_ms = 200,
-            .time_on_ms = 400,
+            .color = LED2812_COLOR_PURPLE,
+            .loop = 4,
+            .time_off_ms = 100,
+            .time_on_ms = 100,
         } // 8
     },
     {
@@ -240,14 +240,14 @@ const struct periph_ws2812_ctrl_cfg ws2812_display_pattern[DISPLAY_PATTERN_MAX][
     {
         {
             .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_GREEN,
+            .color = LED2812_COLOR_BLUE,
             .loop = 0,
             .time_off_ms = 0,
             .time_on_ms = 0,
         },
         {
             .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_GREEN,
+            .color = LED2812_COLOR_BLUE,
             .loop = 0,
             .time_off_ms = 0,
             .time_on_ms = 0,
@@ -303,31 +303,31 @@ const struct periph_ws2812_ctrl_cfg ws2812_display_pattern[DISPLAY_PATTERN_MAX][
     },
     {
         {
-            .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_BLACK,
-            .loop = 0,
+            .mode = PERIPH_WS2812_FADE,
+            .color = LED2812_COLOR_GREEN,
+            .loop = 1,
             .time_off_ms = 0,
-            .time_on_ms = 0,
+            .time_on_ms = 1000,
         },
         {
-            .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_BLACK,
-            .loop = 0,
+            .mode = PERIPH_WS2812_FADE,
+            .color = LED2812_COLOR_GREEN,
+            .loop = 1,
             .time_off_ms = 0,
-            .time_on_ms = 0,
+            .time_on_ms = 1000,
         } // 17
     },
     {
         {
             .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_YELLOW,
+            .color = LED2812_COLOR_ORANGE,
             .loop = 0,
             .time_off_ms = 0,
             .time_on_ms = 0,
         },
         {
             .mode = PERIPH_WS2812_ONE,
-            .color = LED2812_COLOR_YELLOW,
+            .color = LED2812_COLOR_ORANGE,
             .loop = 0,
             .time_off_ms = 0,
             .time_on_ms = 0,
@@ -428,6 +428,71 @@ const struct periph_ws2812_ctrl_cfg ws2812_display_pattern[DISPLAY_PATTERN_MAX][
             .time_off_ms = 1000,
             .time_on_ms = 2000,
         } // 24
+    },
+    {
+        {
+            .mode = PERIPH_WS2812_ONE,
+            .color = LED2812_COLOR_PURPLE,
+            .loop = 0,
+            .time_off_ms = 0,
+            .time_on_ms = 0,
+        },
+        {
+            .mode = PERIPH_WS2812_ONE,
+            .color = LED2812_COLOR_PURPLE,
+            .loop = 0,
+            .time_off_ms = 0,
+            .time_on_ms = 0,
+        } // 25
+    }
+    ,
+    {
+        {
+            .mode = PERIPH_WS2812_BLINK,
+            .color = LED2812_COLOR_RED,
+            .loop = 0xFFFFFFFF,
+            .time_off_ms = 2000,
+            .time_on_ms = 2000,
+        },
+        {
+            .mode = PERIPH_WS2812_BLINK,
+            .color = LED2812_COLOR_RED,
+            .loop = 0xFFFFFFFF,
+            .time_off_ms = 2000,
+            .time_on_ms = 2000,
+        } // 26
+    },
+    {
+        {
+            .mode = PERIPH_WS2812_BLINK,
+            .color = LED2812_COLOR_BLUE,
+            .loop = 0xFFFFFFFF,
+            .time_off_ms = 500,
+            .time_on_ms = 500,
+        },
+        {
+            .mode = PERIPH_WS2812_BLINK,
+            .color = LED2812_COLOR_BLUE,
+            .loop = 0xFFFFFFFF,
+            .time_off_ms = 500,
+            .time_on_ms = 500,
+        } // 27,
+    },
+    {
+        {
+            .mode = PERIPH_WS2812_ONE,
+            .color = LED2812_COLOR_BLACK,
+            .loop = 0,
+            .time_off_ms = 0,
+            .time_on_ms = 0,
+        },
+        {
+            .mode = PERIPH_WS2812_ONE,
+            .color = LED2812_COLOR_BLACK,
+            .loop = 0,
+            .time_off_ms = 0,
+            .time_on_ms = 0,
+        } // 28,
     }
 };
 

@@ -14,7 +14,7 @@
 
 #ifndef LIGHT_BDSPEECH_COMMON_UTILITY_H
 #define LIGHT_BDSPEECH_COMMON_UTILITY_H
-
+ 
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,7 +35,7 @@ unsigned long long bds_get_current_time();
  * @return
  *      time stamp (ms)
  */
-long bds_get_current_time_ms();
+uint64_t bds_get_current_time_ms();
 
 /**
  * @brief      Generate uuid
@@ -72,6 +72,8 @@ int bds_get_sdk_version(char* out_version, int len);
  *     - -1: on fail
  */
 int bds_create_sign(char* psrc, int slen, uint32_t *sign);
+
+uint32_t bds_rand32();
 
 /**
  * @brief      Set sdk log level

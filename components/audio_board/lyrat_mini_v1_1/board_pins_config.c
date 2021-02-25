@@ -57,7 +57,7 @@ esp_err_t get_i2s_pins(i2s_port_t port, i2s_pin_config_t *i2s_config)
     } else if (port == I2S_NUM_1) {
         i2s_config->bck_io_num = GPIO_NUM_32;
         i2s_config->ws_io_num = GPIO_NUM_33;
-        i2s_config->data_out_num = GPIO_NUM_26;
+        i2s_config->data_out_num = -1;
         i2s_config->data_in_num = GPIO_NUM_36;
     } else {
         memset(i2s_config, -1, sizeof(i2s_pin_config_t));
@@ -198,4 +198,9 @@ int8_t get_blue_led_gpio(void)
 int8_t get_es8311_mclk_src(void)
 {
     return ES8311_MCLK_SOURCE;
+}
+
+int8_t get_es7243_mclk_gpio(void)
+{
+    return ES7243_MCLK_GPIO;
 }

@@ -151,10 +151,11 @@ void app_main(void)
                         break;
                     case AEL_STATE_FINISHED :
                         ESP_LOGI(TAG, "[ * ] Rewinding audio pipeline");
-                        audio_pipeline_stop(pipeline);
-                        audio_pipeline_wait_for_stop(pipeline);
+                        audio_pipeline_reset_ringbuffer(pipeline);
+                        audio_pipeline_reset_elements(pipeline);
+                        audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
                         adf_music_mp3_pos = 0;
-                        audio_pipeline_resume(pipeline);
+                        audio_pipeline_run(pipeline);
                         break;
                     default :
                         ESP_LOGI(TAG, "[ * ] Not supported state %d", el_state);

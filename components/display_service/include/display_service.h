@@ -61,6 +61,12 @@ typedef enum {
     DISPLAY_PATTERN_BATTERY_LOW             = 22,
     DISPLAY_PATTERN_BATTERY_CHARGING        = 23,
     DISPLAY_PATTERN_BATTERY_FULL            = 24,
+
+    DISPLAY_PATTERN_POWERON_INIT            = 25,
+    DISPLAY_PATTERN_WIFI_NO_CFG             = 26,
+    DISPLAY_PATTERN_SPEECH_BEGIN            = 27,
+    DISPLAY_PATTERN_SPEECH_OVER             = 28,
+
     DISPLAY_PATTERN_MAX,
 } display_pattern_t;
 

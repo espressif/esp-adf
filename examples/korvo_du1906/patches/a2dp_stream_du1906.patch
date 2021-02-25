@@ -1,14 +1,5 @@
-From f8cb749267224cd488c72299eaae6911372e4c3e Mon Sep 17 00:00:00 2001
-From: donglianghao <donglianghao@espressif.com>
-Date: Wed, 30 Sep 2020 11:54:36 +0800
-Subject: [PATCH] a2dp_stream_1906
-
----
- components/bluetooth_service/a2dp_stream.c | 82 ++++++++++++++++++++--
- 1 file changed, 77 insertions(+), 5 deletions(-)
-
 diff --git a/components/bluetooth_service/a2dp_stream.c b/components/bluetooth_service/a2dp_stream.c
-index 76868950..37347047 100644
+index 06dc1b4b..c1cacea7 100644
 --- a/components/bluetooth_service/a2dp_stream.c
 +++ b/components/bluetooth_service/a2dp_stream.c
 @@ -32,9 +32,16 @@
@@ -34,11 +25,29 @@ index 76868950..37347047 100644
  static uint8_t trans_label = 0;
 +static esp_avrc_rn_evt_cap_mask_t s_avrc_peer_rn_cap;
  
- static const char *audio_state_str[] = { "Suspended", "Stopped", "Started" };
+ #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+ static audio_hal_handle_t audio_hal = NULL;
+@@ -219,7 +227,7 @@ audio_element_handle_t a2dp_stream_init(a2dp_stream_config_t *config)
  
-@@ -247,6 +255,56 @@ esp_err_t a2dp_destroy()
-     return ESP_OK;
+     cfg.task_stack = -1; // No need task
+     cfg.tag = "aadp";
+-    
++
+     esp_avrc_ct_init();
+     esp_avrc_ct_register_callback(bt_avrc_ct_cb);
+ 
+@@ -295,13 +303,63 @@ static void bt_avrc_volume_set_by_local(int16_t volume)
+         rn_param.volume = g_volume;
+         esp_avrc_tg_send_rn_rsp(ESP_AVRC_RN_VOLUME_CHANGE, ESP_AVRC_RN_RSP_CHANGED, &rn_param);
+         if (audio_hal) {
+-        audio_hal_set_volume(audio_hal, g_volume);
+-    }
++            audio_hal_set_volume(audio_hal, g_volume);
++        }
+         g_volume_notify = false;
+     }
  }
+ #endif
  
 +static void bt_av_new_track(void)
 +{
@@ -73,27 +82,27 @@ index 76868950..37347047 100644
 +void bt_av_notify_evt_handler(uint8_t event_id, esp_avrc_rn_param_t *event_parameter)
 +{
 +    switch (event_id) {
-+    case ESP_AVRC_RN_TRACK_CHANGE:
-+        bt_av_new_track();
-+        break;
-+    case ESP_AVRC_RN_PLAY_STATUS_CHANGE:
-+        ESP_LOGI(TAG, "Playback status changed: 0x%x", event_parameter->playback);
-+        if (event_parameter->playback == ESP_AVRC_PLAYBACK_PLAYING) {
-+            bdsc_engine_open_bt();
-+        }
-+        bt_av_playback_changed();
-+        break;
-+    case ESP_AVRC_RN_PLAY_POS_CHANGED:
-+        ESP_LOGI(TAG, "Play position changed: %d-ms", event_parameter->play_pos);
-+        bt_av_play_pos_changed();
-+        break;
++        case ESP_AVRC_RN_TRACK_CHANGE:
++            bt_av_new_track();
++            break;
++        case ESP_AVRC_RN_PLAY_STATUS_CHANGE:
++            ESP_LOGI(TAG, "Playback status changed: 0x%x", event_parameter->playback);
++            if (event_parameter->playback == ESP_AVRC_PLAYBACK_PLAYING) {
++                bdsc_engine_open_bt();
++            }
++            bt_av_playback_changed();
++            break;
++        case ESP_AVRC_RN_PLAY_POS_CHANGED:
++            ESP_LOGI(TAG, "Play position changed: %d-ms", event_parameter->play_pos);
++            bt_av_play_pos_changed();
++            break;
 +    }
 +}
 +
  static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *p_param)
  {
      esp_avrc_ct_cb_param_t *rc = p_param;
-@@ -257,17 +315,21 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
+@@ -312,17 +370,21 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
                  if (rc->conn_stat.connected) {
                      ESP_LOGD(TAG, "ESP_AVRC_CT_CONNECTION_STATE_EVT");
                      bt_key_act_sm_init();
@@ -117,7 +126,7 @@ index 76868950..37347047 100644
                      bt_key_act_param_t param;
                      memset(&param, 0, sizeof(bt_key_act_param_t));
                      param.evt = event;
-@@ -279,18 +341,28 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
+@@ -334,16 +396,26 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
                  break;
              }
          case ESP_AVRC_CT_METADATA_RSP_EVT: {
@@ -128,27 +137,111 @@ index 76868950..37347047 100644
              }
          case ESP_AVRC_CT_CHANGE_NOTIFY_EVT: {
 -                // ESP_LOGD(TAG, "AVRC event notification: %u, param: %u", rc->change_ntf.event_id, rc->change_ntf.event_parameter);
-+                ESP_LOGI(TAG, "AVRC event notification: %d", rc->change_ntf.event_id);
++                // ESP_LOGI(TAG, "AVRC event notification: %u, param: %u", rc->change_ntf.event_id, rc->change_ntf.event_parameter);
 +                bt_av_notify_evt_handler(rc->change_ntf.event_id, &rc->change_ntf.event_parameter);
                  break;
              }
          case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
 -                ESP_LOGD(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
 +                ESP_LOGI(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
++                break;
++            }
++        case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {
++                ESP_LOGI(TAG, "remote rn_cap: count %d, bitmask 0x%x", rc->get_rn_caps_rsp.cap_count,
++                         rc->get_rn_caps_rsp.evt_set.bits);
++                s_avrc_peer_rn_cap.bits = rc->get_rn_caps_rsp.evt_set.bits;
++                bt_av_new_track();
++                bt_av_playback_changed();
++                bt_av_play_pos_changed();
                  break;
              }
-+        case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {
-+            ESP_LOGI(TAG, "remote rn_cap: count %d, bitmask 0x%x", rc->get_rn_caps_rsp.cap_count,
-+                     rc->get_rn_caps_rsp.evt_set.bits);
-+            s_avrc_peer_rn_cap.bits = rc->get_rn_caps_rsp.evt_set.bits;
-+            bt_av_new_track();
-+            bt_av_playback_changed();
-+            bt_av_play_pos_changed();
-+            break;
-+        }
          default:
-             ESP_LOGE(TAG, "%s unhandled evt %d", __func__, event);
-             break;
--- 
-2.17.1
-
+@@ -358,45 +430,45 @@ static void bt_avrc_tg_cb(esp_avrc_tg_cb_event_t event, esp_avrc_tg_cb_param_t *
+     ESP_LOGD(TAG, "%s evt %d", __func__, event);
+     esp_avrc_tg_cb_param_t *rc = (esp_avrc_tg_cb_param_t *)(param);
+     switch (event) {
+-    case ESP_AVRC_TG_CONNECTION_STATE_EVT: {
+-        uint8_t *bda = rc->conn_stat.remote_bda;
+-        ESP_LOGI(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
+-                 rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]); 
+-        avrcp_conn_tg_state = rc->conn_stat.connected;
+-        break;
+-    }
+-    case ESP_AVRC_TG_PASSTHROUGH_CMD_EVT: {
+-        ESP_LOGI(TAG, "AVRC passthrough cmd: key_code 0x%x, key_state %d", rc->psth_cmd.key_code, rc->psth_cmd.key_state);
+-        break;
+-    }
+-    case ESP_AVRC_TG_SET_ABSOLUTE_VOLUME_CMD_EVT: {
+-        ESP_LOGI(TAG, "AVRC set absolute volume: %d%%", (int)rc->set_abs_vol.volume * 100/ 0x7f);
+-        bt_avrc_volume_set_by_controller(rc->set_abs_vol.volume);
+-        break;
+-    }
+-    case ESP_AVRC_TG_REGISTER_NOTIFICATION_EVT: {
+-        ESP_LOGI(TAG, "AVRC register event notification: %d, param: 0x%x", rc->reg_ntf.event_id, rc->reg_ntf.event_parameter);
+-        if (rc->reg_ntf.event_id == ESP_AVRC_RN_VOLUME_CHANGE) {
+-            g_volume_notify = true;
+-            esp_avrc_rn_param_t rn_param;
+-            rn_param.volume = g_volume;
+-            esp_avrc_tg_send_rn_rsp(ESP_AVRC_RN_VOLUME_CHANGE, ESP_AVRC_RN_RSP_INTERIM, &rn_param);
+-        }
+-        break;
+-    }
+-    case ESP_AVRC_TG_REMOTE_FEATURES_EVT: {
+-        ESP_LOGI(TAG, "AVRC remote features %x, CT features %x", rc->rmt_feats.feat_mask, rc->rmt_feats.ct_feat_flag);
+-        break;
+-    }
+-    default:
+-        ESP_LOGE(TAG, "%s unhandled evt %d", __func__, event);
+-        break;
++        case ESP_AVRC_TG_CONNECTION_STATE_EVT: {
++                uint8_t *bda = rc->conn_stat.remote_bda;
++                ESP_LOGI(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
++                         rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
++                avrcp_conn_tg_state = rc->conn_stat.connected;
++                break;
++            }
++        case ESP_AVRC_TG_PASSTHROUGH_CMD_EVT: {
++                ESP_LOGI(TAG, "AVRC passthrough cmd: key_code 0x%x, key_state %d", rc->psth_cmd.key_code, rc->psth_cmd.key_state);
++                break;
++            }
++        case ESP_AVRC_TG_SET_ABSOLUTE_VOLUME_CMD_EVT: {
++                ESP_LOGI(TAG, "AVRC set absolute volume: %d%%", (int)rc->set_abs_vol.volume * 100 / 0x7f);
++                bt_avrc_volume_set_by_controller(rc->set_abs_vol.volume);
++                break;
++            }
++        case ESP_AVRC_TG_REGISTER_NOTIFICATION_EVT: {
++                ESP_LOGI(TAG, "AVRC register event notification: %d, param: 0x%x", rc->reg_ntf.event_id, rc->reg_ntf.event_parameter);
++                if (rc->reg_ntf.event_id == ESP_AVRC_RN_VOLUME_CHANGE) {
++                    g_volume_notify = true;
++                    esp_avrc_rn_param_t rn_param;
++                    rn_param.volume = g_volume;
++                    esp_avrc_tg_send_rn_rsp(ESP_AVRC_RN_VOLUME_CHANGE, ESP_AVRC_RN_RSP_INTERIM, &rn_param);
++                }
++                break;
++            }
++        case ESP_AVRC_TG_REMOTE_FEATURES_EVT: {
++                ESP_LOGI(TAG, "AVRC remote features %x, CT features %x", rc->rmt_feats.feat_mask, rc->rmt_feats.ct_feat_flag);
++                break;
++            }
++        default:
++            ESP_LOGE(TAG, "%s unhandled evt %d", __func__, event);
++            break;
+     }
+ }
+ #endif
+ 
+ static esp_err_t _bt_avrc_periph_init(esp_periph_handle_t periph)
+-{   
++{
+     return ESP_OK;
+ }
+ 
+@@ -428,7 +500,7 @@ static esp_err_t periph_bt_avrc_passthrough_cmd(esp_periph_handle_t periph, uint
+     esp_err_t err = ESP_OK;
+ 
+ #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+-    if(avrcp_conn_tg_state) {
++    if (avrcp_conn_tg_state) {
+         if (cmd == ESP_AVRC_PT_CMD_VOL_DOWN) {
+             int16_t volume = (g_volume - 5) < 0 ? 0 : (g_volume - 5);
+             bt_avrc_volume_set_by_local(volume);

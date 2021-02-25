@@ -84,10 +84,10 @@ typedef struct bluetooth_service {
     uint64_t pos;
     uint8_t tl;
     bool avrc_connected;
+    int a2dp_sample_rate;
 } bluetooth_service_t;
 
 bluetooth_service_t *g_bt_service = NULL;
-int a2dp_sample_rate = 44100;
 
 static const char *conn_state_str[] = { "Disconnected", "Connecting", "Connected", "Disconnecting" };
 static const char *audio_state_str[] = { "Suspended", "Stopped", "Started" };
@@ -159,7 +159,7 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
                 } else if (oct0 & (0x01 << 4)) {
                     sample_rate = 48000;
                 }
-                a2dp_sample_rate = sample_rate;
+                g_bt_service->a2dp_sample_rate = sample_rate;
                 ESP_LOGD(TAG, "Bluetooth configured, sample rate=%d", sample_rate);
                 if (g_bt_service->stream == NULL) {
                     break;
@@ -433,7 +433,7 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
         return ESP_FAIL;
     }
 
-    if (esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT) != ESP_OK) {
+    if (esp_bt_controller_enable(ESP_BT_MODE_BTDM) != ESP_OK) {
         AUDIO_ERROR(TAG, "enable controller failed");
         return ESP_FAIL;
     }
@@ -498,6 +498,7 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
     esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
 #endif
 
+    g_bt_service->a2dp_sample_rate = 44100;
     return ESP_OK;
 }
 
@@ -631,6 +632,7 @@ static esp_err_t _bt_periph_destroy(esp_periph_handle_t periph)
 
 esp_periph_handle_t bluetooth_service_create_periph()
 {
+    AUDIO_NULL_CHECK(TAG, g_bt_service, return NULL);
     if (g_bt_service && g_bt_service->periph) {
         ESP_LOGE(TAG, "Bluetooth periph have been created");
         return NULL;
@@ -665,6 +667,7 @@ static esp_err_t periph_bluetooth_passthrough_cmd(esp_periph_handle_t periph, ui
 
 esp_err_t periph_bluetooth_play(esp_periph_handle_t periph)
 {
+    AUDIO_NULL_CHECK(TAG, g_bt_service, return ESP_FAIL);
     esp_err_t err = ESP_OK;
     if (g_bt_service->stream_type == AUDIO_STREAM_READER) {
         err = periph_bluetooth_passthrough_cmd(periph, ESP_AVRC_PT_CMD_PLAY);
@@ -676,6 +679,7 @@ esp_err_t periph_bluetooth_play(esp_periph_handle_t periph)
 
 esp_err_t periph_bluetooth_pause(esp_periph_handle_t periph)
 {
+    AUDIO_NULL_CHECK(TAG, g_bt_service, return ESP_FAIL);
     esp_err_t err = ESP_OK;
     if (g_bt_service->stream_type == AUDIO_STREAM_READER) {
         err = periph_bluetooth_passthrough_cmd(periph, ESP_AVRC_PT_CMD_PAUSE);
@@ -687,6 +691,7 @@ esp_err_t periph_bluetooth_pause(esp_periph_handle_t periph)
 
 esp_err_t periph_bluetooth_stop(esp_periph_handle_t periph)
 {
+    AUDIO_NULL_CHECK(TAG, g_bt_service, return ESP_FAIL);
     esp_err_t err = ESP_OK;
     if (g_bt_service->stream_type == AUDIO_STREAM_READER) {
         err = periph_bluetooth_passthrough_cmd(periph, ESP_AVRC_PT_CMD_STOP);
@@ -719,6 +724,7 @@ esp_err_t periph_bluetooth_fast_forward(esp_periph_handle_t periph)
 
 esp_err_t periph_bluetooth_discover(esp_periph_handle_t periph)
 {
+    AUDIO_NULL_CHECK(TAG, g_bt_service, return ESP_FAIL);
     if (g_bt_service->stream_type == AUDIO_STREAM_READER) {
         return esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
     }
@@ -727,6 +733,7 @@ esp_err_t periph_bluetooth_discover(esp_periph_handle_t periph)
 
 esp_err_t periph_bluetooth_cancel_discover(esp_periph_handle_t periph)
 {
+    AUDIO_NULL_CHECK(TAG, g_bt_service, return ESP_FAIL);
     if (g_bt_service->stream_type == AUDIO_STREAM_READER) {
         g_bt_service->source_a2d_state = BT_SOURCE_STATE_IDLE;
         return esp_bt_gap_cancel_discovery();
@@ -736,6 +743,7 @@ esp_err_t periph_bluetooth_cancel_discover(esp_periph_handle_t periph)
 
 esp_err_t periph_bluetooth_connect(esp_periph_handle_t periph, bluetooth_addr_t remote_bda)
 {
+    AUDIO_NULL_CHECK(TAG, g_bt_service, return ESP_FAIL);
     if (g_bt_service->stream_type == AUDIO_STREAM_READER) {
         g_bt_service->source_a2d_state = BT_SOURCE_STATE_DISCOVERED;
         memcpy(&g_bt_service->remote_bda, remote_bda, BLUETOOTH_ADDR_LEN);
@@ -743,6 +751,12 @@ esp_err_t periph_bluetooth_connect(esp_periph_handle_t periph, bluetooth_addr_t 
         return esp_bt_gap_cancel_discovery();
     }
     return ESP_OK;
+}
+
+int periph_bluetooth_get_a2dp_sample_rate()
+{
+    AUDIO_NULL_CHECK(TAG, g_bt_service, return -1);
+    return g_bt_service->a2dp_sample_rate;
 }
 
 #endif

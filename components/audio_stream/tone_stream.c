@@ -44,9 +44,8 @@ typedef struct tone_stream {
     bool use_delegate;                   /*!< Tone read with delegate*/
     tone_partition_handle_t tone_handle; /*!< Tone partition's operation handle*/
     tone_file_info_t cur_file;           /*!< Address to read tone file */
+    const char *partition_label;         /*!< Label of tone stored in flash */
 } tone_stream_t;
-
-static const char *partition_label = "flash_tone";
 
 static esp_err_t _tone_open(audio_element_handle_t self)
 {
@@ -55,7 +54,7 @@ static esp_err_t _tone_open(audio_element_handle_t self)
         ESP_LOGE(TAG, "already opened");
         return ESP_FAIL;
     }
-    stream->tone_handle = tone_partition_init(partition_label, stream->use_delegate);
+    stream->tone_handle = tone_partition_init(stream->partition_label, stream->use_delegate);
     if (stream->tone_handle == NULL) {
         return ESP_FAIL;
     }
@@ -177,6 +176,12 @@ audio_element_handle_t tone_stream_init(tone_stream_cfg_t *config)
     stream->type = config->type;
     stream->use_delegate = config->use_delegate;
 
+    if (config->label == NULL) {
+        ESP_LOGE(TAG, "Please set your tone label");
+        return NULL;
+    } else {
+        stream->partition_label = config->label;
+    }
     if (config->type == AUDIO_STREAM_READER) {
         cfg.read = _tone_read;
     } else if (config->type == AUDIO_STREAM_WRITER) {

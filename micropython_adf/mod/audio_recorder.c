@@ -255,6 +255,8 @@ STATIC mp_obj_t audio_recorder_stop(mp_obj_t self_in)
         self->timer = NULL;
     }
     if (self->pipeline != NULL) {
+        audio_pipeline_stop(self->pipeline);
+        audio_pipeline_wait_for_stop(self->pipeline);
         audio_pipeline_deinit(self->pipeline);
     } else {
         return mp_obj_new_bool(false);

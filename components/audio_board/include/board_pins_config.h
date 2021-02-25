@@ -136,6 +136,14 @@ int8_t get_pa_enable_gpio(void);
 int8_t get_adc_detect_gpio(void);
 
 /**
+ * @brief  Get the mclk gpio number of es7243
+ *
+ * @return  -1      non-existent
+ *          Others  gpio number
+ */
+int8_t get_es7243_mclk_gpio(void);
+
+/**
  * @brief  Get the record-button id for adc-button
  *
  * @return  -1      non-existent

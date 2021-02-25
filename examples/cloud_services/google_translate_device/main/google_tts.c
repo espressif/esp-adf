@@ -192,7 +192,7 @@ google_tts_handle_t google_tts_init(google_tts_config_t *config)
     audio_pipeline_register(tts->pipeline, tts->mp3_decoder,        "tts_mp3");
     audio_pipeline_register(tts->pipeline, tts->i2s_writer,         "tts_i2s");
     const char *link_tag[3] = {"tts_http", "tts_mp3", "tts_i2s"};
-    audio_pipeline_link(tts->pipeline, &link_tag[3], 3);
+    audio_pipeline_link(tts->pipeline, &link_tag[0], 3);
     i2s_stream_set_clk(tts->i2s_writer, config->playback_sample_rate, 16, 1);
     return tts;
 exit_tts_init:
