@@ -256,7 +256,7 @@ esp_err_t esp_dispatcher_execute_with_func(esp_dispatcher_handle_t dh,
     if (xQueueSend(impl->exe_que, &delegate, pdMS_TO_TICKS(5000)) != pdPASS) {
         ret->err = ESP_FAIL;
         ESP_LOGE(TAG, "Message send timeout");
-        mutex_lock(impl->mutex);
+        mutex_unlock(impl->mutex);
         return ESP_ERR_ADF_TIMEOUT;
     }
     xQueueReceive(impl->result_que, ret, portMAX_DELAY);
