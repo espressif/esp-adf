@@ -116,7 +116,7 @@ void app_main(void)
         audio_pipeline_register(pipeline[i], fats_rd_el[i], "file");
         audio_pipeline_register(pipeline[i], wav_decoder[i], "wav");
         audio_pipeline_register(pipeline[i], el_raw_write[i], "raw");
-        
+
         const char *link_tag[3] = {"file", "wav", "raw"};
         audio_pipeline_link(pipeline[i], &link_tag[0], 3);
         ringbuf_handle_t rb = audio_element_get_input_ringbuf(el_raw_write[i]);
@@ -125,6 +125,7 @@ void app_main(void)
     }
 
     ESP_LOGI(TAG, "[5.1] Listening event from peripherals");
+    audio_pipeline_set_listener(pipeline_mix, evt);
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
     downmix_set_output_type(downmixer, PLAY_STATUS);
     i2s_stream_set_clk(i2s_writer, SAMPLERATE, 16, PLAY_STATUS);
