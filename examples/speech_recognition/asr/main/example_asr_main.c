@@ -23,6 +23,8 @@
 #include "mp3_decoder.h"
 #include "filter_resample.h"
 #include "rec_eng_helper.h"
+#include "tone_stream.h"
+#include "audio_tone_uri.h"
 
 static const char *TAG = "example_asr_keywords";
 
@@ -74,6 +76,9 @@ static esp_audio_handle_t setup_player()
     fs_reader.type = AUDIO_STREAM_READER;
     raw_stream_cfg_t raw_reader = RAW_STREAM_CFG_DEFAULT();
     raw_reader.type = AUDIO_STREAM_READER;
+    tone_stream_cfg_t tone_cfg = TONE_STREAM_CFG_DEFAULT();
+    tone_cfg.type = AUDIO_STREAM_READER;
+    esp_audio_input_stream_add(player, tone_stream_init(&tone_cfg));
     esp_audio_input_stream_add(player, raw_stream_init(&raw_reader));
     esp_audio_input_stream_add(player, fatfs_stream_init(&fs_reader));
     mp3_decoder_cfg_t  mp3_dec_cfg  = DEFAULT_MP3_DECODER_CONFIG();
@@ -210,7 +215,7 @@ void app_main()
         raw_stream_read(raw_read, (char *)buffer, size * sizeof(short));
         if (enable_wn) {
             if (wakenet->detect(model_wn_data, (int16_t *)buffer) ==  WAKE_UP) {
-                esp_audio_sync_play(player, "file://sdcard/dingdong.mp3", 0);
+                esp_audio_sync_play(player, tone_uri[TONE_TYPE_DINGDONG], 0);
                 ESP_LOGI(TAG, "wake up");
                 enable_wn = false;
             }
@@ -218,7 +223,7 @@ void app_main()
             mn_count++;
             int commit_id = multinet->detect(model_mn_data, buffer);
             if (asr_multinet_control(commit_id) == ESP_OK ) {
-                esp_audio_sync_play(player, "file://sdcard/haode.mp3", 0);
+                esp_audio_sync_play(player, tone_uri[TONE_TYPE_HAODE], 0);
                 enable_wn = true;
                 mn_count = 0;
             }
