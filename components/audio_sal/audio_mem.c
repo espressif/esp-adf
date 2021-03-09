@@ -105,10 +105,12 @@ char *audio_strdup(const char *str)
 void *audio_calloc_inner(size_t n, size_t size)
 {
     void *data =  NULL;
-    data = heap_caps_malloc(n * size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (data) {
-        memset(data, 0, n * size);
-    }
+#if CONFIG_SPIRAM_BOOT_INIT
+    data = heap_caps_calloc_prefer(n, size, 2,  MALLOC_CAP_DEFAULT | MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT, MALLOC_CAP_DEFAULT | MALLOC_CAP_SPIRAM);
+#else
+    data = heap_caps_calloc(n, size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+#endif
+
 #ifdef ENABLE_AUDIO_MEM_TRACE
     ESP_LOGI("AUIDO_MEM", "calloc_inner:%p, size:%d, called:0x%08x", data, size, (intptr_t)__builtin_return_address(0) - 2);
 #endif
