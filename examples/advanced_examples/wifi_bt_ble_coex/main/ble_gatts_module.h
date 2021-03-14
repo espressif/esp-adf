@@ -20,6 +20,20 @@ extern "C" {
  */
 esp_err_t ble_gatts_module_init(void);
 
+/*
+ * @brief ble gatt start adv
+ *
+ * @return
+ */
+void ble_gatts_module_start_adv();
+
+/*
+ * @brief ble gatt stop adv
+ *
+ * @return
+ */
+void ble_gatts_module_stop_adv();
+
 #ifdef __cplusplus
 }
 #endif
