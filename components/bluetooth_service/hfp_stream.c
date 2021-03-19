@@ -365,7 +365,7 @@ audio_element_handle_t hfp_stream_init(hfp_stream_config_t *config)
     hfp->type = config->type;
     if (config->type == INCOMING_STREAM) {
         ESP_LOGI(TAG, "incoming stream init");
-        cfg.tag = "hfp_incoming";
+        cfg.tag = "hfp";
         el = audio_element_init(&cfg);
         hfp_incoming_stream = el;
         AUDIO_MEM_CHECK(TAG, el, {

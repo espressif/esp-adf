@@ -442,3 +442,17 @@ esp_err_t ble_gatts_module_init(void)
 
     return ESP_OK;
 }
+
+void ble_gatts_module_start_adv()
+{
+#if CONFIG_BT_ENABLED
+    esp_ble_gap_start_advertising(&adv_params);
+#endif
+}
+
+void ble_gatts_module_stop_adv()
+{
+#if CONFIG_BT_ENABLED
+    esp_ble_gap_stop_advertising();
+#endif
+}

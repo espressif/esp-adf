@@ -11,29 +11,27 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "nvs_flash.h"
+#include "sdkconfig.h"
 
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_peripherals.h"
 #include "esp_wifi_setting.h"
 #include "esp_audio.h"
+#include "audio_pipeline.h"
 #include "audio_element.h"
 #include "audio_mem.h"
 #include "http_stream.h"
 #include "a2dp_stream.h"
 #include "i2s_stream.h"
 #include "raw_stream.h"
+#include "hfp_stream.h"
+#include "filter_resample.h"
 #include "mp3_decoder.h"
-#include "wav_decoder.h"
 #include "pcm_decoder.h"
-#include "periph_wifi.h"
-#include "periph_touch.h"
 #include "wifi_service.h"
-
 #include "blufi_config.h"
 #include "input_key_service.h"
-#include "board.h"
-#include "sdkconfig.h"
 #include "ble_gatts_module.h"
 
 #if __has_include("esp_idf_version.h")
@@ -48,7 +46,13 @@
 #include "tcpip_adapter.h"
 #endif
 
-#define SAMPLE_DEVICE_NAME "ESP_COEX_EXAMPLE"
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#define HFP_RESAMPLE_RATE 16000
+#else
+#define HFP_RESAMPLE_RATE 8000
+#endif
+
+#define SAMPLE_DEVICE_NAME "ESP_ADF_COEX_EXAMPLE"
 
 static const char *TAG = "COEX_EXAMPLE";
 
@@ -67,6 +71,55 @@ typedef struct coex_handle {
 
 static bool g_wifi_connect_state = false;
 static bool g_a2dp_connect_state = false;
+
+static esp_wifi_setting_handle_t wifi_setting_handle = NULL;
+static periph_service_handle_t wifi_serv = NULL;
+static int play_pos = 0;
+static coex_handle_t *g_coex_handle = NULL;
+
+static void bt_app_hf_client_audio_open(hfp_data_enc_type_t type)
+{
+    ESP_LOGI(TAG, "bt_app_hf_client_audio_open type = %d", type);
+    if (g_coex_handle) {
+        esp_audio_state_t state = { 0 };
+        esp_audio_state_get(g_coex_handle->player, &state);
+        esp_audio_pos_get(g_coex_handle->player, &play_pos);
+        if(state.status == AUDIO_STATUS_RUNNING || state.status == AUDIO_STATUS_PAUSED) {
+            esp_audio_stop(g_coex_handle->player, TERMINATION_TYPE_NOW);
+        }
+          
+        if (type == HF_DATA_CVSD) {
+            esp_audio_play(g_coex_handle->player, AUDIO_CODEC_TYPE_DECODER, "hfp://8000:1@bt/hfp/stream.pcm", 0);
+        } else if (type == HF_DATA_MSBC) {
+            esp_audio_play(g_coex_handle->player, AUDIO_CODEC_TYPE_DECODER, "hfp://16000:1@bt/hfp/stream.pcm", 0);
+        } else {
+            ESP_LOGE(TAG, "error hfp enc type = %d", type);
+        }
+    }
+}
+
+static void bt_app_hf_client_audio_close(void)
+{
+    ESP_LOGI(TAG, "bt_app_hf_client_audio_close");
+    if (g_coex_handle) {
+        esp_audio_state_t state = { 0 };
+        esp_audio_state_get(g_coex_handle->player, &state);
+        if(state.status == AUDIO_STATUS_RUNNING || state.status == AUDIO_STATUS_PAUSED) {
+            esp_audio_stop(g_coex_handle->player, TERMINATION_TYPE_NOW);
+        }
+        if (g_coex_handle->work_mode == BT_MODE) {
+            if (g_a2dp_connect_state == true) {
+                periph_bt_play(g_coex_handle->bt_periph);
+                esp_audio_play(g_coex_handle->player, AUDIO_CODEC_TYPE_DECODER, "aadp://44100:2@bt/sink/stream.pcm", play_pos);
+            }
+        } else if (g_coex_handle->work_mode == WIFI_MODE) {
+            if (g_wifi_connect_state == true) {
+                esp_audio_play(g_coex_handle->player, AUDIO_CODEC_TYPE_DECODER, "https://dl.espressif.com/dl/audio/ff-16b-1c-44100hz.mp3", play_pos);
+            }
+        }
+        play_pos = 0;
+    }
+}
 
 static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
 {
@@ -123,6 +176,18 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
             default:
                 break;
         }
+
+    } else if (evt->type == INPUT_KEY_SERVICE_ACTION_PRESS) {
+        switch ((int) evt->data) {
+            case INPUT_KEY_USER_ID_SET:
+                ESP_LOGI(TAG, "[ * ] [Set] Setting Wi-Fi");
+                ble_gatts_module_start_adv();
+                blufi_set_sta_connected_flag(wifi_setting_handle, false);
+                wifi_service_setting_start(wifi_serv, 0);
+                break;
+            default:
+                break;
+        }
     }
     return ESP_OK;
 }
@@ -155,15 +220,14 @@ static void wifi_server_init(void)
     cfg.evt_cb = wifi_service_cb;
     cfg.cb_ctx = NULL;
     cfg.setting_timeout_s = 60;
-    periph_service_handle_t wifi_serv = wifi_service_create(&cfg);
+    wifi_serv = wifi_service_create(&cfg);
 
     int reg_idx = 0;
-    esp_wifi_setting_handle_t wifi_setting_handle = blufi_config_create(NULL);
+    wifi_setting_handle = blufi_config_create(NULL);
     esp_wifi_setting_regitster_notify_handle(wifi_setting_handle, (void *)wifi_serv);
     wifi_service_register_setting_handle(wifi_serv, wifi_setting_handle, &reg_idx);
     wifi_service_set_sta_info(wifi_serv, &sta_cfg);
     wifi_service_connect(wifi_serv);
-    wifi_service_setting_start(wifi_serv, 0);
 }
 
 static void user_a2dp_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
@@ -209,13 +273,16 @@ static esp_audio_handle_t setup_player()
     };
     audio_element_handle_t bt_stream_reader = a2dp_stream_init(&a2dp_config);
     esp_audio_input_stream_add(player, bt_stream_reader);
+    
+    hfp_stream_config_t hfp_config;
+    hfp_config.type = INCOMING_STREAM;
+    audio_element_handle_t hfp_in_stream = hfp_stream_init(&hfp_config);
+    esp_audio_input_stream_add(player, hfp_in_stream);
 
     // Add decoders and encoders to esp_audio
     mp3_decoder_cfg_t  mp3_dec_cfg  = DEFAULT_MP3_DECODER_CONFIG();
-    wav_decoder_cfg_t  wav_dec_cfg  = DEFAULT_WAV_DECODER_CONFIG();
     pcm_decoder_cfg_t  pcm_dec_cfg  = DEFAULT_PCM_DECODER_CONFIG();
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, pcm_decoder_init(&pcm_dec_cfg));
 
     // Create writers and add to esp_audio
@@ -238,12 +305,14 @@ static void a2dp_sink_blufi_start(coex_handle_t *handle)
     if (handle == NULL) {
         return;
     }
+    ESP_LOGI(TAG, "[4.1] Init Bluetooth");
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     esp_bt_controller_init(&bt_cfg);
     esp_bt_controller_enable(ESP_BT_MODE_BTDM);
     esp_bluedroid_init();
     esp_bluedroid_enable();
-
+    
+    ESP_LOGI(TAG, "[4.2] init gatts");
     ble_gatts_module_init();
     wifi_server_init();
 
@@ -251,10 +320,15 @@ static void a2dp_sink_blufi_start(coex_handle_t *handle)
     if (set_dev_name_ret) {
         ESP_LOGE(TAG, "set device name failed, error code = %x", set_dev_name_ret);
     }
-    ESP_LOGI(TAG, "Create Bluetooth peripheral");
+    ESP_LOGI(TAG, "[4.3] Create Bluetooth peripheral");
     handle->bt_periph = bt_create_periph();
-    ESP_LOGI(TAG, "Start peripherals");
+
+    ESP_LOGI(TAG, "[4.4] Start peripherals");
     esp_periph_start(handle->set, handle->bt_periph);
+    
+    ESP_LOGI(TAG, "[4.5] init hfp_stream");
+    hfp_open_and_close_evt_cb_register(bt_app_hf_client_audio_open, bt_app_hf_client_audio_close);
+    hfp_service_init();
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
@@ -282,22 +356,65 @@ void app_main(void)
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
-
-    coex_handle_t *handle = (coex_handle_t *)audio_malloc(sizeof(coex_handle_t));
-    handle->work_mode = NONE_MODE;
-
+    
+    ESP_LOGI(TAG, "[ 1 ] Create coex handle for a2dp-gatt-wifi");
+    g_coex_handle = (coex_handle_t *)audio_malloc(sizeof(coex_handle_t));
+    AUDIO_MEM_CHECK(TAG, g_coex_handle, return);
+    g_coex_handle->work_mode = NONE_MODE;
+    
+    ESP_LOGI(TAG, "[ 2 ] Initialize peripherals");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
-    handle->set = esp_periph_set_init(&periph_cfg);
+    periph_cfg.extern_stack = true;
+    g_coex_handle->set = esp_periph_set_init(&periph_cfg);
 
-    ESP_LOGI(TAG, "create and start input key service");
-    audio_board_key_init(handle->set);
+    ESP_LOGI(TAG, "[ 3 ] create and start input key service");
+    audio_board_key_init(g_coex_handle->set);
     input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
     input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
-    input_cfg.handle = handle->set;
+    input_cfg.handle = g_coex_handle->set;
+    input_cfg.based_cfg.task_stack = 2048;
+    input_cfg.based_cfg.extern_stack = true;
     periph_service_handle_t input_ser = input_key_service_create(&input_cfg);
-
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
-    periph_service_set_callback(input_ser, &input_key_service_cb, (void *)handle);
+    periph_service_set_callback(input_ser, &input_key_service_cb, (void *)g_coex_handle);
 
-    a2dp_sink_blufi_start(handle);
+    ESP_LOGI(TAG, "[ 4 ] Start a2dp and blufi network");
+    a2dp_sink_blufi_start(g_coex_handle);
+    
+    ESP_LOGI(TAG, "[ 5 ] Create audio pipeline for playback");
+    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    audio_pipeline_handle_t pipeline_out = audio_pipeline_init(&pipeline_cfg);
+    
+    ESP_LOGI(TAG, "[5.1] Create i2s stream to read data from codec chip");
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.type = AUDIO_STREAM_READER;
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    i2s_cfg.i2s_config.use_apll = false;
+    i2s_cfg.i2s_port = 1;
+#endif
+    audio_element_handle_t i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+    
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_cfg.src_rate = 44100;
+    rsp_cfg.src_ch = 2;
+    rsp_cfg.dest_rate = HFP_RESAMPLE_RATE;
+    rsp_cfg.dest_ch = 1;
+    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+
+    ESP_LOGI(TAG, "[5.2] Create hfp stream");
+    hfp_stream_config_t hfp_config;
+    hfp_config.type = OUTGOING_STREAM;
+    audio_element_handle_t hfp_out_stream = hfp_stream_init(&hfp_config);
+    
+    ESP_LOGI(TAG, "[5.3] Register i2s reader and hfp outgoing to audio pipeline");
+    audio_pipeline_register(pipeline_out, i2s_stream_reader, "i2s_reader");
+    audio_pipeline_register(pipeline_out, filter, "filter");
+    audio_pipeline_register(pipeline_out, hfp_out_stream, "outgoing");
+    
+    ESP_LOGI(TAG, "[5.4] Link it together [codec_chip]-->i2s_stream_reader-->filter-->hfp_out_stream-->[Bluetooth]");
+    const char *link_out[3] = {"i2s_reader", "filter", "outgoing"};
+    audio_pipeline_link(pipeline_out, &link_out[0], 3);
+
+    ESP_LOGI(TAG, "[5.5] Start audio_pipeline out"); 
+    audio_pipeline_run(pipeline_out);
 }
