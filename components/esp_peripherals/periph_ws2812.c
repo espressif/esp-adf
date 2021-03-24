@@ -21,6 +21,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+
+#include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -32,6 +34,7 @@
 #include "esp_peripherals.h"
 #include "soc/dport_access.h"
 #include "soc/dport_reg.h"
+#include "driver/rmt.h"
 
 static const char *TAG = "PERIPH_WS2812";
 
@@ -84,85 +87,66 @@ typedef struct periph_ws2812 {
     periph_ws2812_process_t   process;
 } periph_ws2812_t;
 
-static esp_err_t ws2812_init_rmt_channel(int rmt_channel)
+static esp_err_t ws2812_init_rmt_channel(int rmt_channel, int gpio_num)
 {
-    DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_RMT_CLK_EN);
-    DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_RMT_RST);
+    rmt_config_t rmt_tx;
+    rmt_tx.channel = rmt_channel;
+    rmt_tx.gpio_num = gpio_num;
+    rmt_tx.mem_block_num = 1;
+    rmt_tx.clk_div = DIVIDER;
+    rmt_tx.tx_config.loop_en = false;
+    rmt_tx.tx_config.carrier_level = 1;
+    rmt_tx.tx_config.carrier_en = 0;
+    rmt_tx.tx_config.idle_level = 0;
+    rmt_tx.tx_config.idle_output_en = true;
+    rmt_tx.rmt_mode = RMT_MODE_TX;
+    rmt_config(&rmt_tx);
+    rmt_driver_install(rmt_tx.channel, 0, 0);
 
-    RMT.apb_conf.fifo_mask = 1;
-    RMT.apb_conf.mem_tx_wrap_en = 1;
-    RMT.conf_ch[rmt_channel].conf0.div_cnt = DIVIDER;
-    RMT.conf_ch[rmt_channel].conf0.mem_size = 1;
-    RMT.conf_ch[rmt_channel].conf0.carrier_en = 0;
-    RMT.conf_ch[rmt_channel].conf0.carrier_out_lv = 1;
-    RMT.conf_ch[rmt_channel].conf0.mem_pd = 0;
-
-    RMT.conf_ch[rmt_channel].conf1.rx_en = 0;
-    RMT.conf_ch[rmt_channel].conf1.mem_owner = 0;
-    RMT.conf_ch[rmt_channel].conf1.tx_conti_mode = 0;
-    RMT.conf_ch[rmt_channel].conf1.ref_always_on = 1;
-    RMT.conf_ch[rmt_channel].conf1.idle_out_en = 1;
-    RMT.conf_ch[rmt_channel].conf1.idle_out_lv = 0;
-
-    RMT.tx_lim_ch[RMTCHANNEL].limit = MAX_PULSES;
-    RMT.int_ena.ch0_tx_thr_event = 1;
-    RMT.int_ena.ch0_tx_end = 1;
-
+    rmt_set_tx_thr_intr_en(RMTCHANNEL, true, MAX_PULSES);
+    rmt_set_mem_block_num(RMTCHANNEL, 1);
+    rmt_set_mem_pd(RMTCHANNEL, false);
+    rmt_set_tx_loop_mode(RMTCHANNEL, false);
+    rmt_set_source_clk(RMTCHANNEL, RMT_BASECLK_APB);
+    rmt_set_intr_enable_mask(BIT(0) | BIT(24));
     return ESP_OK;
 }
 
 static esp_err_t ws2812_data_copy(periph_ws2812_t *ws)
 {
-    unsigned int i, j, offset, len, bit;
-    offset = ws->process.half * MAX_PULSES;
-    ws->process.half = !ws->process.half;
+    unsigned int i, j, len, bit;
 
-    len = ws->led_num * 3 - ws->process.pos;
-    if (len > (MAX_PULSES / 8)) {
-        len = (MAX_PULSES / 8);
-    }
-
-    if (!len) {
-        for (i = 0; i < MAX_PULSES; i++) {
-            RMTMEM.chan[RMTCHANNEL].data32[i + offset].val = 0;
-        }
-        return ESP_FAIL;
-    }
+    len = ws->led_num * 3;;// - ws->process.pos;
+    rmt_item32_t *rmt_data  = malloc(sizeof(rmt_item32_t) * len * 8);
 
     for (i = 0; i < len; i++) {
-        bit = ws->process.buffer[i + ws->process.pos];
+        bit = ws->process.buffer[i];
         for (j = 0; j < 8; j++, bit <<= 1) {
             if ((bit >> 7) & 0x01) {
-
-                RMTMEM.chan[RMTCHANNEL].data32[j + i * 8 + offset].val = PULSE_BIT1;
+                rmt_data[j + i * 8].val = PULSE_BIT1;
             } else {
-                RMTMEM.chan[RMTCHANNEL].data32[j + i * 8 + offset].val = PULSE_BIT0;
+                rmt_data[j + i * 8].val = PULSE_BIT0;
             }
         }
         if (i + ws->process.pos == ws->led_num * 3 - 1) {
-            RMTMEM.chan[RMTCHANNEL].data32[7 + i * 8 + offset].duration1 = PULSE_TRS;
+            rmt_data[7 + i * 8].duration1 = PULSE_TRS;
         }
     }
-
-    for (i *= 8; i < MAX_PULSES; i++) {
-        RMTMEM.chan[RMTCHANNEL].data32[i + offset].val = 0;
+    
+    rmt_write_items(RMTCHANNEL, rmt_data, len * 8, portMAX_DELAY);
+    
+    if (rmt_data) {
+        free(rmt_data);
+        rmt_data = NULL;
     }
-
-    ws->process.pos += len;
     return ESP_OK;
 }
 
-static void ws2812_handle_interrupt(void *arg)
+static void rmt_handle_tx_end(rmt_channel_t channel, void *arg)
 {
     portBASE_TYPE taskAwoken = 0;
     periph_ws2812_t *ws = (periph_ws2812_t *)(arg);
-    if (RMT.int_st.ch0_tx_thr_event) {
-        ws2812_data_copy(ws);
-        RMT.int_clr.ch0_tx_thr_event = 1;
-    } else if (RMT.int_st.ch0_tx_end && ws->sem) {
-        xSemaphoreGiveFromISR(ws->sem, &taskAwoken);
-        RMT.int_clr.ch0_tx_end = 1;
-    }
+    xSemaphoreGiveFromISR(ws->sem, &taskAwoken);
 }
 
 static esp_err_t ws2812_set_colors(periph_ws2812_t *ws)
@@ -184,14 +168,6 @@ static esp_err_t ws2812_set_colors(periph_ws2812_t *ws)
     ws->process.half = 0;
 
     ws2812_data_copy(ws);
-
-    if (ws->process.pos < (ws->led_num * 3)) {
-        ws2812_data_copy(ws);
-    }
-
-    RMT.conf_ch[RMTCHANNEL].conf1.mem_rd_rst = 1;
-    RMT.conf_ch[RMTCHANNEL].conf1.tx_start = 1;
-
     xSemaphoreTake(ws->sem, portMAX_DELAY);
     if (ws->process.buffer) {
         audio_free(ws->process.buffer);
@@ -338,9 +314,8 @@ static esp_err_t _ws2812_destroy(esp_periph_handle_t periph)
         }
 
         esp_periph_stop_timer(periph);
-        esp_intr_enable(periph_ws2812->rmt_intr_handle);
-        esp_intr_disable(periph_ws2812->rmt_intr_handle);
-        esp_intr_free(periph_ws2812->rmt_intr_handle);
+        rmt_tx_stop(RMTCHANNEL);
+        rmt_driver_uninstall(RMTCHANNEL);
         vSemaphoreDelete(periph_ws2812->sem);
 
         audio_free(periph_ws2812);
@@ -355,7 +330,6 @@ esp_periph_handle_t periph_ws2812_init(periph_ws2812_cfg_t *config)
     AUDIO_NULL_CHECK(TAG, config, return NULL);
 
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_WS2812, "periph_ws2812");
-    rmt_set_pin((rmt_channel_t)RMTCHANNEL, RMT_MODE_TX, (gpio_num_t)config->gpio_num);
     periph_ws2812_t *periph_ws2812 = audio_calloc(1, sizeof(periph_ws2812_t));
     AUDIO_NULL_CHECK(TAG, periph_ws2812, goto ws2812_init_err);
 
@@ -374,9 +348,9 @@ esp_periph_handle_t periph_ws2812_init(periph_ws2812_cfg_t *config)
     periph_ws2812->state = audio_malloc(sizeof(periph_ws2812_state_t) * (periph_ws2812->led_num));
     AUDIO_NULL_CHECK(TAG, periph_ws2812->state, goto ws2812_init_err);
 
-    ws2812_init_rmt_channel(RMTCHANNEL);
+    ws2812_init_rmt_channel(RMTCHANNEL, (gpio_num_t)config->gpio_num);
     esp_periph_set_data(periph, periph_ws2812);
-    esp_intr_alloc(ETS_RMT_INTR_SOURCE, 0, ws2812_handle_interrupt, periph_ws2812, &periph_ws2812->rmt_intr_handle);
+    rmt_register_tx_end_callback(rmt_handle_tx_end, (void *)periph_ws2812);
 
     esp_periph_set_function(periph, _ws2812_init, _ws2812_run, _ws2812_destroy);
     ws2812_set_colors(periph_ws2812);
