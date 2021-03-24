@@ -18,18 +18,35 @@
 #include "audio_common.h"
 #include "fatfs_stream.h"
 #include "i2s_stream.h"
+#ifdef CONFIG_AUDIO_SUPPORT_MP3_DECODER
 #include "mp3_decoder.h"
-
+#elif (CONFIG_AUDIO_SUPPORT_AMRNB_DECODER ||    \
+        CONFIG_AUDIO_SUPPORT_AMRWB_DECODER)
+#include "amr_decoder.h"
+#elif CONFIG_AUDIO_SUPPORT_OPUS_DECODER
+#include "opus_decoder.h"
+#elif CONFIG_AUDIO_SUPPORT_OGG_DECODER
+#include "ogg_decoder.h"
+#elif CONFIG_AUDIO_SUPPORT_FLAC_DECODER
+#include "flac_decoder.h"
+#elif CONFIG_AUDIO_SUPPORT_WAV_DECODER
+#include "wav_decoder.h"
+#elif ((CONFIG_AUDIO_SUPPORT_AAC_DECODER) ||    \
+        (CONFIG_AUDIO_SUPPORT_M4A_DECODER) ||   \
+        (CONFIG_AUDIO_SUPPORT_TS_DECODER) ||    \
+        (CONFIG_AUDIO_SUPPORT_MP4_DECODER))
+#include "aac_decoder.h"
+#endif
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
 #include "board.h"
 
-static const char *TAG = "SDCARD_MP3_EXAMPLE";
+static const char *TAG = "PLAY_SDCARD_MUSIC";
 
 void app_main(void)
 {
     audio_pipeline_handle_t pipeline;
-    audio_element_handle_t fatfs_stream_reader, i2s_stream_writer, mp3_decoder;
+    audio_element_handle_t fatfs_stream_reader, i2s_stream_writer, music_decoder;
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -61,21 +78,83 @@ void app_main(void)
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 
-    ESP_LOGI(TAG, "[3.3] Create mp3 decoder to decode mp3 file");
+#ifdef CONFIG_AUDIO_SUPPORT_MP3_DECODER
+    ESP_LOGI(TAG, "[3.3] Create mp3 decoder");
     mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
-    mp3_decoder = mp3_decoder_init(&mp3_cfg);
+    music_decoder = mp3_decoder_init(&mp3_cfg);
+#elif (CONFIG_AUDIO_SUPPORT_AMRNB_DECODER ||    \
+        CONFIG_AUDIO_SUPPORT_AMRWB_DECODER)
+    ESP_LOGI(TAG, "[3.3] Create amr decoder");
+    amr_decoder_cfg_t  amr_dec_cfg  = DEFAULT_AMR_DECODER_CONFIG();
+    music_decoder = amr_decoder_init(&amr_dec_cfg);
+#elif CONFIG_AUDIO_SUPPORT_OPUS_DECODER
+    ESP_LOGI(TAG, "[3.3] Create opus decoder");
+    opus_decoder_cfg_t opus_dec_cfg = DEFAULT_OPUS_DECODER_CONFIG();
+    music_decoder = decoder_opus_init(&opus_dec_cfg);
+#elif CONFIG_AUDIO_SUPPORT_OGG_DECODER
+    ESP_LOGI(TAG, "[3.3] Create ogg decoder");
+    ogg_decoder_cfg_t  ogg_dec_cfg  = DEFAULT_OGG_DECODER_CONFIG();
+    music_decoder = ogg_decoder_init(&ogg_dec_cfg);
+#elif CONFIG_AUDIO_SUPPORT_FLAC_DECODER
+    ESP_LOGI(TAG, "[3.3] Create flac decoder");
+    flac_decoder_cfg_t flac_dec_cfg = DEFAULT_FLAC_DECODER_CONFIG();
+    music_decoder = flac_decoder_init(&flac_dec_cfg);
+#elif CONFIG_AUDIO_SUPPORT_WAV_DECODER
+    ESP_LOGI(TAG, "[3.3] Create wav decoder");
+    wav_decoder_cfg_t  wav_dec_cfg  = DEFAULT_WAV_DECODER_CONFIG();
+    music_decoder = wav_decoder_init(&wav_dec_cfg);
+#elif ((CONFIG_AUDIO_SUPPORT_AAC_DECODER) ||    \
+        (CONFIG_AUDIO_SUPPORT_M4A_DECODER) ||   \
+        (CONFIG_AUDIO_SUPPORT_TS_DECODER) ||    \
+        (CONFIG_AUDIO_SUPPORT_MP4_DECODER))
+    ESP_LOGI(TAG, "[3.3] Create aac decoder");
+    aac_decoder_cfg_t  aac_dec_cfg  = DEFAULT_AAC_DECODER_CONFIG();
+    music_decoder = aac_decoder_init(&aac_dec_cfg);
+#endif
 
     ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, fatfs_stream_reader, "file");
-    audio_pipeline_register(pipeline, mp3_decoder, "mp3");
+    audio_pipeline_register(pipeline, music_decoder, "dec");
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
 
-    ESP_LOGI(TAG, "[3.5] Link it together [sdcard]-->fatfs_stream-->mp3_decoder-->i2s_stream-->[codec_chip]");
-    const char *link_tag[3] = {"file", "mp3", "i2s"};
+    ESP_LOGI(TAG, "[3.5] Link it together [sdcard]-->fatfs_stream-->music_decoder-->i2s_stream-->[codec_chip]");
+    const char *link_tag[3] = {"file", "dec", "i2s"};
     audio_pipeline_link(pipeline, &link_tag[0], 3);
 
-    ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, mp3 as mp3 decoder, and default output is i2s)");
+#ifdef CONFIG_AUDIO_SUPPORT_MP3_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.mp3 ");
     audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.mp3");
+#elif CONFIG_AUDIO_SUPPORT_AMRNB_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /test.amr");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.amr");
+#elif CONFIG_AUDIO_SUPPORT_AMRWB_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.Wamr");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.Wamr");
+#elif CONFIG_AUDIO_SUPPORT_OPUS_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.opus");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.opus");
+#elif CONFIG_AUDIO_SUPPORT_OGG_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.ogg");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.ogg");
+#elif CONFIG_AUDIO_SUPPORT_FLAC_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.flac");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.flac");
+#elif CONFIG_AUDIO_SUPPORT_WAV_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.wav");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.wav");
+#elif CONFIG_AUDIO_SUPPORT_AAC_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.aac");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.aac");
+#elif CONFIG_AUDIO_SUPPORT_M4A_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.m4a");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.m4a");
+#elif CONFIG_AUDIO_SUPPORT_TS_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.ts");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.ts");
+#elif CONFIG_AUDIO_SUPPORT_MP4_DECODER
+    ESP_LOGI(TAG, "[3.6] Set up uri: /sdcard/test.mp4");
+    audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.mp4");
+#endif
 
     ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -99,10 +178,10 @@ void app_main(void)
             continue;
         }
 
-        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) mp3_decoder
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) music_decoder
             && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
             audio_element_info_t music_info = {0};
-            audio_element_getinfo(mp3_decoder, &music_info);
+            audio_element_getinfo(music_decoder, &music_info);
 
             ESP_LOGI(TAG, "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
                      music_info.sample_rates, music_info.bits, music_info.channels);
@@ -128,7 +207,7 @@ void app_main(void)
 
     audio_pipeline_unregister(pipeline, fatfs_stream_reader);
     audio_pipeline_unregister(pipeline, i2s_stream_writer);
-    audio_pipeline_unregister(pipeline, mp3_decoder);
+    audio_pipeline_unregister(pipeline, music_decoder);
 
     /* Terminal the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);
@@ -144,6 +223,6 @@ void app_main(void)
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(fatfs_stream_reader);
     audio_element_deinit(i2s_stream_writer);
-    audio_element_deinit(mp3_decoder);
+    audio_element_deinit(music_decoder);
     esp_periph_set_destroy(set);
 }
