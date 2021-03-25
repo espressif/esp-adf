@@ -1,65 +1,62 @@
 
-# Play mp3 file with playback control
+# 播放 flash 内嵌的 MP3 音乐
 
-- [中文版本](./README_CN.md)
-- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
-
-## Example Brief
-
-This example uses MP3 element and I2S element to play embedded MP3 music. The mp3 element call back function `read_cb` read the music data form flash, decode the data then use I2S element output the music.
-
-This example also shows how to control MP3 playback by buttons.
-
-- Playback: start, stop, pause, resume.
-- Volume: volume up, volume down.
-- Other button: MODE/FUNC button, which is used to switch between audios played at different sample rates.
-
-The three audio files at the sample rate of 8000 Hz, 22050 Hz, and 44100 Hz are embedded in flash.
+- [English Version](./README.md)
+- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
 
 
-## Environment Setup
+## 例程简介
 
-### Hardware Required
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section *Configuration* below.
+本例程介绍了 mp3 和 I2S 两个 element 实现 MP3 音乐的播放。mp3 element 调用函数回调 read_cb 读取 flash 中的音乐文件，解码后用 I2S element 输出音乐。
+
+同时支持了按键控制功能，如：Play 按键支持开始、暂停、恢复播放； Vol+ 音量加和 Vol- 音量减；以及 MODE/FUNC 按键实现切换不同码率（8000 Hz, 22050 Hz, 44100 Hz）的音频播放，set 键结束示例。
+
+
+## 环境配置
+
+### 硬件要求
+
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | Board Name | Getting Started | Chip | Compatible |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
+| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
 
-## Example Set Up
 
-### Default IDF Branch
-The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-idf`.
+## 编译和下载
 
-### Configuration
-The default board for this example is `ESP32-Lyrat V4.3`, if you need to run this example on other development boards, you need to select the configuration of the development board in menuconfig, for example, select `ESP32-Lyrat-Mini V1.1`.
+### IDF 默认分支
+本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-```c
+### 配置
+
+本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
+
+```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
+### 编译和下载
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
-### Build and Flash
-Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
-
-```c
+```
 idf.py -p PORT flash monitor
 ```
 
-To exit the serial monitor, type ``Ctrl-]``.
+退出调试界面使用 ``Ctrl-]``
 
-See the Getting Started Guide for full steps to configure and use  [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
-## How to use the Example
+## 如何使用例程
 
-### Example Functionality
+### 功能和用法
 
-- After the routine starts to run, it will automatically play the low sample rate (8000 Hz) mp3 file.
+- 例程开始运行后，自动播放低码率 8000 Hz 的 mp3 文件，打印如下：
 
 ```c
 I (260) PLAY_FLASH_MP3_CONTROL: [3.1] Initialize keys on board
@@ -73,7 +70,8 @@ W (310) PLAY_FLASH_MP3_CONTROL:       [Vol-] or [Vol+] to adjust volume.
 I (330) PLAY_FLASH_MP3_CONTROL: [ 5.1 ] Start audio_pipeline
 I (340) PLAY_FLASH_MP3_CONTROL: [ * ] Receive music info from mp3 decoder, sample_rates=8000, bits=16, ch=2
 ```
-- During playback, you can use the [Play] button to pause playback and resume playback.
+
+- 在播放中，可以使用 [Play] 按键进行暂停播放、恢复播放操作。
 
 ```c
 I (330) PLAY_FLASH_MP3_CONTROL: [ 5.1 ] Start audio_pipeline
@@ -85,7 +83,7 @@ I (8830) PLAY_FLASH_MP3_CONTROL: [ * ] Resuming audio pipeline
 I (8850) PLAY_FLASH_MP3_CONTROL: [ * ] Receive music info from mp3 decoder, sample_rates=8000, bits=16, ch=2
 ```
 
-- Use volume down key [Vol-] to decrease the volume, and volume up key [Vol+] to increase the volume.
+- 使用音量减 [Vol-] 按键减少音量，使用音量加 [Vol+] 按键增加音量。
 
 ```c
 I (81590) PLAY_FLASH_MP3_CONTROL: [ * ] Receive music info from mp3 decoder, sample_rates=22050, bits=16, ch=2
@@ -93,7 +91,7 @@ I (106330) PLAY_FLASH_MP3_CONTROL: [ * ] [Vol+] touch tap event
 I (106340) PLAY_FLASH_MP3_CONTROL: [ * ] Volume set to 79 %
 ```
 
-- Use [Mode] key to switch MP3 playback of different audio file (8000 Hz, 22050 Hz, 44100 Hz).
+- 使用 [Mode] 按键切换不同码率（8000 Hz、22050 Hz、44100 Hz）的 MP3 播放。
 
 ```c
 I (330) PLAY_FLASH_MP3_CONTROL: [ 5.1 ] Start audio_pipeline
@@ -112,7 +110,7 @@ W (21440) MP3_DECODER: output aborted -3
 I (21480) PLAY_FLASH_MP3_CONTROL: [ * ] Receive music info from mp3 decoder, sample_rates=8000, bits=16, ch=2
 ```
 
-- Use the [Set] key to exit the routine.
+- 使用 [Set] 按键可以退出例程。
 
 ```c
 I (21480) PLAY_FLASH_MP3_CONTROL: [ * ] Receive music info from mp3 decoder, sample_rates=8000, bits=16, ch=2
@@ -126,8 +124,9 @@ W (63600) AUDIO_ELEMENT: [i2s] Element has not create when AUDIO_ELEMENT_TERMINA
 W (63610) AUDIO_ELEMENT: [mp3] Element has not create when AUDIO_ELEMENT_TERMINATE
 ```
 
-### Example Logs
-A complete log is as follows:
+
+### 日志输出
+本例选取完整的从启动到初始化完成的 log，示例如下：
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -240,11 +239,10 @@ W (101760) AUDIO_ELEMENT: [i2s] Element has not create when AUDIO_ELEMENT_TERMIN
 W (101760) AUDIO_ELEMENT: [mp3] Element has not create when AUDIO_ELEMENT_TERMINATE
 ```
 
-## Technical support and feedback
+## 技术支持
+请按照下面的链接获取技术支持：
 
-Please use the following feedback channels:
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
-
-We will get back to you as soon as possible.
+我们会尽快回复。

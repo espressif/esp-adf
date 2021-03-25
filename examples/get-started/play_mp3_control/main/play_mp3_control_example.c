@@ -27,26 +27,62 @@
 #include "periph_button.h"
 #include "board.h"
 
-static const char *TAG = "PLAY_MP3_FLASH";
+static const char *TAG = "PLAY_FLASH_MP3_CONTROL";
 
-/*
-   To embed it in the app binary, the mp3 file is named
-   in the component.mk COMPONENT_EMBED_TXTFILES variable.
-*/
-extern const uint8_t adf_music_mp3_start[] asm("_binary_adf_music_mp3_start");
-extern const uint8_t adf_music_mp3_end[]   asm("_binary_adf_music_mp3_end");
-static int adf_music_mp3_pos;
+static struct marker {
+    int pos;
+    const uint8_t *start;
+    const uint8_t *end;
+} file_marker;
+
+// low rate mp3 audio
+extern const uint8_t lr_mp3_start[] asm("_binary_music_16b_2c_8000hz_mp3_start");
+extern const uint8_t lr_mp3_end[]   asm("_binary_music_16b_2c_8000hz_mp3_end");
+
+// medium rate mp3 audio
+extern const uint8_t mr_mp3_start[] asm("_binary_music_16b_2c_22050hz_mp3_start");
+extern const uint8_t mr_mp3_end[]   asm("_binary_music_16b_2c_22050hz_mp3_end");
+
+// high rate mp3 audio
+extern const uint8_t hr_mp3_start[] asm("_binary_music_16b_2c_44100hz_mp3_start");
+extern const uint8_t hr_mp3_end[]   asm("_binary_music_16b_2c_44100hz_mp3_end");
+
+static void set_next_file_marker()
+{
+    static int idx = 0;
+
+    switch (idx) {
+        case 0:
+            file_marker.start = lr_mp3_start;
+            file_marker.end   = lr_mp3_end;
+            break;
+        case 1:
+            file_marker.start = mr_mp3_start;
+            file_marker.end   = mr_mp3_end;
+            break;
+        case 2:
+            file_marker.start = hr_mp3_start;
+            file_marker.end   = hr_mp3_end;
+            break;
+        default:
+            ESP_LOGE(TAG, "[ * ] Not supported index = %d", idx);
+    }
+    if (++idx > 2) {
+        idx = 0;
+    }
+    file_marker.pos = 0;
+}
 
 int mp3_music_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
-    int read_size = adf_music_mp3_end - adf_music_mp3_start - adf_music_mp3_pos;
+    int read_size = file_marker.end - file_marker.start - file_marker.pos;
     if (read_size == 0) {
         return AEL_IO_DONE;
     } else if (len < read_size) {
         read_size = len;
     }
-    memcpy(buf, adf_music_mp3_start + adf_music_mp3_pos, read_size);
-    adf_music_mp3_pos += read_size;
+    memcpy(buf, file_marker.start + file_marker.pos, read_size);
+    file_marker.pos += read_size;
     return read_size;
 }
 
@@ -109,11 +145,14 @@ void app_main(void)
     ESP_LOGW(TAG, "      [Play] to start, pause and resume, [Set] to stop.");
     ESP_LOGW(TAG, "      [Vol-] or [Vol+] to adjust volume.");
 
+    ESP_LOGI(TAG, "[ 5.1 ] Start audio_pipeline");
+    set_next_file_marker();
+    audio_pipeline_run(pipeline);
+
     while (1) {
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
             continue;
         }
 
@@ -121,10 +160,8 @@ void app_main(void)
             && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
             audio_element_info_t music_info = {0};
             audio_element_getinfo(mp3_decoder, &music_info);
-
             ESP_LOGI(TAG, "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
                      music_info.sample_rates, music_info.bits, music_info.channels);
-
             audio_element_setinfo(i2s_stream_writer, &music_info);
             i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
             continue;
@@ -132,7 +169,6 @@ void app_main(void)
 
         if ((msg.source_type == PERIPH_ID_TOUCH || msg.source_type == PERIPH_ID_BUTTON || msg.source_type == PERIPH_ID_ADC_BTN)
             && (msg.cmd == PERIPH_TOUCH_TAP || msg.cmd == PERIPH_BUTTON_PRESSED || msg.cmd == PERIPH_ADC_BUTTON_PRESSED)) {
-
             if ((int) msg.data == get_input_play_id()) {
                 ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
                 audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
@@ -154,7 +190,7 @@ void app_main(void)
                         audio_pipeline_reset_ringbuffer(pipeline);
                         audio_pipeline_reset_elements(pipeline);
                         audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
-                        adf_music_mp3_pos = 0;
+                        set_next_file_marker();
                         audio_pipeline_run(pipeline);
                         break;
                     default :
@@ -164,6 +200,15 @@ void app_main(void)
                 ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
                 ESP_LOGI(TAG, "[ * ] Stopping audio pipeline");
                 break;
+            } else if ((int) msg.data == get_input_mode_id()) {
+                ESP_LOGI(TAG, "[ * ] [mode] tap event");
+                audio_pipeline_stop(pipeline);
+                audio_pipeline_wait_for_stop(pipeline);
+                audio_pipeline_terminate(pipeline);
+                audio_pipeline_reset_ringbuffer(pipeline);
+                audio_pipeline_reset_elements(pipeline);
+                set_next_file_marker();
+                audio_pipeline_run(pipeline);
             } else if ((int) msg.data == get_input_volup_id()) {
                 ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event");
                 player_volume += 10;
@@ -188,7 +233,6 @@ void app_main(void)
     audio_pipeline_stop(pipeline);
     audio_pipeline_wait_for_stop(pipeline);
     audio_pipeline_terminate(pipeline);
-
     audio_pipeline_unregister(pipeline, mp3_decoder);
     audio_pipeline_unregister(pipeline, i2s_stream_writer);
 
