@@ -1,0 +1,22 @@
+menu "Example configuration"
+
+choice ENCODER_TYPE
+    prompt "Encoding type of recording file"
+    default CHOICE_WAV_ENCODER
+    help
+        Select a file type to save recording
+
+config CHOICE_WAV_ENCODER
+    bool "wav encoder"
+
+config CHOICE_OPUS_ENCODER
+    bool "opus encoder"
+
+config CHOICE_AMR_NB_ENCODER
+    bool "amrnb encoder"
+
+config CHOICE_AMR_WB_ENCODER
+    bool "amrwb encoder"
+
+endchoice
+endmenu
