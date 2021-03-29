@@ -21,6 +21,8 @@ config ESP32_KORVO_DU1906_BOARD
     bool "ESP32_KORVO_DU1906"
 config ESP32_S2_KALUGA_1_V1_2_BOARD
     bool "ESP32-S2-Kaluga-1 v1.2"
+config ESP_AI_THINKER_V2_2_BOARD
+    bool "ESP32-AiThinker-audio V2.2"
 
 endchoice
 
