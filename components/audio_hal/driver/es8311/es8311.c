@@ -624,7 +624,6 @@ esp_err_t es8311_start(es_module_t mode)
     ret |= es8311_write_reg(ES8311_SDPIN_REG09, dac_iface);
     ret |= es8311_write_reg(ES8311_SDPOUT_REG0A, adc_iface);
 
-    ret |= es8311_write_reg(ES8311_DAC_REG32, 0xBF);
     ret |= es8311_write_reg(ES8311_ADC_REG17, 0xBF);
     ret |= es8311_write_reg(ES8311_SYSTEM_REG0E, 0x02);
     ret |= es8311_write_reg(ES8311_SYSTEM_REG12, 0x00);
