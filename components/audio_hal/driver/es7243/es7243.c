@@ -130,7 +130,12 @@ esp_err_t es7243_adc_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s
 
 esp_err_t es7243_adc_set_voice_mute(bool mute)
 {
-    /* Not implemented yet */
+    ESP_LOGI(TAG, "Enter into es7243_mute(), mute = %d\n", mute);
+    if (mute) {
+        es7243_write_reg(0x05, 0x1B);
+    } else {
+        es7243_write_reg(0x05, 0x13);
+    }
     return ESP_OK;
 }
 

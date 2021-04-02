@@ -19,19 +19,25 @@
 #include "audio_pipeline.h"
 #include "audio_event_iface.h"
 #include "audio_common.h"
+#include "audio_mem.h"
 #include "i2s_stream.h"
 #include "esp_peripherals.h"
 #include "periph_wifi.h"
 #include "board.h"
 #include "input_key_service.h"
 
-#include "audio_mem.h"
 #include "raw_stream.h"
 #include "filter_resample.h"
 #include "esp_sip.h"
 #include "g711_decoder.h"
 #include "g711_encoder.h"
 #include "algorithm_stream.h"
+
+#include "wifi_service.h"
+#include "smart_config.h"
+
+#include "audio_tone_uri.h"
+#include "audio_player_int_tone.h"
 
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
@@ -57,6 +63,9 @@ static const char *TAG = "VOIP_EXAMPLE";
 static sip_handle_t sip;
 static audio_element_handle_t raw_read, raw_write;
 static audio_pipeline_handle_t recorder, player;
+static bool mute, is_smart_config;
+static display_service_handle_t disp;
+static periph_service_handle_t wifi_serv;
 
 static esp_err_t recorder_pipeline_open()
 {
@@ -188,9 +197,11 @@ static int _sip_event_handler(sip_event_msg_t *event)
             return ip_len;
         case SIP_EVENT_REGISTERED:
             ESP_LOGI(TAG, "SIP_EVENT_REGISTERED");
+            audio_player_int_tone_play(tone_uri[TONE_TYPE_SERVER_CONNECT]);
             break;
         case SIP_EVENT_RINGING:
             ESP_LOGI(TAG, "ringing... RemotePhoneNum %s", (char *)event->data);
+            audio_player_int_tone_play(tone_uri[TONE_TYPE_ALARM]);
             break;
         case SIP_EVENT_INVITING:
             ESP_LOGI(TAG, "SIP_EVENT_INVITING Remote Ring...");
@@ -230,7 +241,6 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
 {
     audio_board_handle_t board_handle = (audio_board_handle_t) ctx;
     int player_volume;
-    audio_hal_get_volume(board_handle->audio_hal, &player_volume);
     if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE) {
         ESP_LOGD(TAG, "[ * ] input key id is %d", (int)evt->data);
         sip_state_t sip_state = esp_sip_get_state(sip);
@@ -239,19 +249,30 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
         }
         switch ((int)evt->data) {
             case INPUT_KEY_USER_ID_REC:
+                ESP_LOGI(TAG, "[ * ] [Rec] Set MIC Mute or not");
+                if (mute) {
+                    mute = false;
+                    display_service_set_pattern(disp, DISPLAY_PATTERN_TURN_OFF, 0);
+                } else {
+                    mute = true;
+                    display_service_set_pattern(disp, DISPLAY_PATTERN_TURN_ON, 0);
+                }
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+                audio_hal_set_mute(board_handle->adc_hal, mute);
+#endif
+                break;
             case INPUT_KEY_USER_ID_PLAY:
                 ESP_LOGI(TAG, "[ * ] [Play] input key event");
-                if (sip_state & SIP_STATE_RINGING) {
+                if (sip_state == SIP_STATE_RINGING) {
+                    audio_player_int_tone_stop();
                     esp_sip_uas_answer(sip, true);
-                }
-                if (sip_state & SIP_STATE_REGISTERED) {
+                } else if (sip_state == SIP_STATE_REGISTERED) {
                     esp_sip_uac_invite(sip, "101");
                 }
                 break;
             case INPUT_KEY_USER_ID_MODE:
-            case INPUT_KEY_USER_ID_SET:
-                ESP_LOGI(TAG, "[ * ] [Set] input key event");
                 if (sip_state & SIP_STATE_RINGING) {
+                    audio_player_int_tone_stop();
                     esp_sip_uas_answer(sip, false);
                 } else if (sip_state & SIP_STATE_ON_CALL) {
                     esp_sip_uac_bye(sip);
@@ -261,6 +282,7 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 break;
             case INPUT_KEY_USER_ID_VOLUP:
                 ESP_LOGD(TAG, "[ * ] [Vol+] input key event");
+                audio_hal_get_volume(board_handle->audio_hal, &player_volume);
                 player_volume += 10;
                 if (player_volume > 100) {
                     player_volume = 100;
@@ -270,6 +292,7 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 break;
             case INPUT_KEY_USER_ID_VOLDOWN:
                 ESP_LOGD(TAG, "[ * ] [Vol-] input key event");
+                audio_hal_get_volume(board_handle->audio_hal, &player_volume);
                 player_volume -= 10;
                 if (player_volume < 0) {
                     player_volume = 0;
@@ -278,16 +301,78 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 ESP_LOGI(TAG, "[ * ] Volume set to %d %%", player_volume);
                 break;
         }
+    } else if (evt->type == INPUT_KEY_SERVICE_ACTION_PRESS) {
+        switch ((int)evt->data) {
+            case INPUT_KEY_USER_ID_SET:
+                is_smart_config = true;
+                esp_sip_destroy(sip);
+                wifi_service_setting_start(wifi_serv, 0);
+                audio_player_int_tone_play(tone_uri[TONE_TYPE_UNDER_SMARTCONFIG]);
+                break;
+        }
     }
 
     return ESP_OK;
 }
 
+static esp_err_t wifi_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
+{
+    ESP_LOGD(TAG, "event type:%d,source:%p, data:%p,len:%d,ctx:%p",
+             evt->type, evt->source, evt->data, evt->len, ctx);
+    if (evt->type == WIFI_SERV_EVENT_CONNECTED) {
+        ESP_LOGI(TAG, "PERIPH_WIFI_CONNECTED [%d]", __LINE__);
+        is_smart_config = false;
+        ESP_LOGI(TAG, "[ 5 ] Create SIP Service");
+        sip_config_t sip_cfg = {
+            .uri = CONFIG_SIP_URI,
+            .event_handler = _sip_event_handler,
+            .send_options = true,
+    #ifdef CONFIG_SIP_CODEC_G711A
+            .acodec_type = SIP_ACODEC_G711A,
+    #else
+            .acodec_type = SIP_ACODEC_G711U,
+    #endif
+        };
+        sip = esp_sip_init(&sip_cfg);
+        esp_sip_start(sip);
+    } else if (evt->type == WIFI_SERV_EVENT_DISCONNECTED) {
+        ESP_LOGI(TAG, "PERIPH_WIFI_DISCONNECTED [%d]", __LINE__);
+        if (is_smart_config == false) {
+            audio_player_int_tone_play(tone_uri[TONE_TYPE_PLEASE_SETTING_WIFI]);
+        }
+    } else if (evt->type == WIFI_SERV_EVENT_SETTING_TIMEOUT) {
+        ESP_LOGW(TAG, "WIFI_SERV_EVENT_SETTING_TIMEOUT [%d]", __LINE__);
+        audio_player_int_tone_play(tone_uri[TONE_TYPE_PLEASE_SETTING_WIFI]);
+        is_smart_config = false;
+    }
+
+    return ESP_OK;
+}
+
+void setup_wifi()
+{
+    int reg_idx = 0;
+    wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
+    cfg.evt_cb = wifi_service_cb;
+    cfg.setting_timeout_s = 300;
+    cfg.max_retry_time = 2;
+    wifi_serv = wifi_service_create(&cfg);
+
+    smart_config_info_t info = SMART_CONFIG_INFO_DEFAULT();
+    esp_wifi_setting_handle_t h = smart_config_create(&info);
+    esp_wifi_setting_regitster_notify_handle(h, (void *)wifi_serv);
+    wifi_service_register_setting_handle(wifi_serv, h, &reg_idx);
+
+    wifi_config_t sta_cfg = {0};
+    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, sizeof(sta_cfg.sta.ssid));
+    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, sizeof(sta_cfg.sta.password));
+    wifi_service_set_sta_info(wifi_serv, &sta_cfg);
+    wifi_service_connect(wifi_serv);
+}
+
 void app_main()
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set(TAG, ESP_LOG_INFO);
-    esp_log_level_set("SIP", ESP_LOG_INFO);
 
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
@@ -310,39 +395,28 @@ void app_main()
     ESP_LOGI(TAG, "[1.1] Initialize and start peripherals");
     audio_board_key_init(set);
 
-    ESP_LOGI(TAG, "[1.2] Start and wait for Wi-Fi network");
-    periph_wifi_cfg_t wifi_cfg = {
-        .ssid = CONFIG_WIFI_SSID,
-        .password = CONFIG_WIFI_PASSWORD,
-    };
-    esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(set, wifi_handle);
-    periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
+    ESP_LOGI(TAG, "[1.2] Create and start input key service");
+    input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
+    input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
+    input_cfg.handle = set;
+    input_cfg.based_cfg.task_stack = 4 * 1024;
+    periph_service_handle_t input_ser = input_key_service_create(&input_cfg);
+
+    ESP_LOGI(TAG, "[ 1.3 ] Create display service instance");
+    disp = audio_board_led_init();
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+    audio_hal_set_volume(board_handle->audio_hal, 45);
 
-    ESP_LOGI(TAG, "[ 3 ] Create and start input key service");
-    input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
-    input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
-    input_cfg.handle = set;
-    periph_service_handle_t input_ser = input_key_service_create(&input_cfg);
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
     periph_service_set_callback(input_ser, input_key_service_cb, (void *)board_handle);
 
-    ESP_LOGI(TAG, "[ 4 ] Create SIP Service");
-    sip_config_t sip_cfg = {
-        .uri = CONFIG_SIP_URI,
-        .event_handler = _sip_event_handler,
-        .send_options = true,
-#ifdef CONFIG_SIP_CODEC_G711A
-        .acodec_type = SIP_ACODEC_G711A,
-#else
-        .acodec_type = SIP_ACODEC_G711U,
-#endif
-    };
-    sip = esp_sip_init(&sip_cfg);
-    esp_sip_start(sip);
+    ESP_LOGI(TAG, "[ 3 ] Initialize tone player");
+    audio_player_int_tone_init();
+
+    ESP_LOGI(TAG, "[ 4 ] Create Wi-Fi service instance");
+    setup_wifi();
 }
 
