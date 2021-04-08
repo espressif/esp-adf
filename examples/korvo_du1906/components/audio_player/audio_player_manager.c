@@ -681,8 +681,6 @@ audio_err_t ap_manager_play(const char *url, uint32_t pos, bool blocked, bool au
                                          s_player->prepare_playing = false;
                                          return ESP_ERR_AUDIO_MEMORY_LACK;
                                         });
-    s_player->cur_ops = tmp;
-    ret = esp_audio_media_type_set(s_player->audio_handle, type);
     if (s_player->is_abort_playing) {
         s_player->prepare_playing = false;
         s_player->is_abort_playing = false;
@@ -690,6 +688,9 @@ audio_err_t ap_manager_play(const char *url, uint32_t pos, bool blocked, bool au
         ESP_LOGE(TAG, "AP_MANAGER_PLAY exit:%d", __LINE__);
         return ESP_ERR_AUDIO_FAIL;
     }
+
+    s_player->cur_ops = tmp;
+    ret = esp_audio_media_type_set(s_player->audio_handle, type);
     if (blocked == true) {
         ESP_LOGW(TAG, "AP_MANAGER_PLAY, Blocked playing, %s, type:%x", s_player->cur_ops->para.url, type);
         xEventGroupClearBits(s_player->sync_state, EP_TSK_PLAY_SYNC_TONE_BIT | EP_TSK_PLAY_SYNC_ERROR_BIT);

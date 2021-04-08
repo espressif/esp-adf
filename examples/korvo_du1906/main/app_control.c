@@ -99,6 +99,7 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
     switch ((int)evt->data) {
         case INPUT_KEY_USER_ID_MUTE:
             if (evt->type == INPUT_KEY_SERVICE_ACTION_PRESS) {
+                app_bt_start();
                 audio_player_state_get(&st);
                 if (st.media_src == MEDIA_SRC_TYPE_MUSIC_A2DP) {
                     if (((int)st.status == AUDIO_STATUS_RUNNING)) {
