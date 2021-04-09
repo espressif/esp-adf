@@ -181,21 +181,25 @@ int rb_read(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wai
 
         if (read_size == 0) {
             //no data to read, release thread block to allow other threads to write data
-            rb_release(rb->lock);
 
             if (rb->is_done_write) {
                 ret_val = RB_DONE;
+                rb_release(rb->lock);
                 goto read_err;
             }
             if (rb->abort_read) {
                 ret_val = RB_ABORT;
+                rb_release(rb->lock);
                 goto read_err;
             }
             if (rb->unblock_reader_flag) {
                 //reader_unblock is nothing but forced timeout
                 ret_val = RB_TIMEOUT;
+                rb_release(rb->lock);
                 goto read_err;
             }
+
+            rb_release(rb->lock);
             rb_release(rb->can_write);
             //wait till some data available to read
             if (rb_block(rb->can_read, ticks_to_wait) != pdTRUE) {
@@ -265,15 +269,18 @@ int rb_write(ringbuf_handle_t rb, char *buf, int buf_len, TickType_t ticks_to_wa
 
         if (write_size == 0) {
             //no space to write, release thread block to allow other to read data
-            rb_release(rb->lock);
             if (rb->is_done_write) {
                 ret_val = RB_DONE;
+                rb_release(rb->lock);
                 goto write_err;
             }
             if (rb->abort_write) {
                 ret_val = RB_ABORT;
+                rb_release(rb->lock);
                 goto write_err;
             }
+
+            rb_release(rb->lock);
             rb_release(rb->can_read);
             //wait till we have some empty space to write
             if (rb_block(rb->can_write, ticks_to_wait) != pdTRUE) {
