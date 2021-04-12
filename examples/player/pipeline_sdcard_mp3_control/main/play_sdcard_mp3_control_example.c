@@ -265,6 +265,7 @@ void app_main(void)
     audio_event_iface_destroy(evt);
 
     /* Release all resources */
+    sdcard_list_destroy(sdcard_list_handle);
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(mp3_decoder);
