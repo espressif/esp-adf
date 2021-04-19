@@ -103,7 +103,6 @@ static esp_err_t _tts_stream_close(audio_element_handle_t self)
 static esp_err_t _tts_stream_destroy(audio_element_handle_t self)
 {
     tts_stream_t *tts_stream = (tts_stream_t *)audio_element_getdata(self);
-    esp_tts_stream_reset(tts_stream->tts_handle);
     esp_tts_voice_set_free(tts_stream->voice);
     esp_tts_destroy(tts_stream->tts_handle);
     audio_free(tts_stream);
