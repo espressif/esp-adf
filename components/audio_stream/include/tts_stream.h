@@ -56,7 +56,7 @@ typedef struct {
     bool                    ext_stack;          /*!< Allocate stack on extern ram */
 } tts_stream_cfg_t;
 
-#define TTS_STREAM_BUF_SIZE             (2048)
+#define TTS_STREAM_BUF_SIZE             (4096)
 #define TTS_STREAM_TASK_STACK           (3072)
 #define TTS_STREAM_TASK_CORE            (0)
 #define TTS_STREAM_TASK_PRIO            (4)
