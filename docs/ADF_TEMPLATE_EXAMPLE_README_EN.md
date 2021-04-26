@@ -5,9 +5,9 @@ _English Version or Chinese Version_
 - [Chinese Version](./README_CN.md)
 
 _Add a picture to describe the difficulty level_
-- _Basic Example ![alt text](./_static/level_basic.png "Basic Example") - to get started_
-- _Regular Example ![alt text](./_static/level_regular.png "Regular Example") - demonstrates functionality of ESP-ADF or audio board_
-- _Complex Example ![alt text](./_static/level_complex.png "Complex Example") - like regular example but requires more configuration steps, interaction with other programs, setting up some cloud accounts, or more user expertise_
+- _Basic Example: ![alt text](./_static/level_basic.png "Basic Example") - to get started_
+- _Regular Example: ![alt text](./_static/level_regular.png "Regular Example") - demonstrates functionality of ESP-ADF or audio board_
+- _Complex Example: ![alt text](./_static/level_complex.png "Complex Example") - like regular example but requires more configuration steps, interaction with other programs, setting up some cloud accounts, or more user expertise_
 
 ## Example Brief
 - _Introduce the realization of the example program from a functional point of view_

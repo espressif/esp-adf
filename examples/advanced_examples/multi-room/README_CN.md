@@ -1,7 +1,7 @@
 # Multi-Room Music example
 
 - [English Version](./README.md)
-- 难度：![alt text](../../../docs/_static/level_regular.png "中级")
+- 例程难度：![alt text](../../../docs/_static/level_regular.png "中级")
 
 ## 例程简介
 
