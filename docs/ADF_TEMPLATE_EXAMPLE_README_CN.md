@@ -1,20 +1,20 @@
-_这是一个 ESP-ADF 例子程序的 README.md 模版文件，替换里面斜体内容和举例可以使用该模版_
+_这是 ESP-ADF 例子程序的 README.md 模版文件，替换里面斜体内容和举例可以使用该模版_
 
 # _例程标题_
 _中英文切换的链接，默认英文版本_
 - [English Version](./README.md)
 
 _对 example 的难易程度进行标记，分为：_
-- 基础 ![alt text](./_static/level_basic.png "基础")
-- 普通 ![alt text](./_static/level_regular.png "普通")
-- 复杂 ![alt text](./_static/level_complex.png "复杂")
+_- 例程难度：![alt text](./_static/level_basic.png "初级")_
+_- 例程难度：![alt text](./_static/level_regular.png "中级")_
+_- 例程难度：![alt text](./_static/level_complex.png "高级")_
 
 ## 例程简介
 - _从功能的角度介绍例子程序的实现_
 - _比如，此例是使用不同解码器来播放 sdcard 中不同格式的音乐_
 
 - _从技术角度，描述主要演示的技术功能点是什么_
-- 比如，演示 pipeline 和 element 的使用，element 直接从 callback 获取数据
+- _比如，演示 pipeline 和 element 的使用，element 直接从 callback 获取数据_
 
 ### 资源列表
 _可选项，RAM，CPU 负载_
@@ -59,7 +59,7 @@ _可选项，RAM，CPU 负载_
 
 ### 其他要求
 - _可选项_
-- _音乐文件资源，SIP server、 DLNA APP 等。如： 如百度云的 profile 或亚马逊的 token 认证等_
+- _音乐文件资源、SIP server、DLNA APP 等。如：如百度云的 profile 或亚马逊的 token 认证等_
 
 ## 编译和下载
 
@@ -68,7 +68,7 @@ _默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`_
 
 ### IDF 其他分支
 - _可选项，需要选择特殊 IDF 版本分支，均要明确指出_
-- _例如，DU1906 例程选择 IDF 分支 `audio/stack_on_psram_v3.3` 来编译， 如：_
+- _例如，DU1906 例程选择 IDF 分支 `audio/stack_on_psram_v3.3` 来编译，如：_
 ```c
 cd $IDF_PATH
 git checkout master
@@ -78,7 +78,7 @@ git submodule update --init --recursive
 ```
 
 ### 配置
-- _介绍和设置重要的 menuconfig 项目，如：FATFS长文件名，开发板，芯片类型，PSRAM时钟，Wi-Fi/LWIP参数等_
+- _介绍和设置重要的 menuconfig 项目，如：FATFS 长文件名、开发板、芯片类型、PSRAM时钟、Wi-Fi/LWIP 参数等_
 ```c
 Component config FAT Filesystem support Long filename support
 ```
@@ -108,7 +108,7 @@ _怎么下载，命令是什么，如：_
 - _如果存在一些其他的软件配合才能完成的功能，比如 (servers，BLE device，app，second chip，links) 等，都要列举出来，如首先运行 pipeline_raw_http 的 http server。如：`pipeline_raw_http` 中要求在 PC 上运行 `python server.py`，创建接收数据的服务器_
 
 ### 日志输出
-_选取启动到初始化完成的 log， 示例如下：_
+_选取启动到初始化完成的 log，示例如下：_
 ```c
 I (64) boot: Chip Revision: 3
 I (35) boot: ESP-IDF v3.3.1-203-g0c1859a5a 2nd stage bootloader
