@@ -167,6 +167,36 @@ static esp_err_t cli_get_vol(esp_periph_handle_t periph, int argc, char *argv[])
     return ESP_OK;
 }
 
+static esp_err_t cli_set_speed(esp_periph_handle_t periph, int argc, char *argv[])
+{
+    esp_audio_play_speed_t cur_audio_play_speed_idx = ESP_AUDIO_PLAY_SPEED_1_00;
+    float cur_audio_play_speed = 1.0;
+    if (argc == 1) {
+        cur_audio_play_speed_idx = atof(argv[0]);
+    } else {
+        ESP_LOGE(TAG, "Invalid audio parameter");
+        return ESP_ERR_INVALID_ARG;
+    }
+    float prev_audio_play_speed = 1.0;
+    esp_audio_play_speed_t prev_audio_play_speed_idx = ESP_AUDIO_PLAY_SPEED_1_00;
+    esp_audio_speed_get(player, &prev_audio_play_speed_idx);
+    esp_audio_speed_idx_to_float(player, prev_audio_play_speed_idx, &prev_audio_play_speed);
+    esp_audio_speed_set(player, cur_audio_play_speed_idx);
+    esp_audio_speed_idx_to_float(player, cur_audio_play_speed_idx, &cur_audio_play_speed);
+    ESP_LOGI(TAG, "Audio play speed setting changed from %f to %f", prev_audio_play_speed, cur_audio_play_speed);
+    return ESP_OK;
+}
+
+static esp_err_t cli_get_speed(esp_periph_handle_t periph, int argc, char *argv[])
+{
+    esp_audio_play_speed_t audio_speed_idx = ESP_AUDIO_PLAY_SPEED_1_00;
+    float audio_speed = 1.0;
+    esp_audio_speed_get(player, &audio_speed_idx);
+    esp_audio_speed_idx_to_float(player, audio_speed_idx, &audio_speed);
+    ESP_LOGI(TAG, "Current audio play speed is %f", audio_speed);
+    return ESP_OK;
+}
+
 static esp_err_t get_pos(esp_periph_handle_t periph, int argc, char *argv[])
 {
     int pos = 0;
@@ -435,17 +465,18 @@ const periph_console_cmd_t cli_cmd[] = {
         \te.g. 1.\"play\"; 2. play with index after scan,\"play index_number\"; 3.play with specific url, \"play url_path\"",               .func = cli_play
     },
 
-    { .cmd = "pause",       .id = 2, .help = "Pause",                    .func = cli_pause },
-    { .cmd = "resume",      .id = 3, .help = "Resume",                   .func = cli_resume },
-    { .cmd = "stop",        .id = 3, .help = "Stop player",              .func = cli_stop },
-    { .cmd = "setvol",      .id = 4, .help = "Set volume",               .func = cli_set_vol },
-    { .cmd = "getvol",      .id = 5, .help = "Get volume",               .func = cli_get_vol },
-    { .cmd = "getpos",      .id = 6, .help = "Get position by seconds",  .func = get_pos },
-    { .cmd = "seek",        .id = 7, .help = "Seek position by second",  .func = cli_seek },
-    { .cmd = "duration",    .id = 8, .help = "Get music duration",       .func = cli_duration },
-    { .cmd = "tone",        .id = 9, .help = "Insert tone to play",      .func = cli_insert_tone },
-    { .cmd = "stone",       .id = 9, .help = "Stop tone by a timer",     .func = cli_stop_tone },
-
+    { .cmd = "pause",       .id = 2,  .help = "Pause",                    .func = cli_pause },
+    { .cmd = "resume",      .id = 3,  .help = "Resume",                   .func = cli_resume },
+    { .cmd = "stop",        .id = 3,  .help = "Stop player",              .func = cli_stop },
+    { .cmd = "setvol",      .id = 4,  .help = "Set volume",               .func = cli_set_vol },
+    { .cmd = "getvol",      .id = 5,  .help = "Get volume",               .func = cli_get_vol },
+    { .cmd = "getpos",      .id = 6,  .help = "Get position by seconds",  .func = get_pos },
+    { .cmd = "seek",        .id = 7,  .help = "Seek position by second",  .func = cli_seek },
+    { .cmd = "duration",    .id = 8,  .help = "Get music duration",       .func = cli_duration },
+    { .cmd = "tone",        .id = 9,  .help = "Insert tone to play",      .func = cli_insert_tone },
+    { .cmd = "stone",       .id = 9,  .help = "Stop tone by a timer",     .func = cli_stop_tone },
+    { .cmd = "setspeed",    .id = 10, .help = "Set speed",                .func = cli_set_speed },
+    { .cmd = "getspeed",    .id = 11, .help = "Get speed",                .func = cli_get_speed },
 
     /* ======================== Wi-Fi ======================== */
     { .cmd = "join",        .id = 20, .help = "Join WiFi AP as a station",      .func = wifi_set },

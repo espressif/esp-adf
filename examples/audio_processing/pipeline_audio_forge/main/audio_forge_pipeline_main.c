@@ -74,6 +74,7 @@ void app_main(void)
     audio_forge_src_info_t source_information = {
         .samplerate = DEFAULT_SAMPLERATE,
         .channel = DEFAULT_CHANNEL,
+        .bit_num = 16,
     };
 
     audio_forge_downmix_t downmix_information = {
@@ -165,7 +166,12 @@ void app_main(void)
                 audio_element_getinfo(wav_decoder[i], &music_info);
                 ESP_LOGW(TAG, "[ * ] Receive music info from wav decoder, sample_rates=%d, bits=%d, ch=%d",
                          music_info.sample_rates, music_info.bits, music_info.channels);
-                audio_forge_set_src_info(audio_forge, music_info.sample_rates, music_info.channels, i);
+                audio_forge_src_info_t src_info = {
+                    .samplerate = music_info.sample_rates,
+                    .channel = music_info.channels,
+                    .bit_num = music_info.bits,
+                };
+                audio_forge_set_src_info(audio_forge, src_info, i);
             }
         }
         if (((int)msg.data == get_input_mode_id()) && (msg.cmd == PERIPH_BUTTON_PRESSED)) {
@@ -174,7 +180,6 @@ void app_main(void)
                 ret = audio_pipeline_run(pipeline[i]);
             }
             audio_pipeline_run(pipeline_mix);
-            audio_forge_downmix_set_input_rb_timeout(audio_forge, 50);
         }
         /* Stop when the last pipeline element (fatfs_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
@@ -193,11 +198,6 @@ void app_main(void)
         audio_pipeline_terminate(pipeline[i]);
         audio_pipeline_unregister_more(pipeline[i], fats_rd_el[i], wav_decoder[i], el_raw_write[i], NULL);
         audio_pipeline_remove_listener(pipeline[i]);
-        /* Release resources */
-        audio_pipeline_deinit(pipeline[i]);
-        audio_element_deinit(fats_rd_el[i]);
-        audio_element_deinit(wav_decoder[i]);
-        audio_element_deinit(el_raw_write[i]);
     }
     audio_pipeline_stop(pipeline_mix);
     audio_pipeline_wait_for_stop(pipeline_mix);
@@ -212,6 +212,13 @@ void app_main(void)
     /* Make sure audio_pipeline_remove_listener & audio_event_iface_remove_listener are called before destroying event_iface */
     audio_event_iface_destroy(evt);
 
+    for (int i = 0; i < NUMBER_SOURCE_FILE; i++) {
+        /* Release resources */
+        audio_pipeline_deinit(pipeline[i]);
+        audio_element_deinit(fats_rd_el[i]);
+        audio_element_deinit(wav_decoder[i]);
+        audio_element_deinit(el_raw_write[i]);
+    }
     /* Release resources */
     audio_pipeline_deinit(pipeline_mix);
     audio_element_deinit(audio_forge);
