@@ -133,7 +133,7 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
             return ESP_FAIL;
         }
         fatfs->w_type =  get_type(path);
-        if (STREAM_TYPE_WAV == fatfs->w_type) {
+        if ((STREAM_TYPE_WAV == fatfs->w_type) && (fatfs->write_header == true)) {
             wav_header_t info = {0};
             write(fatfs->file, &info, sizeof(wav_header_t));
             fsync(fatfs->file);
@@ -205,7 +205,8 @@ static esp_err_t _fatfs_close(audio_element_handle_t self)
     fatfs_stream_t *fatfs = (fatfs_stream_t *)audio_element_getdata(self);
 
     if (AUDIO_STREAM_WRITER == fatfs->type
-        && (fatfs->file != -1)
+        && (-1 != fatfs->file)
+        && (true == fatfs->write_header)
         && STREAM_TYPE_WAV == fatfs->w_type) {
         wav_header_t *wav_info = (wav_header_t *) audio_malloc(sizeof(wav_header_t));
 
