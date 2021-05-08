@@ -20,6 +20,12 @@
 #include "filter_resample.h"
 #include "esp_vad.h"
 
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
+
 static const char *TAG = "EXAMPLE-VAD";
 
 #define VAD_SAMPLE_RATE_HZ 16000
@@ -49,6 +55,9 @@ void app_main()
     i2s_cfg.type = AUDIO_STREAM_READER;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_cfg.i2s_port = 1;
+#if (ESP_IDF_VERSION <= ESP_IDF_VERSION_VAL(4, 0, 0))
+    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+#endif
 #endif
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
