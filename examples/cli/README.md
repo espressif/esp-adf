@@ -4,7 +4,7 @@ This example shows how to use `periph_console` to control `esp_audio` APIs and s
 
 ## Compatibility
 
-This example is will run on boards marked with green checkbox. Please remember to select the board in menuconfig as discussed is section *Usage* below.
+This example will run on boards marked with green checkbox. Please remember to select the board in menuconfig as discussed is section *Usage* below.
 
 | Board Name | Getting Started | Chip | Compatible |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -42,6 +42,8 @@ If the `ESP_AUDIO_AUTO_PLAY` is opened, it can automatically recognize audio for
 - setvol: Set volume
 - getvol: Get volume
 - getpos: Get current position in seconds
+- setspeed: Set audio play speed
+- getspeed: Get audio play speed
 
 ### System Commands
 
