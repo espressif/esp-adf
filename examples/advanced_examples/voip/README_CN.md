@@ -1,17 +1,17 @@
 # VoIP example
 
-- [中文版本](./README_CN.md)
-- Complex Example: ![alt text](../../../docs/_static/level_complex.png "Complex Example")
+- [English Version](./README.md)
+- 例程难度：![alt text](../../../docs/_static/level_complex.png "高级")
 
-## Example Brief
+## 例程简介
 
-- ESP VoIP is a telephone client based on the standard SIP protocol, which can be used in some P2P or audio conference scenarios.
+- ESP VoIP 是一个基于标准 SIP 协议的电话客户端，可以用于点对点通话和音频会议等场景。
 
-### Resources
+### 资源列表
 
-- Memory consumption:
+- 内存消耗
 
-esp32-lyrat-mini-v1.2:
+esp32-lyrat-mini:
 
 |memory_total (byte)|memory_inram (byte)|memory_psram (byte)
 |---|---|---
@@ -23,16 +23,16 @@ other boards:
 |---|---|---
 |252900 |111076 |141824
 
-### Prerequisites
+### 预备知识
 
-- [SIP Protocol](https://en.wikipedia.org/wiki/Session_Initiation_Protocol)
+- [SIP 协议栈](https://en.wikipedia.org/wiki/Session_Initiation_Protocol)
 - [RFC3261](https://tools.ietf.org/html/rfc3261)
 
-## Environment Setup
+## 环境配置
 
-### Hardware Required
+### 硬件要求
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section *Configuration* below.
+- 此示例可在标有绿色复选框的开发板上运行。请记住，如下面的*配置*一节所述，可以在 menuconfig 中选择合适的开发板。
 
 | Board Name | Getting Started | Chip | Compatible |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -42,81 +42,81 @@ This example runs on the boards that are marked with a green checkbox in the tab
 | ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
 | ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
 
-### Additional Requirements
+### 其他要求
 
-- You need to build one of the following SIP PBX servers:
+- 您需要搭建如下 SIP PBX 服务器中的一个：
 
   - [Asterisk FreePBX](https://www.freepbx.org/downloads/)
 
   - [Asterisk for Raspberry Pi](http://www.raspberry-asterisk.org/)
 
   - [Freeswitch](https://freeswitch.org/confluence/display/FREESWITCH/Installation)
-      - Recommended to turn off the server event `NOTIFY` by:
+      - 建议关闭服务器事件通知 `NOTIFY`，可以通过如下方式配置：
         ```
-        setting `<param name="send-message-query-on-register" value="false"/>` in `conf/sip_profiles/internal.xml`
+        在 `conf/sip_profiles/internal.xml` 中设置 `<param name="send-message-query-on-register" value="false"/>`
         ```
-      - Recommended to delete the unsupported Video Codec in `conf/vars.xml`
+      - 建议在 `conf/vars.xml` 中删除暂不支持的 Video Codec
 
   - [Kamailio](https://kamailio.org/docs/tutorials/5.3.x/kamailio-install-guide-git/)
 
   - [Yate Server](http://docs.yate.ro/wiki/Beginners_in_Yate)
 
-## Example Set Up
+## 编译和下载
 
-### Default IDF Branch
+### IDF 默认分支
 
-The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-idf`.
+本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-### Configuration
+### 配置
 
-Open the project configuration menu (`make menuconfig` or `idf.py menuconfig`).
+打开配置选项 `make menuconfig` 或 `idf.py menuconfig`
 
-- Select a compatible audio board in `menuconfig` > `Audio HAL`.
-- Set up Wi-Fi connection in `Example Configuration` > `WiFi SSID` and `WiFi Password` or you can use the `Esptouch` application to configure.
-- Select compatible audio codec in `VoIP App Configuration` > `SIP Codec`.
-- Set up SIP URI (Transport://user:password@server:port) in `VoIP App Configuration` > `SIP_URI`.
-  - eg: `tcp://100:100@192.168.1.123:5060`
+- 在 `menuconfig` > `Audio HAL` 中选择合适的开发板。
+- 在 `VoIP App Configuration` > `WiFi SSID` 和 `WiFi Password` 配置 Wi-Fi 网络或者使用 `Esptouch` 应用来配置。
+- 在 `VoIP App Configuration` > `SIP Codec` 中选择想要的编解码器。
+- 在 `VoIP App Configuration` > `SIP_URI` 中配置 SIP 登陆相关信息（Transport://user:password@server:port）。
+  - 例如：`tcp://100:100@192.168.1.123:5060`
 
-### Build and Flash
+### 编译和下载
 
-Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 make -j8 flash monitor ESPPORT=PORT
 ```
 
-Or, for CMake based build system:
+或者，基于 CMake 编译系统：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-To exit the serial monitor, type ``Ctrl-]``.
+退出调试界面使用 ``Ctrl-]``
 
-See the Getting Started Guide for full steps to configure and use [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v3.3/get-started/index.html) to build projects.
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v3.3/get-started/index.html)。
 
-### Download flash tone
+### 下载 flash 提示音
 
-- To use this example, you need to download a tone onto flash:
+- 此应用额外需要下载一个提示音的 bin 到 flash 中：
 
 ```
   python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x210000 ./tools/audio-esp.bin
 ```
 
-## How to use the Example
+## 如何使用例程
 
-### Example Functionality
+### 功能和用法
 
-- After the example starts to run, when the network is not connected, it will play a prompt tone that the network needs to be configured, Entering the smartconfig mode will prompt that the network configuration is in progress, After the SIP server is connected, it will play that the server is connnected.
-- When the device prompts that you need to configure the network, please long press the `Set` key to enter the network configuration mode, and open the phone app [Esptouch](https://www.espressif.com/en/support/download/apps?keys=ESP-TOUCH) to configure the network.
-- After the server is connected, you can press the `Play` button to make a call or answer an incoming call, and the `Mode` button to hang up or cancel the call.
-- The `Vol+` and `Vol-` keys can adjust the call volume of the development board. On the `esp32-lyrat-mini` development board, you can press the `Rec` key to mute the `MIC`.
-- You can use the Open source clients such as Linphone or MicroSIP to make VoIP calls with the development board.
-- About the Acoustic Echo Cancellation, currently the software solution only supports the `esp32-lyrat-mini` development board, you can also choose the `esp32-lyratd-msc` development board or other hardware with AEC function to complete it.
+- 例程开始运行后，在网络未连接时会播放需要进行配网的提示音，进入配网模式会提示正在进行配网，服务器连接成功后会播放服务器已连接。
+- 当设备提示需要配置网络时，请长按 `Set` 键进入配网模式，同时打开手机 [Esptouch](https://www.espressif.com/zh-hans/support/download/apps?keys=ESP-TOUCH) App 来进行配网。
+- 服务器连接成功后，您可以按下 `Play` 键进行呼叫或者接听，`Mode` 键进行挂断或者取消呼叫。
+- `Vol+` 和 `Vol-` 键可以调节开发板通话音量，在 `esp32-lyrat-mini` 开发板上可以按下 `Rec` 键进行 `MIC` 静音的操作。
+- 您也可以使用 Linphone/MicroSIP 等开源客户端与开发板进行通话。
+- 关于回声消除 (AEC) 的功能，目前软件方案只支持 `esp32-lyrat-mini` 开发板，您也可以选择 `esp32-lyratd-msc` 开发板或者其他带 AEC 功能的硬件来完成。
 
-### Example Logs
+### 日志输出
 
-- SIP register
+- SIP 注册
 ```c
 I (4164) VOIP_EXAMPLE: [ 3 ] Create and start input key service
 I (4164) VOIP_EXAMPLE: [ 4 ] Create SIP Service
@@ -199,7 +199,7 @@ I (4524) VOIP_EXAMPLE: SIP_EVENT_REGISTERED
 W (4524) SIP: CHANGE STATE FROM 1, TO 2, :func: sip_register:1592
 ```
 
-- call in
+- 收到来电
 ```c
 I (688034) SIP: [1970-01-01/00:11:13]<<=====READ 1372 bytes==
 I (688034) SIP:
@@ -282,7 +282,7 @@ I (691384) VOIP_EXAMPLE: ringing... RemotePhoneNum 1001
 I (692384) VOIP_EXAMPLE: ringing... RemotePhoneNum 1001
 ```
 
-- hangup
+- 挂断
 ```c
 I (1372804) SIP: User call sip BYE
 I (1372834) SIP: [1970-01-01/00:22:25]=======WRITE 0664 bytes>>
@@ -324,15 +324,14 @@ I (1373024) VOIP_EXAMPLE: SIP_EVENT_AUDIO_SESSION_END
 
 ## Troubleshooting
 
-- If you have a crash when you use `Esptouch` to configure the network, please increase the size of `SC_ACK_TASK_STACK_SIZE` appropriately.
-- If the board are unable to connect to the server, please use the Linphone or MicroSIP open source client to verify that your server is working properly.
-- If you need reduce the RTT(Response time), you can set esp_log_level_set("SIP", ESP_LOG_WARN).
+- 如果您使用 `Esptouch` 配网出现 Crash，请将 `SC_ACK_TASK_STACK_SIZE` 适当调大一些。
+- 如果您遇到无法链接服务器的情况，请先使用 Linphone/MicroSIP 开源客户端验证您的服务器是否工作正常。
+- 如果您需要减少 SIP 信令 RTT 响应时间，您可以设置 esp_log_level_set("SIP", ESP_LOG_WARN)。
 
-## Technical support and feedback
+## 技术支持
+请按照下面的链接获取技术支持：
 
-Please use the following feedback channels:
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
-
-We will get back to you as soon as possible.
+我们会尽快回复。
