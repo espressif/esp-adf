@@ -1,13 +1,13 @@
+# 多个音频文件向下混叠（Down-mix）例程
 
-# Downmix Pipeline Example
+- [English Version](./README.md)
+- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
 
-- [中文版本](./README_CN.md)
-- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
-## Example Brief
-This example shows how to use ESP-ADF multiple input pipelines to play back multiple files with a down-mixer.
+## 例程简介
 
-The structure of multiple pipelines is shown below:
+本例程利用 ADF 多输入管道实现了多个音频文件向下混叠 (Down-mix) 的功能，多个管道结构如下图：
+
 
 ```
 mp3 base input stream ---> resample ---> down-mix ---> I2S output stream ---> codec chip
@@ -15,11 +15,11 @@ mp3 base input stream ---> resample ---> down-mix ---> I2S output stream ---> co
                                            |
 mp3 new come input stream ---> resample ---
 ```
-This example uses dual-channel mp3 with at the sampling rate of 44.1 kHz as the basic music, and single-channel mp3 at the sampling rate of 16 kHz as the mixed input audio.
 
-First, the two audios were decoded and resampled to 48 kHz respectively, and then the PCM with the sampling rate of 48 kHz was processed with Down-mix function.
+本例程使用的是双通道 44.1 kHz 采样率的 mp3 为基础音乐，单通道 16 kHz 采样率的 mp3 为混入音频。先对两首音频分别解码和重采样到 48 kHz，然后对 48 kHz 采样率的 PCM 进行了 Down-mix 的功能演示。
 
-Illustration of Downmixing Process:
+
+本例程的 Downmixing 过程如下图：
 ```
         ^
     gain|
@@ -46,58 +46,60 @@ Illustration of Downmixing Process:
 ```
 
 
-## Environment Setup
+## 环境配置
 
-### Hardware Required
+### 硬件要求
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section *Configuration* below.
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | Board Name | Getting Started | Chip | Compatible |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "The board is not compatible with this routine") |
+| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "开发板不兼容此例程") |
 
-## Example Set Up
 
-### Default IDF Branch
-The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-idf`.
+## 编译和下载
 
-### Configuration
+### IDF 默认分支
+本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-In this example, prepare a microSD card, prepare a dual-channel mp3 music with a sampling rate of 44.1 kHz as the basic music to play, and prepare a short Single channel 16 kHz sampling rate prompt tone, rename them and save to the sdcard.
+### 配置
 
-> In this example, the file name to be played is fixed, a base music file name `music.mp3` and a tone name `tone.mp3`.
+本例程需要准备一张 micro sdcard，准备一首音乐作为基础的音乐播放，另再准备一个短小的提示音作为插入混音使用。
 
-The default board for this example is `ESP32-Lyrat V4.3`, if you need to run this example on other development boards, select the board in menuconfig, such as `ESP32-Lyrat-Mini V1.1`.
+> 本例中需要播放的文件名是固定的，基础音乐命名为 `music.mp3` ，插入混音的提示音命名为 `tone.mp3`。
 
-```c
+本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
+
+```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-This example needs to enable FATFS long file name support also.
+本例程建议同时打开 FATFS 长文件名支持。
 
-```c
+```
 menuconfig > Component config > FAT Filesystem support > Long filename support
 ```
 
-### Build and Flash
-Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
+### 编译和下载
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
-```c
+```
 idf.py -p PORT flash monitor
 ```
 
-To exit the serial monitor, type ``Ctrl-]``.
+退出调试界面使用 ``Ctrl-]``
 
-See the Getting Started Guide for full steps to configure and use  [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
-## How to use the Example
+## 如何使用例程
 
-### Example Functionality
-- After the routine starts to run, it will automatically play the file `music.mp3` in the sdcard.
+### 功能和用法
+
+- 例程开始运行后，自动播放 sdcard 中的 `music.mp3` 音乐文件，打印如下：
 
 ```c
 I (998) AUDIO_ELEMENT: [base_file] AEL_MSG_CMD_RESUME,state:1
@@ -113,7 +115,7 @@ I (1165) AUDIO_ELEMENT: [i2s-0x3f806f4c] Element task created
 I (1166) AUDIO_PIPELINE: Func:audio_pipeline_run, Line:359, MEM Total:4300152 Bytes, Inter:307160 Bytes, Dram:236708 Bytes
 ```
 
-- After pressing the [mode] button, the prompt sound `tone.mp3` will be mixed in, and will gradually change the gain value within the `TRANSMIT TIME` time set by the program.
+- 按下 [mode] 按键后，提示音 `tone.mp3` 会被混音进来，并且在程序设定的 `TRANSMIT TIME` 时间内逐渐变化到设定的增益值。
 
 ```c
 I (1264) DOWNMIX_PIPELINE: [6.0] Base stream pipeline running
@@ -142,8 +144,9 @@ E (14638) AUDIO_ELEMENT: [newcome_mp3] Element already stopped
 E (14640) AUDIO_ELEMENT: [newcome_filter] Element already stopped
 ```
 
-### Example Logs
-A complete log is as follows:
+
+### 日志输出
+本例选取完整的从启动到初始化完成的 log，示例如下：
 
 ```c
 I (62) boot: Chip Revision: 3
@@ -188,6 +191,7 @@ I (299) cpu_start: ELF file SHA256:  3bd9c54c2b4cff94...
 I (305) cpu_start: ESP-IDF:          v3.3.2-107-g722043f73
 I (312) cpu_start: Starting app cpu, entry point is 0x40081478
 0x40081478: call_start_cpu1 at /repo/adfs/bugfix/esp-adf-internal/esp-idf/components/esp32/cpu_start.c:268
+
 I (0) cpu_start: App cpu up.
 I (799) spiram: SPI SRAM memory test OK
 I (800) heap_init: Initializing. RAM available for dynamic allocation:
@@ -210,6 +214,7 @@ I (235) DOWNMIX_PIPELINE: [2.0] Start and wait for SDCARD to mount
 E (237) gpio: gpio_install_isr_service(412): GPIO isr service already installed
 I (245) SDCARD: Using 1-line SD mode, 4-line SD mode,  base path=/sdcard
 I (300) SDCARD: CID name NCard!
+
 I (753) DOWNMIX_PIPELINE: [3.0] Create pipeline_mix to mix
 I (753) DOWNMIX_PIPELINE: [3.1] Create downmixer element
 I (754) DOWNMIX_PIPELINE: [3.2] Create i2s stream to read audio data from codec chip
@@ -243,6 +248,7 @@ I (967) AUDIO_ELEMENT: [base_mp3-0x3f8093c4] Element task created
 I (974) AUDIO_ELEMENT: [base_filter-0x3f80969c] Element task created
 I (980) AUDIO_ELEMENT: [base_raw-0x3f809934] Element task created
 I (986) AUDIO_PIPELINE: Func:audio_pipeline_run, Line:359, MEM Total:4364052 Bytes, Inter:332996 Bytes, Dram:262544 Bytes
+
 I (998) AUDIO_ELEMENT: [base_file] AEL_MSG_CMD_RESUME,state:1
 I (1005) AUDIO_ELEMENT: [base_mp3] AEL_MSG_CMD_RESUME,state:1
 I (1011) MP3_DECODER: MP3 opened
@@ -254,6 +260,7 @@ I (1134) FATFS_STREAM: File size: 2911638 byte, file position: 0
 I (1143) AUDIO_ELEMENT: [mixer-0x3f806c74] Element task created
 I (1165) AUDIO_ELEMENT: [i2s-0x3f806f4c] Element task created
 I (1166) AUDIO_PIPELINE: Func:audio_pipeline_run, Line:359, MEM Total:4300152 Bytes, Inter:307160 Bytes, Dram:236708 Bytes
+
 I (1174) AUDIO_ELEMENT: [mixer] AEL_MSG_CMD_RESUME,state:1
 I (1251) AUDIO_ELEMENT: [i2s] AEL_MSG_CMD_RESUME,state:1
 I (1252) I2S_STREAM: AUDIO_STREAM_WRITER
@@ -264,6 +271,7 @@ I (10924) AUDIO_ELEMENT: [newcome_mp3-0x3f809534] Element task created
 I (10927) AUDIO_ELEMENT: [newcome_filter-0x3f80980c] Element task created
 I (10947) AUDIO_ELEMENT: [newcome_raw-0x3f809a54] Element task created
 I (10948) AUDIO_PIPELINE: Func:audio_pipeline_run, Line:359, MEM Total:4277292 Bytes, Inter:293780 Bytes, Dram:223328 Bytes
+
 I (10958) AUDIO_ELEMENT: [newcome_file] AEL_MSG_CMD_RESUME,state:1
 I (10965) AUDIO_ELEMENT: [newcome_mp3] AEL_MSG_CMD_RESUME,state:1
 I (10971) MP3_DECODER: MP3 opened
@@ -296,6 +304,7 @@ I (19861) AUDIO_ELEMENT: [newcome_mp3-0x3f809534] Element task created
 I (19864) AUDIO_ELEMENT: [newcome_filter-0x3f80980c] Element task created
 I (19885) AUDIO_ELEMENT: [newcome_raw-0x3f809a54] Element task created
 I (19885) AUDIO_PIPELINE: Func:audio_pipeline_run, Line:359, MEM Total:4277224 Bytes, Inter:294296 Bytes, Dram:223844 Bytes
+
 I (19894) AUDIO_ELEMENT: [newcome_file] AEL_MSG_CMD_RESUME,state:1
 I (19902) AUDIO_ELEMENT: [newcome_mp3] AEL_MSG_CMD_RESUME,state:1
 I (19908) MP3_DECODER: MP3 opened
@@ -328,6 +337,7 @@ I (36223) AUDIO_ELEMENT: [newcome_mp3-0x3f809534] Element task created
 I (36226) AUDIO_ELEMENT: [newcome_filter-0x3f80980c] Element task created
 I (36232) AUDIO_ELEMENT: [newcome_raw-0x3f809a54] Element task created
 I (36245) AUDIO_PIPELINE: Func:audio_pipeline_run, Line:359, MEM Total:4277224 Bytes, Inter:294296 Bytes, Dram:223844 Bytes
+
 I (36253) AUDIO_ELEMENT: [newcome_file] AEL_MSG_CMD_RESUME,state:1
 I (36270) AUDIO_ELEMENT: [newcome_mp3] AEL_MSG_CMD_RESUME,state:1
 I (36271) MP3_DECODER: MP3 opened
@@ -358,18 +368,14 @@ I (40114) DOWNMIX_PIPELINE: New come music stoped or finsihed
 ```
 
 ## Troubleshooting
-The CPU loading of the Down-mix algorithm itself is very low.
-
-If the basic music and mixed music decoding are both audio files with high CPU loading (such as the basic music and mixed music are both 48 kHz and dual-channel mp3 audio), then the Down-mix process may have a time out error in data reading-writing, and output music is choppy.
-
-It is recommended to select the appropriate input audio.
+Down-mix 算法本身的 CPU loading 很低。如果基础音乐和混入音乐解码均为 CPU loading 很高的音频文件（如基础音乐和混入音乐均为 48 kHz 且双通道的 mp3 音频），那么 Down-mix 过程可能出现数据读写的 time out 错误， 听感上有卡顿。建议选择合适的输入音频。
 
 
-## Technical support and feedback
 
-Please use the following feedback channels:
+## 技术支持
+请按照下面的链接获取技术支持：
 
-* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-We will get back to you as soon as possible.
+我们会尽快回复。
