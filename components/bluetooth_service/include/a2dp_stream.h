@@ -58,9 +58,18 @@ typedef struct {
     audio_stream_type_t         type;
     a2dp_stream_user_callback_t user_callback;
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
-    audio_hal_handle_t audio_hal;
+    audio_hal_handle_t          audio_hal;
 #endif
 } a2dp_stream_config_t;
+
+/**
+ * a2dp task is only created in a2dp sink mode
+ */
+#define A2DP_STREAM_TASK_STACK          ( 2 * 1024 )
+#define A2DP_STREAM_TASK_CORE           ( 0 )
+#define A2DP_STREAM_TASK_PRIO           ( 22 )
+#define A2DP_STREAM_TASK_IN_EXT         ( true )
+#define A2DP_STREAM_QUEUE_SIZE          ( 20 )
 
 /**
  * @brief      Create a handle to an Audio Element to stream data from A2DP to another Element

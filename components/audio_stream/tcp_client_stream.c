@@ -47,7 +47,7 @@ typedef struct tcp_stream {
     void                          *ctx;
 } tcp_stream_t;
 
-static int _get_socket_error_code_reason(char *str, int sockfd)
+static int _get_socket_error_code_reason(const char *str, int sockfd)
 {
     uint32_t optlen = sizeof(int);
     int result;
@@ -55,7 +55,7 @@ static int _get_socket_error_code_reason(char *str, int sockfd)
 
     err = getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &result, &optlen);
     if (err == -1) {
-        ESP_LOGE(TAG, "%s, getsockopt failed: ret=%d", str, err);
+        ESP_LOGE(TAG, "%s, getsockopt failed", str);
         return -1;
     }
     if (result != 0) {
@@ -91,10 +91,9 @@ static esp_err_t _tcp_open(audio_element_handle_t self)
     AUDIO_NULL_CHECK(TAG, t, return ESP_FAIL);
     tcp->sock = esp_transport_connect(t, tcp->host, tcp->port, CONNECT_TIMEOUT_MS);
     if (tcp->sock < 0) {
-        _get_socket_error_code_reason("TCP create",  tcp->sock);
+        _get_socket_error_code_reason(__func__,  tcp->sock);
         return ESP_FAIL;
     }
-
     tcp->is_open = true;
     tcp->t = t;
 
@@ -107,15 +106,15 @@ static esp_err_t _tcp_read(audio_element_handle_t self, char *buffer, int len, T
 {
     tcp_stream_t *tcp = (tcp_stream_t *)audio_element_getdata(self);
     int rlen = esp_transport_read(tcp->t, buffer, len, tcp->timeout_ms);
-    ESP_LOGD(TAG, "read len=%d, rlen=%d", len, rlen);
     if (rlen < 0) {
-        _get_socket_error_code_reason("TCP read", tcp->sock);
+        _get_socket_error_code_reason(__func__, tcp->sock);
         return ESP_FAIL;
     } else if (rlen == 0) {
         ESP_LOGI(TAG, "Get end of the file");
     } else {
         audio_element_update_byte_pos(self, rlen);
     }
+    ESP_LOGD(TAG, "read len=%d, rlen=%d", len, rlen);
     return rlen;
 }
 
@@ -124,10 +123,10 @@ static esp_err_t _tcp_write(audio_element_handle_t self, char *buffer, int len, 
     tcp_stream_t *tcp = (tcp_stream_t *)audio_element_getdata(self);
     int wlen = esp_transport_write(tcp->t, buffer, len, tcp->timeout_ms);
     if (wlen < 0) {
-        _get_socket_error_code_reason("TCP write", tcp->sock);
+        _get_socket_error_code_reason(__func__, tcp->sock);
         return ESP_FAIL;
     }
-    ESP_LOGD(TAG, "read len=%d, wlen=%d", len, wlen);
+    ESP_LOGD(TAG, "write len=%d, rlen=%d", len, wlen);
     return wlen;
 }
 
