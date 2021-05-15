@@ -14,7 +14,7 @@ What You Need
 -------------
 
 * 1 × :ref:`ESP32 LyraT V4.3 board <get-started-esp32-lyrat-v4.3-board>`
-* 2 x 4-ohm speakers with Dupont female jumper wires or headphones with a 3.5 mm jack
+* 2 x 4-ohm speakers with JST PH 2.0 2-Pin plugs or headphones with a 3.5 mm jack
 * 2 x Micro-USB 2.0 cables, Type A to Micro B
 * 1 × PC loaded with Windows, Linux or Mac OS
 
@@ -71,9 +71,9 @@ Headphone Output
     ESP32-LyraT V4.3 Board Layout Overview
 
 Left Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect 4 ohm speaker. JST PH 2.0 2-pin connector.
 Right Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect 4 ohm speaker. JST PH 2.0 2-pin connector.
 Boot/Reset Press Keys
     Boot: holding down the **Boot** button and momentarily pressing the **Reset** button initiates the firmware upload mode. Then user can upload firmware through the serial port. Reset: pressing this button alone resets the system.
 Audio Codec Chip
