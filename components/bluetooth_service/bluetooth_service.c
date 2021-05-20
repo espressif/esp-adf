@@ -300,6 +300,65 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
     }
 }
 
+static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *p_param)
+{
+    esp_avrc_ct_cb_param_t *rc = p_param;
+    switch (event) {
+        case ESP_AVRC_CT_CONNECTION_STATE_EVT: {
+                uint8_t *bda = rc->conn_stat.remote_bda;
+                g_bt_service->avrc_connected = rc->conn_stat.connected;
+                if (rc->conn_stat.connected) {
+                    ESP_LOGD(TAG, "ESP_AVRC_CT_CONNECTION_STATE_EVT");
+                    bt_key_act_sm_init();
+                } else if (0 == rc->conn_stat.connected) {
+                    bt_key_act_sm_deinit();
+                }
+
+                ESP_LOGD(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
+                         rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
+                break;
+            }
+        case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT: {
+                if (g_bt_service->avrc_connected) {
+                    ESP_LOGD(TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
+                    bt_key_act_param_t param;
+                    memset(&param, 0, sizeof(bt_key_act_param_t));
+                    param.evt = event;
+                    param.tl = rc->psth_rsp.tl;
+                    param.key_code = rc->psth_rsp.key_code;
+                    param.key_state = rc->psth_rsp.key_state;
+                    bt_key_act_state_machine(&param);
+                }
+                break;
+            }
+        case ESP_AVRC_CT_METADATA_RSP_EVT: {
+                ESP_LOGD(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", rc->meta_rsp.attr_id, rc->meta_rsp.attr_text);
+                // free(rc->meta_rsp.attr_text);
+                break;
+            }
+        case ESP_AVRC_CT_CHANGE_NOTIFY_EVT: {
+                ESP_LOGD(TAG, "AVRC event notification: %d", rc->change_ntf.event_id);
+                break;
+            }
+        case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
+                ESP_LOGD(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
+                break;
+            }
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+        case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {
+                ESP_LOGD(TAG, "remote rn_cap: count %d, bitmask 0x%x", rc->get_rn_caps_rsp.cap_count,
+                         rc->get_rn_caps_rsp.evt_set.bits);
+                break;
+            }
+#endif
+
+        default:
+            ESP_LOGE(TAG, "%s unhandled evt %d", __func__, event);
+            break;
+    }
+}
+
 static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param)
 {
     switch (event) {
@@ -458,6 +517,9 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
         }
     }
 
+    esp_avrc_ct_init();
+    esp_avrc_ct_register_callback(bt_avrc_ct_cb);
+
     if (config->mode == BLUETOOTH_A2DP_SINK) {
         esp_a2d_sink_init();
         esp_a2d_sink_register_data_callback(bt_a2d_sink_data_cb);
@@ -510,6 +572,7 @@ esp_err_t bluetooth_service_destroy()
         return ESP_FAIL;
     }
     if (g_bt_service) {
+        esp_avrc_ct_deinit();
         if (g_bt_service->stream_type == AUDIO_STREAM_READER) {
             esp_a2d_sink_deinit();
         } else {
@@ -552,69 +615,8 @@ audio_element_handle_t bluetooth_service_create_stream()
     return g_bt_service->stream;
 }
 
-static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *p_param)
-{
-    esp_avrc_ct_cb_param_t *rc = p_param;
-    switch (event) {
-        case ESP_AVRC_CT_CONNECTION_STATE_EVT: {
-                uint8_t *bda = rc->conn_stat.remote_bda;
-                g_bt_service->avrc_connected = rc->conn_stat.connected;
-                if (rc->conn_stat.connected) {
-                    ESP_LOGD(TAG, "ESP_AVRC_CT_CONNECTION_STATE_EVT");
-                    bt_key_act_sm_init();
-                } else if (0 == rc->conn_stat.connected) {
-                    bt_key_act_sm_deinit();
-                }
-
-                ESP_LOGD(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
-                         rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
-                break;
-            }
-        case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT: {
-                if (g_bt_service->avrc_connected) {
-                    ESP_LOGD(TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
-                    bt_key_act_param_t param;
-                    memset(&param, 0, sizeof(bt_key_act_param_t));
-                    param.evt = event;
-                    param.tl = rc->psth_rsp.tl;
-                    param.key_code = rc->psth_rsp.key_code;
-                    param.key_state = rc->psth_rsp.key_state;
-                    bt_key_act_state_machine(&param);
-                }
-                break;
-            }
-        case ESP_AVRC_CT_METADATA_RSP_EVT: {
-                ESP_LOGD(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", rc->meta_rsp.attr_id, rc->meta_rsp.attr_text);
-                // free(rc->meta_rsp.attr_text);
-                break;
-            }
-        case ESP_AVRC_CT_CHANGE_NOTIFY_EVT: {
-                ESP_LOGD(TAG, "AVRC event notification: %d", rc->change_ntf.event_id);
-                break;
-            }
-        case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
-                ESP_LOGD(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
-                break;
-            }
-
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
-        case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {
-                ESP_LOGD(TAG, "remote rn_cap: count %d, bitmask 0x%x", rc->get_rn_caps_rsp.cap_count,
-                         rc->get_rn_caps_rsp.evt_set.bits);
-                break;
-            }
-#endif
-
-        default:
-            ESP_LOGE(TAG, "%s unhandled evt %d", __func__, event);
-            break;
-    }
-}
-
 static esp_err_t _bt_periph_init(esp_periph_handle_t periph)
 {
-    esp_avrc_ct_init();
-    esp_avrc_ct_register_callback(bt_avrc_ct_cb);
     return ESP_OK;
 }
 
@@ -625,7 +627,6 @@ static esp_err_t _bt_periph_run(esp_periph_handle_t self, audio_event_iface_msg_
 
 static esp_err_t _bt_periph_destroy(esp_periph_handle_t periph)
 {
-    esp_avrc_ct_deinit();
     g_bt_service->periph = NULL;
     return ESP_OK;
 }
