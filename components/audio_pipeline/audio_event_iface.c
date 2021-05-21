@@ -106,8 +106,9 @@ static esp_err_t audio_event_iface_cleanup_listener(audio_event_iface_handle_t l
     STAILQ_FOREACH_SAFE(item, &listen->listening_queues, next, tmp) {
         audio_event_iface_msg_t dummy;
         while (audio_event_iface_read(listen, &dummy, 0) == ESP_OK);
-        if (listen->queue_set && xQueueRemoveFromSet(item->queue, listen->queue_set) != pdPASS) {
+        while (listen->queue_set && (xQueueRemoveFromSet(item->queue, listen->queue_set) != pdPASS)) {
             ESP_LOGW(TAG, "Error remove listener,%p", item->queue);
+            while (audio_event_iface_read(listen, &dummy, 0) == ESP_OK);
         }
     }
     if (listen->queue_set) {

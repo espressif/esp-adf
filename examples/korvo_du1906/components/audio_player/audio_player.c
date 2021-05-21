@@ -125,7 +125,7 @@ audio_err_t audio_player_raw_feed_finish(void)
 audio_err_t audio_player_raw_waiting_finished(void)
 {
     audio_err_t ret = ESP_OK;
-    ap_ops_t *cur_ops = ap_manager_get_cur_ops();
+    ap_ops_t *cur_ops = ap_manager_find_ops_by_src(MEDIA_SRC_TYPE_MUSIC_RAW);
     if (cur_ops == NULL) {
         ESP_LOGW(TAG, "%s, not found the current operations", __func__);
         return ESP_ERR_AUDIO_NOT_FOUND_MEDIA_SRC;

@@ -49,9 +49,7 @@ audio_err_t ap_helper_a2dp_play(ap_ops_attr_t *at, ap_ops_para_t *para)
     AUDIO_NULL_CHECK(TAG, a2dp_stream_hd, return ESP_ERR_AUDIO_INVALID_PARAMETER);
 
     int ret = ESP_OK;
-#if CONFIG_BT_ENABLED
-    ret = periph_bt_play((esp_periph_handle_t)para->ctx);
-#endif
+    
     ret = ap_manager_play(para->url, para->pos, at->blocked, at->auto_resume, at->mixed, at->interrupt, para->media_src);
     ESP_LOGI(TAG, "%s, %d", __func__, __LINE__);
     return ret;
