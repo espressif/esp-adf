@@ -343,7 +343,7 @@ void app_main(void)
 #ifdef CONFIG_OUTPUT_STREAM_HTTP
     pipeline_for_play = example_create_play_pipeline("https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3", OUTPUT_STREAM_HTTP);
 #else
-    pipeline_for_play = example_create_play_pipeline("test.mp3", OUTPUT_STREAM_SDCARD);
+    pipeline_for_play = example_create_play_pipeline("/sdcard/test.mp3", OUTPUT_STREAM_SDCARD);
 #endif
 
 #ifdef CONFIG_INPUT_STREAM_ASR
