@@ -249,7 +249,7 @@ static void dueros_task(void *pvParameters)
                 ESP_LOGI(TAG, "Dueros DUER_CMD_DESTROY");
                 duer_voice_stop();
                 serv->duer_state = SERVICE_STATE_IDLE;
-                task_run = 1;
+                task_run = false;
             }
         }
     }
