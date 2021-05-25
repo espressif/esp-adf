@@ -24,7 +24,7 @@ Prepare the audio board:
 flashTone,data,  0x04,  0x110000 , 500K,
 ```
 - Download audio-esp.bin
-```  
+```
   python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x110000 ./tools/audio-esp.bin
 ```
 Configure the example:
@@ -39,8 +39,9 @@ Download and run the example:
 ## Document Making
 
 - Please use mk_audio_bin.py and prompt sound file in the same directory(the mk_audio_bin.py in tools folder), then run mk_audio_bin.py file, and eventually generate audio-esp.bin file and a components folder in upper level directory, and the components folder include the url of tone.
+
 ```c
-  python tools/mk_audio_bin.py tone_mp3_folder
+  python $ADF_PATH/tools/audio_tone/mk_audio_tone.py tone_mp3_folder
 ```
 
 
