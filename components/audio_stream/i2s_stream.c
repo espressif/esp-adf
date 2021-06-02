@@ -53,7 +53,7 @@ static const char *TAG = "I2S_STREAM";
 #define SOC_I2S_SUPPORTS_ADC_DAC 1
 #endif // defined(ESP_IDF_VERSION)
 
-#define MCLK_GPIO CONFIG_I2S_MCLK_GPIO
+#define MCLK_GPIO CONFIG_I2s_MCLK_GPIO
 
 typedef struct i2s_stream {
     audio_stream_type_t type;
@@ -381,7 +381,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         get_i2s_pins(i2s->config.i2s_port, &i2s_pin_cfg);
         i2s_set_pin(i2s->config.i2s_port, &i2s_pin_cfg);
     }
-#ifdef CONFIG_I2S_SUPPORTS_MCLK
+#ifdef CONFIG_I2S_MCLK_SUPPORT
     i2s_mclk_gpio_select(i2s->config.i2s_port, MCLK_GPIO);
 #endif
     return el;
