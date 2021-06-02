@@ -53,7 +53,7 @@ static const char *TAG = "I2S_STREAM";
 #define SOC_I2S_SUPPORTS_ADC_DAC 1
 #endif // defined(ESP_IDF_VERSION)
 
-#define MCLK_GPIO CONFIG_I2s_MCLK_GPIO
+#define MCLK_GPIO CONFIG_I2S_MCLK_GPIO
 
 typedef struct i2s_stream {
     audio_stream_type_t type;
