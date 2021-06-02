@@ -1,0 +1,18 @@
+menu "Audio HAL"
+
+config I2S_MCLK_SUPPORT
+  bool "Support for I2S MCLK output"
+  default n
+  help
+    This enables support for an I2S MCLK output.
+
+  menu "I2S MCLK config"
+    config I2S_MCLK_GPIO
+      depends on I2S_MCLK_SUPPORT
+        int "MCLK GPIO number"
+        range 0 34
+        default 0
+        help              
+          Select the GPIO for used I2S MCLK Output.
+  endmenu
+endmenu
