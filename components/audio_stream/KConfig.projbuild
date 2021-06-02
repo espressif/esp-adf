@@ -1,4 +1,4 @@
-menu "Audio HAL"
+menu "Audio Stream"
 
 config I2S_MCLK_SUPPORT
   bool "Support for I2S MCLK output"
