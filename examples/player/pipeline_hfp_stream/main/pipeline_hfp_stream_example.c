@@ -19,6 +19,12 @@
 #include "board.h"
 #include "hfp_stream.h"
 
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
+
 static const char *TAG = "HFP_EXAMPLE";
 
 static audio_element_handle_t hfp_in_stream, hfp_out_stream, i2s_stream_writer, i2s_stream_reader;
