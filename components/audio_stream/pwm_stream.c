@@ -215,6 +215,8 @@ static inline void ledc_set_left_duty_fast(uint32_t duty_val)
 static inline void ledc_set_right_duty_fast(uint32_t duty_val)
 {
     *g_ledc_right_duty_val = (duty_val) << 4;
+    *g_ledc_right_conf0_val |= 0x00000014;
+    *g_ledc_right_conf1_val |= 0x80000000;
 }
 
 static void IRAM_ATTR timer_group_isr(void *para)
