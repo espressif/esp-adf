@@ -92,6 +92,7 @@ static esp_err_t _tcp_open(audio_element_handle_t self)
     tcp->sock = esp_transport_connect(t, tcp->host, tcp->port, CONNECT_TIMEOUT_MS);
     if (tcp->sock < 0) {
         _get_socket_error_code_reason(__func__,  tcp->sock);
+        esp_transport_destroy(t);
         return ESP_FAIL;
     }
     tcp->is_open = true;
