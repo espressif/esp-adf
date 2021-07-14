@@ -14,7 +14,7 @@ What You Need
 -------------
 
 * 1 × :ref:`ESP32 LyraT V4.3 board <get-started-esp32-lyrat-v4.3-board>`
-* 2 x 4-ohm speakers with Dupont female jumper wires or headphones with a 3.5 mm jack
+* 2 x Speaker or headphones with a 3.5 mm jack. If you use a speaker, it is recommended to choose one no more than 3 watts, and JST PH 2.0 2-Pin plugs are needed. In case you do not have this type of plug it is also fine to use Dupont female jumper wires during development.
 * 2 x Micro-USB 2.0 cables, Type A to Micro B
 * 1 × PC loaded with Windows, Linux or Mac OS
 
@@ -71,9 +71,9 @@ Headphone Output
     ESP32-LyraT V4.3 Board Layout Overview
 
 Left Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 Right Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 Boot/Reset Press Keys
     Boot: holding down the **Boot** button and momentarily pressing the **Reset** button initiates the firmware upload mode. Then user can upload firmware through the serial port. Reset: pressing this button alone resets the system.
 Audio Codec Chip
@@ -101,7 +101,7 @@ Initial Setup
 
 Prepare the board for loading of the first sample application:
 
-1. Connect 4-ohm speakers to the **Right** and **Left Speaker Output**. Connecting headphones to the **Headphone Output** is an option.
+1. Connect speakers to the **Right** and **Left Speaker Output**. Connecting headphones to the **Headphone Output** is an option.
 2. Plug in the Micro-USB cables to the PC and to **both USB ports** of the ESP32 LyraT.
 3. The **Standby LED** (green) should turn on. Assuming that a battery is not connected, the **Charging LED** (red) will blink every couple of seconds.
 4. Toggle left the **Power On Switch**.

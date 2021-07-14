@@ -14,7 +14,7 @@ What You Need
 -------------
 
 * :ref:`ESP32-LyraT-Mini V1.2 board <get-started-esp32-lyrat-mini-v1.2-board>`
-* 4-ohm speaker with Dupont female jumper wires or headphones with a 3.5 mm jack
+* Speaker or headphones with a 3.5 mm jack. If you use a speaker, it is recommended to choose one no more than 3 watts, and JST PH 2.0 2-Pin plugs are needed. In case you do not have this type of plug it is also fine to use Dupont female jumper wires during development.
 * Two Micro-USB 2.0 cables, Type A to Micro B
 * PC loaded with Windows, Linux or Mac OS
 
@@ -64,7 +64,7 @@ Audio Codec Chip
 Audio Output
 	Output socket to connect headphones with a 3.5 mm stereo jack. (Please note that the board outputs a mono signal)
 Speaker Output
-	Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+	Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 
 .. _get-started-esp32-lyrat-mini-v1.2-board:
 
@@ -100,7 +100,7 @@ Initial Setup
 
 Prepare the board for loading of the first sample application:
 
-1. Connect 4-ohm speaker to the **Speaker Output**. Connecting headphones to the **Audio Output** is an option.
+1. Connect speaker to the **Speaker Output**. Connecting headphones to the **Audio Output** is an option.
 2. Plug in the Micro-USB cables to the PC and to **both USB ports** of the ESP32-LyraT-Mini.
 3. The **Standby LED** (green) should turn on. Assuming that a battery is not connected, the **Charging LED** (red) will blink every couple of seconds.
 4. Toggle top the **Power On Switch**.
