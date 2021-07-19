@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2021 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,54 +22,50 @@
  *
  */
 
-#ifndef __AUDIO_MUTEX_H__
-#define __AUDIO_MUTEX_H__
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "audio_mutex.h"
+#include "audio_idf_version.h"
+#include "esp_log.h"
 
-/**
- * @brief       Create a mutex instance
- *
- * @return      - Others:      A mutex handle is returned
- *              - NULL:         Failed to create mutex
- */
-void *mutex_create(void);
+#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 3, 0))
 
-/**
- * @brief       Delete the mutex instance
- *
- * @param       mutex       The pointer to mutex handle
- *
- * @return      - 0:       Success to delete mutex
- */
-int mutex_destroy(void *mutex);
-
-/**
- * @brief       Take the mutex
- *
- * @param       mutex        The pointer to mutex handle
- *
- * @return      - 0:        The lock was obtained
- */
-int mutex_lock(void *mutex);
-
-/**
- * @brief       Release the mutex
- *
- * @param       mutex        The pointer to mutex handle
- *
- * @return      - 0:           The lock was released
- */
-int mutex_unlock(void *mutex);
-
-#ifdef __cplusplus
+// The xQueueSemaphoreTake is not available on FreeRTOS v8.2.0, it's compatible implementation.
+BaseType_t __attribute__((weak)) xQueueSemaphoreTake( QueueHandle_t xQueue, TickType_t xTicksToWait )
+{
+    xSemaphoreTake(xQueue, xTicksToWait);
+    return pdPASS;
 }
 #endif
 
-#endif /* #ifndef __AUDIO_MUTEX_H__ */
+void *mutex_create(void)
+{
+    void *handle = NULL;
+    handle = xSemaphoreCreateMutex();
+    return (void *) handle;
+}
+
+int mutex_destroy(void *mutex)
+{
+    vSemaphoreDelete((QueueHandle_t)mutex);
+    return 0;
+}
+
+int mutex_lock(void *mutex)
+{
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
+    while (xSemaphoreTake((QueueHandle_t)mutex, portMAX_DELAY) != pdPASS);
+#else
+    while (xSemaphoreTake((QueueHandle_t)mutex, portMAX_DELAY) != pdPASS);
+#endif
+    return 0;
+}
+
+int mutex_unlock(void *mutex)
+{
+    int ret = 0;
+    ret = xSemaphoreGive((QueueHandle_t)mutex);
+    return ret;
+}
