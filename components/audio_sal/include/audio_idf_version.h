@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2021 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,54 +22,22 @@
  *
  */
 
-#ifndef __AUDIO_MUTEX_H__
-#define __AUDIO_MUTEX_H__
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
-#include "freertos/task.h"
+#ifndef __AUDIO_IDF_VERSION_H__
+#define __AUDIO_IDF_VERSION_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * @brief       Create a mutex instance
- *
- * @return      - Others:      A mutex handle is returned
- *              - NULL:         Failed to create mutex
- */
-void *mutex_create(void);
+#if __has_include("esp_idf_version.h")
+#include "esp_idf_version.h"
+#else
+#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
+#endif
 
-/**
- * @brief       Delete the mutex instance
- *
- * @param       mutex       The pointer to mutex handle
- *
- * @return      - 0:       Success to delete mutex
- */
-int mutex_destroy(void *mutex);
-
-/**
- * @brief       Take the mutex
- *
- * @param       mutex        The pointer to mutex handle
- *
- * @return      - 0:        The lock was obtained
- */
-int mutex_lock(void *mutex);
-
-/**
- * @brief       Release the mutex
- *
- * @param       mutex        The pointer to mutex handle
- *
- * @return      - 0:           The lock was released
- */
-int mutex_unlock(void *mutex);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* #ifndef __AUDIO_MUTEX_H__ */
+#endif /* #ifndef __AUDIO_IDF_VERSION_H__ */
