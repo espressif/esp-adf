@@ -232,6 +232,7 @@ esp_err_t esp_fs_ota_finish(esp_fs_ota_handle_t fs_ota_handle)
         case ESP_FS_OTA_SUCCESS:
         case ESP_FS_OTA_IN_PROGRESS:
             err = esp_ota_end(handle->update_handle);
+            __attribute__((fallthrough));
         case ESP_FS_OTA_BEGIN:
             if (handle->ota_upgrade_buf) {
                 audio_free(handle->ota_upgrade_buf);
