@@ -250,10 +250,19 @@ static esp_err_t _console_init(esp_periph_handle_t self)
     setvbuf(stdin, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
 
+
     /* Minicom, screen, idf_monitor send CR when ENTER key is pressed */
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
+    esp_vfs_dev_uart_port_set_rx_line_endings(CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CR);
+#else
     esp_vfs_dev_uart_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
+#endif
     /* Move the caret to the beginning of the next line on '\n' */
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
+    esp_vfs_dev_uart_port_set_tx_line_endings(CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CRLF);
+#else
     esp_vfs_dev_uart_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
+#endif
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, console->buffer_size * 2, 0, 0, NULL, 0);
