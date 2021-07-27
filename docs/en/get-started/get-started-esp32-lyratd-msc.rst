@@ -12,7 +12,7 @@ What You Need
 -------------
 
 * 1 × :ref:`ESP32-LyraTD-MSC V2.2 board <get-started-esp32-lyratd-msc-v2.2-board>`
-* 2 x 4-ohm speakers with Dupont female jumper wires or headphones with a 3.5 mm jack
+* 2 x Speaker or headphones with a 3.5 mm jack. If you use a speaker, it is recommended to choose one no more than 3 watts, and JST PH 2.0 2-Pin plugs are needed. In case you do not have this type of plug it is also fine to use Dupont female jumper wires during development.
 * 2 x Micro-USB 2.0 cables, Type A to Micro B
 * 1 × PC loaded with Windows, Linux or Mac OS
 
@@ -74,9 +74,9 @@ Headphone Output
         The socket may be used with mobile phone headsets and is compatible with OMPT standard headsets only. It does not work with CTIA headsets. Please refer to `Phone connector (audio) <https://en.wikipedia.org/wiki/Phone_connector_(audio)#TRRS_standards>`_ on Wikipedia.
 
 Left Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 Right Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 
 .. figure:: ../../_static/esp32-lyratd-msc-v2.2-a-top.png
     :alt: ESP32-LyraTD-MSC V2.2 Lower Board (A) Components
@@ -118,7 +118,7 @@ Initial Setup
 
 Prepare the board for loading of the first sample application:
 
-1. Connect 4-ohm speakers to the **Right** and **Left Speaker Output**. Connecting headphones to the **Headphone Output** is an option.
+1. Connect speakers to the **Right** and **Left Speaker Output**. Connecting headphones to the **Headphone Output** is an option.
 2. Plug in the Micro-USB cables to the PC and to **both USB ports** of the ESP32-LyraTD-MSC.
 3. The **Standby LED** (green) should turn on. Assuming that a battery is not connected, the **Charging LED** (red) will blink every couple of seconds.
 4. Toggle right the **Power Switch**.

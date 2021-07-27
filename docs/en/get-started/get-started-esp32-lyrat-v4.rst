@@ -12,8 +12,8 @@ What You Need
 -------------
 
 * 1 × :ref:`ESP32-LyraT V4 board <get-started-esp32-lyrat-v4-board>`
-* 2 x 4-ohm speakers with Dupont female jumper wires or headphones with a 3.5 mm jack
-* 1 x Micro USB 2.0 Cable, Type A to Micro B
+* 2 × Speaker or headphones with a 3.5 mm jack. If you use a speaker, it is recommended to choose one no more than 3 watts, and JST PH 2.0 2-Pin plugs are needed. In case you do not have this type of plug it is also fine to use Dupont female jumper wires during development.
+* 1 × Micro USB 2.0 Cable, Type A to Micro B
 * 1 × PC loaded with Windows, Linux or Mac OS
 
 
@@ -83,11 +83,11 @@ Headphone Output
 Right Microphone
     Onboard microphone connected to IN1 of the **Audio Codec Chip**.
 Left Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 Right Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 PA Chip
-    A power amplifier used to amplify stereo audio signal from the **Audio Codec Chip** for driving two 4-ohm speakers.
+    A power amplifier used to amplify stereo audio signal from the **Audio Codec Chip** for driving two speakers.
 Boot/Reset Press Keys
     Boot: holding down the **Boot** button and momentarily pressing the **Reset** button initiates the firmware upload mode. Then user can upload firmware through the serial port. Reset: pressing this button alone resets the system.
 Touch Pad Buttons
@@ -394,7 +394,7 @@ Initial Setup
 
 Prepare the board for loading of the first sample application:
 
-1. Connect 4-ohm speakers to the **Right** and **Left Speaker Output**. Optionally connect headphones to the **Headphone Output**.
+1. Connect speakers to the **Right** and **Left Speaker Output**. Optionally connect headphones to the **Headphone Output**.
 2. Plug in the Micro-USB cable to the PC and to the **Micro USB Port** of the ESP32-LyraT.
 3. The **Standby LED** (green) should turn on.  Assuming that a battery is not connected, the **Charging LED** will momentarily blink every couple of seconds.
 4. Toggle left the **Power On Switch**.

@@ -11,7 +11,7 @@ ESP32-LyraTD-MSC 是一款面向智能音箱和 AI 应用程序的硬件平台�
 -------------
 
 * 1 × :ref:`ESP32-LyraTD-MSC V2.2 board <get-started-esp32-lyratd-msc-v2.2-board>`
-* 2 x 带有杜邦母跳线的 4 ohm 扬声器或 3.5 mm 耳机
+* 2 x 扬声器或 3.5 mm 的耳机（若使用扬声器，建议功率不超过 3 瓦特，另外需要接口为 JST PH 2.0 毫米 2 针的插头，若没有此插头，开发过程中可替换为杜邦母跳线）
 * 2 x Micro-USB 2.0 数据线（Type A 转 Micro B）
 * 1 × PC（Windows、 Linux 或 Mac OS）
 
@@ -73,9 +73,9 @@ DSP 芯片
         该插槽可接入移动电话耳机，只与 OMPT 标准耳机兼容，与 CTIA 耳机不兼容。更多耳机标准信息请访问维基百科 `Phone connector (audio) <https://en.wikipedia.org/wiki/Phone_connector_(audio)#TRRS_standards>`_ 词条。
 
 左侧扬声器输出
-    输出插槽采用 2.54 mm / 0.1” 标准排针间距，可连接 4 ohm 扬声器。
+    音频输出插槽，采用 2.00 mm / 0.08" 排针间距，建议连接 4 欧姆 3 瓦特扬声器。
 右侧扬声器输出
-    输出插槽采用 2.54 mm / 0.1” 标准排针间距，可连接 4 ohm 扬声器。
+    音频输出插槽，采用 2.00 mm / 0.08" 排针间距，建议连接 4 欧姆 3 瓦特扬声器。
 
 .. figure:: ../../_static/esp32-lyratd-msc-v2.2-a-top.png
     :alt: ESP32-LyraTD-MSC V2.2 Lower Board (A) Components
@@ -117,7 +117,7 @@ ESP32-LyraTD-MSC 上电之前，请首先确认开发板完好无损，且上板
 
 设置开发板，以运行首个示例应用程序：
 
-1. 将 4 欧姆扬声器连接至 **两个扬声器输出**，或将耳机连接至 **耳机输出**。
+1. 将扬声器连接至 **两个扬声器输出**，或将耳机连接至 **耳机输出**。
 2. 插入 Micro-USB 数据线，连接 PC 与 ESP32-LyraTD-MSC 开发板的 **两个 USB 端口**。
 3. 此时，绿色 **待机指示灯** 应亮起。若电池未连接，红色 **充电指示灯** 每隔几秒闪烁一次。
 4. 向右拨动 **电源开关**。

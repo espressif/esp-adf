@@ -64,11 +64,11 @@ Headphone Output
 Right Microphone
     Onboard microphone connected to IN1 of the **Audio Codec Chip**.
 Left Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 Right Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 PA Chip
-    A power amplifier used to amplify stereo audio signal from the **Audio Codec Chip** for driving two 4-ohm speakers.
+    A power amplifier used to amplify stereo audio signal from the **Audio Codec Chip** for driving two speakers.
 Boot/Reset Press Keys
     Boot button: holding down the **Boot** button and momentarily pressing the **Reset** button to initiate the firmware download mode. Then you can download firmware through the serial port. Reset button: pressing this button alone resets the system.
 Touch Pad Buttons

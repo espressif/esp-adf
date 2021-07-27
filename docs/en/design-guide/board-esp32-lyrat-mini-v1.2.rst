@@ -40,9 +40,9 @@ Audio Output
 Audio ADC Chip
     The audio codec chip, `ES7243`_, is a low power multi-bit delta-sigma audio ADC and DAC. In this board this chip is used as the microphone interface.
 PA Chip
-    A power amplifier used to amplify the audio signal from the **Audio Codec Chip** for driving the 4-ohm speaker.
+    A power amplifier used to amplify the audio signal from the **Audio Codec Chip** for driving the speaker.
 Speaker Output
-    Output socket to connect 4 ohm speaker. The pins have a standard 2.54 mm / 0.1" pitch.
+    Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 Audio Function Press Keys
     Six press keys labeled **Rec**, **Mode**, **Play**, **Set**, **Vol-** and **Vol+**. They are routed to **ESP32-WROVER-B Module** and intended for development and testing of a UI for audio applications using dedicated API.
 
