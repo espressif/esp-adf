@@ -267,7 +267,6 @@ esp_err_t audio_pipeline_deinit(audio_pipeline_handle_t pipeline)
     audio_element_item_t *el_item, *tmp;
     STAILQ_FOREACH_SAFE(el_item, &pipeline->el_list, next, tmp) {
         ESP_LOGD(TAG, "[%16s]-[%p]element instance has been deleted", audio_element_get_tag(el_item->el), el_item->el);
-        audio_element_deinit(el_item->el);
         audio_pipeline_unregister(pipeline, el_item->el);
     }
     mutex_destroy(pipeline->lock);
