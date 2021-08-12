@@ -210,9 +210,6 @@ esp_err_t google_tts_destroy(google_tts_handle_t tts)
     audio_pipeline_terminate(tts->pipeline);
     audio_pipeline_remove_listener(tts->pipeline);
     audio_pipeline_deinit(tts->pipeline);
-    audio_element_deinit(tts->i2s_writer);
-    audio_element_deinit(tts->mp3_decoder);
-    audio_element_deinit(tts->http_stream_reader);
     free(tts->buffer);
     free(tts->api_key);
     free(tts);
