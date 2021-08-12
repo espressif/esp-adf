@@ -259,8 +259,6 @@ esp_err_t google_sr_destroy(google_sr_handle_t sr)
     audio_pipeline_terminate(sr->pipeline);
     audio_pipeline_remove_listener(sr->pipeline);
     audio_pipeline_deinit(sr->pipeline);
-    audio_element_deinit(sr->i2s_reader);
-    audio_element_deinit(sr->http_stream_writer);
     free(sr->buffer);
     free(sr->b64_buffer);
     free(sr->lang_code);
