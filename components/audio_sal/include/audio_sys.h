@@ -34,6 +34,12 @@ extern "C" {
 #define ___STR___(x) #x
 #define STR_AUDIO(x) ___STR___(x)
 
+#if defined(__GNUC__) && __GNUC__ >= 7
+ #define FALL_THROUGH __attribute__ ((fallthrough))
+#else
+ #define FALL_THROUGH ((void)0)
+#endif /* __GNUC__ >= 7 */
+
 /**
  * @brief       Get system ticks by given millisecond
  *
