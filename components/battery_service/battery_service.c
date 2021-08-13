@@ -31,6 +31,7 @@
 
 #include "esp_log.h"
 #include "audio_mem.h"
+#include "audio_sys.h"
 #include "battery_service.h"
 
 typedef struct battery_service {
@@ -120,6 +121,7 @@ static void battery_task(void *pvParameters)
                 }
                 case BATTERY_SERVICE_DESTROY:
                     service->running = false;
+                    FALL_THROUGH;
                     // No break, to share the actions of case `BATTERY_SERVICE_STOP`, clear all the monitors.
                 case BATTERY_SERVICE_STOP: {
                     if (service->vol_monitor != NULL) {

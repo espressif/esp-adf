@@ -30,6 +30,7 @@
 #include <esp_ota_ops.h>
 #include <errno.h>
 #include "audio_mem.h"
+#include "audio_sys.h"
 
 #define IMAGE_HEADER_SIZE    (sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t) + 1)
 #define DEFAULT_OTA_BUF_SIZE IMAGE_HEADER_SIZE
@@ -232,6 +233,7 @@ esp_err_t esp_fs_ota_finish(esp_fs_ota_handle_t fs_ota_handle)
         case ESP_FS_OTA_SUCCESS:
         case ESP_FS_OTA_IN_PROGRESS:
             err = esp_ota_end(handle->update_handle);
+            FALL_THROUGH;
         case ESP_FS_OTA_BEGIN:
             if (handle->ota_upgrade_buf) {
                 audio_free(handle->ota_upgrade_buf);

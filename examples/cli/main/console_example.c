@@ -284,6 +284,7 @@ static esp_err_t wifi_set(esp_periph_handle_t periph, int argc, char *argv[])
     switch (argc) {
         case 2:
             memcpy(w_config.sta.password, argv[1], sizeof(w_config.sta.password));
+            FALL_THROUGH;
         case 1:
             memcpy(w_config.sta.ssid, argv[0], sizeof(w_config.sta.ssid));
             esp_wifi_disconnect();
