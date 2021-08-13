@@ -87,11 +87,12 @@ esp_err_t dram_list_save(playlist_operator_handle_t handle, const char *url)
         list_node = NULL;
         return ESP_FAIL;
     });
-
+#if defined(__GNUC__) && (__GNUC__ >= 6)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(list_node->url_name, url, url_len); // causes compilation warning although the extra byte is accounted for in the calloc
 #pragma GCC diagnostic pop
+#endif
     TAILQ_INSERT_TAIL(&playlist->url_info_list, list_node, entries);
 
     if (NULL == playlist->cur_node) {
