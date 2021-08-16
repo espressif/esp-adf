@@ -108,7 +108,7 @@ esp_err_t periph_spiffs_mount(esp_periph_handle_t periph)
         ESP_LOGD(TAG, "Mount SPIFFS success");
         spiffs->is_mounted = true;
         size_t total = 0, used = 0;
-        ret = esp_spiffs_info(NULL, &total, &used);
+        ret = esp_spiffs_info(conf.partition_label, &total, &used);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%d)", ret);
         } else {
