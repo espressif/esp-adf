@@ -74,20 +74,25 @@ esp_err_t dram_list_save(playlist_operator_handle_t handle, const char *url)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
     AUDIO_NULL_CHECK(TAG, url, return ESP_FAIL);
+    size_t url_len = strlen(url);
     dram_list_t *playlist = handle->playlist;
     AUDIO_NULL_CHECK(TAG, playlist, return ESP_FAIL);
 
     url_info_t *list_node = (url_info_t *)audio_calloc(1, sizeof(url_info_t));
     AUDIO_NULL_CHECK(TAG, list_node, return ESP_FAIL);
-    list_node->url_name = (char *)audio_calloc(1, strlen(url) + 1);
+    list_node->url_name = (char *)audio_calloc(1, url_len + 1);
     list_node->url_id = playlist->url_num;
     AUDIO_NULL_CHECK(TAG, list_node->url_name, {
         audio_free(list_node);
         list_node = NULL;
         return ESP_FAIL;
     });
-
-    strncpy(list_node->url_name, url, strlen(url));
+#if defined(__GNUC__) && (__GNUC__ >= 6)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+    strncpy(list_node->url_name, url, url_len); // causes compilation warning although the extra byte is accounted for in the calloc
+#pragma GCC diagnostic pop
+#endif
     TAILQ_INSERT_TAIL(&playlist->url_info_list, list_node, entries);
 
     if (NULL == playlist->cur_node) {
