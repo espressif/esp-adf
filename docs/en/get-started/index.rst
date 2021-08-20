@@ -224,7 +224,7 @@ Step 5. Start a Project
 
 After initial preparation you are ready to build the first audio application. The process has already been described in ESP-IDF documentation. Now we would like to discuss remaining key steps and show how the toolchain is able to access the ESP-ADF :adf:`components` by using the ``ADF_PATH`` variable.
 
-To demonstrate how to build an application, we will use :example:`get-started/play_mp3` project from :adf:`examples` directory in the ADF.
+To demonstrate how to build an application, we will use :example:`get-started/play_mp3_control` project from :adf:`examples` directory in the ADF.
 
 Windows
 ~~~~~~~
@@ -232,7 +232,7 @@ Windows
 .. code-block:: batch
 
     cd %userprofile%\esp
-    xcopy /e /i %ADF_PATH%\examples\get-started\play_mp3 play_mp3
+    xcopy /e /i %ADF_PATH%\examples\get-started\play_mp3_control play_mp3_control
 
 Linux and macOS
 ~~~~~~~~~~~~~~~
@@ -240,7 +240,7 @@ Linux and macOS
 .. code-block:: bash
 
     cd ~/esp
-    cp -r $ADF_PATH/examples/get-started/play_mp3 .
+    cp -r $ADF_PATH/examples/get-started/play_mp3_control .
 
 
 There is a range of example projects in the :adf:`examples` directory in ESP-ADF. You can copy any project in the same way as presented above and run it.
@@ -269,7 +269,7 @@ Connect the audio board to the PC, check under what serial port the board is vis
 Step 7. Configure
 =================
 
-Navigate to your ``play_mp3`` directory from :ref:`get-started-start-project` and configure the project:
+Navigate to your ``play_mp3_control`` directory from :ref:`get-started-start-project` and configure the project:
 
 ESP-IDF v3.3.2 and v4.0 releases
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -279,7 +279,7 @@ Windows
 
 .. code-block:: batch
 
-    cd %userprofile%\esp\play_mp3
+    cd %userprofile%\esp\play_mp3_control
     idf.py menuconfig
 
 Linux and macOS
@@ -287,7 +287,7 @@ Linux and macOS
 
 .. code-block:: bash
 
-    cd ~/esp/play_mp3
+    cd ~/esp/play_mp3_control
     idf.py menuconfig
 
 
@@ -299,7 +299,7 @@ Windows
 
 .. code-block:: batch
 
-    cd %userprofile%\esp\play_mp3
+    cd %userprofile%\esp\play_mp3_control
     idf.py set-target esp32
     idf.py menuconfig
 
@@ -308,7 +308,7 @@ Linux and macOS
 
 .. code-block:: bash
 
-    cd ~/esp/play_mp3
+    cd ~/esp/play_mp3_control
     idf.py set-target esp32
     idf.py menuconfig
 
@@ -360,7 +360,7 @@ This command will compile the application and all ESP-IDF and ESP-ADF components
 
    $ idf.py build
     Executing action: all (aliases: build)
-    Running ninja in directory /path/to/esp/play_mp3/build
+    Running ninja in directory /path/to/esp/play_mp3_control/build
     Executing "ninja all"...
     [0/1] Re-running CMake...
 
@@ -368,10 +368,10 @@ This command will compile the application and all ESP-IDF and ESP-ADF components
 
     [1064/1064] Generating binary image from built executable
     esptool.py v3.0-dev
-    Generated /path/to/esp/play_mp3/build/play_mp3.bin
+    Generated /path/to/esp/play_mp3_control/build/play_mp3_control.bin
 
     Project build complete. To flash it, run this command:
-    /path/to/.espressif/python_env/idf4.2_py2.7_env/bin/python ../esp-idf/components/esptool_py/esptool/esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32  write_flash --flash_mode dio --flash_size detect --flash_freq 40m 0x1000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/play_mp3.bin
+    /path/to/.espressif/python_env/idf4.2_py2.7_env/bin/python ../esp-idf/components/esptool_py/esptool/esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32  write_flash --flash_mode dio --flash_size detect --flash_freq 40m 0x1000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/play_mp3_control.bin
     or run 'idf.py -p (PORT) flash'
 
 If there are no errors, the build will finish by generating the firmware binary .bin file.
@@ -417,12 +417,12 @@ Once build and upload is complete, you should see the following::
     Leaving...
     Hard resetting via RTS pin...
     Executing action: monitor
-    Running idf_monitor in directory /path/to/esp/play_mp3
-    Executing "/path/to/.espressif/python_env/idf4.2_py2.7_env/bin/python /path/to/esp/esp-idf/tools/idf_monitor.py -p /dev/ttyUSB0 -b 115200 --toolchain-prefix xtensa-esp32-elf- /path/to/esp/play_mp3/build/play_mp3.elf -m '/path/to/.espressif/python_env/idf4.2_py2.7_env/bin/python' '/path/to/esp/esp-idf/tools/idf.py'"...
+    Running idf_monitor in directory /path/to/esp/play_mp3_control
+    Executing "/path/to/.espressif/python_env/idf4.2_py2.7_env/bin/python /path/to/esp/esp-idf/tools/idf_monitor.py -p /dev/ttyUSB0 -b 115200 --toolchain-prefix xtensa-esp32-elf- /path/to/esp/play_mp3_control/build/play_mp3_control.elf -m '/path/to/.espressif/python_env/idf4.2_py2.7_env/bin/python' '/path/to/esp/esp-idf/tools/idf.py'"...
     --- idf_monitor on /dev/ttyUSB0 115200 ---
     --- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
 
-If there are no issues by the end of the flash process, the board will reboot and start up the “play_mp3” application.
+If there are no issues by the end of the flash process, the board will reboot and start up the “play_mp3_control” application.
 
 
 .. _get-started-build-monitor:
@@ -430,25 +430,25 @@ If there are no issues by the end of the flash process, the board will reboot an
 Step 10. Monitor
 ================
 
-At this point press the **Reset** button to start the application. Following several lines of start up log, the ``play_mp3`` application specific messages should be displayed::
+At this point press the **Reset** button to start the application. Following several lines of start up log, the ``play_mp3_control`` application specific messages should be displayed::
 
     ...
 
-    I (397) PLAY_MP3_FLASH: [ 1 ] Start audio codec chip
-    I (427) PLAY_MP3_FLASH: [ 2 ] Create audio pipeline, add all elements to pipeline, and subscribe pipeline event
-    I (427) PLAY_MP3_FLASH: [2.1] Create mp3 decoder to decode mp3 file and set custom read callback
-    I (437) PLAY_MP3_FLASH: [2.2] Create i2s stream to write data to codec chip
-    I (467) PLAY_MP3_FLASH: [2.3] Register all elements to audio pipeline
-    I (467) PLAY_MP3_FLASH: [2.4] Link it together [mp3_music_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]
-    I (477) PLAY_MP3_FLASH: [ 3 ] Set up  event listener
-    I (477) PLAY_MP3_FLASH: [3.1] Listening event from all elements of pipeline
-    I (487) PLAY_MP3_FLASH: [ 4 ] Start audio_pipeline
-    I (507) PLAY_MP3_FLASH: [ * ] Receive music info from mp3 decoder, sample_rates=44100, bits=16, ch=2
-    I (7277) PLAY_MP3_FLASH: [ 5 ] Stop audio_pipeline
+    I (397) PLAY_FLASH_MP3_CONTROL: [ 1 ] Start audio codec chip
+    I (427) PLAY_FLASH_MP3_CONTROL: [ 2 ] Create audio pipeline, add all elements to pipeline, and subscribe pipeline event
+    I (427) PLAY_FLASH_MP3_CONTROL: [2.1] Create mp3 decoder to decode mp3 file and set custom read callback
+    I (437) PLAY_FLASH_MP3_CONTROL: [2.2] Create i2s stream to write data to codec chip
+    I (467) PLAY_FLASH_MP3_CONTROL: [2.3] Register all elements to audio pipeline
+    I (467) PLAY_FLASH_MP3_CONTROL: [2.4] Link it together [mp3_music_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]
+    I (477) PLAY_FLASH_MP3_CONTROL: [ 3 ] Set up  event listener
+    I (477) PLAY_FLASH_MP3_CONTROL: [3.1] Listening event from all elements of pipeline
+    I (487) PLAY_FLASH_MP3_CONTROL: [ 4 ] Start audio_pipeline
+    I (507) PLAY_FLASH_MP3_CONTROL: [ * ] Receive music info from mp3 decoder, sample_rates=44100, bits=16, ch=2
+    I (7277) PLAY_FLASH_MP3_CONTROL: [ 5 ] Stop audio_pipeline
 
 If there are no issues, besides the above log, you should hear a sound played for about 7 seconds by the speakers or headphones connected to your audio board. Reset the board to hear it again if required.
 
-Now you are ready to try some other :adf:`examples`, or go right to developing your own applications. Check how the :adf:`examples` are made aware of location of the ESP-ADF. Open the :example_file:`get-started/play_mp3/Makefile` and you should see ::
+Now you are ready to try some other :adf:`examples`, or go right to developing your own applications. Check how the :adf:`examples` are made aware of location of the ESP-ADF. Open the :example_file:`get-started/play_mp3_control/Makefile` and you should see ::
 
     include($ENV{ADF_PATH}/CMakeLists.txt)
     include($ENV{IDF_PATH}/tools/cmake/project.cmake)
@@ -482,3 +482,4 @@ Related Documents
 
 
 .. _ESP-IDF Tools Installer: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html#get-started-windows-tools-installer
+
