@@ -30,7 +30,7 @@ Two Channel Audio
     8, ogg, `ff-16b-2c-44100hz.ogg <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.ogg>`_, "2,612"
     9, opus, `ff-16b-2c-44100hz.opus <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.opus>`_, "2,598"
     10, ts, `ff-16b-2c-44100hz.ts <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.ts>`_, "5,510"
-    11, wav, `ff-16b-2c-44100hz.wav <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wav>`_, "49,504"
+    11, wav, `ff-16b-2c-44100hz.wav <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wav>`_, "32,229"
     12, wma, `ff-16b-2c-44100hz.wma <https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.wma>`_, "3,227"
 
 Playlist containing all above files: `ff-16b-2c-playlist.m3u <https://dl.espressif.com/dl/audio/ff-16b-2c-playlist.m3u>`_
