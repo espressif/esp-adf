@@ -122,29 +122,56 @@ esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
     return ESP_OK;
 }
 
-// sdcard
-
+// sdcard detect gpio
 int8_t get_sdcard_intr_gpio(void)
 {
     return SDCARD_INTR_GPIO;
 }
 
+// max number of sdcard open file
 int8_t get_sdcard_open_file_num_max(void)
 {
     return SDCARD_OPEN_FILE_NUM_MAX;
 }
 
+// volume up button
 int8_t get_input_volup_id(void)
 {
     return BUTTON_VOLUP_ID;
 }
 
+// volume down button
 int8_t get_input_voldown_id(void)
 {
     return BUTTON_VOLDOWN_ID;
 }
 
+// pa enable
 int8_t get_pa_enable_gpio(void)
 {
     return PA_ENABLE_GPIO;
+}
+
+// mode button
+int8_t get_input_mode_id(void)
+{
+    return BUTTON_MODE_ID;
+}
+
+// set button
+int8_t get_input_set_id(void)
+{
+    return BUTTON_SET_ID;
+}
+
+// play button
+int8_t get_input_play_id(void)
+{
+    return BUTTON_PLAY_ID;
+}
+
+// mute button
+int8_t get_input_mute_id(void)
+{
+    return BUTTON_MUTE_ID;
 }
