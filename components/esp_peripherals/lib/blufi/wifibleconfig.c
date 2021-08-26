@@ -28,13 +28,18 @@
 #include <assert.h>
 #include <math.h>
 #include "audio_mem.h"
+#include "audio_idf_version.h"
 
 #ifdef CONFIG_BLUEDROID_ENABLED
 #include "esp_system.h"
 #include "esp_bt.h"
 #include "esp_log.h"
 #include "audio_error.h"
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
+#include "esp_blufi.h"
+#else
 #include "esp_blufi_api.h"
+#endif
 #include "esp_bt_defs.h"
 #include "esp_gap_ble_api.h"
 #include "esp_bt_device.h"
