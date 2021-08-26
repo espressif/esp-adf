@@ -47,7 +47,11 @@ static const char *TAG = "BLUFI_CONFIG";
 #ifdef CONFIG_BLUEDROID_ENABLED
 
 #include "esp_bt.h"
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+#include "esp_blufi.h"
+#else
 #include "esp_blufi_api.h"
+#endif
 #include "esp_bt_defs.h"
 #include "esp_gap_ble_api.h"
 #include "esp_bt_device.h"
