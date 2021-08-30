@@ -61,7 +61,7 @@ BUILD_PATH=$(${REALPATH} --relative-to ${IDF_PATH} ${BUILD_PATH})
 ALL_BUILD_LIST_JSON="${BUILD_PATH}/list.json"
 JOB_BUILD_LIST_JSON="${BUILD_PATH}/list_job_${CI_NODE_INDEX}.json"
 
-echo "build_examples running for target $IDF_TARGET"
+echo "build_examples running for target $IDF_TARGET, find_app script args $IDF_FIND_APP_PATH_ARG"
 
 cd ${IDF_PATH}
 
@@ -70,7 +70,10 @@ cd ${IDF_PATH}
 
 # If changing the work-dir or build-dir format, remember to update the "artifacts" in gitlab-ci configs, and IDFApp.py.
 
-${IDF_PATH}/tools/find_apps.py ${ADF_PATH}/examples \
+
+
+${IDF_PATH}/tools/find_apps.py \
+    ${IDF_FIND_APP_PATH_ARG} ${ADF_PATH}/examples \
     -vv \
     --format json \
     --build-system cmake \

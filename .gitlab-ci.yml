@@ -36,6 +36,7 @@ before_script:
   - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
   - chmod 600 ~/.ssh/id_rsa
   - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+
   # replace submodule esp-idf to internal repository to speedup cloning
   - sed -i "s%https://github.com/espressif/esp-idf%${GITLAB_SSH_SERVER}/idf/esp-idf.git%" .gitmodules
   # replace submodule esp-adf-libs to internal repository to speedup cloning
@@ -48,10 +49,11 @@ before_script:
   - if [[ ! -d "$ADF_PATH/../adf-libs-ut/" ]]; then git clone ssh://git@gitlab.espressif.cn:27227/adf/adf-libs-ut.git;else echo "adf-libs-ut folder already exists";fi
   - cd -
   - source $ADF_PATH/tools/ut/switch_branch.sh
+  - source $IDF_PATH/tools/ci/setup_python.sh
+
   # (the same regular expressions are used to set these are used in 'only:' sections below
   - source esp-idf/tools/ci/configure_ci_environment.sh
   # fetch the submodules (& if necessary re-fetch repo) from gitlab
-  - time ./esp-idf/tools/ci/get-full-sources.sh
 
 .add_gitlab_key_before:
   before_script: &add_gitlab_key_before
@@ -86,30 +88,14 @@ before_script:
     BATCH_BUILD: "1"
     V: "0"
 
-.build_examples_template: &build_examples_template
-  <<: *build_template
-  artifacts:
-    when: always
-    paths:
-      - build_examples/*/*/*/build/*.bin
-      - build_examples/*/*/*/build/*.elf
-      - build_examples/*/*/*/build/*.map
-      - build_examples/*/*/*/build/download.config
-      - build_examples/*/*/*/build/bootloader/*.bin
-      - $LOG_PATH
-    expire_in: 1 week
+.build_template_v44: &build_template_v44
+  stage: build
+  image: ci.espressif.cn:42348/esp-env:v4.4-1
+  tags:
+    - build
   variables:
-    IDF_CI_BUILD: "1"
-    LOG_PATH: "$CI_PROJECT_DIR/log_examples"
-  script:
-    # it's not possible to build 100% out-of-tree and have the "artifacts"
-    # mechanism work, but this is the next best thing
-    - rm -rf build_examples
-    - mkdir build_examples
-    - cd build_examples
-    # build some of examples
-    - mkdir -p ${LOG_PATH}
-    - ${ADF_PATH}/tools/ci/build_examples.sh "${CI_JOB_NAME}"
+    BATCH_BUILD: "1"
+    V: "0"
 
 .build_examples_make: &build_examples_make
   <<: *build_template
@@ -132,26 +118,11 @@ before_script:
   variables:
     IDF_CI_BUILD: "1"
     LOG_PATH: "$CI_PROJECT_DIR/log_examples_make"
-  # This is IDF CI limits
-  # only:
-    # # Here both 'variables' and 'refs' conditions are given. They are combined with "AND" logic.
-    # variables:
-    #   - $BOT_TRIGGER_WITH_LABEL == null
-    #   - $BOT_LABEL_BUILD
-    #   - $BOT_LABEL_EXAMPLE_TEST
-    #   - $BOT_LABEL_REGULAR_TEST
-    #   - $BOT_LABEL_WEEKEND_TEST
-    # refs:
-    #   - master
-    #   - /^release\/v/
-    #   - /^v\d+\.\d+(\.\d+)?($|-)/
-    #   - triggers
-    #   - schedules
-    #   - pipelines
-    #   - web
   script:
     # it's not possible to build 100% out-of-tree and have the "artifacts"
     # mechanism work, but this is the next best thing
+    - cd ${ADF_PATH}
+    - git submodule update --init --recursive
     - rm -rf build_examples
     - mkdir build_examples
     - cd build_examples
@@ -210,6 +181,75 @@ before_script:
     - cd ..
     - rm -rf build_examples
 
+# same as above, but for v4.4
+.build_examples_cmake_v44: &build_examples_cmake_v44
+  <<: *build_template_v44
+  parallel: 8
+  artifacts:
+    when: always
+    paths:
+      - build_examples/list.json
+      - build_examples/list_job_*.json
+      - build_examples/*/*/*/sdkconfig
+      - build_examples/*/*/*/build/*.bin
+      - build_examples/*/*/*/build/*.elf
+      - build_examples/*/*/*/build/*.map
+      - build_examples/*/*/*/build/flasher_args.json
+      - build_examples/*/*/*/build/bootloader/*.bin
+      - build_examples/*/*/*/build/partition_table/*.bin
+      - $LOG_PATH
+      - $EXAMPLE_TEST_OUTPUT_DIR
+    expire_in: 4 days
+  before_script:
+    # - source $IDF_PATH/tools/ci/configure_ci_environment.sh
+  variables:
+    SIZE_INFO_LOCATION: "$CI_PROJECT_DIR/size_info.txt"
+    LOG_PATH: "$CI_PROJECT_DIR/log_examples"
+    BUILD_PATH: "$CI_PROJECT_DIR/build_examples"
+    EXAMPLE_TEST_OUTPUT_DIR: ${CI_PROJECT_DIR}/examples/test_configs
+    CI_SCAN_TESTS_PY: ${CI_PROJECT_DIR}/esp-idf/tools/ci/python_packages/ttfw_idf/CIScanTests.py
+    EXAMPLE_TEST_DIR: ${CI_PROJECT_DIR}/examples
+    TEST_PREFIX: examples
+    TEST_RELATIVE_DIR: examples
+    TEST_TYPE: example_test
+    SCAN_TEST_JSON: ${CI_PROJECT_DIR}/${TEST_RELATIVE_DIR}/test_configs/scan_${IDF_TARGET}_${BUILD_SYSTEM}.json
+    PYTHON_VER: 3
+    # TEST_CONFIG_FILE: ${CI_PROJECT_DIR}/esp-idf/tools/ci/config/target-test.yml
+    # TEST_CONFIG_FILE: "$CI_PROJECT_DIR/esp-idf/.gitlab/ci/target-test.yml"
+
+  only:
+    variables:
+      - $BOT_TRIGGER_WITH_LABEL == null
+      - $BOT_LABEL_BUILD
+      - $BOT_LABEL_EXAMPLE_TEST
+      - $BOT_LABEL_REGULAR_TEST
+      - $BOT_LABEL_WEEKEND_TEST
+  script:
+    # it's not possible to build 100% out-of-tree and have the "artifacts"
+    # mechanism work, but this is the next best thing
+    - mkdir -p ${BUILD_PATH}
+    - mkdir -p ${LOG_PATH}
+    - echo "The IDF branch is "${IDF_VERSION}
+
+    - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
+    - source $IDF_PATH/tools/ci/configure_ci_environment.sh
+    - *setup_tools_unless_target_test
+
+    - pip3 install junit_xml
+    - pip3 install netifaces
+    - export PYTHONPATH=$IDF_PATH/tools/ci/python_packages:$IDF_PATH/tools
+    - echo "Ready to scan the examples"
+    - python $CI_SCAN_TESTS_PY example_test $EXAMPLE_TEST_DIR -b cmake --exclude $ADF_PATH/examples/korvo_du1906 -c $TEST_CONFIG_FILE -o $EXAMPLE_TEST_OUTPUT_DIR
+
+    - export PEDANTIC_CFLAGS="-Werror -Wno-implicit-fallthrough"
+    - export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
+    # - ${ADF_PATH}/tools/ci/build_examples_cmake.sh
+    - ${IDF_PATH}/tools/ci/find_apps_build_apps.sh
+    # Check if the tests demand CMake built binaries. If not, delete them
+    - if [ "$EXAMPLE_TEST_BUILD_SYSTEM" == "cmake" ]; then exit 0; fi
+    - cd ..
+    - rm -rf build_examples
+
 .build_ut_template: &build_ut_template
   stage: build_ut
   image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
@@ -237,8 +277,6 @@ before_script:
   - sed -i '/EXTRA_COMPONENT_DIRS += \$(ADF_PATH)\/components\//a\EXTRA_COMPONENT_DIRS += $(ADF_UT)/esp_audio' project.mk
   - git log
   - cd $IDF_PATH
-  - git checkout $IDF_VERSION
-  - git submodule update --init --recursive
   - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
   # - if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
   # $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)" || exit 1
@@ -253,8 +291,8 @@ before_script:
   - cp -rf $ADF_UT/ci $IDF_PATH/tools
   - sed -i "s%CRITICAL_LEAK_THRESHOLD = 4096%CRITICAL_LEAK_THRESHOLD = 26240%" $IDF_PATH/tools/unit-test-app/components/test_utils/test_runner.c
   - sed -i "s%include \$(IDF_PATH)\/make\/project.mk%include \$(ADF_PATH)\/project.mk%g" Makefile
-  
-.build_esp_adf_tests_make: 
+
+.build_esp_adf_tests_make:
   <<: *build_esp_adf_unit_test_template
   artifacts:
     paths:
@@ -284,7 +322,7 @@ before_script:
     - MAKEFLAGS= make help # make sure kconfig tools are built in single process
     - make clean
     - make -j8 TEST_COMPONENTS="$ADF_UT/esp_audio"
-    - make print_flash_cmd > build/download.config 
+    - make print_flash_cmd > build/download.config
     - mkdir adf_configs
     - mkdir output
     - mkdir output/default
@@ -309,24 +347,46 @@ build_examples_v40_cmake:
   variables:
     IDF_TARGET: esp32
     IDF_VERSION: release/v4.0
+    IDF_FIND_APP_PATH_ARG: ""
 
 build_examples_v41_cmake:
   extends: .build_examples_cmake
   variables:
     IDF_TARGET: esp32
     IDF_VERSION: release/v4.1
+    IDF_FIND_APP_PATH_ARG: ""
 
 build_examples_v42_cmake:
   extends: .build_examples_cmake
   variables:
     IDF_TARGET: esp32
     IDF_VERSION: release/v4.2
+    IDF_FIND_APP_PATH_ARG: ""
+
+build_examples_v43_cmake:
+  extends: .build_examples_cmake_v44
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION: release/v4.3
+    BUILD_SYSTEM: cmake
+    IDF_FIND_APP_PATH_ARG: "-p"
+    TEST_CONFIG_FILE: ${CI_PROJECT_DIR}/esp-idf/tools/ci/config/target-test.yml
+
+build_examples_v44_cmake:
+  extends: .build_examples_cmake_v44
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION: master
+    BUILD_SYSTEM: cmake
+    IDF_FIND_APP_PATH_ARG: "-p"
+    TEST_CONFIG_FILE: "$CI_PROJECT_DIR/esp-idf/.gitlab/ci/target-test.yml"
 
 .build_examples_cmake_s2:
   extends: .build_examples_cmake
   variables:
     IDF_TARGET: esp32s2beta
     IDF_VERSION: release/v4.1
+    IDF_FIND_APP_PATH_ARG: "-p"
 
 build_examples_v33_make:
   <<: *build_examples_make
@@ -346,6 +406,8 @@ build_adf_test:
       - $IDF_PATH/components/partition_table
     expire_in: 1 month
   script:
+    - cd ${ADF_PATH}
+    - git submodule update --init --recursive
     - git clone ${ADF_TEST_CLI_REPO}
     - cd adf-cli
     - git checkout ${CI_COMMIT_REF_NAME} || echo "Using adf-cli default branch..."
