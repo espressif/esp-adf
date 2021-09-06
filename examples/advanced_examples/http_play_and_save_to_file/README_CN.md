@@ -1,12 +1,15 @@
-# HTTP Play and Save Pipeline Example
+# http stream 的播放和下载例程
+
+- [English Version](./README.md)
+- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
 
 
-- [中文版本](./README_CN.md)
-- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
+## 例程简介
 
-## Example Brief
 
-This example demonstrates how to use ADF's multiple output pipelines API. The structure of multiple output pipelines is shown below:
+此示例演示了在 http stream pipeline 中使用 ADF 的多输出管道接口，实现一边播放网络歌曲，一边下载歌曲到 microSD 卡中的过程。
+
+多输出管道的结构如下图所示：
 
 ```
 http_stream_reader ---> mp3_decoder ---> i2s_stream ---> codec chip
@@ -15,75 +18,83 @@ http_stream_reader ---> mp3_decoder ---> i2s_stream ---> codec chip
                     raw_stream ---> fatfs_stream ---> SD card
 ```
 
-In the first pipeline, the front-end http stream reader obtains MP3 songs from the network. Then, the MP3 data is decoded by the MP3 decoder and transmitted to the codec chip by the i2s stream. Finally, the PA drives the speaker to play music.
+在第一个 pipeline 中，http stream reader 从网络获取 MP3 歌曲。然后数据经过 MP3 解码器解码，解码后数据通过 i2s stream 传输到 codec 芯片。最后，PA 驱动扬声器播放音乐。
 
-The front end of the other pipeline is the raw stream, which is connected to the http steam reader through the multiple output pipeline API. The data passes through the raw stream and is finally written into the SD card by the fatfs stream for storage.
+另一个 pipeline 的前端是 raw stream，它通过多输出管道接口连接到 http stream reader，读取到的数据最终由 fatfs stream 写入到 microSD 卡中存储。
 
-By using the ADF multi-output pipeline API, we link two pipelines, which not only completes the playback of network audio but also finish downloading network audio into SD card at the same time.
+通过使用 ADF 的多输出管道接口，我们链接了两条 pipeline，不仅完成了网络音频的播放，同时也完成了网络音频下载到 microSD 卡中的操作。
 
-## Environment Setup
+## 环境配置
 
-### Hardware Required
+### 硬件要求
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section *Configuration* below.
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
 
-| Board Name | Getting Started | Chip | Compatible |
+| 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "The board is not compatible with this routine") |
+| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "开发板不兼容此例程") |
 
-## Example Set Up
+## 编译和下载
 
-### Default IDF Branch
-The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-idf`.
+### IDF 默认分支
 
-### Configuration
+本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
+### 配置
 
-Prepare a microSD card in this example to save the downloaded file first.
+本例程需要准备一张 microSD 卡，用于保存网络下载的音频文件。
 
-The default board for this example is `ESP32-Lyrat V4.3`, if you need to run this example on other development boards, select the board in menuconfig, such as `ESP32-Lyrat-Mini V1.1`.
+本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 
-```c
+```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-This example needs to enable FATFS long file name support also.
+本例程同时需要打开 FATFS 长文件名支持。
 
-```c
+```
 menuconfig > Component config > FAT Filesystem support > Long filename support
 ```
 
-Set up the Wi-Fi connection by running `menuconfig` > `Example Configuration` and filling in `WiFi SSID` and `WiFi Password`.
+本例需要链接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
+
+```
+ menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
+```
 
 
-### Build and Flash
-Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
+### 编译和下载
 
-```c
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+
+```
 idf.py -p PORT flash monitor
 ```
 
-To exit the serial monitor, type ``Ctrl-]``.
+退出调试界面使用 ``Ctrl-]``
 
-See the Getting Started Guide for full steps to configure and use  [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
-
-
-## How to use the Example
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
 
-- After power on, Wi-Fi connection will be established.
+## 如何使用例程
 
-- Music starts playing automatically after http server is connected to begin file retrieval.
-
-- Once music stops playing and program finishes, you can check "test_output.mp3" file saved on the SD card.
+### 功能和用法
 
 
-### Example Logs
-A complete log is as follows:
+- 代码烧录成功且开机后，程序会首先去链接 Wi-Fi 网络。
+
+- 连接 http 服务器检索文件成功后，音乐自动开始播放。
+
+- 一旦程序完成且音乐播放结束后，您可以在 microSD 卡里找到网络下载的名为 `test_output.mp3` 的音频文件。
+
+
+### 日志输出
+
+本例选取完整的从启动到初始化完成的 log，示例如下：
 
 ```c
 ets Jul 29 2019 12:21:46
@@ -286,15 +297,12 @@ I (194439) wifi:flush txq
 I (194441) wifi:stop sw txq
 I (194444) wifi:lmac stop hw txq
 I (194447) wifi:Deinit lldesc rx mblock:16
-
 ```
 
+## 技术支持
+请按照下面的链接获取技术支持：
 
-## Technical support and feedback
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-Please use the following feedback channels:
-
-* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
-
-We will get back to you as soon as possible.
+我们会尽快回复。
