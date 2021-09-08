@@ -205,7 +205,7 @@ audio_err_t ap_manager_get_mode(audio_player_mode_t *mode);
  *      - ESP_ERR_AUDIO_NO_ERROR: on success
  *      - ESP_ERR_AUDIO_NOT_READY: no audio player instance
  */
-audio_err_t ap_manager_event_register(xQueueHandle que);
+audio_err_t ap_manager_event_register(void *que);
 
 /**
  * @brief Remove registered queue instance from audio player manager

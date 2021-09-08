@@ -28,6 +28,7 @@
 #include "driver/i2s.h"
 #include "audio_common.h"
 #include "audio_error.h"
+#include "audio_idf_version.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,6 +59,7 @@ typedef struct {
 #define I2S_STREAM_TASK_CORE            (0)
 #define I2S_STREAM_RINGBUFFER_SIZE      (8 * 1024)
 
+#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 3, 0))
 #define I2S_STREAM_CFG_DEFAULT() {                                              \
     .type = AUDIO_STREAM_WRITER,                                                \
     .i2s_config = {                                                             \
@@ -137,6 +139,87 @@ typedef struct {
     .multi_out_num = 0,                                                         \
     .uninstall_drv = false,                                                     \
 }
+#else
+#define I2S_STREAM_CFG_DEFAULT() {                                              \
+    .type = AUDIO_STREAM_WRITER,                                                \
+    .i2s_config = {                                                             \
+        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX),      \
+        .sample_rate = 44100,                                                   \
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,                           \
+        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           \
+        .communication_format = I2S_COMM_FORMAT_STAND_I2S,                      \
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,          \
+        .dma_buf_count = 3,                                                     \
+        .dma_buf_len = 300,                                                     \
+        .use_apll = true,                                                       \
+        .tx_desc_auto_clear = true,                                             \
+        .fixed_mclk = 0                                                         \
+    },                                                                          \
+    .i2s_port = I2S_NUM_0,                                                      \
+    .use_alc = false,                                                           \
+    .volume = 0,                                                                \
+    .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
+    .task_stack = I2S_STREAM_TASK_STACK,                                        \
+    .task_core = I2S_STREAM_TASK_CORE,                                          \
+    .task_prio = I2S_STREAM_TASK_PRIO,                                          \
+    .stack_in_ext = false,                                                      \
+    .multi_out_num = 0,                                                         \
+    .uninstall_drv = true,                                                      \
+}
+
+#define I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT() {                                 \
+    .type = AUDIO_STREAM_WRITER,                                                \
+    .i2s_config = {                                                             \
+        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_DAC_BUILT_IN | I2S_MODE_TX),\
+        .sample_rate = 44100,                                                   \
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,                           \
+        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           \
+        .communication_format = I2S_COMM_FORMAT_STAND_MSB,                        \
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,                               \
+        .dma_buf_count = 3,                                                     \
+        .dma_buf_len = 300,                                                     \
+        .use_apll = false,                                                      \
+        .tx_desc_auto_clear = true,                                             \
+        .fixed_mclk = 0                                                         \
+    },                                                                          \
+    .i2s_port = I2S_NUM_0,                                                      \
+    .use_alc = false,                                                           \
+    .volume = 0,                                                                \
+    .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
+    .task_stack = I2S_STREAM_TASK_STACK,                                        \
+    .task_core = I2S_STREAM_TASK_CORE,                                          \
+    .task_prio = I2S_STREAM_TASK_PRIO,                                          \
+    .stack_in_ext = false,                                                      \
+    .multi_out_num = 0,                                                         \
+    .uninstall_drv = false,                                                     \
+}
+
+#define I2S_STREAM_TX_PDM_CFG_DEFAULT() {                                       \
+    .type = AUDIO_STREAM_WRITER,                                                \
+    .i2s_config = {                                                             \
+        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_PDM | I2S_MODE_TX),     \
+        .sample_rate = 44100,                                                   \
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,                           \
+        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           \
+        .communication_format = I2S_COMM_FORMAT_STAND_MSB,                      \
+        .dma_buf_count = 3,                                                     \
+        .dma_buf_len = 300,                                                     \
+        .use_apll = true,                                                       \
+        .tx_desc_auto_clear = true,                                             \
+        .fixed_mclk = 0                                                         \
+    },                                                                          \
+    .i2s_port = I2S_NUM_0,                                                      \
+    .use_alc = false,                                                           \
+    .volume = 0,                                                                \
+    .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
+    .task_stack = I2S_STREAM_TASK_STACK,                                        \
+    .task_core = I2S_STREAM_TASK_CORE,                                          \
+    .task_prio = I2S_STREAM_TASK_PRIO,                                          \
+    .stack_in_ext = false,                                                      \
+    .multi_out_num = 0,                                                         \
+    .uninstall_drv = false,                                                     \
+}
+#endif
 
 /**
  * @brief      Create a handle to an Audio Element to stream data from I2S to another Element
@@ -186,7 +269,7 @@ esp_err_t i2s_alc_volume_set(audio_element_handle_t i2s_stream, int volume);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t i2s_alc_volume_get(audio_element_handle_t i2s_stream, int* volume);
+esp_err_t i2s_alc_volume_get(audio_element_handle_t i2s_stream, int *volume);
 
 #ifdef __cplusplus
 }

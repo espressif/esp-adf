@@ -619,7 +619,7 @@ audio_err_t ap_manager_get_mode(audio_player_mode_t *mode)
     return ret;
 }
 
-audio_err_t ap_manager_event_register(xQueueHandle que)
+audio_err_t ap_manager_event_register(void *que)
 {
     AUDIO_NULL_CHECK(TAG, s_player, return ESP_ERR_AUDIO_NOT_READY);
     audio_err_t ret = ESP_OK;
@@ -627,7 +627,7 @@ audio_err_t ap_manager_event_register(xQueueHandle que)
     return ret;
 }
 
-audio_err_t ap_manager_event_unregister(xQueueHandle que)
+audio_err_t ap_manager_event_unregister(void *que)
 {
     AUDIO_NULL_CHECK(TAG, s_player, return ESP_ERR_AUDIO_NOT_READY);
     audio_err_t ret = ESP_OK;
