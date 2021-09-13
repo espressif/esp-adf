@@ -30,6 +30,7 @@
     Design Guide <design-guide/index>
     Resources <resources>
     Copyrights <COPYRIGHT>
+    English-Chinese Glossary <english-chinese-glossary>
     About <about>
 
 * :ref:`genindex`
