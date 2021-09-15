@@ -1,78 +1,75 @@
-# Algorithm examples
+# 算法例程
 
-- [中文版本](./README_CN.md)
-- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
+- [English Version](./README.md)
+- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
 
-## Example Brief
+## 例程简介
 
-This routine is to play music while performing echo cancellation of the sound recorded by the microphone, and then save it to the SD card.
+本例程的功能是在播放音乐的同时将麦克风收录的声音先进行回声消除，然后存储到 SD card 中。
 
-Algorithm example has two pipelines. One is to play MP3 files in the SD card, and the other is the recording pipeline, which is processed by the algorithm of AEC, AGC, and NS, and then encoded into the WAV format, saved in the SD card finally. At last we compare the original audio with the recorded audio.
+本例程有两条 pipeline，第一条 pipeline 是读取 SD card 中的 MP3 音乐文件并播放； 第二条 pipeline 是录音的过程， 读取到的数据经过 AEC、AGC、NS 算法处理，再编码成 WAV 格式，最后保存在 SD card 中。 最后我们可以比较原始音频与录制的音频之间的差异。
 
-1.Playing MP3 pipeline:
+1.播放 MP3 pipeline:
 
 ```c
 [sdcard] ---> fatfs_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
 ```
 
-2.Recording WAV pipeline:
+2.录制 WAV pipeline:
 
 ```c
 [codec_chip] ---> i2s_stream ---> wav_encoder ---> fatfs_stream ---> [sdcard]
 ```
 
+## 环境配置
 
-## Environment Setup
+### 硬件要求
 
-#### Hardware Required
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section *Configuration* below.
 
-| Board Name | Getting Started | Chip | Compatible |
+| 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "The board is not compatible with this routine") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "The board is compatible with this routine") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "The board is not compatible with this routine") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "The board is not compatible with this routine") |
+| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "开发板暂不兼容此例程") |
+| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "开发板暂不兼容此例程") |
+| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "开发板暂不兼容此例程") |
 
 
-## Example Set Up
+## 编译和下载
 
-### Default IDF Branch
-The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-idf`.
+### IDF 默认分支
+本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-### Configuration
+### 配置
 
-Prepare the audio board:
+准备好官方音频开发板：
 
-- Insert a microSD card required memory of 1 MB into board's SD card slot.
-- Insert a microSD card loaded with a MP3 file 'test.mp3' into board's slot.
+- 准备一首 MP3 音频文件并命名为 'test.mp3'，拷贝到 microSD card 中。
+- 把 microSD card 插入到开发板的卡槽中备用。
 
-Load and run the example:
+烧录固件并运行例程:
 
-- The board will start playing automatically.
-- After finish, you can open `/sdcard/rec_out.wav` to hear the recorded file.
+- 开发板上电后后自动运行例程。
+- 例程完成后，你可以打开 SD Card 目录 `/sdcard/rec_out.wav` 收听录音文件。
 
 
-### Build and Flash
-Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
+### 编译和下载
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
-```c
+```
 idf.py -p PORT flash monitor
 ```
 
-To exit the serial monitor, type ``Ctrl-]``.
+退出调试界面使用 ``Ctrl-]``
 
-See the Getting Started Guide for full steps to configure and use  [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+## 如何使用例程
 
-## How to use the Example
-
-### Example Functionality
-
-After download the follow logs should be output, here:
-
+### 功能和用法
+下载运行后，开发板应该输出以下日志：
 ```
 I (10) boot: ESP-IDF v3.3.2-107-g722043f 2nd stage bootloader
 I (10) boot: compile time 17:34:10
@@ -145,16 +142,16 @@ I (821) ALGORITHM_EXAMPLES: [6.0] Start audio_pipeline
 I (869) ALGORITHM_EXAMPLES: [7.0] Listen for all pipeline events
 ```
 
-
 ## Troubleshooting
-- If the AEC effect is not very good, you can set all the sampling rates to 16000.
+如果 AEC 效果不是很好，可以将所有采样率设置为 16000。
 
 
-## Technical support and feedback
+## 技术支持
+请按照下面的链接获取技术支持：
 
-Please use the following feedback channels:
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
+我们会尽快回复。
 
-We will get back to you as soon as possible.
+
