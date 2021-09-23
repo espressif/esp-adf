@@ -1,5 +1,9 @@
 # Speech recognition example
 
+- [中文版本](./README_CN.md)
+- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
+
+## Example Brief
 The example demonstrates the speech recognition function on ESP32-LyraT and ESP32-LyraTD-MSC board. It contains nine keywords.
 
 ## WakeUp words
