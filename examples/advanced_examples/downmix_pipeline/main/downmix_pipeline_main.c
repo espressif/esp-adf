@@ -97,6 +97,9 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.2] Create i2s stream to read audio data from codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
+#if (defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
+    i2s_cfg.i2s_port = 1;
+#endif
     audio_element_handle_t i2s_writer = i2s_stream_init(&i2s_cfg);
 
     ESP_LOGI(TAG, "[3.3] Link elements together downmixer-->i2s_writer");
