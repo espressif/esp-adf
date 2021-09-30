@@ -109,6 +109,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[2.1] Create http stream to read data");
     http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
+    http_cfg.out_rb_size = 1024 * 1024;
     http_stream_reader = http_stream_init(&http_cfg);
 
     ESP_LOGI(TAG, "[2.2] Create %s decoder to decode %s file", selected_decoder_name, selected_decoder_name);
@@ -121,6 +122,7 @@ void app_main(void)
     selected_decoder = amr_decoder_init(&amr_cfg);
 #elif defined SELECT_FLAC_DECODER
     flac_decoder_cfg_t flac_cfg = DEFAULT_FLAC_DECODER_CONFIG();
+    flac_cfg.out_rb_size = 500 * 1024;
     selected_decoder = flac_decoder_init(&flac_cfg);
 #elif defined SELECT_MP3_DECODER
     mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
