@@ -480,7 +480,7 @@ const periph_console_cmd_t cli_cmd[] = {
     { .cmd = "getspeed",    .id = 11, .help = "Get speed",                .func = cli_get_speed },
 
     /* ======================== Wi-Fi ======================== */
-    { .cmd = "join",        .id = 20, .help = "Join WiFi AP as a station",      .func = wifi_set },
+    { .cmd = "join",        .id = 20, .help = "Join Wi-Fi AP as a station",     .func = wifi_set },
     { .cmd = "wifi",        .id = 21, .help = "Get connected AP information",   .func = wifi_info },
 
     /* ======================== Led bar ======================== */
