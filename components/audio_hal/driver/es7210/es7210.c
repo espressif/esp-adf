@@ -28,14 +28,30 @@
 #include "i2c_bus.h"
 #include "es7210.h"
 
-#define  I2S_DSP_MODE   0
-#define  MCLK_DIV_FRE   256
+#define I2S_DSP_MODE   0
+#define MCLK_DIV_FRE   256
 
-/* ES7210 address*/
+/* ES7210 address */
 #define ES7210_ADDR                   ES7210_AD1_AD0_00
 #define ES7210_MCLK_SOURCE            FROM_CLOCK_DOUBLE_PIN                            /* In master mode, 0 : MCLK from pad    1 : MCLK from clock doubler */
 #define FROM_PAD_PIN                  0
 #define FROM_CLOCK_DOUBLE_PIN         1
+
+/* ES7210 mic select */
+#if CONFIG_ESP32_S3_KORVO2_V3_BOARD
+#define ES7210_MIC_SELECT             ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2 | ES7210_INPUT_MIC3
+#else
+#define ES7210_MIC_SELECT             ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2
+#endif
+#define ENABLE_TDM_MAX_NUM            3
+
+static char *TAG = "ES7210";
+
+static struct {
+    i2c_bus_handle_t i2c_handle;
+    es7210_input_mics_t mic_select;
+    es7210_gain_value_t gain;
+} es7210_handle;
 
 /*
  * Operate function of ADC
@@ -66,10 +82,6 @@ struct _coeff_div {
     uint32_t lrck_h;          /* The high 4 bits of lrck */
     uint32_t lrck_l;          /* The low 8 bits of lrck */
 };
-
-static char *TAG = "ES7210";
-static i2c_bus_handle_t i2c_handle;
-static es7210_input_mics_t mic_select = ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2;         /* Number of microphones */
 
 /* Codec hifi mclk clock divider coefficients
  *           MEMBER      REG
@@ -138,7 +150,7 @@ static const struct _coeff_div coeff_div[] = {
 
 static esp_err_t es7210_write_reg(uint8_t reg_addr, uint8_t data)
 {
-    return i2c_bus_write_bytes(i2c_handle, ES7210_ADDR, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
+    return i2c_bus_write_bytes(es7210_handle.i2c_handle, ES7210_ADDR, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
 }
 
 static esp_err_t es7210_update_reg_bit(uint8_t reg_addr, uint8_t update_bits, uint8_t data)
@@ -160,7 +172,7 @@ static int i2c_init()
     };
     ret = get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
     AUDIO_CHECK(TAG, !ret, return ESP_FAIL;, "getting i2c pins error");
-    i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
+    es7210_handle.i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
     return ret;
 }
 
@@ -181,7 +193,7 @@ int8_t get_es7210_mclk_src(void)
 int es7210_read_reg(uint8_t reg_addr)
 {
     uint8_t data;
-    i2c_bus_read_bytes(i2c_handle, ES7210_ADDR, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
+    i2c_bus_read_bytes(es7210_handle.i2c_handle, ES7210_ADDR, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
     return (int)data;
 }
 
@@ -250,40 +262,55 @@ esp_err_t es7210_config_sample(audio_hal_iface_samples_t sample)
 esp_err_t es7210_mic_select(es7210_input_mics_t mic)
 {
     esp_err_t ret = ESP_OK;
-    mic_select = mic;
-    if (mic_select & (ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2 | ES7210_INPUT_MIC3 | ES7210_INPUT_MIC4)) {
+    uint16_t mic_num = 0;
+    es7210_handle.mic_select = mic;
+    if (es7210_handle.mic_select & (ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2 | ES7210_INPUT_MIC3 | ES7210_INPUT_MIC4)) {
         for (int i = 0; i < 4; i++) {
             ret |= es7210_update_reg_bit(ES7210_MIC1_GAIN_REG43 + i, 0x10, 0x00);
         }
         ret |= es7210_write_reg(ES7210_MIC12_POWER_REG4B, 0xff);
         ret |= es7210_write_reg(ES7210_MIC34_POWER_REG4C, 0xff);
-        if (mic_select & ES7210_INPUT_MIC1) {
+        if (es7210_handle.mic_select & ES7210_INPUT_MIC1) {
             ESP_LOGI(TAG, "Enable ES7210_INPUT_MIC1");
             ret |= es7210_update_reg_bit(ES7210_CLOCK_OFF_REG01, 0x0b, 0x00);
             ret |= es7210_write_reg(ES7210_MIC12_POWER_REG4B, 0x00);
             ret |= es7210_update_reg_bit(ES7210_MIC1_GAIN_REG43, 0x10, 0x10);
+            ret |= es7210_update_reg_bit(ES7210_MIC1_GAIN_REG43, 0x0f, es7210_handle.gain);
         }
-        if (mic_select & ES7210_INPUT_MIC2) {
+        if (es7210_handle.mic_select & ES7210_INPUT_MIC2) {
             ESP_LOGI(TAG, "Enable ES7210_INPUT_MIC2");
             ret |= es7210_update_reg_bit(ES7210_CLOCK_OFF_REG01, 0x0b, 0x00);
             ret |= es7210_write_reg(ES7210_MIC12_POWER_REG4B, 0x00);
             ret |= es7210_update_reg_bit(ES7210_MIC2_GAIN_REG44, 0x10, 0x10);
+            ret |= es7210_update_reg_bit(ES7210_MIC2_GAIN_REG44, 0x0f, es7210_handle.gain);
         }
-        if (mic_select & ES7210_INPUT_MIC3) {
+        if (es7210_handle.mic_select & ES7210_INPUT_MIC3) {
             ESP_LOGI(TAG, "Enable ES7210_INPUT_MIC3");
             ret |= es7210_update_reg_bit(ES7210_CLOCK_OFF_REG01, 0x15, 0x00);
             ret |= es7210_write_reg(ES7210_MIC34_POWER_REG4C, 0x00);
             ret |= es7210_update_reg_bit(ES7210_MIC3_GAIN_REG45, 0x10, 0x10);
+            ret |= es7210_update_reg_bit(ES7210_MIC3_GAIN_REG45, 0x0f, es7210_handle.gain);
         }
-        if (mic_select & ES7210_INPUT_MIC4) {
+        if (es7210_handle.mic_select & ES7210_INPUT_MIC4) {
             ESP_LOGI(TAG, "Enable ES7210_INPUT_MIC4");
             ret |= es7210_update_reg_bit(ES7210_CLOCK_OFF_REG01, 0x15, 0x00);
             ret |= es7210_write_reg(ES7210_MIC34_POWER_REG4C, 0x00);
             ret |= es7210_update_reg_bit(ES7210_MIC4_GAIN_REG46, 0x10, 0x10);
+            ret |= es7210_update_reg_bit(ES7210_MIC4_GAIN_REG46, 0x0f, es7210_handle.gain);
         }
     } else {
         ESP_LOGE(TAG, "Microphone selection error");
         return ESP_FAIL;
+    }
+
+    for (int i = ES7210_INPUT_MIC1; i <= ES7210_INPUT_MIC4; i = i << 1) {
+        if (es7210_handle.mic_select & i) {
+            mic_num++;
+        }
+    }
+    if (mic_num >= ENABLE_TDM_MAX_NUM) {
+        ret |= es7210_write_reg(ES7210_SDP_INTERFACE2_REG12, 0x02);
+        ESP_LOGW(TAG, "Enable TDM mode. ES7210_SDP_INTERFACE2_REG12: %X", es7210_read_reg(ES7210_SDP_INTERFACE2_REG12));
     }
     return ret;
 }
@@ -294,7 +321,7 @@ esp_err_t es7210_adc_init(audio_hal_codec_config_t *codec_cfg)
     i2c_init();
     ret |= es7210_write_reg(ES7210_RESET_REG00, 0xff);
     ret |= es7210_write_reg(ES7210_RESET_REG00, 0x41);
-    ret |= es7210_write_reg(ES7210_CLOCK_OFF_REG01, 0x1f);
+    ret |= es7210_write_reg(ES7210_CLOCK_OFF_REG01, 0x3f);
     ret |= es7210_write_reg(ES7210_TIME_CONTROL0_REG09, 0x30);      /* Set chip state cycle */
     ret |= es7210_write_reg(ES7210_TIME_CONTROL1_REG0A, 0x30);      /* Set power on state cycle */
     ret |= es7210_write_reg(ES7210_ADC12_HPF2_REG23, 0x2a);         /* Quick setup */
@@ -333,14 +360,14 @@ esp_err_t es7210_adc_init(audio_hal_codec_config_t *codec_cfg)
     ret |= es7210_write_reg(ES7210_OSR_REG07, 0x20);
     ret |= es7210_write_reg(ES7210_MAINCLK_REG02, 0xc1);              /* Set the frequency division coefficient and use dll except clock doubler, and need to set 0xc1 to clear the state */
     ret |= es7210_config_sample(i2s_cfg->samples);
-    ret |= es7210_mic_select(mic_select);
+    ret |= es7210_mic_select(ES7210_MIC_SELECT);
     ret |= es7210_adc_set_gain(GAIN_30DB);
     return ESP_OK;
 }
 
 esp_err_t es7210_adc_deinit()
 {
-    i2c_bus_delete(i2c_handle);
+    i2c_bus_delete(es7210_handle.i2c_handle);
     return ESP_OK;
 }
 
@@ -374,6 +401,7 @@ esp_err_t es7210_config_fmt(audio_hal_iface_format_t fmt)
             break;
     }
     ret |= es7210_write_reg(ES7210_SDP_INTERFACE1_REG11, adc_iface);
+    ESP_LOGI(TAG, "config fmt %X", adc_iface);
     return ret;
 }
 
@@ -416,11 +444,11 @@ esp_err_t es7210_start(uint8_t clock_reg_value)
     ret |= es7210_write_reg(ES7210_CLOCK_OFF_REG01, clock_reg_value);
     ret |= es7210_write_reg(ES7210_POWER_DOWN_REG06, 0x00);
     ret |= es7210_write_reg(ES7210_ANALOG_REG40, 0x43);
-    ret |= es7210_write_reg(ES7210_MIC1_POWER_REG47, 0x00);
-    ret |= es7210_write_reg(ES7210_MIC2_POWER_REG48, 0x00);
-    ret |= es7210_write_reg(ES7210_MIC3_POWER_REG49, 0x00);
-    ret |= es7210_write_reg(ES7210_MIC4_POWER_REG4A, 0x00);
-    ret |= es7210_mic_select(mic_select);
+    ret |= es7210_write_reg(ES7210_MIC1_POWER_REG47, 0x08);
+    ret |= es7210_write_reg(ES7210_MIC2_POWER_REG48, 0x08);
+    ret |= es7210_write_reg(ES7210_MIC3_POWER_REG49, 0x08);
+    ret |= es7210_write_reg(ES7210_MIC4_POWER_REG4A, 0x08);
+    ret |= es7210_mic_select(es7210_handle.mic_select);
     return ret;
 }
 
@@ -469,18 +497,19 @@ esp_err_t es7210_adc_set_gain(es7210_gain_value_t gain)
         gain = max_gain_vaule;
     }
     ESP_LOGD(TAG, "SET: gain:%d", gain);
-    if (mic_select & ES7210_INPUT_MIC1) {
+    if (es7210_handle.mic_select & ES7210_INPUT_MIC1) {
         ret |= es7210_update_reg_bit(ES7210_MIC1_GAIN_REG43, 0x0f, gain);
     }
-    if (mic_select & ES7210_INPUT_MIC2) {
+    if (es7210_handle.mic_select & ES7210_INPUT_MIC2) {
         ret |= es7210_update_reg_bit(ES7210_MIC2_GAIN_REG44, 0x0f, gain);
     }
-    if (mic_select & ES7210_INPUT_MIC3) {
+    if (es7210_handle.mic_select & ES7210_INPUT_MIC3) {
         ret |= es7210_update_reg_bit(ES7210_MIC3_GAIN_REG45, 0x0f, gain);
     }
-    if (mic_select & ES7210_INPUT_MIC4) {
+    if (es7210_handle.mic_select & ES7210_INPUT_MIC4) {
         ret |= es7210_update_reg_bit(ES7210_MIC4_GAIN_REG46, 0x0f, gain);
     }
+    es7210_handle.gain = gain;
     return ret;
 }
 
@@ -488,13 +517,13 @@ esp_err_t es7210_adc_get_gain(void)
 {
     int regv = 0;
     uint8_t gain_value;
-    if (mic_select & ES7210_INPUT_MIC1) {
+    if (es7210_handle.mic_select & ES7210_INPUT_MIC1) {
         regv = es7210_read_reg(ES7210_MIC1_GAIN_REG43);
-    } else if (mic_select & ES7210_INPUT_MIC2) {
+    } else if (es7210_handle.mic_select & ES7210_INPUT_MIC2) {
         regv = es7210_read_reg(ES7210_MIC2_GAIN_REG44);
-    } else if (mic_select & ES7210_INPUT_MIC3) {
+    } else if (es7210_handle.mic_select & ES7210_INPUT_MIC3) {
         regv = es7210_read_reg(ES7210_MIC3_GAIN_REG45);
-    } else if (mic_select & ES7210_INPUT_MIC4) {
+    } else if (es7210_handle.mic_select & ES7210_INPUT_MIC4) {
         regv = es7210_read_reg(ES7210_MIC4_GAIN_REG46);
     } else {
         ESP_LOGE(TAG, "No MIC selected");
@@ -510,8 +539,11 @@ esp_err_t es7210_adc_get_gain(void)
 
 esp_err_t es7210_adc_set_volume(int volume)
 {
-    esp_err_t ret = ESP_OK;
     ESP_LOGD(TAG, "ADC can adjust gain");
+    if (volume > GAIN_37_5DB) {
+        volume = GAIN_37_5DB;
+    }
+    esp_err_t ret = es7210_adc_set_gain(volume);
     return ret;
 }
 
