@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2019 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ * Copyright (c) 2022 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,10 +22,29 @@
  *
  */
 
-#ifndef __AUDIO_SETUP_H__
-#define __AUDIO_SETUP_H__
+#ifndef __RECORDER_ENCODER_IFACE_H__
+#define __RECORDER_ENCODER_IFACE_H__
 
-void *setup_player(void* cb, void *ctx);
-void *setup_recorder(void* cb, void *ctx);
+#include "recorder_subproc_iface.h"
 
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+/**
+* true is running
+*/
+typedef bool recorder_encoder_state_t;
+
+typedef struct {
+    /**
+     * subprocess
+     */
+    recorder_subproc_iface_t base;
+} recorder_encoder_iface_t;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /*__RECORDER_ENCODER_IFACE_H__*/

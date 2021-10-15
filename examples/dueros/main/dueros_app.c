@@ -25,6 +25,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
@@ -39,19 +41,21 @@
 #include "sdkconfig.h"
 #include "audio_mem.h"
 #include "dueros_app.h"
-#include "recorder_engine.h"
 #include "esp_audio.h"
 #include "esp_log.h"
 
 #include "duer_audio_wrapper.h"
 #include "dueros_service.h"
+#include "audio_mem.h"
+#include "audio_recorder.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"
-#include "audio_mem.h"
+#include "recorder_sr.h"
 #include "i2s_stream.h"
 #include "raw_stream.h"
 #include "filter_resample.h"
 #include "audio_sys.h"
+#include "audio_idf_version.h"
 
 #include "display_service.h"
 #include "wifi_service.h"
@@ -60,11 +64,8 @@
 #include "periph_adc_button.h"
 #include "algorithm_stream.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "model_path.h"
+
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
 #include "driver/touch_pad.h"
@@ -73,18 +74,20 @@
 static const char *TAG              = "DUEROS";
 extern esp_audio_handle_t           player;
 
+static audio_rec_handle_t recorder = NULL;
+static audio_element_handle_t raw_read;
 static audio_service_handle_t duer_serv_handle = NULL;
 static display_service_handle_t disp_serv = NULL;
 static periph_service_handle_t wifi_serv = NULL;
 static bool wifi_setting_flag;
 extern int duer_dcs_audio_sync_play_tone(const char *uri);
 
-void rec_engine_cb(rec_event_type_t type, void *user_data)
+static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
 {
-    if (REC_EVENT_WAKEUP_START == type) {
-        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_START");
+    if (AUDIO_REC_WAKEUP_START == type) {
+        ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_WAKEUP_START");
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
-            return;
+            return ESP_OK;
         }
         if (duer_audio_wrapper_get_state() == AUDIO_STATUS_RUNNING) {
             duer_audio_wrapper_pause();
@@ -92,121 +95,24 @@ void rec_engine_cb(rec_event_type_t type, void *user_data)
         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_ON, 0);
         ESP_LOGI(TAG, "rec_engine_cb - Play tone");
         duer_dcs_audio_sync_play_tone("file://sdcard/dingding.wav");
-    } else if (REC_EVENT_VAD_START == type) {
-        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_START");
+    } else if (AUDIO_REC_VAD_START == type) {
+        ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_START");
         audio_service_start(duer_serv_handle);
-    } else if (REC_EVENT_VAD_STOP == type) {
+    } else if (AUDIO_REC_VAD_END == type) {
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(duer_serv_handle);
         }
-        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_STOP, state:%d", dueros_service_state_get());
-    } else if (REC_EVENT_WAKEUP_END == type) {
+        ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_STOP, state:%d", dueros_service_state_get());
+    } else if (AUDIO_REC_WAKEUP_END == type) {
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(duer_serv_handle);
         }
         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_OFF, 0);
-        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_END");
+        ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_WAKEUP_END");
     } else {
 
     }
-}
 
-int duer_i2s_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
-{
-    audio_element_handle_t i2s_read_handle = (audio_element_handle_t)ctx;
-    return audio_element_input(i2s_read_handle, buf, len);
-}
-
-static  audio_element_handle_t raw_read;
-
-#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-static esp_err_t recorder_pipeline_open_for_mini(void **handle)
-{
-    audio_element_handle_t i2s_reader;
-    audio_pipeline_handle_t recorder;
-    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
-    recorder = audio_pipeline_init(&pipeline_cfg);
-    if (NULL == recorder) {
-        return ESP_FAIL;
-    }
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.i2s_port = 1;
-    i2s_cfg.i2s_config.use_apll = 0;
-    i2s_cfg.i2s_config.sample_rate = 16000;
-    i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_reader = i2s_stream_init(&i2s_cfg);
-
-    raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
-    raw_cfg.type = AUDIO_STREAM_READER;
-    raw_read = raw_stream_init(&raw_cfg);
-
-    algorithm_stream_cfg_t algo_cfg = ALGORITHM_STREAM_CFG_DEFAULT();
-    audio_element_handle_t algo_handle = algo_stream_init(&algo_cfg);
-
-    audio_pipeline_register(recorder, algo_handle, "algo");
-    audio_element_set_read_cb(algo_handle, duer_i2s_read_cb, (void *)i2s_reader);
-    audio_pipeline_register(recorder, raw_read, "raw");
-
-    const char *link_tag[2] = {"algo", "raw"};
-    audio_pipeline_link(recorder, &link_tag[0], 2);
-
-    audio_pipeline_run(recorder);
-    ESP_LOGI(TAG, "Recorder has been created");
-    *handle = recorder;
-    return ESP_OK;
-}
-#else
-static esp_err_t recorder_pipeline_open(void **handle)
-{
-    audio_element_handle_t i2s_stream_reader;
-    audio_pipeline_handle_t recorder;
-    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
-    recorder = audio_pipeline_init(&pipeline_cfg);
-    if (NULL == recorder) {
-        return ESP_FAIL;
-    }
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
-    audio_element_info_t i2s_info = {0};
-    audio_element_getinfo(i2s_stream_reader, &i2s_info);
-    i2s_info.bits = 16;
-    i2s_info.channels = 2;
-    i2s_info.sample_rates = 48000;
-    audio_element_setinfo(i2s_stream_reader, &i2s_info);
-
-    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    rsp_cfg.src_rate = 48000;
-    rsp_cfg.src_ch = 2;
-    rsp_cfg.dest_rate = 16000;
-    rsp_cfg.dest_ch = 1;
-    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
-
-    raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
-    raw_cfg.type = AUDIO_STREAM_READER;
-    raw_read = raw_stream_init(&raw_cfg);
-
-    audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
-    audio_pipeline_register(recorder, filter, "filter");
-    audio_pipeline_register(recorder, raw_read, "raw");
-    const char *link_tag[3] = {"i2s", "filter", "raw"};
-    audio_pipeline_link(recorder, &link_tag[0], 3);
-    audio_pipeline_run(recorder);
-    ESP_LOGI(TAG, "Recorder has been created");
-    *handle = recorder;
-    return ESP_OK;
-}
-#endif
-
-static esp_err_t recorder_pipeline_read(void *handle, char *data, int data_size)
-{
-    raw_stream_read(raw_read, data, data_size);
-    return ESP_OK;
-}
-
-static esp_err_t recorder_pipeline_close(void *handle)
-{
-    audio_pipeline_deinit(handle);
     return ESP_OK;
 }
 
@@ -284,7 +190,7 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
         case PERIPH_ID_BUTTON: {
                 if ((int)event->data == get_input_rec_id() && event->cmd == PERIPH_BUTTON_PRESSED) {
                     ESP_LOGI(TAG, "PERIPH_NOTIFY_KEY_REC");
-                    rec_engine_trigger_start();
+                    audio_recorder_trigger_start(recorder);
                 } else if ((int)event->data == get_input_mode_id() &&
                            ((event->cmd == PERIPH_BUTTON_RELEASE) || (event->cmd == PERIPH_BUTTON_LONG_RELEASE))) {
                     ESP_LOGI(TAG, "PERIPH_NOTIFY_KEY_REC_QUIT");
@@ -389,6 +295,93 @@ void start_sys_monitor(void)
     xTaskCreatePinnedToCore(sys_monitor_task, "sys_monitor_task", (2 * 1024), NULL, 1, NULL, 1);
 }
 
+static int input_cb_for_afe(int16_t *buffer, int buf_sz, void *user_ctx, TickType_t ticks)
+{
+    return raw_stream_read(raw_read, (char *)buffer, buf_sz);
+}
+
+static void start_recorder()
+{
+#ifdef CONFIG_MODEL_IN_SPIFFS
+    srmodel_spiffs_init();
+#endif
+    audio_element_handle_t i2s_stream_reader;
+    audio_pipeline_handle_t pipeline;
+    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    pipeline = audio_pipeline_init(&pipeline_cfg);
+    if (NULL == pipeline) {
+        return;
+    }
+
+#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.i2s_port = 1;
+    i2s_cfg.i2s_config.use_apll = 0;
+    i2s_cfg.i2s_config.sample_rate = 16000;
+    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+    i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+#else
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    i2s_cfg.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
+#endif
+    i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+    audio_element_info_t i2s_info = {0};
+    audio_element_getinfo(i2s_stream_reader, &i2s_info);
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    i2s_info.bits = 32;
+#else
+    i2s_info.bits = 16;
+#endif
+    i2s_info.channels = 2;
+    i2s_info.sample_rates = 48000;
+    audio_element_setinfo(i2s_stream_reader, &i2s_info);
+
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_cfg.src_rate = 48000;
+    rsp_cfg.dest_rate = 16000;
+    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+#endif
+
+    raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
+    raw_cfg.type = AUDIO_STREAM_READER;
+    raw_read = raw_stream_init(&raw_cfg);
+
+    audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
+    audio_pipeline_register(pipeline, raw_read, "raw");
+
+
+#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    const char *link_tag[2] = {"i2s", "raw"};
+    audio_pipeline_link(pipeline, &link_tag[0], 2);
+#else
+    audio_pipeline_register(pipeline, filter, "filter");
+    const char *link_tag[3] = {"i2s", "filter", "raw"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
+#endif
+
+    audio_pipeline_run(pipeline);
+    ESP_LOGI(TAG, "Recorder has been created");
+
+    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
+    recorder_sr_cfg.afe_cfg.aec_init = false;
+    recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
+    recorder_sr_cfg.afe_cfg.agc_mode = 0;
+#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
+    recorder_sr_cfg.input_order[0] = DAT_CH_REF0;
+    recorder_sr_cfg.input_order[1] = DAT_CH_0;
+#endif
+
+    audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
+    cfg.read = (recorder_data_read_t)&input_cb_for_afe;
+    cfg.sr_handle = recorder_sr_create(&recorder_sr_cfg, &cfg.sr_iface);
+    cfg.event_cb = rec_engine_cb;
+    cfg.vad_off = 1000;
+    recorder = audio_recorder_create(&cfg);
+}
+
 void duer_app_init(void)
 {
     esp_log_level_set("*", ESP_LOG_INFO);
@@ -400,30 +393,18 @@ void duer_app_init(void)
     if (set != NULL) {
         esp_periph_set_register_callback(set, periph_callback, NULL);
     }
-
+    audio_board_init();
     audio_board_key_init(set);
     audio_board_sdcard_init(set, SD_MODE_1_LINE);
+#ifndef CONFIG_ESP32_S3_KORVO2_V3_BOARD
     disp_serv = audio_board_led_init();
-
-    rec_config_t eng = DEFAULT_REC_ENGINE_CONFIG();
-    eng.vad_off_delay_ms = 800;
-    eng.wakeup_time_ms = 10 * 1000;
-    eng.evt_cb = rec_engine_cb;
-#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    eng.open = recorder_pipeline_open_for_mini;
-#else
-    eng.open = recorder_pipeline_open;
 #endif
-    eng.close = recorder_pipeline_close;
-    eng.fetch = recorder_pipeline_read;
-    eng.extension = NULL;
-    eng.support_encoding = false;
-    eng.user_data = NULL;
-    rec_engine_create(&eng);
+
+    start_recorder();
 
     xTimerHandle retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
                                      pdFALSE, NULL, retry_login_timer_cb);
-    duer_serv_handle = dueros_service_create();
+    duer_serv_handle = dueros_service_create(recorder);
     audio_service_set_callback(duer_serv_handle, duer_callback, retry_login_timer);
 
     wifi_config_t sta_cfg = {0};
@@ -453,5 +434,5 @@ void duer_app_init(void)
     wifi_service_connect(wifi_serv);
 
     duer_audio_wrapper_init();
-    start_sys_monitor();
+    // start_sys_monitor();
 }

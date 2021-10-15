@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2022 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,34 +22,54 @@
  *
  */
 
-#ifndef _DUEROS_SERVICE_H_
-#define _DUEROS_SERVICE_H_
+#ifndef __RECORDER_ENCODER_H__
+#define __RECORDER_ENCODER_H__
 
-#include "audio_service.h"
+#include "esp_err.h"
+#include "audio_element.h"
+#include "recorder_encoder_iface.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*
- * @brief Create the dueros service
- *
- * @return
- *     - NULL, Fail
- *     - Others, Success
+/**
+ * @brief encoder handle
  */
-audio_service_handle_t dueros_service_create(void *recorder_handle);
+typedef void *recorder_encoder_handle_t;
 
-/*
- * @brief Get dueros service state
- *
- * @return The state of service
- *
+
+/**
+ * @brief recorder encoder configuration parameters
  */
-service_state_t dueros_service_state_get();
+typedef struct {
+    audio_element_handle_t resample;  /*!< Handle of resample */
+    audio_element_handle_t encoder;   /*!< Handle of encoder */
+} recorder_encoder_cfg_t;
+
+/**
+ * @brief Initialize encoder processor, and the encoder is disabled as default.
+ *
+ * @param cfg   Configuration of encoder
+ * @param iface User interface provide by recorder encoder
+ *
+ * @return NULL    failed
+ *         Others  encoder handle
+ */
+recorder_encoder_handle_t recorder_encoder_create(recorder_encoder_cfg_t *cfg, recorder_encoder_iface_t **iface);
+
+/**
+ * @brief Destroy encoder processor and recycle all resource
+ *
+ * @param handle Encoder processor handle
+ *
+ * @return ESP_OK
+ *         ESP_FAIL
+ */
+esp_err_t recorder_encoder_destroy(recorder_encoder_handle_t handle);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /*__RECORDER_ENCODER_H__*/

@@ -30,7 +30,6 @@
 #include "esp_peripherals.h"
 #include "audio_mem.h"
 #include "audio_setup.h"
-#include "recorder_engine.h"
 #include "esp_dispatcher_dueros_app.h"
 #include "esp_player_wrapper.h"
 #include "duer_audio_action.h"
@@ -51,8 +50,8 @@
 #include "dueros_action.h"
 #include "recorder_action.h"
 #include "player_action.h"
-
-
+#include "audio_recorder.h"
+#include "esp_delegate.h"
 
 static const char *TAG              = "DISPATCHER_DUEROS";
 esp_dispatcher_dueros_speaker_t *dueros_speaker = NULL;
@@ -70,33 +69,35 @@ static void esp_audio_callback_func(esp_audio_state_t *audio, void *ctx)
     }
 }
 
-void rec_engine_cb(rec_event_type_t type, void *user_data)
+static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
 {
     esp_dispatcher_dueros_speaker_t *d = (esp_dispatcher_dueros_speaker_t *)user_data;
-    if (REC_EVENT_WAKEUP_START == type) {
-        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_START");
+    if (AUDIO_REC_WAKEUP_START == type) {
+        ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_WAKEUP_START");
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
-            return;
+            return ESP_OK;
         }
         esp_dispatcher_execute(d->dispatcher, ACTION_EXE_TYPE_AUDIO_PAUSE, NULL, NULL);
         esp_dispatcher_execute(d->dispatcher, ACTION_EXE_TYPE_DISPLAY_TURN_ON, NULL, NULL);
-    } else if (REC_EVENT_VAD_START == type) {
-        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_START");
+    } else if (AUDIO_REC_VAD_START == type) {
+        ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_START");
         audio_service_start(d->audio_serv);
-    } else if (REC_EVENT_VAD_STOP == type) {
+    } else if (AUDIO_REC_VAD_END == type) {
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(d->audio_serv);
         }
-        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_STOP, state:%d", dueros_service_state_get());
-    } else if (REC_EVENT_WAKEUP_END == type) {
+        ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_STOP, state:%d", dueros_service_state_get());
+    } else if (AUDIO_REC_WAKEUP_END == type) {
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(d->audio_serv);
         }
         esp_dispatcher_execute(d->dispatcher, ACTION_EXE_TYPE_DISPLAY_TURN_OFF, NULL, NULL);
-        ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_END");
+        ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_WAKEUP_END");
     } else {
 
     }
+
+    return ESP_OK;
 }
 
 static esp_err_t wifi_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
@@ -222,8 +223,8 @@ void duer_app_init(void)
     ESP_LOGI(TAG, "Step 1. Create dueros_speaker instance");
     dueros_speaker = audio_calloc(1, sizeof(esp_dispatcher_dueros_speaker_t));
     AUDIO_MEM_CHECK(TAG, dueros_speaker, return);
-    esp_dispatcher_config_t d_cfg = ESP_DISPATCHER_CONFIG_DEFAULT();
-    esp_dispatcher_handle_t dispatcher = esp_dispatcher_create(&d_cfg);
+
+    esp_dispatcher_handle_t dispatcher = esp_dispatcher_get_delegate_handle();
     dueros_speaker->dispatcher = dispatcher;
 
     ESP_LOGI(TAG, "[Step 2.0] Create esp_periph_set_handle_t instance and initialize Touch, Button, SDcard");
@@ -241,8 +242,9 @@ void duer_app_init(void)
     periph_service_set_callback(dueros_speaker->input_serv, input_key_service_cb, (void *)dueros_speaker);
 
     ESP_LOGI(TAG, "[Step 3.0] Create display service instance");
+#ifndef CONFIG_ESP32_S3_KORVO2_V3_BOARD
     dueros_speaker->disp_serv = audio_board_led_init();
-
+#endif
     ESP_LOGI(TAG, "[Step 3.1] Register display service execution type");
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
                                 ACTION_EXE_TYPE_DISPLAY_TURN_OFF, display_action_turn_off);
@@ -255,66 +257,30 @@ void duer_app_init(void)
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->disp_serv,
                                 ACTION_EXE_TYPE_DISPLAY_WIFI_DISCONNECTED, display_action_wifi_disconnected);
 
-    ESP_LOGI(TAG, "[Step 4.0] Create Wi-Fi service instance");
-    wifi_config_t sta_cfg = {0};
-    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, sizeof(sta_cfg.sta.ssid));
-    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, sizeof(sta_cfg.sta.password));
-    wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
-    cfg.evt_cb = wifi_service_cb;
-    cfg.cb_ctx = dueros_speaker;
-    cfg.setting_timeout_s = 60;
-    dueros_speaker->wifi_serv = wifi_service_create(&cfg);
 
-    ESP_LOGI(TAG, "[Step 4.1] Register wanted display service execution type");
-    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
-                                ACTION_EXE_TYPE_WIFI_CONNECT, wifi_action_connect);
-    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
-                                ACTION_EXE_TYPE_WIFI_DISCONNECT, wifi_action_disconnect);
-    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
-                                ACTION_EXE_TYPE_WIFI_SETTING_STOP, wifi_action_setting_stop);
-    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
-                                ACTION_EXE_TYPE_WIFI_SETTING_START, wifi_action_setting_start);
-    ESP_LOGI(TAG, "[Step 4.2] Initialize Wi-Fi provisioning type(AIRKISS or SMARTCONFIG)");
-    int reg_idx = 0;
-    esp_wifi_setting_handle_t h = NULL;
-#ifdef CONFIG_AIRKISS_ENCRYPT
-    airkiss_config_info_t air_info = AIRKISS_CONFIG_INFO_DEFAULT();
-    air_info.lan_pack.appid = CONFIG_AIRKISS_APPID;
-    air_info.lan_pack.deviceid = CONFIG_AIRKISS_DEVICEID;
-    air_info.aes_key = CONFIG_DUER_AIRKISS_KEY;
-    h = airkiss_config_create(&air_info);
-#elif (defined CONFIG_ESP_SMARTCONFIG)
-    smart_config_info_t info = SMART_CONFIG_INFO_DEFAULT();
-    h = smart_config_create(&info);
-#endif
-    esp_wifi_setting_regitster_notify_handle(h, (void *)dueros_speaker->wifi_serv);
-    wifi_service_register_setting_handle(dueros_speaker->wifi_serv, h, &reg_idx);
-    wifi_service_set_sta_info(dueros_speaker->wifi_serv, &sta_cfg);
-    wifi_service_connect(dueros_speaker->wifi_serv);
-
-    ESP_LOGI(TAG, "[Step 5.0] Initialize recorder engine");
-    setup_recorder(rec_engine_cb, dueros_speaker);
-    ESP_LOGI(TAG, "[Step 5.1] Register wanted recorder execution type");
+    ESP_LOGI(TAG, "[Step 4.0] Initialize recorder engine");
+    void *recorder = setup_recorder(rec_engine_cb, dueros_speaker);
+    ESP_LOGI(TAG, "[Step 4.1] Register wanted recorder execution type");
     esp_dispatcher_reg_exe_func(dispatcher, NULL,
                                 ACTION_EXE_TYPE_REC_WAV_TURN_OFF, recorder_action_rec_wav_turn_off);
     esp_dispatcher_reg_exe_func(dispatcher, NULL,
                                 ACTION_EXE_TYPE_REC_WAV_TURN_ON, recorder_action_rec_wav_turn_on);
 
-    ESP_LOGI(TAG, "[Step 6.0] Initialize esp player");
+    ESP_LOGI(TAG, "[Step 5.0] Initialize esp player");
     dueros_speaker->player = setup_player(esp_audio_callback_func, NULL);
     esp_player_init(dueros_speaker->player);
-    ESP_LOGI(TAG, "[Step 6.1] Register wanted player execution type");
+    ESP_LOGI(TAG, "[Step 5.1] Register wanted player execution type");
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, ACTION_EXE_TYPE_AUDIO_PLAY, player_action_play);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, ACTION_EXE_TYPE_AUDIO_PAUSE, player_action_pause);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, ACTION_EXE_TYPE_AUDIO_VOLUME_UP, player_action_vol_up);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->player, ACTION_EXE_TYPE_AUDIO_VOLUME_DOWN, player_action_vol_down);
 
-    ESP_LOGI(TAG, "[Step 7.0] Initialize dueros service");
+    ESP_LOGI(TAG, "[Step 6.0] Initialize dueros service");
     dueros_speaker->retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
                                         pdFALSE, (void *)dueros_speaker, retry_login_timer_cb);
-    dueros_speaker->audio_serv = dueros_service_create();
+    dueros_speaker->audio_serv = dueros_service_create(recorder);
 
-    ESP_LOGI(TAG, "[Step 7.1] Register dueros service execution type");
+    ESP_LOGI(TAG, "[Step 6.1] Register dueros service execution type");
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
                                 ACTION_EXE_TYPE_DUER_VOLUME_ADJ, duer_dcs_action_vol_adj);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
@@ -338,5 +304,43 @@ void duer_app_init(void)
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
                                 ACTION_EXE_TYPE_DUER_DISCONNECT, dueros_action_disconnect);
     audio_service_set_callback(dueros_speaker->audio_serv, duer_callback, dueros_speaker);
+
+    ESP_LOGI(TAG, "[Step 7.0] Create Wi-Fi service instance");
+    wifi_config_t sta_cfg = {0};
+    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, sizeof(sta_cfg.sta.ssid));
+    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, sizeof(sta_cfg.sta.password));
+    wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
+    cfg.evt_cb = wifi_service_cb;
+    cfg.cb_ctx = dueros_speaker;
+    cfg.setting_timeout_s = 60;
+    dueros_speaker->wifi_serv = wifi_service_create(&cfg);
+
+    ESP_LOGI(TAG, "[Step 7.1] Register wanted display service execution type");
+    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
+                                ACTION_EXE_TYPE_WIFI_CONNECT, wifi_action_connect);
+    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
+                                ACTION_EXE_TYPE_WIFI_DISCONNECT, wifi_action_disconnect);
+    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
+                                ACTION_EXE_TYPE_WIFI_SETTING_STOP, wifi_action_setting_stop);
+    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
+                                ACTION_EXE_TYPE_WIFI_SETTING_START, wifi_action_setting_start);
+    ESP_LOGI(TAG, "[Step 7.2] Initialize Wi-Fi provisioning type(AIRKISS or SMARTCONFIG)");
+    int reg_idx = 0;
+    esp_wifi_setting_handle_t h = NULL;
+#ifdef CONFIG_AIRKISS_ENCRYPT
+    airkiss_config_info_t air_info = AIRKISS_CONFIG_INFO_DEFAULT();
+    air_info.lan_pack.appid = CONFIG_AIRKISS_APPID;
+    air_info.lan_pack.deviceid = CONFIG_AIRKISS_DEVICEID;
+    air_info.aes_key = CONFIG_DUER_AIRKISS_KEY;
+    h = airkiss_config_create(&air_info);
+#elif (defined CONFIG_ESP_SMARTCONFIG)
+    smart_config_info_t info = SMART_CONFIG_INFO_DEFAULT();
+    h = smart_config_create(&info);
+#endif
+    esp_wifi_setting_regitster_notify_handle(h, (void *)dueros_speaker->wifi_serv);
+    wifi_service_register_setting_handle(dueros_speaker->wifi_serv, h, &reg_idx);
+    wifi_service_set_sta_info(dueros_speaker->wifi_serv, &sta_cfg);
+    wifi_service_connect(dueros_speaker->wifi_serv);
+
     ESP_LOGI(TAG, "[Step 8.0] Initialize Done");
 }
