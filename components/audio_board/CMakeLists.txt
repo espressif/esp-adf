@@ -97,4 +97,14 @@ set(COMPONENT_SRCS
 )
 endif()
 
+if (CONFIG_ESP32_C3_LYRA_V2_BOARD)
+message(STATUS "Current board name is " CONFIG_ESP32_C3_LYRA_V2_BOARD)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_c3_lyra)
+set(COMPONENT_SRCS
+./esp32_c3_lyra/board.c
+./esp32_c3_lyra/board_pins_config.c
+./esp32_c3_lyra/C3_lyra_sys_pattern.c
+)
+endif()
+
 register_component()

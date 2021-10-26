@@ -72,6 +72,7 @@ This example supports IDF release/v3.3 and later branches. By default, it runs o
 ### Configuration
 
 The default board for this example is `ESP32-Lyrat V4.3`. If you need to run this example on other development boards, select the board in menuconfig, such as `ESP32-Lyrat-Mini V1.1`.
+If you select `CONFIG_ESP32_C3_LYRA_V2_BOARD`, you need to apply `idf_v4.4_i2s_c3_pdm_tx.patch` in the `$ADF_PATH/esp-idf` directory.
 
 ```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1

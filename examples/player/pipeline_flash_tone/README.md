@@ -74,6 +74,7 @@ This example supports IDF release/v3.3 and later branches. By default, it runs o
 ### Configuration
 
 The default board for this example is `ESP32-Lyrat V4.3`. If you need to run this example on other development boards, select the board in menuconfig, such as `ESP32-Lyrat-Mini V1.1`.
+If you select `CONFIG_ESP32_C3_LYRA_V2_BOARD`, you need to apply `idf_v4.4_i2s_c3_pdm_tx.patch` in the `$ADF_PATH/esp-idf` directory.
 
 ```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
@@ -95,7 +96,8 @@ idf.py -p PORT flash monitor
 ```
 
 
-In addition, this example also needs to flash `/tools/audio-esp.bin` to the `flashTone` partition of `partition_flash_tone.csv`. Please use the following command:
+In addition, this example also needs to flash `/tools/audio-esp.bin` to the `flashTone` partition of `partition_flash_tone.csv`. Please use the following command. 
+If using `config_ ESP32_ C3_ LYRA_ V2_ Board`, please replace `esp32` in the following command with `esp32c3`.
 
 ```
 python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x110000 ./tools/audio-esp.bin

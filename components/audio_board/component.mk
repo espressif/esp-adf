@@ -47,3 +47,7 @@ COMPONENT_ADD_INCLUDEDIRS += ./esp32_s3_korvo2_v3
 COMPONENT_SRCDIRS += ./esp32_s3_korvo2_v3
 endif
 
+ifdef CONFIG_ESP32_C3_LYRA_V2_BOARD
+COMPONENT_ADD_INCLUDEDIRS += ./esp32_c3_lyra
+COMPONENT_SRCDIRS += ./esp32_c3_lyra
+endif
