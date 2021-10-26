@@ -71,7 +71,7 @@ python3 $ADF_PATH/tools/audio_tone/mk_audio_tone.py -f ./ -r tone_mp3_folder
 
 ### 配置
 
-本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
+本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。如果选择 `CONFIG_ESP32_C3_LYRA_V2_BOARD`，则需要在 `$ADF_PATH/esp-idf` 目录下应用`idf_v4.4_i2s_c3_pdm_tx.patch`。
 
 ```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
@@ -94,6 +94,7 @@ idf.py -p PORT flash monitor
 
 
 此外，本例程还需烧录 `/tools/audio-esp.bin` 到 `partition_flash_tone.csv` 的 `flashTone` 分区，请使用如下命令。
+若使用 `CONFIG_ESP32_C3_LYRA_V2_BOARD` ,请将下面命令中的 `esp32` 替换为 `esp32c3` 。
 
 ```
 python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x110000 ./tools/audio-esp.bin

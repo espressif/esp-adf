@@ -44,6 +44,7 @@ typedef enum {
     INPUT_KEY_USER_ID_MSG                       = 0x09, /*!< user id for message */
     INPUT_KEY_USER_ID_BATTERY_CHARGING          = 0x0A, /*!< user id for battery charging */
     INPUT_KEY_USER_ID_WAKEUP                    = 0x0B, /*!< user id for GPIO wakeup */
+    INPUT_KEY_USER_ID_COLOR                     = 0x0C, /*!< user id for color */
 
     INPUT_KEY_USER_ID_MAX                       = 0x101,
 } input_KEY_user_id_t;

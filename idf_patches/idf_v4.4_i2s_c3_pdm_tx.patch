@@ -1,0 +1,171 @@
+diff --git a/components/driver/i2s.c b/components/driver/i2s.c
+index ab73aa81602..2244600459e 100644
+--- a/components/driver/i2s.c
++++ b/components/driver/i2s.c
+@@ -1041,7 +1041,11 @@ static esp_err_t i2s_calculate_pdm_tx_clock(int i2s_num, i2s_hal_clock_cfg_t *cl
+     /* Set I2S bit clock */
+     clk_cfg->bclk = p_i2s[i2s_num]->hal_cfg.sample_rate * I2S_LL_PDM_BCK_FACTOR * fp / fs;
+     /* Set I2S bit clock default division */
+-    clk_cfg->bclk_div = 8;
++    if (p_i2s[i2s_num]->hal_cfg.sample_rate == 44100) {
++        clk_cfg->bclk_div = 14;
++    } else {
++        clk_cfg->bclk_div = 13;
++    }
+     /* If fixed_mclk and use_apll are set, use fixed_mclk as mclk frequency, otherwise calculate by mclk = sample_rate * multiple */
+     clk_cfg->mclk = (p_i2s[i2s_num]->use_apll && p_i2s[i2s_num]->fixed_mclk) ?
+                     p_i2s[i2s_num]->fixed_mclk : clk_cfg->bclk * clk_cfg->bclk_div;
+@@ -1513,6 +1517,12 @@ static esp_err_t i2s_check_cfg_validity(i2s_port_t i2s_num, i2s_hal_config_t *cf
+ static void i2s_tx_set_clk_and_channel(i2s_port_t i2s_num, i2s_hal_clock_cfg_t *clk_cfg)
+ {
+     i2s_hal_tx_clock_config(&(p_i2s[i2s_num]->hal), clk_cfg);
++#if SOC_I2S_SUPPORTS_TDM & SOC_I2S_SUPPORTS_PDM_TX
++    if (p_i2s[i2s_num]->hal_cfg.mode & I2S_MODE_PDM) {
++        // On ESP32-C3 and ESP32-S3, force to set PDM TX clock decimal part coeffients, otherwise noise can be indroduced from the unstable clock (hardware issue)
++        i2s_ll_tx_set_raw_clk_xyz(p_i2s[i2s_num]->hal.dev, 1, 1, 0);
++    }
++#endif
+     i2s_hal_set_tx_sample_bit(&(p_i2s[i2s_num]->hal), p_i2s[i2s_num]->hal_cfg.chan_bits, p_i2s[i2s_num]->hal_cfg.sample_bits);
+     i2s_hal_tx_set_channel_style(&(p_i2s[i2s_num]->hal), &(p_i2s[i2s_num]->hal_cfg));
+ }
+diff --git a/components/hal/esp32c3/include/hal/i2s_ll.h b/components/hal/esp32c3/include/hal/i2s_ll.h
+index f7cb496b4b8..13f867a7a39 100644
+--- a/components/hal/esp32c3/include/hal/i2s_ll.h
++++ b/components/hal/esp32c3/include/hal/i2s_ll.h
+@@ -12,12 +12,14 @@
+  ******************************************************************************/
+ 
+ #pragma once
++#include "stdio.h"
+ #include <stdbool.h>
+ #include "hal/misc.h"
+ #include "soc/i2s_periph.h"
+ #include "soc/i2s_struct.h"
+ #include "hal/i2s_types.h"
+ 
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+@@ -25,7 +27,7 @@ extern "C" {
+ #define I2S_LL_GET_HW(num)             (&I2S0)
+ 
+ #define I2S_LL_TDM_CH_MASK             (0xffff)
+-#define I2S_LL_PDM_BCK_FACTOR          (64)
++#define I2S_LL_PDM_BCK_FACTOR          (42)
+ #define I2S_LL_BASE_CLK                (2*APB_CLK_FREQ)
+ 
+ #define I2S_LL_MCLK_DIVIDER_BIT_WIDTH  (9)
+@@ -192,7 +194,7 @@ static inline void i2s_ll_rx_reset_fifo(i2s_dev_t *hw)
+  */
+ static inline void i2s_ll_tx_clk_set_src(i2s_dev_t *hw, i2s_clock_src_t src)
+ {
+-    hw->tx_clkm_conf.tx_clk_sel = 2;
++    hw->tx_clkm_conf.tx_clk_sel = 1;
+ }
+ 
+ /**
+@@ -242,9 +244,25 @@ static inline void i2s_ll_tx_set_clk(i2s_dev_t *hw, i2s_ll_mclk_div_t *set)
+             hw->tx_clkm_div_conf.tx_clkm_div_yn1 = 0;
+         }
+     }
++
+     HAL_FORCE_MODIFY_U32_REG_FIELD(hw->tx_clkm_conf, tx_clkm_div_num, set->mclk_div);
+ }
+ 
++/**
++ * @brief Set TX raw clock coefficients x y z
++ *
++ * @param hw Peripheral I2S hardware instance address.
++ * @param x Decimal part coefficient x
++ * @param y Decimal part coefficient y
++ * @param z Decimal part coefficient z
++ */
++static inline void i2s_ll_tx_set_raw_clk_xyz(i2s_dev_t *hw, uint32_t x, uint32_t y, uint32_t z)
++{
++    hw->tx_clkm_div_conf.tx_clkm_div_x = x;
++    hw->tx_clkm_div_conf.tx_clkm_div_y = y;
++    hw->tx_clkm_div_conf.tx_clkm_div_z = z;
++}
++
+ /**
+  * @brief Set I2S rx bck div num
+  *
+diff --git a/components/hal/esp32s3/include/hal/i2s_ll.h b/components/hal/esp32s3/include/hal/i2s_ll.h
+index c1b3ae7f505..2117fb8f85d 100644
+--- a/components/hal/esp32s3/include/hal/i2s_ll.h
++++ b/components/hal/esp32s3/include/hal/i2s_ll.h
+@@ -248,6 +248,21 @@ static inline void i2s_ll_tx_set_clk(i2s_dev_t *hw, i2s_ll_mclk_div_t *set)
+     HAL_FORCE_MODIFY_U32_REG_FIELD(hw->tx_clkm_conf, tx_clkm_div_num, set->mclk_div);
+ }
+ 
++/**
++ * @brief Set TX raw clock coefficients x y z
++ *
++ * @param hw Peripheral I2S hardware instance address.
++ * @param x Decimal part coefficient x
++ * @param y Decimal part coefficient y
++ * @param z Decimal part coefficient z
++ */
++static inline void i2s_ll_tx_set_raw_clk_xyz(i2s_dev_t *hw, uint32_t x, uint32_t y, uint32_t z)
++{
++    hw->tx_clkm_div_conf.tx_clkm_div_x = x;
++    hw->tx_clkm_div_conf.tx_clkm_div_y = y;
++    hw->tx_clkm_div_conf.tx_clkm_div_z = z;
++}
++
+ /**
+  * @brief Set I2S rx bck div num
+  *
+diff --git a/components/hal/i2s_hal.c b/components/hal/i2s_hal.c
+index 142971993d6..7d6fcbf2038 100644
+--- a/components/hal/i2s_hal.c
++++ b/components/hal/i2s_hal.c
+@@ -113,7 +113,7 @@ void i2s_hal_tx_set_pdm_mode_default(i2s_hal_context_t *hal, uint32_t sample_rat
+     /* set pdm tx default presacle */
+     i2s_ll_tx_set_pdm_prescale(hal->dev, 0);
+     /* set pdm tx default sacle of high pass filter */
+-    i2s_ll_tx_set_pdm_hp_scale(hal->dev, I2S_PDM_SIG_SCALING_MUL_1);
++    i2s_ll_tx_set_pdm_hp_scale(hal->dev, I2S_PDM_SIG_SCALING_DIV_2);
+     /* set pdm tx default sacle of low pass filter */
+     i2s_ll_tx_set_pdm_lp_scale(hal->dev, I2S_PDM_SIG_SCALING_MUL_1);
+     /* set pdm tx default sacle of sinc filter */
+@@ -121,7 +121,7 @@ void i2s_hal_tx_set_pdm_mode_default(i2s_hal_context_t *hal, uint32_t sample_rat
+     /* set pdm tx default sacle of sigma-delta filter */
+     i2s_ll_tx_set_pdm_sd_scale(hal->dev, I2S_PDM_SIG_SCALING_MUL_1);
+     /* set pdm tx sample rate */
+-    i2s_ll_tx_set_pdm_fpfs(hal->dev, 960, sample_rate / 100);
++    i2s_ll_tx_set_pdm_fpfs(hal->dev, 960, 480);
+ 
+ #if SOC_I2S_SUPPORTS_PDM_CODEC
+     /* enable pdm high pass filter */
+@@ -133,7 +133,7 @@ void i2s_hal_tx_set_pdm_mode_default(i2s_hal_context_t *hal, uint32_t sample_rat
+     i2s_ll_tx_enable_pdm_sd_codec(hal->dev, true);
+     /* set pdm tx sigma-delta codec dither */
+     i2s_ll_tx_set_pdm_sd_dither(hal->dev, 0);
+-    i2s_ll_tx_set_pdm_sd_dither2(hal->dev, 0);
++    i2s_ll_tx_set_pdm_sd_dither2(hal->dev, 1);
+ 
+ #endif // SOC_I2S_SUPPORTS_PDM_CODEC
+ }
+@@ -233,15 +233,19 @@ void i2s_hal_tx_set_channel_style(i2s_hal_context_t *hal, const i2s_hal_config_t
+     bool is_mono = (hal_cfg->chan_fmt == I2S_CHANNEL_FMT_ONLY_RIGHT) ||
+                    (hal_cfg->chan_fmt == I2S_CHANNEL_FMT_ONLY_LEFT);
+ 
++    i2s_ll_tx_set_sample_bit(hal->dev, chan_bits, data_bits);
+     /* Set channel number and valid data bits */
+ #if SOC_I2S_SUPPORTS_TDM
+     chan_num = hal_cfg->total_chan;
+     i2s_ll_tx_set_active_chan_mask(hal->dev, hal_cfg->chan_mask >> 16);
+     i2s_ll_tx_set_chan_num(hal->dev, chan_num);
++    if ((hal_cfg->mode & I2S_MODE_PDM) && (hal_cfg->chan_fmt < I2S_CHANNEL_FMT_ONLY_RIGHT)) {
++        // Force to use 32 bits to implemented stereo mode, otherwise it won't take effect
++        i2s_ll_tx_set_sample_bit(hal->dev, I2S_BITS_PER_CHAN_32BIT, I2S_BITS_PER_SAMPLE_32BIT);
++    }
+ #else
+     i2s_ll_tx_set_chan_mod(hal->dev, hal_cfg->chan_fmt < I2S_CHANNEL_FMT_ONLY_RIGHT ? hal_cfg->chan_fmt : (hal_cfg->chan_fmt >> 1)); // 0-two channel;1-right;2-left;3-righ;4-left
+ #endif
+-    i2s_ll_tx_set_sample_bit(hal->dev, chan_bits, data_bits);
+     i2s_ll_tx_enable_mono_mode(hal->dev, is_mono);
+ 
+     /* Set communication format */
