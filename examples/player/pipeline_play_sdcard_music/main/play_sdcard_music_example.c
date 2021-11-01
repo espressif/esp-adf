@@ -45,6 +45,7 @@ static const char *TAG = "PLAY_SDCARD_MUSIC";
 
 void app_main(void)
 {
+    // Example of linking elements into an audio pipeline -- START
     audio_pipeline_handle_t pipeline;
     audio_element_handle_t fatfs_stream_reader, i2s_stream_writer, music_decoder;
 
@@ -168,6 +169,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 5 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
+    // Example of linking elements into an audio pipeline -- END
 
     ESP_LOGI(TAG, "[ 6 ] Listen for all pipeline events");
     while (1) {

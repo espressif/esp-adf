@@ -555,11 +555,12 @@ static void cli_setup_console()
     esp_periph_start(set, console_handle);
 }
 
+// Example of initializing esp_audio as an audio player -- START
 static void cli_setup_player(void)
 {
     if (player ) {
         return ;
-    }
+    } 
     esp_audio_cfg_t cfg = DEFAULT_ESP_AUDIO_CONFIG();
     audio_board_handle_t board_handle = audio_board_init();
     cfg.vol_handle = board_handle->audio_hal;
@@ -657,6 +658,7 @@ static void cli_setup_player(void)
     AUDIO_MEM_SHOW(TAG);
     ESP_LOGI(TAG, "esp_audio instance is:%p\r\n", player);
 }
+// Example of initializing esp_audio as an audio player -- END
 
 void app_main(void)
 {

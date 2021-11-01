@@ -107,9 +107,9 @@ JTAG Test Point
 .     ESP32 Pin        JTAG Signal
 ====  ===============  =================
  1    MTDO / GPIO15    TDO
- 2    MTCK / GPIO15    TCK
- 3    MTDI / GPIO15    TDI
- 4    MTMS / GPIO15    TMS
+ 2    MTCK / GPIO13    TCK
+ 3    MTDI / GPIO12    TDI
+ 4    MTMS / GPIO14    TMS
 ====  ===============  =================
 
 .. note:
