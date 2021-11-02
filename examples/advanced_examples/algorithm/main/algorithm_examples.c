@@ -73,7 +73,6 @@ void app_main()
     ESP_LOGE(TAG, "[ * ] Do not support current board");
     return;
 #endif
-    algo_config.input_type = ALGORITHM_STREAM_INPUT_TYPE2;
     element_algo = algo_stream_init(&algo_config);
 
     ESP_LOGI(TAG, "[3.2] Create mp3 encoder to encode mp3 format");
@@ -106,7 +105,7 @@ void app_main()
     fatfs_stream_cfg_t fatfs_rd_cfg = FATFS_STREAM_CFG_DEFAULT();
     fatfs_rd_cfg.type = AUDIO_STREAM_READER;
     fatfs_stream_reader = fatfs_stream_init(&fatfs_rd_cfg);
-    
+
     ESP_LOGI(TAG, "[4.2] Create mp3 decoder to decode mp3 file");
     mp3_decoder_cfg_t mp3_decoder_cfg = DEFAULT_MP3_DECODER_CONFIG();
     mp3_decoder = mp3_decoder_init(&mp3_decoder_cfg);
@@ -131,7 +130,7 @@ void app_main()
 #if defined CONFIG_ESP_LYRAT_V4_3_BOARD
     //Please reference the way of ALGORITHM_STREAM_INPUT_TYPE2 in "algorithm_stream.h"
     ringbuf_handle_t input_rb = algo_stream_get_multi_input_rb(element_algo);
-    audio_element_set_multi_output_ringbuf(mp3_decoder, input_rb, 0);
+    audio_element_set_multi_output_ringbuf(i2s_stream_writer, input_rb, 0);
 #endif
 
     ESP_LOGI(TAG, "[5.0] Set up event listener");
@@ -147,7 +146,7 @@ void app_main()
     ESP_LOGI(TAG, "[6.0] Start audio_pipeline");
 
     audio_element_info_t fat_info = {0};
-    audio_element_getinfo(fatfs_stream_writer, &fat_info); 
+    audio_element_getinfo(fatfs_stream_writer, &fat_info);
     fat_info.sample_rates = ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ;
     fat_info.channels = ALGORITHM_STREAM_DEFAULT_CHANNEL;
     fat_info.bits = ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT;
@@ -160,6 +159,7 @@ void app_main()
 #endif
 
     audio_pipeline_run(pipeline_play);
+    vTaskDelay(25 / portTICK_RATE_MS);  // run play first, reference signal later
     audio_pipeline_run(pipeline_rec);
 
     ESP_LOGI(TAG, "[7.0] Listen for all pipeline events");
