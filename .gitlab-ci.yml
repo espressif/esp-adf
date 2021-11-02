@@ -90,7 +90,7 @@ before_script:
 
 .build_template_v44: &build_template_v44
   stage: build
-  image: ci.espressif.cn:42348/esp-env:v4.4-1
+  image: $CI_DOCKER_REGISTRY/esp-env:v4.4-1
   tags:
     - build
   variables:
@@ -275,7 +275,7 @@ before_script:
   - export ADF_UT=$(pwd)
   - cd $ADF_PATH
   - sed -i '/EXTRA_COMPONENT_DIRS += \$(ADF_PATH)\/components\//a\EXTRA_COMPONENT_DIRS += $(ADF_UT)/esp_audio' project.mk
-  - git log
+  - git log -2
   - cd $IDF_PATH
   - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
   # - if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
@@ -376,7 +376,7 @@ build_examples_v44_cmake:
   extends: .build_examples_cmake_v44
   variables:
     IDF_TARGET: esp32
-    IDF_VERSION: master
+    IDF_VERSION: release/v4.4
     BUILD_SYSTEM: cmake
     IDF_FIND_APP_PATH_ARG: "-p"
     TEST_CONFIG_FILE: "$CI_PROJECT_DIR/esp-idf/.gitlab/ci/target-test.yml"
@@ -450,7 +450,8 @@ build_docs:
 .assign_test_template: &assign_test_template
   tags:
     - adf_assign_test
-  image: $CI_DOCKER_REGISTRY/ubuntu-test-env$BOT_DOCKER_IMAGE_TAG
+  # image: $CI_DOCKER_REGISTRY/ubuntu-test-env$BOT_DOCKER_IMAGE_TAG
+  image: $CI_DOCKER_REGISTRY/ubuntu-test-env:old1     # just a temporary solution
   stage: assign_test
   artifacts:
     paths:
