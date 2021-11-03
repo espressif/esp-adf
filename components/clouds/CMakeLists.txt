@@ -6,10 +6,10 @@ set(COMPONENT_SRCS )
 
 register_component()
 
-IF (IDF_VER MATCHES "v4.")
+IF (IDF_VERSION_MAJOR GREATER 3)
 target_link_libraries(${COMPONENT_TARGET} INTERFACE "-L${CMAKE_CURRENT_LIST_DIR}/dueros/lightduer")
 target_link_libraries(${COMPONENT_TARGET} INTERFACE duer-device-v4x)
 ELSE ()
 target_link_libraries(${COMPONENT_TARGET} INTERFACE "-L${CMAKE_CURRENT_LIST_DIR}/dueros/lightduer")
 target_link_libraries(${COMPONENT_TARGET} INTERFACE duer-device)
-ENDIF (IDF_VER MATCHES "v4.")
+ENDIF (IDF_VERSION_MAJOR GREATER 3)
