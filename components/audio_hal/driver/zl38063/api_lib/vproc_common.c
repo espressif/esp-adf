@@ -17,6 +17,7 @@
 #include "mbedtls/net.h"
 #include "lwip/def.h"
 #include "board.h"
+#include "audio_idf_version.h"
 
 static spi_device_handle_t g_spi = NULL;
 
@@ -40,9 +41,15 @@ int VprocHALInit(void)
     if (g_spi) {
         return ret;
     }
+#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
     ret = spi_bus_initialize(HSPI_HOST, &buscfg, 0);
     assert(ret == ESP_OK);
     ret = spi_bus_add_device(HSPI_HOST, &devcfg, &g_spi);
+#else
+    ret = spi_bus_initialize(SPI3_HOST, &buscfg, 0);
+    assert(ret == ESP_OK);
+    ret = spi_bus_add_device(SPI3_HOST, &devcfg, &g_spi);
+#endif
     assert(ret == ESP_OK);
     gpio_set_pull_mode(0, GPIO_FLOATING);
     return ret;
@@ -63,7 +70,12 @@ void VprocHALcleanup(void)
     int ret = 0;
     ret = spi_bus_remove_device(g_spi);
     assert(ret == ESP_OK);
+#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
     ret = spi_bus_free(HSPI_HOST);
+#else
+    ret = spi_bus_free(SPI3_HOST);
+#endif
+
     assert(ret == ESP_OK);
 }
 /*Note - These functions are PLATFORM SPECIFIC- They must be modified

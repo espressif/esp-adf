@@ -36,6 +36,7 @@
 #include "soc/ledc_struct.h"
 #include "soc/ledc_reg.h"
 #include "pwm_stream.h"
+#include "audio_idf_version.h"
 
 static const char *TAG = "PWM_STREAM";
 
@@ -227,17 +228,16 @@ static void IRAM_ATTR timer_group_isr(void *para)
         return;
     }
 
-#ifdef CONFIG_IDF_TARGET_ESP32S2
-    if (handle->timg_dev->int_st.val & BIT(handle->config.timer_num)) {
-        handle->timg_dev->int_clr.val |= (1UL << handle->config.timer_num);
-    }
-#elif CONFIG_IDF_TARGET_ESP32
     if (handle->timg_dev->int_st_timers.val & BIT(handle->config.timer_num)) {
         handle->timg_dev->int_clr_timers.val |= (1UL << handle->config.timer_num);
     }
-#endif
-
+#ifdef CONFIG_IDF_TARGET_ESP32S2
+    handle->timg_dev->hw_timer[handle->config.timer_num].config.tx_alarm_en = TIMER_ALARM_EN;
+#elif CONFIG_IDF_TARGET_ESP32
     handle->timg_dev->hw_timer[handle->config.timer_num].config.alarm_en = TIMER_ALARM_EN;
+#elif CONFIG_IDF_TARGET_ESP32S3
+    handle->timg_dev->hw_timer[handle->config.timer_num].config.tn_alarm_en = TIMER_ALARM_EN;
+#endif
 
     static uint8_t wave_h, wave_l;
     static uint16_t value;
@@ -436,7 +436,15 @@ esp_err_t audio_pwm_set_sample_rate(int rate)
 
     audio_pwm_handle_t handle = g_audio_pwm_handle;
     handle->framerate = rate;
-    uint16_t div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.divider;
+    uint16_t div = 1;
+#ifdef CONFIG_IDF_TARGET_ESP32S2
+    div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.tx_divider;
+#elif CONFIG_IDF_TARGET_ESP32
+    div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.divider;
+#elif CONFIG_IDF_TARGET_ESP32S3
+    div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.tn_divider;
+#endif
+
     res = timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, (TIMER_BASE_CLK / div) / handle->framerate);
     return res;
 }
