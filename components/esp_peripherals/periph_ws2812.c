@@ -33,7 +33,9 @@
 #include "periph_ws2812.h"
 #include "esp_peripherals.h"
 #include "soc/dport_access.h"
+#if !defined CONFIG_IDF_TARGET_ESP32C3
 #include "soc/dport_reg.h"
+#endif
 #include "driver/rmt.h"
 #include "audio_idf_version.h"
 

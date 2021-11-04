@@ -31,7 +31,6 @@
 #include "freertos/task.h"
 
 #include "driver/i2s.h"
-#include "driver/dac.h"
 #include "esp_log.h"
 #include "esp_err.h"
 
@@ -47,6 +46,7 @@ static const char *TAG = "I2S_STREAM";
 #if defined(ESP_IDF_VERSION)
 #if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 2, 0))
 #define SOC_I2S_SUPPORTS_ADC_DAC 1
+#include "driver/dac.h"
 #endif
 
 #else
@@ -62,7 +62,7 @@ typedef struct i2s_stream {
     int                 volume;
     bool                uninstall_drv;
 } i2s_stream_t;
-
+#ifdef CONFIG_IDF_TARGET_ESP32
 static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
 {
     if (bits == 16) {
@@ -89,6 +89,7 @@ static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
     }
     return ESP_OK;
 }
+#endif
 
 #if SOC_I2S_SUPPORTS_ADC_DAC
 /**
@@ -354,7 +355,9 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     } else if (config->type == AUDIO_STREAM_WRITER) {
         cfg.write = _i2s_write;
     }
-    if (i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL) != ESP_OK) {
+
+    esp_err_t ret = i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
+    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
         audio_free(i2s);
         return NULL;
     }
@@ -379,7 +382,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         get_i2s_pins(i2s->config.i2s_port, &i2s_pin_cfg);
         i2s_set_pin(i2s->config.i2s_port, &i2s_pin_cfg);
     }
-    i2s_mclk_gpio_select(i2s->config.i2s_port, GPIO_NUM_0);
+    i2s_mclk_gpio_select(i2s->config.i2s_port, i2s->config.i2s_port);
 
     return el;
 }

@@ -66,30 +66,50 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
     }
 
     sdmmc_card_t *card = NULL;
-    esp_err_t ret;
+    esp_err_t ret = 0;
+
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
-        .max_files = get_sdcard_open_file_num_max()
+        .max_files = get_sdcard_open_file_num_max(),
     };
 
     if (mode != SD_MODE_SPI) {
         ESP_LOGI(TAG, "Using 1-line SD mode, 4-line SD mode,  base path=%s", base_path);
         sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-        host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
+        // host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
 
         sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-        slot_config.gpio_cd = g_gpio;
+        // slot_config.gpio_cd = g_gpio;
         slot_config.width = mode & 0X01;
+        // Enable internal pullups on enabled pins. The internal pullups
+        // are insufficient however, please make sure 10k external pullups are
+        // connected on the bus. This is for debug / example purpose only.
+        slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
 
-        gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);  
-        gpio_set_pull_mode(GPIO_NUM_2,  GPIO_PULLUP_ONLY);   
+#if CONFIG_IDF_TARGET_ESP32S3
+        slot_config.clk = ESP_SD_PIN_CLK;
+        slot_config.cmd = ESP_SD_PIN_CMD;
+        slot_config.d0 = ESP_SD_PIN_D0;
+        slot_config.d1 = ESP_SD_PIN_D1;
+        slot_config.d2 = ESP_SD_PIN_D2;
+        slot_config.d3 = ESP_SD_PIN_D3;
+        slot_config.d4 = ESP_SD_PIN_D4;
+        slot_config.d5 = ESP_SD_PIN_D5;
+        slot_config.d6 = ESP_SD_PIN_D6;
+        slot_config.d7 = ESP_SD_PIN_D7;
+        slot_config.cd = ESP_SD_PIN_CD;
+        slot_config.wp = ESP_SD_PIN_WP;
+        ESP_LOGI(TAG, "Using 1-line SD mode");
+#else
+        gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);
+        gpio_set_pull_mode(GPIO_NUM_2,  GPIO_PULLUP_ONLY);
         gpio_set_pull_mode(GPIO_NUM_13, GPIO_PULLUP_ONLY);
 
         if (mode == SD_MODE_4_LINE) {
             gpio_set_pull_mode(GPIO_NUM_4,  GPIO_PULLUP_ONLY);
             gpio_set_pull_mode(GPIO_NUM_12, GPIO_PULLUP_ONLY);
         }
-
+#endif
         ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
     } else {
         ESP_LOGI(TAG, "Using SPI mode, base path=%s", base_path);

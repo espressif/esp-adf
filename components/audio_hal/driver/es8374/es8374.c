@@ -788,7 +788,6 @@ void es8374_pa_power(bool enable)
 {
     gpio_config_t  io_conf;
     memset(&io_conf, 0, sizeof(io_conf));
-    io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
     io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
     io_conf.pull_down_en = 0;
