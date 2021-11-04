@@ -132,15 +132,12 @@ void flexible_pipeline_playback()
     audio_pipeline_register(pipeline_play, filter_upsample_el,   "filter_upsample");
     audio_pipeline_register(pipeline_play, i2s_writer_el,        "i2s_writer");
 
-    char *p0_reader_tag = NULL;
     audio_element_set_uri(fatfs_aac_reader_el, "/sdcard/test.aac");
-    p0_reader_tag = "file_aac_reader";
     audio_element_set_uri(fatfs_mp3_reader_el, "/sdcard/test.mp3");
 
     ESP_LOGI(TAG, "[ 3 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
-
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
     ESP_LOGI(TAG, "[3.1] Set up  i2s clock");
@@ -148,7 +145,7 @@ void flexible_pipeline_playback()
 
     ESP_LOGI(TAG, "[ 4 ] Start playback pipeline");
     bool source_is_mp3_format = false;
-    const char *link_tag[4] = {p0_reader_tag, "aac_decoder", "filter_upsample", "i2s_writer"};
+    const char *link_tag[4] = {"file_aac_reader", "aac_decoder", "filter_upsample", "i2s_writer"};
     audio_pipeline_link(pipeline_play, &link_tag[0], 4);
     audio_pipeline_run(pipeline_play);
     while (1) {
@@ -170,7 +167,7 @@ void flexible_pipeline_playback()
                 audio_pipeline_set_listener(pipeline_play, evt);
             } else {
                 audio_pipeline_breakup_elements(pipeline_play, mp3_decoder_el);
-                audio_pipeline_relink(pipeline_play, (const char *[]) {p0_reader_tag, "aac_decoder", "filter_upsample", "i2s_writer"}, 4);
+                audio_pipeline_relink(pipeline_play, (const char *[]) {"file_aac_reader", "aac_decoder", "filter_upsample", "i2s_writer"}, 4);
                 audio_pipeline_set_listener(pipeline_play, evt);
             }
             audio_pipeline_run(pipeline_play);
