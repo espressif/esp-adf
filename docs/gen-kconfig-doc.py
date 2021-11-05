@@ -66,36 +66,36 @@ def print_menu_contents(title, items, heading_level, breadcrumbs):
             # as Kconfglib offers no way of recognizing them automatically.
             print_option(entry, breadcrumbs)
         # Trailing newline after every option
-        print
+        print()
 
 def print_choice(choice, breadcrumbs):
     print_option(choice, breadcrumbs)
-    print
-    print '%sAvailable options:' % INDENT
+    print()
+    print('%sAvailable options:' % INDENT)
     for opt in choice.get_symbols():
         # Format available options as a list
-        print '%s- %s' % (INDENT * 2, opt.name)
+        print('%s- %s' % (INDENT * 2, opt.name))
 
 def print_section_heading(title, heading_level):
-    print title
-    print HEADING_SYMBOLS[heading_level] * len(title)
-    print
+    print(title)
+    print(HEADING_SYMBOLS[heading_level] * len(title))
+    print()
 
 def print_option(opt, breadcrumbs):
     # add link target so we can use :ref:`CONFIG_FOO` 
-    print '.. _CONFIG_%s:' % opt.name
-    print
+    print('.. _CONFIG_%s:' % opt.name)
+    print()
     print_section_heading(opt.name, OPTION_HEADING_LEVEL)
     if len(opt.prompts) > 0:
-        print '%s%s' % (INDENT, opt.prompts[0][0])
-        print
-    print '%s:emphasis:`Found in: %s`' % (INDENT, breadcrumbs)
-    print
+        print('%s%s' % (INDENT, opt.prompts[0][0]))
+        print()
+    print('%s:emphasis:`Found in: %s`' % (INDENT, breadcrumbs))
+    print()
     if opt.get_help() is not None:
         # Help text normally contains newlines, but spaces at the beginning of
         # each line are stripped by kconfiglib. We need to re-indent the text
         # to produce valid ReST.
-        print '%s%s' % (INDENT, opt.get_help().replace('\n', '\n%s' % INDENT))
+        print('%s%s' % (INDENT, opt.get_help().replace('\n', '\n%s' % INDENT)))
 
 def process_kconfig_file(kconfig_file, heading_level, breadcrumbs):
     if os.path.exists(kconfig_file):

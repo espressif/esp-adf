@@ -48,10 +48,10 @@ def get_doxyfile_input():
 
     """
     if not os.path.isfile(doxyfile_path):
-        print "Doxyfile '%s' does not exist!" % doxyfile_path
+        print("Doxyfile '%s' does not exist!" % doxyfile_path)
         sys.exit()
 
-    print "Getting Doxyfile's INPUT"
+    print("Getting Doxyfile's INPUT")
 
     input_file = open(doxyfile_path, "r")
 
@@ -256,14 +256,14 @@ def generate_api_inc_files():
     """
 
     if not os.path.isdir(xml_directory_path):
-        print "Directory %s does not exist!" % xml_directory_path
+        print("Directory %s does not exist!" % xml_directory_path)
         sys.exit()
 
     if not os.path.exists(inc_directory_path):
         os.makedirs(inc_directory_path)
 
     list_to_generate = get_doxyfile_input()
-    print "Generating 'api_name.inc' files with Doxygen directives"
+    print("Generating 'api_name.inc' files with Doxygen directives")
     for header_file_path in list_to_generate.splitlines():
         api_name = get_api_name(header_file_path)
         inc_file_path = inc_directory_path + "/" + api_name + ".inc"
@@ -288,23 +288,23 @@ if __name__ == "__main__":
     # Process command line arguments, if any
     if len(sys.argv) > 1:
         if not os.path.isdir(xml_directory_path):
-            print "Directory %s does not exist!" % xml_directory_path
+            print("Directory %s does not exist!" % xml_directory_path)
             sys.exit()
         header_file_path = sys.argv[1]
         api_name = get_api_name(header_file_path)
         if api_name:
             rst_output = generate_directives(header_file_path)
-            print "Doxygen directives for '%s'" % header_file_path
-            print
-            print rst_output
+            print("Doxygen directives for '%s'" % header_file_path)
+            print()
+            print(rst_output)
         else:
-            print "Options to execute 'gen-dxd.py' application:"
-            print "1: $ python gen-dxd.py"
-            print "   Generate API 'header_file.inc' files for headers defined in '%s'" % doxyfile_path
-            print "2: $ python gen-dxd.py header_file_path"
-            print "   Print out Doxygen directives for a single header file"
-            print "   example: $ python gen-dxd.py mdns/include/mdns.h"
-            print "   NOTE: Run Doxygen first to get XML files for the header file"
+            print("Options to execute 'gen-dxd.py' application:")
+            print("1: $ python gen-dxd.py")
+            print("   Generate API 'header_file.inc' files for headers defined in '%s'" % doxyfile_path)
+            print("2: $ python gen-dxd.py header_file_path")
+            print("   Print out Doxygen directives for a single header file")
+            print("   example: $ python gen-dxd.py mdns/include/mdns.h")
+            print("   NOTE: Run Doxygen first to get XML files for the header file")
 
         sys.exit()
 

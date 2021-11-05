@@ -417,7 +417,7 @@ build_adf_test:
 
 build_docs:
   stage: build
-  image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
+  image: $CI_DOCKER_REGISTRY/esp-idf-doc-env:v7
   tags:
     - build_docs
   artifacts:
@@ -428,7 +428,6 @@ build_docs:
       - docs/en/sphinx-warning-log.txt
       - docs/en/sphinx-warning-log-sanitized.txt
       - docs/en/_build/html
-      - docs/sphinx-err-*
       # Chinese version of documentation
       - docs/zh_CN/doxygen-warning-log.txt
       - docs/zh_CN/sphinx-warning-log.txt
@@ -436,6 +435,8 @@ build_docs:
       - docs/zh_CN/_build/html
     expire_in: 1 mos
   script:
+    - source /opt/pyenv/activate && pyenv global 3.6.10
+    - /opt/pyenv/pyenv-1.2.16/versions/3.6.10/bin/python -m pip install --user -r docs/requirements.txt
     - cd docs
     - ./check_lang_folder_sync.sh
     - cd en
