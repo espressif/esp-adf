@@ -30,6 +30,7 @@ This is the documentation for Espressif Audio Development Framework (ADF).
     Design Guide <design-guide/index>
     Resources <resources>
     Copyrights <COPYRIGHT>
+    English-Chinese Glossary <english-chinese-glossary>
     About <about>
 
 * :ref:`genindex`
