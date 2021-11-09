@@ -16,9 +16,9 @@ For easier start with ESP-ADF, Espressif designed ESP32 and ESP32-S2 based devel
 ---------------------------------------------  ---------------------------------------------
 `Getting Started with ESP32-LyraT-Mini`_       `Getting Started with ESP32-S2-Kaluga-1-Kit`_ 
 ---------------------------------------------  ---------------------------------------------
-|Getting Started with ESP32-Korvo-DU1906|_
+|Getting Started with ESP32-Korvo-DU1906|_     |Getting Started with ESP32-S3-Korvo-2|_
 ---------------------------------------------  ---------------------------------------------
-`Getting Started with ESP32-Korvo-DU1906`_
+`Getting Started with ESP32-Korvo-DU1906`_     `Getting Started with ESP32-S3-Korvo-2`_
 =============================================  =============================================
 
 
@@ -38,6 +38,9 @@ For easier start with ESP-ADF, Espressif designed ESP32 and ESP32-S2 based devel
 .. |Getting Started with ESP32-Korvo-DU1906| image:: ../../_static/esp32-korvo-du1906-v1.1.png
 .. _Getting Started with ESP32-Korvo-DU1906: get-started-esp32-korvo-du1906.html
 
+.. |Getting Started with ESP32-S3-Korvo-2| image:: ../../_static/esp32-s3-korvo-2-v3.0-overview.png
+.. _Getting Started with ESP32-S3-Korvo-2: user-guide-esp32-s3-korvo-2.html
+
 .. toctree::
     :hidden:
     :maxdepth: 1
@@ -47,6 +50,8 @@ For easier start with ESP-ADF, Espressif designed ESP32 and ESP32-S2 based devel
     Guide for ESP32-LyraT-Mini <get-started-esp32-lyrat-mini>
     Guide for ESP32-S2-Kaluga-1-Kit <https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html>
     Guide for ESP32-Korvo-DU1906 <get-started-esp32-korvo-du1906>
+    Guide for ESP32-S3-Korvo-2 <user-guide-esp32-s3-korvo-2>
+    Guide for ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>
 
 
 If you do not have any of the above boards, you can still use ESP-ADF for the ESP32 and ESP32-S2 based audio applications. For this, your board needs to have a compatible audio codec or DSP chip; alternatively, you can develop a driver to support communication with your specific chip.
