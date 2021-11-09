@@ -115,6 +115,7 @@ void app_main(void)
 #if (ESP_IDF_VERSION <= ESP_IDF_VERSION_VAL(4, 0, 0))
     i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
 #endif
+
 #endif
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
@@ -214,12 +215,17 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 6 ] Listen for all pipeline events, record for %d Seconds", RECORD_TIME_SECONDS);
     int second_recorded = 0;
+    audio_element_info_t music_info = {0};
     while (1) {
         audio_event_iface_msg_t msg;
         if (audio_event_iface_listen(evt, &msg, 1000 / portTICK_RATE_MS) != ESP_OK) {
             second_recorded ++;
             ESP_LOGI(TAG, "[ * ] Recording ... %d", second_recorded);
             if (second_recorded >= RECORD_TIME_SECONDS) {
+                audio_element_getinfo(i2s_stream_reader, &music_info);
+                ESP_LOGI(TAG, "[ * ] Save the recording info to the fatfs stream writer, sample_rates=%d, bits=%d, ch=%d",
+                         music_info.sample_rates, music_info.bits, music_info.channels);
+                audio_element_setinfo(fatfs_stream_writer, &music_info);
                 audio_element_set_ringbuf_done(i2s_stream_reader);
             }
             continue;
