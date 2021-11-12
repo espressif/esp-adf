@@ -70,4 +70,13 @@ set(COMPONENT_SRCS
 )
 endif()
 
+if (CONFIG_ESP32_S3_KORVO2_V3_BOARD)
+message(STATUS "Current board name is " CONFIG_ESP32_S3_KORVO2_V3_BOARD)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_s3_korvo2_v3)
+set(COMPONENT_SRCS
+./esp32_s3_korvo2_v3/board.c
+./esp32_s3_korvo2_v3/board_pins_config.c
+)
+endif()
+
 register_component()
