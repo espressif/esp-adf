@@ -14,7 +14,7 @@ formats:
 python:
   version: 3.7
   install:
-     - requirements: docs/setuptools.requirements.txt
+    - requirements: docs/setuptools.requirements.txt
     - requirements: docs/requirements.txt
 
 # We need to list all the submodules included in documentation build by Doxygen
