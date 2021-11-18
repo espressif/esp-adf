@@ -117,7 +117,7 @@ void app_main()
 #endif
     audio_pipeline_register(pipeline_amr, amr_fatfs_stream_writer, "amr_file");
 
-    ESP_LOGI(TAG, "[4.5] Link it together [codec_chip]-->i2s_stream-->wav_encoder-->fatfs_stream-->[sdcard]");
+    ESP_LOGI(TAG, "[4.5] Link it together raw_stream-->amr_encoder-->fatfs_stream-->[sdcard]");
 #ifdef CONFIG_CHOICE_AMR_WB
     const char *link_amr[3] = {"amr_raw", "Wamr", "amr_file"};
     audio_pipeline_link(pipeline_amr, &link_amr[0], 3);
