@@ -382,7 +382,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         get_i2s_pins(i2s->config.i2s_port, &i2s_pin_cfg);
         i2s_set_pin(i2s->config.i2s_port, &i2s_pin_cfg);
     }
-    i2s_mclk_gpio_select(i2s->config.i2s_port, i2s->config.i2s_port);
+    i2s_mclk_gpio_select(i2s->config.i2s_port, GPIO_NUM_0);
 
     return el;
 }
