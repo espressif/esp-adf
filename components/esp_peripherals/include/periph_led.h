@@ -25,10 +25,7 @@
 #ifndef _PERIPH_LED_H_
 #define _PERIPH_LED_H_
 
-#include "sys/queue.h"
 #include "driver/ledc.h"
-#include "esp_err.h"
-#include "audio_common.h"
 #include "esp_peripherals.h"
 
 #ifdef __cplusplus
@@ -47,8 +44,8 @@ typedef enum {
  * @brief      Peripheral LED idle output level
  */
 typedef enum {
-	PERIPH_LED_IDLE_LEVEL_LOW,  /*!< Low level output */
-	PERIPH_LED_IDLE_LEVEL_HIGH  /*!< High level output */
+    PERIPH_LED_IDLE_LEVEL_LOW,  /*!< Low level output */
+    PERIPH_LED_IDLE_LEVEL_HIGH  /*!< High level output */
 } periph_led_idle_level_t;
 
 /**

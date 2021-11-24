@@ -45,14 +45,22 @@
 
 // TCA9554 IO Pin number
 #define GREEN_LED_GPIO              -1
-#define BLUE_LED_GPIO               BIT(7)
-#define RED_LED_GPIO                BIT(6)
+#define BLUE_LED_GPIO               BIT(7) // TCA9554_GPIO_NUM_7
+#define RED_LED_GPIO                BIT(6) // TCA9554_GPIO_NUM_6
 
 // TCA9554 IO Pin number
-#define LCD_CTRL_GPIO               BIT(1)
-#define LCD_RST_GPIO                BIT(2)
-#define LCD_CS_GPIO                 BIT(3)
+#define LCD_CTRL_GPIO               BIT(1) // TCA9554_GPIO_NUM_1
+#define LCD_RST_GPIO                BIT(2) // TCA9554_GPIO_NUM_2
+#define LCD_CS_GPIO                 BIT(3) // TCA9554_GPIO_NUM_3
 
+// LCD SPI Pins
+#define LCD_DC_GPIO                 GPIO_NUM_2
+#define LCD_CLK_GPIO                GPIO_NUM_1
+#define LCD_MOSI_GPIO               GPIO_NUM_0
+
+// The LCD pixel number in horizontal and vertical
+#define LCD_H_RES                   320
+#define LCD_V_RES                   240
 
 #define ESP_SD_PIN_CLK              GPIO_NUM_15
 #define ESP_SD_PIN_CMD              GPIO_NUM_7
