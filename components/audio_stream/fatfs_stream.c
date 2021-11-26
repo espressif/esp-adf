@@ -242,6 +242,7 @@ static esp_err_t _fatfs_destroy(audio_element_handle_t self)
     return ESP_OK;
 }
 
+// Example of using an audio element - START
 audio_element_handle_t fatfs_stream_init(fatfs_stream_cfg_t *config)
 {
     audio_element_handle_t el;
@@ -282,3 +283,4 @@ _fatfs_init_exit:
     audio_free(fatfs);
     return NULL;
 }
+// Example of using an audio element - END
