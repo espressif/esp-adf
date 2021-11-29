@@ -1,4 +1,4 @@
-# 音频开发板按键检测例程
+# 开发板按键检测例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -6,11 +6,13 @@
 
 ## 例程简介
 
-ADF 定义了音频开发板常用的[ 6 种用户功能按键](https://github.com/espressif/esp-adf/blob/master/components/input_key_service/include/input_key_com_user_id.h)，录音键（Rec）、模式键（Mode）、 播放键（Play）、设置键（Set）、音量减键（Vol-）、音量加键（Vol+），用户可以通过 `input_key_service` 来使用每个按键的短按下、短按下释放、长按下、长按下释放等 [4 种按键事件](https://github.com/espressif/esp-adf/blob/master/components/input_key_service/include/input_key_service.h)。在不同的开发板上，六个按键实现按键检测的方式各有不同，有 [ADC 模拟电压检测](https://github.com/espressif/esp-adf/blob/master/components/audio_board/esp32_s3_korvo2_v3/board_def.h)、[GPIO 中断输入](https://github.com/espressif/esp-adf/blob/master/components/audio_board/lyrat_v4_3/board_def.h)、[电容触摸](https://github.com/espressif/esp-adf/blob/master/components/audio_board/lyrat_v4_3/board_def.h)等方式。
+ADF 定义了音频开发板常用的 [6 种功能按键](https://github.com/espressif/esp-adf/blob/master/components/input_key_service/include/input_key_com_user_id.h)，即录音键 (Rec)、模式键 (Mode)、 播放键 (Play)、设置键 (Set)、音量减键 (Vol-)、音量加键 (Vol+)，用户可以通过 `input_key_service` 来实现每个按键的短按下、短按下释放、长按下、长按下释放等 [4 种按键事件](https://github.com/espressif/esp-adf/blob/master/components/input_key_service/include/input_key_service.h)。在不同的开发板上，六个按键实现按键检测的方式各有不同，有 [ADC 模拟电压检测](https://github.com/espressif/esp-adf/blob/master/components/audio_board/esp32_s3_korvo2_v3/board_def.h)、[GPIO 中断输入](https://github.com/espressif/esp-adf/blob/master/components/audio_board/lyrat_v4_3/board_def.h)、[电容触摸](https://github.com/espressif/esp-adf/blob/master/components/audio_board/lyrat_v4_3/board_def.h) 等方式。
 
-本例子程序调用 `input_key_service` 使用 6 种用户按键和 4 种按键事件，可用于对开发板按键进行调试和检测。
+本例子程序调用 `input_key_service` 使用 6 种功能按键和 4 种按键事件，可用于对开发板按键进行调试和检测。
+
 
 ## 环境配置
+
 
 ### 硬件要求
 
@@ -27,8 +29,11 @@ ADF 定义了音频开发板常用的[ 6 种用户功能按键](https://github.c
 
 ## 编译和下载
 
+
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+
 
 ### 配置
 
@@ -38,7 +43,9 @@ ADF 定义了音频开发板常用的[ 6 种用户功能按键](https://github.c
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
+
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
@@ -49,7 +56,9 @@ idf.py -p PORT flash monitor
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
@@ -127,7 +136,7 @@ W (370) CHECK_BUTTON: [ 4 ] Waiting for a button to be pressed ...
 
 ```
 
-- 本例默认是使用 `ESP32-Lyrat V4.3`，可以按下音频板上的 [Rec]、[Mode]、[Play]、[Set]、[Vol-]、[Vol+] 按键，检测按键是否正常工作，打印如下：
+- 本例默认使用 `ESP32-Lyrat V4.3`，可以按下音频板上的 [Rec]、[Mode]、[Play]、[Set]、[Vol-]、[Vol+] 按键，检测按键是否正常工作，打印如下：
 
 ```c
 I (24320) CHECK_BUTTON: [ * ] [Rec] KEY CLICKED
@@ -171,7 +180,8 @@ I (75820) CHECK_BUTTON: [ * ] [Vol+] KEY PRESS RELEASED
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -276,9 +286,10 @@ I (75820) CHECK_BUTTON: [ * ] [Vol+] KEY PRESS RELEASED
 
 
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

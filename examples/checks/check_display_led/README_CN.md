@@ -6,9 +6,9 @@
 
 ## 例程简介
 
-ADF 从功能角度为定义了一系列[常见显示模式](https://github.com/espressif/esp-adf/blob/master/components/display_service/include/display_service.h), 在不同硬件环境下，用户可使用统一接口 `display_service_set_pattern` 设置显示模式。目前已添加的驱动 LED 方式有，[PWM](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_indicator/led_indicator.c)、[AW2013](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_aw2013.c)、[IS3x](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_is31x.c)、 [WS2812](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_ws2812.c)。
+ADF 从功能角度为定义了一系列常见的 [显示模式](https://github.com/espressif/esp-adf/blob/master/components/display_service/include/display_service.h)，在不同硬件环境下，用户可使用统一接口 `display_service_set_pattern` 设置显示模式。目前已添加的驱动 LED 方式有 [PWM](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_indicator/led_indicator.c)、[AW2013](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_aw2013.c)、[IS3x](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_is31x.c)、[WS2812](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_ws2812.c)。
 
-此应用程序目的是演示如何操作 LED 模式，以及验证所有 LED 是否正常工作，更多信息请参考 [ADF 快速开始](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html)。
+本例程主要演示如何操作 LED 模式，以及验证所有 LED 是否正常工作，更多信息请参考 [ADF 入门指南](https://docs.espressif.com/projects/esp-adf/zh_CN/latest/get-started/index.html)。
 
 
 ## 环境配置
@@ -188,7 +188,8 @@ W (72337) LED_INDI: The led mode is invalid
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -321,7 +322,7 @@ W (72337) LED_INDI: The led mode is invalid
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。
