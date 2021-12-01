@@ -103,7 +103,6 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 #else
         gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);
         gpio_set_pull_mode(GPIO_NUM_2,  GPIO_PULLUP_ONLY);
-        gpio_set_pull_mode(GPIO_NUM_13, GPIO_PULLUP_ONLY);
 
         if (mode == SD_MODE_4_LINE) {
             gpio_set_pull_mode(GPIO_NUM_4,  GPIO_PULLUP_ONLY);
