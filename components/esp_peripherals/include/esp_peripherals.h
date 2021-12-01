@@ -53,7 +53,8 @@ typedef enum {
     PERIPH_ID_IS31FL3216 = AUDIO_ELEMENT_TYPE_PERIPH + 13,
     PERIPH_ID_GPIO_ISR   = AUDIO_ELEMENT_TYPE_PERIPH + 14,
     PERIPH_ID_WS2812     = AUDIO_ELEMENT_TYPE_PERIPH + 15,
-    PERIPH_ID_AW2013     = AUDIO_ELEMENT_TYPE_PERIPH + 16
+    PERIPH_ID_AW2013     = AUDIO_ELEMENT_TYPE_PERIPH + 16,
+    PERIPH_ID_LCD        = AUDIO_ELEMENT_TYPE_PERIPH + 17
 } esp_periph_id_t;
 
 /**
@@ -69,8 +70,8 @@ typedef enum {
     PERIPH_STATE_STATUS_MAX,
 } esp_periph_state_t;
 
-typedef struct esp_periph_sets* esp_periph_set_handle_t;
-typedef struct esp_periph* esp_periph_handle_t;
+typedef struct esp_periph_sets *esp_periph_set_handle_t;
+typedef struct esp_periph *esp_periph_handle_t;
 typedef esp_err_t (*esp_periph_func)(esp_periph_handle_t periph);
 typedef esp_err_t (*esp_periph_run_func)(esp_periph_handle_t periph, audio_event_iface_msg_t *msg);
 typedef esp_err_t (*esp_periph_event_handle_t)(audio_event_iface_msg_t *event, void *context);
@@ -118,7 +119,7 @@ typedef struct esp_periph_event {
  *
  * @return The peripheral sets instance
  */
-esp_periph_set_handle_t esp_periph_set_init(esp_periph_config_t* config);
+esp_periph_set_handle_t esp_periph_set_init(esp_periph_config_t *config);
 
 /**
  * @brief      This function will stop and kill the monitor task, calling all destroy callback functions of the peripheral
@@ -177,7 +178,7 @@ audio_event_iface_handle_t esp_periph_set_get_event_iface(esp_periph_set_handle_
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t esp_periph_set_register_callback(esp_periph_set_handle_t periph_set_handle, esp_periph_event_handle_t cb, void* user_context);
+esp_err_t esp_periph_set_register_callback(esp_periph_set_handle_t periph_set_handle, esp_periph_event_handle_t cb, void *user_context);
 
 /**
  * @brief      Peripheral is using event_iface to control the event, all events are send out to event_iface queue.
@@ -368,7 +369,7 @@ esp_err_t esp_periph_stop_timer(esp_periph_handle_t periph);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t esp_periph_set_data(esp_periph_handle_t periph, void* data);
+esp_err_t esp_periph_set_data(esp_periph_handle_t periph, void *data);
 
 /**
  * @brief      Get the user data stored in the peripheral
@@ -377,7 +378,7 @@ esp_err_t esp_periph_set_data(esp_periph_handle_t periph, void* data);
  *
  * @return     Peripheral data pointer
  */
-void* esp_periph_get_data(esp_periph_handle_t periph);
+void *esp_periph_get_data(esp_periph_handle_t periph);
 
 /**
  * @brief      Get the current state of peripheral.
@@ -452,7 +453,7 @@ esp_err_t esp_periph_destroy(esp_periph_handle_t periph);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t esp_periph_register_on_events(esp_periph_handle_t periph, esp_periph_event_t * evts);
+esp_err_t esp_periph_register_on_events(esp_periph_handle_t periph, esp_periph_event_t *evts);
 
 #define periph_tick_get esp_periph_tick_get
 

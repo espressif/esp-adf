@@ -31,6 +31,7 @@
 #include "esp_peripherals.h"
 #include "display_service.h"
 #include "periph_sdcard.h"
+#include "periph_lcd.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,9 +71,11 @@ audio_hal_handle_t audio_board_adc_init(void);
 /**
  * @brief Initialize led peripheral and display service
  *
+ * @param set The handle of esp_periph_set_handle_t
+ *
  * @return The audio display service handle
  */
-display_service_handle_t audio_board_led_init(void);
+esp_lcd_panel_handle_t audio_board_lcd_init(esp_periph_set_handle_t set);
 
 /**
  * @brief Initialize led peripheral and display service

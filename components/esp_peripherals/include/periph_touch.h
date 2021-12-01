@@ -25,9 +25,6 @@
 #ifndef _TOUCH_DEV_H_
 #define _TOUCH_DEV_H_
 
-#include "sys/queue.h"
-#include "audio_error.h"
-#include "audio_common.h"
 #include "esp_peripherals.h"
 
 #ifdef __cplusplus

@@ -25,8 +25,6 @@
 #ifndef _PERIPH_CONSOLE_H_
 #define _PERIPH_CONSOLE_H_
 
-#include "sys/queue.h"
-#include "audio_error.h"
 #include "esp_peripherals.h"
 
 #ifdef __cplusplus
