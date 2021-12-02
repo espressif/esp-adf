@@ -139,7 +139,7 @@ Hardware Setup
 Software Setup
 ^^^^^^^^^^^^^^
 
-Please proceed to :doc:`/../get-started/index`, where Section :ref:`get-started-step-by-step` will quickly help you set up the development environment and then flash an :adf:`application example <example>` onto your board. 
+Please proceed to :doc:`/../get-started/index`, where Section :ref:`get-started-step-by-step` will quickly help you set up the development environment and then flash an :adf:`application example <examples>` onto your board.
 
 Contents and Packaging
 ----------------------
@@ -848,7 +848,7 @@ Related Documents
 =================
 
 - `ESP32-S3 Series Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf>`_ (PDF)
-- `ESP32-S3-WROOM-1/1U Datasheet <https://www.espressif.com/en/sites/default/files/documentation/esp32-s3-wroom-1_datasheet_en.pdf>`_ (PDF)
+- `ESP32-S3-WROOM-1/1U Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf>`_ (PDF)
 - `ESP32-S3-Korvo-2 V3.0 Schematic <https://dl.espressif.com/dl/schematics/SCH_ESP32-S3-KORVO-2_V3_0_20210918.pdf>`_ (PDF)
 - `ESP32-S3-Korvo-2 V3.0 PCB layout <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-KORVO-2_V3.0_20210918.pdf>`_ (PDF)
 

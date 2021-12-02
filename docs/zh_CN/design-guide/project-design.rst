@@ -68,7 +68,7 @@ ESP 芯片拥有多个外设，可借助 I2S、PDM 或 DAC 接口可开发出一
 典型项目
 ================
 
-如果需要更好的音频质量和更多的接口选项，可使用外部 I2S 编解码器来完成所有模拟输入和输出信号的处理。不同类型的编解码器芯片可提供不同的额外功能，如音频输入信号前置放大器、耳机输出放大器、多个模拟输入和输出、音效处理等。`I2S <http://iot-bits.com/wp-content /uploads/2017/06/I2SBUS.pdf>`_ 是音频编解码器芯片接口的行业标准，通常用于高速、连续传输音频数据。为了优化音频数据处理的性能，可能需要额外的内存。对于这种情况，请考虑使用集成 8 MB PSRAM 和 ESP32 芯片的 `ESP32-WROVER-E <https://www.espressif.com/sites/default/files/documentation/esp32-wrover_datasheet_cn.pdf>`_ 模组。
+如果需要更好的音频质量和更多的接口选项，可使用外部 I2S 编解码器来完成所有模拟输入和输出信号的处理。不同类型的编解码器芯片可提供不同的额外功能，如音频输入信号前置放大器、耳机输出放大器、多个模拟输入和输出、音效处理等。`I2S <http://iot-bits.com/wp-content /uploads/2017/06/I2SBUS.pdf>`_ 是音频编解码器芯片接口的行业标准，通常用于高速、连续传输音频数据。为了优化音频数据处理的性能，可能需要额外的内存。对于这种情况，请考虑使用集成 8 MB PSRAM 和 ESP32 芯片的 `ESP32-WROVER-E <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_cn.pdf>`_ 模组。
 
 .. figure:: ../../_static/audio-project-typical-example.jpg
     :alt: 典型音频项目示例
