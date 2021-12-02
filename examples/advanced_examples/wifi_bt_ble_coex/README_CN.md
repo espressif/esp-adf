@@ -1,4 +1,4 @@
-# Wi-Fi，A2DP，HFP，Bluetooth LE 共存例程
+# Wi-Fi、A2DP、HFP、Bluetooth LE 共存例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -6,11 +6,9 @@
 
 ## 例程简介
 
-
 本例程创建了几个 GATT 服务并启动了 ADV，ADV 名称为 `BLUFI_DEVICE`，然后等待连接，可以将设备配置为连接 Wi-Fi 和 BluFi 服务。当 Wi-Fi 连接时，例程将演示如何创建 HTTP STREAM 模块，它可以播放带有 HTTP URI 的音乐。
 
 本例程的经典蓝牙部分实现了 A2DP SINK 部分。程序启动后，智能手机等蓝牙设备可以发现名为 `ESP_ADF_COEX_EXAMPLE` 的设备，建立连接后，使用 AVRCP 配置文件控制蓝牙音乐状态。
-
 
 
 ## 环境配置
@@ -32,11 +30,10 @@
 
 ### IDF 默认分支
 
-本例程涉及 Wi-Fi、A2DP、HFP、Bluetooth LE 共存，所以使用的是优化共存的 IDF 分支： [audio/stack_on_psram_v3.3](https://github.com/espressif/esp-idf/tree/audio/stack_on_psram_v3.3)。
+本例程涉及 Wi-Fi、A2DP、HFP、Bluetooth LE 共存，所以使用的是优化共存的 IDF 分支：[audio/stack_on_psram_v3.3](https://github.com/espressif/esp-idf/tree/audio/stack_on_psram_v3.3)。
 
 
 ### 配置
-
 
 本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 
@@ -46,24 +43,24 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
-
-- 本例同时还可以使用共存的 Bluetooth LE 服务，用户使用手机 `EspBluFi` APP 连接名为 `BLUFI_DEVICE` 的 Bluetooth LE 设备，配置 SSID 和密码然后连接 Wi-Fi 网络。
-
-
+- 本例同时还可以使用共存的 Bluetooth LE 服务，用户使用手机 `EspBluFi` 应用程序连接名为 `BLUFI_DEVICE` 的 Bluetooth LE 设备，配置 SSID 和密码然后连接 Wi-Fi 网络。
 
 - 例程开始运行后，等待用户手机主动去连接设备，A2DP 设备广播名为：`ESP_ADF_COEX_EXAMPLE`，打印如下：
 
@@ -183,7 +180,7 @@ I (112794) COEX_EXAMPLE: User cb A2DP event: 1
 
 ```
 
-- 本例中，可以按键 [MODE] 分别进入 Classic Bluetooth 模式或 Wi-Fi 模式，音频开发板板可以播放 HTTP STREAM 网络音乐和 A2DP 的蓝牙音乐。
+- 本例中，可以按键 [MODE] 分别进入经典蓝牙模式或 Wi-Fi 模式，音频开发板可以播放 HTTP STREAM 网络音乐和 A2DP 的蓝牙音乐。
 
 ```c
 I (16106) COEX_EXAMPLE: [ * ] input key id is 4, key type is 1
@@ -210,7 +207,8 @@ I (26066) COEX_EXAMPLE: User cb A2DP event: 1
 ```
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -332,22 +330,20 @@ I (112794) COEX_EXAMPLE: User cb A2DP event: 1
 
 ```
 
-## Troubleshooting
+## 故障排除
 
 当你的应用出现共存一类的错误时候，可以从以下方面的查找错误原因：
 
 - 是否使用默认的 `sdkconfig.defaults` 配置，强烈建议使用默认的 sdkconfig 配置。
-
-- 是否使能了蓝牙的双模配置
-
+- 是否使能了蓝牙的双模配置。
 - 是否打开了 PSRAM 的配置，或者开发板模组是否配置了 PSRAM 功能。
 
 
-
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

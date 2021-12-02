@@ -1,4 +1,3 @@
-
 # 播放 microSD card 中不同格式的音乐
 
 - [English Version](./README.md)
@@ -7,11 +6,11 @@
 
 ## 例程简介
 
-本例程介绍了使用 fatfs element 读取 microSD card 中不同格式的音乐，然后经过 decoder element 解码 ，解码后数据用 I2S element 输出音乐。
+本例程介绍了使用 FatFs 元素读取 microSD 卡中不同格式的音乐，然后经过 decoder 元素解码，解码后数据用 I2S 元素输出音乐。
 
 本例支持 MP3、OPUS、OGG、FLAC、AAC、M4A、TS、MP4、AMRNB、AMRWB 音频格式，默认选择 MP3 音乐格式。
 
-例程中引用的音源可以通过 [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) 来获取并下载到 microSD card 中。
+例程中引用的音源可以通过 [音频样例或短样例](https://docs.espressif.com/projects/esp-adf/zh-CN/latest/design-guide/audio-samples.html#short-samples) 来获取并下载到 microSD 卡中。
 
 下表列出本例程支持的音乐格式：
 
@@ -34,23 +33,26 @@
 
 本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
 
-| Board Name | Getting Started | Chip | Compatible |
+| 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
 | ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
 | ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
 | ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
 | ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
+| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Incompatible") |
 
 
 ## 编译和下载
 
+
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+
 
 ### 配置
 
-本例程需要准备一张 microSD card，下载  [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) 立体声音源到 microSD card 中，当然也可以是用户自备的音源。
+本例程需要准备一张 microSD 卡，下载 [音频样例或短样例](https://docs.espressif.com/projects/esp-adf/zh-CN/latest/design-guide/audio-samples.html#short-samples) 立体声音源到 microSD 卡中，当然也可以是用户自备的音源。
 
 > 本例中需要播放的文件名是固定的，以 `test` 开头，以格式名后缀结尾。例如 `test.mp3` 这样的文件命名。
 
@@ -60,28 +62,32 @@
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-本例程同时需要打开 FATFS 长文件名支持。
+本例程同时需要打开 FatFs 长文件名支持。
 
 ```
 menuconfig > Component config > FAT Filesystem support > Long filename support
 ```
 
+
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
-- 例程开始运行后，自动播放 microSD card 中的音乐文件，打印如下：
+- 例程开始运行后，自动播放 microSD 卡中的音乐文件，打印如下：
 
 ```c
 I (29) SDCARD_MUSIC_EXAMPLE: [ 1 ] Mount sdcard
@@ -112,8 +118,10 @@ W (16619) AUDIO_ELEMENT: [i2s] Element has not create when AUDIO_ELEMENT_TERMINA
 W (16619) AUDIO_ELEMENT: [dec] Element has not create when AUDIO_ELEMENT_TERMINATE
 ```
 
+
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -202,8 +210,10 @@ W (16619) AUDIO_ELEMENT: [i2s] Element has not create when AUDIO_ELEMENT_TERMINA
 W (16619) AUDIO_ELEMENT: [dec] Element has not create when AUDIO_ELEMENT_TERMINATE
 ```
 
-## Troubleshooting
-如果你的 log 有如下的错误提示，这是因为在 microSD card 中没有找到需要播放的音频文件，请按照上面的 *配置* 一节操作重命名文件。
+
+## 故障排除
+
+如果您的日志有如下的错误提示，这是因为在 microSD 卡 中没有找到需要播放的音频文件，请按照上面的 *配置* 一节操作重命名文件。
 
 ```c
 I (608) SDCARD_MUSIC_EXAMPLE: [4.2] Listening event from peripherals
@@ -218,9 +228,10 @@ W (658) AUDIO_ELEMENT: IN-[i2s] AEL_IO_ABORT
 ```
 
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

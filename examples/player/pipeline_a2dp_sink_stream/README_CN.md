@@ -1,4 +1,4 @@
-# A2DP SINK Stream 例程
+# A2DP SINK 流例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -8,7 +8,7 @@
 
 本例程是 A2DP SINK 例程，使用经典蓝牙的 A2DP 协议进行音频流分发接收，使用 AVRCP 协议进行媒体信息通知控制。蓝牙音箱或者蓝牙耳机等应用可以用此示例作为基本功能参考。
 
-A2DP SINK 的完整 pipeline 如下：
+A2DP SINK 的完整管道如下：
 
 ```c
 aadp_source ---> aadp_sink_stream ---> i2s_stream_writer ---> codec_chip ---> speaker
@@ -18,6 +18,7 @@ aadp_source ---> aadp_sink_stream ---> i2s_stream_writer ---> codec_chip ---> sp
 
 
 ## 环境配置
+
 
 ### 硬件要求
 
@@ -34,8 +35,11 @@ aadp_source ---> aadp_sink_stream ---> i2s_stream_writer ---> codec_chip ---> sp
 
 ## 编译和下载
 
+
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+
 
 ### 配置
 
@@ -47,17 +51,20 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
@@ -161,7 +168,7 @@ I (1655) AUDIO_PIPELINE: Pipeline started
 I (1655) BLUETOOTH_EXAMPLE: [ 8 ] Listen for all pipeline events
 ```
 
-- 用户使用手机蓝牙扫描，搜索到名为 `ESP_SINK_STREAM_DEMO` 的蓝牙设备然后点击链接，打印如下：
+- 用户使用手机蓝牙扫描，搜索到名为 `ESP_SINK_STREAM_DEMO` 的蓝牙设备然后点击连接，打印如下：
 
 ```c
 E (265275) BT_APPL: bta_av_rc_create ACP handle exist for shdl:0
@@ -185,7 +192,7 @@ I (266615) A2DP_STREAM: Volume is set by remote controller 40%
 
 ```
 
-- 蓝牙连接成功后， 手机打开播放器，点击播放，那么开发板就会输出手机蓝牙下发的音频，打印如下：
+- 蓝牙连接成功后，手机打开播放器，点击播放，那么开发板就会输出手机蓝牙下发的音频，打印如下：
 
 ```c
 I (294305) A2DP_STREAM: AVRC set absolute volume: 23%
@@ -205,7 +212,7 @@ I (327765) A2DP_STREAM: Volume is set by remote controller 23%
 
 ```
 
-- 本例程还支持 AVRCP 进行媒体播放操作控制，如音量加，音量减，下一曲，上一曲等，打印如下：
+- 本例程还支持 AVRCP 进行媒体播放操作控制，如音量加、音量减、下一曲、上一曲等，打印如下：
 
 ```c
 I (327765) A2DP_STREAM: AVRC set absolute volume: 23%
@@ -237,7 +244,7 @@ I (345155) A2DP_STREAM: Volume is set by remote controller 29%
 
 ### 日志输出
 
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 entry 0x400806f4
@@ -392,17 +399,17 @@ I (345155) A2DP_STREAM: Volume is set by remote controller 29%
 
 ```
 
-## Troubleshooting
+## 故障排除
 
-- ESP32 A2DP 强制支持的音频编解码器是 SBC。SBC 数据流传输到 A2DP SINK，然后解码为 PCM 数据输出。PCM 数据格式通常为 44.1k Hz 采样率、双通道、16 位采样数据流。当然也支持 ESP32 A2DP SINK 中的其他解码器配置，但需要额外修改协议栈设置。
-
+- ESP32 A2DP 强制支持的音频编解码器是 SBC。SBC 数据流传输到 A2DP SINK，然后解码为 PCM 数据输出。PCM 数据格式通常为 44.1 kHz 采样率、双通道、16 位采样数据流。当然也支持 ESP32 A2DP SINK 中的其他解码器配置，但需要额外修改协议栈设置。
 - ESP32 A2DP SINK 最多只能支持与一个远程 A2DP SOURCE 设备的连接。此外，A2DP SINK 不能与 A2DP SOURCE 同时使用，但可以与其他配置文件一起使用，例如 SPP 和 HFP。
 
 
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

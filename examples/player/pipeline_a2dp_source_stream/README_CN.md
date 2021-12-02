@@ -1,4 +1,4 @@
-# A2DP SOURCE Stream 例程
+# A2DP SOURCE 流例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -8,18 +8,17 @@
 
 本例程是 A2DP SOURCE 例程，使用经典蓝牙的 A2DP SOURCE 角色进行音频流分发，应用程序可以利用这个例子来实现便携式音频播放器或麦克风应用，将音频流传输到 A2DP SINK 接收设备。
 
-
-A2DP SOURCE 的完整 pipeline 如下：
+A2DP SOURCE 的完整管道如下：
 
 ```c
-
 sdcard ---> fatfs_stream ---> mp3_decoder ---> bt_stream ---> aadp_source
-
 ```
 
 本例程作为 A2DP 的 SOURCE 角色，需要和 A2DP SINK（一般是蓝牙音箱）配对连接，用来播放下发的音频。
 
+
 ## 环境配置
+
 
 ### 硬件要求
 
@@ -37,7 +36,9 @@ sdcard ---> fatfs_stream ---> mp3_decoder ---> bt_stream ---> aadp_source
 ## 编译和下载
 
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+
 
 ### 配置
 
@@ -55,19 +56,21 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 menuconfig > Example Configuration > BT remote device name
 ```
 
-
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
@@ -240,7 +243,7 @@ I (8074) BLUETOOTH_SOURCE_EXAMPLE: a2dp connecting to peer: Heap Corrupt
 
 ### 日志输出
 
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 entry 0x400806f4
@@ -398,18 +401,18 @@ I (8074) BLUETOOTH_SOURCE_EXAMPLE: a2dp connecting to peer: Heap Corrupt
 
 ```
 
-## Troubleshooting
 
-- 目前阶段，ESP32 A2DP 支持的音频编解码器是 SBC。SBC 音频流由 PCM 数据编码，通常格式为 44.1kHz 采样率、双通道、16 位采样数据。也可以支持其他 SBC 配置，但需要对协议堆栈进行额外修改。
+## 故障排除
 
+- 目前阶段，ESP32 A2DP 支持的音频编解码器是 SBC。SBC 音频流由 PCM 数据编码，通常格式为 44.1 kHz 采样率、双通道、16 位采样数据。也可以支持其他 SBC 配置，但需要对协议堆栈进行额外修改。
 - 当前使用限制，ESP32 A2DP SOURCE 最多只能支持与一个远程 A2DP SINK 设备的连接。此外，A2DP SOURCE 不能与 A2DP SINK 同时使用，但可以与其他配置文件一起使用，例如 SPP 和 HFP。
 
 
-
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

@@ -10,21 +10,17 @@
 
 ADF 当前提供了以下两种方法实现 ALC 设置音量。
 
-1.对于使能 `USE_ALONE_ALC` 的 pipeline 如下：
+- 对于使能 `USE_ALONE_ALC` 的管道如下：
 
-```c
-sdcard ---> fatfs_stream ---> wav_decoder ---> ALC ---> i2s_stream ---> codec_chip ---> speaker
+  ```
+  sdcard ---> fatfs_stream ---> wav_decoder ---> ALC ---> i2s_stream ---> codec_chip ---> speaker
+  ```
 
-```
+- 对于未使能 `USE_ALONE_ALC` 的管道如下：
 
-2.对于未使能 `USE_ALONE_ALC` 的 pipeline 如下：
-
-```c
-
-sdcard ---> fatfs_stream ---> wav_decoder ---> i2s_stream ---> codec_chip ---> speaker
-
-```
-
+  ```
+  sdcard ---> fatfs_stream ---> wav_decoder ---> i2s_stream ---> codec_chip ---> speaker
+  ```
 
 ## 环境配置
 
@@ -43,12 +39,13 @@ sdcard ---> fatfs_stream ---> wav_decoder ---> i2s_stream ---> codec_chip ---> s
 
 ## 编译和下载
 
+
 ### IDF 默认分支
 
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-### 配置
 
+### 配置
 
 本例程需要准备一张 microSD 卡，并自备一首 WAV 格式的音频文件，命名为 `test.wav`，然后把 microSD 卡插入开发板备用。
 
@@ -58,24 +55,27 @@ sdcard ---> fatfs_stream ---> wav_decoder ---> i2s_stream ---> codec_chip ---> s
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-如果你需要修改录音文件名，本例程建议同时打开 FATFS 长文件名支持。
+如果你需要修改录音文件名，本例程建议同时打开 FatFs 长文件名支持。
 
 ```
 menuconfig > Component config > FAT Filesystem support > Long filename support
 ```
 
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
@@ -88,11 +88,12 @@ idf.py -p PORT flash monitor
 即是通过在 `i2s_stream.h` 函数 `i2s_alc_volume_set` 来控制音量振幅。
 
 
-- 例程开始运行后，会自动处理音频数据的过高的幅值，打印详见[日志输出](##日志输出)
+- 例程开始运行后，会自动处理音频数据的过高的幅值，打印详见[日志输出](##日志输出)。
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
 
 ```c
 entry 0x400806f4
@@ -167,11 +168,11 @@ W (432735) HEADPHONE: Headphone jack inserted
 ```
 
 
-
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

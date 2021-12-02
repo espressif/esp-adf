@@ -1,49 +1,49 @@
-# 命令行接口（CLI）例程
+# 命令行接口 (CLI) 例程
 
 - [English Version](./README.md)
-- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
+- 例程难度：![alt text](../../docs/_static/level_basic.png "初级")
 
 
 ## 例程简介
 
 本例程演示了 ADF 的 `periph_console` 控制 `esp_audio` API 和其他系统 API 的方法。
 
-在熟记命令的前提下，使用命令行接口 (command-line interface, CLI) 可以在 ADF 项目的快速 DEBUG 分析和快速 FEATURE 测试中有较大的优势。
+在熟记命令的前提下，使用命令行接口 (command-line interface, CLI) 可以在 ADF 项目的快速 debug 分析和快速 feature 测试中有较大的优势。
 
 当前支持的命令如下表：
 
 |序号|命令|描述或用法|关联函数|
 | --  | -- | -- | -- |
-| 01  | play      |  Play music with given index, cmd:\"play [index or url] [byte_pos]\" <br /> 1."play "; <br /> 2. play with index after scan,"play  index_number"; <br /> 3.play with specific url, "play  url_path"                  |  cli_play |
-| 02  | pause     |  Pause the playing music                                                      |  cli_pause  |
-| 03  | resume    |  Resume                                                                       |  cli_resume  |
-| 04  | stop      |  Stop player                                                                  |  cli_stop  |
-| 05  | setvol    |  Set volume                                                                   |  cli_set_vol  |
-| 06  | getvol    |  Get volume                                                                   |  cli_get_vol  |
-| 07  | getpos    |  Get position by seconds                                                      |  get_pos  |
-| 08  | seek      |  Seek position by second                                                      |  cli_seek  |
-| 09  | duration  |  Get music duration                                                           |  cli_duration  |
-| 10  | tone      |  Insert tone to play                                                          |  cli_insert_tone  |
-| 11  | stone     |  Stop tone by a timer                                                         |  cli_stop_tone  |
-| 12  | setspeed  |  Set speed                                                                    |  cli_set_speed  |
-| 13  | getspeed  |  Get speed                                                                    |  cli_get_speed  |
-| 14  | join      |  Join Wi-Fi AP as a station                                                   |  wifi_set  |
-| 15  | wifi      |  Get connected AP information                                                 |  wifi_info  |
-| 16  | led       |  Lyrat-MSC led bar pattern                                                    |  led  |
-| 17  | scan      |  Scan SD card music file, cmd: \"scan [path]\",e.g. \"scan /sdcard\"          |  playlist_sd_scan  |
-| 18  | list      |  Show scanned playlist                                                        |  playlist_sd_show  |
-| 19  | next      |  Next x file to play, cmd: \"next [step]\"                                    |  playlist_sd_next  |
-| 20  | prev      |  Previous x file to play, cmd: \"prev [step]\"                                |  playlist_sd_prev  |
-| 21  | mode      |  Set auto play mode, cmd:\"mode [value]\",  0: once;  others: playlist loop all  |  playlist_set_mode  |
-| 22  | reboot    |  Reboot system                                                                |  sys_reset  |
-| 23  | free      |  Get system free memory                                                       |  show_free_mem  |
-| 24  | stat      |  Show processor time of all FreeRTOS tasks                                    |  run_time_stats  |
-| 25  | tasks     |  Get information about running tasks                                          |  task_list  |
-| 26  | system    |  Get freertos all task states information                                     |  task_real_time_states  |
-
+| 01  | play      |  播放指定序号的音乐，命令为 "play [index or url] [byte_pos]" <br /> 1. "play" <br /> 2. 扫描后播放指定序号的音乐，命令为 "play index_number" <br /> 3. 从指定网址播放，命令为 "play url_path"               |  cli_play |
+| 02  | pause     |  暂停播放音乐                                                   |  cli_pause  |
+| 03  | resume    |  继续播放                                                                       |  cli_resume  |
+| 04  | stop      |  停止播放                                                                 |  cli_stop  |
+| 05  | setvol    |  设置音量                                                                  |  cli_set_vol  |
+| 06  | getvol    |  获取音量                                                                   |  cli_get_vol  |
+| 07  | getpos    |  获取位置，单位为秒                                                    |  get_pos  |
+| 08  | seek      |  寻找位置，单位为秒                                                     |  cli_seek  |
+| 09  | duration  |  获取音乐时长                                                           |  cli_duration  |
+| 10  | tone      |  插入并播放提示音                                                         |  cli_insert_tone  |
+| 11  | stone     |  定时关闭提示音                                                         |  cli_stop_tone  |
+| 12  | setspeed  |  设置速度                                                                    |  cli_set_speed  |
+| 13  | getspeed  |  获取速度                                                                   |  cli_get_speed  |
+| 14  | join      |  作为 station 与 Wi-Fi AP 连接                                                   |  wifi_set  |
+| 15  | wifi      |  获取已连接的 AP 信息                                              |  wifi_info  |
+| 16  | led       |  Lyrat-MSC LED 灯带模式                                                   |  led  |
+| 17  | scan      |  扫描 microSD 卡中的音乐文件，命令为 "scan [path]"，如 "scan /sdcard"          |  playlist_sd_scan  |
+| 18  | list      |  显示扫描的播放列表                                                        |  playlist_sd_show  |
+| 19  | next      |  播放下 x 个文件，命令为 "next [step]"                                    |  playlist_sd_next  |
+| 20  | prev      |  播放上 x 个文件，命令为 "prev [step]"                                |  playlist_sd_prev  |
+| 21  | mode      |  设置自动播放模式，命令为 "mode [value]"， 0 表示仅播放一次，其他值表示列表内循环播放|  playlist_set_mode  |
+| 22  | reboot    |  重启系统                                                                |  sys_reset  |
+| 23  | free      |  获取系统空闲内存                                                       |  show_free_mem  |
+| 24  | stat      |  显示所有 FreeRTOS 任务处理时间                                    |  run_time_stats  |
+| 25  | tasks     |  获取正在运行的任务信息                                          |  task_list  |
+| 26  | system    |  获取所有 FreeRTOS 任务状态信息                                    |  task_real_time_states  |
 
 
 ## 环境配置
+
 
 ### 硬件要求
 
@@ -51,22 +51,23 @@
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraT | [![alt text](../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraT-Mini | [![alt text](../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-Korvo-DU1906 | [![alt text](../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-S2-Kaluga-1 Kit | [![alt text](../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../docs/_static/yes-button.png "开发板兼容此例程") |
 
 
 ## 编译和下载
 
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+
 
 ### 配置
 
-
-本例程需要准备一张 microSD 卡，准备一些 AMR、FLAC、OGG、OPUS、MP3、WAV、AAC、TS、M4A 等格式的音频文件，并命名为 test.amr'、'test.flac'、'test.ogg'、'test.opus'、'test.mp3'、'test.wav'、'test.aac'、'test.ts' 和 'test.m4a' 样式，然后拷贝到 microSD 中，最后插入开发板备用。
+本例程需要准备一张 microSD 卡，准备一些 AMR、FLAC、OGG、OPUS、MP3、WAV、AAC、TS、M4A 等格式的音频文件，并命名为 `test.amr`、`test.flac`、`test.ogg`、`test.opus`、`test.mp3`、`test.wav`、`test.aac`、`test.ts` 和 `test.m4a` 样式，然后拷贝到 microSD 中，最后插入开发板备用。
 
 本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 
@@ -74,25 +75,27 @@
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-如果你需要修改录音文件名，本例程建议同时打开 FATFS 长文件名支持。
+如果你需要修改录音文件名，本例程建议同时打开 FatFs 长文件名支持。
 
 ```
 menuconfig > Component config > FAT Filesystem support > Long filename support
 ```
 
-
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
@@ -217,8 +220,7 @@ I (2832) CONSOLE_EXAMPLE: esp_audio instance is:0x3f806b38
 esp32>
 ```
 
-- 此时，我可以使用 join 指令来连接 WiFi AP，无线路由的 SSID 为 `esp32`，无线路由器的 PWD 为 `esp123456`，命令执行后 log 打印显示设备已经成功获取 IP，打印如下：
-
+- 此时，我可以使用 `join` 指令来连接 Wi-Fi AP，无线路由的 SSID 为 `esp32`，无线路由器的密码为 `esp123456`，命令执行后日志打印显示设备已经成功获取 IP 地址，打印如下：
 
 ```c
 esp32> join esp32 esp123456
@@ -239,7 +241,7 @@ I (44452) PERIPH_WIFI: Got ip:192.168.5.187
 esp32>
 ```
 
-- 使用 `scan /sdcard` 命令扫描 SD 卡中的音频文件，打印如下：
+- 使用 `scan /sdcard` 命令扫描 microSD 卡中的音频文件，打印如下：
 
 ```c
 esp32> scan /sdcard
@@ -263,7 +265,7 @@ I (92122) PLAYLIST_SDCARD: 15   file://sdcard/7c9ebdcf12f0-19700101080024.wav
 esp32>
 ```
 
-- 使用 `play 13` 命令播放 SDcard 中的 index 值为 13 的 `test.WAV` 音频文件，打印如下：
+- 使用 `play 13` 命令播放 microSD 卡中序号为 13 的 `test.WAV` 音频文件，打印如下：
 
 ```c
 I (123222) CONSOLE_EXAMPLE: app_audio play
@@ -377,7 +379,8 @@ esp32>
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
 
 ```c
 ets Jul 29 2019 12:21:46
@@ -642,18 +645,19 @@ esp32>
 ```
 
 
-## Troubleshooting
+## 故障排除
 
 - 要运行 `stat` 命令，必须在 `menuconfig > Component Config > FreeRTOS > Enable FreeRTOS to collect run time stats` 中启用 `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS`。
-- 要运行 `tasklist` 命令，必须在 `menuconfig >Component Config > FreeRTOS > Enable FreeRTOS trace facility and Enable FreeRTOS stats formatting functions` 中启用 `CONFIG_FREERTOS_USE_TRACE_FACILITY`。
+- 要运行 `tasklist` 命令，必须在 `menuconfig > Component Config > FreeRTOS > Enable FreeRTOS trace facility and Enable FreeRTOS stats formatting functions` 中启用 `CONFIG_FREERTOS_USE_TRACE_FACILITY`。
 - 要运行 AAC 解码器，`CONFIG_FREERTOS_HZ` 应设置为 1000 Hz。
-- 如果选择开发板 `ESP32-S2-kaluga-1`，则是不支持 microSD 卡的。
+- 如果选择开发板 `ESP32-S2-kaluga-1`，则不支持 microSD 卡。
 
 
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

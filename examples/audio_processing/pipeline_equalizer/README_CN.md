@@ -6,19 +6,17 @@
 
 ## 例程简介
 
-本例程演示了使用 ADF 的均衡器 (equalizer) 处理 WAV 音频文件播放的过程，其处理过程的 pipeline 数据流如下：
-
-```c
-
-sdcard ---> fatfs_stream ---> wav_decoder ---> equalizer ---> i2s_stream ---> codec_chip
+本例程演示了使用 ADF 的均衡器 (equalizer) 处理 WAV 音频文件播放的过程，其处理过程的管道数据流如下：
 
 ```
+sdcard ---> fatfs_stream ---> wav_decoder ---> equalizer ---> i2s_stream ---> codec_chip
+```
 
-首先 fatfs_stream 读取位于 microSD 卡中的名为 `test.wav` 音频文件 (此文件需用户自备，并预先放置于 microSD 卡中)，然后 WAV 文件数据经过 wav_decoder 解码器解码，解码后的数据再经过均衡器处理，最后数据通过 I2S 发送到 codec 芯片播放出来。
-
+首先 fatfs_stream 读取位于 microSD 卡中的名为 `test.wav` 音频文件（此文件需用户自备，并预先放置于 microSD 卡中)，然后 WAV 文件数据经过 wav_decoder 解码器解码，解码后的数据再经过均衡器处理，最后数据通过 I2S 发送到 codec 芯片播放出来。
 
 
 ## 环境配置
+
 
 ### 硬件要求
 
@@ -35,11 +33,13 @@ sdcard ---> fatfs_stream ---> wav_decoder ---> equalizer ---> i2s_stream ---> co
 
 ## 编译和下载
 
+
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-### 配置
 
+### 配置
 
 本例程需要准备一张 microSD 卡，并自备一首 WAV 格式的音频文件，命名为 `test.wav`，然后把 microSD 卡插入开发板备用。
 
@@ -49,7 +49,7 @@ sdcard ---> fatfs_stream ---> wav_decoder ---> equalizer ---> i2s_stream ---> co
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-如果你需要修改录音文件名，并且文件名超过 8 个字符的，那么本例程建议同时打开 FATFS 长文件名支持。
+如果你需要修改录音文件名，并且文件名超过 8 个字符的，那么本例程建议同时打开 FatFs 长文件名支持。
 
 ```
 menuconfig > Component config > FAT Filesystem support > Long filename support
@@ -57,46 +57,39 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 
 
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
-
-例程开始运行后，读取 microSD 卡中的 `test.wav` 文件，并自动使用均衡器处理，然后播放处理后的音频，完整打印详见[日志输出](### 日志输出)。
-
+例程开始运行后，读取 microSD 卡中的 `test.wav` 文件，并自动使用均衡器处理，然后播放处理后的音频，完整打印详见[日志输出](#日志输出)。
 
 如果要更改均衡器的参数，请编辑 `equalizer_example.c` 中的 `set_gain[]` 表。均衡器的中心频率为 31 Hz、62 Hz、125 Hz、250 Hz、500 Hz、1 kHz、2 kHz、4 kHz、8 kHz 和 16 kHz。
 
-
-- 本例程测试的 `test.wav` 是采样率为 44100 Hz，16-bits，1channel 的音频文件。
-
-
+- 本例程测试的 `test.wav` 是采样率为 44100 Hz、16 位、单通道的音频文件。
 - 本例程位于 `document/` 目录下的 `spectrum_before.png` 图片是音频文件 `test.wav` 的原始频谱图像。
-<div  align="center"><img src="document/spectrum_before.png" width="700" alt ="spectrum_before" align=center /></div>
-
-
+  <div  align="center"><img src="document/spectrum_before.png" width="700" alt ="spectrum_before" align=center /></div>
 - 本例程位于 `document/` 目录下的 `spectrum_after.png` 图片是音频文件 `test.wav` 经过均衡器处理后的频谱图，均衡器增益为 -13 dB。
-<div align="center"><img src="document/spectrum_after.png" width="700" alt ="spectrum_after" align=center /></div>
-
-
+  <div align="center"><img src="document/spectrum_after.png" width="700" alt ="spectrum_after" align=center /></div>
 - 本例程位于 `document/` 目录下的 `amplitude_frequency.png` 图片是当均衡器的增益为 0 dB 时的频率响应图。
-<div align="center"><img src="document/amplitude_frequency.png" width="700" alt ="amplitude_frequency" align=center /></div>
-
+  <div align="center"><img src="document/amplitude_frequency.png" width="700" alt ="amplitude_frequency" align=center /></div>
 
 
 ### 日志输出
 
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 entry 0x400806f4
@@ -177,7 +170,7 @@ W (91788) AUDIO_ELEMENT: [i2s] Element has not create when AUDIO_ELEMENT_TERMINA
 ```
 
 
-## Troubleshooting
+## 故障排除
 
 运行播放示例，需要满足以下条件：
 
@@ -189,9 +182,10 @@ W (91788) AUDIO_ELEMENT: [i2s] Element has not create when AUDIO_ELEMENT_TERMINA
 
 
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。
