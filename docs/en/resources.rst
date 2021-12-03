@@ -8,7 +8,7 @@ Resources
 
 * Third party audio development modules and boards that work with ESP-ADF:
 
-    * `ESP32-A1S Audio Module <http://wiki.ai-thinker.com/esp32-a1s>`__ equipped CodeC audio decoding chip that supports music playback and recording, and 4MB PSRAM. The module application schematic is available in `datasheet <http://wiki.ai-thinker.com/_media/esp32/docs/esp32-a1s%E4%BA%A7%E5%93%81%E8%A7%84%E6%A0%BC%E4%B9%A6.pdf>`__.
+    * `ESP32-A1S Audio Module <https://docs.ai-thinker.com/en/esp32-a1s>`__ equipped CodeC audio decoding chip that supports music playback and recording, and 4MB PSRAM. The module application schematic is available in `datasheet <https://docs.ai-thinker.com/_media/esp32-a1s_v2.3_specification.pdf>`__.
 
 * The `esp32.com forum <https://esp32.com>`_ is a place to ask questions and find community resources. The forum has a section dedicated to `ESP-ADF <https://esp32.com/viewforum.php?f=20>`_.
 
