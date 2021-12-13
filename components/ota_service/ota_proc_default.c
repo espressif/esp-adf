@@ -65,6 +65,7 @@ static ota_service_err_reason_t validate_image_header(esp_app_desc_t *new_app_in
         ESP_LOGI(TAG, "Running firmware version: %s, the incoming firmware version %s", running_app_info.version, new_app_info->version);
     }
 
+#if defined (CONFIG_FORCE_CHECK_FIRMWARE_VERSION_NUMBER)
     if (ota_get_version_number(new_app_info->version) < 0) {
         ESP_LOGE(TAG, "Error version incoming");
         return OTA_SERV_ERR_REASON_ERROR_VERSION;
@@ -74,6 +75,8 @@ static ota_service_err_reason_t validate_image_header(esp_app_desc_t *new_app_in
         ESP_LOGW(TAG, "Current running version is the same as or higher than a new. We will not continue the update.");
         return OTA_SERV_ERR_REASON_NO_HIGHER_VERSION;
     }
+#endif
+
     return OTA_SERV_ERR_REASON_SUCCESS;
 }
 

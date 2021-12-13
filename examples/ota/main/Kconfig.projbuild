@@ -32,4 +32,10 @@ config DATA_PARTITION_LABEL
     help
         data partition's label.
 
+config FORCE_CHECK_FIRMWARE_VERSION_NUMBER
+    bool "Forece check the firmware version number when OTA start"
+    default n
+    help
+        If this option is set, mandatory check the firmware version number
+
 endmenu
