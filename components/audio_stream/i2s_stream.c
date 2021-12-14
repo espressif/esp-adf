@@ -142,6 +142,19 @@ static int i2s_stream_clear_dma_buffer(audio_element_handle_t self)
     return ESP_OK;
 }
 
+static esp_err_t _i2s_set_clk(i2s_port_t i2s_num, uint32_t rate, uint32_t bits_cfg, int ch)
+{
+    i2s_channel_t channel;
+    if (ch == 1) {
+        channel = I2S_CHANNEL_MONO;
+    } else if (ch == 2) {
+        channel = I2S_CHANNEL_STEREO;
+    } else {
+        return ESP_FAIL;
+    }
+    return i2s_set_clk(i2s_num, rate, bits_cfg, channel);
+}
+
 static esp_err_t _i2s_open(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
@@ -156,7 +169,7 @@ static esp_err_t _i2s_open(audio_element_handle_t self)
         i2s_info.sample_rates = 16000;
         audio_element_getinfo(self, &i2s_info);
         ESP_LOGI(TAG, "AUDIO_STREAM_READER,Rate:%d,ch:%d", i2s_info.sample_rates, i2s_info.channels);
-        if (i2s_set_clk(i2s->config.i2s_port, i2s_info.sample_rates, i2s_info.bits, i2s_info.channels) == ESP_FAIL) {
+        if (_i2s_set_clk(i2s->config.i2s_port, i2s_info.sample_rates, i2s_info.bits, i2s_info.channels) == ESP_FAIL) {
             ESP_LOGE(TAG, "i2s_set_clk failed, type = %d", i2s->config.type);
             return ESP_FAIL;
         }
@@ -290,7 +303,7 @@ esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bi
     }
     audio_element_set_music_info(i2s_stream, rate, ch, bits);
 
-    if (i2s_set_clk(i2s->config.i2s_port, rate, bits, ch) == ESP_FAIL) {
+    if (_i2s_set_clk(i2s->config.i2s_port, rate, bits, ch) == ESP_FAIL) {
         ESP_LOGE(TAG, "i2s_set_clk failed, type = %d,port:%d", i2s->config.type, i2s->config.i2s_port);
         err = ESP_FAIL;
     }
