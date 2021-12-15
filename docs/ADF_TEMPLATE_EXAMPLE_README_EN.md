@@ -1,29 +1,41 @@
 _Note that this is a template for an ESP-ADF example README.md file. When using this template, replace all these emphasised placeholders with example-specific content._
 
 # _Example Title_
-_English Version or Chinese Version_
+
+
+_Link to Chinese Version_
+
 - [Chinese Version](./README_CN.md)
 
-_Add a picture to describe the difficulty level_
-- _Basic Example: ![alt text](./_static/level_basic.png "Basic Example") - to get started_
-- _Regular Example: ![alt text](./_static/level_regular.png "Regular Example") - demonstrates functionality of ESP-ADF or audio board_
-- _Complex Example: ![alt text](./_static/level_complex.png "Complex Example") - like regular example but requires more configuration steps, interaction with other programs, setting up some cloud accounts, or more user expertise_
+_Select one of the following to describe the difficulty level._
+
+- Basic Example: ![alt text](./_static/level_basic.png "Basic Example") - to get started
+- Regular Example: ![alt text](./_static/level_regular.png "Regular Example") - demonstrates functionality of ESP-ADF or audio board
+- Complex Example: ![alt text](./_static/level_complex.png "Complex Example") - like regular example but requires more configuration steps, interaction with other programs, setting up some cloud accounts, or more user expertise
+
 
 ## Example Brief
-- _Introduce the realization of the example program from a functional point of view_
-- _From a technical point of view, describe the main technical functions demonstrated. For example, to demonstrate the use of pipeline and element, element obtains data directly from callback_
+
+- _Introduce the realization of the example program from a functional point of view. For instance, this example uses different decoders to play music in different formats from the microSD card._
+- _From a technical point of view, describe the main technical functions demonstrated. For instance, this example demonstrates the use of pipeline and element, and how element obtains data directly from callback._
+
 
 ### Resources
-_It's optional, such as RAM, CPU loading_
+
+_It's optional, such as RAM, CPU loading._
+
 
 ### Prerequisites
+
 - _It's optional_
 - _Guide first-time users to run get started example first_
 - _Guide users to learn the background_
 
+
 ### Folder contents
+
 - _It's optional_
-- _It is short explanation of remaining files in the project folder, e.g: play_mp3 folder_
+- _It is short explanation of remaining files in the project folder and the folder structure. Below is the example of the `play_mp3` folder._
 
 ```c
 ├── components
@@ -50,63 +62,86 @@ _It's optional, such as RAM, CPU loading_
 └── README.md                  This is the file you are currently reading
 ```
 
+
 ## Environment Setup
 
+
 ### Hardware Required
-_List all the hardware, Such as Boards, speakers, SD card, LCD module, Camera module, Bluetooth speaker, etc._
+
+_List all the hardware, such as development boards, speakers, microSD card, LCD module, camera module, Bluetooth speaker, and so on_
+
 
 ### Additional Requirements
-- _It's optional_
-- _Such as Baidu Cloud's profile or Amazon's token authentication, tone bins, music files, etc._
-- _Such as SIP server, DLNA APP, etc._
 
-## Example Set Up
+- _It's optional_
+- _Audio files, SIP server, DLNA app and so on, such as Baidu Cloud's profile or Amazon's token._
+
+
+## Build and Flash
+
 
 ### Default IDF Branch
+
 _The default IDF branch is ADF's built-in branch `$ADF_PATH/esp-idf`_
 
-### Other special IDF branches
+
+### Other Special IDF Branches
+
 - _When required to select a special IDF/ADF version branch, which must be clearly pointed out and described_
-- _For example, DU1906 project select the IDF branch `audio/stack_on_psram_v3.3` to compile_
-```c
-cd $IDF_PATH
-git checkout master
-git pull
-git checkout audio/stack_on_psram_v3.3
-git submodule update --init --recursive
-```
+- _For example, DU1906 project selects the IDF branch `audio/stack_on_psram_v3.3` to compile_
+
+  ```c
+  cd $IDF_PATH
+  git checkout master
+  git pull
+  git checkout audio/stack_on_psram_v3.3
+  git submodule update --init --recursive
+  ```
+
 
 ### Configuration
-- _Such as select compatible audio board in ` menuconfig > Audio HAL`_
-- _Such as other important tips, such as turning on long file name support for fatfs_
-```c
-Component config > FAT Filesystem support > Long filename support
-```
+
+- _Describe important items to configure in menuconfig, such as long file name support for FatFs, selection of compatible audio board, chip type, PSRAM clock, Wi-Fi/LWIP parameters and so on. Below is an example._
+
+  ```c
+  Component config > FAT Filesystem support > Long filename support
+  ```
+
+- _Configuration of other software if required, such as specifying a patch_
+
 
 ### Build and Flash
-_Build the project and flash it to the board, then run monitor tool to view serial output:_
-```c
-idf.py build -p PORT flash monitor
-```
 
-## How to use the Example
+_Command to build the example_
+
+- Legacy GNU Make command: `make`
+- CMake command: `idf.py build`
+
+_Command to flash the example_
+
+- Legacy GNU Make command: `make flash monitor`
+- CMake command: `idf.py -p PORT flash monitor`
+
+
+## How to Use the Example
+
 
 ### Example Functionality
-- _To explain how to use this example, what features are supported and what results would be get_
-- _Such as description button functionality_
-- _If any other items (server, BLE device, app, second chip, whatever) are needed, mention them here. Include links if applicable. Explain how to set them up_
 
-For example, the DU1906 voice interaction command
-    * "小度小度" "在呢" "讲个笑话"
-    * "小度小度" "在呢" "上海天气怎么样？"
-    * "小度小度" "在呢" "播放一首歌"
-    * "小度小度" "在呢" "百度百科乐鑫信息科技"
+- _To explain how to use this example, what features are supported and what results to get. For example, describe what keys or speech commands are supported. Below is the speech interaction with DuerOS._
+  - _"小度小度"，"在呢"，"讲个笑话"_
+  - _"小度小度"，"在呢"，"上海天气怎么样？"_
+  - _"小度小度"，"在呢"，"播放一首歌"_
+  - _"小度小度"，"在呢"，"百度百科乐鑫信息科技"_
 
-e.g.
-`pipeline_raw_http`, run `python server.py` - place the file `server.py` at root of this example, and make sure this directory is writable
+- _If any other items are needed, such as server, Bluetooth device, app, second chip, do mention them here. Include links if applicable. Explain how to set them up. Below is an example._
+  - _Please run the HTTP server of `pipeline_raw_http`. This server is created on PC by running `python server.py` to receive data._ 
 
-### Example Logs
-- _Select the booting log, e.g._
+
+### Example Log
+
+- _Select the complete log from boot to the end of initialization:_
+
 ```c
 I (64) boot: Chip Revision: 3
 I (35) boot: ESP-IDF v3.3.1-203-g0c1859a5a 2nd stage bootloader
@@ -129,18 +164,24 @@ I (121) boot:  7 flash_tone       Unknown data     01 27 00791000 00060000
 I (129) boot: End of partition table
 ```
 
+
 ### References
-_Running results, text description, or video links, etc. (optional)._
-e.g. [ESP32-S3 Offline Speech Recognition](https://www.bilibili.com/video/BV1Cv411e7g8)
+
+- _It's optional_
+- _Running process, results, or video links, such as [ESP32-S3 离线语音识别](https://www.bilibili.com/video/BV1Cv411e7g8)_
+
+
 
 ## Troubleshooting
-_It's optional. If there are any likely problems or errors which many users might encounter, mention them here. Remove this section for very simple examples where nothing is likely to go wrong._
 
-## Technical support and feedback
+_It's optional. If there are any likely problems or errors which many users might encounter, mention them here._
+
+
+## Technical Support and Feedback
 
 Please use the following feedback channels:
 
-* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
+- For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 We will get back to you as soon as possible.

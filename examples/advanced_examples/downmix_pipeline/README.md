@@ -67,7 +67,7 @@ The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-i
 
 ### Configuration
 
-In this example, prepare a microSD card, prepare a dual-channel mp3 music with a sampling rate of 44.1 kHz as the basic music to play, and prepare a short Single channel 16 kHz sampling rate prompt tone, rename them and save to the sdcard.
+In this example, prepare a microSD card, prepare a dual-channel MP3 music with a sampling rate of 44.1 kHz as the basic music to play, and prepare a short Single channel 16 kHz sampling rate prompt tone, rename them and save to the microSD card.
 
 > In this example, the file name to be played is fixed, a base music file name `music.mp3` and a tone name `tone.mp3`.
 
