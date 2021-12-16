@@ -71,7 +71,7 @@ esp_dlna_handle_t esp_dlna_start(dlna_config_t *config)
         },
         .user_ctx = dlna, // VERY IMPORTANT FOR CALLBACK
     };
-    dlna->upnp = upnp_init(&upnp_config);
+    dlna->upnp = esp_upnp_init(&upnp_config);
     if (dlna->upnp == NULL) {
         ESP_LOGE(TAG, "error create UPnP client");
         return NULL;
@@ -105,7 +105,7 @@ esp_err_t esp_dlna_notify(esp_dlna_handle_t dlna, const char *service_name)
     if (dlna == NULL || service_name == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-    return upnp_send_notify(dlna->upnp, service_name);
+    return esp_upnp_send_notify(dlna->upnp, service_name);
 }
 
 esp_err_t esp_dlna_notify_avt_by_action(esp_dlna_handle_t dlna, const char *action_name)
@@ -113,7 +113,7 @@ esp_err_t esp_dlna_notify_avt_by_action(esp_dlna_handle_t dlna, const char *acti
     if (dlna == NULL || action_name == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-    return upnp_send_avt_notify(dlna->upnp, action_name);
+    return esp_upnp_send_avt_notify(dlna->upnp, action_name);
 }
 
 void *esp_dlna_get_user_ctx(esp_dlna_handle_t dlna)
@@ -131,7 +131,7 @@ esp_err_t esp_dlna_destroy(esp_dlna_handle_t dlna)
     if (dlna == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-    if ((err = upnp_destroy(dlna->upnp)) != ESP_OK) {
+    if ((err = esp_upnp_destroy(dlna->upnp)) != ESP_OK) {
         return err;
     }
     free(dlna);

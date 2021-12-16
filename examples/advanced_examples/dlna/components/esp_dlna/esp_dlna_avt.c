@@ -143,5 +143,5 @@ void esp_dlna_avt_register_service(upnp_handle_t upnp)
 
         },
     };
-    upnp_register_service(upnp, &avt_service, avt_action, avt_notify);
+    esp_upnp_register_service(upnp, &avt_service, avt_action, avt_notify);
 }

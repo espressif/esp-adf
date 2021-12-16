@@ -25,7 +25,7 @@
 #include "http_stream.h"
 #include "audio_mem.h"
 #include "audio_thread.h"
-
+#include "media_lib_adapter.h"
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
 #else
@@ -34,7 +34,7 @@
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0))
 
-#include "mrm_client.h"
+#include "esp_mrm_client.h"
 #include "esp_netif.h"
 
 #define DEFAULT_PLAY_URL "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3"
@@ -270,7 +270,7 @@ static int _mrm_event_handler(mrm_event_msg_t *event, void *ctx)
 void app_main(void)
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-
+    media_lib_add_default_adapter();
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();

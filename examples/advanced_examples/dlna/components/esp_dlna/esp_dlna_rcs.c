@@ -110,5 +110,5 @@ void esp_dlna_rcs_register_service(upnp_handle_t upnp)
             .path = "/RCS/"
         },
     };
-    upnp_register_service(upnp, &rcs_service, rcs_action, rcs_notify);
+    esp_upnp_register_service(upnp, &rcs_service, rcs_action, rcs_notify);
 }
