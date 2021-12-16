@@ -1,40 +1,39 @@
-# Multi-Room Music example
+# Multi-Room Music 例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_regular.png "中级")
 
 ## 例程简介
 
-- ESP Multi-Room Music 是一种基于 Wi-Fi 的多扬声器互联共享音乐通信协议。
-- 该协议连接多个音箱并组建成群组，群组的音箱可以同步播放和控制音乐，能够方便的实现影院级立体声环绕系统。
+ESP Multi-Room Music 是一种基于 Wi-Fi 的多扬声器互联共享音乐通信协议。该协议连接多个音箱并组建成群组，群组的音箱可以同步播放和控制音乐，能够方便的实现影院级立体声环绕系统。
 
 ### 资源列表
 
-- 内存消耗
+内存消耗
 
-|memory_total (byte)|memory_inram (byte)|memory_psram (byte)
-|---|---|---
-|279632 |145064 |134568
+| memory_total (byte) | memory_inram (byte) | memory_psram (byte) |
+|---------------------|---------------------|---------------------|
+| 279632              | 145064              | 134568              |
 
 ## 环境配置
 
 ### 硬件要求
 
-- 此示例可在标有绿色复选框的开发板上运行。请记住，如下面的*配置*一节所述，可以在 menuconfig 中选择合适的开发板。
+- 此示例可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 menuconfig 中选择合适的开发板。
 
-| Board Name | Getting Started | Chip | Compatible |
+| 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
+| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "开发板兼容此例程") |
+| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "开发板兼容此例程") |
 
 ## 编译和下载
 
 ### 使用 IDF 其他分支
 
-- 此示例需要选择 IDF `release/v4.2` 分支来编译
+此示例需要选择 IDF `release/v4.2` 分支来编译。
 ```c
 cd $IDF_PATH
 git checkout master
@@ -43,9 +42,9 @@ git checkout release/v4.2
 git submodule update --init --recursive
 ```
 
-### ADF Patches
+### ADF 补丁
 
-- 同时需要按照以下步骤应用 ADF 补丁：
+同时需要按照以下步骤应用 ADF 补丁：
 ```c
 cd $ADF_PATH
 git apply $ADF_PATH/examples/advanced_examples/multi-room/adf_patch/i2s-stream.patch
@@ -53,10 +52,10 @@ git apply $ADF_PATH/examples/advanced_examples/multi-room/adf_patch/i2s-stream.p
 
 ### 配置
 
-打开配置选项 `idf.py menuconfig`
+打开配置选项 `idf.py menuconfig`。
 
-- 在 `menuconfig` > `Audio HAL` 中选择合适的开发板
-- 在 `Example Configuration` > `WiFi SSID` 和 `WiFi Password` 配置 Wi-Fi 网络
+- 在 `menuconfig` > `Audio HAL` 中选择合适的开发板。
+- 在 `Example Configuration` > `WiFi SSID` 和 `WiFi Password` 配置 Wi-Fi 网络。
 
 ### 编译和下载
 
@@ -66,7 +65,7 @@ git apply $ADF_PATH/examples/advanced_examples/multi-room/adf_patch/i2s-stream.p
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -75,11 +74,11 @@ idf.py -p PORT flash monitor
 ### 功能和用法
 
 - 准备几块开发板，同时在所有开发板上加载并运行示例。
-- 当所有开发板都处于 `从机开始搜索` 模式后, 按下其中一块开发板的 `PLAY/REC` 键开始 (ESP) Multi-Room Music 播放。
+- 当所有开发板都处于 `从机开始搜索` 模式后，按下其中一块开发板的 `PLAY/REC` 键开始 (ESP) Multi-Room Music 播放。
 
 ### 日志输出
 
-- 从机开始搜索
+- 从机开始搜索，打印如下：
 ```c
 I (5451) ESP_AUDIO_TASK: media_ctrl_task running...,0x3f805a60
 
@@ -123,7 +122,7 @@ I (5718) AUDIO_THREAD: The mrm_slave_client task allocate stack on external memo
 I (5726) MRM_CLIENT: Slave start searching...
 ```
 
-- 主机开始播放
+- 主机开始播放，打印如下：
 ```c
 I (56177) MRM_EXAMPLE: [ * ] [Play] input key event
 I (56734) MRM_CLIENT: slave client task stoped
@@ -174,7 +173,7 @@ TSF:5785929
 Sync:1749
 ```
 
-- 从机开始播放
+- 从机开始播放，打印如下：
 ```c
 I (59095) MRM_EXAMPLE: slave set url https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3
 I (60563) HTTP_STREAM: total_bytes=2994349
@@ -207,7 +206,7 @@ I (61965) MRM_CLIENT: [sync] Sync 1011 PTS 1024 E2E_delay [73] sync diff [-3] ms
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

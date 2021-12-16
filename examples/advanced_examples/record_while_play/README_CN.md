@@ -8,26 +8,23 @@
 
 此示例展示了使用 ADF 接口同时进行播放和录音的操作，其中播放的管道可以选择从 microSD 卡或者从 HTTP 服务器获取 MP3 音频；录音的管道可以选择把录音的数据存储到 microSD 卡中或者直接用来语音识别。
 
-1. 播放的管道如下：
+播放的管道如下：
 
-    ```c
+  ```  
+  [sdcard] ---> fatfs_mp3_reader ---> mp3_decoder ---> i2s_stream_writer ---> [codec_chip]
+                                           ^
+                                           | (CONFIG_OUTPUT_STREAM_HTTP)
+  [http_server] ---> http_stream_reader ---
+  ```
 
-    [sdcard] ---> fatfs_mp3_reader ---> mp3_decoder ---> i2s_stream_writer ---> [codec_chip]
-                                             ^
-                                             | (CONFIG_OUTPUT_STREAM_HTTP)
-    [http_server] ---> http_stream_reader ---
-    ```
+录音的管道如下：
 
-2. 录音的管道如下：
-
-    ```c
-
-    [mic] ---> i2s_stream_reader ---> resample_filter ---> fatfs_stream_writer ---> [sdcard]
-                                                                |
-                                      (CONFIG_INPUT_STREAM_ASR) |
-                                                                 ---> raw_reader ---> wakenet_model ---> [asr_relsult]
-
-    ```
+  ```
+  [mic] ---> i2s_stream_reader ---> resample_filter ---> fatfs_stream_writer ---> [sdcard]
+                                                              |
+                                    (CONFIG_INPUT_STREAM_ASR) |
+                                                               ---> raw_reader ---> wakenet_model ---> [asr_relsult]
+  ```
 
 
 ## 环境配置
@@ -35,7 +32,7 @@
 ### 硬件要求
 
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -54,7 +51,7 @@
 
 ### 配置
 
-本例程需要准备一张 microSD 卡，在 [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) 页面下载 `ff-16b-2c-44100hz.mp3` 音频文件，重命名为 `test.mp3` 拷贝音源文件到 microSD 卡中。当然用户也可以自备的音源，只需按照上述规则重命名即可。
+本例程需要准备一张 microSD 卡，在 [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) 页面下载 `ff-16b-2c-44100hz.mp3` 音频文件，重命名为 `test.mp3`，拷贝音源文件到 microSD 卡中。当然用户也可以自备的音源，只需按照上述规则重命名即可。
 
 本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 
@@ -68,7 +65,7 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 ```
 
-本例程需要准备一张 microSD 卡，录音数据用途支持选择配置，可用于 ASR 自动语音识别，或者是直接保存写入 microSD 卡中。
+录音数据用途支持选择配置，可用于 ASR 自动语音识别，或者是直接保存写入 microSD 卡中。
 
 ```c
 menuconfig > Example Configuration > Input stream selection > (X) record for ASR
@@ -76,7 +73,7 @@ menuconfig > Example Configuration > Input stream selection > (X) record for ASR
                                                             --> ( ) record and save to sdcard
 ```
 
-同时，本例程播放的音频来源也可以选择配置，从 HTPP 服务器获取或者是从 microSD 卡中获取音频播放。
+同时，本例程播放的音频来源也可以选择配置，从 HTTP 服务器获取或者是从 microSD 卡中获取音频播放。
 
 ```c
 menuconfig > Example Configuration > Output stream selection > (X) play music from http
@@ -93,7 +90,7 @@ menuconfig > Example Configuration > Output stream selection > (X) play music fr
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -101,7 +98,7 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后，默认的配置是先去链接 Wi-Fi热点，链接成功后，播放 HTTP 服务器上的 MP3 音频文件，打印如下：
+- 例程开始运行后，默认的配置是先去连接 Wi-Fi 热点，连接成功后，播放 HTTP 服务器上的 MP3 音频文件，打印如下：
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -252,7 +249,7 @@ I (9990) REC_AND_PLAY_EXAMPLE: [ * ] Receive music info from mp3 decoder, sample
 
 ```
 
-- 此时，如果配置了 ASR 唤醒，则可以使用 “嗨， 乐鑫”，语音识别唤醒后打印 “###spot keyword###”，过程如下。
+- 此时，如果配置了 ASR 唤醒，则可以使用 “嗨， 乐鑫”，语音识别唤醒后打印 `###spot keyword###`，过程如下。
 
 ```c
 I (10808) REC_AND_PLAY_EXAMPLE: [ * ] Receive music info from mp3 decoder, sample_rates=44100, bits=16, ch=2
@@ -275,7 +272,7 @@ I (11201) REC_AND_PLAY_EXAMPLE: [ * ] Receive music info from mp3 decoder, sampl
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 --- idf_monitor on /dev/ttyUSB0 115200 ---
@@ -504,7 +501,7 @@ I (12064) REC_AND_PLAY_EXAMPLE: [ * ] Receive music info from mp3 decoder, sampl
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

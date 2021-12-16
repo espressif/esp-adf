@@ -1,26 +1,25 @@
 # Multi-Room Music example
 
-- [Chinese Version](./README_CN.md)
-- Difficulty level: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
+- [中文版本](./README_CN.md)
+- Regular Example: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
 
 ## Example Brief
 
-- ESP Multi-Room Music is a Wi-Fi-based communication protocol to share music among multiple interconnected speakers.
-- Under this protocol, those connected speakers form a Group. They can play music synchronously and are controlled together, which can easily achieve a theater-grade stereo surround sound system.
+ESP Multi-Room Music is a Wi-Fi-based communication protocol to share music among multiple interconnected speakers. Under this protocol, those connected speakers form a Group. They can play music synchronously and are controlled together, which can easily achieve a theater-grade stereo surround sound system.
 
 ### Resources
 
-- Memory consumption:
+Memory consumption:
 
-|memory_total (byte)|memory_inram (byte)|memory_psram (byte)
-|---|---|---
-|279632 |145064 |134568
+| memory_total (byte) | memory_inram (byte) | memory_psram (byte) |
+|---------------------|---------------------|---------------------|
+| 279632              | 145064              | 134568              |
 
 ## Environment Setup
 
 ### Hardware Required
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section *Configuration* below.
+This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
 | Board Name | Getting Started | Chip | Compatible |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -32,7 +31,7 @@ This example runs on the boards that are marked with a green checkbox in the tab
 
 ## Example Set Up
 
-### Use special IDF branches
+### Use Special IDF Branch
 
 - Compile this example on the IDF branch `release/v4.2`:
 ```c
@@ -68,16 +67,16 @@ idf.py -p PORT flash monitor
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See the Getting Started Guide for full steps to configure and use  [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
+See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project.
 
-## How to use the Example
+## How to Use the Example
 
 ### Example Functionality
 
 - Prepare some audio boards, load and run the example on all of them.
 - After all the boards are in `Slave start searching` mode, press the `PLAY/REC` button on one of the boards to start Multi-Room Music playback.
 
-### Example Logs
+### Example Log
 
 - Slave start searching
 ```c
@@ -204,7 +203,7 @@ I (61964) MRM_EXAMPLE: slave got sync 1011
 I (61965) MRM_CLIENT: [sync] Sync 1011 PTS 1024 E2E_delay [73] sync diff [-3] ms
 ```
 
-## Technical support and feedback
+## Technical Support and Feedback
 
 Please use the following feedback channels:
 
