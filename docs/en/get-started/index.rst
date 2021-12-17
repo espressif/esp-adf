@@ -4,55 +4,16 @@ Get Started
 
 This document is intended to help users set up the software environment for the development of audio applications using hardware based on the ESP32 family of chips by Espressif. After that, a simple example will show you how to use ESP-ADF (Espressif Audio Development Framework).
 
-For easier start with ESP-ADF, Espressif designed ESP32 and ESP32-S2 based development boards intended for audio applications. Click the links below to learn more about the available boards.
+Development Board Overview
+==========================
 
-
-=============================================  =============================================
-|Getting Started with ESP32-LyraT|_            |Getting Started with ESP32-LyraTD-MSC|_    
-=============================================  =============================================
-`Getting Started with ESP32-LyraT`_            `Getting Started with ESP32-LyraTD-MSC`_    
----------------------------------------------  ---------------------------------------------
-|Getting Started with ESP32-LyraT-Mini|_       |Getting Started with ESP32-S2-Kaluga-1-Kit|_ 
----------------------------------------------  ---------------------------------------------
-`Getting Started with ESP32-LyraT-Mini`_       `Getting Started with ESP32-S2-Kaluga-1-Kit`_ 
----------------------------------------------  ---------------------------------------------
-|Getting Started with ESP32-Korvo-DU1906|_     |Getting Started with ESP32-S3-Korvo-2|_
----------------------------------------------  ---------------------------------------------
-`Getting Started with ESP32-Korvo-DU1906`_     `Getting Started with ESP32-S3-Korvo-2`_
-=============================================  =============================================
-
-
-
-.. |Getting Started with ESP32-LyraT| image:: ../../_static/esp32-lyrat-v4.2-side.jpg
-.. _Getting Started with ESP32-LyraT: get-started-esp32-lyrat.html
-
-.. |Getting Started with ESP32-LyraTD-MSC| image:: ../../_static/esp32-lyratd-msc-v2.2.jpg
-.. _Getting Started with ESP32-LyraTD-MSC: get-started-esp32-lyratd-msc.html
-
-.. |Getting Started with ESP32-LyraT-Mini| image:: ../../_static/esp32-lyrat-mini-v1.2.png
-.. _Getting Started with ESP32-LyraT-Mini: get-started-esp32-lyrat-mini.html
-
-.. |Getting Started with ESP32-S2-Kaluga-1-Kit| image:: ../../_static/esp32-s2-kaluga-1-kit.png
-.. _Getting Started with ESP32-S2-Kaluga-1-Kit: https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html
-
-.. |Getting Started with ESP32-Korvo-DU1906| image:: ../../_static/esp32-korvo-du1906-v1.1.png
-.. _Getting Started with ESP32-Korvo-DU1906: get-started-esp32-korvo-du1906.html
-
-.. |Getting Started with ESP32-S3-Korvo-2| image:: ../../_static/esp32-s3-korvo-2-v3.0-overview.png
-.. _Getting Started with ESP32-S3-Korvo-2: user-guide-esp32-s3-korvo-2.html
+For easier start with ESP-ADF, Espressif designed ESP32, ESP32-S2, and ESP32-S3 based development boards intended for audio applications. Click the links below to learn more about the available boards.
 
 .. toctree::
-    :hidden:
-    :maxdepth: 1
+   :maxdepth: 2
 
-    Guide for ESP32-LyraT <get-started-esp32-lyrat>
-    Guide for ESP32-LyraTD-MSC <get-started-esp32-lyratd-msc>
-    Guide for ESP32-LyraT-Mini <get-started-esp32-lyrat-mini>
-    Guide for ESP32-S2-Kaluga-1-Kit <https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html>
-    Guide for ESP32-Korvo-DU1906 <get-started-esp32-korvo-du1906>
-    Guide for ESP32-S3-Korvo-2 <user-guide-esp32-s3-korvo-2>
-    Guide for ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>
 
+   ../design-guide/dev-boards/index
 
 If you do not have any of the above boards, you can still use ESP-ADF for the ESP32 and ESP32-S2 based audio applications. For this, your board needs to have a compatible audio codec or DSP chip; alternatively, you can develop a driver to support communication with your specific chip.
 
@@ -67,7 +28,7 @@ To use ESP-ADF you need set up the ESP-IDF first, and this is described in the n
 
 .. note::
 
-    ESP-ADF provides support for specific ESP-IDF versions (v3.3, v4.0, v4.1, v4.2, v4.3 and v4.4) <https://docs.espressif.com/projects/esp-idf/en/release-v3.3/versions.html>`_. If your have already set up another version, please switch to a supported ESP-IDF version, or you may not be able to compile ESP-ADF applications.
+    ESP-ADF provides support for specific `ESP-IDF versions (v3.3, v4.0, v4.1, v4.2, v4.3 and v4.4) <https://docs.espressif.com/projects/esp-idf/en/release-v3.3/versions.html>`_. If your have already set up another version, please switch to a supported ESP-IDF version, or you may not be able to compile ESP-ADF applications.
 
 
 .. _get-started-step-by-step:
@@ -473,17 +434,6 @@ Another solution is to update only what has changed. This method is useful if yo
     git submodule update --init --recursive
 
 The ``git pull`` command is fetching and merging changes from ESP-ADF repository on GitHub. Then ``git submodule update --init --recursive`` is updating existing submodules or getting a fresh copy of new ones. On GitHub the submodules are represented as links to other repositories and require this additional command to get them onto your PC.
-
-
-Related Documents
-=================
-
-.. toctree::
-    :maxdepth: 1
-
-    get-started-esp32-lyrat
-    get-started-esp32-lyrat-v4.2
-    get-started-esp32-lyrat-v4
 
 
 .. _ESP-IDF Tools Installer: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html#get-started-windows-tools-installer

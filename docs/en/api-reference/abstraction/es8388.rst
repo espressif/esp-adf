@@ -1,7 +1,7 @@
 ES8388 Driver
 =============
 
-Driver for `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_ codec chip used in :doc:`ESP32 LyraT <../../get-started/get-started-esp32-lyrat>` audio board.
+Driver for `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_ codec chip used in :doc:`ESP32 LyraT <../../design-guide/dev-boards/get-started-esp32-lyrat>` audio board.
 
 
 API Reference

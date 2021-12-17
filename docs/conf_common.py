@@ -66,6 +66,14 @@ extensions = ['breathe',
               'html_redirects'
              ]
 
+# Custom added feature to allow redirecting old URLs
+with open('../page_redirects.txt') as f:
+    lines = [re.sub(' +', ' ', line.strip()) for line in f.readlines() if line.strip() != '' and not line.startswith('#')]
+    for line in lines:  # check for well-formed entries
+        if len(line.split(' ')) != 2:
+            raise RuntimeError('Invalid line in page_redirects.txt: %s' % line)
+html_redirect_pages = [tuple(line.split(' ')) for line in lines]
+
 # Breathe extension variables
 
 # Doxygen regenerates files in 'xml/' directory every time,

@@ -8,7 +8,7 @@ This user guide will help you get started with ESP32-S3-Korvo-2 V3.0 and will al
 
 The ESP32-S3-Korvo-2 is a multimedia development board based on the ESP32-S3 chip. It is equipped with a two-microphone array which is suitable for voice recognition and near/far-field voice wake-up applications. The board integrates multiple peripherals such as LCD, camera, and microSD card. It also supports JPEG video stream processing. With all of its outstanding features, the board is an ideal choice for the development of low-cost and low-power network-connected audio and video products.
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-overview.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-overview.png
     :align: center
     :alt: ESP32-S3-Korvo-2 V3.0 with ESP32-S3-WROOM-1 module
     :figclass: align-center
@@ -40,7 +40,7 @@ This section provides a brief introduction of ESP32-S3-Korvo-2 V3.0, instruction
 Description of Components
 -------------------------
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0.png
     :align: center
     :scale: 70%
     :alt: ESP32-S3-Korvo-2 V3.0 (click to enlarge)
@@ -184,7 +184,7 @@ Block Diagram
 
 The block diagram below shows the components of ESP32-S3-Korvo-2 V3.0 and their interconnections.
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-electrical-block-diagram.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-electrical-block-diagram.png
     :align: center
     :scale: 60%
     :alt: ESP32-S3-Korvo-2 V3.0 Electrical Block Diagram
@@ -201,14 +201,14 @@ Power Supply over USB and from Battery
 
 The main power supply is 5 V and provided by a USB. The secondary power supply is 3.7 V and provided by an optional battery. The USB power itself is fed with a dedicated cable, separate from a USB cable used for an application upload. To further reduce noise from the USB, the battery may be used instead of the USB.
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-usb-ps.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-usb-ps.png
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Dedicated USB Power Supply Socket
     :figclass: align-center
 
     ESP32-S3-Korvo-2 V3.0 - Dedicated USB Power Supply Socket
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-battery-ps.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-battery-ps.png
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Power Supply from a Battery
     :figclass: align-center
@@ -217,7 +217,7 @@ The main power supply is 5 V and provided by a USB. The secondary power supply i
 
 When the USB power supply and battery power supply are connected at the same time as shown in the figure below, VBUS is high, Q14 is in the off state, VBAT is automatically cut off, and USB becomes the power supply for the system.
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-ps-options.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-ps-options.png
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Power Supply Options
     :figclass: align-center
@@ -229,14 +229,14 @@ Independent Audio and Digital Power Supply
 
 The board features independent power supplies to the audio components and ESP module. This should reduce noise in the audio signal from digital components and improve overall performance of the components.
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-digital-ps.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-digital-ps.png
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Digital Power Supply
     :figclass: align-center
 
     ESP32-S3-Korvo-2 V3.0 - Digital Power Supply
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-audio-ps.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-audio-ps.png
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Audio Power Supply
     :figclass: align-center
@@ -747,21 +747,21 @@ ESP32-S3-Korvo-2 provides two compatible echo reference signal source designs. O
 
 The echo reference signal is collected by ADC_MIC3P/ADC_MIC3N of ADC (ES7210) and then sent back to ESP32-S3 for AEC algorithm.
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-aec-codec-o.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-codec-o.png
     :scale: 60%
     :alt: ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC Output
     :figclass: align-center
 
     ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC Output
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-aec-pa-o.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-pa-o.png
     :scale: 30%
     :alt: ESP32-S3-Korvo-2 V3.0 - AEC PA Output
     :figclass: align-center
 
     ESP32-S3-Korvo-2 V3.0 - AEC PA Output
 
-.. figure:: ../../_static/esp32-s3-korvo-2-v3.0-aec-signal-collection.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-signal-collection.png
     :scale: 60%
     :alt: ESP32-S3-Korvo-2 V3.0 - AEC Reference Signal Collection
     :figclass: align-center

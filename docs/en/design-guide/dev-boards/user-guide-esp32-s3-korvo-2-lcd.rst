@@ -12,7 +12,7 @@ Currently, ESP32-S3-Korvo-2-LCD V1.0 is sold as part of the :ref:`ESP32-S3-Korvo
 
 The ESP32-S3-Korvo-2-LCD extends the functionality of your main board by adding an LCD graphic display and capacitive touchpad.
 
-.. figure:: ../../_static/esp32-s3-korvo-2-lcd-v1.0-overview.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-lcd-v1.0-overview.png
     :align: center
     :alt: ESP32-S3-Korvo-2-LCD V1.0
     :figclass: align-center
@@ -35,7 +35,7 @@ This extension board adds a 2.4” LCD graphic display with the resolution of 32
 Description of Components
 -------------------------
 
-.. figure:: ../../_static/esp32-s3-korvo-2-lcd-v1.0-front.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-lcd-v1.0-front.png
     :scale: 60%
     :align: center
     :alt: ESP32-S3-Korvo-2-LCD V1.0 - front
@@ -43,7 +43,7 @@ Description of Components
 
     ESP32-S3-Korvo-2-LCD V1.0 - front
 
-.. figure:: ../../_static/esp32-s3-korvo-2-lcd-v1.0-back.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-lcd-v1.0-back.png
     :scale: 70%
     :align: center
     :alt: ESP32-S3-Korvo-2-LCD V1.0- back
@@ -110,7 +110,7 @@ Block Diagram
 
 The block diagram below shows the components of ESP32-S3-Korvo-2-LCD and their interconnections.
 
-.. figure:: ../../_static/esp32-s3-korvo-2-lcd-v1.0-electrical-block-diagram.png
+.. figure:: ../../../_static/esp32-s3-korvo-2-lcd-v1.0-electrical-block-diagram.png
     :align: center
     :alt: ESP32-S3-Korvo-2-LCD
     :figclass: align-center

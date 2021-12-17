@@ -6,7 +6,7 @@ ESP32-Korvo-DU1906
 This user guide provides information on ESP32-Korvo-DU1906. 
 
 
-.. figure:: ../../_static/esp32-korvo-du1906-v1.1.png
+.. figure:: ../../../_static/esp32-korvo-du1906-v1.1.png
     :align: center
     :scale: 50%
     :alt: esp32-korvo-du1906
@@ -53,7 +53,7 @@ DU1906 is a voice processing flagship chip launched by Baidu. This chip has a hi
 
 The block diagram below presents main components of the ESP32-Korvo-DU1906 and interconnections between components.
 
-.. figure:: ../../_static/esp32-korvo-du1906-v1.1-block-diagram.png
+.. figure:: ../../../_static/esp32-korvo-du1906-v1.1-block-diagram.png
     :align: center
     :scale: 50%
     :alt: esp32-korvo-du1906-block
@@ -67,7 +67,7 @@ Description of Components
 
 The following list and figure describe key components, interfaces and controls of the ESP32-Korvo-DU1906 used in this guide. This covers just what is needed now. For additional details please refer to schematics provided in Related Documents.
 
-.. figure:: ../../_static/esp32-korvo-du1906-v1.1-layout.png
+.. figure:: ../../../_static/esp32-korvo-du1906-v1.1-layout.png
     :align: center
     :scale: 50%
     :alt: esp32-korvo-du1906-components

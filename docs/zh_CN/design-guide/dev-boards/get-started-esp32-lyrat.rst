@@ -40,7 +40,7 @@ ESP32-LyraT V4.3 是一款基于 `乐鑫 <https://espressif.com>`_ ESP32 的开�
 
 下图展示的是 ESP32-LyraT 的主要组件以及组件之间的连接方式。
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-block-diagram.jpg
+.. figure:: ../../../_static/esp32-lyrat-v4.3-block-diagram.jpg
     :alt: ESP32 LyraT block diagram
     :figclass: align-center
 
@@ -50,7 +50,7 @@ ESP32-LyraT V4.3 是一款基于 `乐鑫 <https://espressif.com>`_ ESP32 的开�
 组件
 ^^^^^^
 
-以下列表和图片仅涉及 ESP32-LyraT 的主要组件、接口和控制方式，仅展示目前所需的信息。欲访问详细的技术文档，请前往 :doc:`../design-guide/board-esp32-lyrat-v4.3` 和 `ESP32 LyraT V4.3 schematic`_ (PDF)。
+以下列表和图片仅涉及 ESP32-LyraT 的主要组件、接口和控制方式，仅展示目前所需的信息。欲访问详细的技术文档，请前往 :doc:`board-esp32-lyrat-v4.3` 和 `ESP32 LyraT V4.3 schematic`_ (PDF)。
 
 
 ESP32-WROVER 模组
@@ -64,7 +64,7 @@ ESP32-WROVER 模组
 
 .. _get-started-esp32-lyrat-v4.3-board:
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-layout-overview.jpg
+.. figure:: ../../../_static/esp32-lyrat-v4.3-layout-overview.jpg
     :alt: ESP32 LyraT V4.3 Board Layout Overview
     :figclass: align-center
 
@@ -147,7 +147,7 @@ ESP32-LyraT 上电之前，请首先确认开发板完好无损。
 相关文档
 ----------
 
-* :doc:`../design-guide/board-esp32-lyrat-v4.3`
+* :doc:`board-esp32-lyrat-v4.3`
 * `ESP32 LyraT V4.3 schematic`_ (PDF)
 * `ESP32-LyraT V4.3 Component Layout`_ (PDF)
 * `ESP32 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_cn.pdf>`_ (PDF)
