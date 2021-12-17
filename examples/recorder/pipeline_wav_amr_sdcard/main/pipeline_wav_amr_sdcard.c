@@ -141,9 +141,12 @@ void app_main()
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
+    audio_pipeline_set_listener(pipeline_wav, evt);
+    audio_pipeline_set_listener(pipeline_amr, evt);
+
     ESP_LOGI(TAG, "[5.1] Listening event from peripherals");
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
-
+    
     ESP_LOGI(TAG, "[6.0] start audio_pipeline");
     audio_pipeline_run(pipeline_wav);
     audio_pipeline_run(pipeline_amr);
@@ -157,7 +160,7 @@ void app_main()
             ESP_LOGI(TAG, "[ * ] Recording ... %d", second_recorded);
             if (second_recorded >= RECORD_TIME_SECONDS) {
                 ESP_LOGI(TAG, "Finishing recording");
-                break;
+                audio_element_set_ringbuf_done(i2s_stream_reader);
             }
             continue;
         }
