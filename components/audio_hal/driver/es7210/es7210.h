@@ -79,21 +79,21 @@ typedef enum {
 } es7210_input_mics_t;
 
 typedef enum gain_value{
-	GAIN_0DB = 0,
-	GAIN_3DB,
-	GAIN_6DB,
-	GAIN_9DB,
-	GAIN_12DB,
-	GAIN_15DB,
-	GAIN_18DB,
-	GAIN_21DB,
-	GAIN_24DB,
-	GAIN_27DB,
-	GAIN_30DB,
-	GAIN_33DB,
-	GAIN_34_5DB,
-	GAIN_36DB,
-	GAIN_37_5DB,
+    GAIN_0DB = 0,
+    GAIN_3DB,
+    GAIN_6DB,
+    GAIN_9DB,
+    GAIN_12DB,
+    GAIN_15DB,
+    GAIN_18DB,
+    GAIN_21DB,
+    GAIN_24DB,
+    GAIN_27DB,
+    GAIN_30DB,
+    GAIN_33DB,
+    GAIN_34_5DB,
+    GAIN_36DB,
+    GAIN_37_5DB,
 } es7210_gain_value_t;
 
 /*
