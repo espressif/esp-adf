@@ -69,13 +69,14 @@ audio_hal_handle_t audio_board_codec_init(void);
 audio_hal_handle_t audio_board_adc_init(void);
 
 /**
- * @brief Initialize led peripheral and display service
+ * @brief Initialize lcd peripheral
  *
  * @param set The handle of esp_periph_set_handle_t
+ * @param cb  The `on_color_trans_done` callback in `esp_lcd_panel_io_spi_config_t`
  *
- * @return The audio display service handle
+ * @return The `esp_lcd_panel_handle_t` handle
  */
-esp_lcd_panel_handle_t audio_board_lcd_init(esp_periph_set_handle_t set);
+void *audio_board_lcd_init(esp_periph_set_handle_t set, void *cb);
 
 /**
  * @brief Initialize led peripheral and display service

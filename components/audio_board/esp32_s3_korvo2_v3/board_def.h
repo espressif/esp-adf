@@ -62,6 +62,11 @@
 #define LCD_H_RES                   320
 #define LCD_V_RES                   240
 
+#define LCD_SWAP_XY                 (false)
+#define LCD_MIRROR_X                (true)
+#define LCD_MIRROR_Y                (true)
+#define LCD_COLOR_INV               (false)
+
 #define ESP_SD_PIN_CLK              GPIO_NUM_15
 #define ESP_SD_PIN_CMD              GPIO_NUM_7
 #define ESP_SD_PIN_D0               GPIO_NUM_4
@@ -74,6 +79,11 @@
 #define ESP_SD_PIN_D7               -1
 #define ESP_SD_PIN_CD               -1
 #define ESP_SD_PIN_WP               -1
+
+
+#define TOUCH_PANEL_SWAP_XY        (0)
+#define TOUCH_PANEL_INVERSE_X      (1)
+#define TOUCH_PANEL_INVERSE_Y      (0)
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 extern audio_hal_func_t AUDIO_CODEC_ES7210_DEFAULT_HANDLE;

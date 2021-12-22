@@ -38,6 +38,26 @@
 #define BUTTON_ADC                6
 #define WS2812_LED_GPIO           45
 
+
+#define LCD_CTRL_GPIO               GPIO_NUM_6
+#define LCD_RST_GPIO                GPIO_NUM_16
+#define LCD_CS_GPIO                 GPIO_NUM_11
+
+// LCD SPI Pins
+#define LCD_DC_GPIO                 GPIO_NUM_13
+#define LCD_CLK_GPIO                GPIO_NUM_15
+#define LCD_MOSI_GPIO               GPIO_NUM_9
+
+// The LCD pixel number in horizontal and vertical
+#define LCD_H_RES                   320
+#define LCD_V_RES                   240
+
+#define LCD_SWAP_XY                 (true)
+#define LCD_MIRROR_X                (true)
+#define LCD_MIRROR_Y                (true)
+#define LCD_COLOR_INV               (false)
+
+
 #define ES8311_MCLK_SOURCE        1   /* 0 From MCLK, 1 From BCLK */
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;

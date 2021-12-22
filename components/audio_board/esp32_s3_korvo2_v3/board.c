@@ -25,9 +25,7 @@
 #include "esp_log.h"
 #include "board.h"
 #include "audio_mem.h"
-
 #include "periph_sdcard.h"
-#include "periph_lcd.h"
 #include "periph_adc_button.h"
 #include "tca9554.h"
 
@@ -81,7 +79,7 @@ esp_err_t _get_lcd_io_bus (void *bus, esp_lcd_panel_io_spi_config_t *io_config,
     return esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)bus, io_config, out_panel_io);
 }
 
-esp_lcd_panel_handle_t audio_board_lcd_init(esp_periph_set_handle_t set)
+void *audio_board_lcd_init(esp_periph_set_handle_t set, void *cb)
 {
     esp_tca9554_config_t pca_cfg = {
         .i2c_scl = GPIO_NUM_18,
@@ -108,18 +106,20 @@ esp_lcd_panel_handle_t audio_board_lcd_init(esp_periph_set_handle_t set)
         .miso_io_num = -1,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
-        .max_transfer_sz = 16 * LCD_H_RES * 2 + 8
+        .max_transfer_sz = LCD_V_RES * LCD_H_RES * 2
     };
     ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
     esp_lcd_panel_io_spi_config_t io_config = {
         .dc_gpio_num = LCD_DC_GPIO,
         .cs_gpio_num = -1,
-        .pclk_hz = 10 * 1000 * 1000,
+        .pclk_hz = 60 * 1000 * 1000,
         .lcd_cmd_bits = 8,
         .lcd_param_bits = 8,
         .spi_mode = 0,
         .trans_queue_depth = 10,
+        .on_color_trans_done = cb,
+        .user_ctx = NULL,
     };
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = -1,
@@ -134,12 +134,15 @@ esp_lcd_panel_handle_t audio_board_lcd_init(esp_periph_set_handle_t set)
         .lcd_dev_cfg = &panel_config,
         .rest_cb = _lcd_rest,
         .rest_cb_ctx = NULL,
+        .lcd_swap_xy = LCD_SWAP_XY,
+        .lcd_mirror_x = LCD_MIRROR_X,
+        .lcd_mirror_y = LCD_MIRROR_Y,
+        .lcd_color_invert = LCD_COLOR_INV,
     };
     esp_periph_handle_t periph_lcd = periph_lcd_init(&cfg);
     AUDIO_NULL_CHECK(TAG, periph_lcd, return NULL;);
     esp_periph_start(set, periph_lcd);
-
-    return periph_lcd_get_panel_handle(periph_lcd);
+    return (void *)periph_lcd_get_panel_handle(periph_lcd);
 }
 
 esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
