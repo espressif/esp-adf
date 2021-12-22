@@ -121,8 +121,9 @@ before_script:
   script:
     # it's not possible to build 100% out-of-tree and have the "artifacts"
     # mechanism work, but this is the next best thing
-    - cd ${ADF_PATH}
+    - cd ${IDF_PATH}
     - git submodule update --init --recursive
+    - cd ${ADF_PATH}
     - rm -rf build_examples
     - mkdir build_examples
     - cd build_examples
@@ -406,8 +407,11 @@ build_adf_test:
       - $IDF_PATH/components/partition_table
     expire_in: 1 month
   script:
-    - cd ${ADF_PATH}
+    - cd ${IDF_PATH}
     - git submodule update --init --recursive
+    - cd ${ADF_PATH}/components/esp-adf-libs
+    - git log -2
+    - cd ${ADF_PATH}
     - git clone ${ADF_TEST_CLI_REPO}
     - cd adf-cli
     - git checkout ${CI_COMMIT_REF_NAME} || echo "Using adf-cli default branch..."

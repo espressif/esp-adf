@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#include "upnp.h"
+#include "esp_upnp.h"
 
 /**
  * DLNA Renderer request type

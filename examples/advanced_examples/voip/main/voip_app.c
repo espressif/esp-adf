@@ -38,7 +38,7 @@
 
 #include "audio_tone_uri.h"
 #include "audio_player_int_tone.h"
-
+#include "media_lib_adapter.h"
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
 #else
@@ -373,7 +373,7 @@ void setup_wifi()
 void app_main()
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-
+    media_lib_add_default_adapter();
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         // NVS partition was truncated and needs to be erased

@@ -86,5 +86,5 @@ void esp_dlna_cmr_register_service(upnp_handle_t upnp)
             .path = "/CMR/"
         }
     };
-    upnp_register_service(upnp, &cmr_service, cmr_action, NULL);
+    esp_upnp_register_service(upnp, &cmr_service, cmr_action, NULL);
 }

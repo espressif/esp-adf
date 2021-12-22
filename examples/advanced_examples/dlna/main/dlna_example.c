@@ -22,7 +22,7 @@
 #include "esp_decoder.h"
 #include "http_stream.h"
 #include "i2s_stream.h"
-
+#include "media_lib_adapter.h"
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
 #else
@@ -274,7 +274,7 @@ static void start_dlna()
     ssdp_config_t ssdp_config = SSDP_DEFAULT_CONFIG();
     ssdp_config.udn = DLNA_UNIQUE_DEVICE_NAME;
     ssdp_config.location = "http://${ip}"DLNA_ROOT_PATH;
-    ssdp_start(&ssdp_config, ssdp_service);
+    esp_ssdp_start(&ssdp_config, ssdp_service);
 
     static httpd_handle_t httpd = NULL;
     httpd_config_t httpd_config = HTTPD_DEFAULT_CONFIG();
@@ -314,7 +314,7 @@ void app_main()
     esp_log_level_set("AUDIO_ELEMENT", ESP_LOG_WARN);
     esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_ERROR);
     esp_log_level_set("ESP_AUDIO_CTRL", ESP_LOG_WARN);
-
+    media_lib_add_default_adapter();
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -330,8 +330,8 @@ void app_main()
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = CONFIG_WIFI_SSID,
-        .password = CONFIG_WIFI_PASSWORD,
+        .ssid = "ESP-Audio",
+        .password = "esp123456",
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);
