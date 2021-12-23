@@ -254,7 +254,10 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
         }
 #endif
     }
-    i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
+    if (i2s->config.i2s_config.bits_per_sample == I2S_BITS_PER_SAMPLE_16BIT)
+        i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
+    else
+        i2s_write_expand(i2s->config.i2s_port, buffer, len, I2S_BITS_PER_SAMPLE_16BIT, i2s->config.i2s_config.bits_per_sample, &bytes_written, ticks_to_wait);
     return bytes_written;
 }
 
