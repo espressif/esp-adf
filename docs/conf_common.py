@@ -62,7 +62,8 @@ extensions = ['breathe',
               'sphinxcontrib.actdiag',
               'sphinxcontrib.nwdiag',
               'sphinxcontrib.rackdiag',
-              'sphinxcontrib.packetdiag'
+              'sphinxcontrib.packetdiag',
+              'html_redirects'
              ]
 
 # Breathe extension variables
