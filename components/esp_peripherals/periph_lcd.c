@@ -36,7 +36,7 @@
 static const char *TAG = "PERIPH_LCD";
 
 typedef struct periph_lcd {
-    void                               *io_bus;
+    void                                *io_bus;
     get_lcd_io_bus                      new_panel_io;
     esp_lcd_panel_io_spi_config_t       lcd_io_cfg;
     get_lcd_panel                       new_lcd_panel;
@@ -46,7 +46,11 @@ typedef struct periph_lcd {
     esp_lcd_panel_handle_t              lcd_panel_handle;
 
     perph_lcd_rest                      rest_cb;
-    void                               *rest_cb_ctx;
+    void                                *rest_cb_ctx;
+    bool                                lcd_swap_xy;
+    bool                                lcd_mirror_x;
+    bool                                lcd_mirror_y;
+    bool                                lcd_color_invert;
 } periph_lcd_t;
 
 
@@ -65,6 +69,12 @@ static esp_err_t _lcd_init(esp_periph_handle_t self)
     }
     // Initialize LCD panel
     ESP_ERROR_CHECK(esp_lcd_panel_init(periph_lcd->lcd_panel_handle));
+
+
+    ESP_ERROR_CHECK(esp_lcd_panel_invert_color(periph_lcd->lcd_panel_handle, periph_lcd->lcd_color_invert));
+    ESP_ERROR_CHECK(esp_lcd_panel_set_gap(periph_lcd->lcd_panel_handle, 0, 0));
+    ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(periph_lcd->lcd_panel_handle, periph_lcd->lcd_swap_xy));
+    ESP_ERROR_CHECK(esp_lcd_panel_mirror(periph_lcd->lcd_panel_handle, periph_lcd->lcd_mirror_x, periph_lcd->lcd_mirror_y));
     return ESP_OK;
 }
 
@@ -104,6 +114,10 @@ esp_periph_handle_t periph_lcd_init(periph_lcd_cfg_t *config)
     memcpy(&periph_lcd->lcd_dev_cfg, config->lcd_dev_cfg, sizeof(esp_lcd_panel_dev_config_t));
     periph_lcd->new_panel_io = config->new_panel_io;
     periph_lcd->new_lcd_panel = config->new_lcd_panel;
+    periph_lcd->lcd_swap_xy = config->lcd_swap_xy;
+    periph_lcd->lcd_mirror_x = config->lcd_mirror_x;
+    periph_lcd->lcd_mirror_y = config->lcd_mirror_y;
+    periph_lcd->lcd_color_invert = config->lcd_color_invert;
 
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_LCD, "periph_lcd");
     AUDIO_MEM_CHECK(TAG, periph, {audio_free(periph_lcd);

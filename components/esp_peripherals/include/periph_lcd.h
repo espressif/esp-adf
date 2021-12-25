@@ -25,14 +25,15 @@
 #ifndef _PERIPH_LCD_H_
 #define _PERIPH_LCD_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
 #include "driver/spi_master.h"
 #include "esp_peripherals.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef esp_err_t (*perph_lcd_rest)(esp_periph_handle_t self, void *ctx);
 
@@ -53,6 +54,11 @@ typedef struct {
     esp_lcd_panel_dev_config_t          *lcd_dev_cfg;
     perph_lcd_rest                      rest_cb;
     void                                *rest_cb_ctx;
+
+    bool                                lcd_swap_xy;
+    bool                                lcd_mirror_x;
+    bool                                lcd_mirror_y;
+    bool                                lcd_color_invert;
 } periph_lcd_cfg_t;
 
 /**
@@ -74,6 +80,8 @@ esp_periph_handle_t periph_lcd_init(periph_lcd_cfg_t *config);
  * @return     The `esp_lcd_panel_handle_t` handle
  */
 esp_lcd_panel_handle_t periph_lcd_get_panel_handle(esp_periph_handle_t handle);
+
+#endif
 
 #ifdef __cplusplus
 }
