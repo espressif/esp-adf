@@ -42,7 +42,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -71,7 +71,7 @@
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-如果你需要修改录音文件名，本例程建议同时打开 FATFS 长文件名支持。
+如果你需要修改录音文件名，本例程建议同时打开 FatFs 长文件名支持。
 
 ```
 menuconfig > Component config > FAT Filesystem support > Long filename support
@@ -79,7 +79,7 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
@@ -155,7 +155,7 @@ I (1440) RESAMPLE_EXAMPLE: [2.3] Register audio elements to playback pipeline
 I (1460) RESAMPLE_EXAMPLE: [ 3 ] Set up  event listener
 ```
 
-- 当按下音频板上的 [REC] 按钮时，本例将进行录音，重采样数据后编码为 WAV 文件，并写入到 microSD 卡中保存，打印如下：
+- 当按下音频板上的 [REC] 按键时，本例将进行录音，重采样数据后编码为 WAV 文件，并写入到 microSD 卡中保存，打印如下：
 
 ```c
 E (25420) RESAMPLE_EXAMPLE: STOP Playback and START [Record]
