@@ -1,4 +1,4 @@
-# 数字生活网络联盟（DLNA）例程
+# 数字生活网络联盟 (DLNA) 例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_regular.png "中级")
@@ -15,7 +15,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -42,7 +42,7 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 本例程需要先配置 Wi-Fi 连接信息，通过运行 `menuconfig > Example Configuration` 填写 `Wi-Fi SSID` 和 `Wi-Fi Password`。
 
-```c
+```
 menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 ```
 
@@ -54,7 +54,7 @@ menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -64,7 +64,7 @@ idf.py -p PORT flash monitor
 
 本例程需要先运行 DLNA 服务器，对于电脑端的配置如下：
 - 先安装 [Universal Media Center](https://www.universalmediaserver.com/) 或其他的 DLNA 媒体控制终端。
-- 按照下图，选择 ESP32 Renderer -> 从电脑选择 MP3 文件 -> 点击播放。
+- 按照下图，选择 ESP32 Renderer > 从电脑选择 MP3 文件 > 点击播放。
 
   <img src="./ums.png" width="50%" height="50%" alt="ums" align=center />
 
@@ -203,7 +203,7 @@ I (5136) LYRAT_V4_3: I2S0, MCLK output by GPIO0
 I (5186) DLNA_EXAMPLE: DLNA Started...
 ```
 
-- 本例程选择安卓手机，使用网易云音乐应用程序，与 DLNA 设备建立连接，连接成功后，点击播放音乐，手机上的音乐则会通过开发板播放出来，log 如下：
+- 本例程选择安卓手机，使用网易云音乐应用程序，与 DLNA 设备建立连接，连接成功后，点击播放音乐，手机上的音乐则会通过开发板播放出来，日志如下：
 
 ```c
 I (15456) DLNA_EXAMPLE: Play with speed=1 trans_state STOPPED
@@ -246,7 +246,7 @@ I (40766) DLNA_EXAMPLE: _avt_get_trans_state PLAYING
 I (40776) DLNA_EXAMPLE: _avt_get_trans_state PLAYING
 ```
 
-- 支持歌曲暂停、下一曲、上一曲、音量加、音量减等操作的，歌曲暂停 log 如下：
+- 支持歌曲暂停、下一曲、上一曲、音量加、音量减等操作的，歌曲暂停。日志如下：
 
 ```c
 I (114436) DLNA_EXAMPLE: Pause instance=0
@@ -259,7 +259,7 @@ I (114486) DLNA_EXAMPLE: _avt_get_trans_state PAUSED_PLAYBACK
 ```
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 ets Jul 29 2019 12:21:46
@@ -439,7 +439,7 @@ I (114486) DLNA_EXAMPLE: _avt_get_trans_state PAUSED_PLAYBACK
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

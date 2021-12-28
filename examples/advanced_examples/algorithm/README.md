@@ -5,28 +5,28 @@
 
 ## Example Brief
 
-This routine is to play music while performing echo cancellation of the sound recorded by the microphone, and then save it to the SD card.
+This example is to play music while performing echo cancellation of the sound recorded by the microphone, and then save it to the microSD card.
 
-Algorithm example has two pipelines. One is to play MP3 files in the SD card, and the other is the recording pipeline, which is processed by the algorithm of AEC, AGC, and NS, and then encoded into the WAV format, saved in the SD card finally. At last we compare the original audio with the recorded audio.
+This algorithm example has two pipelines. One is to play the MP3 file in the microSD card, and the other is to record the audio. First, the audio is processed by the algorithm of AEC, AGC, and NS, and then is encoded into the WAV format and saved in the microSD card. At last we compare the original audio with the recorded audio.
 
-1.Playing MP3 pipeline:
+- Playing MP3 pipeline:
 
-```c
-[sdcard] ---> fatfs_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
-```
+  ```c
+  [sdcard] ---> fatfs_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
+  ```
 
-2.Recording WAV pipeline:
+- Recording WAV pipeline:
 
-```c
-[codec_chip] ---> i2s_stream ---> wav_encoder ---> fatfs_stream ---> [sdcard]
-```
+  ```c
+  [codec_chip] ---> i2s_stream ---> wav_encoder ---> fatfs_stream ---> [sdcard]
+  ```
 
 
 ## Environment Setup
 
 #### Hardware Required
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section *Configuration* below.
+This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
 | Board Name | Getting Started | Chip | Compatible |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -64,14 +64,14 @@ idf.py -p PORT flash monitor
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See the Getting Started Guide for full steps to configure and use  [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
+See the Getting Started Guide for full steps to configure and use [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
 
 
 ## How to use the Example
 
 ### Example Functionality
 
-After download the follow logs should be output, here:
+After download the follow log should be output:
 
 ```
 I (10) boot: ESP-IDF v3.3.2-107-g722043f 2nd stage bootloader

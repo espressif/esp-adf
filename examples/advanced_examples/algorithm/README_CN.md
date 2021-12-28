@@ -5,27 +5,27 @@
 
 ## 例程简介
 
-本例程的功能是在播放音乐的同时将麦克风收录的声音先进行回声消除，然后存储到 SD card 中。
+本例程的功能是在播放音乐的同时将麦克风收录的声音先进行回声消除，然后存储到 microSD 卡中。
 
-本例程有两条 pipeline，第一条 pipeline 是读取 SD card 中的 MP3 音乐文件并播放； 第二条 pipeline 是录音的过程， 读取到的数据经过 AEC、AGC、NS 算法处理，再编码成 WAV 格式，最后保存在 SD card 中。 最后我们可以比较原始音频与录制的音频之间的差异。
+本例程有两条管道，第一条管道读取 microSD 卡中的 MP3 音乐文件并播放；第二条管道是录音的过程，读取到的数据经过 AEC、AGC、NS 算法处理，再编码成 WAV 格式，最后保存在 microSD 卡中。最后我们可以比较原始音频与录制的音频之间的差异。
 
-1.播放 MP3 pipeline:
+- 播放 MP3 的管道：
 
-```c
-[sdcard] ---> fatfs_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
-```
+  ```c
+  [sdcard] ---> fatfs_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
+  ```
 
-2.录制 WAV pipeline:
+ - 录制 WAV 的管道：
 
-```c
-[codec_chip] ---> i2s_stream ---> wav_encoder ---> fatfs_stream ---> [sdcard]
-```
+   ```c
+   [codec_chip] ---> i2s_stream ---> wav_encoder ---> fatfs_stream ---> [sdcard]
+   ```
 
 ## 环境配置
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
@@ -46,13 +46,13 @@
 
 准备好官方音频开发板：
 
-- 准备一首 MP3 音频文件并命名为 'test.mp3'，拷贝到 microSD card 中。
-- 把 microSD card 插入到开发板的卡槽中备用。
+- 准备一首 MP3 音频文件并命名为 `test.mp3`，拷贝到 microSD 卡中。
+- 把 microSD 卡插入到开发板的卡槽中备用。
 
-烧录固件并运行例程:
+烧录固件并运行例程：
 
 - 开发板上电后后自动运行例程。
-- 例程完成后，你可以打开 SD Card 目录 `/sdcard/rec_out.wav` 收听录音文件。
+- 例程完成后，你可以打开 microSD 卡目录 `/sdcard/rec_out.wav` 收听录音文件。
 
 
 ### 编译和下载
@@ -62,7 +62,7 @@
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -142,14 +142,14 @@ I (821) ALGORITHM_EXAMPLES: [6.0] Start audio_pipeline
 I (869) ALGORITHM_EXAMPLES: [7.0] Listen for all pipeline events
 ```
 
-## Troubleshooting
+## 故障排除
 如果 AEC 效果不是很好，可以将所有采样率设置为 16000。
 
 
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

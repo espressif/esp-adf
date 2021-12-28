@@ -5,11 +5,11 @@
 
 ## Example Brief
 
-- ESP VoIP is a telephone client based on the standard SIP protocol, which can be used in some P2P or audio conference scenarios.
+ESP VoIP is a telephone client based on the standard SIP protocol, which can be used in some P2P or audio conference scenarios.
 
 ### Resources
 
-- Memory consumption:
+Memory consumption:
 
 esp32-lyrat-mini-v1.2:
 

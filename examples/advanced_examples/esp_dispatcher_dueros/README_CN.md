@@ -13,7 +13,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -54,7 +54,7 @@ menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -448,7 +448,7 @@ E (905166,tid:3ffb7b9c) lightduer_system_info.c( 389):Sys Info: Get disk info fa
 ```
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 entry 0x400806f4
@@ -820,17 +820,17 @@ W (905163,tid:3ffb7b9c) lightduer_system_info.c( 306):Undefined memory type, 0
 E (905166,tid:3ffb7b9c) lightduer_system_info.c( 389):Sys Info: Get disk info failed
 ```
 
-## Troubleshooting
+## 故障排除
 
-如果你的设备运行后，无法正确运行语音命令识别，可以按下面顺序排查：
+如果您的设备运行后，无法正确运行语音命令识别，可以按下面顺序排查：
 1. 确保 Wi-Fi 设置正确，成功连接路由器并获取 IP 地址。
-2. 确保 duer_profile 是正确的，从[百度官方](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown)获取。
+2. 确保 duer_profile 是正确的，从 [百度官方](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 获取。
 
 
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

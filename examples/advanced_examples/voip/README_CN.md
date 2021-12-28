@@ -5,19 +5,19 @@
 
 ## 例程简介
 
-- ESP VoIP 是一个基于标准 SIP 协议的电话客户端，可以用于点对点通话和音频会议等场景。
+ESP VoIP 是一个基于标准 SIP 协议的电话客户端，可以用于点对点通话和音频会议等场景。
 
 ### 资源列表
 
-- 内存消耗
+内存消耗
 
-esp32-lyrat-mini:
+ESP32-LyraT-Mini：
 
 |memory_total (byte)|memory_inram (byte)|memory_psram (byte)
 |---|---|---
 |392008 |236328 |155680
 
-other boards:
+其他开发板：
 
 |memory_total (byte)|memory_inram (byte)|memory_psram (byte)
 |---|---|---
@@ -32,7 +32,7 @@ other boards:
 
 ### 硬件要求
 
-- 此示例可在标有绿色复选框的开发板上运行。请记住，如下面的*配置*一节所述，可以在 menuconfig 中选择合适的开发板。
+- 此示例可在标有绿色复选框的开发板上运行。请记住，如下面的[配置](#配置)一节所述，可以在 menuconfig 中选择合适的开发板。
 
 | Board Name | Getting Started | Chip | Compatible |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -331,7 +331,7 @@ I (1373024) VOIP_EXAMPLE: SIP_EVENT_AUDIO_SESSION_END
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

@@ -50,7 +50,7 @@ mp3 new come input stream ---> resample ---
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | Board Name | Getting Started | Chip | Compatible |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -91,7 +91,7 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -146,7 +146,7 @@ E (14640) AUDIO_ELEMENT: [newcome_filter] Element already stopped
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 I (62) boot: Chip Revision: 3
@@ -367,7 +367,7 @@ W (40111) AUDIO_ELEMENT: [newcome_raw] Element has not create when AUDIO_ELEMENT
 I (40114) DOWNMIX_PIPELINE: New come music stoped or finsihed
 ```
 
-## Troubleshooting
+## 故障排除
 Down-mix 算法本身的 CPU loading 很低。如果基础音乐和混入音乐解码均为 CPU loading 很高的音频文件（如基础音乐和混入音乐均为 48 kHz 且双通道的 mp3 音频），那么 Down-mix 过程可能出现数据读写的 time out 错误， 听感上有卡顿。建议选择合适的输入音频。
 
 
@@ -375,7 +375,7 @@ Down-mix 算法本身的 CPU loading 很低。如果基础音乐和混入音乐�
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

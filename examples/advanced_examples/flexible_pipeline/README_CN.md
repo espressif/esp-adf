@@ -10,26 +10,22 @@
 
 1. 当播放或切换播放 AAC 格式的音频时，先暂停前一个 MP3 播放管道并分解掉 MP3 播放管道，然后重新连接组成新的 AAC 播放管道，组合完成后的 AAC 音频管道如下：
 
-  ```c
-
-    [sdcard] ---> file_aac_reader ---> aac_decoder ---> i2s_stream_writer ---> [codec_chip]
-
-  ```
+   ```
+   [sdcard] ---> file_aac_reader ---> aac_decoder ---> i2s_stream_writer ---> [codec_chip]
+   ```
 
 2. 当播放或切换播放 MP3 格式的音频时，先暂停前一个 AAC 播放管道并分解掉 AAC 播放管道，然后重新连接组成新的 MP3 播放管道，组合完成后的 MP3 音频管道如下：
 
-  ```c
-
-    [sdcard] ---> file_mp3_reader ---> mp3_decoder ---> i2s_stream_writer ---> [codec_chip]
-
-  ```
+   ```
+   [sdcard] ---> file_mp3_reader ---> mp3_decoder ---> i2s_stream_writer ---> [codec_chip]
+   ```
 
 ## 环境配置
 
 ### 硬件要求
 
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -48,7 +44,7 @@
 
 ### 配置
 
-本例程需要准备一张 microSD 卡，在 [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) 页面下载 `ff-16b-2c-44100hz.aac` 和 `ff-16b-2c-44100hz.mp3` 音频文件，分别重命名为 `test.aac` 和 `test.mp3`拷贝音源文件到 microSD 卡中。当然用户也可以自备的音源，只需按照上述规则重命名即可。
+本例程需要准备一张 microSD 卡，在 [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) 页面下载 `ff-16b-2c-44100hz.aac` 和 `ff-16b-2c-44100hz.mp3` 音频文件，分别重命名为 `test.aac` 和 `test.mp3`拷贝音源文件到 microSD 卡中。当然用户也可以自备音源，只需按照上述规则重命名即可。
 
 本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 
@@ -64,7 +60,7 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -177,7 +173,7 @@ I (1799) AAC_DECODER: this audio is RAW AAC
 
 ```
 
-- 此时，按下 [Mode] 按键，那么当前的 AAC 音乐将会暂停播放，分解当前的管道重新，然后重组成新的管道，并且开始播放名为 test.mp3 的音源文件，打印如下：
+- 此时，按下 [Mode] 按键，那么当前的 AAC 音乐将会暂停播放，分解当前的管道，然后重组成新的管道，并且开始播放名为 `test.mp3` 的音源文件，打印如下：
 
 ```c
 I (41285) AUDIO_ELEMENT: [file_aac_reader] AEL_MSG_CMD_PAUSE
@@ -206,7 +202,7 @@ E (41518) FLEXIBLE_PIPELINE: [ 4.1 ] Start playback new pipeline
 
 ```
 
-- 如果此时，再次按下 [Mode] 键，那么会先暂停当前 MP3 播放，分解当前的管道重新，然后重组成新的管道，然后切回原来的 `test.aac` 播放，且播放起始点就是上次 AAC 播放暂停的地方，打印如下。
+- 如果此时再次按下 [Mode] 键，那么会先暂停当前 MP3 播放，分解当前的管道重新，然后重组成新的管道，然后切回原来的 `test.aac` 播放，且播放起始点就是上次 AAC 播放暂停的地方，打印如下。
 
 ```c
 E (41518) FLEXIBLE_PIPELINE: [ 4.1 ] Start playback new pipeline
@@ -233,7 +229,7 @@ E (80828) FLEXIBLE_PIPELINE: [ 4.1 ] Start playback new pipeline
 
 ```
 
-- 如果此时再次按下 [Mode] 键，那么会先暂停当前 MP3 播放，分解当前的管道，重组成新的管道，然后切回原来的 `test.aac` 播放，且播放起始点为上次 AAC 播放暂停的地方，打印如下：
+- 如果此时再次按下 [Mode] 键，那么会先暂停当前 AAC 播放，分解当前的管道，重组成新的管道，然后切回原来的 `test.mp3` 播放，且播放起始点为上次 MP3 播放暂停的地方，打印如下：
 
 ```c
 I (116068) AUDIO_ELEMENT: [file_aac_reader] AEL_MSG_CMD_PAUSE
@@ -260,7 +256,7 @@ E (116260) FLEXIBLE_PIPELINE: [ 4.1 ] Start playback new pipeline
 
 ### 日志输出
 
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 entry 0x400806f4
@@ -428,9 +424,9 @@ E (116260) FLEXIBLE_PIPELINE: [ 4.1 ] Start playback new pipeline
 
 ```
 
-## Troubleshooting
+## 故障排除
 
-如果出现以下 log，可能是由用户自备的 ACC 音频文件导致，该文件可能使用 M4A 容器封装，但 M4A 初始不支持位置寻址播放，所以需要检查 .aac 后缀的文件是否是真正的 AAC 格式。
+如果出现以下日志，可能是由用户自备的 ACC 音频文件导致，该文件可能使用 M4A 容器封装，但 M4A 初始不支持位置寻址播放，所以需要检查 .aac 后缀的文件是否是真正的 AAC 格式。
 
 ```c
 I (9601) AUDIO_ELEMENT: [file_aac_reader] AEL_MSG_CMD_RESUME,state:4
@@ -454,7 +450,7 @@ E (9747) FLEXIBLE_PIPELINE: [ 4.1 ] Start playback new pipeline
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。
