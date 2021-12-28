@@ -34,6 +34,13 @@
 #include "wifibleconfig.h"
 #include "audio_mem.h"
 
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+#include "nvs_flash.h"
+#include "esp_netif.h"
+#include "esp_wifi_netif.h"
+static esp_netif_t *sta = NULL;
+#endif
+
 #if __has_include("esp_idf_version.h")
 #include "esp_idf_version.h"
 #else
@@ -391,6 +398,8 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
     esp_netif_create_default_wifi_sta();
+#elif (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+    sta = esp_netif_create_default_wifi_sta();
 #endif
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_wifi_event_callback, self));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &_wifi_event_callback, self));
@@ -468,6 +477,10 @@ static esp_err_t _wifi_destroy(esp_periph_handle_t self)
     }
     audio_free(periph_wifi);
     g_periph = NULL;
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+    esp_netif_destroy_default_wifi(sta);
+#endif
     return ESP_OK;
 }
 

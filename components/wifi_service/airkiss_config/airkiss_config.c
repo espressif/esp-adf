@@ -41,6 +41,10 @@
 #include "airkiss_config.h"
 #include "esp_wifi_setting.h"
 
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+#include "tcpip_adapter_types.h"
+#endif
+
 #define AIRKISS_DEBUG_ON                0
 
 #define AIRKISS_NOTIFY_TASK_PRIORITY    3
