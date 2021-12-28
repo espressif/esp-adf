@@ -14,11 +14,11 @@
 
 ```c
 mic ---> codec_chip ---> i2s_stream ---> http_stream >>>> [Wi-Fi] >>>> http_server ---> wav_file
-
 ```
 
 
 ## 环境配置
+
 
 ### 硬件要求
 
@@ -35,8 +35,11 @@ mic ---> codec_chip ---> i2s_stream ---> http_stream >>>> [Wi-Fi] >>>> http_serv
 
 ## 编译和下载
 
+
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+
 
 ### 配置
 
@@ -60,17 +63,20 @@ menuconfig > Example Configuration > (http://192.168.5.72:8000/upload) Server UR
 
 
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
@@ -84,7 +90,7 @@ Serving HTTP on 192.168.5.72 port 8000
 
 - 例程开始运行后，会先连接 Wi-Fi，Wi-Fi 连接成功后，按下 [Rec] 键录音，这时录制的声音会被上传到 HTTP 服务器的目录下，文件命名内容为当天的时间日期、音频采样率和通道数，并用下划线隔开，如` 20210918T070420Z_16000_16_2.wav`。
 
-- 开发板的 log 如下：
+- 开发板的日志如下：
 
 ```c
 I (0) cpu_start: App cpu up.
@@ -142,7 +148,7 @@ W (14967) AUDIO_PIPELINE: Without stop, st:1
 W (14967) AUDIO_PIPELINE: Without wait stop, st:1
 ```
 
-- HTTP 服务器的 log 如下：
+- HTTP 服务器的日志如下：
 
 ```c
 python2 server.py
@@ -179,7 +185,7 @@ I (197725) wifi:Deinit lldesc rx mblock:10
 
 ### 日志输出
 
-开发板完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 I (0) cpu_start: App cpu up.
@@ -256,7 +262,7 @@ I (197725) wifi:lmac stop hw txq
 I (197725) wifi:Deinit lldesc rx mblock:10
 ```
 
-HTTP 服务器端的完整 log 如下：
+HTTP 服务器端的完整日志如下：
 
 ```c
 python2 server.py
@@ -267,7 +273,7 @@ Total bytes received: 141312
 ```
 
 
-## Troubleshooting
+## 故障排除
 
 如果开发板无法上传语音到 HTTP 服务器，那么请检查下面的配置：
 1. 开发板的 Wi-Fi 配置是否正确。
@@ -278,9 +284,10 @@ Total bytes received: 141312
 
 
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

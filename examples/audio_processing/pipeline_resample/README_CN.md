@@ -6,42 +6,39 @@
 
 ## 例程简介
 
-本例程演示了 ADF 的重采样 (resample) 使用方法，录音的时候把 48000 Hz、16 位、2 通道的音频数据重采样为 16000 Hz、16 位、1 通道的数据，然后编码为 WAV 格式并写入 SD 卡中，回放的时候把 SD 卡中的 16000 Hz、16 位、1 通道的 WAV 文件读出，重采样数据为 48000 Hz、16 位、2 通道，然后通过 I2S 外设把录音数据播放出来。
+本例程演示了 ADF 的重采样 (resample) 使用方法，录音的时候把 48000 Hz、16 位、2 通道的音频数据重采样为 16000 Hz、16 位、1 通道的数据，然后编码为 WAV 格式并写入 microSD 卡中，回放的时候把 microSD 卡中的 16000 Hz、16 位、1 通道的 WAV 文件读出，重采样数据为 48000 Hz、16 位、2 通道，然后通过 I2S 外设把录音数据播放出来。
 
 
-1.对于录音过程：
+1. 对于录音过程：
 
-- 设置 I2S 并以 48000 Hz、16 位、立体声的采样率获取音频。
-- 使用重采样过滤器转换数据为 16000 Hz、16 位、1 通道。
-- 使用 WAV 编码器进行数据编码。
-- 写入 microSD 卡。
+  - 设置 I2S 并以 48000 Hz、16 位、立体声的采样率获取音频。
+  - 使用重采样过滤器转换数据为 16000 Hz、16 位、1 通道。
+  - 使用 WAV 编码器进行数据编码。
+  - 写入 microSD 卡。
 
-录音的重采样并保存到 SDcard 的 pipeline 如下：
+  录音的重采样并保存到 microSD 卡的管道如下：
 
-```c
-mic ---> codec_chip ---> i2s_stream ---> resample_filter ---> wav_encoder ---> fatfs_stream ---> sdcard
+  ```
+  mic ---> codec_chip ---> i2s_stream ---> resample_filter ---> wav_encoder ---> fatfs_stream ---> sdcard
+  ```
 
-```
+2. 对于录音回放过程：
 
-
-2.对于录音回放过程：
-
-- 读取 microSD 卡录制的文件，采样率为 16000 Hz，16 位，1 通道。
-- 用 WAV 解码器解码文件数据。
-- 使用重采样过滤器转换数据为 48000 Hz、16 位、2 通道。
-- 将音频写入 I2S 外设。
+  - 读取 microSD 卡录制的文件，采样率为 16000 Hz、16 位、1 通道。
+  - 用 WAV 解码器解码文件数据。
+  - 使用重采样过滤器转换数据为 48000 Hz、16 位、2 通道。
+  - 将音频写入 I2S 外设。
 
 
-读取 SDcard 的文件重采样后通过 I2S 播放 pipeline 如下：
+  读取 microSD 卡的文件重采样后通过 I2S 播放管道如下：
 
-```c
-
-sdcard ---> fatfs_stream ---> wav_decoder ---> resample_filter ---> i2s_stream ---> codec_chip ---> speaker
-
-```
+  ```
+  sdcard ---> fatfs_stream ---> wav_decoder ---> resample_filter ---> i2s_stream ---> codec_chip ---> speaker
+  ```
 
 
 ## 环境配置
+
 
 ### 硬件要求
 
@@ -58,11 +55,13 @@ sdcard ---> fatfs_stream ---> wav_decoder ---> resample_filter ---> i2s_stream -
 
 ## 编译和下载
 
+
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-### 配置
 
+### 配置
 
 本例程需要准备一张 microSD 卡，插入开发板备用，用于保存录音的 WAV 音频文件。
 
@@ -79,13 +78,14 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 ```
 
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -155,8 +155,7 @@ I (1440) RESAMPLE_EXAMPLE: [2.3] Register audio elements to playback pipeline
 I (1460) RESAMPLE_EXAMPLE: [ 3 ] Set up  event listener
 ```
 
-- 当按下音频板上的 [REC] 按钮时，本例将进行录音，重采样数据后编码为 WAV 文件，并写入到 SD 卡中保存,打印如下：
-
+- 当按下音频板上的 [REC] 按钮时，本例将进行录音，重采样数据后编码为 WAV 文件，并写入到 microSD 卡中保存，打印如下：
 
 ```c
 E (25420) RESAMPLE_EXAMPLE: STOP Playback and START [Record]
@@ -166,7 +165,7 @@ I (25420) RESAMPLE_EXAMPLE: Link audio elements to make recorder pipeline ready
 I (25430) RESAMPLE_EXAMPLE: Setup file path to save recorded audio
 ```
 
-- 当 [REC] 键松开时，例程将读取 SD 卡中的 wav 文件，重采样后发送到 I2S 接口播放该录音文件，打印如下：
+- 当 [REC] 键松开时，例程将读取 microSD 卡中的 WAV 文件，重采样后发送到 I2S 接口播放该录音文件，打印如下：
 
 ```c
 I (31540) RESAMPLE_EXAMPLE: STOP [Record] and START Playback
@@ -181,7 +180,8 @@ W (37070) FATFS_STREAM: No more data, ret:0
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
 
 ```c
 cets Jul 29 2019 12:21:46
@@ -268,11 +268,11 @@ W (37070) FATFS_STREAM: No more data, ret:0
 ```
 
 
-
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

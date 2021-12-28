@@ -8,11 +8,9 @@
 
 本例可以选择播放从 HTTP 下载的 AAC、AMR、FLAC、MP3、OGG、OPUS 或 WAV 等格式的音频文件。
 
-
-完整 HTTP 下载，解码器解码播放的 pipeline 如下：
+完整 HTTP 下载，解码器解码播放的管道如下：
 
 ```c
-
 [Music_file_on_HTTP_server] ---> http_stream ---> music_decoder ---> i2s_stream ---> codec_chip ---> [Speaker]
                                                         ▲
                                                 ┌───────┴────────┐
@@ -31,6 +29,7 @@ http_stream 从网络上下载程序选定的音频文件，然后由选定的�
 
 ## 环境配置
 
+
 ### 硬件要求
 
 本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
@@ -46,11 +45,13 @@ http_stream 从网络上下载程序选定的音频文件，然后由选定的�
 
 ## 编译和下载
 
+
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-### 配置
 
+### 配置
 
 本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 
@@ -65,17 +66,20 @@ menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 ```
 
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
@@ -174,7 +178,8 @@ W (193359) PERIPH_WIFI: WiFi Event cb, Unhandle event_base:WIFI_EVENT, event_id:
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
 
 ```c
 entry 0x40080710
@@ -260,20 +265,21 @@ W (193359) PERIPH_WIFI: Wi-Fi disconnected from SSID esp32, auto-reconnect disab
 W (193359) PERIPH_WIFI: WiFi Event cb, Unhandle event_base:WIFI_EVENT, event_id:3
 ```
 
-## Troubleshooting
+## 故障排除
 
 如果你遇上开发板无法正常播放网络音频的问题，那么请检查下面的配置：
 1. 开发板的 Wi-Fi 配置是否正确。
-2. 开发板是否已经连接 Wi-Fi 并获取 IP 成功。
+2. 开发板是否已经连接 Wi-Fi 并获取 IP 地址成功。
 3. 服务器端的 HTTP URI 是否可以正常访问。 
 4. 对于 HTTP 播放出现卡顿问题，有能力定位问题的用户，可参照 [Wi-Fi Menuconfig](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/api-guides/wifi.html#psram) 和 [Lwip Performance Optimization](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/api-guides/lwip.html#performance-optimization) 手动优化配置。
-5. 一般建议，推荐使用默认 sdkconfig.default 配置。
+5. 一般建议使用默认 sdkconfig.default 配置。
 
 
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

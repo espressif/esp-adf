@@ -1,4 +1,4 @@
-# 语音识别（ASR）例程
+# 自动语音识别 (ASR) 例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -9,44 +9,44 @@
 
 - 当前支持的唤醒词有 3 条，你可以在 `menuconfig` 中配置使用它们，默认唤醒词是 “嗨，乐鑫”，如下表：
 
-| # | 唤醒词    | 英文含义 | 发音 |
-|:-:|---------|--------------------|-------------------|
-| 1 | 嗨，乐鑫 | Hi, Espressif      | Hāi, lè xīn        |
-| 2 | 你好，小智 | Hi, xiaozhi      | Hāi, lè xīn        |
-| 3 | 嗨，杰森 | hi jeson      | Hāi, lè xīn        |
+| # | 唤醒词    | 英文含义      | 发音          |
+|:-:|--------|---------------|---------------|
+| 1 | 嗨，乐鑫   | Hi, Espressif | Hāi, lè xīn   |
+| 2 | 你好，小智 | Hi, Xiaozhi   | Hāi, xiǎo zhì |
+| 3 | 嗨，杰森   | Hi, Jeson     | Hāi, jié sēn  |
 
 - 当前支持的命令词有 20 条，如下表：
 
-| #  | 命令词      | 英文含义                | 发音             |
-|:-: |-----------|--------------------------------|---------------------------|
-| 0  | 打开空调    | turn on air-condition         | dǎ kāi kōng tiáo            |
-| 1  | 关闭空调    |turn off air-condition         | guān bì kōng tiáo           |
-| 2  | 增大风速    | increase in speed             | zēng dà fēng sù             |
-| 3  | 减小风速    | decrease in speed             | jiǎn xiǎo fēng sù           |
-| 4  | 升高一度    | increase in temperature       | shēng gāo yī dù            |
-| 5  | 降低一度    | decrease in temperature       | jiàng dī yī dù             |
-| 6  | 制热模式    | hot mode                      | zhì rè mó shì              |
-| 7  | 制冷模式    | slow mode                     | zhì lěng mó shì            |
-| 8  | 送风模式    | blower mode                   | sòng fēng mó shì           |
-| 9  | 节能模式    | save power mode               | jié néng mó shì            |
-| 10 | 关闭节能模式 | turn off save power mode      | guān bì jié néng mó shì     |
-| 11 | 除湿模式    | dampness mode                 | chú shī mó shì              |
-| 12 | 关闭除湿模式 | turn off dampness mode        | guān bì chú shī mó shì     |
-| 13 | 打开蓝牙    | turn on bt                    | dǎ kāi lán yá              |
-| 14 | 关闭蓝牙    | turn off bt                   | guān bì lán yá              |
-| 15 | 播放歌曲    | turn on                       | bō fàng gē qǔ              |
-| 16 | 暂停播放    | turn off                      | zàn tíng bō fàng            |
-| 17 | 定时一小时  | timer one hour                | dìng shí yī xiǎo shí        |
-| 18 | 打开电灯    | turn on light                 | dǎ kāi diàn dēng           |
-| 19 | 关闭点灯    | turn off light                | guān bì diǎn dēng          |
+| #  | 命令词       | 英文含义                            | 发音                    |
+|:--:|-----------|-------------------------------------|-------------------------|
+| 0  | 打开空调     | turn on air conditioner             | dǎ kāi kōng tiáo        |
+| 1  | 关闭空调     | turn off air conditioner            | guān bì kōng tiáo       |
+| 2  | 增大风速     | increase fan speed                  | zēng dà fēng sù         |
+| 3  | 减小风速     | decrease fan speed                  | jiǎn xiǎo fēng sù       |
+| 4  | 升高一度     | increase temperature by one degree  | shēng gāo yī dù         |
+| 5  | 降低一度     | decrease temperature by one degreee | jiàng dī yī dù          |
+| 6  | 制热模式     | heat mode                           | zhì rè mó shì           |
+| 7  | 制冷模式     | cool mode                           | zhì lěng mó shì         |
+| 8  | 送风模式     | fan mode                            | sòng fēng mó shì        |
+| 9  | 节能模式     | energy saver mode                   | jié néng mó shì         |
+| 10 | 关闭节能模式 | turn off energy saver mode          | guān bì jié néng mó shì |
+| 11 | 除湿模式     | dry mode                            | chú shī mó shì          |
+| 12 | 关闭除湿模式 | turn off dry mode                   | guān bì chú shī mó shì  |
+| 13 | 打开蓝牙     | turn on Bluetooth                   | dǎ kāi lán yá           |
+| 14 | 关闭蓝牙     | turn off Bluetooth                  | guān bì lán yá          |
+| 15 | 播放歌曲     | play                                | bō fàng gē qǔ           |
+| 16 | 暂停播放     | stop playing                        | zàn tíng bō fàng        |
+| 17 | 定时一小时   | set timer for one hour              | dìng shí yī xiǎo shí    |
+| 18 | 打开电灯     | turn on light                       | dǎ kāi diàn dēng        |
+| 19 | 关闭电灯     | turn off light                      | guān bì diǎn dēng       |
 
 
-关于唤醒词和命令词的使用，下面的这个流程展示如何使用它们：
+以下为唤醒词和命令词的使用流程：
 
-1. USER： “嗨，乐鑫”
-2. ASR：  “叮咚”
-3. USER： “打开空调”
-4. ASR：  “好的”
+1. USER：“嗨，乐鑫”
+2. ASR：“叮咚”
+3. USER：“打开空调”
+4. ASR：“好的”
 
 
 ## 环境配置
@@ -93,7 +93,7 @@ idf.py -p PORT flash monitor
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
-**NOTE:**
+**注意：**
 
 此例子的 CMakeLists.txt 中有自动烧录提示音的处理函数，用户在本例程目录下使用 `idf.py flash` 命令烧写固件的时候，脚本会查找 `partition` 分区表的 `flash_tone` 的烧写地址，然后在烧写 `speech_recognition_example.bin` 的同时也会自动把提示音文件 `audio_tone.bin` 烧写到 `partition` 的指定分区中。
 
@@ -103,14 +103,14 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后，ASR 例程等用户的待唤醒词唤醒，打印如下：
+- 例程开始运行后，ASR 例程等待用户的唤醒词唤醒，打印如下：
 
 ```c
 W (2225) I2S: I2S driver already installed
 I (2226) example_asr_keywords: esp_audio instance is:0x3f80dc80
 I (2226) example_asr_keywords: [ 5 ] Start audio_pipeline
 ```
-- 此时用户先说唤醒词，比如：“嗨，乐鑫”，这时候会听到反馈的提示音“叮咚”
+- 此时用户先说唤醒词，比如：“嗨，乐鑫”，这时候会听到反馈的提示音“叮咚”。
 
 ```c
 W (6152) TONE_STREAM: No more data,ret:0 ,info.byte_pos:8527
@@ -132,7 +132,9 @@ W (9536) ESP_AUDIO_TASK: The old pipeline destroyed, FINISHED
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
+
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
 configsip: 0, SPIWP:0xee
@@ -244,9 +246,11 @@ W (9536) ESP_AUDIO_TASK: The old pipeline destroyed, FINISHED
 ```
 
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
+
 
 我们会尽快回复。

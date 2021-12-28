@@ -1,4 +1,4 @@
-# 语音活动检测（VAD）例程
+# 语音活动检测 (VAD) 例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -8,7 +8,7 @@
 
 本例程演示了从麦克风读取环境声音数据，经过 VAD 处理分析，最后 VAD 输出是噪声还是人声的判定结果。
 
-管道的数据流向，如下图所示：
+管道的数据流向，如下所示：
 
 ```
 mic ---> codec_chip ---> i2s_stream ---> filter ---> raw ---> vad_process ---> output
@@ -16,6 +16,7 @@ mic ---> codec_chip ---> i2s_stream ---> filter ---> raw ---> vad_process ---> o
 
 
 ## 环境配置
+
 
 ### 硬件要求
 
@@ -32,12 +33,13 @@ mic ---> codec_chip ---> i2s_stream ---> filter ---> raw ---> vad_process ---> o
 
 ## 编译和下载
 
+
 ### IDF 默认分支
 
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-### 配置
 
+### 配置
 
 本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 
@@ -47,17 +49,20 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
+
 ## 如何使用例程
+
 
 ### 功能和用法
 
@@ -131,7 +136,8 @@ I (8545) EXAMPLE-VAD: Speech detected
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+
+以下为本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -229,18 +235,18 @@ I (8465) EXAMPLE-VAD: Speech detected
 I (8495) EXAMPLE-VAD: Speech detected
 I (8525) EXAMPLE-VAD: Speech detected
 I (8545) EXAMPLE-VAD: Speech detected
-
 ```
 
-## Troubleshooting
+## 故障排除
 
 此应用程序可能会将一些其他与人声频率相似的随机声音报告为语音，例如敲击棋盘、带有某些音调的音乐等。
 
 
 ## 技术支持
+
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。
