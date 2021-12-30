@@ -8,7 +8,7 @@ There are several peripherals available in the ESP-ADF, ranging from buttons and
 
     Common API <esp_peripherals>
 
-The peripheral specific functionality is available by calling dedicated functions described below. Some peripherals are available on both :doc:`ESP32-LyraT <../../get-started/get-started-esp32-lyrat>` and :doc:`ESP32-LyraTD-MSC <../../get-started/get-started-esp32-lyratd-msc>` development boards, some on a specific board only. The following table provides all implemented peripherals broken down by development board.
+The peripheral specific functionality is available by calling dedicated functions described below. Some peripherals are available on both :doc:`ESP32-LyraT <../../design-guide/dev-boards/get-started-esp32-lyrat>` and :doc:`ESP32-LyraTD-MSC <../../design-guide/dev-boards/get-started-esp32-lyratd-msc>` development boards, some on a specific board only. The following table provides all implemented peripherals broken down by development board.
 
 .. toctree::
     :maxdepth: 1

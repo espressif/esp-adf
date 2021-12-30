@@ -1,1 +1,0 @@
-.. include:: ../../en/design-guide/dev-boards.rst

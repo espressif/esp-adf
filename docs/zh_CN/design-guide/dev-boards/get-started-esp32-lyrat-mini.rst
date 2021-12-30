@@ -45,7 +45,7 @@ ESP32-LyraT-Mini 1.2 是基于 `乐鑫 <https://espressif.com>`_ ESP32 专为音
 
 下图所示的是 ESP32-LyraT-Mini 的主要组件以及组件之间的连接方式。
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-block-diagram.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-block-diagram.png
     :alt: ESP32-LyraT-Mini block diagram
     :figclass: align-center
 
@@ -55,7 +55,7 @@ ESP32-LyraT-Mini 1.2 是基于 `乐鑫 <https://espressif.com>`_ ESP32 专为音
 组件
 ^^^^^^^^^^
 
-本指南涉及到的 ESP32-LyraT-Mini 开发板的主要组件、接口及控制方式见下。详细技术文档请参阅 :doc:`../design-guide/board-esp32-lyrat-mini-v1.2` 和 `ESP32-LyraT-Mini V1.2 原理图`_ (PDF)。ESP32-LyraT-Mini 开发板各组件的详细描述见下表（从右上角起顺时针顺序）。
+本指南涉及到的 ESP32-LyraT-Mini 开发板的主要组件、接口及控制方式见下。详细技术文档请参阅 :doc:`board-esp32-lyrat-mini-v1.2` 和 `ESP32-LyraT-Mini V1.2 原理图`_ (PDF)。ESP32-LyraT-Mini 开发板各组件的详细描述见下表（从右上角起顺时针顺序）。
 
 音频编解码芯片
 	音频编解码芯片 `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_ 是一款低功耗单声道音频编解码器。它由单通道 ADC、单通道 DAC、低噪声前置放大器、耳机驱动程序、数字音效处理器、模拟混音器和增益函数组成。该芯片通过 I2S 和 I2C 总线与 **ESP32-WROVER-B 模组** 连接提供硬件音频处理功能。
@@ -66,7 +66,7 @@ ESP32-LyraT-Mini 1.2 是基于 `乐鑫 <https://espressif.com>`_ ESP32 专为音
 
 .. _get-started-esp32-lyrat-mini-v1.2-board:
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-layout-overview.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-layout-overview.png
     :scale: 70%
     :alt: ESP32 LyraT-Mini V1.2 Board Layout Overview
     :figclass: align-center
@@ -129,7 +129,7 @@ ESP32-LyraT-Mini 上电之前，请首先确认开发板完好无损。
 -----------------
 
 * `ESP32-LyraT-Mini V1.2 原理图`_ (PDF)
-* :doc:`../design-guide/board-esp32-lyrat-mini-v1.2`
+* :doc:`board-esp32-lyrat-mini-v1.2`
 * `ESP32 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
 * `ESP32-WROVER-B 技术规格书 <https://espressif.com/sites/default/files/documentation/esp32-wrover-b_datasheet_en.pdf>`_ (PDF)
 

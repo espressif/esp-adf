@@ -4,7 +4,7 @@ ESP32-Korvo-DU1906
 
 本文档介绍了如何使用 ESP32-Korvo-DU1906 开发板。
 
-.. figure:: ../../_static/esp32-korvo-du1906-v1.1.png
+.. figure:: ../../../_static/esp32-korvo-du1906-v1.1.png
     :align: center
     :scale: 50%
     :alt: esp32-korvo-du1906
@@ -50,7 +50,7 @@ DU1906 是百度推出的语音处理旗舰芯片，算法集成度高，一颗�
 
 ESP32-Korvo-DU1906 的主要组件和连接方式如下图所示。
 
-.. figure:: ../../_static/esp32-korvo-du1906-v1.1-block-diagram.png
+.. figure:: ../../../_static/esp32-korvo-du1906-v1.1-block-diagram.png
     :align: center
     :scale: 50%
     :alt: esp32-korvo-du1906-block
@@ -64,7 +64,7 @@ ESP32-Korvo-DU1906 的主要组件和连接方式如下图所示。
 
 本节介绍了目前所需 ESP32-Korvo-DU1906 的主要组件、接口和控件等。更多详细信息，请参考相关文档中提供的原理图。
 
-.. figure:: ../../_static/esp32-korvo-du1906-v1.1-layout.png
+.. figure:: ../../../_static/esp32-korvo-du1906-v1.1-layout.png
     :align: center
     :scale: 50%
     :alt: esp32-korvo-du1906-components

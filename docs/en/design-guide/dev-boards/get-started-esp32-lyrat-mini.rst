@@ -46,7 +46,7 @@ The ESP32-LyraT-Mini V1.2 is an audio development board produced by `Espressif <
 
 The block diagram below presents main components of the ESP32-LyraT-Mini and interconnections between components.
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-block-diagram.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-block-diagram.png
     :alt: ESP32-LyraT-Mini block diagram
     :figclass: align-center
 
@@ -56,7 +56,7 @@ The block diagram below presents main components of the ESP32-LyraT-Mini and int
 Components
 ^^^^^^^^^^
 
-The following list and figure describe key components, interfaces and controls of the ESP32-LyraT-Mini used in this guide. For detailed technical documentation of this board, please refer to :doc:`../design-guide/board-esp32-lyrat-mini-v1.2` and `ESP32-LyraT-Mini V1.2 schematic`_ (PDF). The list below provides description starting from the picture’s top right corner and going clockwise.
+The following list and figure describe key components, interfaces and controls of the ESP32-LyraT-Mini used in this guide. For detailed technical documentation of this board, please refer to :doc:`board-esp32-lyrat-mini-v1.2` and `ESP32-LyraT-Mini V1.2 schematic`_ (PDF). The list below provides description starting from the picture’s top right corner and going clockwise.
 
 
 Audio Codec Chip
@@ -68,7 +68,7 @@ Speaker Output
 
 .. _get-started-esp32-lyrat-mini-v1.2-board:
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-layout-overview.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-layout-overview.png
     :scale: 70%
     :alt: ESP32 LyraT-Mini V1.2 Board Layout Overview
     :figclass: align-center
@@ -132,7 +132,7 @@ Related Documents
 -----------------
 
 * `ESP32-LyraT-Mini V1.2 schematic`_ (PDF)
-* :doc:`../design-guide/board-esp32-lyrat-mini-v1.2`
+* :doc:`board-esp32-lyrat-mini-v1.2`
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
 * `ESP32-WROVER-B Datasheet <https://espressif.com/sites/default/files/documentation/esp32-wrover-b_datasheet_en.pdf>`_ (PDF)
 

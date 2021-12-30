@@ -1,7 +1,7 @@
 ESP32-LyraT-Mini V1.2 Hardware Reference
 ========================================
 
-This guide provides functional descriptions, configuration options for ESP32-LyraT-Mini V1.2 audio development board. As an introduction to functionality and using the LyraT, please see :doc:`../get-started/get-started-esp32-lyrat-mini`.
+This guide provides functional descriptions, configuration options for ESP32-LyraT-Mini V1.2 audio development board. As an introduction to functionality and using the LyraT, please see :doc:`get-started-esp32-lyrat-mini`.
 
 .. contents:: In this Section
     :local:
@@ -15,7 +15,7 @@ The ESP32-LyraT is a hardware platform designed for the dual-core ESP32 audio ap
 
 The block diagram below presents main components of the ESP32-LyraT-Mini.
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-electrical-block-diagram.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-electrical-block-diagram.png
     :alt: ESP32-LyraT-Mini V1.2 Electrical Block Diagram
     :figclass: align-center
 
@@ -46,7 +46,7 @@ Speaker Output
 Audio Function Press Keys
     Six press keys labeled **Rec**, **Mode**, **Play**, **Set**, **Vol-** and **Vol+**. They are routed to **ESP32-WROVER-B Module** and intended for development and testing of a UI for audio applications using dedicated API.
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-layout.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-layout.png
     :scale: 70%
     :alt: ESP32 LyraT-Mini V1.2 Board Layout
     :figclass: align-center
@@ -209,14 +209,14 @@ Power Supply over USB and from Battery
 
 The main power supply is 5V and provided by a USB. The secondary power supply is 3.7V and provided by an optional battery. The USB power itself is fed with a dedicated cable, separate from a USB cable used for an application upload. To further reduce noise from the USB, the battery may be used instead of the USB.
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-usb-ps.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-usb-ps.png
     :scale: 60%
     :alt: ESP32-LyraT-Mini V1.2 - Dedicated USB Power Supply Socket
     :figclass: align-center
 
     ESP32-LyraT-Mini V1.2 - Dedicated USB Power Supply Socket
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-battery-ps.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-battery-ps.png
     :scale: 60%
     :alt: ESP32-LyraT-Mini V1.2 - Power Supply from a Battery
     :figclass: align-center
@@ -229,14 +229,14 @@ Independent Audio and Digital Power Supply
 
 The board features independent power supplies to the audio components and ESP32 module. This should reduce noise in the audio signal from digital components and improve overall performance of the components.
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-digital-ps.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-digital-ps.png
     :scale: 60%
     :alt: ESP32-LyraT-Mini V1.2 - Digital Power Supply
     :figclass: align-center
 
     ESP32-LyraT-Mini V1.2 - Digital Power Supply
 
-.. figure:: ../../_static/esp32-lyrat-mini-v1.2-audio-ps.png
+.. figure:: ../../../_static/esp32-lyrat-mini-v1.2-audio-ps.png
     :scale: 60%
     :alt: ESP32-LyraT-Mini V1.2 - Audio Power Supply
     :figclass: align-center
@@ -267,7 +267,7 @@ Related Documents
 -----------------
 
 * `ESP32-LyraT-Mini V1.2 schematic`_ (PDF)
-* :doc:`../get-started/get-started-esp32-lyrat-mini`
+* :doc:`get-started-esp32-lyrat-mini`
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
 * `ESP32-WROVER-B Datasheet <https://espressif.com/sites/default/files/documentation/esp32-wrover-b_datasheet_en.pdf>`_ (PDF)
 

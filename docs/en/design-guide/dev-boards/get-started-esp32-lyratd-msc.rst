@@ -28,7 +28,7 @@ This audio development board consists of two parts: the upper board (B), which p
 
 .. _get-started-esp32-lyratd-msc-v2.2-board:
 
-.. figure:: ../../_static/esp32-lyratd-msc-v2.2-side.png
+.. figure:: ../../../_static/esp32-lyratd-msc-v2.2-side.png
     :alt: ESP32-LyraTD-MSC Side View
     :figclass: align-center
 
@@ -50,7 +50,7 @@ The specific hardware includes:
 
 The block diagram below presents main components of the ESP32-LyraTD-MSC and interconnections between components.
 
-.. figure:: ../../_static/esp32-lyratd-msc-v2.2-block-diagram.png
+.. figure:: ../../../_static/esp32-lyratd-msc-v2.2-block-diagram.png
     :alt: ESP32-LyraTD-MSC block diagram
     :figclass: align-center
 
@@ -78,7 +78,7 @@ Left Speaker Output
 Right Speaker Output
     Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 
-.. figure:: ../../_static/esp32-lyratd-msc-v2.2-a-top.png
+.. figure:: ../../../_static/esp32-lyratd-msc-v2.2-a-top.png
     :alt: ESP32-LyraTD-MSC V2.2 Lower Board (A) Components
     :figclass: align-center
 
@@ -95,7 +95,7 @@ Power Switch
 Power On LED
     Red LED indicating that **Power Switch** is turned on.
 
-.. figure:: ../../_static/esp32-lyratd-msc-v2.2-b-top.png
+.. figure:: ../../../_static/esp32-lyratd-msc-v2.2-b-top.png
     :alt: ESP32-LyraTD-MSC V2.2 Upper Board (B) Components
     :figclass: align-center
 

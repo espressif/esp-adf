@@ -48,7 +48,7 @@ There may be several variation between the above projects, by adding or removing
 Project Minimum
 ===============
 
-With several peripherals on an ESP chip, I2S or PDM or DAC interfaces can be used to implement a minimum project. With the digital microphones, we could input voice signals and build a command voice control project minumum that could communicate with a cloud service.
+With several peripherals on an ESP chip, I2S or PDM or DAC interfaces can be used to implement a minimum project. With the digital microphones, we could input voice signals and build a command voice control project minimum that could communicate with a cloud service.
 
 .. figure:: ../../_static/audio-project-minimum-voice-service.jpg
     :alt: Audio Project Example - Send Voice Commands to Cloud Service
@@ -76,4 +76,4 @@ When looking for better audio quality and more interfacing options we would use 
 
     Typical Audio Project Example
 
-The ESP-ADF is designed primarily to support projects with a codec chip. The :doc:`ESP32 LyraT <../get-started/get-started-esp32-lyrat>` board is an example of such a project. The software interfacing with the board is done by Audio HAL and a driver. The codec chip used on the ESP32 LyraT is `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_. Boards with a different codec chip may be supported by providing a different driver.
+The ESP-ADF is designed primarily to support projects with a codec chip. The :doc:`ESP32 LyraT <dev-boards/get-started-esp32-lyrat>` board is an example of such a project. The software interfacing with the board is done by Audio HAL and a driver. The codec chip used on the ESP32 LyraT is `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_. Boards with a different codec chip may be supported by providing a different driver.

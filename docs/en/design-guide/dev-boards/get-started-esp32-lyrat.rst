@@ -40,7 +40,7 @@ The ESP32-LyraT V4.3 is an audio development board produced by `Espressif <https
 
 The block diagram below presents main components of the ESP32-LyraT and interconnections between components.
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-block-diagram.jpg
+.. figure:: ../../../_static/esp32-lyrat-v4.3-block-diagram.jpg
     :alt: ESP32 LyraT block diagram
     :figclass: align-center
 
@@ -50,7 +50,7 @@ The block diagram below presents main components of the ESP32-LyraT and intercon
 Components
 ^^^^^^^^^^
 
-The following list and figure describe key components, interfaces and controls of the ESP32-LyraT used in this guide. This covers just what is needed now. For detailed technical documentation of this board, please refer to :doc:`../design-guide/board-esp32-lyrat-v4.3` and `ESP32 LyraT V4.3 schematic`_ (PDF).
+The following list and figure describe key components, interfaces and controls of the ESP32-LyraT used in this guide. This covers just what is needed now. For detailed technical documentation of this board, please refer to :doc:`board-esp32-lyrat-v4.3` and `ESP32 LyraT V4.3 schematic`_ (PDF).
 
 
 ESP32-WROVER Module
@@ -64,7 +64,7 @@ Headphone Output
 
 .. _get-started-esp32-lyrat-v4.3-board:
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-layout-overview.jpg
+.. figure:: ../../../_static/esp32-lyrat-v4.3-layout-overview.jpg
     :alt: ESP32 LyraT V4.3 Board Layout Overview
     :figclass: align-center
 
@@ -148,7 +148,7 @@ Other Boards from LyraT Family
 Related Documents
 -----------------
 
-* :doc:`../design-guide/board-esp32-lyrat-v4.3`
+* :doc:`board-esp32-lyrat-v4.3`
 * `ESP32 LyraT V4.3 schematic`_ (PDF)
 * `ESP32-LyraT V4.3 Component Layout`_ (PDF)
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)

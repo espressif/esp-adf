@@ -1,0 +1,1 @@
+.. include:: ../../../en/design-guide/dev-boards/get-started-esp32-lyrat-v4.2.rst

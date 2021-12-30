@@ -1,1 +1,0 @@
-.. include:: ../../en/design-guide/board-esp32-lyrat-mini-v1.2.rst

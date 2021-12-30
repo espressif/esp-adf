@@ -1,1 +1,0 @@
-.. include:: ../../en/get-started/user-guide-esp32-s3-korvo-2-lcd.rst

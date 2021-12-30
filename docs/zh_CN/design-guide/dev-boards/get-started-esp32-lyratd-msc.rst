@@ -27,7 +27,7 @@ ESP32-LyraTD-MSC V2.2 由上板和下板两部分组成，上板 (B) 集成三�
 
 .. _get-started-esp32-lyratd-msc-v2.2-board:
 
-.. figure:: ../../_static/esp32-lyratd-msc-v2.2-side.png
+.. figure:: ../../../_static/esp32-lyratd-msc-v2.2-side.png
     :alt: ESP32-LyraTD-MSC Side View
     :figclass: align-center
 
@@ -49,7 +49,7 @@ ESP32-LyraTD-MSC V2.2 由上板和下板两部分组成，上板 (B) 集成三�
 
 下图展示的是 ESP32-LyraTD-MSC 的主要组件以及组件之间的连接方式。
 
-.. figure:: ../../_static/esp32-lyratd-msc-v2.2-block-diagram.png
+.. figure:: ../../../_static/esp32-lyratd-msc-v2.2-block-diagram.png
     :alt: ESP32-LyraTD-MSC block diagram
     :figclass: align-center
 
@@ -77,7 +77,7 @@ DSP 芯片
 右侧扬声器输出
     音频输出插槽，采用 2.00 mm / 0.08" 排针间距，建议连接 4 欧姆 3 瓦特扬声器。
 
-.. figure:: ../../_static/esp32-lyratd-msc-v2.2-a-top.png
+.. figure:: ../../../_static/esp32-lyratd-msc-v2.2-a-top.png
     :alt: ESP32-LyraTD-MSC V2.2 Lower Board (A) Components
     :figclass: align-center
 
@@ -94,7 +94,7 @@ USB 供电接口
 电源指示灯
     红色指示灯亮起表示 **电源开关** 已开启。
 
-.. figure:: ../../_static/esp32-lyratd-msc-v2.2-b-top.png
+.. figure:: ../../../_static/esp32-lyratd-msc-v2.2-b-top.png
     :alt: ESP32-LyraTD-MSC V2.2 Upper Board (B) Components
     :figclass: align-center
 

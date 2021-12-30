@@ -1,7 +1,7 @@
 ESP32-LyraT V4.3 Hardware Reference
 ===================================
 
-This guide provides functional descriptions, configuration options for ESP32-LyraT V4.3 audio development board. As an introduction to functionality and using the LyraT, please see :doc:`../get-started/get-started-esp32-lyrat`. Check section `Other Versions of LyraT`_ if you have different version of the board.
+This guide provides functional descriptions, configuration options for ESP32-LyraT V4.3 audio development board. As an introduction to functionality and using the LyraT, please see :doc:`get-started-esp32-lyrat`. Check section `Other Versions of LyraT`_ if you have different version of the board.
 
 .. contents:: In this Section
     :local:
@@ -15,7 +15,7 @@ The ESP32-LyraT development board is a hardware platform designed for the dual-c
 
 The block diagram below presents main components of the ESP32-LyraT.
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-electrical-block-diagram.jpg
+.. figure:: ../../../_static/esp32-lyrat-v4.3-electrical-block-diagram.jpg
     :alt: ESP32 LyraT V4.3 Electrical Block Diagram
     :figclass: align-center
 
@@ -54,7 +54,7 @@ Headphone Output
 
         The socket may be used with mobile phone headsets and is compatible with OMPT standard headsets only. It does work with CTIA headsets. Please refer to `Phone connector (audio) <https://en.wikipedia.org/wiki/Phone_connector_(audio)#TRRS_standards>`_ on Wikipedia.
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-layout.jpg
+.. figure:: ../../../_static/esp32-lyrat-v4.3-layout.jpg
     :alt: ESP32 LyraT V4.3 Board Layout
     :figclass: align-center
 
@@ -356,7 +356,7 @@ Power Supply Separation
 
 The main power supply is 5V and provided by a USB. The secondary power supply is 3.7V and provided by an optional battery. The USB power itself is fed with a dedicated cable, separate from a USB cable used for an application upload. To further reduce noise from the USB, the battery may be used instead of the USB.
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-usb-battery-ps.png
+.. figure:: ../../../_static/esp32-lyrat-v4.3-usb-battery-ps.png
     :alt: ESP32 LyraT V4.3 - Power Supply Separation
     :figclass: align-center
 
@@ -370,7 +370,7 @@ Three Dedicated LDOs
 
 To provide enough current the ESP32, the development board adopts LD1117S33CTR LDO capable to supply the maximum output current of 800mA.
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-esp32-module-ps.png
+.. figure:: ../../../_static/esp32-lyrat-v4.3-esp32-module-ps.png
     :alt: ESP32 LyraT V4.3 - Dedicated LDO for the ESP32 Module
     :figclass: align-center
 
@@ -381,7 +381,7 @@ To provide enough current the ESP32, the development board adopts LD1117S33CTR L
 
 Two separate LDOs are provided for the MicorSD Card and the Audio Codec. Both circuits have similar design that includes an inductor and double decoupling capacitors on both the input and output of the LDO.
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-sdio-ps.png
+.. figure:: ../../../_static/esp32-lyrat-v4.3-sdio-ps.png
     :alt: ESP32 LyraT V4.3 - Dedicated LDO for the MicroSD Card
     :figclass: align-center
 
@@ -393,7 +393,7 @@ Separate Power Feed for the PAs
 
 The audio amplifier unit features two NS4150 that require a large power supply for driving external speakers with the maximum output power of 3W. The power is supplied directly to both PAs from the battery or the USB. The development board adds a set of LC circuits at the front of the PA power supply, where L uses 1.5A magnetic beads and C uses 10uF aluminum electrolytic capacitors, to effectively filter out power crosstalk.
 
-.. figure:: ../../_static/esp32-lyrat-v4.3-pa-ps.png
+.. figure:: ../../../_static/esp32-lyrat-v4.3-pa-ps.png
     :alt: ESP32 LyraT V4.3 - Power Supply for the PAs
     :figclass: align-center
 
@@ -415,15 +415,15 @@ To switch between using headphones and speakers, the board provides a digital in
 Other Versions of LyraT
 -----------------------
 
-* :doc:`../get-started/get-started-esp32-lyrat-v4.2`
-* :doc:`../get-started/get-started-esp32-lyrat-v4`
+* :doc:`get-started-esp32-lyrat-v4.2`
+* :doc:`get-started-esp32-lyrat-v4`
 
 
 Related Documents
 -----------------
 
 * `ESP32 LyraT V4.3 schematic`_ (PDF)
-* :doc:`../get-started/get-started-esp32-lyrat`
+* :doc:`get-started-esp32-lyrat`
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
 * `ESP32-WROVER Datasheet <https://espressif.com/sites/default/files/documentation/esp32-wrover_datasheet_en.pdf>`_ (PDF)
 * `JTAG Debugging <https://esp-idf.readthedocs.io/en/latest/api-guides/jtag-debugging/index.html>`_

@@ -76,4 +76,4 @@ ESP 芯片拥有多个外设，可借助 I2S、PDM 或 DAC 接口可开发出一
 
     典型音频项目示例
 
-ESP-ADF 主要支持使用编解码器芯片的项目，如 :doc:`ESP32 LyraT <../get-started/get-started-esp32-lyrat>` 开发板与软件之间的交互由音频 HAL 和驱动程序完成，开发板使用的编解码芯片是 `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_。可以通过提供不同的驱动程序来支持具有不同编解码器芯片的开发板。
+ESP-ADF 主要支持使用编解码器芯片的项目，如 :doc:`ESP32 LyraT <dev-boards/get-started-esp32-lyrat>` 开发板与软件之间的交互由音频 HAL 和驱动程序完成，开发板使用的编解码芯片是 `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_。可以通过提供不同的驱动程序来支持具有不同编解码器芯片的开发板。
