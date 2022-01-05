@@ -10,6 +10,7 @@ do
         VAR_PATH=$(echo $VAR | grep -Eo "[a-zA-Z0-9./\-\_-]*" | tail -1)
         cd $VAR_PATH
         echo "This path has been switched to:"$(pwd)
+        if [ -e tools/CreateSectionTable.pyc ]; then rm -f tools/CreateSectionTable.pyc; fi
         git fetch
         git checkout $VAR_BRANCH
         git submodule update --init --recursive
