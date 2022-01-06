@@ -1,0 +1,151 @@
+From a04e0fa0065a954f83311e05cd990b5eae239059 Mon Sep 17 00:00:00 2001
+From: xutao <xutao@espressif.com>
+Date: Thu, 30 Dec 2021 16:09:00 +0800
+Subject: [PATCH] feature: add allocate task stack from any memory
+
+---
+ components/freertos/include/freertos/task.h | 46 ++++++++++++++
+ components/freertos/tasks.c                 | 70 +++++++++++++++++++++
+ 2 files changed, 116 insertions(+)
+
+diff --git a/components/freertos/include/freertos/task.h b/components/freertos/include/freertos/task.h
+index 125a924d061..73fa0405265 100644
+--- a/components/freertos/include/freertos/task.h
++++ b/components/freertos/include/freertos/task.h
+@@ -701,6 +701,52 @@ typedef enum
+ #if ( portUSING_MPU_WRAPPERS == 1 )
+     BaseType_t xTaskCreateRestricted( const TaskParameters_t * const pxTaskDefinition,
+                                       TaskHandle_t * pxCreatedTask ) PRIVILEGED_FUNCTION;
++
++/**
++ * Only available when configSUPPORT_DYNAMIC_ALLOCATION is set to 1.
++ *
++ * xTaskCreateRestrictedStaticPinnedToCore() should only be used in systems that include an MPU
++ * implementation.
++ *
++ * Example usage:
++ * @code{c}
++ *
++ *
++ * int main( void )
++ * {
++ * TaskHandle_t xHandle;
++ *
++ *
++ *  #define stack_size      (2048)
++ *  #define stack_priority  (10)
++ *  #define stack_core       (1)
++ *  TaskHandle_t              taskHandles
++ *  StackType_t * stack = (StackType_t *)malloc(stack_size)
++ *
++ *  xTaskCreateRestrictedStaticPinnedToCore( &pxTaskCode, "pxTaskCode", stack_size,  stack,
++ *                                            (void *)arg, stack_priority, &taskHandles, stack_core);
++ *
++ *  // Start the scheduler.
++ *  vTaskStartScheduler();
++ *
++ *  // Will only get here if there was insufficient memory to create the idle
++ *  // and/or timer task.
++ *  for( ;; );
++ * }
++ * @endcode
++ * @cond !DOC_SINGLE_GROUP
++ * \defgroup xTaskCreateRestrictedStaticPinnedToCore
++ * @endcond
++ * \ingroup Tasks
++ */
++    BaseType_t xTaskCreateRestrictedStaticPinnedToCore(TaskFunction_t pxTaskCode,
++                                                       const char * const pcName,
++                                                       uint32_t usStackDepth,
++                                                       StackType_t * stack,
++                                                       void * const pvParameters,
++                                                       UBaseType_t uxPriorit,
++                                                       TaskHandle_t *pxCreatedTask,
++                                                       const BaseType_t x) PRIVILEGED_FUNCTION;
+ #endif
+ 
+ /**
+diff --git a/components/freertos/tasks.c b/components/freertos/tasks.c
+index 40a07839e79..2df6bc55eb4 100644
+--- a/components/freertos/tasks.c
++++ b/components/freertos/tasks.c
+@@ -812,6 +812,76 @@ void taskYIELD_OTHER_CORE( BaseType_t xCoreID, UBaseType_t uxPriority )
+         return xReturn;
+     }
+ 
++    BaseType_t xTaskCreateRestrictedPinnedToCore( const TaskParameters_t * const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID)
++    {
++    TCB_t *pxNewTCB;
++    BaseType_t xReturn = errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
++
++        configASSERT( pxTaskDefinition->puxStackBuffer );
++
++        if( pxTaskDefinition->puxStackBuffer != NULL )
++        {
++            /* Allocate space for the TCB.  Where the memory comes from depends
++            on the implementation of the port malloc function and whether or
++            not static allocation is being used. */
++            pxNewTCB = ( TCB_t * ) pvPortMallocTcbMem( sizeof( TCB_t ) );
++
++            if( pxNewTCB != NULL )
++            {
++                /* Store the stack location in the TCB. */
++                pxNewTCB->pxStack = pxTaskDefinition->puxStackBuffer;
++
++                /* Tasks can be created statically or dynamically, so note
++                this task had a statically allocated stack in case it is
++                later deleted.  The TCB was allocated dynamically. */
++                pxNewTCB->ucStaticallyAllocated = tskDYNAMICALLY_ALLOCATED_STACK_AND_TCB;
++
++                prvInitialiseNewTask(   pxTaskDefinition->pvTaskCode,
++                                        pxTaskDefinition->pcName,
++                                        pxTaskDefinition->usStackDepth,
++                                        pxTaskDefinition->pvParameters,
++                                        pxTaskDefinition->uxPriority,
++                                        pxCreatedTask, pxNewTCB,
++                                        pxTaskDefinition->xRegions,
++                                        xCoreID );
++
++                prvAddNewTaskToReadyList( pxNewTCB, pxTaskDefinition->pvTaskCode, xCoreID );
++                xReturn = pdPASS;
++            }
++        }
++
++        return xReturn;
++    }
++
++
++BaseType_t xTaskCreateRestrictedStaticPinnedToCore(TaskFunction_t pxTaskCode,
++                                                const char * const pcName,
++                                                uint32_t usStackDepth,
++                                                StackType_t * stack,
++                                                void * const pvParameters,
++                                                UBaseType_t uxPriorit,
++                                                TaskHandle_t *pxCreatedTask,
++                                                const BaseType_t xCoreID)
++
++{
++        printf("Task: Create stack of \033[0;32;31m %s \033[m Task From External(%d)\n", pcName, usStackDepth);
++        TaskParameters_t xRegParameters = {
++            .pvTaskCode = pxTaskCode,
++            .pcName = pcName,
++            .usStackDepth = usStackDepth,
++            .pvParameters = pvParameters,
++            .uxPriority = uxPriorit | portPRIVILEGE_BIT,
++            .puxStackBuffer = stack,
++            .xRegions = {{
++                    .pvBaseAddress = 0x00,
++                    .ulLengthInBytes = 0x00,
++                    .ulParameters = 0x00,
++                }
++            }
++        };
++        return xTaskCreateRestrictedPinnedToCore(&xRegParameters, pxCreatedTask, xCoreID);
++}
++
+ #endif /* portUSING_MPU_WRAPPERS */
+ /*-----------------------------------------------------------*/
+ 
+-- 
+2.17.1
+

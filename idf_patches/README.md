@@ -1,19 +1,20 @@
-## Abstract 
+## Abstract
 
- About the idf_ patches folder, the files stored in it are mainly the features that we have used in advance but have not yet been officially incorporated into the **esp-idf**. We have provided them in the form of patch 
+ About the idf_ patches folder, the files stored in it are mainly the features that we have used in advance but have not yet been officially incorporated into the **esp-idf**. We have provided them in the form of patch
 
 
 
-## Patch file description 
+## Patch file description
 
-### 1. idf_v3.3_freertos.patch
+### 1. idf_v3.3_freertos.patch and idf_v4.4_freertos.patch
 
->  The function of idf_v3.3_freertos.patch is to put the stack of some tasks on PSRAM 
+>  The function of idf_v*.*_freertos.patch is to put the stack of some tasks on PSRAM
 
  **Use scenario:**  When using PSRAM, some default tasks stack will be put into PSRAM to save memory. If this patch is not put on, the following errors will occur during compilation .This patch need put on in `IDF` path
 
 ```c
-Not found right xTaskCreateRestrictedPinnedToCore. Please apply the $ADF_PATH/idf_patches/idf_v3.3_freertos.patch first
+Not found right xTaskCreateRestrictedPinnedToCore. Please apply the `$ADF_PATH/idf_patches/idf_v3.3_freertos.patch` or `$ADF_PATH/idf_patches/idf_v4.4_freertos.patch` first
+There are two versions of patch. This mainly depends on the IDF version number you use. If the version you use is `audio/stack_on_psram_v3.3` or `release/v3.3`, you use `idf_v3.3_freertos.patch` patch. If the IDF version you use is `release/v4.4`, you use `idf_v4.4_freertos.patch`
 ```
 
 ### 2. idf_v3.3_light_sleep.path
@@ -24,7 +25,7 @@ Not found right xTaskCreateRestrictedPinnedToCore. Please apply the $ADF_PATH/id
 
 ### 3.idf_v3.3_esp_http_client.patch & adf_http_stream.patch
 
-> The function of idf_v3.3_esp_http_client.patch avoid multiple `esp_http_client` problems 
+> The function of idf_v3.3_esp_http_client.patch avoid multiple `esp_http_client` problems
 
 >  When problems occur, they are as follows
 > - There are log phenomena such as `Got 104 errno(Connection reset by peer), reconnect to peer` or `Got 11 errno(No more processes), reconnect to peer`, then there will be decoding failures such as m4a/aac
