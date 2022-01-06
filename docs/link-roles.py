@@ -4,8 +4,38 @@ from __future__ import print_function
 from __future__ import unicode_literals
 import re
 import os
+import subprocess
+from collections import namedtuple
+
 from docutils import nodes
 from local_util import run_cmd_get_output
+
+# Creates a dict of all submodules with the format {submodule_path : (url relative to git root), commit)}
+def get_submodules():
+    git_root = subprocess.check_output(['git', 'rev-parse', '--show-toplevel']).strip().decode('utf-8')
+    gitmodules_file = os.path.join(git_root, '.gitmodules')
+
+    submodules = subprocess.check_output(['git', 'submodule', 'status'], cwd=git_root).strip().decode('utf-8').split('\n')
+
+    if submodules[0] == '':
+        return {}
+
+    submodule_dict = {}
+    Submodule = namedtuple('Submodule', 'url rev')
+
+    for sub in submodules:
+        sub_info = sub.lstrip().split(' ')
+
+        # Get short hash, 7 digits
+        rev = sub_info[0].lstrip('-')[0:7]
+        path = sub_info[1].lstrip('./')
+
+        config_key_arg = 'submodule.{}.url'.format(path)
+        rel_url = subprocess.check_output(['git', 'config', '--file', gitmodules_file, '--get', config_key_arg]).decode('utf-8').lstrip('./').rstrip('\n')
+
+        submodule_dict[path] = Submodule(rel_url, rev)
+
+    return submodule_dict
 
 
 def get_github_rev():
@@ -20,18 +50,18 @@ def get_github_rev():
 
 def setup(app):
     rev = get_github_rev()
+    submods = get_submodules()
 
     # links to files or folders on the GitHub
-    baseurl = 'https://github.com/espressif/esp-adf'
-    app.add_role('adf', autolink('{}/tree/{}/%s'.format(baseurl, rev)))
-    app.add_role('adf_file', autolink('{}/blob/{}/%s'.format(baseurl, rev)))
-    app.add_role('adf_raw', autolink('{}/raw/{}/%s'.format(baseurl, rev)))
-    app.add_role('component', autolink('{}/tree/{}/components/%s'.format(baseurl, rev)))
-    app.add_role('component_file', autolink('{}/blob/{}/components/%s'.format(baseurl, rev)))
-    app.add_role('component_raw', autolink('{}/raw/{}/components/%s'.format(baseurl, rev)))
-    app.add_role('example', autolink('{}/tree/{}/examples/%s'.format(baseurl, rev)))
-    app.add_role('example_file', autolink('{}/blob/{}/examples/%s'.format(baseurl, rev)))
-    app.add_role('example_raw', autolink('{}/raw/{}/examples/%s'.format(baseurl, rev)))
+    app.add_role('adf', github_link('tree', rev, submods, '/', app.config))
+    app.add_role('adf_file', github_link('blob', rev, submods, '/', app.config))
+    app.add_role('adf_raw', github_link('raw', rev, submods, '/', app.config))
+    app.add_role('component', github_link('tree', rev, submods, '/components/', app.config))
+    app.add_role('component_file', github_link('blob', rev, submods, '/components/', app.config))
+    app.add_role('component_raw', github_link('raw', rev, submods, '/components/', app.config))
+    app.add_role('example', github_link('tree', rev, submods, '/examples/', app.config))
+    app.add_role('example_file', github_link('blob', rev, submods, '/examples/', app.config))
+    app.add_role('example_raw', github_link('raw', rev, submods, '/examples/', app.config))
 
     # link to the current documentation file in specific language version
     on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -47,8 +77,31 @@ def setup(app):
     app.add_role('link_to_translation', crosslink('%s../../%s/{}/%s.html'.format(tag_rev)))
 
 
-def autolink(pattern):
+def url_join(*url_parts):
+    """ Make a URL out of multiple components, assume first part is the https:// part and
+    anything else is a path component """
+    result = "/".join(url_parts)
+    result = re.sub(r"([^:])//+", r"\1/", result)  # remove any // that isn't in the https:// part
+    return result
+
+
+def github_link(link_type, adf_rev, submods, root_path, app_config):
     def role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+
+        ADF_REPO = "espressif/esp-adf"
+        BASE_URL = "https://github.com"
+
+        # Redirects to submodule repo if path is a submodule, else default to IDF repo
+        def redirect_submodule(path, submods, rev):
+            for key, value in submods.items():
+                # Add path separator to end of submodule path to ensure we are matching a directory
+                if path.lstrip('/').startswith(os.path.join(key, '')):
+                    # Remove domain
+                    url = value.url.split('.com')[-1]
+                    return url, value.rev, re.sub('^/{}/'.format(key), '', path)
+
+            return ADF_REPO, rev, path
+
         m = re.search('(.*)\s*<(.*)>', text)  # noqa: W605 - regular expression
         if m:
             link_text = m.group(1)
@@ -56,7 +109,12 @@ def autolink(pattern):
         else:
             link_text = text
             link = text
-        url = pattern % (link,)
+
+        abs_path = root_path + link
+
+        repo_url, repo_rev, abs_path = redirect_submodule(abs_path, submods, adf_rev)
+        url = url_join(BASE_URL, repo_url, link_type, repo_rev, abs_path)
+
         node = nodes.reference(rawtext, link_text, refuri=url, **options)
         return [node], []
     return role
