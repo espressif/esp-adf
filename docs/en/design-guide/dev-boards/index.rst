@@ -42,6 +42,7 @@ Below are getting started guides and hardware details of audio development board
 
 .. toctree::
     :maxdepth: 1
+    :hidden:
 
     ESP32-LyraT-Mini V1.2 Getting Started Guide <get-started-esp32-lyrat-mini>
     ESP32-LyraT-Mini V1.2 Hardware Reference <board-esp32-lyrat-mini-v1.2>

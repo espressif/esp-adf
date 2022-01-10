@@ -8,12 +8,12 @@
 
 # move dev boards getting started guide and hardware reference doc to design-guide/dev-boards/
 
-get-started/get-started-esp32-korvo-du1906      design-guide/get-started-esp32-korvo-du1906
-get-started/get-started-esp32-lyrat-mini        design-guide/get-started-esp32-lyrat-mini
-get-started/get-started-esp32-lyrat-v4.2        design-guide/get-started-esp32-lyrat-v4.2
-get-started/get-started-esp32-lyrat-v4          design-guide/get-started-esp32-lyrat-v4
+get-started/get-started-esp32-korvo-du1906      design-guide/dev-boards/get-started-esp32-korvo-du1906
+get-started/get-started-esp32-lyrat-mini        design-guide/dev-boards/get-started-esp32-lyrat-mini
+get-started/get-started-esp32-lyrat-v4.2        design-guide/dev-boards/get-started-esp32-lyrat-v4.2
+get-started/get-started-esp32-lyrat-v4          design-guide/dev-boards/get-started-esp32-lyrat-v4
 get-started/get-started-esp32-lyrat             design-guide/dev-boards/get-started-esp32-lyrat
-get-started/get-started-esp32-lyrat-msc         design-guide/dev-boards/get-started-esp32-lyrat-msc
+get-started/get-started-esp32-lyratd-msc        design-guide/dev-boards/get-started-esp32-lyratd-msc
 get-started/user-guide-esp32-s3-korvo-2-lcd     design-guide/dev-boards/user-guide-esp32-s3-korvo-2-lcd
 get-started/user-guide-esp32-s3-korvo-2         design-guide/dev-boards/user-guide-esp32-s3-korvo-2
 design-guide/board-esp32-lyrat-mini-v1.2        design-guide/dev-boards/board-esp32-lyrat-mini-v1.2
