@@ -1,4 +1,4 @@
-# 经典蓝牙接收端（SINK）管道例程
+# 经典蓝牙接收端 (Sink) 管道例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -11,10 +11,8 @@
 
 开发板接收语音数据并解码播放的管道如下：
 
-```c
-
+```
 [Bluetooth] ---> bt_stream_reader ---> i2s_stream_writer ---> [codec_chip]
-
 ```
 
 
@@ -22,7 +20,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -48,13 +46,13 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
 ### 编译和下载
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -172,7 +170,7 @@ I (1691) BLUETOOTH_EXAMPLE: [ 7 ] Listen for all pipeline events
 
 ```
 
-- 当手机连接上开发板板，并开始播放音乐时候,打印如下：
+- 当手机连接上开发板，并开始播放音乐时候，打印如下：
 
 ```c
 E (226361) BT_APPL: bta_av_rc_create ACP handle exist for shdl:0
@@ -188,7 +186,7 @@ W (259861) BT_APPL: new conn_srvc id:19, app_id:1
 
 ```
 
-- 同时，也可以在开发板上使用按键开始播放，暂停播放等操作，打印如下：
+- 同时，也可以在开发板上使用按键，进行开始播放、暂停播放等操作，打印如下：
 
 ```c
 I (1225481) BLUETOOTH_EXAMPLE: [ * ] [Play] touch tap event
@@ -205,7 +203,7 @@ I (1254881) BLUETOOTH_EXAMPLE: [ * ] [Vol-] touch tap event
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -338,7 +336,7 @@ I (1254881) BLUETOOTH_EXAMPLE: [ * ] [Vol-] touch tap event
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

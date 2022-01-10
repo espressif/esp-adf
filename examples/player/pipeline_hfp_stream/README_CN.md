@@ -6,13 +6,12 @@
 
 ## 例程简介
 
-本例程实现免提配置文件 (Hands Free Profile, HFP) 在 ADF 框架下接收和发送音频流的 API 的演示。
+本例程演示了免提配置文件 (Hands Free Profile, HFP) 在 ADF 框架下接收和发送音频流的 API 的过程。
 
 本例程的管道如下图：
 
 ```
 [Bluetooth] ---> hfp_in_stream ---> i2s_stream_writer ---> [codec_chip]
-
 ```
 
 
@@ -20,12 +19,12 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
 | ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "开发板不兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
 | ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
 | ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
 | ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "开发板不兼容此例程") |
@@ -45,7 +44,7 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
 ### 编译和下载
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
@@ -60,7 +59,7 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后，会等待手机等蓝牙设备主动去连接，HFP 设备名为 `ESP-ADF-HFP`， 打印如下：
+- 例程开始运行后，会等待手机等蓝牙设备主动进行连接，HFP 设备名为 `ESP-ADF-HFP`， 打印如下：
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -168,7 +167,7 @@ I (1643) HFP_EXAMPLE: [ 7 ] Listen for all pipeline events
 
 ```
 
-- 此示例中，手机搜索到 `ESP-ADF-HFP` 并链接成功，log 如下：
+- 此示例中，手机搜索到 `ESP-ADF-HFP` 并连接成功，日志如下：
 
 ```c
 W (36303) BT_APPL: new conn_srvc id:27, app_id:1
@@ -219,7 +218,7 @@ I (95803) HFP_STREAM: --ROAMING: active
 
 ```
 
-- 然后，可以使用此设备接听呼入的电话，LOG 如下。
+- 然后，可以使用此设备接听呼入的电话，日志如下。
 
 ```c
 I (108073) gpio: GPIO[21]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
@@ -242,7 +241,7 @@ I (207183) HFP_STREAM: --Call setup indicator NONE
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -410,7 +409,7 @@ I (207183) HFP_STREAM: --Call setup indicator NONE
 
 ```
 
-## Troubleshooting
+## 故障排除
 
 - 目前阶段，ESP32 HFP 设备默认支持的音频编解码器是 CVSD。CVSD 数据流传输到 HFP 设备，然后解码为 PCM 数据输出。ESP32 支持 HFP 的其他解码器配置，但需要额外修改协议栈设置。
 - 由于使用限制，ESP32 HFP 设备最多只能支持一个与远程设备的连接。
@@ -419,7 +418,7 @@ I (207183) HFP_STREAM: --Call setup indicator NONE
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。

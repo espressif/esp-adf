@@ -1,4 +1,4 @@
-# 从 flash 中播放 MP3 文件例程
+# 从 Flash 中播放 MP3 文件例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_regular.png "中级")
@@ -10,10 +10,8 @@
 
 开发板获取 flash 中存储的 MP3 文件并解码播放的管道如下：
 
-```c
-
+```
 [flash] ---> tone_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
-
 ```
 
 ### 预备知识
@@ -25,9 +23,8 @@
 
 Python 脚本命令如下：
 
-```c
+```
 python $ADF_PATH/tools/audio_tone/mk_audio_tone.py tone_mp3_folder
-
 ```
 
 本例程默认的 `audio-esp.bin` 包含如下音频文件：
@@ -61,7 +58,7 @@ python $ADF_PATH/tools/audio_tone/mk_audio_tone.py tone_mp3_folder
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -89,23 +86,23 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 此例程的 `flashTone` 在 `partition_flash_tone.csv` 中地址配置如下，用户可以根据自己的项目 flash 分区灵活配置地址。
 
-```c
+```
 flashTone,data,  0x04,  0x110000 , 500K,
 ```
 
 
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
 
-此外， 本例程还需烧录 `/tools/audio-esp.bin` 到 `partition_flash_tone.csv ` 的 `flashTone` 分区， 使用下面的命令。
+此外，本例程还需烧录 `/tools/audio-esp.bin` 到 `partition_flash_tone.csv` 的 `flashTone` 分区，请使用如下命令。
 
-```c
+```
 python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x110000 ./tools/audio-esp.bin
 
 esptool.py v2.8
@@ -131,7 +128,7 @@ Hard resetting via RTS pin...
 ```
 
 
-退出调试界面使用 ``Ctrl-]``
+使用 ``Ctrl-]`` 退出调试界面。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -140,7 +137,7 @@ Hard resetting via RTS pin...
 
 ### 功能和用法
 
-- 例程开始运行后，如果事前没有烧录 `/tools/audio-esp.bin` 到 `partition_flash_tone.csv ` 的 `flashTone` 分区，例程将会报错，请参考[编译和下载](### 编译和下载)的说明烧录，正常的例程打印如下：
+- 例程开始运行后，如果事前没有烧录 `/tools/audio-esp.bin` 到 `partition_flash_tone.csv ` 的 `flashTone` 分区，例程将会报错，请参考 [编译和下载](#编译和下载) 的说明进行烧录，正常的例程打印如下：
 
 ```c
 ets Jul 29 2019 12:21:46
@@ -234,7 +231,7 @@ W (1271) AUDIO_ELEMENT: [mp3] Element has not create when AUDIO_ELEMENT_TERMINAT
 
 ### 日志输出
 
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 ets Jul 29 2019 12:21:46
@@ -326,7 +323,7 @@ W (1271) AUDIO_ELEMENT: [mp3] Element has not create when AUDIO_ELEMENT_TERMINAT
 ```
 
 
-## Troubleshooting
+## 故障排除
 
 ```c
 E (481) TONE_PARTITION: Not flash tone partition
@@ -339,13 +336,13 @@ W (521) AUDIO_ELEMENT: [mp3] AEL_IO_ABORT, -3
 W (531) AUDIO_ELEMENT: IN-[i2s] AEL_IO_ABORT
 ```
 
-如果遇到上述的错误，请把按照[编译和下载](### 编译和下载)说明烧录 `/tools/audio-esp.bin` 到 `partition_flash_tone.csv ` 的 `flashTone` 分区。
+如果遇到上述的错误，请把按照 [编译和下载](#编译和下载) 的说明烧录 `/tools/audio-esp.bin` 到 `partition_flash_tone.csv ` 的 `flashTone` 分区。
 
 
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。
