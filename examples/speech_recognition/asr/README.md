@@ -1,7 +1,7 @@
 ﻿# Automatic Speech Recognition (ASR)
 
 - [中文版本](./README_CN.md)
-- Baisc Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
+- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
 ## Example Brief
 

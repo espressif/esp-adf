@@ -1,4 +1,4 @@
-# 音频锻造例程
+# 音频塑造 (audio forge) 例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_regular.png "中级")
@@ -6,14 +6,14 @@
 
 ## 例程简介
 
-此示例展示了如何使用 ESP-ADF 的多输入管道通过音频锻造处理播放多个音频文件。
+此示例展示了如何使用 ESP-ADF 的多输入管道通过音频塑造 (audio forge) 处理播放多个音频文件。
 
-音频锻造包含了重采样（resample）、向下混叠（downmix）、自动电平控制（ALC）、均衡器(equalizer)、变声（sonic）等处理过程，通过 audio_forge 的结构体成员 component_select 的掩码来组合这几个功能的选择。
+音频塑造包含了重采样 (resample)、向下混叠 (downmix)、自动电平控制 (ALC)、均衡器 (equalizer)、变声 (sonic) 等处理过程，通过 audio_forge 的结构体成员 component_select 的掩码来组合这几个功能的选择。
 
 
-此例程音频锻造的 pipeline 如下：
+此例程音频塑造的管道如下：
 
-```c
+```
 
               ---> fatfs_stream ---> wav_decoder ---> raw_stream ---> 
              |                                                       |
@@ -35,7 +35,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -49,12 +49,12 @@
 ## 编译和下载
 
 ### IDF 默认分支
+
 本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 ### 配置
 
-
-本例程需要准备一张 microSD 卡，准备两首 WAV 音频文件，并重命名为 'test1.wav' 和 'test2.wav'拷贝到 microSD 卡中，然后把 microSD 卡插入开发板备用，
+本例程需要准备一张 microSD 卡以及两首 WAV 音频文件，将音频文件分别重命名为 `test1.wav` 和 `test2.wav` 并拷贝到 microSD 卡中，然后把 microSD 卡插入开发板备用，
 
 本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 
@@ -62,7 +62,7 @@
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-如果你需要修改录音文件名，本例程建议同时打开 FATFS 长文件名支持。
+如果你需要修改录音文件名，本例程建议同时打开 FatFs 长文件名支持。
 
 ```
 menuconfig > Component config > FAT Filesystem support > Long filename support
@@ -75,7 +75,7 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -189,7 +189,7 @@ I (1724) AUDIO_PIPELINE: link el->rb, el:0x3f80b7f4, tag:wav, rb:0x3f80dabc
 I (1731) AUDIO_FORGE_PIPELINE: [5.1] Listening event from peripherals
 ```
 
-- 当按下音频板上的 [Mode] 按钮时，本例读取 microSD 卡中的 wav 文件，然后根据 audio forge 的配置处理音频并播放，打印如下：
+- 当按下音频板上的 [Mode] 按钮时，本例读取 microSD 卡中的 WAV 文件，然后根据音频塑造的配置处理音频并播放，打印如下：
 
 ```c
 E (71359) AUDIO_FORGE_PIPELINE: audio_forge start
@@ -263,7 +263,7 @@ W (311684) AUDIO_ELEMENT: [iis] Element has not create when AUDIO_ELEMENT_TERMIN
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下是本例程的完整日志。
 
 ```c
 ets Jun  8 2016 00:22:57
@@ -440,7 +440,7 @@ W (311684) AUDIO_ELEMENT: [iis] Element has not create when AUDIO_ELEMENT_TERMIN
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。
