@@ -1,0 +1,9 @@
+menu "Audio Recorder"
+    config AFE_MIC_NUM
+        int "Number of micphones used for AFE"
+        range 1 2
+        default 2 if IDF_TARGET_ESP32S3
+        default 1 if IDF_TARGET_ESP32
+        help
+            Now only support 1 or 2 mic
+endmenu

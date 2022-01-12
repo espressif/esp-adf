@@ -134,6 +134,9 @@ static void setup_player(void)
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.i2s_config.sample_rate = 48000;
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    i2s_writer.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
+#endif
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
     // Add decoders and encoders to esp_audio

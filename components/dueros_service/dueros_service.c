@@ -41,13 +41,14 @@
 #include "sdkconfig.h"
 #include "audio_mem.h"
 #include "dueros_service.h"
-#include "recorder_engine.h"
+#include "audio_recorder.h"
 #include "esp_audio.h"
 #include "esp_log.h"
 
 #define DUEROS_TASK_PRIORITY        5
 #define DUEROS_TASK_STACK_SIZE      6*1024
 #define RECORD_SAMPLE_RATE          (16000)
+#define RECORD_READ_BLOCK_SIZE      (2048)
 
 #define RECORD_DEBUG                0
 
@@ -70,6 +71,7 @@ typedef enum {
 typedef struct {
     xQueueHandle            duer_que;
     service_state_t         duer_state;
+    audio_rec_handle_t      recorder;
 } dueros_service_t;
 
 typedef struct {
@@ -170,7 +172,7 @@ static void dueros_task(void *pvParameters)
     duer_set_event_callback(duer_event_hook);
     duer_init_device_info();
 
-    uint8_t *voiceData = audio_calloc(1, REC_ONE_BLOCK_SIZE);
+    uint8_t *voiceData = audio_calloc(1, RECORD_READ_BLOCK_SIZE);
     if (NULL == voiceData) {
         ESP_LOGE(TAG, "Func:%s, Line:%d, Malloc failed", __func__, __LINE__);
         goto dueros_task_fail;
@@ -217,15 +219,15 @@ static void dueros_task(void *pvParameters)
                 serv->duer_state = SERVICE_STATE_RUNNING;
                 audio_service_callback(serv_handle, &serv_evt);
                 while (1) {
-                    int ret = rec_engine_data_read(voiceData, REC_ONE_BLOCK_SIZE, 110 / portTICK_PERIOD_MS);
+                    int ret = audio_recorder_data_read(serv->recorder, voiceData, RECORD_READ_BLOCK_SIZE, portMAX_DELAY);
                     ESP_LOGD(TAG, "index = %d", ret);
                     if ((ret == 0) || (ret == -1)) {
                         break;
                     }
                     if (file) {
-                        fwrite(voiceData, 1, REC_ONE_BLOCK_SIZE, file);
+                        fwrite(voiceData, 1, ret, file);
                     }
-                    ret  = duer_voice_send(voiceData, REC_ONE_BLOCK_SIZE);
+                    ret  = duer_voice_send(voiceData, ret);
                     if (ret < 0) {
                         ESP_LOGE(TAG, "duer_voice_send failed ret:%d", ret);
                         break;
@@ -304,11 +306,13 @@ service_state_t dueros_service_state_get()
     return serv->duer_state;
 }
 
-audio_service_handle_t dueros_service_create(void)
+audio_service_handle_t dueros_service_create(void *recorder_handle)
 {
     dueros_service_t *serv =  audio_calloc(1, sizeof(dueros_service_t));
     serv->duer_que = xQueueCreate(3, sizeof(duer_task_msg_t));
     serv->duer_state = SERVICE_STATE_UNKNOWN;
+    serv->recorder = recorder_handle;
+
     audio_service_config_t duer_cfg = {
         .task_stack = DUEROS_TASK_STACK_SIZE,
         .task_prio  = DUEROS_TASK_PRIORITY,
