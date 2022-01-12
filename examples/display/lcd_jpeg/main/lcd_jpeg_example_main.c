@@ -11,7 +11,7 @@
 #include "pretty_effect.h"
 #include "board.h"
 
-#if !defined (CONFIG_ESP32_S3_KORVO2_V3_BOARD) && !defined (CONFIG_ESP32_S2_KALUGA_1_V1_2_BOARD)
+#if !defined (FUNC_LCD_SCREEN_EN)
 void app_main(void)
 {
     // Just to pass CI test with older IDF
