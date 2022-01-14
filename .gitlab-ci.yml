@@ -19,6 +19,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: none
   ADF_PATH: "$CI_PROJECT_DIR"
   IDF_PATH: "$CI_PROJECT_DIR/esp-idf"
+  CI_TARGET_UT_TEST_CONFIG_FILE: "$CI_PROJECT_DIR/tools/ci/target-ut-test.yml"
 
 .setup_tools_unless_target_test: &setup_tools_unless_target_test |
   if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
@@ -48,11 +49,19 @@ before_script:
   - cd $ADF_PATH/..
   - if [[ ! -d "$ADF_PATH/../adf-libs-ut/" ]]; then git clone ssh://git@gitlab.espressif.cn:27227/adf/adf-libs-ut.git;else echo "adf-libs-ut folder already exists";fi
   - cd -
+  - if [ -e $ADF_UT/tools/CreateSectionTable.pyc ]; then rm -f $ADF_UT/tools/CreateSectionTable.pyc; fi
   - source $ADF_PATH/tools/ut/switch_branch.sh
+
+  - if [ "$IDF_VERSION" = "release/v4.4" ];then cd $IDF_PATH; git checkout $IDF_VERSION; $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)";fi
+
+  # - cd $IDF_PATH
+  # - git checkout $IDF_VERSION
+  # - $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)"
   - source $IDF_PATH/tools/ci/setup_python.sh
+  - if [ "$IDF_VERSION" != "release/v4.4" ];then source esp-idf/tools/ci/configure_ci_environment.sh;fi
 
   # (the same regular expressions are used to set these are used in 'only:' sections below
-  - source esp-idf/tools/ci/configure_ci_environment.sh
+  # - source esp-idf/tools/ci/configure_ci_environment.sh
   # fetch the submodules (& if necessary re-fetch repo) from gitlab
 
 .add_gitlab_key_before:
@@ -269,6 +278,21 @@ before_script:
       - $BOT_LABEL_UNIT_TEST
       - $BOT_LABEL_REGULAR_TEST
 
+.build_esp_adf_unit_test_v44_template: &build_esp_adf_unit_test_v44_template
+  stage: build_ut
+  image: $CI_DOCKER_REGISTRY/esp-env:v4.4-1
+  tags:
+    - adf_build
+  variables:
+    BATCH_BUILD: "1"
+    V: "0"
+  only:
+    variables:
+      - $BOT_TRIGGER_WITH_LABEL == null
+      - $BOT_LABEL_BUILD
+      - $BOT_LABEL_UNIT_TEST
+      - $BOT_LABEL_REGULAR_TEST
+
 .add_adf_components_to_ut_make_build: &add_adf_components_to_ut_make_build
   - cd $ADF_PATH
   - git apply idf_patches/adf_http_stream.patch
@@ -291,6 +315,28 @@ before_script:
   - rm -rf $IDF_PATH/tools/ci
   - cp -rf $ADF_UT/ci $IDF_PATH/tools
   - sed -i "s%CRITICAL_LEAK_THRESHOLD = 4096%CRITICAL_LEAK_THRESHOLD = 26240%" $IDF_PATH/tools/unit-test-app/components/test_utils/test_runner.c
+  - sed -i "s%include \$(IDF_PATH)\/make\/project.mk%include \$(ADF_PATH)\/project.mk%g" Makefile
+
+.add_adf_components_to_ut_v44_make_build: &add_adf_components_to_ut_v44_make_build
+  - cd $ADF_PATH
+  - git apply idf_patches/adf_http_stream.patch
+  - cd ../adf-libs-ut
+  - export ADF_UT=$(pwd)
+  - cd $ADF_PATH
+  - sed -i '/EXTRA_COMPONENT_DIRS += \$(ADF_PATH)\/components\//a\EXTRA_COMPONENT_DIRS += $(ADF_UT)/esp_audio' project.mk
+  - git log -2
+  - cd $IDF_PATH
+  - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
+  # - if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
+  # $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)" || exit 1
+  # fi
+  - source $IDF_PATH/tools/ci/configure_ci_environment.sh
+  - git apply $ADF_PATH/idf_patches/idf_v4.4_freertos.patch
+  - cd -
+  - cd $IDF_PATH/tools/unit-test-app
+  - cp $ADF_UT/sdkconfig_v44.defaults ./sdkconfig.defaults
+  - rm -rf $IDF_PATH/tools/ci
+  - cp -rf $ADF_UT/ci $IDF_PATH/tools
   - sed -i "s%include \$(IDF_PATH)\/make\/project.mk%include \$(ADF_PATH)\/project.mk%g" Makefile
 
 .build_esp_adf_tests_make:
@@ -337,18 +383,84 @@ before_script:
     - cd $ADF_UT
     - python tools/UnitTestParser.py
 
+.build_esp_adf_tests_v44_make:
+  <<: *build_esp_adf_unit_test_v44_template
+  artifacts:
+    paths:
+      - $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml
+      - $IDF_PATH/tools/unit-test-app/
+      - $IDF_PATH/tools/unit-test-app/output
+      - $IDF_PATH/tools/unit-test-app/build/*.elf
+      - $IDF_PATH/tools/unit-test-app/build/*.map
+      - $IDF_PATH/tools/unit-test-app/build/*.bin
+      - $IDF_PATH/tools/unit-test-app/build/download.config
+      - $IDF_PATH/tools/unit-test-app/build/bootloader/*
+      - $IDF_PATH/tools/tiny-test-fw/
+      - $IDF_PATH/tools/ci
+      - $IDF_PATH/components/esptool_py/esptool/
+      - $IDF_PATH/components/partition_table/
+    # when: always
+    expire_in: 4 days
+  dependencies: []
+  variables:
+    LOG_PATH: "$CI_PROJECT_DIR/log_ut_make"
+    OUTPUT_PATH: ${IDF_PATH}/tools/unit-test-app/output
+  script:
+    - echo $PATH
+    - xtensa-esp32-elf-gcc -v
+    - *add_adf_components_to_ut_v44_make_build
+    - MAKEFLAGS= make help # make sure kconfig tools are built in single process
+    - make clean
+    - make -j8 TEST_COMPONENTS="$ADF_UT/esp_audio"
+    - make print_flash_cmd > build/download.config
+    - mkdir adf_configs
+    - mkdir output
+    - mkdir output/default
+    - mkdir $IDF_PATH/components/idf_test/unit_test
+    - cp configs/default adf_configs/
+    - cp -ar adf_configs $ADF_UT
+    - find / -name $ADF_UT/adf_configs
+    - cp sdkconfig output/default/
+    - cp -ar build/*.bin output/default
+    - cp -ar build/*.elf output/default
+    - cp -ar build/*.map output/default
+    - cp -ar build/bootloader output/default
+    - cp -r build $CI_PROJECT_DIR
+    - cd $IDF_PATH
+    - git checkout .
+    - git checkout -- $IDF_PATH/components/freertos/include/freertos/task.h $IDF_PATH/components/freertos/tasks.c $IDF_PATH/tools/unit-test-app/Makefile $IDF_PATH/tools/unit-test-app/components/test_utils/test_runner.c $IDF_PATH/tools/unit-test-app/sdkconfig.defaults
+    - rm -rf tools/ci/apply_bot_filter.py tools/ci/build_examples.sh tools/ci/build_examples_cmake.sh tools/ci/check-executable.sh tools/ci/check-line-endings.sh tools/ci/check_examples_cmake_make.sh
+    # use the 'tools/UnitTestParser.py' of release/v3.3 in order to generate 'idf_test/unit_test/TestCaseAll.yml'
+    - git checkout 722043f734
+    - git submodule update --init --recursive
+    - cd -
+    - pyenv install 2.7.15
+    - pyenv global 2.7.15
+    - pyenv rehash
+    - cd $IDF_PATH
+    - ./install.sh
+    - . ./export.sh
+    - cd -
+    - cp $CI_PROJECT_DIR/build $IDF_PATH/tools/unit-test-app -r
+    - cp -ar $ADF_UT/adf_configs $IDF_PATH/tools/unit-test-app
+    - cd $ADF_UT
+    - pip install netifaces
+    - pip install pyyaml
+    - pip install junit_xml
+    - python tools/UnitTestParser.py
+    - sed -i "23i\  - V44" $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml
+
 adf_ut_make_v33:
   extends: .build_esp_adf_tests_make
   variables:
-    IDF_VERSION: 722043f73
+    IDF_VERSION: 722043f734
     IDF_TARGET: esp32
 
-build_examples_v40_cmake:
-  extends: .build_examples_cmake
+adf_ut_make_v44:
+  extends: .build_esp_adf_tests_v44_make
   variables:
+    IDF_VERSION: release/v4.4
     IDF_TARGET: esp32
-    IDF_VERSION: release/v4.0
-    IDF_FIND_APP_PATH_ARG: ""
 
 build_examples_v41_cmake:
   extends: .build_examples_cmake
@@ -474,7 +586,7 @@ build_docs:
   script:
     - ls
     - pwd
-    - python $UNIT_ASSIGN_SCRIPT $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml $CI_PROJECT_DIR/.gitlab-ci.yml $IDF_PATH/components/idf_test/unit_test/CIConfigs
+    - python $UNIT_ASSIGN_SCRIPT $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml $CI_TARGET_UT_TEST_CONFIG_FILE $IDF_PATH/components/idf_test/unit_test/CIConfigs
 
 assign_test_v33:
   <<: *assign_test_template
@@ -485,7 +597,15 @@ assign_test_v33:
     UNIT_ASSIGN_SCRIPT: "esp-idf/tools/tiny-test-fw/CIAssignUnitTest.py"
     PYTHON_VER: 3.7.7
 
-assign_test:
+assign_test_v44:
+  <<: *assign_test_template
+  dependencies:
+    - adf_ut_make_v44
+  variables:
+    UNIT_ASSIGN_SCRIPT: "esp-idf/tools/tiny-test-fw/CIAssignUnitTest.py"
+    PYTHON_VER: 3.7.7
+
+.assign_test:
   tags:
     - assign_test
   image: $CI_DOCKER_REGISTRY/audio_test_env$BOT_DOCKER_IMAGE_TAG
@@ -495,7 +615,6 @@ assign_test:
   dependencies:
     - build_adf_test
     - build_examples_v33_make
-    - build_examples_v40_cmake
   variables:
     TEST_FW_PATH: "$CI_PROJECT_DIR/general-test-framework"
     EXAMPLE_CONFIG_OUTPUT_PATH: "$CI_PROJECT_DIR/examples/test_configs"
@@ -521,7 +640,6 @@ assign_test:
   dependencies:
     - assign_test
     - build_examples_v33_make
-    - build_examples_v40_cmake
     - build_adf_test
   artifacts:
     when: always
@@ -570,138 +688,5 @@ push_to_github:
     - git remote add github git@github.com:espressif/esp-adf.git
     - tools/ci/push_to_github.sh
 
-.define_config_file_name: &define_config_file_name |
-  JOB_NAME_PREFIX=$(echo ${CI_JOB_NAME} | awk '{print $1}')
-  JOG_FULL_NAME="${JOB_NAME_PREFIX}_${CI_NODE_INDEX}"
-  CONFIG_FILE="${CONFIG_FILE_PATH}/${JOG_FULL_NAME}.yml"
-
-.unit_test_template: &unit_test_template
-  stage: target_test
-  when: on_success
-  only:
-    refs:
-      - master
-      - /^release\/v/
-      - /^v\d+\.\d+(\.\d+)?($|-)/
-      - triggers
-      - schedules
-    variables:
-      - $BOT_TRIGGER_WITH_LABEL == null
-      - $BOT_LABEL_UNIT_TEST
-  artifacts:
-    when: always
-    paths:
-      - $LOG_PATH
-    expire_in: 1 week
-    reports:
-        junit: $LOG_PATH/*/XUNIT_RESULT.xml
-  before_script: *add_gitlab_key_before_ut
-  script:
-    - *define_config_file_name
-    - find / -name UT_001_.yml
-    - find / -name UT_002_.yml
-    - pwd
-    - ls
-    - test -e $CONFIG_FILE || exit 0
-    - echo $JOG_FULL_NAME
-    - echo $CONFIG_FILE
-    - ls -al $CONFIG_FILE
-    - ls -al $TEST_SCRIPT
-    - ls -al $TEST_CASE_PATH
-    - ls -al $IDF_PATH
-    # clone test env configs
-    - ./esp-idf/tools/ci/retry_failed.sh git clone $TEST_ENV_CONFIG_REPOSITORY
-    - python $CHECKOUT_REF_SCRIPT ci-test-runner-configs ci-test-runner-configs
-    # run test
-    - echo $TEST_SCRIPT
-    - echo $TEST_CASE_PATH
-    - echo $CONFIG_FILE
-    - echo $ENV_FILE
-    - pwd
-    - python $TEST_SCRIPT $TEST_CASE_PATH -c $CONFIG_FILE -e $ENV_FILE
-
-.job_template: &job_template
-  <<: *unit_test_template
-  dependencies:
-    - adf_ut_make_v33
-    - assign_test_v33
-  variables:
-    TEST_SCRIPT: "esp-idf/tools/tiny-test-fw/Runner.py"
-    TEST_CASE_PATH: "esp-idf/tools/unit-test-app"
-    CONFIG_FILE_PATH: "esp-idf/components/idf_test/unit_test/CIConfigs"
-    LOG_PATH: "esp-idf/TEST_LOGS"
-    ENV_FILE: "ci-test-runner-configs/$CI_RUNNER_DESCRIPTION/EnvConfig.yml"
-    CHECKOUT_REF_SCRIPT: "esp-idf/tools/ci/checkout_project_ref.py"
-    PYTHON_VER: 3.7.7
-
-UT_001:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_002:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_003:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L1
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_004:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L2
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_005:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L3
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_006:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L4
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_007:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L5
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_008:
-  <<: *job_template
-  tags:
-    - UT_T1_1
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_009:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_E6
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
+include:
+  - 'tools/ci/target-ut-test.yml'
