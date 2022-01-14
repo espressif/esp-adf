@@ -293,7 +293,7 @@ I (123362) FATFS_STREAM: File size: 17432920 byte, file position: 0
 I (123372) ESP_AUDIO_TASK: Recv Element[IN_file-0x3f806e9c] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
 I (123372) CODEC_ELEMENT_HELPER: The element is 0x3f807f14. The reserve data 2 is 0x0.
 I (123392) WAV_DECODER: a new song playing
-I (123392) ESP_AUDIO_TASK: Received muisc info then on play
+I (123392) ESP_AUDIO_TASK: Received music info then on play
 I (123412) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (123412) AUDIO_ELEMENT: [Audio_forge-0x3f808d88] Element task created
 I (123422) AUDIO_ELEMENT: [Audio_forge] AEL_MSG_CMD_RESUME,state:1
@@ -565,7 +565,7 @@ I (123362) FATFS_STREAM: File size: 17432920 byte, file position: 0
 I (123372) ESP_AUDIO_TASK: Recv Element[IN_file-0x3f806e9c] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
 I (123372) CODEC_ELEMENT_HELPER: The element is 0x3f807f14. The reserve data 2 is 0x0.
 I (123392) WAV_DECODER: a new song playing
-I (123392) ESP_AUDIO_TASK: Received muisc info then on play
+I (123392) ESP_AUDIO_TASK: Received music info then on play
 I (123412) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (123412) AUDIO_ELEMENT: [Audio_forge-0x3f808d88] Element task created
 I (123422) AUDIO_ELEMENT: [Audio_forge] AEL_MSG_CMD_RESUME,state:1

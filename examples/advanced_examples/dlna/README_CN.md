@@ -233,7 +233,7 @@ I (40346) ESP_DECODER: Detect audio type is M4A
 I (40346) CODEC_ELEMENT_HELPER: The element is 0x3f8125dc. The reserve data 2 is 0x0.
 I (40356) AAC_DECODER: a new song playing
 I (40696) ESP_AUDIO_TASK: Recv Element[DEC_auto-0x3f8125dc] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (40706) ESP_AUDIO_TASK: Received muisc info then on play
+I (40706) ESP_AUDIO_TASK: Received music info then on play
 I (40706) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (40716) I2S_STREAM: AUDIO_STREAM_WRITER
 I (40716) AUDIO_FORGE: audio_forge opened
@@ -412,7 +412,7 @@ I (40346) ESP_DECODER: Detect audio type is M4A
 I (40346) CODEC_ELEMENT_HELPER: The element is 0x3f8125dc. The reserve data 2 is 0x0.
 I (40356) AAC_DECODER: a new song playing
 I (40696) ESP_AUDIO_TASK: Recv Element[DEC_auto-0x3f8125dc] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (40706) ESP_AUDIO_TASK: Received muisc info then on play
+I (40706) ESP_AUDIO_TASK: Received music info then on play
 I (40706) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (40716) I2S_STREAM: AUDIO_STREAM_WRITER
 I (40716) AUDIO_FORGE: audio_forge opened

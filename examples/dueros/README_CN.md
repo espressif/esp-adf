@@ -337,7 +337,7 @@ I (20839) FATFS_STREAM: File size: 17536 byte, file position: 0
 I (20840) ESP_AUDIO_TASK: Recv Element[IN_file-0x3f821f0c] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
 I (20866) CODEC_ELEMENT_HELPER: The element is 0x3f8227e4. The reserve data 2 is 0x0.
 I (20867) WAV_DECODER: a new song playing
-I (20870) ESP_AUDIO_TASK: Received muisc info then on play
+I (20870) ESP_AUDIO_TASK: Received music info then on play
 I (20875) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (20881) AUDIO_THREAD: The Audio_forge task allocate stack on external memory
 I (20889) AUDIO_ELEMENT: [Audio_forge-0x3f829300] Element task created
@@ -439,7 +439,7 @@ I (25583) ESP_AUDIO_TASK: Blocking play until received AEL_MSG_CMD_REPORT_MUSIC_
 I (25719) HTTP_STREAM: total_bytes=0
 I (25720) ESP_AUDIO_TASK: Recv Element[IN_http-0x3f8224cc] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
 I (25757) ESP_AUDIO_TASK: Recv Element[DEC_mp3-0x3f82296c] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (25762) ESP_AUDIO_TASK: Received muisc info then on play
+I (25762) ESP_AUDIO_TASK: Received music info then on play
 I (25764) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (25771) AUDIO_THREAD: The Audio_forge task allocate stack on external memory
 I (25779) AUDIO_ELEMENT: [Audio_forge-0x3f829300] Element task created
@@ -539,7 +539,7 @@ I (53261) DUEROS: Func:sys_monitor_task, Line:379, MEM Total:4098536 Bytes, Inte
 
 I (53283) CODEC_ELEMENT_HELPER: The element is 0x3f8227e4. The reserve data 2 is 0x0.
 I (53283) WAV_DECODER: a new song playing
-I (53287) ESP_AUDIO_TASK: Received muisc info then on play
+I (53287) ESP_AUDIO_TASK: Received music info then on play
 I (53292) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (53299) AUDIO_THREAD: The Audio_forge task allocate stack on external memory
 I (53307) AUDIO_ELEMENT: [Audio_forge-0x3f828e2c] Element task created
@@ -626,7 +626,7 @@ I (58273) DUEROS: Func:sys_monitor_task, Line:379, MEM Total:4059664 Bytes, Inte
 I (58354) HTTP_STREAM: total_bytes=0
 I (58355) ESP_AUDIO_TASK: Recv Element[IN_http-0x3f8224cc] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
 I (58389) ESP_AUDIO_TASK: Recv Element[DEC_mp3-0x3f82296c] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (58395) ESP_AUDIO_TASK: Received muisc info then on play
+I (58395) ESP_AUDIO_TASK: Received music info then on play
 I (58396) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (58403) AUDIO_THREAD: The Audio_forge task allocate stack on external memory
 I (58411) AUDIO_ELEMENT: [Audio_forge-0x3f828e2c] Element task created
@@ -942,7 +942,7 @@ I (20839) FATFS_STREAM: File size: 17536 byte, file position: 0
 I (20840) ESP_AUDIO_TASK: Recv Element[IN_file-0x3f821f0c] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
 I (20866) CODEC_ELEMENT_HELPER: The element is 0x3f8227e4. The reserve data 2 is 0x0.
 I (20867) WAV_DECODER: a new song playing
-I (20870) ESP_AUDIO_TASK: Received muisc info then on play
+I (20870) ESP_AUDIO_TASK: Received music info then on play
 I (20875) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (20881) AUDIO_THREAD: The Audio_forge task allocate stack on external memory
 I (20889) AUDIO_ELEMENT: [Audio_forge-0x3f829300] Element task created
@@ -1039,7 +1039,7 @@ I (25583) ESP_AUDIO_TASK: Blocking play until received AEL_MSG_CMD_REPORT_MUSIC_
 I (25719) HTTP_STREAM: total_bytes=0
 I (25720) ESP_AUDIO_TASK: Recv Element[IN_http-0x3f8224cc] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
 I (25757) ESP_AUDIO_TASK: Recv Element[DEC_mp3-0x3f82296c] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (25762) ESP_AUDIO_TASK: Received muisc info then on play
+I (25762) ESP_AUDIO_TASK: Received music info then on play
 I (25764) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (25771) AUDIO_THREAD: The Audio_forge task allocate stack on external memory
 I (25779) AUDIO_ELEMENT: [Audio_forge-0x3f829300] Element task created
@@ -1134,7 +1134,7 @@ I (53261) DUEROS: Func:sys_monitor_task, Line:379, MEM Total:4098536 Bytes, Inte
 
 I (53283) CODEC_ELEMENT_HELPER: The element is 0x3f8227e4. The reserve data 2 is 0x0.
 I (53283) WAV_DECODER: a new song playing
-I (53287) ESP_AUDIO_TASK: Received muisc info then on play
+I (53287) ESP_AUDIO_TASK: Received music info then on play
 I (53292) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (53299) AUDIO_THREAD: The Audio_forge task allocate stack on external memory
 I (53307) AUDIO_ELEMENT: [Audio_forge-0x3f828e2c] Element task created
@@ -1221,7 +1221,7 @@ I (58273) DUEROS: Func:sys_monitor_task, Line:379, MEM Total:4059664 Bytes, Inte
 I (58354) HTTP_STREAM: total_bytes=0
 I (58355) ESP_AUDIO_TASK: Recv Element[IN_http-0x3f8224cc] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
 I (58389) ESP_AUDIO_TASK: Recv Element[DEC_mp3-0x3f82296c] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (58395) ESP_AUDIO_TASK: Received muisc info then on play
+I (58395) ESP_AUDIO_TASK: Received music info then on play
 I (58396) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (58403) AUDIO_THREAD: The Audio_forge task allocate stack on external memory
 I (58411) AUDIO_ELEMENT: [Audio_forge-0x3f828e2c] Element task created
