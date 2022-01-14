@@ -12,14 +12,13 @@
 
 ```
 [tcp_server] ---> tcp_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
-
 ```
 
 ## 环境配置
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -46,13 +45,13 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 本例程需要先配置 Wi-Fi 连接信息，通过运行 `menuconfig > Example Configuration` 填写 `Wi-Fi SSID` 和 `Wi-Fi Password`。
 
-```c
+```
 menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 ```
 
 本例程需要配置 TCP 服务器的信息（IP 地址和端口号），通过运行 `menuconfig > Example Configuration` 填写 `TCP URL` 和 `TCP PORT`。
 
-```c
+```
 menuconfig > Example Configuration > (192.168.5.72) TCP URL > (8080) TCP PORT
 
 ```
@@ -74,9 +73,9 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程需要先运行 TCP 服务器的 Python 脚本，需要 python 2.7，并且开发板和 TCP 服务器连接在同一个 Wi-Fi 网络中，还需要准备一首 MP3 音乐命名为 `esp32.mp3` 拷贝到 TCP 服务器脚本同一文件夹下面，Python 脚本运行 log 如下：
+- 例程需要先运行 TCP 服务器的 Python 脚本，需要 python 2.7，并且开发板和 TCP 服务器连接在同一个 Wi-Fi 网络中，还需要准备一首 MP3 音乐命名为 `esp32.mp3` 拷贝到 TCP 服务器脚本同一文件夹下面，Python 脚本运行日志如下：
 
-```c
+```
 python2 tcp_server.py
 Get the esp32.mp3 size is 1453677
 starting listen on ip 192.168.5.72, port 8080
@@ -84,7 +83,7 @@ waiting for client to connect
 
 ```
 
-- 例程开始运行后，将主动链接 Wi-Fi 热点，如连接成功则去连接 TCP 服务器，获取 MP3 音频进行播放，打印如下：
+- 例程开始运行后，将主动连接 Wi-Fi 热点，如连接成功则去连接 TCP 服务器，获取 MP3 音频进行播放，打印如下：
 
 ```c
 I (0) cpu_start: App cpu up.

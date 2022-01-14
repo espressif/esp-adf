@@ -1,4 +1,4 @@
-# http stream 的播放和下载例程
+# HTTP 流的播放和下载例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -7,7 +7,7 @@
 ## 例程简介
 
 
-此示例演示了在 http stream pipeline 中使用 ADF 的多输出管道接口，实现一边播放网络歌曲，一边下载歌曲到 microSD 卡中的过程。
+此示例演示了在HTTP 流的管道中使用 ADF 的多输出管道接口，实现一边播放网络歌曲，一边下载歌曲到 microSD 卡中的过程。
 
 多输出管道的结构如下图所示：
 
@@ -18,11 +18,11 @@ http_stream_reader ---> mp3_decoder ---> i2s_stream ---> codec chip
                     raw_stream ---> fatfs_stream ---> SD card
 ```
 
-在第一个 pipeline 中，http stream reader 从网络获取 MP3 歌曲。然后数据经过 MP3 解码器解码，解码后数据通过 i2s stream 传输到 codec 芯片。最后，PA 驱动扬声器播放音乐。
+在第一个管道中，`http_stream_reader` 从网络获取 MP3 歌曲。然后数据经过 MP3 解码器解码，解码后数据通过 I2S 流传输到 `codec_chip`。最后，PA 驱动扬声器播放音乐。
 
-另一个 pipeline 的前端是 raw stream，它通过多输出管道接口连接到 http stream reader，读取到的数据最终由 fatfs stream 写入到 microSD 卡中存储。
+另一个管道的前端是 `raw_stream`，它通过多输出管道接口连接到 `http_stream_reader`，读取到的数据最终由 `fatfs_stream` 写入到 microSD 卡中存储。
 
-通过使用 ADF 的多输出管道接口，我们链接了两条 pipeline，不仅完成了网络音频的播放，同时也完成了网络音频下载到 microSD 卡中的操作。
+通过使用 ADF 的多输出管道接口，我们连接了两条管道，不仅完成了网络音频的播放，同时也完成了网络音频下载到 microSD 卡中的操作。
 
 ## 环境配置
 
@@ -54,13 +54,13 @@ http_stream_reader ---> mp3_decoder ---> i2s_stream ---> codec chip
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-本例程同时需要打开 FATFS 长文件名支持。
+本例程同时需要打开 FatFs 长文件名支持。
 
 ```
 menuconfig > Component config > FAT Filesystem support > Long filename support
 ```
 
-本例需要链接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
+本例需要连接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
 
 ```
  menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
@@ -75,7 +75,7 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -85,9 +85,9 @@ idf.py -p PORT flash monitor
 ### 功能和用法
 
 
-- 代码烧录成功且开机后，程序会首先去链接 Wi-Fi 网络。
+- 代码烧录成功且开机后，程序会首先去连接 Wi-Fi 网络。
 
-- 连接 http 服务器检索文件成功后，音乐自动开始播放。
+- 连接 HTTP 服务器检索文件成功后，音乐自动开始播放。
 
 - 一旦程序完成且音乐播放结束后，您可以在 microSD 卡里找到网络下载的名为 `test_output.mp3` 的音频文件。
 

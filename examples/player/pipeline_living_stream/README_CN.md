@@ -70,7 +70,7 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后，将主动链接 Wi-Fi 热点，如连接成功，则去获取内置的蜻蜓 FM 网络电台直播流的音频进行播放，打印如下：
+- 例程开始运行后，将主动连接 Wi-Fi 热点，如连接成功，则去获取内置的蜻蜓 FM 网络电台直播流的音频进行播放，打印如下：
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)

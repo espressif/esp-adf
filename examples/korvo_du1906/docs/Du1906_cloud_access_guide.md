@@ -186,14 +186,14 @@ ESP32-Korvo-DU1906 工程默认使用 Ble 配网，烦请前往乐鑫官方 Gith
 
 - 开启手机蓝牙，打开 APP 扫描设备
 - 长按开发板 FUNC 键 4s，开发板进入配网模式，并播放提示音“请点击确定，开始配网”
-- 下来 APP 扫描 Ble 设备，选择需要配对的设备，并点击链接
-- 链接成功后显示如下图，然后点击配网，按照输入需要配对的 Wi-Fi 账号密码
+- 下来 APP 扫描 Ble 设备，选择需要配对的设备，并点击连接
+- 连接成功后显示如下图，然后点击配网，按照输入需要配对的 Wi-Fi 账号密码
 
     <img src="./pictures/blufi_connect.png" height="1024" width="480" alt="Blufi connect">
 
     > 注意： 配网方式默认选择 "Station"，配对的网络必须是 2.4GHz Wi-Fi
 
-- 输入后点击确认发送，此时设备会收到配网信息并开始连接网络，连接成功后会提示“网络链接成功”
+- 输入后点击确认发送，此时设备会收到配网信息并开始连接网络，连接成功后会提示“网络连接成功”
 
     <img src="./pictures/blufi_config.png" height="1024" width="480" alt="Blufi configuration">
 

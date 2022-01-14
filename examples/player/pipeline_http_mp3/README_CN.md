@@ -70,7 +70,7 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后，将主动链接 Wi-Fi 热点，如连接成功则去获取 HTTP 服务器的在线 MP3 音频进行播放，打印如下：
+- 例程开始运行后，将主动连接 Wi-Fi 热点，如连接成功则去获取 HTTP 服务器的在线 MP3 音频进行播放，打印如下：
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)

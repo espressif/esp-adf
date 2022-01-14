@@ -51,11 +51,9 @@ ESP32-LyraT-Mini：
   - [Asterisk for Raspberry Pi](http://www.raspberry-asterisk.org/)
 
   - [Freeswitch](https://freeswitch.org/confluence/display/FREESWITCH/Installation)
-      - 建议关闭服务器事件通知 `NOTIFY`，可以通过如下方式配置：
-        ```
-        在 `conf/sip_profiles/internal.xml` 中设置 `<param name="send-message-query-on-register" value="false"/>`
-        ```
-      - 建议在 `conf/vars.xml` 中删除暂不支持的 Video Codec
+      - 建议关闭服务器事件通知 `NOTIFY`，可以通过在 `conf/sip_profiles/internal.xml` 中设置 `<param name="send-message-query-on-register" value="false"/>` 关闭通知。
+        
+      - 建议在 `conf/vars.xml` 中删除暂不支持的 Video Codec。
 
   - [Kamailio](https://kamailio.org/docs/tutorials/5.3.x/kamailio-install-guide-git/)
 
@@ -325,7 +323,7 @@ I (1373024) VOIP_EXAMPLE: SIP_EVENT_AUDIO_SESSION_END
 ## Troubleshooting
 
 - 如果您使用 `Esptouch` 配网出现 Crash，请将 `SC_ACK_TASK_STACK_SIZE` 适当调大一些。
-- 如果您遇到无法链接服务器的情况，请先使用 Linphone/MicroSIP 开源客户端验证您的服务器是否工作正常。
+- 如果您遇到无法连接服务器的情况，请先使用 Linphone/MicroSIP 开源客户端验证您的服务器是否工作正常。
 - 如果您需要减少 SIP 信令 RTT 响应时间，您可以设置 esp_log_level_set("SIP", ESP_LOG_WARN)。
 
 ## 技术支持
