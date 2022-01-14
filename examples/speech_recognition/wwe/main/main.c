@@ -53,7 +53,7 @@
 
 #include "model_path.h"
 
-#define RECORDER_ENC_ENABLE (true)
+#define RECORDER_ENC_ENABLE (false)
 #define VOICE2FILE          (true)
 #define WAKENET_ENABLE      (true)
 
@@ -67,6 +67,12 @@
 #define BITS_PER_SAMPLE     (I2S_BITS_PER_SAMPLE_32BIT)
 #else
 #define BITS_PER_SAMPLE     (I2S_BITS_PER_SAMPLE_16BIT)
+#endif
+
+#if defined(CONFIG_ESP_LYRAT_MINI_V1_1_BOARD) || defined(CONFIG_ESP32_S3_KORVO2_V3_BOARD)
+#define AEC_ENABLE          (true)
+#else
+#define AEC_ENABLE          (false)
 #endif
 
 enum _rec_msg_id {
@@ -308,6 +314,7 @@ static void start_recorder()
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
     recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
     recorder_sr_cfg.afe_cfg.wakenet_init = WAKENET_ENABLE;
+    recorder_sr_cfg.afe_cfg.aec_init = AEC_ENABLE;
 #if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
     recorder_sr_cfg.input_order[0] = DAT_CH_REF0;
     recorder_sr_cfg.input_order[1] = DAT_CH_0;

@@ -42,7 +42,7 @@ model, data, spiffs,  , 4152K,
 Recommended model partition size:  4152KB
 ```
 
-如果选择的是将数据存储在 SD 卡中，或者是选择基于 esp32 的开发板来测试本例程，则 Flash 分区中不用包含此项。请参阅[《模型加载方式》](../../../components/esp-sr/docs/flash_model/README_CN.md)。
+如果选择的是将数据存储在 SD 卡中，或者是选择基于 esp32 的开发板来测试本例程，则 Flash 分区中不用包含此项。请参阅[《模型加载方式》](https://github.com/espressif/esp-sr/blob/master/docs/flash_model/README_CN.md)。
 
 ## 编译和下载
 
@@ -302,7 +302,39 @@ I (11076) wwe_example: rec_engine_cb - REC_EVENT_WAKEUP_END
 
 ## 故障排除
 
-此应用程序在以 ESP32 为核心的开发板上运行可能会触发任务看门狗。
+1. 此应用程序在以 ESP32 为核心的开发板上运行可能会触发任务看门狗。
+2. 使用 `lyrat_msc` 的板子，请确保 zl38063 上运行的是最新版本的固件，可以通过修改 [zl38063.c](https://github.com/espressif/esp-adf/blob/master/components/audio_hal/driver/zl38063/zl38063.c) 中的函数 `zl38063_codec_init` 来强制下载一次最新固件，开发板启动并下载好 zl38063 固件之后可以还原到之前代码，替换代码如下：
+
+```c
+esp_err_t zl38063_codec_init(audio_hal_codec_config_t *cfg)
+{
+    if (zl38063_codec_initialized()) {
+        ESP_LOGW(TAG, "The zl38063 codec has been already initialized");
+        return ESP_OK;
+    }
+    tw_upload_dsp_firmware(-1);
+    gpio_config_t  borad_conf;
+    memset(&borad_conf, 0, sizeof(borad_conf));
+    borad_conf.mode = GPIO_MODE_OUTPUT;
+    borad_conf.pin_bit_mask = 1UL << (get_reset_board_gpio());
+    borad_conf.pull_down_en = 0;
+    borad_conf.pull_up_en = 0;
+
+    gpio_config_t  pa_conf;
+    memset(&pa_conf, 0, sizeof(pa_conf));
+    pa_conf.mode = GPIO_MODE_OUTPUT;
+    pa_conf.pin_bit_mask = 1UL << (get_pa_enable_gpio());
+    pa_conf.pull_down_en = 0;
+    pa_conf.pull_up_en = 0;
+
+    gpio_config(&pa_conf);
+    gpio_config(&borad_conf);
+    gpio_set_level(get_pa_enable_gpio(), 1);        //enable PA
+    gpio_set_level(get_reset_board_gpio(), 0);      //enable DSP
+    codec_init_flag = 1;
+    return ESP_OK;
+}
+```
 
 ## 技术支持
 
