@@ -46,10 +46,10 @@ def start_tcp_server(ip, port):
 
     print("starting listen on ip %s, port %s" % server_address)
     sock.bind(server_address)
- 
+
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, RCV_BUF_SIZE)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, SND_BUF_SIZE)
- 
+
     try:
         sock.listen(1)
     except socket.error:
@@ -69,11 +69,11 @@ def start_tcp_server(ip, port):
             print("get all data for %s" % FILE_NAME)
             break
         client.send(file_msg)
- 
+
     fo.close()
     client.close()
-    sock.close() 
+    sock.close()
     print(" close client connect ")
- 
+
 if __name__=='__main__':
     start_tcp_server(socket.gethostbyname(socket.getfqdn(socket.gethostname())),SERVER_PORT)
