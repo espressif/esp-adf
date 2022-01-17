@@ -23,7 +23,7 @@ ESP32-LyraTD-MSC 是一款面向智能音箱和 AI 应用程序的硬件平台�
 
 ESP32-LyraTD-MSC V2.2 是一款基于 `乐鑫 <https://espressif.com>`_ ESP32 芯片的音频开发板，专为智能音箱和 AI 应用程序打造， 除 ESP32 芯片原有的硬件外，还增添了数字信号处理、麦克风阵列以及扩展 RAM。 
 
-ESP32-LyraTD-MSC V2.2 由上板和下板两部分组成，上板 (B) 集成三麦克风阵列、功能按键和 LED 灯，下板 (A) 集成 ESP32-WROVER-B 模组、MicroSemi Digital Signal Processing (DSP) 芯片以及电源管理模块。
+ESP32-LyraTD-MSC V2.2 由上板和下板两部分组成，上板 (B) 集成三麦克风阵列、功能按键和 LED 灯，下板 (A) 集成 ESP32-WROVER-E 模组、MicroSemi Digital Signal Processing (DSP) 芯片以及电源管理模块。
 
 .. _get-started-esp32-lyratd-msc-v2.2-board:
 
@@ -35,7 +35,7 @@ ESP32-LyraTD-MSC V2.2 由上板和下板两部分组成，上板 (B) 集成三�
 
 具体包括以下硬件：
 
-* ESP32-WROVER-B 模组
+* ESP32-WROVER-E 模组
 * DSP 芯片
 * 3 颗支持远场语音唤醒功能的麦克风
 * 2 个 3-watt 扬声器输出
@@ -61,8 +61,8 @@ ESP32-LyraTD-MSC V2.2 由上板和下板两部分组成，上板 (B) 集成三�
 
 以下列表和图片仅涉及 ESP32-LyraTD-MSC 的主要组件、接口和控制方式，只展示目前所需的信息，更多细节请参阅 `相关文档`_ 中的原理图。
 
-ESP32-WROVER-B 模组
-    The ESP32-WROVER-B 模组采用 ESP32 芯片，可实现 Wi-Fi/蓝牙连接和数据处理，同时集成 32 Mbit SPI flash 和 64 Mbit PSRAM，可实现灵活的数据存储。
+ESP32-WROVER-E 模组
+    ESP32-WROVER-E 模组采用 ESP32 芯片，可实现 Wi-Fi/蓝牙连接和数据处理，同时集成 4 MB 外部 SPI flash 和 8 MB SPI PSRAM，可实现灵活的数据存储。
 DSP 芯片
     `ZL38063 <https://www.microsemi.com/document-portal/doc_download/136798-zl38063-datasheet>`_ DSP 芯片用于自动语音识别应用程序，可从外部麦克风阵列获取音频数据，并通过自身 DAC 端口输出音频信号。
 耳机输出
@@ -84,7 +84,7 @@ DSP 芯片
     ESP32-LyraTD-MSC V2.2 下板 (A) 组件图
 
 USB-UART 接口
-    作为 PC 和 ESP32-WROVER-B 模组之间的通信接口。
+    作为 PC 和 ESP32-WROVER-E 模组之间的通信接口。
 USB 供电接口
     为开发板供电。
 待机/充电指示灯
@@ -139,6 +139,12 @@ ESP32-LyraTD-MSC 上电之前，请首先确认开发板完好无损，且上板
 * **Build the Project** 运行应用程序，播放音乐。
 
 
+修订历史
+--------
+
+* 板上模组从 ESP32-WROVER-B 更新为 ESP32-WROVER-E。
+
+
 其他 LyraT 系列开发板
 ------------------------------
 
@@ -151,8 +157,8 @@ ESP32-LyraTD-MSC 上电之前，请首先确认开发板完好无损，且上板
 * `ESP32-LyraTD-MSC V2.2 Schematic Lower Board (A)`_ (PDF)
 * `ESP32-LyraTD-MSC V2.2 Schematic Upper Board (B)`_ (PDF)
 * `ESP32 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_cn.pdf>`_ (PDF)
-* `ESP32-WROVER-B 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-b_datasheet_cn.pdf>`_ (PDF)
+* `ESP32-WROVER-E 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_cn.pdf>`_ (PDF)
 
 
-.. _ESP32-LyraTD-MSC V2.2 Schematic Lower Board (A): https://dl.espressif.com/dl/schematics/ESP32-LyraTD-MSC_A_V2_2-1109A.pdf
+.. _ESP32-LyraTD-MSC V2.2 Schematic Lower Board (A): https://dl.espressif.com/dl/schematics/ESP32-LYRATD-MSC_A_V2.2-20220119.pdf
 .. _ESP32-LyraTD-MSC V2.2 Schematic Upper Board (B): https://dl.espressif.com/dl/schematics/ESP32-LyraTD-MSC_B_V1_1-1109A.pdf
