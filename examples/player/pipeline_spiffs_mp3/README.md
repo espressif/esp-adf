@@ -39,16 +39,18 @@ This example is will run on boards marked with green checkbox. Please remember t
 
 - Running command `./mkspiffs -c ./tools -b 4096 -p 256 -s 0x100000 ./tools/adf_music.bin`. Then, all of the music files are compressed into `adf_music.bin` file.
 
+> 更多的`spiffs` 说明可以参考[spiffs 使用章节](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/storage/spiffs.html)
+
 **Download**
 - Create partition table as follow
   ```
     nvs,      data, nvs,     ,        0x6000,
     phy_init, data, phy,     ,        0x1000,
     factory,  app,  factory, ,        1M,
-    storage,  data, spiffs,  0x110000,1M, 
+    storage,  data, spiffs,  0x110000,1M,
   ```
 - Download the spiffs bin. Now the `./tools/adf_music.bin` include `adf_music.mp3` only (All MP3 files will eventually generate a bin file).
   ```
   python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 115200 write_flash -z 0x110000 ./tools/adf_music.bin
   ```
-
+> 注: 该 `download` 命令只是针对 `esp32` 芯片模块，如果使用其他的芯片硬件， 需要修改 `--chip`, 例如使用 `esp32s3`芯片, 命令为 `  python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32s3 --port /dev/ttyUSB0 --baud 115200 write_flash -z 0x110000 ./tools/adf_music.bin`
