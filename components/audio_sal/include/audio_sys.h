@@ -75,7 +75,7 @@ int64_t audio_sys_get_time_ms(void);
  *
  * @return
  *  - ESP_OK
- *  - ESP_FIAL
+ *  - ESP_FAIL
  */
 esp_err_t audio_sys_get_real_time_stats(void);
 

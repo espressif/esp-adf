@@ -97,7 +97,6 @@ static esp_err_t _tcp_open(audio_element_handle_t self)
     }
     tcp->is_open = true;
     tcp->t = t;
-
     _dispatch_event(self, tcp, NULL, 0, TCP_STREAM_STATE_CONNECTED);
 
     return ESP_OK;
@@ -108,7 +107,11 @@ static esp_err_t _tcp_read(audio_element_handle_t self, char *buffer, int len, T
     tcp_stream_t *tcp = (tcp_stream_t *)audio_element_getdata(self);
     int rlen = esp_transport_read(tcp->t, buffer, len, tcp->timeout_ms);
     if (rlen < 0) {
-        _get_socket_error_code_reason(__func__, tcp->sock);
+        int result = _get_socket_error_code_reason(__func__, tcp->sock);
+        if (result == 0) {
+            ESP_LOGW(TAG, "TCP server actively closes the connection");
+            return ESP_OK;
+        }
         return ESP_FAIL;
     } else if (rlen == 0) {
         ESP_LOGI(TAG, "Get end of the file");
