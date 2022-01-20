@@ -1,50 +1,50 @@
-# ESP32-Korvo-DU1906 Board
+# ESP32-Korvo-DU1906 开发板
 
-- [中文版本](./README.md)
-- Complex Example: ![alt text](../../../docs/_static/level_complex.png "Complex Example")
+- [English Version](./README.md)
+- 例程难度：![alt text](../../../docs/_static/level_complex.png "高级")
 
 
-## Example Brief
+## 例程简介
 
-This example demonstrates how the ESP32-Korvo-DU1906 development board works on the DuHome AIOT Voice Platform. The development board supports features such as:
+本例程演示了使用 ESP32-Korvo-DU1906 开发板与度家 - AIOT 语音平台协作的过程。开发板支持以下功能：
 
-- ASR, TTS, and NLP
-- Bluetooth music
-- BLE Wi-Fi provisioning
+- ASR、TTS 和 NLP
+- 蓝牙音乐
+- 低功耗蓝牙 Wi-Fi 配网
 - OTA
-- Mesh and infrared controller
+- Mesh 和红外控制器
 
-The board together with the platform provides an easy way to develop a smart speaker or AIOT device.
+开发板与平台协作，让智能扬声器或是 AIOT 设备的开发更加便捷。
 
-## Environment Setup
+## 环境配置
 
-### Hardware Required
+### 硬件要求
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in `menuconfig` as discussed in Section [Configuration](#configuration) below.
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
-| Board Name | Getting Started | Chip | Compatibility |
+| 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "Incompatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "Incompatible") |
-| ESP32-LyraT-Mini | [![alt text](../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "Incompatible") |
-| ESP32-Korvo-DU1906 | ![alt text](../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906") | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | ![alt text](../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit") | <img src="../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../docs/_static/no-button.png "Incompatible") |
+| ESP32-LyraT | [![alt text](../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "开发板不兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "开发板不兼容此例程") |
+| ESP32-LyraT-Mini | [![alt text](../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "开发板不兼容此例程") |
+| ESP32-Korvo-DU1906 | ![alt text](../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906") | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-S2-Kaluga-1 Kit | ![alt text](../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit") | <img src="../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../docs/_static/no-button.png "开发板不兼容此例程") |
 
 
-### Setup Software Environment
+### 软件环境配置
 
-Please refer to [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html#get-started).
+请参阅 [快速入门](https://docs.espressif.com/projects/esp-adf/zh_CN/latest/get-started/index.html#get-started)，获取详细信息。
 
-### Authentication Code
+### 认证代码
 
-Please refer to [度家 AIOT 快速入门](https://cloud.baidu.com/doc/SHC/s/wk7bl9g8i) and apply for factory code (FC), product key (PK), access key (AK), and secret key (SK) that should be then saved in `profiles/profile.bin`.
+请参阅 [度家 AIOT 快速入门](https://cloud.baidu.com/doc/SHC/s/wk7bl9g8i)，申请所属厂商 (FC)、所属产品 (PK)、设备编号 (AK) 和设备密钥 (SK)，并将其保存在 `profiles/profile.bin`中。
 
 
-## Build and Flash
+## 编译和下载
 
-### IDF branch
+### IDF 分支
 
-Select the IDF branch as follows:
+选择 IDF 分支，如下所示：
 
 ```bash
 cd $IDF_PATH
@@ -53,26 +53,26 @@ git pull
 git checkout audio/stack_on_psram_v3.3
 git submodule update --init --recursive
 ```
-The latest commit ID is `606dd2b629f264aa37a0d76fe23805d61bc6c712`
+最新的 commit ID 为 `606dd2b629f264aa37a0d76fe23805d61bc6c712`。
 
-### ADF Patches
+### ADF 补丁
 
-Required ADF patch is as follows:
+所需的 ADF 补丁如下所示：
 ```bash
 cd $ADF_PATH
 git apply ./idf_patches/adf_http_stream.patch
 git apply ./examples/korvo_du1906/patches/a2dp_stream_du1906.patch
 ```
 
-### Configuration
+### 配置
 
-#### Jumpstart the Example
+#### 启动例程
 
-No need to build the project, just use the firmware in this example.
+使用本例程中的固件，无需另外编译项目。
 
-Refer to the following table for the firmware downloading address.
+请参考下表，获取固件下载的 flash 地址信息。
 
-Flash Address | Bin Path
+Flash 地址 | Bin 文件路径
 ---|---
 0x1000 | bootloader.bin
 0x8000 | partitions.bin
@@ -82,11 +82,11 @@ Flash Address | Bin Path
 0x7d9000 | audio_tone.bin
 0x7FF000 | profile.bin
 
-#### Download Firmware
+#### 固件下载
 
-##### Linux Operating System
+##### Linux 操作系统
 
-Run the command below:
+请运行如下命令：
 
 ```bash
 python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
@@ -101,48 +101,48 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 0x7d9000 ./tone/audio_tone.bin \
 0x7FF000 ./profiles/profile.bin
 ```
-##### Windows Operating System
+##### Windows 操作系统
 
-- **Step 1:** Download the [Flash Download Tool](https://www.espressif.com/en/support/download/other-tools) and unzip the compressed package, then run the executable file with ".exe" suffix.
+- **第一步:** 下载 [flash 下载工具](https://www.espressif.com/zh_hans/support/download/other-tools)，将压缩包解压后运行后缀为 ".exe" 的可执行文件。
 
-- **Step 2:** Choose download mode (Developer Mode).
+- **第二步:** 选择下载模式（开发者模式）。
 
     <img src="./docs/pictures/tool_choose_mode.jpg" height="320" width="480" alt="Tool choose mode">
 
-- **Step 3:** Choose chip (ESP32).
+- **第三步:** 选择芯片（ESP32）。
 
     <img src="./docs/pictures/tool_choose_chip.jpg" height="640" width="480" alt="Tool choose chip">
 
-- **Step 4:** Open firmware directory (`$ADF_PATH/example/korvo_du1906/firmware`) and fill in the address according to the above flash address table.
+- **第四步:** 打开固件目录 (`$ADF_PATH/example/korvo_du1906/firmware`)， 参考上述 flash 地址表中的信息填写地址。
 
     <img src="./docs/pictures/tool_download.png" height="640" width="480" alt="Tool download">
 
-**Note: The tone bin is in `$ADF_PATH/example/korvo_du1906/tone/audio_tone.bin` and profile.bin is in `$ADF_PATH/example/korvo_du1906/profile/profile.bin`**
+**Note: 提示音 bin 文件的路径为 `$ADF_PATH/example/korvo_du1906/tone/audio_tone.bin`，profile.bin 文件的路径为 `$ADF_PATH/example/korvo_du1906/profile/profile.bin`。**
 
-- **Step 5:** Click `START` button on the graphical interface to download the firmware.
+- **第五步:** 点击图形界面上的 `START` 按键下载固件。
 
-After download firmware, click `[RST]` button, and then there will be some logs printed on the serial port.
+固件下载完成后，点击 `[RST]` 按键，将日志打印在串口上。
 
-#### Network Configuration
+#### 网络配置
 
-- **Step 1:** Download and install BluFi app on cell phone, [App for Andriod](https://github.com/EspressifApp/EspBlufiForAndroid/releases)/[App for iOS](https://github.com/EspressifApp/EspBlufiForiOS/releases).
-- **Step 2:** Open Bluetooth and open BluFi app on the cell phone, then scan the device.
-- **Step 3:** Press `[FUNC]` button on device for 4 s, the device will enter Wi-Fi setting mode, and play a tone music "Click Confirm to Start Provisioning".
-- **Step 4:** Fresh the scan list, there will be a device named "BLUFI_DEVICE", click it and choose `[Connect]` on the phone.
+- **第一步:** 在手机上下载并安装 BluFi 应用程序，[安卓版](https://github.com/EspressifApp/EspBlufiForAndroid/releases)/[iOS 版](https://github.com/EspressifApp/EspBlufiForiOS/releases)。
+- **第二步:** 打开蓝牙以及手机上的 BluFi 应用程序，开始扫描设备。
+- **第三步:** 长按设备上的 `[FUNC]` 按键四秒，进入 Wi-Fi 设置模式，并播放名为 "请点击确认开始配网" 的提示音乐。
+- **第四步:** 刷新扫描列表，点击名为 "BLUFI_DEVICE" 的设备，并在手机上选择 `[连接]` 选项。
 
     <img src="./docs/pictures/blufi_connect.png" height="640" width="480" alt="Blufi connect">
 
-- **Step 5:** After the device is connected, click `[Provision]`, and input Wi-Fi SSID and password that to connect.
-- **Step 6:** Click `[Confirm]`, the device will acquire the Wi-Fi information and connect to the network. If the connection succeeds, the app will receive the string "hello world" and the device will play the tone music "Successfully Connected".
+- **第五步:** 成功连接到设备后，点击 `[配网]`，输入 Wi-Fi 名称及密码进行连接。
+- **第六步:** 点击 `[确认]`，设备获取 Wi-Fi 信息并连接至网络。连接成功后，应用程序将收到字符串 "hello world"，设备将播放名为"网络连接成功" 的提示音乐。
 
     <img src="./docs/pictures/blufi_config.png" height="640" width="480" alt="Blufi configuration">
 
-**Note: If configuration fails, check the above process and try again.**
+**注意：若配置失败，请检查上述步骤并重试。**
 
-### Build
+### 编译
 
-You can use `GNU make` or `cmake` to build the project.
-If you are using Make:
+可以使用 `GNU make` 或 `cmake` 编译该项目。
+若使用 Make，则步骤如下:
 ```bash
 cd $ADF_PATH/examples/korvo_du1906
 make clean
@@ -150,7 +150,7 @@ make menuconfig
 make -j4 all
 ```
 
-Or if you are using CMake:
+若使用 CMake，则步骤如下:
 ```bash
 cd $ADF_PATH/examples/korvo_du1906
 idf.py fullclean
@@ -158,20 +158,20 @@ idf.py menuconfig
 idf.py build
 ```
 
-### Flash
+### 下载
 
-Download application with Make:
+若使用 Make 下载应用，则步骤如下：
 ```bash
 make flash ESPPORT=PORT
 ```
-Or if you are using CMake:
+若使用 CMake 下载应用，则步骤如下：
 ```bash
 idf.py flash -p PORT
 ```
 
-**Note:** Replace `PORT` with USB port name where ESP32-Korvo-DU1906 board is connected to.
+**Note:** 替换 `PORT` 为 ESP32-Korvo-DU1906 开发板接入的 USB 端口名称。
 
-In addition, ESP32-Korvo-DU1906 have three more bins, `./firmware/DU1906_slave_v1.5.5.D.bin`,  `./profiles/profile.bin` and `./tone/audio-esp.bin`.
+此外，ESP32-Korvo-DU1906 额外包含三个 bin 文件，分别是 `./firmware/DU1906_slave_v1.5.5.D.bin`、 `./profiles/profile.bin` 和 `./tone/audio-esp.bin`。
 ```bash
 python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 --port PORT --baud 921600 \
@@ -182,80 +182,80 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 \
 0x7FF000 ./profiles/profile.bin
 ```
 
-Please refer to [Jumpstart the Example](#jumpstart-the-example) above for the firmware downloading flash address.
+请参阅上述的 [启动例程](#启动例程)，获取固件下载的详细信息。
 
-## How to Use the Example
+## 如何使用例程
 
-### Example Functionality
+### 功能和用法
 
-**Note: Please make sure that there is at least a speaker inserted to the development board.**
+**注意：请确认开发板上已至少接入了一个扬声器。**
 
-#### Voice Interaction
+#### 语音交互
 
-After configuring Wi-Fi information and connecting to the network, you can start a conversation with the voice wake-up word "xiaodu xiaodu". Below are some supported command words:
+在配置 Wi-Fi 信息并连接到网络后，可以用语音唤醒词 "小度小度" 开始对话。下面列出了一些支持的命令：
 
 - "小度小度" "在呢" "讲个笑话"
 - "小度小度" "在呢" "上海天气怎么样？"
 - "小度小度" "在呢" "播放一首歌"
 - "小度小度" "在呢" "百度百科乐鑫信息科技"
 
-If you need to define your own command words, please go to Baidu for instructions.
+可以前往百度后台，定义并添加您的个人指示词。
 
-#### Bluetooth Music
+#### 蓝牙音乐
 
-Press `[MUTE]` key for 3-5 seconds to enter Bluetooth mode, open Bluetooth on your phone and connect to the device named "ESP_BT_COEX_DEV", and then you can play Bluetooth music on the device.
+长按 `[MUTE]` 按键 3-5 秒进入蓝牙模式，打开手机上的蓝牙并连接名为 "ESP_BT_COEX_DEV" 的设备。现在，您就可以在设备上播放蓝牙音乐了。
 
-#### Keys Functionality
-Name of Button | Short press | Long press
+#### 按键功能和用法
+按键名 | 短按 | 长按
 :-:|:-:|:-:
-VOL + | Volume up | N/A
-VOL - | Volume down | N/A
-MUTE | Enter mute mode |Enter/Exit Bluetooth mode
-FUNC | N/A | Setting Wi-Fi
+VOL + | 提高音量 | N/A
+VOL - | 降低音量 | N/A
+MUTE | 进入静音模式 | 进入/退出蓝牙模式
+FUNC | N/A | 设置 Wi-Fi
 
 
-### Upgrade Function
+### 升级功能
 
-The application, flash tone, profile bins, DSP firmware, and app firmware upgrade are supported. Those bins can be stored on a microSD card or an HTTP Server, such as, "/sdcard/profile.bin", "https://github.com/espressif/esp-adf/raw/master/examples/korvo_du1906/firmware/app.bin".
+支持应用程序、flash 提示音、profile 文件、DSP 固件和应用程序固件升级。这些文件可以存储在 SD 卡或 HTTP 服务器上，如 "/sdcard/profile.bin" 和 "https://github.com/espressif/esp-adf/raw/master/examples/korvo_du1906/firmware/app.bin"。
 
-#### Upgrade Strategy
+#### 升级方法
 
-We have two kinds of firmware OTA strategies in this example as described below.
-- Each partition to be upgraded has a separate URL. **(Strategy 1)**
-- Combine different binary bins into a whole firmware and add a description header to the firmware and just need one URL to access it. **(Strategy 2)**
+本进程有两种固件空中升级 (OTA) 方法，如下所示：
+- 需要升级的每个分区都有一个单独的 URL。 **（方法一）**
+- 将不同的二进制文件组合为一个完整的固件，在固件上添加一个描述头，仅需要一个 URL 就可以进行访问。 **（方法二）**
 
-##### Strategy 1 (Default)
+##### 方法一（默认）
 
-Before start upgrading, you usually need to compare the firmware version first, and then judge whether the firmware needs to be upgraded (microSD card OTA in this example doesn't compare firmware version).
-To edit the version of firmware like below:
-- App bin: Change "version.txt" in the project directory and recompile.
-- Tone bin: Use this script to assign version `python $ADF_PATH/tools/audio_tone/mk_audio_tone.py -r tone/ -f components/audio_flash_tone -v v1.1.1`.
+在升级前，请先比较固件版本，然后判断是否需要升级固件（本例程中 microSD 卡空中升级不比较固件版本）。
+如需编辑固件版本，方法如下所示：
+- 应用程序文件：修改项目目录中的 "version.txt"，并重新编译。
+- 提示音文件：使用这个脚本来分配版本 ``` python $ADF_PATH/tools/audio_tone/mk_audio_tone.py -r tone/ -f components/audio_flash_tone -v v1.1.1 ```。
 
-The bin files version checking after every booting, exculde profile.bin.
-User copy the profile.bin to microSD card root folder and inserted to ESP32-Korvo-DU1906 microSD card slot could be execute the profile.bin upgrade.
+每次启动后，都会检查除 profile.bin 之外的 bin 文件版本。
+将 profile.bin 复制到 microSD 卡的根目录下，并插入 ESP32-Korvo-DU1906 的 microSD 卡插槽，就可以进行对 profile.bin 的升级。
 
-The app will wait 15 s for Wi-Fi connection. If the connection succeeds, the OTA process will start; if not, skip it.
+应用程序将等待 15 秒以进行 Wi-Fi 连接。若成功连接，OTA 进程则会开始；若连接失败，则跳过该进程。
 
-##### Strategy 2
+##### 方法二
 
-To use OTA strategy 2, some patchs should be applied first.
+若采用 OTA 方法二，则需事先应用一些补丁文件。
 ```bash
 cd $ADF_PATH; git apply $ADF_PATH/examples/korvo_du1906/patches/adf_ota_patch.patch
 ```
-Use script under tools directory to assign version.
+使用工具目录下的脚本来分配版本。
 ```bash
 cd $ADF_PATH/examples/korvo_du1906/tools/iot_ota_pkg_generator
 python mk_ota_bin.py -c tda -st x.x.x -sd x.x.x -sa x.x.x -v xxx -p ../../
 ```
-Use ``` python mk_ota_bin.py -h ``` to get more information about the script.
+使用 `python mk_ota_bin.py -h`，获取更多关于脚本的信息。
 
-After the script is executed, there will be a combined firmware named "combine_ota_default.bin" generated under the directory. Put the firmware on your website and update the URL.
+执行该脚本后，该目录下将生成一个名为 "combined_ota_default.bin" 的组合固件。将这个固件上传至网站并更新 URL。
 
-Press button `[VOL +]` to excute OTA process.
+请按下 `[VOL +]`，退出 OTA 进程。
 
-### Example Log
+### 日志输出
 
-A complete log is as follows:
+以下为本例程的完整日志。
 
 ```c
 I (64) boot: Chip Revision: 3
@@ -544,9 +544,9 @@ W (25708) DU1910_APP: AUDIO_PLAYER_CALLBACK send OK, status:4, err_msg:0, media_
 W (30202) MQTT_TASK: Stack: 2352
 ```
 
-## Troubleshooting
+## 故障排除
 
-### Incorrect `fc`, `pk`, `ak`, and `sk`.
+### 错误的 `fc`，`pk`，`ak` 和 `sk`。
 
 ```c
 I (4499) RAW_HELPER: default_raw_player_init :106, que:0x3ffe8804
@@ -598,7 +598,7 @@ E (6118) AUTH_TASK: auth failed, retry!
 ==> generate_auth_pam
 ```
 
-### Missing `phy_init_data.bin`.
+### `phy_init_data.bin` 不存在。
 
 ```c
 I (64) boot: Chip Revision: 3
@@ -715,10 +715,10 @@ Backtrace: 0x40092d4b:0x3ffd1840 0x40092fe1:0x3ffd1860 0x400d2117:0x3ffd1880 0x4
 0x400f77e5: wpa_remove_ptk at ??:?
 ```
 
-## Technical Support and Feedback
-Please use the following feedback channels:
+## 技术支持
+请按照下面的链接获取技术支持：
 
-* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
+- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-We will get back to you as soon as possible.
+我们会尽快回复。

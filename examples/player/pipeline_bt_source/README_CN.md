@@ -1,4 +1,4 @@
-# 经典蓝牙发送端（SOURCE）管道例程
+# 经典蓝牙发送端 (Source) 管道例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -10,10 +10,8 @@
 
 开发板获取 HTTP 服务器上的 MP3 文件并解码发送的管道如下：
 
-```c
-
+```
 [http_server] ---> http_stream ---> mp3_decoder ---> bt_stream_writer ---> [Bluetooth]
-
 ```
 
 
@@ -21,7 +19,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -46,13 +44,13 @@
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-本例需要链接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
+本例需要连接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
 
 ```
  menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
 ```
 
-本例需要链接经典蓝牙的 SINK 角色，通过运行 `menuconfig` 来配置远程 SINK 的设备名称，默认名为 `ESP-ADF-SPEAKER`。
+本例需要连接经典蓝牙的 sink 角色，通过运行 `menuconfig` 来配置远程 sink 的设备名称，默认名为 `ESP-ADF-SPEAKER`。
 
 ```
  menuconfig > Example Configuration > (ESP-ADF-SPEAKER) BT remote device name
@@ -61,13 +59,13 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -76,7 +74,7 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后，首先连接 Wi-Fi，连接成功后，开发板开始搜索名称为 “ESP_ADF_SPEAKER 的 SINK 设备，打印如下：
+- 例程开始运行后，首先连接 Wi-Fi，连接成功后，开发板开始搜索名称为 "ESP_ADF_SPEAKER" 的 sink 设备，打印如下：
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -295,7 +293,7 @@ I (45912) BLUETOOTH_SERVICE: --Name: madcow-ThinkPad-T440s
 
 ```
 
-- 当 SOURCE 连接上另一开发板 SINK 后，如连接成功，则开始获取 HTTP 服务器的 MP3 文件并且解码发送给 SINK 端，打印如下：
+- 当 source 连接上另一开发板 sink 后，如连接成功，则开始获取 HTTP 服务器的 MP3 文件并且解码发送给 sink 端，打印如下：
 
 ```c
 I (71252) BLUETOOTH_SERVICE: Scanned device: c4:dd:57:7f:50:ce
@@ -327,7 +325,7 @@ I (72542) BLUETOOTH_SERVICE: bt_a2d_source_cb state 5, evt 0x1
 
 ### 日志输出
 
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -598,7 +596,7 @@ W (132722) wifi:m f null
 ## 技术支持
 请按照下面的链接获取技术支持：
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。
