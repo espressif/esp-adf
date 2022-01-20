@@ -59,6 +59,18 @@ menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 
 ### Build and Flash
 
+For `esp32-s3` chip compilation, please use the following command to select the esp32-s3 default compilation options.
+
+````c
+cp sdkconfig.defaults.esp32s3 sdkconfig
+````
+
+For `esp32` chip compilation, please use the following command to select the esp32 default compilation options.
+
+````c
+cp sdkconfig.defaults.esp32 sdkconfig
+````
+
 Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
 
 ```
