@@ -150,7 +150,7 @@ TEST_CASE("gpio button test", "[peripherals]")
 static esp_err_t play_func(esp_periph_handle_t periph, int argc, char *argv[])
 {
     if (argc == 1) {
-        ESP_LOGI(TAG, "play muisc, url:%s", argv[0]);
+        ESP_LOGI(TAG, "play music, url:%s", argv[0]);
     } else if (argc == 0) {
         ESP_LOGI(TAG, "play");
     } else {

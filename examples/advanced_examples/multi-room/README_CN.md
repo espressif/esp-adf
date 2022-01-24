@@ -134,7 +134,7 @@ I (58334) ESP_DECODER: Detect audio type is MP3
 I (58338) MP3_DECODER: MP3 opened
 I (58342) ADF_BIT_STREAM: The element is 0x3f807254. The reserve data 2 is 0x0.
 I (58353) ESP_AUDIO_TASK: Recv Element[DEC_auto-0x3f807254] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (58367) ESP_AUDIO_TASK: Received muisc info then on play
+I (58367) ESP_AUDIO_TASK: Received music info then on play
 I (58368) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 I (58374) AUDIO_THREAD: The Resample task allocate stack on external memory
 I (58382) AUDIO_ELEMENT: [Resample-0x3f8075b8] Element task created
@@ -183,7 +183,7 @@ I (60573) ESP_DECODER: Detect audio type is MP3
 I (60577) MP3_DECODER: MP3 opened
 I (60581) ADF_BIT_STREAM: The element is 0x3f806250. The reserve data 2 is 0x0.
 I (60592) ESP_AUDIO_TASK: Recv Element[DEC_auto-0x3f806250] MSG,type:20000,cmd:8,len:4,status:AEL_STATUS_STATE_RUNNING
-I (60607) ESP_AUDIO_TASK: Received muisc info then on play
+I (60607) ESP_AUDIO_TASK: Received music info then on play
 I (60608) ESP_AUDIO_TASK: On event play, status:UNKNOWN, 0
 W (60613) AUIDO_MEM: Can't support stack on external memory due to ESP32 chip is 1
 I (60621) AUDIO_ELEMENT: [Resample-0x3f8065b4] Element task created

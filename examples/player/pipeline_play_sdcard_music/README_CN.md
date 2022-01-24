@@ -164,7 +164,7 @@ I (257) boot: Loaded app from partition at offset 0x10000
 I (257) boot: Disabling RNG early entropy source...
 I (257) cpu_start: Pro cpu up.
 I (261) cpu_start: Application information:
-I (266) cpu_start: Project name:     play_sdcard_muisc
+I (266) cpu_start: Project name:     play_sdcard_music
 I (272) cpu_start: App version:      v2.2-103-g33721b98-dirty
 I (278) cpu_start: Compile time:     Apr 27 2021 19:37:04
 I (284) cpu_start: ELF file SHA256:  5d6c86d684a92743...
