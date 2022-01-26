@@ -51,7 +51,8 @@ This example runs on the boards that are marked with a green checkbox in the tab
   - [Asterisk for Raspberry Pi](http://www.raspberry-asterisk.org/)
 
   - [Freeswitch](https://freeswitch.org/confluence/display/FREESWITCH/Installation)
-      - Recommended to turn off the server event `NOTIFY` by setting `<param name="send-message-query-on-register" value="false"/>` in `conf/sip_profiles/internal.xml`. 
+      - Recommended to turn off the server event `NOTIFY` by setting `<param name="send-message-query-on-register" value="false"/>` in `conf/sip_profiles/internal.xml`.
+      - Recommended to turn off the server timer by setting `<param name="enable-timer" value="false"/>` in `conf/sip_profiles/internal.xml`.
       - Recommended to delete the unsupported Video Codec in `conf/vars.xml`.
 
   - [Kamailio](https://kamailio.org/docs/tutorials/5.3.x/kamailio-install-guide-git/)
