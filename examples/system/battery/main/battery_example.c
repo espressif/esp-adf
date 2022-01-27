@@ -19,11 +19,12 @@
  * @brief Battery adc configure
  */
 typedef struct {
-    int unit;  /*!< ADC unit, see `adc_unit_t` */
-    int chan;  /*!< ADC channel, see `adc_channel_t` */
-    int width; /*!< ADC width, see `adc_channel_t` */
-    int atten; /*!< ADC atten, see `adc_atten_t` */
-    int v_ref; /*!< default vref` */
+    int     unit;   /*!< ADC unit, see `adc_unit_t` */
+    int     chan;   /*!< ADC channel, see `adc_channel_t` */
+    int     width;  /*!< ADC width, see `adc_channel_t` */
+    int     atten;  /*!< ADC atten, see `adc_atten_t` */
+    int     v_ref;  /*!< default vref` */
+    float   ratio;  /*!< divider ratio` */
 } vol_adc_param_t;
 
 static const char *TAG = "BATTERY_EXAMPLE";
@@ -51,17 +52,12 @@ static int vol_read(void *user_data)
     uint32_t sum = 0;
     int tmp = 0;
 
-#if CONFIG_IDF_TARGET_ESP32
     esp_adc_cal_characteristics_t characteristics;
     esp_adc_cal_characterize(adc_cfg->unit, adc_cfg->atten, adc_cfg->width, adc_cfg->v_ref, &characteristics);
+
     for (int i = 0; i < ADC_SAMPLES_NUM; ++i) {
         esp_adc_cal_get_voltage(adc_cfg->chan, &characteristics, &data[i]);
     }
-#elif CONFIG_IDF_TARGET_ESP32S2
-    for (int i = 0; i < ADC_SAMPLES_NUM; i++) {
-        data[i] = adc1_get_raw((adc1_channel_t)channel);
-    }
-#endif
 
     for (int j = 0; j < ADC_SAMPLES_NUM - 1; j++) {
         for (int i = 0; i < ADC_SAMPLES_NUM - j - 1; i++) {
@@ -74,7 +70,7 @@ static int vol_read(void *user_data)
     }
     for (int num = 1; num < ADC_SAMPLES_NUM - 1; num++)
         sum += data[num];
-    return (sum / (ADC_SAMPLES_NUM - 2));
+    return (int)((sum / (ADC_SAMPLES_NUM - 2)) * adc_cfg->ratio);
 }
 
 static esp_err_t battery_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
@@ -98,14 +94,24 @@ void app_main(void)
 {
     vol_adc_param_t adc_cfg = {
         .unit = ADC_UNIT_1,
-        .chan = ADC_CHANNEL_1,
-#if CONFIG_IDF_TARGET_ESP32
-        .width = ADC_WIDTH_BIT_12,
-#elif CONFIG_IDF_TARGET_ESP32S2
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+        .chan = ADC1_CHANNEL_5,
+        .ratio = 4.0,
+#else
+        .chan = ADC1_CHANNEL_1,
+        .ratio = 2.0,
+#endif
+#ifdef CONFIG_IDF_TARGET_ESP32S2
         .width = ADC_WIDTH_BIT_13,
+#else
+        .width = ADC_WIDTH_BIT_12,
 #endif
         .atten = ADC_ATTEN_11db,
+#ifdef CONFIG_IDF_TARGET_ESP32
         .v_ref = 1100,
+#else
+        .v_ref = 0,
+#endif
     };
 
     vol_monitor_param_t vol_monitor_cfg = {
@@ -114,8 +120,8 @@ void app_main(void)
         .vol_get = vol_read,
         .read_freq = 2,
         .report_freq = 2,
-        .vol_full_threshold = 2100,
-        .vol_low_threshold = 1800,
+        .vol_full_threshold = CONFIG_VOLTAGE_OF_BATTERY_FULL,
+        .vol_low_threshold = CONFIG_VOLTAGE_OF_BATTERY_LOW,
     };
     vol_monitor_cfg.user_data = audio_calloc(1, sizeof(vol_adc_param_t));
     AUDIO_MEM_CHECK(TAG, vol_monitor_cfg.user_data, return);
