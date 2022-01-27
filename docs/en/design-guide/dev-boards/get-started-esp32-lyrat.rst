@@ -26,7 +26,7 @@ Overview
 
 The ESP32-LyraT V4.3 is an audio development board produced by `Espressif <https://espressif.com>`_ built around ESP32. It is intended for audio applications, by providing hardware for audio processing and additional RAM on top of what is already onboard of the ESP32 chip. The specific hardware includes:
 
-* ESP32-WROVER Module
+* ESP32-WROVER-E Module
 * Audio Codec Chip
 * Dual Microphones on board
 * Headphone output
@@ -53,8 +53,8 @@ Components
 The following list and figure describe key components, interfaces and controls of the ESP32-LyraT used in this guide. This covers just what is needed now. For detailed technical documentation of this board, please refer to :doc:`board-esp32-lyrat-v4.3` and `ESP32 LyraT V4.3 schematic`_ (PDF).
 
 
-ESP32-WROVER Module
-    The ESP32-WROVER module contains ESP32 chip to provide Wi-Fi / Bluetooth connectivity and data processing power as well as integrates 32 Mbit SPI flash and 32 Mbit PSRAM for flexible data storage.
+ESP32-WROVER-E Module
+    The ESP32-WROVER-E module contains ESP32 chip to provide Wi-Fi / Bluetooth connectivity and data processing power as well as integrates 4 MB external SPI flash and an additional 8 MB PSRAM for flexible data storage.
 Headphone Output
     Output socket to connect headphones with a 3.5 mm stereo jack.
 
@@ -64,7 +64,7 @@ Headphone Output
 
 .. _get-started-esp32-lyrat-v4.3-board:
 
-.. figure:: ../../../_static/esp32-lyrat-v4.3-layout-overview.jpg
+.. figure:: ../../../_static/esp32-lyrat-v4.3-layout-overview-with-wrover-e-module.jpg
     :alt: ESP32 LyraT V4.3 Board Layout Overview
     :figclass: align-center
 
@@ -77,9 +77,9 @@ Right Speaker Output
 Boot/Reset Press Keys
     Boot: holding down the **Boot** button and momentarily pressing the **Reset** button initiates the firmware upload mode. Then user can upload firmware through the serial port. Reset: pressing this button alone resets the system.
 Audio Codec Chip
-    The Audio Codec Chip, `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_, is a low power stereo audio codec with a headphone amplifier. It consists of 2-channel ADC, 2-channel DAC, microphone amplifier, headphone amplifier, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER Module** over I2S and I2S buses to provide audio processing in hardware independently from the audio application.
+    The Audio Codec Chip, `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_, is a low power stereo audio codec with a headphone amplifier. It consists of 2-channel ADC, 2-channel DAC, microphone amplifier, headphone amplifier, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER-E Module** over I2S and I2S buses to provide audio processing in hardware independently from the audio application.
 USB-UART Port
-    Functions as the communication interface between a PC and the ESP32 WROVER module.
+    Functions as the communication interface between a PC and the **ESP32-WROVER-E Module**.
 USB Power Port
     Provides the power supply for the board.
 Standby / Charging LEDs
@@ -126,6 +126,7 @@ Once the board is initially set up and checked, you can start preparing the deve
 Summary of Key Changes from LyraT V4.2
 --------------------------------------
 
+* Changed the integrated module to ESP32-WROVER-E from ESP32-WROVER.
 * Removed Red LED indicator light.
 * Introduced headphone jack insert detection.
 * Replaced single Power Amplifier (PA) chip with two separate chips.
@@ -152,8 +153,8 @@ Related Documents
 * `ESP32 LyraT V4.3 schematic`_ (PDF)
 * `ESP32-LyraT V4.3 Component Layout`_ (PDF)
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
-* `ESP32-WROVER Datasheet <https://espressif.com/sites/default/files/documentation/esp32-wrover_datasheet_en.pdf>`_ (PDF)
+* `ESP32-WROVER-E Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_en.pdf>`_ (PDF)
 
 
-.. _ESP32 LyraT V4.3 schematic: https://dl.espressif.com/dl/schematics/esp32-lyrat-v4.3-schematic.pdf
+.. _ESP32 LyraT V4.3 schematic: https://dl.espressif.com/dl/schematics/ESP32-LYRAT_V4.3-20220119.pdf
 .. _ESP32-LyraT V4.3 Component Layout: https://dl.espressif.com/dl/schematics/ESP32-LyraT_v4.3_component_layout.pdf

@@ -26,7 +26,7 @@ ESP32-LyraT 是一款立体声音频开发板，如需单声道音频开发板�
 
 ESP32-LyraT V4.3 是一款基于 `乐鑫 <https://espressif.com>`_ ESP32 的开发板，专为音频应用市场打造，除 ESP32 芯片原有的硬件外，还提供了可用于音频处理硬件和扩展 RAM。具体包括以下硬件：
 
-* ESP32-WROVER 模组
+* ESP32-WROVER-E 模组
 * 音频编解码芯片
 * 板载双麦克风
 * 耳机输出
@@ -53,8 +53,8 @@ ESP32-LyraT V4.3 是一款基于 `乐鑫 <https://espressif.com>`_ ESP32 的开�
 以下列表和图片仅涉及 ESP32-LyraT 的主要组件、接口和控制方式，仅展示目前所需的信息。欲访问详细的技术文档，请前往 :doc:`board-esp32-lyrat-v4.3` 和 `ESP32 LyraT V4.3 schematic`_ (PDF)。
 
 
-ESP32-WROVER 模组
-    ESP32-WROVER 模组采用 ESP32 芯片，可实现 Wi-Fi/蓝牙连接和数据处理，同时集成 32 Mbit SPI flash 和 32 Mbit PSRAM，可实现灵活的数据存储。
+ESP32-WROVER-E 模组
+    ESP32-WROVER-E 模组采用 ESP32 芯片，可实现 Wi-Fi/蓝牙连接和数据处理，同时集成 4 MB 外部 SPI flash 和 8 MB SPI PSRAM，可实现灵活的数据存储。
 耳机输出
     输出插槽可连接 3.5 mm 立体声耳机。
 
@@ -64,7 +64,7 @@ ESP32-WROVER 模组
 
 .. _get-started-esp32-lyrat-v4.3-board:
 
-.. figure:: ../../../_static/esp32-lyrat-v4.3-layout-overview.jpg
+.. figure:: ../../../_static/esp32-lyrat-v4.3-layout-overview-with-wrover-e-module.jpg
     :alt: ESP32 LyraT V4.3 Board Layout Overview
     :figclass: align-center
 
@@ -77,9 +77,9 @@ ESP32-WROVER 模组
 启动/复位按键
     启动: 长按 **Boot** 键，然后按下 **Reset** 键进入烧写模式，此时可通过串行端口上传固件。复位：仅按下 **Reset** 键只能重置系统。
 音频编解码芯片
-    `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_ 音频编解码芯片是一款低功耗立体声编解码器，它由双通道 ADC、双通道 DAC、麦克风放大器、耳机放大器、数字音效处理器、模拟混音和增益控制功能组成。该芯片通过 I2S 和 I2C 总线与 **ESP32-WROVER 模组** 连接，可在芯片内独立完成音频处理，无需依赖音频应用软件。
+    `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_ 音频编解码芯片是一款低功耗立体声编解码器，它由双通道 ADC、双通道 DAC、麦克风放大器、耳机放大器、数字音效处理器、模拟混音和增益控制功能组成。该芯片通过 I2S 和 I2C 总线与 **ESP32-WROVER-E 模组** 连接，可在芯片内独立完成音频处理，无需依赖音频应用软件。
 USB-UART 接口
-    作为 PC 和 ESP32 WROVER 模组之间的通信接口。
+    作为 PC 和 **ESP32-WROVER-E** 模组之间的通信接口。
 USB 供电接口
     为开发板供电。
 待机/充电指示灯
@@ -125,6 +125,7 @@ ESP32-LyraT 上电之前，请首先确认开发板完好无损。
 与 LyraT V4.2 相比的主要变化
 ----------------------------
 
+* 板上模组从 ESP32-WROVER 更新为 ESP32-WROVER-E；
 * 移除红色 LED 指示灯；
 * 增添耳机插孔插入检测功能； 
 * 使用两枚独立芯片代替单个功率放大器；
@@ -151,8 +152,8 @@ ESP32-LyraT 上电之前，请首先确认开发板完好无损。
 * `ESP32 LyraT V4.3 schematic`_ (PDF)
 * `ESP32-LyraT V4.3 Component Layout`_ (PDF)
 * `ESP32 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_cn.pdf>`_ (PDF)
-* `ESP32-WROVER 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32_wrover_datasheet_cn.pdf>`_ (PDF)
+* `ESP32-WROVER-E 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_cn.pdf>`_ (PDF)
 
 
-.. _ESP32 LyraT V4.3 schematic: https://dl.espressif.com/dl/schematics/esp32-lyrat-v4.3-schematic.pdf
+.. _ESP32 LyraT V4.3 schematic: https://dl.espressif.com/dl/schematics/ESP32-LYRAT_V4.3-20220119.pdf
 .. _ESP32-LyraT V4.3 Component Layout: https://dl.espressif.com/dl/schematics/ESP32-LyraT_v4.3_component_layout.pdf

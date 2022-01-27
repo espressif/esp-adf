@@ -30,7 +30,7 @@ ESP32-LyraT-Mini 是单声道音频开发板，如需立体声音频开发板，
 
 ESP32-LyraT-Mini 1.2 是基于 `乐鑫 <https://espressif.com>`_ ESP32 专为音频应用市场打造的音频开发板。其主要包括了音频编解码芯片，外置扩展 RAM 和双核 ESP32 芯片。 硬件具体包括：
 
-* **ESP32-WROVER-B 模组**
+* **ESP32-WROVER-E 模组**
 * **音频编解码芯片**
 * **ADC 芯片**
 * **麦克风**
@@ -58,7 +58,7 @@ ESP32-LyraT-Mini 1.2 是基于 `乐鑫 <https://espressif.com>`_ ESP32 专为音
 本指南涉及到的 ESP32-LyraT-Mini 开发板的主要组件、接口及控制方式见下。详细技术文档请参阅 :doc:`board-esp32-lyrat-mini-v1.2` 和 `ESP32-LyraT-Mini V1.2 原理图`_ (PDF)。ESP32-LyraT-Mini 开发板各组件的详细描述见下表（从右上角起顺时针顺序）。
 
 音频编解码芯片
-	音频编解码芯片 `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_ 是一款低功耗单声道音频编解码器。它由单通道 ADC、单通道 DAC、低噪声前置放大器、耳机驱动程序、数字音效处理器、模拟混音器和增益函数组成。该芯片通过 I2S 和 I2C 总线与 **ESP32-WROVER-B 模组** 连接提供硬件音频处理功能。
+	音频编解码芯片 `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_ 是一款低功耗单声道音频编解码器。它由单通道 ADC、单通道 DAC、低噪声前置放大器、耳机驱动程序、数字音效处理器、模拟混音器和增益函数组成。该芯片通过 I2S 和 I2C 总线与 **ESP32-WROVER-E 模组** 连接提供硬件音频处理功能。
 音频输出
 	音频输出插槽，可连接 3.5 mm 立体声耳机。（请注意，此开发板输出单声道信号）
 扬声器输出
@@ -83,8 +83,8 @@ USB 充电端口
 	电源开/关按钮：向上拨动按钮则开发板电源开启；向下拨动则电源关闭。
 电源指示灯
 	红色指示灯亮起表示 **电源开关** 已开启。
-ESP32-WROVER-B 模组
-    ESP32-WROVER-B 模组中包含 ESP32 芯片，可提供 Wi-Fi/蓝牙连接和数字处理能力，同时集成了 32 Mbit SPI flash 与 64 Mbit PSRAM，可实现灵活的数据存储。
+ESP32-WROVER-E 模组
+    ESP32-WROVER-E 模组采用 ESP32 芯片，可实现 Wi-Fi/蓝牙连接和数据处理，同时集成 4 MB 外部 SPI flash 和 8 MB SPI PSRAM，可实现灵活的数据存储。
 
 
 应用程序开发
@@ -119,6 +119,13 @@ ESP32-LyraT-Mini 上电之前，请首先确认开发板完好无损。
 * :ref:`get-started-connect` 准备加载应用程序；
 * :ref:`get-started-build` 最后运行应用程序并播放音乐。
 
+
+修订历史
+--------
+
+* 板上模组从 ESP32-WROVER-B 更新为 ESP32-WROVER-E。
+
+
 其他 LyraT 系列开发板
 ------------------------------
 
@@ -131,7 +138,7 @@ ESP32-LyraT-Mini 上电之前，请首先确认开发板完好无损。
 * `ESP32-LyraT-Mini V1.2 原理图`_ (PDF)
 * :doc:`board-esp32-lyrat-mini-v1.2`
 * `ESP32 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
-* `ESP32-WROVER-B 技术规格书 <https://espressif.com/sites/default/files/documentation/esp32-wrover-b_datasheet_en.pdf>`_ (PDF)
+* `ESP32-WROVER-E 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_cn.pdf>`_ (PDF)
 
 
-.. _ESP32-LyraT-Mini V1.2 原理图: https://dl.espressif.com/dl/schematics/SCH_ESP32-LYRAT-MINI_V1.2_20190605.pdf
+.. _ESP32-LyraT-Mini V1.2 原理图: https://dl.espressif.com/dl/schematics/SCH_ESP32-LyraT-Mini_V1.2_20220119.pdf

@@ -32,9 +32,9 @@ MicroSD Card
 Microphone
     On-board microphone connected to AINRP/AINRP of the **Audio ADC Chip**.
 System LEDs
-    Two general purpose LEDs (green and red) controlled by **ESP32-WROVER-B Module** to indicate certain operation states of the audio application using dedicated API.
+    Two general purpose LEDs (green and red) controlled by **ESP32-WROVER-E Module** to indicate certain operation states of the audio application using dedicated API.
 Audio Codec Chip
-    The audio codec chip, `ES8311`_, is a low power mono audio codec. It consists of 1-channel ADC, 1-channel DAC, low noise pre-amplifier, headphone driver, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER-B Module** over I2S and I2C buses to provide audio processing in hardware independently from the audio application.
+    The audio codec chip, `ES8311`_, is a low power mono audio codec. It consists of 1-channel ADC, 1-channel DAC, low noise pre-amplifier, headphone driver, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER-E Module** over I2S and I2C buses to provide audio processing in hardware independently from the audio application.
 Audio Output
     Output socket to connect headphones with a 3.5 mm stereo jack. One of the socket's terminals is wired to ESP32 to provide jack insertion detection.
 Audio ADC Chip
@@ -44,7 +44,7 @@ PA Chip
 Speaker Output
     Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm / 0.08" pitch.
 Audio Function Press Keys
-    Six press keys labeled **Rec**, **Mode**, **Play**, **Set**, **Vol-** and **Vol+**. They are routed to **ESP32-WROVER-B Module** and intended for development and testing of a UI for audio applications using dedicated API.
+    Six press keys labeled **Rec**, **Mode**, **Play**, **Set**, **Vol-** and **Vol+**. They are routed to **ESP32-WROVER-E Module** and intended for development and testing of a UI for audio applications using dedicated API.
 
 .. figure:: ../../../_static/esp32-lyrat-mini-v1.2-layout.png
     :scale: 70%
@@ -82,12 +82,12 @@ Power Supervisor
     Provides EN signal to enable ESP32 once power supply voltage stabilizes.
 Power On LED
     Red LED indicating that **Power On Switch** is turned on.
-ESP32-WROVER-B Module
-    The ESP32-WROVER-B module contains ESP32 chip to provide Wi-Fi / BT connectivity and data processing power as well as integrates 64 Mbit SPI flash and 64 Mbit PSRAM for flexible data storage.
+ESP32-WROVER-E Module
+    The ESP32-WROVER-E module contains ESP32 chip to provide Wi-Fi / Bluetooth connectivity and data processing power as well as integrates 4 MB external SPI flash and an additional 8 MB PSRAM for flexible data storage.
 UART Test Point
-    Serial port: provides access to the serial TX/RX signals between **ESP32-WROVER-B Module** and **USB-UART Bridge Chip**. See `UART Test Point`_ for pinout details.
+    Serial port: provides access to the serial TX/RX signals between **ESP32-WROVER-E Module** and **USB-UART Bridge Chip**. See `UART Test Point`_ for pinout details.
 JTAG Test Point
-    Provides access to the **JTAG** interface of **ESP32-WROVER-B Module**. It may be used for debugging, application upload, as well as implementing several other functions, e.g., `Application Level Tracing <http://esp-idf.readthedocs.io/en/latest/api-reference/system/app_trace.html>`_. See `JTAG Test Point`_ for pinout details. 
+    Provides access to the **JTAG** interface of **ESP32-WROVER-E Module**. It may be used for debugging, application upload, as well as implementing several other functions, e.g., `Application Level Tracing <http://esp-idf.readthedocs.io/en/latest/api-reference/system/app_trace.html>`_. See `JTAG Test Point`_ for pinout details. 
 
 
 
@@ -152,7 +152,7 @@ it mode after populating couple of additional components on locations reserved o
 GPIO Allocation Summary
 -----------------------
 
-The table below provides allocation of GPIOs exposed on terminals of **ESP32-WROVER-B Module** to control specific components or functions of the board.
+The table below provides allocation of GPIOs exposed on terminals of **ESP32-WROVER-E Module** to control specific components or functions of the board.
 
 .. csv-table::
     :header: Pin :sup:`1`,Pin Name,`ES8311`_,`ES7243`_,Keys,MicroSD,Other
@@ -191,7 +191,7 @@ The table below provides allocation of GPIOs exposed on terminals of **ESP32-WRO
     36,IO22,,,,,Green_LED
     37,IO23,I2C_SCK,I2C_SCL,,,
 
-1. **Pin** - ESP32-WROVER-B module pin number, GND and power supply pins are not listed
+1. **Pin** - ESP32-WROVER-E module pin number, GND and power supply pins are not listed
 2. **PJ_DET** - phone jack insertion detect signal
 3. **PA_CTRL** - NS4150 power amplifier chip control signal
 4. **RXD0**, **TXD0** - serial communication signals connected to TXD and RXD pins of CP2102N USB-UART bridge
@@ -269,9 +269,8 @@ Related Documents
 * `ESP32-LyraT-Mini V1.2 schematic`_ (PDF)
 * :doc:`get-started-esp32-lyrat-mini`
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
-* `ESP32-WROVER-B Datasheet <https://espressif.com/sites/default/files/documentation/esp32-wrover-b_datasheet_en.pdf>`_ (PDF)
+* `ESP32-WROVER-E Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_en.pdf>`_ (PDF)
 
-
-.. _ESP32-LyraT-Mini V1.2 schematic: https://dl.espressif.com/dl/schematics/SCH_ESP32-LYRAT-MINI_V1.2_20190605.pdf
+.. _ESP32-LyraT-Mini V1.2 schematic: https://dl.espressif.com/dl/schematics/SCH_ESP32-LyraT-Mini_V1.2_20220119.pdf
 .. _ES8311: http://www.everest-semi.com/pdf/ES8311%20PB.pdf
 .. _ES7243: http://www.everest-semi.com/pdf/ES7243%20PB.pdf

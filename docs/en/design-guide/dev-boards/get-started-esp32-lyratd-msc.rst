@@ -24,7 +24,7 @@ Overview
 
 The ESP32-LyraTD-MSC V2.2 is an audio development board produced by `Espressif <https://espressif.com>`_ built around ESP32. It is intended for smart speakers and AI applications, by providing hardware for digital signal processing, microphone array and additional RAM on top of what is already onboard of the ESP32 chip. 
 
-This audio development board consists of two parts: the upper board (B), which provides a three-microphone array, function keys and LED lights; and the lower board (A), which integrates ESP32-WROVER-B, a MicroSemi Digital Signal Processing (DSP) chip, and a power management module.
+This audio development board consists of two parts: the upper board (B), which provides a three-microphone array, function keys and LED lights; and the lower board (A), which integrates ESP32-WROVER-E, a MicroSemi Digital Signal Processing (DSP) chip, and a power management module.
 
 .. _get-started-esp32-lyratd-msc-v2.2-board:
 
@@ -36,7 +36,7 @@ This audio development board consists of two parts: the upper board (B), which p
 
 The specific hardware includes:
 
-* ESP32-WROVER-B Module
+* ESP32-WROVER-E Module
 * DSP (Digital Signal Processing) chip
 * Three digital Microphones that support far-field voice pick-up
 * 2 x 3-watt Speaker output
@@ -62,8 +62,8 @@ Components
 
 The following list and figure describe key components, interfaces and controls of the ESP32-LyraTD-MSC used in this guide. This covers just what is needed now. For additional details please refer to schematics provided in `Related Documents`_.
 
-ESP32-WROVER-B Module
-    The ESP32-WROVER-B module contains ESP32 chip to provide Wi-Fi / Bluetooth connectivity and data processing power as well as integrates 32 Mbit SPI flash and 64 Mbit PSRAM for flexible data storage.
+ESP32-WROVER-E Module
+    The ESP32-WROVER-E module contains ESP32 chip to provide Wi-Fi / Bluetooth connectivity and data processing power as well as integrates 4 MB external SPI flash and an additional 8 MB PSRAM for flexible data storage.
 DSP Chip
     The Digital Signal Processing chip `ZL38063 <https://www.microsemi.com/document-portal/doc_download/136798-zl38063-datasheet>`_ is used for Automatic Speech Recognition (ASR) applications. It captures audio data from an external microphone array and outputs audio signals through its Digital-to-Analog-Converter (DAC) port.
 Headphone Output
@@ -85,7 +85,7 @@ Right Speaker Output
     ESP32-LyraTD-MSC V2.2 Lower Board (A) Components
 
 USB-UART Port
-    Functions as the communication interface between a PC and the ESP32-WROVER-B module.
+    Functions as the communication interface between a PC and the ESP32-WROVER-E module.
 USB Power Port
     Provides the power supply for the board.
 Standby / Charging LEDs
@@ -140,6 +140,12 @@ Once the board is initially set up and checked, you can start preparing the deve
 *  **Build the Project** to finally run the application and play some music.
 
 
+Revision History
+----------------
+
+* Changed the integrated module to ESP32-WROVER-E from ESP32-WROVER-B.
+
+
 Other Boards from LyraT Family
 ------------------------------
 
@@ -152,8 +158,8 @@ Related Documents
 * `ESP32-LyraTD-MSC V2.2 Schematic Lower Board (A)`_ (PDF)
 * `ESP32-LyraTD-MSC V2.2 Schematic Upper Board (B)`_ (PDF)
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
-* `ESP32-WROVER-B Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-b_datasheet_en.pdf>`_ (PDF)
+* `ESP32-WROVER-E Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_en.pdf>`_ (PDF)
 
 
-.. _ESP32-LyraTD-MSC V2.2 Schematic Lower Board (A): https://dl.espressif.com/dl/schematics/ESP32-LyraTD-MSC_A_V2_2-1109A.pdf
+.. _ESP32-LyraTD-MSC V2.2 Schematic Lower Board (A): https://dl.espressif.com/dl/schematics/ESP32-LYRATD-MSC_A_V2.2-20220119.pdf
 .. _ESP32-LyraTD-MSC V2.2 Schematic Upper Board (B): https://dl.espressif.com/dl/schematics/ESP32-LyraTD-MSC_B_V1_1-1109A.pdf

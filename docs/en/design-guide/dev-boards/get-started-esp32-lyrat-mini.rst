@@ -31,7 +31,7 @@ Overview
 
 The ESP32-LyraT-Mini V1.2 is an audio development board produced by `Espressif <https://espressif.com>`_ built around ESP32. It is intended for audio applications, by providing hardware for audio processing and additional RAM on top of what is already on-board of the ESP32 chip. The specific hardware includes:
 
-* **ESP32-WROVER-B module**
+* **ESP32-WROVER-E module**
 * **Audio codec chip**
 * **ADC chip**
 * **Microphone** on board
@@ -60,7 +60,7 @@ The following list and figure describe key components, interfaces and controls o
 
 
 Audio Codec Chip
-	The audio codec chip, `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_, is a low power mono audio codec. It consists of 1-channel ADC, 1-channel DAC, low noise pre-amplifier, headphone driver, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER-B Module** over I2S and I2C buses to provide audio processing in hardware independently from the audio application.
+	The audio codec chip, `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_, is a low power mono audio codec. It consists of 1-channel ADC, 1-channel DAC, low noise pre-amplifier, headphone driver, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER-E Module** over I2S and I2C buses to provide audio processing in hardware independently from the audio application.
 Audio Output
 	Output socket to connect headphones with a 3.5 mm stereo jack. (Please note that the board outputs a mono signal)
 Speaker Output
@@ -85,8 +85,8 @@ Power On Switch
 	Power on/off knob: toggling it to the top powers the board on; toggling it to the down powers the board off.
 Power On LED
 	Red LED indicating that **Power On Switch** is turned on.
-ESP32-WROVER-B Module
-    The ESP32-WROVER-B module contains ESP32 chip to provide Wi-Fi / BT connectivity and data processing power as well as integrates 32 Mbit SPI flash and 64 Mbit PSRAM for flexible data storage.
+ESP32-WROVER-E Module
+    The ESP32-WROVER-E module contains ESP32 chip to provide Wi-Fi / Bluetooth connectivity and data processing power as well as integrates 4 MB external SPI flash and an additional 8 MB PSRAM for flexible data storage.
 
 
 Start Application Development
@@ -122,6 +122,11 @@ Once the board is initially set up and checked, you can start preparing the deve
 *  **Build the Project** to finally run the application and play some music.
 
 
+Revision History
+----------------
+
+* Changed the integrated module to ESP32-WROVER-E from ESP32-WROVER-B.
+
 Other Boards from LyraT Family
 ------------------------------
 
@@ -134,7 +139,7 @@ Related Documents
 * `ESP32-LyraT-Mini V1.2 schematic`_ (PDF)
 * :doc:`board-esp32-lyrat-mini-v1.2`
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
-* `ESP32-WROVER-B Datasheet <https://espressif.com/sites/default/files/documentation/esp32-wrover-b_datasheet_en.pdf>`_ (PDF)
+* `ESP32-WROVER-E Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_en.pdf>`_ (PDF)
 
 
-.. _ESP32-LyraT-Mini V1.2 schematic: https://dl.espressif.com/dl/schematics/SCH_ESP32-LYRAT-MINI_V1.2_20190605.pdf
+.. _ESP32-LyraT-Mini V1.2 schematic: https://dl.espressif.com/dl/schematics/SCH_ESP32-LyraT-Mini_V1.2_20220119.pdf
