@@ -89,7 +89,7 @@ idf.py -p PORT flash monitor
 #define SELECT_AAC_DECODER 1
 ```
 
-- 例程开始运行后，会先尝试链接 Wi-Fi 无线网络，如果连接成功后会播放 `play_http_select_decoder_example.c` 代码中预先设定的 HTTP URI 网络音频，打印如下：
+- 例程开始运行后，会先尝试连接 Wi-Fi 无线网络，如果连接成功后会播放 `play_http_select_decoder_example.c` 代码中预先设定的 HTTP URI 网络音频，打印如下：
 
 ```c
 entry 0x40080710

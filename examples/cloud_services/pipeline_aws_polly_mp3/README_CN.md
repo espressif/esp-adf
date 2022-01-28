@@ -11,17 +11,15 @@
 
 获取亚马逊在线语音合成 MP3 音频管道如下：
 
-```c
-
+```
 [amazon_polly_server] ---> http_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
-
 ```
 
 ## 环境配置
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -47,17 +45,16 @@
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-本例需要链接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
+本例需要连接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
 
 ```
  menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
 ```
 
-此外，还需要在[Amazon Polly](https://aws.amazon.com/cn/polly/)申请语音合成应用，并把申请到的 `Amazon service access key ID` 和 `Amazon service access secret` 分别填入 `menuconfig` 的配置中，用来和亚马逊 Amazon Polly 服务器鉴权。
+此外，还需要在 [Amazon Polly](https://aws.amazon.com/cn/polly/) 申请语音合成应用，并把申请到的 `Amazon service access key ID` 和 `Amazon service access secret` 分别填入 `menuconfig` 的配置中，用来和亚马逊 Amazon Polly 服务器鉴权。
 
 ```
- menuconfig > Example Configuration > `Amazon service access key ID` and `Amazon service access secret`
-
+menuconfig > Example Configuration > `Amazon service access key ID` and `Amazon service access secret`
 ```
 
 
@@ -76,7 +73,11 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后，按照配置首先尝试连接 Wi-Fi 网络，然后和亚马逊 Amazon Polly 服务器鉴权，成功后会向服务器请求英文文本内容为 `Espressif Systems is a multinational, fabless semiconductor company, with headquarters in Shanghai, China. We specialize in producing highly-integrated, low-power, WiFi-and-Bluetooth IoT solutions. Among our most popular chips are ESP8266 and ESP32. We are committed to creating IoT solutions that are power-efficient, robust and secure.` 的合成音频，最后 Amazon Polly 服务器返回 MP3 音频，打印如下：
+例程开始运行后，按照配置首先尝试连接 Wi-Fi 网络，然后和亚马逊 Amazon Polly 服务器鉴权，成功后会向服务器请求以下英文文本的合成音频，最后 Amazon Polly 服务器返回 MP3 音频。
+
+*"Espressif Systems is a multinational, fabless semiconductor company, with headquarters in Shanghai, China. We specialize in producing highly-integrated, low-power, WiFi-and-Bluetooth IoT solutions. Among our most popular chips are ESP8266 and ESP32. We are committed to creating IoT solutions that are power-efficient, robust and secure."* 
+
+相关日志打印如下：
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -259,7 +260,7 @@ Done
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下是本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)

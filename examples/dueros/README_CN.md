@@ -1,30 +1,30 @@
 # DuerOS 3.0 语音交互例程
 
 - [English Version](./README.md)
-- 例程难度：![alt text](../../../docs/_static/level_complex.png "高级")
+- 例程难度：![alt text](../../docs/_static/level_complex.png "高级")
 
 
 ## 例程简介
 
 本例程主要功能是连接百度 DuerOS 3.0 云端并进行语音交互，可以适用于智能音箱产品、智能玩具、语音控制设备等。此示例是一个综合性较强的例程，使用了 ADF 提供的高封装简易实用接口。建议用户构建项目时，优先使用 ADF 提供的高封装接口，可快速简便地构建项目。
 
-其中，[esp audio](../../components/esp-adf-libs/esp_audio/include/esp_audio.h) 处理音频播放，[wifi service](../../components/wifi_service) 接口管理配网和连接 Wi-Fi，[recorder engine](../../components/esp-adf-libs/recorder_engine/include/recorder_engine.h) 负责唤醒和语音数据管理，[display service](../../components/display_service/display_service.c) 管理系统指示灯，[Dueros service](../..//components/dueros_service) 连接 DuerOS，[esp_periph_set_register_callback](../../components/esp_peripherals/include/esp_peripherals.h) 管理按键事件，也可以使用 [Key service](../../components/input_key_service/input_key_service.c) 按键服务来管理按键。
+其中，[esp audio](../../components/esp-adf-libs/esp_audio/include/esp_audio.h) 处理音频播放，[wifi service](../../components/wifi_service) 接口管理配网和连接 Wi-Fi，[recorder engine](../../components/esp-adf-libs/recorder_engine/include/recorder_engine.h) 负责唤醒和语音数据管理，[display service](../../components/display_service/display_service.c) 管理系统指示灯，[Dueros service](../../components/dueros_service) 连接 DuerOS，[esp_periph_set_register_callback](../../components/esp_peripherals/include/esp_peripherals.h) 管理按键事件，也可以使用 [Key service](../../components/input_key_service/input_key_service.c) 按键服务来管理按键。
 
-此外，本例程需要预先在[百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown)申请 DuerOS 的 profile，并替换 `ADF_PATH/components/dueros_service/duer_profile` 中的空文件。
+此外，本例程需要预先在 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 申请 DuerOS 的 profile，并替换 `ADF_PATH/components/dueros_service/duer_profile` 中的空文件。
 
 ## 环境配置
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "开发板不兼容此例程") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/no-button.png "开发板不兼容此例程") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "开发板不兼容此例程") |
+| ESP32-LyraT | [![alt text](../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "开发板不兼容此例程") |
+| ESP32-LyraT-Mini | [![alt text](../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-Korvo-DU1906 | [![alt text](../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../docs/_static/no-button.png "开发板不兼容此例程") |
+| ESP32-S2-Kaluga-1 Kit | [![alt text](../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../docs/_static/no-button.png "开发板不兼容此例程") |
 
 
 ## 编译和下载
@@ -44,7 +44,7 @@
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-如果你需要修改录音文件名，本例程建议同时打开 FATFS 长文件名支持。
+如果你需要修改录音文件名，本例程建议同时打开 FatFs 长文件名支持。
 
 ```
 menuconfig > Component config > FAT Filesystem support > Long filename support
@@ -53,10 +53,10 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 本例需要连接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
 
 ```
- menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
+menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
 ```
 
-此外，本例程还需 DuerOS 的 profile，用户可自行前往[百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown)页面进行申请，并且将申请到的 profile 替换 `ADF_PATH/components/dueros_service/duer_profile` 文件夹下的原始空文件。
+此外，本例程还需 DuerOS 的 profile，用户可自行前往 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 页面进行申请，并且将申请到的 profile 替换 `ADF_PATH/components/dueros_service/duer_profile` 文件夹下的原始空文件。
 
 
 ### 编译和下载
@@ -66,7 +66,7 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -307,7 +307,7 @@ I (18244) DUEROS: Func:sys_monitor_task, Line:379, MEM Total:4137200 Bytes, Inte
 
 ```
 
-- 此时，可以对开发板说 “Hi Lexin”，将会唤醒触发 DuerOS 语音交互，绿色 LED 亮起表示成功唤醒，如果 `dingding.wav` 已经拷贝到 microSD 中，则会听到 “叮叮” 唤醒提示音。
+- 此时，可以对开发板说 “Hi Lexin”，唤醒触发 DuerOS 语音交互。绿色 LED 亮起表示成功唤醒，如果 `dingding.wav` 已经拷贝到 microSD 中，则会听到 “叮叮” 唤醒提示音。
 
 ```c
 W (20644) REC_ENG: ### spot keyword ###
@@ -377,7 +377,7 @@ I (21466) ESP_AUDIO_CTRL: Sync play done
 
 ```
 
-- 接着，可以继续说出一些语音交互的命令，如“苏州明天天气怎么样？”，则 DuerOS 将会返回苏州明天的天气情况，打印如下：
+- 接着，可以说出一些语音交互的命令，如“苏州明天天气怎么样？”，则 DuerOS 将会返回苏州明天的天气情况，打印如下：
 
 ```c
 W (22153) REC_ENG: State VAD silence_time >= vad_off_window
@@ -685,7 +685,7 @@ I (68275) DUEROS: Func:sys_monitor_task, Line:379, MEM Total:4080364 Bytes, Inte
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下是本例程的完整日志。
 
 ```c
 ets Jul 29 2019 12:21:46
@@ -1271,7 +1271,7 @@ I (68275) DUEROS: Func:sys_monitor_task, Line:379, MEM Total:4080364 Bytes, Inte
 ```
 
 
-## Troubleshooting
+## 故障排除
 
 当前触摸驱动的限制是占用大量 CPU，可能会造成系统不能被语音唤醒或者系统播放音乐时断断续续，解决方法是不要在 `duer_service_create` 中使用以下代码。
 

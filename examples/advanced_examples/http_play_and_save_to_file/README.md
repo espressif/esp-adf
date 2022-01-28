@@ -15,11 +15,11 @@ http_stream_reader ---> mp3_decoder ---> i2s_stream ---> codec chip
                     raw_stream ---> fatfs_stream ---> SD card
 ```
 
-In the first pipeline, the front-end http stream reader obtains MP3 songs from the network. Then, the MP3 data is decoded by the MP3 decoder and transmitted to the codec chip by the i2s stream. Finally, the PA drives the speaker to play music.
+In the first pipeline, the front-end `http_stream_reader` obtains MP3 songs from the network. Then, the MP3 data is decoded by the MP3 decoder and transmitted to the `codec chip` by the I2S stream. Finally, the PA drives the speaker to play music.
 
-The front end of the other pipeline is the raw stream, which is connected to the http steam reader through the multiple output pipeline API. The data passes through the raw stream and is finally written into the SD card by the fatfs stream for storage.
+The front end of the other pipeline is the `raw_stream`, which is connected to the `http_stream_reader` through the multiple output pipeline API. The data passes through the `raw_stream` and is finally written into the microSD card by the `fatfs_stream` for storage.
 
-By using the ADF multi-output pipeline API, we link two pipelines, which not only completes the playback of network audio but also finish downloading network audio into SD card at the same time.
+By using the ADF multi-output pipeline API, we link two pipelines, which not only play back network audio but also download the audio into microSD card at the same time.
 
 ## Environment Setup
 
@@ -77,9 +77,9 @@ See the Getting Started Guide for full steps to configure and use  [ESP-IDF Prog
 
 - After power on, Wi-Fi connection will be established.
 
-- Music starts playing automatically after http server is connected to begin file retrieval.
+- Music starts playing automatically after HTTP server is connected to begin file retrieval.
 
-- Once music stops playing and program finishes, you can check "test_output.mp3" file saved on the SD card.
+- Once music stops playing and program finishes, you can check "test_output.mp3" file saved on the microSD card.
 
 
 ### Example Logs

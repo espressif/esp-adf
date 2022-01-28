@@ -6,22 +6,20 @@
 
 ## 例程简介
 
-此示例的目的是展示如何使用 ADF 播放由百度在线语音合成 (Text-To-Speech, TTS) 服务生成的音频。本示例默认是中文文本，但也支持其他一些语言，更多的技术细节可以参考[百度语音合成文档](http://ai.baidu.com/tech/speech/tts)页面。
+此示例的目的是展示如何使用 ADF 播放由百度在线语音合成 (text-to-speech, TTS) 服务生成的音频。本示例默认是中文文本，但也支持其他一些语言，更多的技术细节可以参考 [百度语音合成文档](http://ai.baidu.com/tech/speech/tts) 页面。
 
 
 获取百度在线语音合成 MP3 音频管道如下：
 
-```c
-
+```
 [baidu_tts_server] ---> http_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
-
 ```
 
 ## 环境配置
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -47,17 +45,17 @@
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-本例需要链接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
+本例需要连接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
 
 ```
  menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
 ```
 
-此外，还需要在[百度在线语音合成页面](http://ai.baidu.com/tech/speech/tts)申请语音合成应用，并把申请到的 `API Key` 和 `Secret Key` 分别填入 `menuconfig` 的配置中，用来和百度 TTS 服务器鉴权。
+此外，还需要在 [百度在线语音合成页面](http://ai.baidu.com/tech/speech/tts) 申请语音合成应用，并把申请到的 `API Key` 和 `Secret Key` 分别填入 `menuconfig` 的配置中，用来和百度 TTS 服务器鉴权。
 
 
 ```
- menuconfig > Example Configuration > `Baidu speech access key ID` and `Baidu speech access secret`
+menuconfig > Example Configuration > `Baidu speech access key ID` and `Baidu speech access secret`
 
 ```
 
@@ -255,7 +253,7 @@ I (15596) wifi:Deinit lldesc rx mblock:10
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下是本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
