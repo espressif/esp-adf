@@ -1,0 +1,15 @@
+menu "Example Configuration"
+
+config VOLTAGE_OF_BATTERY_FULL
+    int "voltage of battery full"
+    default 4200
+    help
+        unit: mv
+
+config VOLTAGE_OF_BATTERY_LOW
+    int "voltage of battery low"
+    default 3600
+    help
+        unit: mv
+
+endmenu
