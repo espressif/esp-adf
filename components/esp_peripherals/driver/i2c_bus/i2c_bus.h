@@ -113,6 +113,18 @@ esp_err_t i2c_bus_delete(i2c_bus_handle_t bus);
  */
 esp_err_t i2c_bus_cmd_begin(i2c_bus_handle_t bus, i2c_cmd_handle_t cmd, portBASE_TYPE ticks_to_wait);
 
+/**
+ * @brief Auto probe the I2C device
+ *
+ * @param bus            I2C bus handle
+ * @param addr           I2C adress
+ *
+ * @return
+ *     - ESP_OK Found a I2C device
+ *     - ESP_FAIL Fail
+ */
+esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr);
+
 #ifdef __cplusplus
 }
 #endif

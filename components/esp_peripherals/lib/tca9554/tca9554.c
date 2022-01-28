@@ -29,8 +29,6 @@
 #include "esp_log.h"
 #include "tca9554.h"
 
-#define TCA9554_ADDR   0x40
-
 static char *TAG = "TCA9554";
 static i2c_bus_handle_t i2c_handle;
 
@@ -43,16 +41,43 @@ static i2c_bus_handle_t i2c_handle;
 #define TCA9554_POLARITY_INVERSION_PORT 0x02
 #define TCA9554_CONFIGURATION_PORT      0x03
 
+typedef struct {
+    uint8_t addr;
+    char *name;
+} tca9554_dev_t;
+
+static tca9554_dev_t dev_list[] = {
+    { 0x70, "TCA9554A"},
+    { 0x40, "TCA9554"},
+};
+
+static uint8_t tca9554_addr;
+
+static esp_err_t expander_dev_prob()
+{
+    for (size_t i = 0; i < sizeof(dev_list) / sizeof(dev_list[0]); i++) {
+        if (ESP_OK == i2c_bus_probe_addr(i2c_handle, dev_list[i].addr)) {
+            ESP_LOGI(TAG, "Detected IO expander device at 0x%02X, name is: %s",
+                     dev_list[i].addr, dev_list[i].name);
+            tca9554_addr = dev_list[i].addr;
+            return ESP_OK;
+        }
+    }
+    tca9554_addr = 0;
+    ESP_LOGE(TAG, "IO expander device has not detected");
+    return ESP_ERR_NOT_FOUND;
+}
+
 
 static esp_err_t tca9554_write_reg(uint8_t reg_addr, uint8_t data)
 {
-    return i2c_bus_write_bytes(i2c_handle, TCA9554_ADDR, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
+    return i2c_bus_write_bytes(i2c_handle, tca9554_addr, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
 }
 
 static char tca9554_read_reg(uint8_t reg_addr)
 {
     uint8_t data;
-    i2c_bus_read_bytes(i2c_handle, TCA9554_ADDR, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
+    i2c_bus_read_bytes(i2c_handle, tca9554_addr, &reg_addr, sizeof(reg_addr), &data, sizeof(data));
     return data;
 }
 
@@ -161,6 +186,8 @@ esp_err_t tca9554_init(esp_tca9554_config_t *cfg)
 {
     esp_err_t ret = ESP_OK;
     i2c_init(cfg->i2c_scl, cfg->i2c_sda);
+
+    expander_dev_prob();
 
     return ret;
 }
