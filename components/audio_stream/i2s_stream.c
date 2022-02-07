@@ -277,8 +277,9 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
             memset(in_buffer, 0x00, in_len);
         }
         r_size = in_len;
-    }
-    if ((r_size > 0)) {
+        audio_element_multi_output(self, in_buffer, r_size, 0);
+        w_size = audio_element_output(self, in_buffer, r_size);
+    } else if (r_size > 0) {
         if (i2s->use_alc) {
             audio_element_getinfo(self, &i2s_info);
             alc_volume_setup_process(in_buffer, r_size, i2s_info.channels, i2s->volume_handle, i2s->volume);
@@ -401,4 +402,47 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     i2s_mclk_gpio_select(i2s->config.i2s_port, GPIO_NUM_0);
 
     return el;
+}
+
+esp_err_t i2s_stream_sync_delay(audio_element_handle_t i2s_stream, int delay_ms)
+{
+    char *in_buffer = NULL;
+
+    audio_element_info_t info;
+    audio_element_getinfo(i2s_stream, &info);
+
+    if (delay_ms < 0) {
+        uint32_t delay_size = (~delay_ms + 1) * ((uint32_t)(info.sample_rates * info.channels * info.bits / 8) / 1000);
+        in_buffer = (char *)audio_malloc(delay_size);
+        AUDIO_MEM_CHECK(TAG, in_buffer, return ESP_FAIL);
+#if SOC_I2S_SUPPORTS_ADC_DAC
+        i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(i2s_stream);
+        if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+            memset(in_buffer, 0x80, delay_size);
+        } else
+#endif
+        {
+            memset(in_buffer, 0x00, delay_size);
+        }
+        ringbuf_handle_t input_rb = audio_element_get_input_ringbuf(i2s_stream);
+        if (input_rb) {
+            rb_write(input_rb, in_buffer, delay_size, 0);
+        }
+        audio_free(in_buffer);
+    } else if (delay_ms > 0) {
+        uint32_t drop_size = delay_ms * ((uint32_t)(info.sample_rates * info.channels * info.bits / 8) / 1000);
+        in_buffer = (char *)audio_malloc(drop_size);
+        AUDIO_MEM_CHECK(TAG, in_buffer, return ESP_FAIL);
+        uint32_t r_size = audio_element_input(i2s_stream, in_buffer, drop_size);
+        audio_free(in_buffer);
+
+        if(r_size > 0) {
+            audio_element_update_byte_pos(i2s_stream, r_size);
+        } else {
+            ESP_LOGW(TAG, "Can't get enough data to drop.");
+            return ESP_FAIL;
+        }
+    }
+
+    return ESP_OK;
 }

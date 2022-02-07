@@ -33,21 +33,13 @@ This example runs on the boards that are marked with a green checkbox in the tab
 
 ### Use Special IDF Branch
 
-- Compile this example on the IDF branch `release/v4.2`:
+- This example needs to select a branch above IDF `release/v4.2` to compile:
 ```c
 cd $IDF_PATH
 git checkout master
 git pull
 git checkout release/v4.2
 git submodule update --init --recursive
-```
-
-### ADF Patches
-
-- Apply an ADF patch:
-```c
-cd $ADF_PATH
-git apply $ADF_PATH/examples/advanced_examples/multi-room/adf_patch/i2s-stream.patch
 ```
 
 ### Configuration

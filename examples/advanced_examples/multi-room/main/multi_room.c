@@ -47,11 +47,6 @@ static esp_audio_handle_t               player;
 static esp_mrm_client_handle_t          mrm_client;
 static audio_element_handle_t           player_raw_in_h, i2s_h, http_stream_reader;
 
-void __attribute__((weak)) i2s_stream_set_delay(int delay)
-{
-    ESP_LOGE(TAG, "Not found right %s.\r\nPlease enter ADF-PATH with \"cd $ADF_PATH\" and apply the IDF patch with \"git apply $ADF_PATH/examples/advanced_examples/multi-room/adf_patch/i2s-stream.patch\" first\r\n", __func__);
-}
-
 static void setup_wifi(esp_periph_set_handle_t set)
 {
     ESP_LOGI(TAG, "Start Wi-Fi");
@@ -182,6 +177,7 @@ static void setup_player(esp_periph_set_handle_t set)
     input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
     input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
     input_cfg.handle = set;
+    input_cfg.based_cfg.task_stack = 4 * 1024;
     periph_service_handle_t input_ser = input_key_service_create(&input_cfg);
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
     periph_service_set_callback(input_ser, input_key_service_cb, (void *)board_handle);
@@ -211,13 +207,13 @@ static void setup_player(esp_periph_set_handle_t set)
         DEFAULT_ESP_TS_DECODER_CONFIG(),
     };
     esp_decoder_cfg_t auto_dec_cfg = DEFAULT_ESP_DECODER_CONFIG();
+    auto_dec_cfg.out_rb_size = 50 * 1024;
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, esp_decoder_init(&auto_dec_cfg, auto_decode, 10));
 
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.i2s_config.sample_rate = 48000;
     i2s_writer.i2s_config.mode = I2S_MODE_MASTER | I2S_MODE_TX;
     i2s_writer.type = AUDIO_STREAM_WRITER;
-    i2s_writer.out_rb_size = 50 * 1024;
     i2s_h = i2s_stream_init(&i2s_writer);
     esp_audio_output_stream_add(player, i2s_h);
 
@@ -228,7 +224,7 @@ static void setup_player(esp_periph_set_handle_t set)
 static int _mrm_event_handler(mrm_event_msg_t *event, void *ctx)
 {
     int64_t tsf_time = 0;
-    int tmp = 0;
+    int sync = 0;
 
     switch ((int)event->type) {
         case MRM_EVENT_SET_URL:
@@ -243,21 +239,22 @@ static int _mrm_event_handler(mrm_event_msg_t *event, void *ctx)
             *(int64_t *)event->data = tsf_time / 1000;
             break;
         case MRM_EVENT_SET_SYNC:
-            tmp = atoi((char *)event->data);
-            ESP_LOGI(TAG, "slave got sync %d", tmp);
+            sync = *(int *)event->data;
+            ESP_LOGD(TAG, "slave got sync %d", sync);
             break;
         case MRM_EVENT_SYNC_FAST:
-            tmp = *(int *)event->data;
-            i2s_stream_set_delay(tmp);
+            sync = *(int *)event->data;
+            if (sync < -200){
+                sync = -200;
+            }
+            i2s_stream_sync_delay(i2s_h, sync);
             break;
         case MRM_EVENT_SYNC_SLOW:
-            tmp = *(int *)event->data;
-            char *in_buffer = audio_malloc(tmp);
-            uint32_t r_size = audio_element_input(i2s_h, in_buffer, tmp);
-            if(r_size > 0) {
-                audio_element_update_byte_pos(i2s_h, r_size);
+            sync = *(int *)event->data;
+            if (sync > 200){
+                sync = 200;
             }
-            free(in_buffer);
+            i2s_stream_sync_delay(i2s_h, sync);
             break;
         case MRM_EVENT_PLAY_STOP:
             play_task_run = false;

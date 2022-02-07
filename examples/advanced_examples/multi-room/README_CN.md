@@ -33,21 +33,13 @@ ESP Multi-Room Music 是一种基于 Wi-Fi 的多扬声器互联共享音乐通�
 
 ### 使用 IDF 其他分支
 
-此示例需要选择 IDF `release/v4.2` 分支来编译。
+此示例需要选择 IDF `release/v4.2` 以上的分支来编译。
 ```c
 cd $IDF_PATH
 git checkout master
 git pull
 git checkout release/v4.2
 git submodule update --init --recursive
-```
-
-### ADF 补丁
-
-同时需要按照以下步骤应用 ADF 补丁：
-```c
-cd $ADF_PATH
-git apply $ADF_PATH/examples/advanced_examples/multi-room/adf_patch/i2s-stream.patch
 ```
 
 ### 配置
