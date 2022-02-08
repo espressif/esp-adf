@@ -49,11 +49,11 @@
 #define DUEROS_TASK_STACK_SIZE      6*1024
 #define RECORD_SAMPLE_RATE          (16000)
 #define RECORD_READ_BLOCK_SIZE      (2048)
+#define DUER_EVT_UPLOADED           (BIT0)
 
 #define RECORD_DEBUG                0
 
-static const char *TAG              = "DUEROS";
-static bool                         duer_login_success;
+static const char *TAG = "DUEROS";
 
 extern const uint8_t _duer_profile_start[] asm("_binary_duer_profile_start");
 extern const uint8_t _duer_profile_end[]   asm("_binary_duer_profile_end");
@@ -65,13 +65,16 @@ typedef enum {
     DUER_CMD_START,
     DUER_CMD_STOP,
     DUER_CMD_QUIT,
+    DUER_CMD_UPLOAD,
+    DUER_CMD_CANCEL,
     DUER_CMD_DESTROY,
 } duer_task_cmd_t;
 
 typedef struct {
+    bool                    login;
     xQueueHandle            duer_que;
     service_state_t         duer_state;
-    audio_rec_handle_t      recorder;
+    EventGroupHandle_t      duer_evt;
 } dueros_service_t;
 
 typedef struct {
@@ -130,20 +133,23 @@ static void duer_event_hook(duer_event_t *event)
     }
     ESP_LOGE(TAG, "event: %d", event->_event);
     switch (event->_event) {
-        case DUER_EVENT_STARTED:
+        case DUER_EVENT_STARTED: {
             // Initialize the DCS API
             duer_dcs_init();
             dueros_service_t *serv = audio_service_get_data(duer_serv_handle);
             duer_que_send(serv->duer_que, DUER_CMD_CONNECTED, NULL, 0, 0, 0);
-            duer_login_success = true;
+            serv->login = true;
             ESP_LOGE(TAG, "event: DUER_EVENT_STARTED");
             xTaskCreate(&report_info_task, "report_info_task", 1024 * 2, NULL, 5, NULL);
             break;
-        case DUER_EVENT_STOPPED:
+        }
+        case DUER_EVENT_STOPPED: {
             ESP_LOGE(TAG, "event: DUER_EVENT_STOPPED");
-            duer_login_success = false;
+            dueros_service_t *serv = audio_service_get_data(duer_serv_handle);
+            serv->login = false;
             audio_service_disconnect(duer_serv_handle);
             break;
+        }
     }
 }
 
@@ -172,27 +178,16 @@ static void dueros_task(void *pvParameters)
     duer_set_event_callback(duer_event_hook);
     duer_init_device_info();
 
-    uint8_t *voiceData = audio_calloc(1, RECORD_READ_BLOCK_SIZE);
-    if (NULL == voiceData) {
-        ESP_LOGE(TAG, "Func:%s, Line:%d, Malloc failed", __func__, __LINE__);
-        goto dueros_task_fail;
-    }
-    static duer_task_msg_t duer_msg;
-    FILE *file = NULL;
-#if RECORD_DEBUG
-    file = fopen("/sdcard/rec_adf_1.wav", "w+");
-    if (NULL == file) {
-        ESP_LOGW(TAG, "open rec_adf_1.wav failed,[%d]", __LINE__);
-    }
-#endif
-    int task_run = 1;
-    serv->duer_state = SERVICE_STATE_IDLE;
-    service_event_t serv_evt = {
+    duer_task_msg_t duer_msg    = { 0 };
+    int task_run                = 1;
+    serv->duer_state            = SERVICE_STATE_IDLE;
+    service_event_t serv_evt    = {
         .type = 0,
         .source = serv,
         .data = &serv->duer_state,
         .len = 0,
     };
+
     while (task_run) {
         if (xQueueReceive(serv->duer_que, &duer_msg, portMAX_DELAY)) {
             if (duer_msg.type == DUER_CMD_LOGIN) {
@@ -218,31 +213,25 @@ static void dueros_task(void *pvParameters)
                 duer_dcs_on_listen_started();
                 serv->duer_state = SERVICE_STATE_RUNNING;
                 audio_service_callback(serv_handle, &serv_evt);
-                while (1) {
-                    int ret = audio_recorder_data_read(serv->recorder, voiceData, RECORD_READ_BLOCK_SIZE, portMAX_DELAY);
-                    ESP_LOGD(TAG, "index = %d", ret);
-                    if ((ret == 0) || (ret == -1)) {
-                        break;
-                    }
-                    if (file) {
-                        fwrite(voiceData, 1, ret, file);
-                    }
-                    ret  = duer_voice_send(voiceData, ret);
-                    if (ret < 0) {
-                        ESP_LOGE(TAG, "duer_voice_send failed ret:%d", ret);
-                        break;
-                    }
+            } else if (duer_msg.type == DUER_CMD_CANCEL) {
+                ESP_LOGI(TAG, "Recv Que DUER_CMD_CANCEL %d", serv->duer_state);
+                if (serv->duer_state == SERVICE_STATE_RUNNING) {
+                    duer_voice_terminate();
+                    serv->duer_state = SERVICE_STATE_STOPPED;
+                    audio_service_callback(serv_handle, &serv_evt);
                 }
+            } else if (duer_msg.type == DUER_CMD_UPLOAD) {
+                if (serv->duer_state == SERVICE_STATE_RUNNING) {
+                    duer_voice_send(duer_msg.pdata, duer_msg.len);
+                }
+                xEventGroupSetBits(serv->duer_evt, DUER_EVT_UPLOADED);
             } else if (duer_msg.type == DUER_CMD_STOP)  {
                 ESP_LOGI(TAG, "Dueros DUER_CMD_STOP");
-                if (file) {
-                    fclose(file);
-                }
                 duer_voice_stop();
                 serv->duer_state = SERVICE_STATE_STOPPED;
                 audio_service_callback(serv_handle, &serv_evt);
             } else if (duer_msg.type == DUER_CMD_QUIT && (serv->duer_state != SERVICE_STATE_IDLE))  {
-                if (duer_login_success) {
+                if (serv->login) {
                     duer_stop();
                 }
                 serv->duer_state = SERVICE_STATE_IDLE;
@@ -256,11 +245,8 @@ static void dueros_task(void *pvParameters)
         }
     }
 
-dueros_task_fail:
-    if (voiceData) {
-        free(voiceData);
-    }
     vQueueDelete(serv->duer_que);
+    vEventGroupDelete(serv->duer_evt);
     audio_free(serv);
     vTaskDelete(NULL);
 }
@@ -306,12 +292,33 @@ service_state_t dueros_service_state_get()
     return serv->duer_state;
 }
 
-audio_service_handle_t dueros_service_create(void *recorder_handle)
+esp_err_t dueros_voice_upload(audio_service_handle_t handle, void *buf, int len)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
+    dueros_service_t *serv = audio_service_get_data(handle);
+    duer_que_send(serv->duer_que, DUER_CMD_UPLOAD, buf, 0, len, 0);
+    EventBits_t bits = xEventGroupWaitBits(serv->duer_evt, DUER_EVT_UPLOADED, true, true, pdMS_TO_TICKS(2000));
+    if (bits & DUER_EVT_UPLOADED) {
+        return ESP_OK;
+    } else {
+        return ESP_FAIL;
+    }
+}
+
+esp_err_t dueros_voice_cancel(audio_service_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
+    dueros_service_t *serv = audio_service_get_data(handle);
+    duer_que_send(serv->duer_que, DUER_CMD_CANCEL, NULL, 0, 0, 0);
+    return ESP_OK;
+}
+
+audio_service_handle_t dueros_service_create()
 {
     dueros_service_t *serv =  audio_calloc(1, sizeof(dueros_service_t));
     serv->duer_que = xQueueCreate(3, sizeof(duer_task_msg_t));
     serv->duer_state = SERVICE_STATE_UNKNOWN;
-    serv->recorder = recorder_handle;
+    serv->duer_evt = xEventGroupCreate();
 
     audio_service_config_t duer_cfg = {
         .task_stack = DUEROS_TASK_STACK_SIZE,

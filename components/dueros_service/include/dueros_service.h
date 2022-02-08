@@ -31,22 +31,46 @@
 extern "C" {
 #endif
 
-/*
+/**
  * @brief Create the dueros service
  *
  * @return
  *     - NULL, Fail
  *     - Others, Success
  */
-audio_service_handle_t dueros_service_create(void *recorder_handle);
+audio_service_handle_t dueros_service_create();
 
-/*
+/**
  * @brief Get dueros service state
  *
  * @return The state of service
  *
  */
 service_state_t dueros_service_state_get();
+
+/**
+ * @brief Upload voice to backend server
+ *
+ * @param handle  dueros service handle
+ * @param buf     Data buffer
+ * @param len     Size of buffer
+ *
+ * @return
+ *         ESP_OK
+ *         ESP_FAIL
+ */
+esp_err_t dueros_voice_upload(audio_service_handle_t handle, void *buf, int len);
+
+/**
+ * @brief Cancel the current session
+ *
+ * @param handle  dueros service handle
+ *
+ * @return
+ *         ESP_OK
+ *         ESP_FAIL
+ */
+esp_err_t dueros_voice_cancel(audio_service_handle_t handle);
 
 #ifdef __cplusplus
 }

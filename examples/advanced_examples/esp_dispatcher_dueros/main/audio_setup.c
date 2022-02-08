@@ -28,7 +28,6 @@
 #include <freertos/semphr.h>
 
 #include "esp_log.h"
-#include "recorder_engine.h"
 #include "esp_audio.h"
 #include "audio_element.h"
 #include "audio_pipeline.h"

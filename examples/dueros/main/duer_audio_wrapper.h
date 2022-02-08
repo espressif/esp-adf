@@ -25,6 +25,7 @@
 #ifndef DUER_AUDIO_WRAPPER_H
 #define DUER_AUDIO_WRAPPER_H
 
+#include "audio_recorder.h"
 #include "lightduer_dcs.h"
 typedef  int duer_audio_play_type_t;
 
@@ -40,6 +41,18 @@ typedef enum {
  */
 void duer_audio_wrapper_init(void);
 
+/**
+ * @brief DCS init player function
+ *
+ */
+void *duer_audio_setup_player(void);
+
+/**
+ * @brief DCS init recorder function
+ * @param cb: callback of recorder
+ *
+ */
+void *duer_audio_start_recorder(rec_event_cb_t cb);
 /*
  * @brief DCS audio on_started callback function
  *

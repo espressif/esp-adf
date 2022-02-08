@@ -52,9 +52,38 @@
 #include "player_action.h"
 #include "audio_recorder.h"
 #include "esp_delegate.h"
+#include "audio_thread.h"
 
-static const char *TAG              = "DISPATCHER_DUEROS";
+#define DUER_REC_READING (BIT0)
+
+static const char               *TAG            = "DISPATCHER_DUEROS";
 esp_dispatcher_dueros_speaker_t *dueros_speaker = NULL;
+static EventGroupHandle_t       duer_evt        = NULL;
+
+static void voice_read_task(void *args)
+{
+    const int buf_len = 2 * 1024;
+    uint8_t *voiceData = audio_calloc(1, buf_len);
+    bool runing = true;
+    esp_dispatcher_dueros_speaker_t *d = (esp_dispatcher_dueros_speaker_t *)args;
+
+    while (runing) {
+        EventBits_t bits = xEventGroupWaitBits(duer_evt, DUER_REC_READING, false, true, portMAX_DELAY);
+        if (bits & DUER_REC_READING) {
+            int ret = audio_recorder_data_read(d->recorder, voiceData, buf_len, portMAX_DELAY);
+            if (ret == 0 || ret == -1) {
+                xEventGroupClearBits(duer_evt, DUER_REC_READING);
+                ESP_LOGE(TAG, "Read Finished");
+            } else {
+                dueros_voice_upload(d->audio_serv, voiceData, ret);
+            }
+        }
+    }
+
+    xEventGroupClearBits(duer_evt, DUER_REC_READING);
+    free(voiceData);
+    vTaskDelete(NULL);
+}
 
 static void esp_audio_callback_func(esp_audio_state_t *audio, void *ctx)
 {
@@ -75,14 +104,16 @@ static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
     if (AUDIO_REC_WAKEUP_START == type) {
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_WAKEUP_START");
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
-            return ESP_OK;
+            dueros_voice_cancel(d->audio_serv);
         }
         esp_dispatcher_execute(d->dispatcher, ACTION_EXE_TYPE_AUDIO_PAUSE, NULL, NULL);
         esp_dispatcher_execute(d->dispatcher, ACTION_EXE_TYPE_DISPLAY_TURN_ON, NULL, NULL);
     } else if (AUDIO_REC_VAD_START == type) {
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_START");
         audio_service_start(d->audio_serv);
+        xEventGroupSetBits(duer_evt, DUER_REC_READING);
     } else if (AUDIO_REC_VAD_END == type) {
+        xEventGroupClearBits(duer_evt, DUER_REC_READING);
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(d->audio_serv);
         }
@@ -259,11 +290,11 @@ void duer_app_init(void)
 
 
     ESP_LOGI(TAG, "[Step 4.0] Initialize recorder engine");
-    void *recorder = setup_recorder(rec_engine_cb, dueros_speaker);
+    dueros_speaker->recorder = setup_recorder(rec_engine_cb, dueros_speaker);
     ESP_LOGI(TAG, "[Step 4.1] Register wanted recorder execution type");
-    esp_dispatcher_reg_exe_func(dispatcher, NULL,
+    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->recorder,
                                 ACTION_EXE_TYPE_REC_WAV_TURN_OFF, recorder_action_rec_wav_turn_off);
-    esp_dispatcher_reg_exe_func(dispatcher, NULL,
+    esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->recorder,
                                 ACTION_EXE_TYPE_REC_WAV_TURN_ON, recorder_action_rec_wav_turn_on);
 
     ESP_LOGI(TAG, "[Step 5.0] Initialize esp player");
@@ -278,7 +309,7 @@ void duer_app_init(void)
     ESP_LOGI(TAG, "[Step 6.0] Initialize dueros service");
     dueros_speaker->retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
                                         pdFALSE, (void *)dueros_speaker, retry_login_timer_cb);
-    dueros_speaker->audio_serv = dueros_service_create(recorder);
+    dueros_speaker->audio_serv = dueros_service_create();
 
     ESP_LOGI(TAG, "[Step 6.1] Register dueros service execution type");
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->audio_serv,
@@ -341,6 +372,9 @@ void duer_app_init(void)
     wifi_service_register_setting_handle(dueros_speaker->wifi_serv, h, &reg_idx);
     wifi_service_set_sta_info(dueros_speaker->wifi_serv, &sta_cfg);
     wifi_service_connect(dueros_speaker->wifi_serv);
+
+    duer_evt = xEventGroupCreate();
+    audio_thread_create(NULL, "voice_read_task", voice_read_task, dueros_speaker, 2 * 1024, 5, true, 1);
 
     ESP_LOGI(TAG, "[Step 8.0] Initialize Done");
 }
