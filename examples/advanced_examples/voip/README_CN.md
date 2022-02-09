@@ -52,7 +52,9 @@ ESP32-LyraT-Mini：
 
   - [Freeswitch](https://freeswitch.org/confluence/display/FREESWITCH/Installation)
       - 建议关闭服务器事件通知 `NOTIFY`，可以通过在 `conf/sip_profiles/internal.xml` 中设置 `<param name="send-message-query-on-register" value="false"/>` 关闭通知。
-        
+
+      - 建议关闭服务器 timer，可以通过在 `conf/sip_profiles/internal.xml` 中设置 `<param name="enable-timer" value="false"/>` 来关闭。
+
       - 建议在 `conf/vars.xml` 中删除暂不支持的 Video Codec。
 
   - [Kamailio](https://kamailio.org/docs/tutorials/5.3.x/kamailio-install-guide-git/)
