@@ -271,6 +271,18 @@ esp_err_t i2s_alc_volume_set(audio_element_handle_t i2s_stream, int volume);
  */
 esp_err_t i2s_alc_volume_get(audio_element_handle_t i2s_stream, int *volume);
 
+/**
+ * @brief      Set sync delay of stream
+ *
+ * @param[in]  i2s_stream   The i2s element handle
+ * @param[in]  delay_ms     The delay of stream
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t i2s_stream_sync_delay(audio_element_handle_t i2s_stream, int delay_ms);
+
 #ifdef __cplusplus
 }
 #endif
