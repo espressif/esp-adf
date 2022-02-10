@@ -38,6 +38,7 @@ typedef struct $ {
     periph_service_handle_t         input_serv;         /*!< Input event service handle */
     esp_dispatcher_handle_t         dispatcher;         /*!< ESP dispatcher handle */
     void                            *player;            /*!< The esp_audio handle */
+    void                            *recorder;          /*!< The audio recorder handle */
     xTimerHandle                    retry_login_timer;
     bool                            wifi_setting_flag;
     bool                            is_palying;

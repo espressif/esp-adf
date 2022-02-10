@@ -197,6 +197,16 @@ int audio_recorder_data_read(audio_rec_handle_t handle, void *buffer, int length
  */
 esp_err_t audio_recorder_destroy(audio_rec_handle_t handle);
 
+/**
+ * @brief Get the wake up state of audio recorder
+ *
+ * @param handle Audio recorder handle
+ *
+ * @return ESP_TRUE
+ *         ESP_FAIL
+ */
+bool audio_recorder_get_wakeup_state(audio_rec_handle_t handle);
+
 #ifdef __cplusplus
 }
 #endif

@@ -25,20 +25,21 @@
 #include "audio_error.h"
 #include "esp_log.h"
 #include "recorder_action.h"
-#include "recorder_engine.h"
+#include "audio_recorder.h"
 
 static const char *TAG = "REC_ACTION";
 
 esp_err_t recorder_action_rec_wav_turn_on(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
-    int ret = rec_engine_trigger_start();
+    int ret = audio_recorder_trigger_start(instance);
     return ret;
 }
+
 esp_err_t recorder_action_rec_wav_turn_off(void *instance, action_arg_t *arg, action_result_t *result)
 {
     ESP_LOGI(TAG, "%s", __func__);
-    int ret = rec_engine_trigger_stop();
+    int ret = audio_recorder_trigger_stop(instance);
     return ret;
 }
 

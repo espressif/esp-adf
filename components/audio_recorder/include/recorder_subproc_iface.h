@@ -25,7 +25,7 @@
 #ifndef __RECORDER_SUBPROC_H__
 #define __RECORDER_SUBPROC_H__
 
-#include "freertos/portmacro.h"
+#include "freertos/FreeRTOS.h"
 #include "esp_err.h"
 
 #ifdef __cplusplus
