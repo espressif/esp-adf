@@ -9,6 +9,7 @@ from collections import namedtuple
 
 from docutils import nodes
 from local_util import run_cmd_get_output
+from sphinx.util import logging
 
 # Creates a dict of all submodules with the format {submodule_path : (url relative to git root), commit)}
 def get_submodules():
@@ -87,9 +88,12 @@ def url_join(*url_parts):
 
 def github_link(link_type, adf_rev, submods, root_path, app_config):
     def role(name, rawtext, text, lineno, inliner, options={}, content=[]):
-
+        logger = logging.getLogger(__name__)
         ADF_REPO = "espressif/esp-adf"
         BASE_URL = "https://github.com"
+
+        def warning(msg):
+            logger.warning(msg, location=(inliner.document.settings.env.docname, lineno))
 
         # Redirects to submodule repo if path is a submodule, else default to IDF repo
         def redirect_submodule(path, submods, rev):
@@ -110,10 +114,22 @@ def github_link(link_type, adf_rev, submods, root_path, app_config):
             link_text = text
             link = text
 
-        abs_path = root_path + link
+        rel_path = root_path + link
+        abs_path = os.path.join(os.environ['ADF_PATH'], rel_path.lstrip('/'))
 
-        repo_url, repo_rev, abs_path = redirect_submodule(abs_path, submods, adf_rev)
-        url = url_join(BASE_URL, repo_url, link_type, repo_rev, abs_path)
+        repo_url, repo_rev, rel_path = redirect_submodule(rel_path, submods, adf_rev)
+        url = url_join(BASE_URL, repo_url, link_type, repo_rev, rel_path)
+
+        is_dir = (link_type == 'tree')
+
+        if not os.path.exists(abs_path):
+            warning('ADF path %s does not appear to exist (absolute path %s)' % (rel_path, abs_path))
+        elif is_dir and not os.path.isdir(abs_path):
+            # note these "wrong type" warnings are not strictly needed  as GitHub will apply a redirect,
+            # but the may become important in the future (plus make for cleaner links)
+            warning('ADF path %s is not a directory but role :%s: is for linking to a directory, try :%s_file:' % (rel_path, name, name))
+        elif not is_dir and os.path.isdir(abs_path):
+            warning('ADF path %s is a directory but role :%s: is for linking to a file' % (rel_path, name))
 
         node = nodes.reference(rawtext, link_text, refuri=url, **options)
         return [node], []
