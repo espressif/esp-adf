@@ -8,9 +8,6 @@
 */
 
 #include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
@@ -32,6 +29,8 @@
 #include "g711_decoder.h"
 #include "g711_encoder.h"
 #include "algorithm_stream.h"
+#include "fatfs_stream.h"
+#include "wav_encoder.h"
 
 #include "wifi_service.h"
 #include "smart_config.h"
@@ -53,6 +52,9 @@
 
 static const char *TAG = "VOIP_EXAMPLE";
 
+/* Debug original input data for AEC feature*/
+// #define DEBUG_AEC_INPUT
+
 #define I2S_SAMPLE_RATE     16000
 #define I2S_CHANNELS        2
 #define I2S_BITS            16
@@ -60,8 +62,13 @@ static const char *TAG = "VOIP_EXAMPLE";
 #define CODEC_SAMPLE_RATE    8000
 #define CODEC_CHANNELS       1
 
+/* The AEC internal buffering mechanism requires that the recording signal
+   is delayed by around 0 - 10 ms compared to the corresponding reference (playback) signal. */
+#define DEFAULT_REF_DELAY_MS    0
+#define DEFAULT_REC_DELAY_MS    50
+
 static sip_handle_t sip;
-static audio_element_handle_t raw_read, raw_write;
+static audio_element_handle_t raw_read, raw_write, element_algo;
 static audio_pipeline_handle_t recorder, player;
 static bool mute, is_smart_config;
 static display_service_handle_t disp;
@@ -77,27 +84,69 @@ static esp_err_t recorder_pipeline_open()
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
     i2s_cfg.uninstall_drv = false;
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_cfg.i2s_port = 1;
-    i2s_cfg.task_core = 1;
 #endif
+    i2s_cfg.task_core = 1;
     i2s_cfg.i2s_config.sample_rate = I2S_SAMPLE_RATE;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    algorithm_stream_cfg_t algo_config = ALGORITHM_STREAM_CFG_DEFAULT();
-    algo_config.input_type = ALGORITHM_STREAM_INPUT_TYPE1;
-    algo_config.task_core = 1;
-    audio_element_handle_t element_algo = algo_stream_init(&algo_config);
+    rsp_filter_cfg_t rsp_cfg_r = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_cfg_r.src_rate = I2S_SAMPLE_RATE;
+    rsp_cfg_r.src_ch = I2S_CHANNELS;
+    rsp_cfg_r.dest_rate = I2S_SAMPLE_RATE;
+#ifndef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    rsp_cfg_r.dest_ch = 1;
 #endif
+    rsp_cfg_r.complexity = 5;
+    rsp_cfg_r.task_core = 1;
+    rsp_cfg_r.out_rb_size = 10 * 1024;
+    audio_element_handle_t filter_r = rsp_filter_init(&rsp_cfg_r);
 
+    algorithm_stream_cfg_t algo_config = ALGORITHM_STREAM_CFG_DEFAULT();
+#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    algo_config.input_type = ALGORITHM_STREAM_INPUT_TYPE1;
+#else
+    algo_config.input_type = ALGORITHM_STREAM_INPUT_TYPE2;
+#endif
+    algo_config.task_core = 1;
+#ifdef DEBUG_AEC_INPUT
+    algo_config.debug_input = true;
+#endif
+    element_algo = algo_stream_init(&algo_config);
+    audio_element_set_music_info(element_algo, I2S_SAMPLE_RATE, 1, I2S_BITS);
+
+    audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
+    audio_pipeline_register(recorder, filter_r, "filter_r");
+    audio_pipeline_register(recorder, element_algo, "algo");
+
+#ifdef DEBUG_AEC_INPUT
+    wav_encoder_cfg_t wav_cfg = DEFAULT_WAV_ENCODER_CONFIG();
+    wav_cfg.task_core = 1;
+    audio_element_handle_t wav_encoder = wav_encoder_init(&wav_cfg);
+
+    fatfs_stream_cfg_t fatfs_wd_cfg = FATFS_STREAM_CFG_DEFAULT();
+    fatfs_wd_cfg.type = AUDIO_STREAM_WRITER;
+    fatfs_wd_cfg.task_core = 1;
+    audio_element_handle_t fatfs_stream_writer = fatfs_stream_init(&fatfs_wd_cfg);
+
+    audio_pipeline_register(recorder, wav_encoder, "wav_enc");
+    audio_pipeline_register(recorder, fatfs_stream_writer, "fatfs_stream");
+
+    const char *link_tag[5] = {"i2s", "filter_r", "algo", "wav_enc", "fatfs_stream"};
+    audio_pipeline_link(recorder, &link_tag[0], 5);
+
+    audio_element_info_t fat_info = {0};
+    audio_element_getinfo(fatfs_stream_writer, &fat_info);
+    fat_info.sample_rates = ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ;
+    fat_info.bits = ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT;
+    fat_info.channels = 2;
+    audio_element_setinfo(fatfs_stream_writer, &fat_info);
+    audio_element_set_uri(fatfs_stream_writer, "/sdcard/aec_in.wav");
+#else
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg.src_rate = I2S_SAMPLE_RATE;
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     rsp_cfg.src_ch = 1;
-#else
-    rsp_cfg.src_ch = I2S_CHANNELS;
-#endif
     rsp_cfg.dest_rate = CODEC_SAMPLE_RATE;
     rsp_cfg.dest_ch = CODEC_CHANNELS;
     rsp_cfg.complexity = 5;
@@ -113,22 +162,14 @@ static esp_err_t recorder_pipeline_open()
     raw_read = raw_stream_init(&raw_cfg);
     audio_element_set_output_timeout(raw_read, portMAX_DELAY);
 
-    audio_pipeline_register(recorder, i2s_stream_reader, "i2s");
     audio_pipeline_register(recorder, filter, "filter");
     audio_pipeline_register(recorder, sip_encoder, "sip_enc");
     audio_pipeline_register(recorder, raw_read, "raw");
 
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    audio_pipeline_register(recorder, element_algo, "algo");
-    algo_stream_set_record_rate(element_algo, I2S_CHANNELS, I2S_SAMPLE_RATE);
-    const char *link_tag[5] = {"i2s", "algo", "filter", "sip_enc", "raw"};
-    audio_pipeline_link(recorder, &link_tag[0], 5);
-#else
-    const char *link_tag[4] = {"i2s", "filter", "sip_enc", "raw"};
-    audio_pipeline_link(recorder, &link_tag[0], 4);
+    const char *link_tag[6] = {"i2s", "filter_r", "algo", "filter", "sip_enc", "raw"};
+    audio_pipeline_link(recorder, &link_tag[0], 6);
 #endif
 
-    audio_pipeline_run(recorder);
     ESP_LOGI(TAG, " SIP recorder has been created");
     return ESP_OK;
 }
@@ -159,6 +200,9 @@ static esp_err_t player_pipeline_open()
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_cfg.uninstall_drv = false;
     i2s_cfg.i2s_config.sample_rate = I2S_SAMPLE_RATE;
+#ifndef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    i2s_cfg.multi_out_num = 1;
+#endif
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 
     audio_pipeline_register(player, raw_write, "raw");
@@ -167,7 +211,22 @@ static esp_err_t player_pipeline_open()
     audio_pipeline_register(player, i2s_stream_writer, "i2s");
     const char *link_tag[4] = {"raw", "sip_dec", "filter", "i2s"};
     audio_pipeline_link(player, &link_tag[0], 4);
-    audio_pipeline_run(player);
+
+#ifndef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    //Please reference the way of ALGORITHM_STREAM_INPUT_TYPE2 in "algorithm_stream.h"
+    ringbuf_handle_t ringbuf_ref = rb_create(50 * 1024, 1);
+    audio_element_set_multi_input_ringbuf(element_algo, ringbuf_ref, 0);
+    audio_element_set_multi_output_ringbuf(i2s_stream_writer, ringbuf_ref, 0);
+
+    /* When the playback signal far ahead of the recording signal,
+        the playback signal needs to be delayed */
+    algo_stream_set_delay(i2s_stream_writer, ringbuf_ref, DEFAULT_REF_DELAY_MS);
+
+    /* When the playback signal after the recording signal,
+        the recording signal needs to be delayed */
+    algo_stream_set_delay(element_algo, audio_element_get_input_ringbuf(element_algo), DEFAULT_REC_DELAY_MS);
+#endif
+
     ESP_LOGI(TAG, "SIP player has been created");
     return ESP_OK;
 }
@@ -214,8 +273,10 @@ static int _sip_event_handler(sip_event_msg_t *event)
             break;
         case SIP_EVENT_AUDIO_SESSION_BEGIN:
             ESP_LOGI(TAG, "SIP_EVENT_AUDIO_SESSION_BEGIN");
-            player_pipeline_open();
             recorder_pipeline_open();
+            player_pipeline_open();
+            audio_pipeline_run(player);
+            audio_pipeline_run(recorder);
             break;
         case SIP_EVENT_AUDIO_SESSION_END:
             ESP_LOGI(TAG, "SIP_EVENT_AUDIO_SESSION_END");
@@ -227,7 +288,12 @@ static int _sip_event_handler(sip_event_msg_t *event)
             audio_pipeline_deinit(recorder);
             break;
         case SIP_EVENT_READ_AUDIO_DATA:
+#ifdef DEBUG_AEC_INPUT
+            vTaskDelay(20 / portTICK_PERIOD_MS);
+            return event->data_len;
+#else
             return raw_stream_read(raw_read, (char *)event->data, event->data_len);
+#endif
         case SIP_EVENT_WRITE_AUDIO_DATA:
             return raw_stream_write(raw_write, (char *)event->data, event->data_len);
         case SIP_EVENT_READ_DTMF:
@@ -396,6 +462,9 @@ void app_main()
 
     ESP_LOGI(TAG, "[1.1] Initialize and start peripherals");
     audio_board_key_init(set);
+#ifdef DEBUG_AEC_INPUT
+    audio_board_sdcard_init(set, SD_MODE_1_LINE);
+#endif
 
     ESP_LOGI(TAG, "[1.2] Create and start input key service");
     input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
@@ -412,7 +481,7 @@ void app_main()
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
-    audio_hal_set_volume(board_handle->audio_hal, 45);
+    audio_hal_set_volume(board_handle->audio_hal, 55);
 
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
     periph_service_set_callback(input_ser, input_key_service_cb, (void *)board_handle);

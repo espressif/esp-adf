@@ -7,18 +7,18 @@
 
 This example is to play music while performing echo cancellation of the sound recorded by the microphone, and then save it to the microSD card.
 
-This algorithm example has two pipelines. One is to play the MP3 file in the microSD card, and the other is to record the audio. First, the audio is processed by the algorithm of AEC, AGC, and NS, and then is encoded into the WAV format and saved in the microSD card. At last we compare the original audio with the recorded audio.
+This algorithm example has two pipelines. One is to play the MP3 file in the flash, and the other is to record the audio. First, the audio is processed by the algorithm of AEC, AGC, and NS, and then is encoded into the WAV format and saved in the microSD card. At last we compare the original audio with the recorded audio.
 
 - Playing MP3 pipeline:
 
   ```c
-  [sdcard] ---> fatfs_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
+  [flash] ---> mp3_decoder ---> filter ---> i2s_stream ---> [codec_chip]
   ```
 
 - Recording WAV pipeline:
 
   ```c
-  [codec_chip] ---> i2s_stream ---> wav_encoder ---> fatfs_stream ---> [sdcard]
+  [codec_chip] ---> i2s_stream ---> filter ---> algorithm ---> wav_encoder ---> fatfs_stream ---> [sdcard]
   ```
 
 
@@ -47,12 +47,11 @@ The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-i
 Prepare the audio board:
 
 - Insert a microSD card required memory of 1 MB into board's SD card slot.
-- Insert a microSD card loaded with a MP3 file 'test.mp3' into board's slot.
 
 Load and run the example:
 
 - The board will start playing automatically.
-- After finish, you can open `/sdcard/rec_out.wav` to hear the recorded file.
+- After finish, you can open `/sdcard/aec_out.wav` to hear the recorded file.
 
 
 ### Build and Flash
@@ -147,8 +146,10 @@ I (869) ALGORITHM_EXAMPLES: [7.0] Listen for all pipeline events
 
 
 ## Troubleshooting
-- If the AEC effect is not very good, you can set all the sampling rates to 16000.
 
+- If the AEC effect is not very good, you can open the `DEBUG_ALGO_INPUT` define to get the original input data (left channel is the signal captured from the microphone, and right channel is the signal played to the speaker), and then check the delay with an audio analysis tool.
+
+- The AEC internal buffering mechanism requires that the recording signal is delayed by around 0 - 10 ms compared to the corresponding reference (playback) signal.
 
 ## Technical support and feedback
 

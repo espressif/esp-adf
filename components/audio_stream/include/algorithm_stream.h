@@ -62,7 +62,7 @@ extern "C" {
                     |                   record signal                                                           |
                     |                                                                                           |
                     +-------------------------------------------------------------------------------------------+
-                
+
                                                            +-----------+
                                                            |           |
                                                            |  TYPE 2   |
@@ -119,6 +119,7 @@ typedef struct {
     int rec_linear_factor;                      /*!< The linear amplication factor of record signal*/
     int ref_linear_factor;                      /*!< The linear amplication factor of reference signal */
     int8_t algo_mask;                           /*!< Choose algorithm to use */
+    bool debug_input;                           /*!< debug algorithm input data */
 } algorithm_stream_cfg_t;
 
 #define ALGORITHM_STREAM_CFG_DEFAULT() {                                                          \
@@ -133,6 +134,7 @@ typedef struct {
     .rec_linear_factor = 1,                                                                       \
     .ref_linear_factor = 3,                                                                       \
     .algo_mask = (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_AGC | ALGORITHM_STREAM_USE_NS), \
+    .debug_input = false,                                                                         \
 }
 
 /**
@@ -145,42 +147,25 @@ typedef struct {
 audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config);
 
 /**
- * @brief      Get reference signal input ringbuff
+ * @brief      Set playback signal or recording signal delay when use type2
  *
- * @note       If input type2 is choosen, call this function to get ringbuffer to input reference data.
+ * @note       The AEC internal buffering mechanism requires that the recording signal
+ *             is delayed by around 0 - 10 ms compared to the corresponding reference (playback) signal.
  *
- * @param      algo_handle   Handle of algorithm stream
- *
- * @return     Ringbuffer handle to get
- *         
- */
-ringbuf_handle_t algo_stream_get_multi_input_rb(audio_element_handle_t algo_handle);
-
-/**
- * @brief      Setup record signal clock for algorithm stream, this function is only used with handle created by `algo_stream_init`
- *
- * @param[in]  algo_handle        The algorithm stream element handle
- * @param[in]  rec_ch             Channel number of record signal
- * @param[in]  rec_sample_rate    Sample rate of record signal
+ * @param      el           Handle of element
+ * @param      ringbuf      Handle of ringbuf
+ * @param      delay_ms     The delay between playback and recording in ms
+ *                          This delay_ms can be debugged by yourself, you can set the configuration debug_input to true,
+ *                          then get the original input data (left channel is the signal captured from the microphone,
+ *                                                            right channel is the signal played to the speaker),
+ *                          and check the delay with an audio analysis tool.
  *
  * @return
  *     - ESP_OK
  *     - ESP_FAIL
+ *     - ESP_ERR_INVALID_ARG
  */
-esp_err_t algo_stream_set_record_rate(audio_element_handle_t algo_handle, int rec_ch, int rec_sample_rate);
-
-/**
- * @brief      Setup reference signal clock for algorithm stream, this function is only used with handle created by `algo_stream_init`
- *
- * @param[in]  algo_handle        The algorithm stream element handle
- * @param[in]  ref_ch             Channel number of reference signal
- * @param[in]  ref_sample_rate    Sample rate of reference signal
- *
- * @return
- *     - ESP_OK
- *     - ESP_FAIL
- */
-esp_err_t algo_stream_set_reference_rate(audio_element_handle_t algo_handle, int ref_ch, int ref_sample_rate);
+audio_element_err_t algo_stream_set_delay(audio_element_handle_t el, ringbuf_handle_t ringbuf, int delay_ms);
 
 #ifdef __cplusplus
 }

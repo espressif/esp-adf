@@ -61,6 +61,8 @@ ESP32-LyraT-Mini：
 
   - [Yate Server](http://docs.yate.ro/wiki/Beginners_in_Yate)
 
+- 我们建议搭建 Freeswitch 服务器来测试。
+
 ## 编译和下载
 
 ### IDF 默认分支
@@ -112,7 +114,8 @@ idf.py -p PORT flash monitor
 - 服务器连接成功后，您可以按下 `Play` 键进行呼叫或者接听，`Mode` 键进行挂断或者取消呼叫。
 - `Vol+` 和 `Vol-` 键可以调节开发板通话音量，在 `esp32-lyrat-mini` 开发板上可以按下 `Rec` 键进行 `MIC` 静音的操作。
 - 您也可以使用 Linphone/MicroSIP 等开源客户端与开发板进行通话。
-- 关于回声消除 (AEC) 的功能，目前软件方案只支持 `esp32-lyrat-mini` 开发板，您也可以选择 `esp32-lyratd-msc` 开发板或者其他带 AEC 功能的硬件来完成。
+- 如果 AEC 效果不是很好，你可以打开 `DEBUG_AEC_INPUT` define，就可以获取到原始的输入数据（左声道是从麦克风获取到的信号，右声道是扬声器端获取到的信号），并使用音频分析工具查看麦克风信号和扬声器信号之间的延迟。
+- AEC 内部缓冲机制要求录制信号相对于相应的参考（回放）信号延迟 0 - 10 ms 左右。
 
 ### 日志输出
 

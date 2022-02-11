@@ -59,6 +59,8 @@ This example runs on the boards that are marked with a green checkbox in the tab
 
   - [Yate Server](http://docs.yate.ro/wiki/Beginners_in_Yate)
 
+- We recommend building a Freeswitch server for testing.
+
 ## Example Set Up
 
 ### Default IDF Branch
@@ -110,7 +112,8 @@ See the Getting Started Guide for full steps to configure and use [ESP-IDF Progr
 - After the server is connected, you can press the `Play` button to make a call or answer an incoming call, and the `Mode` button to hang up or cancel the call.
 - The `Vol+` and `Vol-` keys can adjust the call volume of the development board. On the `esp32-lyrat-mini` development board, you can press the `Rec` key to mute the `MIC`.
 - You can use the Open source clients such as Linphone or MicroSIP to make VoIP calls with the development board.
-- About the Acoustic Echo Cancellation, currently the software solution only supports the `esp32-lyrat-mini` development board, you can also choose the `esp32-lyratd-msc` development board or other hardware with AEC function to complete it.
+- If the AEC effect is not very good, you can open the `DEBUG_AEC_INPUT` define to get the original input data (left channel is the signal captured from the microphone, and right channel is the signal played to the speaker), and then check the delay with an audio analysis tool.
+- The AEC internal buffering mechanism requires that the recording signal is delayed by around 0 - 10 ms compared to the corresponding reference (playback) signal.
 
 ### Example Logs
 
