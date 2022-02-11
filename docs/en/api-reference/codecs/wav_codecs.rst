@@ -9,8 +9,8 @@ Application Examples
 
 Implementation of this API is demonstrated in the following examples:
 
-* :example:`player/pipeline_sdcard_wav`
-* :example:`recorder/pipeline_wav_sdcard`
+* :example:`player/pipeline_play_sdcard_music`
+* :example:`recorder/pipeline_wav_amr_sdcard`
 
 
 API Reference - Decoder

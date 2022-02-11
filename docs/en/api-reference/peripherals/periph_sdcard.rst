@@ -9,9 +9,10 @@ Application Examples
 
 Implementation of this API is demonstrated in couple of examples:
 
-* :example:`player/pipeline_sdcard_mp3`
-* :example:`player/pipeline_sdcard_wav`
-* :example:`recorder/pipeline_wav_sdcard`
+* :example:`player/pipeline_play_sdcard_music`
+* :example:`player/pipeline_sdcard_mp3_control`
+* :example:`recorder/pipeline_recording_to_sdcard`
+* :example:`recorder/pipeline_wav_amr_sdcard`
 
 
 API Reference

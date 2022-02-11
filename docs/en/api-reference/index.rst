@@ -32,7 +32,7 @@ This API provides a way to develop audio applications using :doc:`Elements <fram
         STREAMS_DESC -- DECODERS_DESC -- ENCODERS_DESC -- AUDIO_PROC_DESC [style=none]
     }
 
-The application is developed by combining the :doc:`Elements <framework/audio_element>` into a :doc:`Pipeline <framework/audio_pipeline>`. A diagram below presents organization of two elements, MP3 decoder and I2S stream, in the Audio Pipeline, that has been used in :example:`get-started/play_mp3` example.
+The application is developed by combining the :doc:`Elements <framework/audio_element>` into a :doc:`Pipeline <framework/audio_pipeline>`. A diagram below presents organization of two elements, MP3 decoder and I2S stream, in the Audio Pipeline, that has been used in :example:`get-started/play_mp3_control` example.
 
 .. blockdiag::
     :caption: Sample Organization of Elements in Audio Pipeline

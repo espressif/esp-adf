@@ -8,7 +8,7 @@ You can also use it to control a number of LEDs connected to GPIOs. If you want 
 Application Examples
 --------------------
 
-Implementation of this API is demonstrated in :example:`checks/check_msc_leds` example.
+Implementation of this API is demonstrated in :example:`checks/check_display_led` example.
 
 
 API Reference

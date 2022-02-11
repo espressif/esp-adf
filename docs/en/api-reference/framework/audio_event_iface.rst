@@ -7,7 +7,7 @@ The ADF provides the Event Interface API to establish communication between Audi
 Application Examples
 --------------------
 
-Implementation of this API is demonstrated in couple of examples including :example:`get-started/play_mp3`.
+Implementation of this API is demonstrated in couple of examples including :example:`get-started/play_mp3_control`.
 
 
 API Reference
