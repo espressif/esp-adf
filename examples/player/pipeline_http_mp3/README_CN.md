@@ -14,7 +14,6 @@
 
 ```
 [http_server] ---> http_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
-
 ```
 
 
@@ -22,7 +21,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -49,19 +48,19 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 本例程需要先配置 Wi-Fi 连接信息，通过运行 `menuconfig > Example Configuration` 填写 `Wi-Fi SSID` 和 `Wi-Fi Password`。
 
-```c
+```
 menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 ```
 
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
 
@@ -70,7 +69,7 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后，将主动连接 Wi-Fi 热点，如连接成功则去获取 HTTP 服务器的在线 MP3 音频进行播放，打印如下：
+- 例程开始运行后，将主动连接 Wi-Fi 热点，如连接成功，则获取 HTTP 服务器的在线 MP3 音频进行播放，打印如下：
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -167,7 +166,7 @@ W (227796) PERIPH_WIFI: WiFi Event cb, Unhandle event_base:WIFI_EVENT, event_id:
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下是本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)

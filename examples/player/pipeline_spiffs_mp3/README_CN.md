@@ -14,22 +14,21 @@
 
 ```
 [flash] ---> spiffs_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
-
 ```
 
 ### 预备知识
 
 制作 SPIFFS 文件
 
-- 从 [Github/spiffs](https://github.com/igrr/mkspiffs.git) 上克隆 SPFFS 仓库
+- 从 [Github/spiffs](https://github.com/igrr/mkspiffs.git) 上克隆 SPIFFS 仓库
 
-```c
+```
     git clone https://github.com/igrr/mkspiffs.git
 ```
 
 - 编译 SPIFFS
 
-```c
+```
     cd mkspiffs
     make clean
     make dist CPPFLAGS="-DSPIFFS_OBJ_META_LEN=4"
@@ -37,18 +36,31 @@
 
 - 拷贝用户音频文件到例程下面的 `tools` 文件夹（本例程已经准备了 `adf_music.mp3` 文件）。
 
-- 运行下面命令，把 `adf_music.mp3` 文件压进 `adf_music.bin` 二进制文件中，然后烧录此文件到 partition 中指定分区即可，本例程已经把制作好的文件也放置在 `tools` 文件夹中。
+- 运行下面命令，把 `adf_music.mp3` 文件压进 `adf_music.bin` 二进制文件中，然后烧录此文件到 `partition` 中指定分区即可，本例程已经把制作好的文件也放置在 `tools` 文件夹中。
 
-```c
+```
     ./mkspiffs -c ./tools -b 4096 -p 256 -s 0x100000 ./tools/adf_music.bin
 ```
+
+- 创建分区表，如下所示：
+
+  ```
+    nvs,      data, nvs,     ,        0x6000,
+    phy_init, data, phy,     ,        0x1000,
+    factory,  app,  factory, ,        1M,
+    storage,  data, spiffs,  0x110000,1M,
+  ```
+
+- 下载 SPIFFS bin 文件。当前 `./tools/adf_music.bin` 中只包含 `adf_music.mp3` 文件（所有 MP3 文件最终都会生成一个 bin 文件）。
+
+有关 `spiffs` 的更多信息，请参阅 [SPIFFS 文件系统](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/api-reference/storage/spiffs.html)。
 
 
 ## 环境配置
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -75,25 +87,24 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-运行下面的命令，烧录 `./tools/adf_music.bin` 文件到 partition 分区的 `storage` 地址处。
+运行下面的命令，烧录 `./tools/adf_music.bin` 文件到 `partition` 分区的 `storage` 地址处。
 
-```c
-
+```
 python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 115200 write_flash -z 0x110000 ./tools/adf_music.bin
-
 ```
 
 
-退出调试界面使用 ``Ctrl-]``
+> 注: 该 `download` 命令只针对 `esp32` 芯片模块，如果使用其他的芯片硬件，则需要修改 `--chip`。例如，使用 `esp32s3`芯片，命令则为 `python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32s3 --port /dev/ttyUSB0 --baud 115200 write_flash -z 0x110000 ./tools/adf_music.bin`。
+
+退出调试界面使用 ``Ctrl-]``。
 
 有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
-
 
 ## 如何使用例程
 
@@ -195,7 +206,7 @@ W (7424) AUDIO_ELEMENT: [mp3] Element has not create when AUDIO_ELEMENT_TERMINAT
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下是本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -290,7 +301,7 @@ W (7424) AUDIO_ELEMENT: [mp3] Element has not create when AUDIO_ELEMENT_TERMINAT
 ```
 
 
-## Troubleshooting
+## 故障排除
 
 ```c
 I (364) cpu_start: Starting scheduler on PRO CPU.
@@ -300,7 +311,7 @@ E (386) SPIFFS: spiffs partition could not be found
 root /spiffs E (386) PERIPH_SPIFFS: Failed to find SPIFFS partition
 
 ```
-如果出现上述 LOG 中的错提示，请按照编译下载章节的说明，烧录 `./tools/adf_music.bin` 文件到 `partition` 分区的 `storage` 地址处，即可解决此问题。
+如果出现上述日志中的错误提示，请按照编译下载章节的说明，烧录 `./tools/adf_music.bin` 文件到 `partition` 分区的 `storage` 地址处，即可解决此问题。
 
 
 

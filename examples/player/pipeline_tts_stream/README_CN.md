@@ -1,58 +1,58 @@
-# Chinese Text-to-Speech (TTS) Service
+# 中文文本转语音 (TTS)
 
-- [中文版本](./README_CN.md)
-- Regular Example: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
+- [English Version](./README.md)
+- 例程难度：![alt text](../../../docs/_static/level_regular.png "中级")
 
 
 ## Example Brief
 
-This example demonstrates how to convert Chinese text into Chinese speech. If the input text is a mixture of Chinese and English, the English words will be read letter by letter. If you need the English text-to-speech (TTS) service, you can send an email to our Business Support team for individual customization.
+这个例子演示了如何将中文文本转换为中文语音。如果输入的是中英文混杂的文本，英文部分将会被逐字母读出。若需要英语文本转语音版本，请发送电子邮件到我们的业务支持团队，团队将会为您进行私人定制。
 
 
-## Environment Setup
+## 环境配置
 
-### Hardware Required
+### 硬件要求
 
-This example runs on the boards that are marked with a green checkbox in the table below. Please remember to select the board in `menuconfig` as discussed in Section [Configuration](#configuration) below.
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
-| Board Name | Getting Started | Chip | Compatibility |
+| 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
-| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "Compatible") |
-| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "Compatible") |
+| ESP32-LyraT | [![alt text](../../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraTD-MSC | [![alt text](../../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-LyraT-Mini | [![alt text](../../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-Korvo-DU1906 | [![alt text](../../../docs/_static/esp32-korvo-du1906-v1.1-small.jpg "ESP32-Korvo-DU1906")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-korvo-du1906.html) | <img src="../../../docs/_static/ESP32.svg" height="85" alt="ESP32"> | ![alt text](../../../docs/_static/yes-button.png "开发板兼容此例程") |
+| ESP32-S2-Kaluga-1 Kit | [![alt text](../../../docs/_static/esp32-s2-kaluga-1-kit-small.png "ESP32-S2-Kaluga-1 Kit")](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html) | <img src="../../../docs/_static/ESP32-S2.svg" height="100" alt="ESP32-S2"> | ![alt text](../../../docs/_static/no-button.png "开发板不兼容此例程") |
 
-## Build and Flash
+## 编译和下载
 
-### Default IDF Branch
+### IDF 默认分支
 
-The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-idf`.
+本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
-### Configuration
+### 配置
 
-The default board for this example is `ESP32-Lyrat V4.3`. If you need to run this example on other development boards, select the board in menuconfig, such as `ESP32-Lyrat-Mini V1.1`.
+本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 
 ```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-You can use `GNU make` or `cmake` for configuration.
+可以使用 `GNU make` 或 `cmake` 完成配置。
 
-If you are using `cmake`, run the command below:
+若使用 CMake，请运行以下命令:
 ```
 idf.py menuconfig
 ```
 
-Or if you are using `GNU make`, run the command below:
+若使用 Make，请运行以下命令:
 ```
 make menuconfig
 ```
 
-### Build and Flash
+### 编译和下载
 
-You can use `GNU make` or `cmake` to build the project.
-If you are using `GNU make`:
+可以使用 `GNU make` 或 `cmake` 编译该项目。
+若使用 `GNU make`，则步骤如下:
 ```bash
 cd $ADF_PATH/examples/player/pipeline_tts_stream
 make clean
@@ -60,16 +60,16 @@ make menuconfig
 make -j4 all
 ```
 
-Or if you are using `cmake`:
+若使用 `cmake`，则步骤如下:
 ```bash
 cd $ADF_PATH/examples/player/pipeline_tts_stream
 idf.py fullclean
 idf.py menuconfig
 idf.py build
 ```
-Refer to the following table for the firmware flash address.
+请参考下表，获取固件下载的 flash 地址信息。
 
-| Flash address | Bin Path |
+| Flash 地址 | Bin 文件路径 |
 |---|---|
 |0x1000 | build/bootloader/bootloader.bin|
 |0x8000 | build/partitions.bin|
@@ -77,17 +77,17 @@ Refer to the following table for the firmware flash address.
 |0x100000 | components/esp-sr/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat|
 
 
-Select compatible audio board in ``menuconfig > Audio HAL``, build the project and flash it to the board, then run monitor tool to view serial output.
+在 ``menuconfig > Audio HAL`` 中选择兼容的音频板，编译项目并将其烧录至开发板上。运行监控工具，查看串行输出。
 
-- Flash `components/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat` to the partition table address.
-- Then flash the app bin, the board will start playing automatically.
+- 将 `components/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat` 烧录到分区表地址中。
+- 接着，烧录应用程序 bin 文件，烧录完成后，开发板将会自动开始播放语音。
 
-To exit the serial monitor, type ``Ctrl-]``.
+退出调试界面使用 ``Ctrl-]``。
 
 
-## Example Log
+## 日志输出
 
-A complete log is as follows:
+以下是本例程的完整日志。
 
 ```
 I (10) boot: ESP-IDF v3.3.2-107-g722043f73-dirty 2nd stage bootloader
@@ -164,15 +164,15 @@ W (3516) AUDIO_ELEMENT: [i2s] Element has not create when AUDIO_ELEMENT_TERMINAT
 ```
 
 
-## Troubleshooting
+## 故障排除
 
-- If the TTS example does not play the speech, please check if the ``esp_tts_voice_data_xiaole.dat`` file has been flashed to the specified address.
+- 如果 TTS 无法播放声音，请检查 ``esp_tts_voice_data_xiaole.dat`` 文件是否已经烧录到指定地址。
 
 
-## Technical Support and Feedback
-Please use the following feedback channels:
+## 技术支持
+请按照下面的链接获取技术支持：
 
-* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
+- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
+- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-We will get back to you as soon as possible.
+我们会尽快回复。
