@@ -36,6 +36,7 @@
 #include "soc/ledc_struct.h"
 #include "soc/ledc_reg.h"
 #include "pwm_stream.h"
+#include "audio_idf_version.h"
 
 static const char *TAG = "PWM_STREAM";
 
@@ -227,14 +228,27 @@ static void IRAM_ATTR timer_group_isr(void *para)
         return;
     }
 
+#ifdef CONFIG_IDF_TARGET_ESP32S2
+#if ((ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)) && (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)))
+    if (handle->timg_dev->int_st.val & BIT(handle->config.timer_num)) {
+        handle->timg_dev->int_clr.val |= (1UL << handle->config.timer_num);
+    }
+    handle->timg_dev->hw_timer[handle->config.timer_num].config.alarm_en = TIMER_ALARM_EN;
+#else
     if (handle->timg_dev->int_st_timers.val & BIT(handle->config.timer_num)) {
         handle->timg_dev->int_clr_timers.val |= (1UL << handle->config.timer_num);
     }
-#ifdef CONFIG_IDF_TARGET_ESP32S2
     handle->timg_dev->hw_timer[handle->config.timer_num].config.tx_alarm_en = TIMER_ALARM_EN;
+#endif
 #elif CONFIG_IDF_TARGET_ESP32
+    if (handle->timg_dev->int_st_timers.val & BIT(handle->config.timer_num)) {
+        handle->timg_dev->int_clr_timers.val |= (1UL << handle->config.timer_num);
+    }
     handle->timg_dev->hw_timer[handle->config.timer_num].config.alarm_en = TIMER_ALARM_EN;
 #elif CONFIG_IDF_TARGET_ESP32S3
+    if (handle->timg_dev->int_st_timers.val & BIT(handle->config.timer_num)) {
+        handle->timg_dev->int_clr_timers.val |= (1UL << handle->config.timer_num);
+    }
     handle->timg_dev->hw_timer[handle->config.timer_num].config.tn_alarm_en = TIMER_ALARM_EN;
 #endif
 
@@ -437,7 +451,11 @@ esp_err_t audio_pwm_set_sample_rate(int rate)
     handle->framerate = rate;
     uint16_t div = 1;
 #ifdef CONFIG_IDF_TARGET_ESP32S2
+#if ((ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)) && (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)))
+    div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.divider;
+#else
     div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.tx_divider;
+#endif
 #elif CONFIG_IDF_TARGET_ESP32
     div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.divider;
 #elif CONFIG_IDF_TARGET_ESP32S3
