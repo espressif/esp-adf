@@ -35,8 +35,8 @@ esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
 {
     AUDIO_NULL_CHECK(TAG, i2c_config, return ESP_FAIL);
     if (port == I2C_NUM_0 || port == I2C_NUM_1) {
-        i2c_config->sda_io_num = GPIO_NUM_18;
-        i2c_config->scl_io_num = GPIO_NUM_23;
+        i2c_config->sda_io_num = GPIO_NUM_33;
+        i2c_config->scl_io_num = GPIO_NUM_32;
     } else {
         i2c_config->sda_io_num = -1;
         i2c_config->scl_io_num = -1;
@@ -50,7 +50,7 @@ esp_err_t get_i2s_pins(i2s_port_t port, i2s_pin_config_t *i2s_config)
 {
     AUDIO_NULL_CHECK(TAG, i2s_config, return ESP_FAIL);
     if (port == I2S_NUM_0 || port == I2S_NUM_1) {
-        i2s_config->bck_io_num = GPIO_NUM_5;
+        i2s_config->bck_io_num = GPIO_NUM_27;
         i2s_config->ws_io_num = GPIO_NUM_25;
         i2s_config->data_out_num = GPIO_NUM_26;
         i2s_config->data_in_num = GPIO_NUM_35;
