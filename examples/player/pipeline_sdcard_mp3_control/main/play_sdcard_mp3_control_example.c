@@ -199,6 +199,8 @@ void app_main(void)
     ESP_LOGW(TAG, "[ 6 ] Press the keys to control music player:");
     ESP_LOGW(TAG, "      [Play] to start, pause and resume, [Set] next song.");
     ESP_LOGW(TAG, "      [Vol-] or [Vol+] to adjust volume.");
+    ESP_LOGI(TAG, "[7] Start playing automatically.");
+    audio_pipeline_run(pipeline);
 
     while (1) {
         /* Handle event interface messages from pipeline
