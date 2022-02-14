@@ -28,18 +28,22 @@
 #define SDCARD_OPEN_FILE_NUM_MAX  5
 #define SDCARD_INTR_GPIO          GPIO_NUM_34
 
-#define BUTTON_VOLUP_ID           0
-#define BUTTON_VOLDOWN_ID         1
-#define BUTTON_SET_ID             2
-#define BUTTON_PLAY_ID            3
-#define BUTTON_MODE_ID            4
-#define BUTTON_REC_ID             5
+// According to https://docs.ai-thinker.com/en/esp32-audio-kit
+// Only 36 and 13 are working
+#define BUTTON_VOLUP_ID           GPIO_NUM_5
+#define BUTTON_VOLDOWN_ID         GPIO_NUM_18
+#define BUTTON_SET_ID             GPIO_NUM_23
+#define BUTTON_PLAY_ID            GPIO_NUM_19
+#define BUTTON_MODE_ID            GPIO_NUM_13
+#define BUTTON_REC_ID             GPIO_NUM_36
 
 #define AUXIN_DETECT_GPIO         GPIO_NUM_12
-#define HEADPHONE_DETECT          GPIO_NUM_19
+#define HEADPHONE_DETECT          GPIO_NUM_39
 #define PA_ENABLE_GPIO            GPIO_NUM_21
 
 #define GREEN_LED_GPIO            GPIO_NUM_22
+// This LED shares with KEY 3
+#define BLUE_LED_GPIO            GPIO_NUM_19
 
 extern audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE;
 
