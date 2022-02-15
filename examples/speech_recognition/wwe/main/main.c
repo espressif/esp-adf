@@ -56,6 +56,9 @@
 #define RECORDER_ENC_ENABLE (false)
 #define VOICE2FILE          (true)
 #define WAKENET_ENABLE      (true)
+#define SPEECH_CMDS_RESET   (false)
+
+#define SPEECH_COMMANDS     ("da kai dian deng,kai dian deng;guan bi dian deng,guan dian deng;guan deng;")
 
 #ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
 #define RECORDER_SAMPLE_RATE (16000)
@@ -340,6 +343,10 @@ static void start_recorder()
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
     cfg.read = (recorder_data_read_t)&input_cb_for_afe;
     cfg.sr_handle = recorder_sr_create(&recorder_sr_cfg, &cfg.sr_iface);
+#if SPEECH_CMDS_RESET
+    char err[200];
+    recorder_sr_reset_speech_cmd(cfg.sr_handle, SPEECH_COMMANDS, err);
+#endif
 #if RECORDER_ENC_ENABLE == (true)
     cfg.encoder_handle = recorder_encoder_create(&recorder_encoder_cfg, &cfg.encoder_iface);
 #endif
