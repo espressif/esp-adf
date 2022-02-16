@@ -497,7 +497,7 @@ assign_test:
     - build_examples_v33_make
     - build_examples_v40_cmake
   variables:
-    TEST_FW_PATH: "$CI_PROJECT_DIR/general_test_framework"
+    TEST_FW_PATH: "$CI_PROJECT_DIR/general-test-framework"
     EXAMPLE_CONFIG_OUTPUT_PATH: "$CI_PROJECT_DIR/examples/test_configs"
     AUTO_TEST_PATH: "$CI_PROJECT_DIR/audio_auto_test"
   artifacts:
@@ -529,7 +529,7 @@ assign_test:
       - $LOG_PATH
     expire_in: 1 mos
   variables:
-    TEST_FW_PATH: "$CI_PROJECT_DIR/general_test_framework"
+    TEST_FW_PATH: "$CI_PROJECT_DIR/general-test-framework"
     TEST_CASE_PATH: "$CI_PROJECT_DIR/examples"
     CONFIG_FILE: "$CI_PROJECT_DIR/examples/test_configs/$CI_JOB_NAME.yml"
     LOG_PATH: "$CI_PROJECT_DIR/log_examples"
