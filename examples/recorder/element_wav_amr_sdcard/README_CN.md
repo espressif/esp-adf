@@ -1,4 +1,3 @@
-
 # 回调方式同时录制 WAV 和 AMR 文件到 microSD 卡例程
 
 - [English Version](./README.md)
@@ -7,13 +6,13 @@
 
 ## 例程简介
 
-本例程使用元素 API 灵活组建了一路 I2S 输入和 2 路文件输出的音频数据流，功能是同时录制 10 秒的 AMR 和 WAV 音频文件，然后保存到 microSD 卡中。例程重`audio_element_set_input_ringbuf` 和 `audio_element_set_output_ringbuf` 把 ringbuf 插入到元素中间，完成数据的拷贝分发和流转搬运，`audio_element_set_event_callback`负责注册元素事件，`audio_element_run`和`audio_element_resume` 控制开启数据传输。
+本例程使用元素 API 灵活组建了一路 I2S 输入和 2 路文件输出的音频数据流，功能是同时录制 10 秒的 AMR 和 WAV 音频文件，然后保存到 microSD 卡中。例程中，`audio_element_set_input_ringbuf` 和 `audio_element_set_output_ringbuf` 把 ringbuf 插入到元素中间，完成数据的拷贝分发和流转搬运，`audio_element_set_event_callback` 负责注册元素事件，`audio_element_run` 和 `audio_element_resume` 控制开启数据传输。
 
-其中，AMR 支持 AMR-NB、AMR-WB 两种种音频编码器。默认选择 AMR-NB 编码器录制音频保存在 microSD 卡中。
+AMR 支持 AMR-NB、AMR-WB 两种种音频编码器。默认选择 AMR-NB 编码器录制音频保存在 microSD 卡中。
 
 录音例程的管道如下所示：
 
-```c
+```
                                                 ---> ringbuf01 ---> wav_encoder ---> ringbuf02 ---> fatfs_stream_writer ---> [wav_file]
                                                |
 [mic] ---> codec_chip ---> i2s_stream_reader --
@@ -30,7 +29,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -65,7 +64,7 @@ menuconfig > Example configuration > Audio encoder file type  > amrwb
 
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
@@ -79,7 +78,7 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-例程开始运行后，会打印如下倒计时提示，并提示录音开始。
+例程开始运行后，会提示录音开始，并打印录音读秒时间。日志如下：
 
 ```
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)

@@ -13,7 +13,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -40,46 +40,45 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 本例程需要配置 Wi-Fi 连接信息，通过运行 `menuconfig > Example Configuration` 填写 `Wi-Fi SSID`，此例填 `Xiaomi_7909`。
 
-```c
+```
 menuconfig > Example Configuration > (Xiaomi_7909) WiFi SSID
 ```
 
-本例程需要配置 `EAP` 的工作方式，设置 `0` 为 `TLS`,设置 `1` 为 `PEAP`，设置 `2` 为 `TTLS`，此例程设置为 `REAP` 方式。
+本例程需要配置 `EAP` 的工作方式，设置 `0` 为 `TLS`，设置 `1` 为 `PEAP`，设置 `2` 为 `TTLS`，此例程设置为 `REAP` 方式。
 
-```c
+```
 menuconfig > Example Configuration > (1) EAP METHOD
 ```
 
 本例程需要配置 `EAP ID` 的工作方式，设置 `EAP ID` 为 `example@espressif.com`。
 
-```c
+```
 menuconfig > Example Configuration > (example@espressif.com) EAP ID
 ```
 
 本例程需要配置 `EAP USERNAME`，设置为 `espressif`。
 
-```c
+```
 menuconfig > Example Configuration > (espressif) EAP USERNAME
 ```
 
 本例程需要配置 `EAP PASSWORD`，设置为 `test11`。
 
-```c
+```
 menuconfig > Example Configuration > (test11) EAP PASSWORD
-
 ```
 
-** 注意： **
+**注意：**
 
-此例程还需要搭配支持企业加密的路由器和另一台电脑，电脑上运行 `RADIUS` 服务器 `hostapd`服务，并且路由器配置页面也需要配置 `RADIUS` 选项。
+此例程还需要搭配支持企业加密的路由器和另一台电脑，电脑上运行 `RADIUS` 服务器 `hostapd` 服务，并且路由器配置页面也需要配置 `RADIUS` 选项。
 
-详细配置可以参考乐鑫技术文档 [RADIUS 服务器之 hostapd 配置说明](https://blog.csdn.net/espressif/article/details/80933222)。
+有关详细配置，可参阅乐鑫技术文档 [RADIUS 服务器之 hostapd 配置说明](https://blog.csdn.net/espressif/article/details/80933222)。
 
-此例配置且运行成功， log 见日志输出的服务器输出章节。
+此例配置且运行成功，日志详见 [日志输出](#日志输出) 章节。
 
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
@@ -94,7 +93,7 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后，会先连接 Wi-Fi，Wi-Fi 连接成功 LOG 打印如下：
+- 例程开始运行后，会先连接 Wi-Fi，Wi-Fi 连接成功日志打印如下：
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -219,7 +218,7 @@ Done
 
 ### 日志输出
 
-- 本例开发板端完整的从启动到初始化完成的 log，示例如下：
+- 以下是开发板端从启动到初始化完成的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -341,7 +340,7 @@ I (34631) wpa2_enterprise: GW:192.168.51.1
 Done
 ```
 
-- 本例企业加密服务器端的 log 摘录如下：
+- 以下是企业加密服务器端的部分日志。
 
 ```c
 hengyongchao@rocket2mfg:/etc/hostapd$ sudo hostapd -dddt /etc/hostapd/hostapd.conf

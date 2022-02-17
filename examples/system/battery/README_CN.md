@@ -1,4 +1,4 @@
-# 电池检测服务（Ｂattery Service）例程
+# 电池检测服务 (Battery Detection Service) 例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -13,7 +13,7 @@
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -32,7 +32,7 @@
 
 ### 配置
 
-本例程默认选择的开发板是 `ESP32-Korvo-DU1906`，注意，因为此例程需要 ADC 读取电池电压，所以有些开发板不适用此例程。
+本例程默认选择的开发板是 `ESP32-Korvo-DU1906`。注意，因为此例程需要 GPIO 读取 ADC 电压，所以有些开发板不适用此例程。
 
 ```
 menuconfig > Audio HAL > ESP32-Korvo-DU1906
@@ -40,7 +40,7 @@ menuconfig > Audio HAL > ESP32-Korvo-DU1906
 
 **注意：**
 
-对于有充电芯片管理的开发板，如果其有 `I2C` 等接口可以读取电池电压、温度等数据，可以通过注册电池服务的 `init` 来初始化电池充电管理芯片，然后通过注册 `vol_get` 接口，来读取电池充电管理芯片的数据。
+对于有充电管理芯片的开发板，如果其有 `I2C` 等接口可以读取电池电压、温度等数据，可以通过注册电池服务的 `init` 来初始化电池充电管理芯片，然后通过注册 `vol_get` 接口，来读取电池充电管理芯片的数据。
 
 ```c
     vol_monitor_param_t vol_monitor_cfg = {
@@ -49,14 +49,16 @@ menuconfig > Audio HAL > ESP32-Korvo-DU1906
         .vol_get = vol_read,
         .read_freq = 2,
         .report_freq = 2,
-        .vol_full_threshold = 2100,
-        .vol_low_threshold = 1800,
+        .vol_full_threshold = CONFIG_VOLTAGE_OF_BATTERY_FULL,
+        .vol_low_threshold = CONFIG_VOLTAGE_OF_BATTERY_LOW,
     };
 ```
 
+可以通过 menuconfig 来配置电池电压阈值。
+
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
@@ -193,7 +195,7 @@ I (120336) VOL_MONITOR: vol monitor destroyed
 
 
 ### 日志输出
-本例选取完整的从启动到初始化完成的 log，示例如下：
+以下为本例程的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1b (SPI_FAST_FLASH_BOOT)

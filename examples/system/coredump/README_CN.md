@@ -1,4 +1,4 @@
-# 核心转储服务（Coredump Service）例程
+# 核心转储服务 (Core Dump Service) 例程
 
 - [English Version](./README.md)
 - 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
@@ -6,14 +6,14 @@
 
 ## 例程简介
 
-本例程在演示了 ADF 框架下如何配置核心转储（coredump）服务，通过引用一个不存在的汇编指令制造一个 crash，然后把核心转储的数据上传到 HTTP 服务器上，并且由 HTPP 服务器接收并解析这些核心转储信息的演示示例。
+本例程演示了如何在 ADF 框架下配置核心转储（core dump）服务。通过引用一个不存在的汇编指令制造一个 crash，把核心转储的数据上传到 HTTP 服务器上，并由 HTTP 服务器接收并解析这些核心转储信息。
 
 
 ## 环境配置
 
 ### 硬件要求
 
-本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 *配置* 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程可在标有绿色复选框的开发板上运行。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 | 开发板名称 | 开始入门 | 芯片 | 兼容性 |
 |-------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------:|:-----------------------------------------------------------------:|
@@ -40,19 +40,19 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 
 本例程需要先配置 Wi-Fi 连接信息，通过运行 `menuconfig > Example Configuration` 填写 `Wi-Fi SSID` 和 `Wi-Fi Password`。
 
-```c
+```
 menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 ```
 
-本例程还需要配置接收核心转储数据的 HTTP 服务器（个人 PC）的 URI，请确保开发板和 HTTP 服务器处在同一个 Wi-Fi 局域网中，如 HTTP 服务器的 LAN IP 地址是 `192.168.5.72` 那么在 `menuconfig > Example Configuration` 配置为 `http://192.168.5.72:8000/upload`。
+本例程还需要配置接收核心转储数据的 HTTP 服务器（个人 PC）的 URI，请确保开发板和 HTTP 服务器处在同一个 Wi-Fi 局域网中，如 HTTP 服务器的 LAN IP 地址是 `192.168.5.72`，那么在 `menuconfig > Example Configuration` 中则配置为 `http://192.168.5.72:8000/upload`。
 
-```c
+```
 menuconfig > Core dump upload configuration > core dump upload uri
 ```
 
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
 
 ```
 idf.py -p PORT flash monitor
@@ -67,20 +67,20 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程需要先运行 Python 脚本，需要 python 2.7，并且开发板和 HTTP 服务器连接在同一个 Wi-Fi 网络中。
+- 例程需要先在 Python 2.7 版本下运行 Python 脚本，且开发板和 HTTP 服务器要连接在同一个 Wi-Fi 网络下。
 
-- Python 脚本需要获取 `$IDF_PATH` 和 `$ADF_PATH` 环境变量值，请预先设定。
+- 请预先设定 Python 脚本所需的 `$IDF_PATH` 和 `$ADF_PATH` 环境变量值。
 
-- 下载 [esp32_rom.elf](https://dl.espressif.com/dl/esp32_rom.elf) 放置到 `$ADF_PATH/examples/system/coredump/tools` 目录下。
+- 下载 [esp32_rom.elf](https://dl.espressif.com/dl/esp32_rom.elf) 到 `$ADF_PATH/examples/system/coredump/tools` 目录下。
 
-- tools 目录下运行接收和解析核心转储 HTTP 服务器的 Python 脚本 `coredump_http_server.py`，Python 脚本运行 log 如下：
+- 在 tools 目录下，运行接收和解析核心转储 HTTP 服务器的 Python 脚本 `coredump_http_server.py`，Python 脚本运行日志如下：
 
-```c
+```
 python2 $ADF_PATH/examples/system/coredump/tools/coredump_http_server.py -e $ADF_PATH/examples/system/coredump/build/coredump_example.elf -r $ADF_PATH/examples/system/coredump/tools/esp32_rom.elf
 Serving HTTP on 0.0.0.0 port 8000
 ```
 
-- 例程开始运行后，会先连接 Wi-Fi，Wi-Fi 连接成功后，如果是第一次运行，则故意引用了一条不存在的汇编指令自行制造了 crash，核心转储服务会把此次的 crash 数据写入 flash 保存然后重启，重启后会检查上一次 crash ，最后把这些数据上传到 HTTP 服务器，摘抄核心步骤 LOG 打印如下：
+- 例程开始运行后，会先连接 Wi-Fi，Wi-Fi 连接成功后，如果是第一次运行，则将故意引用一条不存在的汇编指令自行制造 crash，核心转储服务会把此次的 crash 数据写入 flash 保存然后重启，重启后会检查上一次 crash，最后把这些数据上传到 HTTP 服务器。核心步骤日志打印如下：
 
 ```c
 I (2921) wifi:AP's beacon interval = 102400 us, DTIM period = 3
@@ -148,7 +148,7 @@ Done
 
 ### 日志输出
 
-- 本例开发板端完整的从启动到初始化完成的 log，示例如下：
+- 以下为本例程开发板端从启动到初始化的完整日志。
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
@@ -405,7 +405,7 @@ Done
 ```
 
 
-- 本例 HTTP 服务器端从接收核心转储数据到解析核心转储数据的完整的 log，示例如下：
+- 以下为 HTTP 服务器端从接收核心转储数据到解析核心转储数据的完整日志。
 
 ```c
 (py27)  hengyongchao@ubuntu-18-04-5-lts  /repo/adfs/bugfix/esp-adf-internal  python2 $ADF_PATH/examples/system/coredump/tools/coredump_http_server.py -e $ADF_PATH/examples/system/coredump/build/coredump_example.elf -r $ADF_PATH/examples/system/coredump/tools/esp32_rom.elf
