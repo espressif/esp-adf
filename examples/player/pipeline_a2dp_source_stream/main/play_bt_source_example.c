@@ -19,6 +19,7 @@
 #include "audio_event_iface.h"
 #include "board.h"
 #include "mp3_decoder.h"
+#include "filter_resample.h"
 #include "a2dp_stream.h"
 #include "fatfs_stream.h"
 
@@ -168,7 +169,7 @@ static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
 void app_main(void)
 {
     audio_pipeline_handle_t pipeline;
-    audio_element_handle_t fatfs_stream_reader, bt_stream_writer, mp3_decoder;
+    audio_element_handle_t fatfs_stream_reader, bt_stream_writer, mp3_decoder, rsp_handle;
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -206,6 +207,10 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.2] Create mp3 decoder to decode mp3 file");
     mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
     mp3_decoder = mp3_decoder_init(&mp3_cfg);
+
+    ESP_LOGI(TAG, "[3.2.5] Create resample filter");
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_handle = rsp_filter_init(&rsp_cfg);
 
     ESP_LOGI(TAG, "[3.3] Create Bluetooth stream");
 
@@ -247,11 +252,12 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, fatfs_stream_reader, "file");
     audio_pipeline_register(pipeline, mp3_decoder, "mp3");
+    audio_pipeline_register(pipeline, rsp_handle, "filter");
     audio_pipeline_register(pipeline, bt_stream_writer, "bt");
 
     ESP_LOGI(TAG, "[3.5] Link it together [sdcard]-->fatfs_stream-->mp3_decoder-->bt_stream-->[bt sink]");
-    const char *link_tag[3] = {"file", "mp3", "bt"};
-    audio_pipeline_link(pipeline, &link_tag[0], 3);
+    const char *link_tag[4] = {"file", "mp3", "filter", "bt"};
+    audio_pipeline_link(pipeline, &link_tag[0], 4);
 
     ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, mp3 as mp3 decoder, and default output is i2s)");
     audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.mp3");
@@ -292,6 +298,7 @@ void app_main(void)
 
             ESP_LOGI(TAG, "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
                      music_info.sample_rates, music_info.bits, music_info.channels);
+            rsp_filter_set_src_info(rsp_handle, music_info.sample_rates, music_info.channels);
             continue;
         }
         if (msg.source_type == PERIPH_ID_BLUETOOTH
@@ -323,10 +330,12 @@ void app_main(void)
     audio_pipeline_unregister(pipeline, bt_stream_writer);
     audio_pipeline_unregister(pipeline, fatfs_stream_reader);
     audio_pipeline_unregister(pipeline, mp3_decoder);
+    audio_pipeline_unregister(pipeline, rsp_handle);
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(bt_stream_writer);
     audio_element_deinit(fatfs_stream_reader);
     audio_element_deinit(mp3_decoder);
+    audio_element_deinit(rsp_handle);
     esp_periph_set_destroy(set);
     esp_bluedroid_disable();
     esp_bluedroid_deinit();
