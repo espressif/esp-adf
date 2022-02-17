@@ -36,7 +36,6 @@
 #include "esp_afe_sr_iface.h"
 #include "esp_afe_sr_models.h"
 
-// #define DEBUG_ALGO_INPUT // debug input AFE feed data
 #define AEC_FRAME_BYTES                 (1024) // 32ms data frame (32 * 16 * 2)
 #define ALGORITHM_FETCH_TASK_STACK_SIZE (2 * 1024)
 
@@ -50,16 +49,14 @@ typedef struct {
     int16_t *aec_buff;
     int8_t algo_mask;
     bool afe_fetch_run;
+    int rec_linear_factor;
+    int ref_linear_factor;
     algorithm_stream_input_type_t input_type;
     const esp_afe_sr_iface_t *afe_handle;
     esp_afe_sr_data_t *afe_data;
     EventGroupHandle_t state;
+    bool debug_input;
 } algo_stream_t;
-
-char *get_model_base_path(void)
-{
-    return NULL;
-}
 
 static esp_err_t _algo_close(audio_element_handle_t self)
 {
@@ -67,12 +64,15 @@ static esp_err_t _algo_close(audio_element_handle_t self)
 
     algo->afe_fetch_run = false;
 
+    /* Feed some data to prevent afe->fetch getting stuck */
+    while (xEventGroupWaitBits(algo->state, FETCH_STOPPED_BIT, false, true, 10 / portTICK_PERIOD_MS) != FETCH_STOPPED_BIT) {
+        algo->afe_handle->feed(algo->afe_data, (int16_t *)algo->scale_buff);
+    }
+
     if (algo->afe_data) {
         algo->afe_handle->destroy(algo->afe_data);
         algo->afe_data = NULL;
     }
-
-    xEventGroupWaitBits(algo->state, FETCH_STOPPED_BIT, false, true, portMAX_DELAY);
 
     if (algo->aec_buff) {
         audio_free(algo->aec_buff);
@@ -107,6 +107,7 @@ void _algo_fetch_task(void *pv)
         audio_element_output(self, (char *)algo->aec_buff, AEC_FRAME_BYTES);
     }
 
+    ESP_LOGI(TAG, "_algo_fetch_task is stopped");
     xEventGroupSetBits(algo->state, FETCH_STOPPED_BIT);
     vTaskDelete(NULL);
 }
@@ -114,27 +115,34 @@ void _algo_fetch_task(void *pv)
 static esp_err_t _algo_open(audio_element_handle_t self)
 {
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
-    bool _success = true;
+    AUDIO_NULL_CHECK(TAG, algo, return ESP_FAIL);
 
     algo->afe_handle = &esp_afe_sr_1mic;
     afe_config_t afe_config = AFE_CONFIG_DEFAULT();
-    afe_config.se_init = true;
     afe_config.vad_init = false;
     afe_config.wakenet_init = false;
     afe_config.afe_perferred_core = 1;
     afe_config.wakenet_mode = DET_MODE_90;
+    afe_config.alloc_from_psram = 3;
+    if (!(algo->algo_mask & ALGORITHM_STREAM_USE_NS)) {
+        afe_config.se_init = false;
+    }
+    if (!(algo->algo_mask & ALGORITHM_STREAM_USE_AGC)) {
+        afe_config.agc_mode = false;
+    }
     algo->afe_data = algo->afe_handle->create_from_config(&afe_config);
     algo->afe_fetch_run = true;
 
     xEventGroupClearBits(algo->state, FETCH_STOPPED_BIT);
-#ifndef DEBUG_ALGO_INPUT
-    audio_thread_create(NULL, "algo_fetch", _algo_fetch_task, (void *)self, ALGORITHM_FETCH_TASK_STACK_SIZE,
-        ALGORITHM_STREAM_TASK_PERIOD, false, ALGORITHM_STREAM_PINNED_TO_CORE);
-#else
-    xEventGroupSetBits(algo->state, FETCH_STOPPED_BIT);
-#endif
 
-    AUDIO_NULL_CHECK(TAG, _success, {
+    if (algo->debug_input) {
+        xEventGroupSetBits(algo->state, FETCH_STOPPED_BIT);
+    } else {
+        audio_thread_create(NULL, "algo_fetch", _algo_fetch_task, (void *)self, ALGORITHM_FETCH_TASK_STACK_SIZE,
+            ALGORITHM_STREAM_TASK_PERIOD, false, ALGORITHM_STREAM_PINNED_TO_CORE);
+    }
+
+    AUDIO_NULL_CHECK(TAG, algo->afe_data, {
         _algo_close(self);
         return ESP_FAIL;
     });
@@ -171,14 +179,13 @@ static int algorithm_data_process_for_type1(audio_element_handle_t self)
 
     in_ret = audio_element_input(self, algo->scale_buff, 2 * AEC_FRAME_BYTES);
     if (in_ret > 0) {
-#ifndef DEBUG_ALGO_INPUT
-        algorithm_data_gain((int16_t *)algo->scale_buff, 2 * AEC_FRAME_BYTES, 1, 3);
-        algo->afe_handle->feed(algo->afe_data, (int16_t *)algo->scale_buff);
-#else
-        audio_element_output(self, algo->scale_buff, 2 * AEC_FRAME_BYTES);
-#endif
+        if (algo->debug_input) {
+            audio_element_output(self, algo->scale_buff, 2 * AEC_FRAME_BYTES);
+        } else {
+            algorithm_data_gain((int16_t *)algo->scale_buff, 2 * AEC_FRAME_BYTES, algo->rec_linear_factor, algo->ref_linear_factor);
+            algo->afe_handle->feed(algo->afe_data, (int16_t *)algo->scale_buff);
+        }
     }
-
     return in_ret;
 }
 
@@ -198,11 +205,12 @@ static int algorithm_data_process_for_type2(audio_element_handle_t self)
             temp[i << 1] = ((int16_t *)record)[i];
             temp[(i << 1) + 1] = ((int16_t *)reference)[i];
         }
-#ifndef DEBUG_ALGO_INPUT
-        algo->afe_handle->feed(algo->afe_data, temp);
-#else
-        audio_element_output(self, temp, 2 * AEC_FRAME_BYTES);
-#endif
+
+        if (algo->debug_input) {
+            audio_element_output(self, (char *)temp, 2 * AEC_FRAME_BYTES);
+        } else {
+            algo->afe_handle->feed(algo->afe_data, temp);
+        }
     }
     audio_free(record);
     audio_free(reference);
@@ -249,7 +257,10 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     cfg.buffer_len = AEC_FRAME_BYTES;
     algo->input_type = config->input_type;
     algo->algo_mask = config->algo_mask;
+    algo->rec_linear_factor = config->rec_linear_factor;
+    algo->ref_linear_factor = config->ref_linear_factor;
     algo->state = xEventGroupCreate();
+    algo->debug_input = config->debug_input;
     audio_element_handle_t el = audio_element_init(&cfg);
     AUDIO_NULL_CHECK(TAG, el, {
         audio_free(algo);
@@ -276,18 +287,23 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     return el;
 }
 
-ringbuf_handle_t algo_stream_get_multi_input_rb(audio_element_handle_t algo_handle)
+audio_element_err_t algo_stream_set_delay(audio_element_handle_t el, ringbuf_handle_t ringbuf, int delay_ms)
 {
-    AUDIO_NULL_CHECK(TAG, algo_handle, return NULL);
-    return audio_element_get_multi_input_ringbuf(algo_handle, 0);
-}
+    AUDIO_NULL_CHECK(TAG, el, return ESP_ERR_INVALID_ARG);
+    AUDIO_NULL_CHECK(TAG, ringbuf, return ESP_ERR_INVALID_ARG);
 
-esp_err_t algo_stream_set_record_rate(audio_element_handle_t algo_handle, int rec_ch, int rec_sample_rate)
-{
-    return ESP_OK;
-}
+    if (delay_ms > 0) {
+        audio_element_info_t info;
+        audio_element_getinfo(el, &info);
 
-esp_err_t algo_stream_set_reference_rate(audio_element_handle_t algo_handle, int ref_ch, int ref_sample_rate)
-{
+        uint32_t delay_size = delay_ms * ((uint32_t)(info.sample_rates * info.channels * info.bits / 8) / 1000);
+        char *in_buffer = (char *)audio_calloc(1, delay_size);
+        AUDIO_MEM_CHECK(TAG, in_buffer, return ESP_FAIL);
+        if (rb_write(ringbuf, in_buffer, delay_size, 0) <= 0) {
+            ESP_LOGW(TAG, "Can't set ringbuf delay, please make sure element ringbuf size is enough!");
+        }
+        audio_free(in_buffer);
+    }
+
     return ESP_OK;
 }

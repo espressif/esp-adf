@@ -7,18 +7,18 @@
 
 本例程的功能是在播放音乐的同时将麦克风收录的声音先进行回声消除，然后存储到 microSD 卡中。
 
-本例程有两条管道，第一条管道读取 microSD 卡中的 MP3 音乐文件并播放；第二条管道是录音的过程，读取到的数据经过 AEC、AGC、NS 算法处理，再编码成 WAV 格式，最后保存在 microSD 卡中。最后我们可以比较原始音频与录制的音频之间的差异。
+本例程有两条管道，第一条管道读取 flash 中的 MP3 音乐文件并播放；第二条管道是录音的过程，读取到的数据经过 AEC、AGC、NS 算法处理，再编码成 WAV 格式，最后保存在 microSD 卡中。最后我们可以比较原始音频与录制的音频之间的差异。
 
 - 播放 MP3 的管道：
 
   ```c
-  [sdcard] ---> fatfs_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
+  [flash] ---> mp3_decoder ---> filter ---> i2s_stream ---> [codec_chip]
   ```
 
  - 录制 WAV 的管道：
 
    ```c
-   [codec_chip] ---> i2s_stream ---> wav_encoder ---> fatfs_stream ---> [sdcard]
+   [codec_chip] ---> i2s_stream ---> filter ---> algorithm ---> wav_encoder ---> fatfs_stream ---> [sdcard]
    ```
 
 ## 环境配置
@@ -46,13 +46,12 @@
 
 准备好官方音频开发板：
 
-- 准备一首 MP3 音频文件并命名为 `test.mp3`，拷贝到 microSD 卡中。
 - 把 microSD 卡插入到开发板的卡槽中备用。
 
 烧录固件并运行例程：
 
 - 开发板上电后后自动运行例程。
-- 例程完成后，你可以打开 microSD 卡目录 `/sdcard/rec_out.wav` 收听录音文件。
+- 例程完成后，你可以打开 microSD 卡目录 `/sdcard/aec_out.wav` 收听录音文件。
 
 
 ### 编译和下载
@@ -143,8 +142,10 @@ I (869) ALGORITHM_EXAMPLES: [7.0] Listen for all pipeline events
 ```
 
 ## 故障排除
-如果 AEC 效果不是很好，可以将所有采样率设置为 16000。
 
+- 如果 AEC 效果不是很好，你可以打开 `DEBUG_ALGO_INPUT` define，就可以获取到原始的输入数据（左声道是从麦克风获取到的信号，右声道是扬声器端获取到的信号），并使用音频分析工具查看麦克风信号和扬声器信号之间的延迟。
+
+- AEC 内部缓冲机制要求录制信号相对于相应的参考（回放）信号延迟 0 - 10 ms 左右。
 
 ## 技术支持
 请按照下面的链接获取技术支持：
@@ -153,5 +154,3 @@ I (869) ALGORITHM_EXAMPLES: [7.0] Listen for all pipeline events
 - 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
 我们会尽快回复。
-
-
