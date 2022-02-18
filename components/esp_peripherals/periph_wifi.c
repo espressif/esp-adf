@@ -34,17 +34,12 @@
 #include "wifibleconfig.h"
 #include "audio_mem.h"
 
+#include "audio_idf_version.h"
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
 #include "nvs_flash.h"
 #include "esp_netif.h"
 #include "esp_wifi_netif.h"
 static esp_netif_t *sta = NULL;
-#endif
-
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
 #endif
 
 static const char *TAG = "PERIPH_WIFI";
@@ -396,10 +391,10 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
     }
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
-    esp_netif_create_default_wifi_sta();
-#elif (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
     sta = esp_netif_create_default_wifi_sta();
+#elif (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+    esp_netif_create_default_wifi_sta();
 #endif
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_wifi_event_callback, self));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &_wifi_event_callback, self));
