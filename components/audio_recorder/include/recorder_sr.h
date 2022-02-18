@@ -126,6 +126,18 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
  */
 esp_err_t recorder_sr_destroy(recorder_sr_handle_t handle);
 
+/**
+ * @brief Reset the speech commands
+ *
+ * @param handle        SR processor handle
+ * @param command_str   String of the commands. more details on `https://github.com/espressif/esp-sr/blob/release/v1.0/docs/speech_command_recognition/README.md#2reset-api-on-the-fly`
+ * @param err_phrase_id error string output
+ *
+ * @return ESP_OK
+ *         ESP_FAIL
+ */
+esp_err_t recorder_sr_reset_speech_cmd(recorder_sr_handle_t handle, char *command_str, char *err_phrase_id);
+
 #ifdef __cplusplus
 }
 #endif

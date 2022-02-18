@@ -592,3 +592,19 @@ esp_err_t recorder_sr_destroy(recorder_sr_handle_t handle)
     recorder_sr_clear(recorder_sr);
     return ESP_OK;
 }
+
+
+esp_err_t recorder_sr_reset_speech_cmd(recorder_sr_handle_t handle, char *command_str, char *err_phrase_id)
+{
+#ifdef CONFIG_USE_MULTINET
+    AUDIO_CHECK(TAG, handle, return ESP_FAIL, "Handle is NULL");
+    recorder_sr_t *recorder_sr = (recorder_sr_t *)handle;
+
+    multinet->reset(recorder_sr->mn_handle, command_str, err_phrase_id);
+
+    return ESP_OK;
+#else
+    ESP_LOGW(TAG, "Multinet is not enabled");
+    return ESP_FAIL;
+#endif
+}
