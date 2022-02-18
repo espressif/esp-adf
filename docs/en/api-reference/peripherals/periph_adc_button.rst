@@ -9,7 +9,7 @@ Application Examples
 
 Implementation of this API is demonstrated in the following example:
 
-* :example:`checks/check_msc_adc_button`
+* :example:`checks/check_board_buttons`
 
 
 API Reference

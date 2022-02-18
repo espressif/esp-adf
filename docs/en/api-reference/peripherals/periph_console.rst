@@ -8,7 +8,7 @@ Please make sure that the lifetime of :cpp:type:`periph_console_cmd_t` must be e
 Code example
 ------------
 
-Please refer to :example:`cli/main/console_example.c`.
+Please refer to :example_file:`cli/main/console_example.c`.
 
 
 API Reference

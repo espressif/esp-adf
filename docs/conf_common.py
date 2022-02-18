@@ -28,6 +28,10 @@ builddir = '_build'
 if 'BUILDDIR' in os.environ:
     builddir = os.environ['BUILDDIR']
 
+if os.environ.get('ADF_PATH') is None:
+    raise RuntimeError('ADF_PATH should be set, run export.sh before building docs')
+
+
 # Call Doxygen to get XML files from the header files
 print("Calling Doxygen to generate latest XML files")
 os.system("doxygen ../Doxyfile")
@@ -44,7 +48,7 @@ os.system('python ../gen-kconfig-doc.py > ' + kconfig_inc_path + '.in')
 copy_if_modified(kconfig_inc_path + '.in', kconfig_inc_path)
 
 # http://stackoverflow.com/questions/12772927/specifying-an-online-image-in-sphinx-restructuredtext-format
-# 
+#
 suppress_warnings = ['image.nonlocal_uri']
 
 # -- General configuration ------------------------------------------------

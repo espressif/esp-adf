@@ -27,7 +27,7 @@ Ringbuffer is designed in addition to use as a data buffer, also used to connect
 Application Example
 -------------------
 
-In most of ESP-ADF :adf:`examples` connecting of Elements with Ringbuffers is done "behind the scenes" by a function :cpp:func:`audio_pipeline_link`. To see this operation exposed check :example:`player/element_sdcard_mp3` example.
+In most of ESP-ADF :adf:`examples` connecting of Elements with Ringbuffers is done "behind the scenes" by a function :cpp:func:`audio_pipeline_link`. To see this operation exposed check :example:`player/pipeline_sdcard_mp3_control` example.
 
 
 API Reference

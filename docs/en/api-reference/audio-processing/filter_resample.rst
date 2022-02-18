@@ -11,7 +11,7 @@ Implementation of this API is demonstrated in the following examples:
 
 * :example:`audio_processing/pipeline_resample`
 * :example:`audio_processing/pipeline_spiffs_amr_resample`
-* :example:`get-started/play_mp3`
+* :example:`get-started/play_mp3_control`
 
 
 API Reference

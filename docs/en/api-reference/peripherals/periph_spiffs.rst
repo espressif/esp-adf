@@ -7,7 +7,7 @@ Use this API to initialize, mount and unmount spiffs partition, see functions :c
 Application Example
 -------------------
 
-Implementation of this API is demonstrated in :example:`filter/pipeline_spiffs_amr_resample` example.
+Implementation of this API is demonstrated in :example:`audio_processing/pipeline_spiffs_amr_resample` example.
 
 
 API Reference

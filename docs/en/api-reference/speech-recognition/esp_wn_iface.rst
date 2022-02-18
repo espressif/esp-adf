@@ -35,7 +35,7 @@ Configuration and use of particular elements is demonstrated in several :adf:`ex
 Application Example
 -------------------
 
-The :example:`speech_recognition/asr/main/example_asr_main.c` example demonstrates how to initialize the model, determine the number of samples and the sample rate of voice data to feed to the model, and detect the wakeup word.
+The :example_file:`speech_recognition/wwe/main/main.c` example demonstrates how to initialize the model, determine the number of samples and the sample rate of voice data to feed to the model, and detect the wakeup word.
 
 Implementation of the speech recognition API is demonstrated in that example.
 

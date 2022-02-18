@@ -9,8 +9,9 @@ Application Examples
 
 Implementation of this API is demonstrated in the following examples:
 
-* :example:`get-started/play_mp3`
-* :example:`player/pipeline_sdcard_mp3`
+* :example:`get-started/play_mp3_control`
+* :example:`player/pipeline_play_sdcard_music`
+* :example:`player/pipeline_play_mp3_with_dac_or_pwm`
 
 
 API Reference

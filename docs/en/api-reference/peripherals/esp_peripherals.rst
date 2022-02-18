@@ -10,7 +10,7 @@ This library simplifies the management of peripherals, by pooling and monitoring
 Examples
 --------
 
-Please refer to :example:`player/pipeline_http_mp3/main/play_http_mp3_example.c`.
+Please refer to :example_file:`player/pipeline_http_mp3/main/play_http_mp3_example.c`.
 
 
 API Reference

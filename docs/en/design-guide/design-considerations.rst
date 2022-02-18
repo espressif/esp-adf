@@ -74,7 +74,7 @@ The initial spare internal RAM is 290kB.
 
 1. According to the Wi-Fi menuconfig each Tx and Rx buffer occupies 1.6kB internal RAM. The value of 50kB RAM is assuming use of 5 Rx static buffers and 6 Tx static buffers. If PSRAM is not in use, then the "Type of WiFi Tx Buffer" option should be set as *DYNAMIC* in order to save RAM, in this case, the RAM usage will be far less than 50kB, but programmer should keep at least 50kB available for the Wi-Fi to be able to transmit the data. **[Internal RAM only]**
 
-2. Depending on value of *SD_CARD_OPEN_FILE_NUM_MAX* in :component_file:`audio_hal/board/board.h`, that is then used in ``sd_card_mount()`` function, the RAM needed will increase with a greater number of maximum open files. 12kB is the RAM needed with 5 max files and 512 bytes *CONFIG_WL_SECTOR_SIZE*. **[Internal RAM only]**
+2. Taking ESP32-LyraT V4.3 as an example, depending on value of *SDCARD_OPEN_FILE_NUM_MAX* in :component_file:`audio_board/lyrat_v4_3/board_def.h`, that is then used in ``sdcard_mount()`` function, the RAM needed will increase with a greater number of maximum open files. 12kB is the RAM needed with 5 max files and 512 bytes *CONFIG_WL_SECTOR_SIZE*. **[Internal RAM only]**
 
 3. Depending on configuration settings of the I2S stream, refer to :component_file:`audio_stream/include/i2s_stream.h` and :component_file:`audio_stream/i2s_stream.c`. **[Internal RAM only]**
 
