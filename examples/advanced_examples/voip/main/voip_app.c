@@ -265,8 +265,8 @@ static int _sip_event_handler(sip_event_msg_t *event)
         case SIP_EVENT_INVITING:
             ESP_LOGI(TAG, "SIP_EVENT_INVITING Remote Ring...");
             break;
-        case SIP_EVENT_BUSY:
-            ESP_LOGI(TAG, "SIP_EVENT_BUSY");
+        case SIP_EVENT_ERROR:
+            ESP_LOGI(TAG, "SIP_EVENT_ERROR");
             break;
         case SIP_EVENT_HANGUP:
             ESP_LOGI(TAG, "SIP_EVENT_HANGUP");
