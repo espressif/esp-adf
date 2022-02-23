@@ -58,6 +58,7 @@ esp_err_t _http_stream_event_handle(http_stream_event_msg_t *msg)
     if (msg->event_id == HTTP_STREAM_PRE_REQUEST) {
         // set header
         ESP_LOGI(TAG, "[ + ] HTTP client HTTP_STREAM_PRE_REQUEST, lenght=%d", msg->buffer_len);
+        esp_http_client_set_method(http, HTTP_METHOD_POST);
         esp_http_client_set_header(http, "x-audio-sample-rates", "16000");
         esp_http_client_set_header(http, "x-audio-bits", "16");
         esp_http_client_set_header(http, "x-audio-channel", "2");
