@@ -33,8 +33,8 @@
 #define LCD_RST_GPIO                GPIO_NUM_48
 #define LCD_DC_GPIO                 GPIO_NUM_4
 #define LCD_CS_GPIO                 GPIO_NUM_5
-#define LCD_CLK_GPIO                GPIO_NUM_7
 #define LCD_MOSI_GPIO               GPIO_NUM_6
+#define LCD_CLK_GPIO                GPIO_NUM_7
 // The LCD pixel number in horizontal and vertical
 #define LCD_H_RES                   320
 #define LCD_V_RES                   240
@@ -73,6 +73,11 @@
 #define FUNC_AUDIO_CODEC_EN         (1)
 #define HEADPHONE_DETECT            -1
 #define PA_ENABLE_GPIO              GPIO_NUM_46
+#define CODEC_ADC_I2S_PORT          (0)
+#define CODEC_ADC_BITS_PER_SAMPLE   I2S_BITS_PER_SAMPLE_32BIT
+#define CODEC_ADC_SAMPLE_RATE       48000
+#define RECORD_HARDWARE_AEC         (false)
+
 extern audio_hal_func_t AUDIO_CODEC_ES8156_DEFAULT_HANDLE;
 extern audio_hal_func_t AUDIO_CODEC_ES7243E_DEFAULT_HANDLE;
 
@@ -96,6 +101,9 @@ extern audio_hal_func_t AUDIO_CODEC_ES7243E_DEFAULT_HANDLE;
 #define BUTTON_VOLUP_ID             0
 #define BUTTON_VOLDOWN_ID           1
 #define BUTTON_SET_ID               2
+#define BUTTON_PLAY_ID              3
+#define BUTTON_MODE_ID              4
+#define BUTTON_REC_ID               5
 #define INPUT_KEY_DEFAULT_INFO() {                      \
     {                                                   \
         .type = PERIPH_ID_ADC_BTN,                      \

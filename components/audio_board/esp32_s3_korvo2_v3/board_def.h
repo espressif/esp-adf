@@ -137,6 +137,11 @@
 #define ES8311_MCLK_SOURCE          (0)   /* 0 From MCLK of esp32   1 From BCLK */
 #define HEADPHONE_DETECT            (-1)
 #define PA_ENABLE_GPIO              GPIO_NUM_48
+#define CODEC_ADC_I2S_PORT          (0)
+#define CODEC_ADC_BITS_PER_SAMPLE   I2S_BITS_PER_SAMPLE_32BIT
+#define CODEC_ADC_SAMPLE_RATE       48000
+#define RECORD_HARDWARE_AEC         (true)
+
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 extern audio_hal_func_t AUDIO_CODEC_ES7210_DEFAULT_HANDLE;
 

@@ -86,7 +86,7 @@ void *audio_board_lcd_init(esp_periph_set_handle_t set, void *cb)
         .pin_bit_mask = LCD_CTRL_GPIO > 0 ? 1ULL << LCD_CTRL_GPIO : 0ULL,
     };
     gpio_config(&bk_gpio_config);
-    gpio_set_level(LCD_CTRL_GPIO, true);
+    gpio_set_level(LCD_CTRL_GPIO, false);
 
     spi_bus_config_t buscfg = {
         .sclk_io_num = LCD_CLK_GPIO,
