@@ -179,3 +179,25 @@ esp_err_t i2c_bus_cmd_begin(i2c_bus_handle_t bus, i2c_cmd_handle_t cmd, portBASE
     esp_err_t ret = i2c_master_cmd_begin(p_bus->i2c_port, cmd, ticks_to_wait);
     return ret;
 }
+
+esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr)
+{
+    I2C_BUS_CHECK(bus != NULL, "Handle error", ESP_FAIL);
+    /* Use 7 bit address here */
+    if (addr >= 0x80) {
+        ESP_LOGE(TAG, "I2C addr out of range");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    i2c_bus_t *i2c_bus = (i2c_bus_t *) bus;
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, addr, I2C_ACK_CHECK_EN);
+    i2c_master_stop(cmd);
+    esp_err_t ret_val = i2c_master_cmd_begin(i2c_bus->i2c_port, cmd, pdMS_TO_TICKS(500));
+    i2c_cmd_link_delete(cmd);
+
+    /* Get probe result if ESP_OK equals to ret_val */
+    return ret_val;
+}
+
