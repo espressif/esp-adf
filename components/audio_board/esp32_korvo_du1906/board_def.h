@@ -25,22 +25,35 @@
 #ifndef _AUDIO_BOARD_DEFINITION_H_
 #define _AUDIO_BOARD_DEFINITION_H_
 
-#define BUTTON_VOLUP_ID           0
-#define BUTTON_VOLDOWN_ID         1
-#define BUTTON_MUTE_ID            2
-#define BUTTON_SET_ID             3
-
-#define PA_ENABLE_GPIO            GPIO_NUM_12
-#define ADC_DETECT_GPIO           GPIO_NUM_36
-#define BATTERY_DETECT_GPIO       GPIO_NUM_37
-
+/**
+ * @brief SDCARD Function Definition
+ */
+#define FUNC_SDCARD_EN            (1)
 #define SDCARD_OPEN_FILE_NUM_MAX  5
 #define SDCARD_INTR_GPIO          GPIO_NUM_39
-#define ES7243_MCLK_GPIO          GPIO_NUM_0
 
+
+/**
+ * @brief LED Function Definition
+ */
+#define FUNC_SYS_LEN_EN           (1)
 #define WS2812_LED_GPIO_PIN       3
 #define WS2812_LED_BAR_NUMBERS    2
 
+
+/**
+ * @brief Battery Detect Function Definition
+ */
+#define FUNC_BATTERY_DET_EN       (1)
+#define BATTERY_DETECT_GPIO       GPIO_NUM_37
+
+
+/**
+ * @brief Audio Codec Chip Function Definition
+ */
+#define FUNC_AUDIO_CODEC_EN       (1)
+#define ES7243_MCLK_GPIO          GPIO_NUM_0
+#define PA_ENABLE_GPIO            GPIO_NUM_12
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
@@ -53,7 +66,17 @@
         },                                              \
 };
 
-#define INPUT_KEY_NUM            4
+
+/**
+ * @brief Button Function Definition
+ */
+#define FUNC_BUTTON_EN            (1)
+#define ADC_DETECT_GPIO           GPIO_NUM_36
+#define INPUT_KEY_NUM             4
+#define BUTTON_VOLUP_ID           0
+#define BUTTON_VOLDOWN_ID         1
+#define BUTTON_MUTE_ID            2
+#define BUTTON_SET_ID             3
 
 #define INPUT_KEY_DEFAULT_INFO() {                      \
     {                                                   \

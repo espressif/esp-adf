@@ -37,6 +37,7 @@
 /**
  * @brief LED Function Definition
  */
+#define FUNC_SYS_LEN_EN           (1)
 #define BLUE_LED_GPIO             GPIO_NUM_27
 #define GREEN_LED_GPIO            GPIO_NUM_22
 
@@ -51,7 +52,7 @@
 #define ES8311_MCLK_SOURCE        0   /* 0 From MCLK of esp32   1 From BCLK */
 #define CODEC_ADC_I2S_PORT        (1)
 #define CODEC_ADC_BITS_PER_SAMPLE I2S_BITS_PER_SAMPLE_16BIT
-#define CODEC_ADC_SAMPLE_RATE     16000
+#define CODEC_ADC_SAMPLE_RATE     (16000)
 #define RECORD_HARDWARE_AEC       (true)
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
@@ -73,6 +74,7 @@ extern audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE;
  * @brief Button Function Definition
  */
 #define FUNC_BUTTON_EN            (1)
+#define ADC_DETECT_GPIO           GPIO_NUM_39
 #define INPUT_KEY_NUM             6
 #define BUTTON_VOLUP_ID           0
 #define BUTTON_VOLDOWN_ID         1

@@ -25,24 +25,27 @@
 #ifndef _AUDIO_BOARD_DEFINITION_H_
 #define _AUDIO_BOARD_DEFINITION_H_
 
+/**
+ * @brief SDCARD Function Definition
+ */
+#define FUNC_SDCARD_EN            (1)
 #define SDCARD_OPEN_FILE_NUM_MAX  5
 #define SDCARD_INTR_GPIO          GPIO_NUM_34
 
+
+/**
+ * @brief Audio Codec Chip Function Definition
+ */
+#define FUNC_AUDIO_CODEC_EN       (1)
 #define PA_ENABLE_GPIO            GPIO_NUM_22
-
-#define ADC_DETECT_GPIO           GPIO_NUM_39
-#define BUTTON_SET_ID             0
-#define BUTTON_PLAY_ID            1
-#define BUTTON_REC_ID             2
-#define BUTTON_MODE_ID            3
-#define BUTTON_VOLDOWN_ID         4
-#define BUTTON_VOLUP_ID           5
-
 #define CODEC_RESET_GPIO          GPIO_NUM_19
 #define DSP_RESET_GPIO            GPIO_NUM_21
+#define CODEC_ADC_I2S_PORT        (0)
+#define CODEC_ADC_BITS_PER_SAMPLE I2S_BITS_PER_SAMPLE_16BIT
+#define CODEC_ADC_SAMPLE_RATE     (44100)
+#define RECORD_HARDWARE_AEC       (false)
 
 extern audio_hal_func_t AUDIO_CODEC_ZL38063_DEFAULT_HANDLE;
-
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
@@ -55,7 +58,19 @@ extern audio_hal_func_t AUDIO_CODEC_ZL38063_DEFAULT_HANDLE;
         },                                              \
 };
 
-#define INPUT_KEY_NUM     6
+
+/**
+ * @brief Button Function Definition
+ */
+#define FUNC_BUTTON_EN            (1)
+#define ADC_DETECT_GPIO           GPIO_NUM_39
+#define INPUT_KEY_NUM             6
+#define BUTTON_SET_ID             0
+#define BUTTON_PLAY_ID            1
+#define BUTTON_REC_ID             2
+#define BUTTON_MODE_ID            3
+#define BUTTON_VOLDOWN_ID         4
+#define BUTTON_VOLUP_ID           5
 
 #define INPUT_KEY_DEFAULT_INFO() {                  \
     {                                               \

@@ -331,7 +331,7 @@ void duer_app_init(void)
     audio_board_init();
     audio_board_key_init(set);
     audio_board_sdcard_init(set, SD_MODE_1_LINE);
-#ifndef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+#ifdef FUNC_SYS_LEN_EN
     disp_serv = audio_board_led_init();
 #endif
 
