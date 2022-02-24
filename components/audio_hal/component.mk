@@ -22,3 +22,6 @@ COMPONENT_SRCDIRS += ./driver/tas5805m ./driver/es7148
 
 COMPONENT_ADD_INCLUDEDIRS += ./driver/es7210 ./driver/es8156 ./driver/es7243e
 COMPONENT_SRCDIRS += ./driver/es7210 ./driver/es8156 ./driver/es7243e
+
+COMPONENT_ADD_INCLUDEDIRS += ./driver/ac101
+COMPONENT_SRCDIRS += ./driver/ac101
