@@ -28,10 +28,6 @@ builddir = '_build'
 if 'BUILDDIR' in os.environ:
     builddir = os.environ['BUILDDIR']
 
-if os.environ.get('ADF_PATH') is None:
-    raise RuntimeError('ADF_PATH should be set, run export.sh before building docs')
-
-
 # Call Doxygen to get XML files from the header files
 print("Calling Doxygen to generate latest XML files")
 os.system("doxygen ../Doxyfile")

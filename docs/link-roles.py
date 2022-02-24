@@ -115,21 +115,23 @@ def github_link(link_type, adf_rev, submods, root_path, app_config):
             link = text
 
         rel_path = root_path + link
-        abs_path = os.path.join(os.environ['ADF_PATH'], rel_path.lstrip('/'))
+        abs_path = os.path.join(os.getenv('ADF_PATH', ''), rel_path.lstrip('/'))
 
         repo_url, repo_rev, rel_path = redirect_submodule(rel_path, submods, adf_rev)
         url = url_join(BASE_URL, repo_url, link_type, repo_rev, rel_path)
 
-        is_dir = (link_type == 'tree')
+        if 'READTHEDOCS' not in os.environ:
+            # only check links when building locally
+            is_dir = (link_type == 'tree')
 
-        if not os.path.exists(abs_path):
-            warning('ADF path %s does not appear to exist (absolute path %s)' % (rel_path, abs_path))
-        elif is_dir and not os.path.isdir(abs_path):
-            # note these "wrong type" warnings are not strictly needed  as GitHub will apply a redirect,
-            # but the may become important in the future (plus make for cleaner links)
-            warning('ADF path %s is not a directory but role :%s: is for linking to a directory, try :%s_file:' % (rel_path, name, name))
-        elif not is_dir and os.path.isdir(abs_path):
-            warning('ADF path %s is a directory but role :%s: is for linking to a file' % (rel_path, name))
+            if not os.path.exists(abs_path):
+                warning('ADF path %s does not appear to exist (absolute path %s)' % (rel_path, abs_path))
+            elif is_dir and not os.path.isdir(abs_path):
+                # note these "wrong type" warnings are not strictly needed  as GitHub will apply a redirect,
+                # but the may become important in the future (plus make for cleaner links)
+                warning('ADF path %s is not a directory but role :%s: is for linking to a directory, try :%s_file:' % (rel_path, name, name))
+            elif not is_dir and os.path.isdir(abs_path):
+                warning('ADF path %s is a directory but role :%s: is for linking to a file' % (rel_path, name))
 
         node = nodes.reference(rawtext, link_text, refuri=url, **options)
         return [node], []
