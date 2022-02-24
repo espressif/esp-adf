@@ -1,0 +1,55 @@
+From 008bdd13eeafb1f7219061291da565bdd4d7d3bb Mon Sep 17 00:00:00 2001
+From: xutao <xutao@espressif.com>
+Date: Fri, 28 Jan 2022 16:16:46 +0800
+Subject: [PATCH] http_client: fix errno error
+
+---
+ components/esp_http_client/esp_http_client.c         |  9 +++++++++
+ components/esp_http_client/include/esp_http_client.h | 11 +++++++++++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/components/esp_http_client/esp_http_client.c b/components/esp_http_client/esp_http_client.c
+index 940a0c9254..a8f1965db9 100644
+--- a/components/esp_http_client/esp_http_client.c
++++ b/components/esp_http_client/esp_http_client.c
+@@ -876,6 +876,15 @@ esp_err_t esp_http_client_set_url(esp_http_client_handle_t client, const char *u
+     return ESP_OK;
+ }
+ 
++int esp_http_client_get_errno(esp_http_client_handle_t client)
++{
++    if (!client) {
++        ESP_LOGE(TAG, "Invalid client handle");
++        return -1;
++    }
++    return esp_transport_get_errno(client->transport);
++}
++
+ esp_err_t esp_http_client_set_method(esp_http_client_handle_t client, esp_http_client_method_t method)
+ {
+     client->connection_info.method = method;
+diff --git a/components/esp_http_client/include/esp_http_client.h b/components/esp_http_client/include/esp_http_client.h
+index e559b61939..57529cf520 100644
+--- a/components/esp_http_client/include/esp_http_client.h
++++ b/components/esp_http_client/include/esp_http_client.h
+@@ -344,6 +344,17 @@ esp_err_t esp_http_client_set_password(esp_http_client_handle_t client, char *pa
+  */
+ esp_err_t esp_http_client_set_authtype(esp_http_client_handle_t client, esp_http_client_auth_type_t auth_type);
+ 
++/**
++ * @brief      Get HTTP client session errno
++ *
++ * @param[in]  client  The esp_http_client handle
++ *
++ * @return
++ *         - (-1) if invalid argument
++ *         - errno
++ */
++int esp_http_client_get_errno(esp_http_client_handle_t client);
++
+ /**
+  * @brief      Set http request method
+  *
+-- 
+2.17.1
+

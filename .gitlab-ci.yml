@@ -297,9 +297,7 @@ before_script:
       - $BOT_LABEL_REGULAR_TEST
 
 .add_adf_components_to_ut_make_build: &add_adf_components_to_ut_make_build
-  - cd $ADF_PATH
-  - git apply idf_patches/adf_http_stream.patch
-  - cd ../adf-libs-ut
+  - cd $ADF_PATH/../adf-libs-ut
   - export ADF_UT=$(pwd)
   - cd $ADF_PATH
   - sed -i '/EXTRA_COMPONENT_DIRS += \$(ADF_PATH)\/components\//a\EXTRA_COMPONENT_DIRS += $(ADF_UT)/esp_audio' project.mk
@@ -321,9 +319,7 @@ before_script:
   - sed -i "s%include \$(IDF_PATH)\/make\/project.mk%include \$(ADF_PATH)\/project.mk%g" Makefile
 
 .add_adf_components_to_ut_v44_make_build: &add_adf_components_to_ut_v44_make_build
-  - cd $ADF_PATH
-  - git apply idf_patches/adf_http_stream.patch
-  - cd ../adf-libs-ut
+  - cd $ADF_PATH/../adf-libs-ut
   - export ADF_UT=$(pwd)
   - cd $ADF_PATH
   - sed -i '/EXTRA_COMPONENT_DIRS += \$(ADF_PATH)\/components\//a\EXTRA_COMPONENT_DIRS += $(ADF_UT)/esp_audio' project.mk

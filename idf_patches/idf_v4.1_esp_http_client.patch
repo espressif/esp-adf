@@ -1,0 +1,196 @@
+From 9b2af2992785564ff07693d893c0bd0c7e767787 Mon Sep 17 00:00:00 2001
+From: xutao <xutao@espressif.com>
+Date: Mon, 7 Mar 2022 17:19:07 +0800
+Subject: [PATCH] bugfix: Fix incorrect errno when multiple esp-http-client
+
+---
+ components/esp_http_client/esp_http_client.c  |  8 +++++++
+ .../esp_http_client/include/esp_http_client.h | 11 +++++++++
+ .../tcp_transport/include/esp_transport.h     | 24 +++++++++++++++++++
+ components/tcp_transport/transport.c          | 18 ++++++++++++++
+ components/tcp_transport/transport_ssl.c      | 16 +++++++++++++
+ components/tcp_transport/transport_tcp.c      | 16 ++++++++++++-
+ 6 files changed, 92 insertions(+), 1 deletion(-)
+
+diff --git a/components/esp_http_client/esp_http_client.c b/components/esp_http_client/esp_http_client.c
+index f2af0ab5a7..a3c855b6e6 100644
+--- a/components/esp_http_client/esp_http_client.c
++++ b/components/esp_http_client/esp_http_client.c
+@@ -1191,6 +1191,14 @@ static esp_err_t esp_http_client_request_send(esp_http_client_handle_t client, i
+     return ESP_OK;
+ }
+ 
++int esp_http_client_get_errno(esp_http_client_handle_t client)
++{
++    if (client && client->transport) {
++        return esp_transport_get_errno(client->transport);
++    }
++    return ESP_FAIL;
++}
++
+ static esp_err_t esp_http_client_send_post_data(esp_http_client_handle_t client)
+ {
+     if (client->state != HTTP_STATE_REQ_COMPLETE_HEADER) {
+diff --git a/components/esp_http_client/include/esp_http_client.h b/components/esp_http_client/include/esp_http_client.h
+index 921edf7cd7..9679515036 100644
+--- a/components/esp_http_client/include/esp_http_client.h
++++ b/components/esp_http_client/include/esp_http_client.h
+@@ -206,6 +206,17 @@ esp_err_t esp_http_client_perform(esp_http_client_handle_t client);
+  */
+ esp_err_t esp_http_client_set_url(esp_http_client_handle_t client, const char *url);
+ 
++/**
++* @brief    Get Current HTTP errno
++*
++* @param[in]  client  The client
++*
++* @return
++*   The current HTTP errno
++*   ESP_FAIL
++*/
++int esp_http_client_get_errno(esp_http_client_handle_t client);
++
+ /**
+  * @brief      Set post data, this function must be called before `esp_http_client_perform`.
+  *             Note: The data parameter passed to this function is a pointer and this function will not copy the data
+diff --git a/components/tcp_transport/include/esp_transport.h b/components/tcp_transport/include/esp_transport.h
+index 70874a2eeb..05a390697c 100644
+--- a/components/tcp_transport/include/esp_transport.h
++++ b/components/tcp_transport/include/esp_transport.h
+@@ -137,6 +137,30 @@ int esp_transport_get_default_port(esp_transport_handle_t t);
+  */
+ esp_err_t esp_transport_set_default_port(esp_transport_handle_t t, int port);
+ 
++/**
++ *  @brief      Get Current socket errno
++ *
++ * @param[in]  t        The transport handle
++ *
++ * @return
++ *   - The current errno
++ *   - ESP_FAIL
++ */
++int esp_transport_get_errno(esp_transport_handle_t t);
++
++/**
++ * @brief      Set transport get errno functions for the transport handle
++ *
++ * @param[in]  t                The transport handle
++ * @param[in]  _get_errno_func  The get errno function pointer
++ *
++ * @return
++ *     - ESP_OK
++ *     - ESP_FAIL
++ */
++esp_err_t esp_transport_set_get_errno_func(esp_transport_handle_t t, trans_func _get_errno_func);
++
++
+ /**
+  * @brief      Transport connection function, to make a connection to server
+  *
+diff --git a/components/tcp_transport/transport.c b/components/tcp_transport/transport.c
+index 0dbad08f6b..4ca5b04f3d 100644
+--- a/components/tcp_transport/transport.c
++++ b/components/tcp_transport/transport.c
+@@ -41,6 +41,7 @@ struct esp_transport_item_t {
+     poll_func       _poll_read;     /*!< Poll and read */
+     poll_func       _poll_write;    /*!< Poll and write */
+     trans_func      _destroy;       /*!< Destroy and free transport */
++    trans_func      _get_errno;     /*!< Get the errno */
+     connect_async_func _connect_async;      /*!< non-blocking connect function of this transport */
+     payload_transfer_func  _parent_transfer;        /*!< Function returning underlying transport layer */
+     esp_tls_error_handle_t     error_handle;            /*!< Pointer to esp-tls error handle */
+@@ -274,6 +275,23 @@ esp_err_t esp_transport_set_default_port(esp_transport_handle_t t, int port)
+     return ESP_OK;
+ }
+ 
++int esp_transport_get_errno(esp_transport_handle_t t)
++{
++    if (t && t->_get_errno) {
++        return t->_get_errno(t);
++    }
++    return ESP_FAIL;
++}
++
++esp_err_t esp_transport_set_get_errno_func(esp_transport_handle_t t, trans_func _get_errno_func)
++{
++    if (t == NULL) {
++        return ESP_FAIL;
++    }
++    t->_get_errno = _get_errno_func;
++    return ESP_OK;
++}
++
+ esp_err_t esp_transport_set_async_connect_func(esp_transport_handle_t t, connect_async_func _connect_async_func)
+ {
+     if (t == NULL) {
+diff --git a/components/tcp_transport/transport_ssl.c b/components/tcp_transport/transport_ssl.c
+index 1b19fd5fca..584a9aea85 100644
+--- a/components/tcp_transport/transport_ssl.c
++++ b/components/tcp_transport/transport_ssl.c
+@@ -290,6 +290,20 @@ void esp_transport_ssl_set_keep_alive(esp_transport_handle_t t, esp_transport_ke
+     }
+ }
+ 
++static int esp_transport_ssl_get_errno(esp_transport_handle_t t)
++{
++    transport_ssl_t *ssl = esp_transport_get_context_data(t);
++    if ((ssl == NULL) || (ssl->tls == NULL)) {
++        ESP_LOGE(TAG, "tls connect failed");
++        return -1;
++    }
++    int sock_errno = 0;
++    uint32_t optlen = sizeof(sock_errno);
++    getsockopt(ssl->tls->sockfd, SOL_SOCKET, SO_ERROR, &sock_errno, &optlen);
++    ESP_LOGD(TAG, "[socket = %d] errno is %d\n", ssl->tls->sockfd, sock_errno);
++    return sock_errno;
++}
++
+ esp_transport_handle_t esp_transport_ssl_init(void)
+ {
+     esp_transport_handle_t t = esp_transport_init();
+@@ -301,6 +315,8 @@ esp_transport_handle_t esp_transport_ssl_init(void)
+     esp_transport_set_context_data(t, ssl);
+     esp_transport_set_func(t, ssl_connect, ssl_read, ssl_write, ssl_close, ssl_poll_read, ssl_poll_write, ssl_destroy);
+     esp_transport_set_async_connect_func(t, ssl_connect_async);
++    esp_transport_set_get_errno_func(t, esp_transport_ssl_get_errno);
++
+     return t;
+ }
+ 
+diff --git a/components/tcp_transport/transport_tcp.c b/components/tcp_transport/transport_tcp.c
+index c8ccf3e6d0..0ad99af7a9 100644
+--- a/components/tcp_transport/transport_tcp.c
++++ b/components/tcp_transport/transport_tcp.c
+@@ -222,6 +222,20 @@ void esp_transport_tcp_set_keep_alive(esp_transport_handle_t t, esp_transport_ke
+     esp_transport_set_keep_alive(t, keep_alive_cfg);
+ }
+ 
++static int tcp_get_errno(esp_transport_handle_t t)
++{
++    transport_tcp_t *tcp = esp_transport_get_context_data(t);
++    if (tcp->sock < 2) {
++        ESP_LOGE(TAG, "tcp connect failed");
++        return -1;
++    }
++    int sock_errno = 0;
++    uint32_t optlen = sizeof(sock_errno);
++    getsockopt(tcp->sock, SOL_SOCKET, SO_ERROR, &sock_errno, &optlen);
++    ESP_LOGD(TAG, "[socket = %d] errno is %d\n", tcp->sock, sock_errno);
++    return sock_errno;
++}
++
+ esp_transport_handle_t esp_transport_tcp_init(void)
+ {
+     esp_transport_handle_t t = esp_transport_init();
+@@ -233,6 +247,6 @@ esp_transport_handle_t esp_transport_tcp_init(void)
+     tcp->sock = -1;
+     esp_transport_set_func(t, tcp_connect, tcp_read, tcp_write, tcp_close, tcp_poll_read, tcp_poll_write, tcp_destroy);
+     esp_transport_set_context_data(t, tcp);
+-
++    esp_transport_set_get_errno_func(t, tcp_get_errno);
+     return t;
+ }
+-- 
+2.17.1
+
