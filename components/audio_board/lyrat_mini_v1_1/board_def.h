@@ -25,30 +25,37 @@
 #ifndef _AUDIO_BOARD_DEFINITION_H_
 #define _AUDIO_BOARD_DEFINITION_H_
 
+/**
+ * @brief SDCARD Function Definition
+ */
+#define FUNC_SDCARD_EN            (1)
 #define SDCARD_OPEN_FILE_NUM_MAX  5
 #define SDCARD_INTR_GPIO          GPIO_NUM_34
 #define SDCARD_PWR_CTRL           GPIO_NUM_13
-#define ES7243_MCLK_GPIO          GPIO_NUM_0
-
-#define BUTTON_VOLUP_ID           0
-#define BUTTON_VOLDOWN_ID         1
-#define BUTTON_SET_ID             2
-#define BUTTON_PLAY_ID            3
-#define BUTTON_MODE_ID            4
-#define BUTTON_REC_ID             5
-
-#define ES8311_MCLK_SOURCE        0   /* 0 From MCLK of esp32   1 From BCLK */
 
 
-#define HEADPHONE_DETECT          GPIO_NUM_19
-#define PA_ENABLE_GPIO            GPIO_NUM_21
-
+/**
+ * @brief LED Function Definition
+ */
 #define BLUE_LED_GPIO             GPIO_NUM_27
 #define GREEN_LED_GPIO            GPIO_NUM_22
 
+
+/**
+ * @brief Audio Codec Chip Function Definition
+ */
+#define FUNC_AUDIO_CODEC_EN       (1)
+#define ES7243_MCLK_GPIO          GPIO_NUM_0
+#define HEADPHONE_DETECT          GPIO_NUM_19
+#define PA_ENABLE_GPIO            GPIO_NUM_21
+#define ES8311_MCLK_SOURCE        0   /* 0 From MCLK of esp32   1 From BCLK */
+#define CODEC_ADC_I2S_PORT        (1)
+#define CODEC_ADC_BITS_PER_SAMPLE I2S_BITS_PER_SAMPLE_16BIT
+#define CODEC_ADC_SAMPLE_RATE     16000
+#define RECORD_HARDWARE_AEC       (true)
+
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 extern audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE;
-
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
@@ -61,8 +68,18 @@ extern audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE;
         },                                              \
 };
 
-#define INPUT_KEY_NUM     6
 
+/**
+ * @brief Button Function Definition
+ */
+#define FUNC_BUTTON_EN            (1)
+#define INPUT_KEY_NUM             6
+#define BUTTON_VOLUP_ID           0
+#define BUTTON_VOLDOWN_ID         1
+#define BUTTON_SET_ID             2
+#define BUTTON_PLAY_ID            3
+#define BUTTON_MODE_ID            4
+#define BUTTON_REC_ID             5
 #define INPUT_KEY_DEFAULT_INFO() {                      \
      {                                                  \
         .type = PERIPH_ID_ADC_BTN,                      \

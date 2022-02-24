@@ -24,6 +24,8 @@ GPATH
 examples/**/sdkconfig
 examples/**/sdkconfig.old
 examples/**/build
+examples/**/managed_components
+examples/**/dependencies.lock
 
 # Doc build artifacts
 docs/*/_build/

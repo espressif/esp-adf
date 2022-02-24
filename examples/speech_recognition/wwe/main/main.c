@@ -54,28 +54,29 @@
 #include "model_path.h"
 
 #define RECORDER_ENC_ENABLE (false)
-#define VOICE2FILE          (true)
+#define VOICE2FILE          (false)
 #define WAKENET_ENABLE      (true)
 #define SPEECH_CMDS_RESET   (false)
 
 #define SPEECH_COMMANDS     ("da kai dian deng,kai dian deng;guan bi dian deng,guan dian deng;guan deng;")
 
-#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-#define RECORDER_SAMPLE_RATE (16000)
-#else
-#define RECORDER_SAMPLE_RATE (48000)
+#ifndef CODEC_ADC_SAMPLE_RATE
+#warning "Please define CODEC_ADC_SAMPLE_RATE first, default value is 48kHz may not correctly"
+#define CODEC_ADC_SAMPLE_RATE    48000
 #endif
 
-#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
-#define BITS_PER_SAMPLE     (I2S_BITS_PER_SAMPLE_32BIT)
-#else
-#define BITS_PER_SAMPLE     (I2S_BITS_PER_SAMPLE_16BIT)
+#ifndef CODEC_ADC_BITS_PER_SAMPLE
+#warning "Please define CODEC_ADC_BITS_PER_SAMPLE first, default value 16 bits may not correctly"
+#define CODEC_ADC_BITS_PER_SAMPLE  I2S_BITS_PER_SAMPLE_16BIT
 #endif
 
-#if defined(CONFIG_ESP_LYRAT_MINI_V1_1_BOARD) || defined(CONFIG_ESP32_S3_KORVO2_V3_BOARD)
-#define AEC_ENABLE          (true)
-#else
-#define AEC_ENABLE          (false)
+#ifndef RECORD_HARDWARE_AEC
+#warning "The hardware AEC is disabled!"
+#define RECORD_HARDWARE_AEC  (false)
+#endif
+
+#ifndef CODEC_ADC_I2S_PORT
+#define CODEC_ADC_I2S_PORT  (0)
 #endif
 
 enum _rec_msg_id {
@@ -119,7 +120,7 @@ static esp_audio_handle_t setup_player()
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.i2s_config.sample_rate = 48000;
-    i2s_writer.i2s_config.bits_per_sample = BITS_PER_SAMPLE;
+    i2s_writer.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
     esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
@@ -278,19 +279,17 @@ static void start_recorder()
     }
 
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-#if RECORDER_SAMPLE_RATE == (16000)
-    i2s_cfg.i2s_port = 1;
+    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
     i2s_cfg.i2s_config.use_apll = 0;
-#endif
-    i2s_cfg.i2s_config.sample_rate = RECORDER_SAMPLE_RATE;
-    i2s_cfg.i2s_config.bits_per_sample = BITS_PER_SAMPLE;
+    i2s_cfg.i2s_config.sample_rate = CODEC_ADC_SAMPLE_RATE;
+    i2s_cfg.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
     i2s_cfg.type = AUDIO_STREAM_READER;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
     audio_element_handle_t filter = NULL;
-#if RECORDER_SAMPLE_RATE == (48000)
+#if CODEC_ADC_SAMPLE_RATE != (16000)
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    rsp_cfg.src_rate = 48000;
+    rsp_cfg.src_rate = CODEC_ADC_SAMPLE_RATE;
     rsp_cfg.dest_rate = 16000;
     filter = rsp_filter_init(&rsp_cfg);
 #endif
@@ -317,7 +316,7 @@ static void start_recorder()
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
     recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
     recorder_sr_cfg.afe_cfg.wakenet_init = WAKENET_ENABLE;
-    recorder_sr_cfg.afe_cfg.aec_init = AEC_ENABLE;
+    recorder_sr_cfg.afe_cfg.aec_init = RECORD_HARDWARE_AEC;
 #if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
     recorder_sr_cfg.input_order[0] = DAT_CH_REF0;
     recorder_sr_cfg.input_order[1] = DAT_CH_0;
@@ -408,7 +407,9 @@ void app_main(void)
     if (set != NULL) {
         esp_periph_set_register_callback(set, periph_callback, NULL);
     }
+#if VOICE2FILE
     audio_board_sdcard_init(set, SD_MODE_1_LINE);
+#endif
     audio_board_key_init(set);
     audio_board_init();
     setup_player();
