@@ -273,7 +273,7 @@ void duer_app_init(void)
     periph_service_set_callback(dueros_speaker->input_serv, input_key_service_cb, (void *)dueros_speaker);
 
     ESP_LOGI(TAG, "[Step 3.0] Create display service instance");
-#ifndef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+#ifdef FUNC_SYS_LEN_EN
     dueros_speaker->disp_serv = audio_board_led_init();
 #endif
     ESP_LOGI(TAG, "[Step 3.1] Register display service execution type");

@@ -139,7 +139,7 @@
 #define PA_ENABLE_GPIO              GPIO_NUM_48
 #define CODEC_ADC_I2S_PORT          (0)
 #define CODEC_ADC_BITS_PER_SAMPLE   I2S_BITS_PER_SAMPLE_32BIT
-#define CODEC_ADC_SAMPLE_RATE       48000
+#define CODEC_ADC_SAMPLE_RATE       (48000)
 #define RECORD_HARDWARE_AEC         (true)
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;

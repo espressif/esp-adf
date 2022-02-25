@@ -52,6 +52,21 @@
 #include "recorder_sr.h"
 
 static char *TAG = "AUDIO_SETUP";
+
+#ifndef CODEC_ADC_SAMPLE_RATE
+#warning "Please define CODEC_ADC_SAMPLE_RATE first, default value is 48kHz may not correctly"
+#define CODEC_ADC_SAMPLE_RATE    48000
+#endif
+
+#ifndef CODEC_ADC_BITS_PER_SAMPLE
+#warning "Please define CODEC_ADC_BITS_PER_SAMPLE first, default value 16 bits may not correctly"
+#define CODEC_ADC_BITS_PER_SAMPLE  I2S_BITS_PER_SAMPLE_16BIT
+#endif
+
+#ifndef CODEC_ADC_I2S_PORT
+#define CODEC_ADC_I2S_PORT  (0)
+#endif
+
 static audio_element_handle_t raw_read;
 
 static int _http_stream_event_handle(http_stream_event_msg_t *msg)
@@ -121,9 +136,7 @@ void *setup_player(void *cb, void *ctx)
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
     i2s_writer.i2s_config.sample_rate = 48000;
-#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
-    i2s_writer.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
-#endif
+    i2s_writer.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
     esp_audio_output_stream_add(handle, i2s_stream_init(&i2s_writer));
 
     // Set default volume
@@ -151,37 +164,13 @@ void *setup_recorder(rec_event_cb_t cb, void *ctx)
         return NULL;
     }
 
-#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.i2s_port = 1;
+    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
     i2s_cfg.i2s_config.use_apll = 0;
-    i2s_cfg.i2s_config.sample_rate = 16000;
+    i2s_cfg.i2s_config.sample_rate = CODEC_ADC_SAMPLE_RATE;
     i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
     i2s_cfg.type = AUDIO_STREAM_READER;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
-#else
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
-    i2s_cfg.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
-#endif
-    i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
-    audio_element_info_t i2s_info = {0};
-    audio_element_getinfo(i2s_stream_reader, &i2s_info);
-#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
-    i2s_info.bits = 32;
-#else
-    i2s_info.bits = 16;
-#endif
-    i2s_info.channels = 2;
-    i2s_info.sample_rates = 48000;
-    audio_element_setinfo(i2s_stream_reader, &i2s_info);
-
-    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    rsp_cfg.src_rate = 48000;
-    rsp_cfg.dest_rate = 16000;
-    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
-#endif
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_READER;
@@ -189,16 +178,20 @@ void *setup_recorder(rec_event_cb_t cb, void *ctx)
 
     audio_pipeline_register(pipeline, i2s_stream_reader, "i2s");
     audio_pipeline_register(pipeline, raw_read, "raw");
+    const char *link_tag[3] = {"i2s", "raw"};
+    uint8_t linked_num = 2;
 
-#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    const char *link_tag[2] = {"i2s", "raw"};
-    audio_pipeline_link(pipeline, &link_tag[0], 2);
-#else
+#if (CODEC_ADC_SAMPLE_RATE != (16000))
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_cfg.src_rate = CODEC_ADC_SAMPLE_RATE;
+    rsp_cfg.dest_rate = 16000;
+    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
     audio_pipeline_register(pipeline, filter, "filter");
-    const char *link_tag[3] = {"i2s", "filter", "raw"};
-    audio_pipeline_link(pipeline, &link_tag[0], 3);
+    link_tag[1] = "filter";
+    link_tag[2] = "raw";
+    linked_num = 3;
 #endif
-
+    audio_pipeline_link(pipeline, &link_tag[0], linked_num);
     audio_pipeline_run(pipeline);
     ESP_LOGI(TAG, "Recorder has been created");
 

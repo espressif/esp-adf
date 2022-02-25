@@ -30,6 +30,7 @@
 /**
  * @brief LED Function Definition
  */
+#define FUNC_SYS_LEN_EN             (1)
 #define WS2812_LED_GPIO             45
 
 
@@ -59,6 +60,11 @@
 #define FUNC_AUDIO_CODEC_EN         (1)
 #define PA_ENABLE_GPIO              10
 #define ES8311_MCLK_SOURCE          1   /* 0 From MCLK, 1 From BCLK */
+#define CODEC_ADC_I2S_PORT         (0)
+#define CODEC_ADC_BITS_PER_SAMPLE  I2S_BITS_PER_SAMPLE_16BIT
+#define CODEC_ADC_SAMPLE_RATE      (48000)
+#define RECORD_HARDWARE_AEC        (false)
+
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \

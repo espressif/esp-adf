@@ -38,6 +38,7 @@
 /**
  * @brief LED Function Definition
  */
+#define FUNC_SYS_LEN_EN           (1)
 #define GREEN_LED_GPIO            GPIO_NUM_22
 
 
@@ -50,7 +51,7 @@
 #define PA_ENABLE_GPIO            GPIO_NUM_21
 #define CODEC_ADC_I2S_PORT        (0)
 #define CODEC_ADC_BITS_PER_SAMPLE I2S_BITS_PER_SAMPLE_16BIT
-#define CODEC_ADC_SAMPLE_RATE     48000
+#define CODEC_ADC_SAMPLE_RATE     (48000)
 #define RECORD_HARDWARE_AEC       (false)
 
 extern audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE;

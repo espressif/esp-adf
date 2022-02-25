@@ -27,22 +27,32 @@
 
 #include "driver/touch_pad.h"
 
+/**
+ * @brief SDCARD Function Definition
+ */
+#define FUNC_SDCARD_EN            (1)
 #define SDCARD_OPEN_FILE_NUM_MAX  5
 #define SDCARD_INTR_GPIO          GPIO_NUM_34
 
-#define BUTTON_REC_ID             GPIO_NUM_36
-#define BUTTON_MODE_ID            GPIO_NUM_39
-#define BUTTON_SET_ID             TOUCH_PAD_NUM9
-#define BUTTON_PLAY_ID            TOUCH_PAD_NUM8
-#define BUTTON_VOLUP_ID           TOUCH_PAD_NUM7
-#define BUTTON_VOLDOWN_ID         TOUCH_PAD_NUM4
 
-#define AUXIN_DETECT_GPIO         GPIO_NUM_12
-#define PA_ENABLE_GPIO            GPIO_NUM_21
-
+/**
+ * @brief LED Function Definition
+ */
+#define FUNC_SYS_LEN_EN           (1)
 #define GREEN_LED_GPIO            GPIO_NUM_22
 #define RED_LED_GPIO              GPIO_NUM_19
 
+
+/**
+ * @brief Audio Codec Chip Function Definition
+ */
+#define FUNC_AUDIO_CODEC_EN       (1)
+#define AUXIN_DETECT_GPIO         GPIO_NUM_12
+#define PA_ENABLE_GPIO            GPIO_NUM_21
+#define CODEC_ADC_I2S_PORT        (0)
+#define CODEC_ADC_BITS_PER_SAMPLE I2S_BITS_PER_SAMPLE_16BIT
+#define CODEC_ADC_SAMPLE_RATE     (48000)
+#define RECORD_HARDWARE_AEC       (false)
 extern audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE;
 
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
@@ -57,7 +67,18 @@ extern audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE;
         },                                              \
 };
 
-#define INPUT_KEY_NUM     6
+
+/**
+ * @brief Button Function Definition
+ */
+#define FUNC_BUTTON_EN            (1)
+#define INPUT_KEY_NUM             6
+#define BUTTON_REC_ID             GPIO_NUM_36
+#define BUTTON_MODE_ID            GPIO_NUM_39
+#define BUTTON_SET_ID             TOUCH_PAD_NUM9
+#define BUTTON_PLAY_ID            TOUCH_PAD_NUM8
+#define BUTTON_VOLUP_ID           TOUCH_PAD_NUM7
+#define BUTTON_VOLDOWN_ID         TOUCH_PAD_NUM4
 
 #define INPUT_KEY_DEFAULT_INFO() {                      \
      {                                                  \
