@@ -1,27 +1,27 @@
-# GUI 显示示例
-- [English Version](./README.md)
-- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
+# GUI Display
+- [中文版本](./README_CN.md)
+- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
-## 例程简介
+## Example Brief
 
-本例程使用 LVGL 图形库绘制了一个音乐播放器的界面，支持触摸屏控制。本例程参考 LVGL 原始 lv_demo_music 工程。
+This example demonstrates how to use the LVGL graphics library to draw a music player user interface that supports touch screen control. This example refers to the original LVGL lv_demo_music project.
 
-## 环境配置
+## Environment Setup
 
-### 硬件要求
+### Hardware Required
 
-本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中 [例程与乐鑫音频开发板的兼容性表格](../../README_CN.md#例程与乐鑫音频开发板的兼容性) 中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
+This example runs on the boards that are marked with a green checkbox in the [table](../../README.md#compatibility-of-examples-with-espressif-audio-boards). Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
-## 编译和下载
+## Build and Flash
 
 
-### IDF 默认分支
+### Default IDF Branch
 
-本例程支持 IDF release/v4.4 及以后的分支，例程默认使用 IDF release/v4.4 分支。
+This example supports IDF release/v4.4 and later branches. By default, it runs on IDF release/v4.4.
 
-### IDF 分支
+### IDF Branch
 
-- IDF release/v4.4 分支切换命令如下：
+- The command to switch to IDF release/v4.4 branch is as follows:
 
 ```
 cd $IDF_PATH
@@ -31,32 +31,32 @@ git checkout release/v4.4
 git submodule update --init --recursive
 ```
 
-### 配置
+### Configuration
 
-本例程选择的开发板是 `ESP32-S3-Korvo-2 v3`。
+The default board for this example is `ESP32-S3-Korvo-2 v3`.
 
-### 编译和下载
+### Build and Flash
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
+Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``。
+To exit the serial monitor, type ``Ctrl-]``.
 
-有关配置和使用 ESP-IDF 生成项目的完整步骤，请前往 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/get-started/index.html)，并在页面左上角选择芯片和版本，查看对应的文档。
+For full steps to configure and build an ESP-IDF project, please go to [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) and select the chip and version in the upper left corner of the page.
 
-## 如何使用例程
+## How to Use the Example
 
 
-### 功能和用法
+### Example Functionality
 
-例程运行时会首先进入欢迎界面，待进入播放界面后，向上滑动 `ALL TRACKS` 会出现播放列表。点击一首模拟的音乐，再向下滑动折叠的播放界面，即可看到音乐正在播放。
+After the example starts running, it first presents the welcome page. Then, after entering the play page, please swipe up `ALL TRACKS` to see the playlist. Click on a piece of analog music, then slide down the collapsed play page to see the music being played.
 
-### 日志输出
+### Example Log
 
-以下为本例程的完整日志。
+A complete log is as follows:
 
 ```c
 I (25) boot: ESP-IDF v4.4-dev-3930-g214d62b9ad-dirty 2nd stage bootloader
@@ -111,11 +111,11 @@ I (468) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldow
 W (468) I2C_BUS: i2c_bus_create:57: I2C bus has been already created, [port:0]
 ```
 
-## 技术支持
+## Technical Support and Feedback
 
-请按照下面的链接获取技术支持：
+Please use the following feedback channels:
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
-- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
+* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-我们会尽快回复。
+We will get back to you as soon as possible.

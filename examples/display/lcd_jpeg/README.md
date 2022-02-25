@@ -1,28 +1,28 @@
-# JPEG 解码显示示例
-- [English Version](./README.md)
-- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
+# JPEG Decoding Display
+- [中文版本](./README_CN.md)
+- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
-## 例程简介
+## Example Brief
 
-本例程演示调用 `esp_jpeg_dec` API 解码 JPEG 图片，并显示在 LCD 上。示例图片分辨率为 320 * 244。
-
-
-## 环境配置
-
-### 硬件要求
-
-本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中 [例程与乐鑫音频开发板的兼容性表格](../../README_CN.md#例程与乐鑫音频开发板的兼容性) 中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
-
-## 编译和下载
+This example demonstrates calling the `esp_jpeg_dec` API to decode a JPEG image and display it on the LCD. The sample image resolution is 320 * 244.
 
 
-### IDF 默认分支
+## Environment Setup
 
-本例程支持 IDF release/v4.4 及以后的分支，例程默认使用 IDF release/v4.4 分支。
+### Hardware Required
 
-### IDF 分支
+This example runs on the boards that are marked with a green checkbox in the [table](../../README.md#compatibility-of-examples-with-espressif-audio-boards). Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
-- 本例程使用 release/v4.4 分支，切换命令如下：
+## Build and Flash
+
+
+### Default IDF Branch
+
+This example supports IDF release/v4.4 and later branches. By default, it runs on IDF release/v4.4.
+
+### IDF Branch
+
+- The command to switch to IDF release/v4.4 branch is as follows:
 
 ```
 cd $IDF_PATH
@@ -30,38 +30,38 @@ git checkout master
 git pull
 git checkout release/v4.4
 git submodule update --init --recursive
-  ```
+```
 
-### 配置
+### Configuration
 
-本例程默认选择的开发板是 `ESP32-S3-Korvo-2 v3`。如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-S2-Kaluga-1 Kit`。
+The default board for this example is `ESP32-S3-Korvo-2 v3`. If you need to run this example on other development boards, select the board in menuconfig, such as  `ESP32-S2-Kaluga-1 Kit`.
 
 ```
 menuconfig > Audio HAL > ESP32-S2-Kaluga-1 Kit
 ```
 
-### 编译和下载
+### Build and Flash
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
+Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``。
+To exit the serial monitor, type ``Ctrl-]``.
 
-有关配置和使用 ESP-IDF 生成项目的完整步骤，请前往 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/get-started/index.html)，并在页面左上角选择芯片和版本，查看对应的文档。
+For full steps to configure and build an ESP-IDF project, please go to [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) and select the chip and version in the upper left corner of the page.
 
-## 如何使用例程
+## How to Use the Example
 
-### 功能和用法
+### Example Functionality
 
-例程运行时可看到红色字样的 `ESP32` 图片，其效果是波浪浮动并不停反转。
+After the example starts running, it shows the `ESP32` image in red, with the effect of wavy floats and rollovers.
 
 
-### 日志输出
+### Example Log
 
-以下为本例程的完整日志。
+A complete log is as follows:
 
 ```c
 I (25) boot: ESP-IDF v4.4-dev-3838-gf23dcd3555-dirty 2nd stage bootloader
@@ -136,11 +136,11 @@ I (870) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldow
 I (870) ImageDec: The image size is 156160 bytes, width:320, height:244
 ```
 
-## 技术支持
+## Technical Support and Feedback
 
-请按照下面的链接获取技术支持：
+Please use the following feedback channels:
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
-- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
+* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-我们会尽快回复。
+We will get back to you as soon as possible.
