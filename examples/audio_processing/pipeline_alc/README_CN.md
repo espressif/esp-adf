@@ -34,7 +34,7 @@ ADF 当前提供了以下两种方法实现 ALC 设置音量。
 
 ### IDF 默认分支
 
-本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 
 ### 配置

@@ -22,7 +22,7 @@ ADF 在外部 PSRAM 中创建和使用了较多堆栈任务，任务运行时候
 
 ### IDF 默认分支
 
-本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 ### 配置
 

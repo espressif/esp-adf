@@ -84,7 +84,7 @@ _List all the hardware, such as development boards, speakers, microSD card, LCD 
 
 _Select either of the two expressions below depending on the actual situation._
 
-This example supports IDF release/v[x.y] and later branches. By default, it runs on ADF's build-in branch `$ADF_PATH/esp-idf`.
+This example supports IDF release/v[x.y] and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
 This example supports IDF release/v[x.y] and later branches. By default, it runs on IDF release/v[x.y].
 

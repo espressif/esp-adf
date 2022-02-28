@@ -24,7 +24,7 @@ ADF 定义了音频开发板常用的 [6 种功能按键](https://github.com/esp
 
 ### IDF 默认分支
 
-本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 
 ### 配置
