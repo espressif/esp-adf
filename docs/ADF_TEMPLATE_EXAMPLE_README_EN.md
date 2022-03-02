@@ -37,7 +37,7 @@ _It's optional, such as RAM, CPU loading._
 - _It's optional_
 - _It is short explanation of remaining files in the project folder and the folder structure. Below is the example of the `play_mp3` folder._
 
-```c
+```
 ├── components
 │   └── my_board
 │       ├── my_board_v1_0
@@ -82,7 +82,11 @@ _List all the hardware, such as development boards, speakers, microSD card, LCD 
 
 ### Default IDF Branch
 
-_The default IDF branch is ADF's built-in branch `$ADF_PATH/esp-idf`_
+_Select either of the two expressions below depending on the actual situation._
+
+This example supports IDF release/v[x.y] and later branches. By default, it runs on ADF's build-in branch `$ADF_PATH/esp-idf`.
+
+This example supports IDF release/v[x.y] and later branches. By default, it runs on IDF release/v[x.y].
 
 
 ### Other Special IDF Branches
@@ -90,7 +94,7 @@ _The default IDF branch is ADF's built-in branch `$ADF_PATH/esp-idf`_
 - _When required to select a special IDF/ADF version branch, which must be clearly pointed out and described_
 - _For example, DU1906 project selects the IDF branch `audio/stack_on_psram_v3.3` to compile_
 
-  ```c
+  ```bach
   cd $IDF_PATH
   git checkout master
   git pull
@@ -103,7 +107,7 @@ _The default IDF branch is ADF's built-in branch `$ADF_PATH/esp-idf`_
 
 - _Describe important items to configure in menuconfig, such as long file name support for FatFs, selection of compatible audio board, chip type, PSRAM clock, Wi-Fi/LWIP parameters and so on. Below is an example._
 
-  ```c
+  ```
   Component config > FAT Filesystem support > Long filename support
   ```
 
@@ -121,6 +125,8 @@ _Command to flash the example_
 
 - Legacy GNU Make command: `make flash monitor`
 - CMake command: `idf.py -p PORT flash monitor`
+
+For full steps to configure and build an ESP-IDF project, please go to [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) and select the chip and version in the upper left corner of the page.
 
 
 ## How to Use the Example
@@ -140,7 +146,7 @@ _Command to flash the example_
 
 ### Example Log
 
-- _Select the complete log from boot to the end of initialization:_
+The complete log is as follows:
 
 ```c
 I (64) boot: Chip Revision: 3

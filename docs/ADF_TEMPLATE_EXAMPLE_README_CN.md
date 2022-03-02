@@ -37,7 +37,7 @@ _可选项，如 RAM、CPU 负载_
 - _可选项_
 - _介绍示例的文件夹结构和文件，如 `play_mp3` 文件夹_
 
-```c
+```
 ├── components
 │   └── my_board
 │       ├── my_board_v1_0
@@ -80,9 +80,13 @@ _列举本例程需要的硬件资源，包括开发板、扬声器、microSD �
 ## 编译和下载
 
 
-### IDF 默认分支
+### 默认 IDF 分支
 
-_默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`_
+_根据实际情况选择以下两种表述方式中的一种。_
+
+本例程支持 IDF release/v[x.y] 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+
+本例程支持 IDF release/v[x.y] 及以后的分支，例程默认使用 IDF release/v[x.y] 分支。
 
 
 ### IDF 其他分支
@@ -90,7 +94,7 @@ _默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`_
 - _可选项，需要选择特殊 IDF 版本分支，均要明确指出_
 - _例如，DU1906 例程选择 IDF 分支 `audio/stack_on_psram_v3.3` 来编译，如：_
 
-  ```c
+  ```bash
   cd $IDF_PATH
   git checkout master
   git pull
@@ -103,7 +107,7 @@ _默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`_
 
 - _介绍和设置重要的 menuconfig 项目，如：FatFs 长文件名、开发板、芯片类型、PSRAM 时钟、Wi-Fi/LWIP 参数等_
 
-  ```c
+  ```
   Component config FAT Filesystem support Long filename support
   ```
   
@@ -122,6 +126,7 @@ _如何下载，命令是什么，如：_
 - Legacy GNU Make 命令 `make flash monitor`
 - CMake 命令 `idf.py -p PORT flash monitor`
 
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请前往 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/get-started/index.html)，并在页面左上角选择芯片和版本，查看对应的文档。
 
 ## 如何使用例程
 
@@ -139,7 +144,7 @@ _如何下载，命令是什么，如：_
 
 ### 日志输出
 
-_选取启动到初始化完成的 log，示例如下：_
+以下为本例程的完整日志。
 
 ```c
 I (64) boot: Chip Revision: 3
