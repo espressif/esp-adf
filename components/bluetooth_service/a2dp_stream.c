@@ -102,6 +102,8 @@ static void audio_a2dp_stream_thread(void *pvParameters)
         }
     }
     ESP_LOGI(TAG, "Delete the audio_a2dp_stream_thread");
+    vQueueDelete(s_aadp_handler.a2dp_queue);
+    s_aadp_handler.a2dp_queue = NULL;
     vTaskDelete(NULL);
 }
 
@@ -265,8 +267,6 @@ static esp_err_t a2dp_sink_destory(audio_element_handle_t self)
         return ESP_FAIL;
     }
     s_aadp_handler.sink_stream = NULL;
-    vQueueDelete(s_aadp_handler.a2dp_queue);
-    s_aadp_handler.a2dp_queue = NULL;
     memset(&s_aadp_handler.user_callback, 0, sizeof(a2dp_stream_user_callback_t));
     return ESP_OK;
 }
