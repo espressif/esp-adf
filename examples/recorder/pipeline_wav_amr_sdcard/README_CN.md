@@ -1,4 +1,3 @@
-
 # 同时录制 WAV 和 AMR 文件到 microSD 卡例程
 
 - [English Version](./README.md)
@@ -7,13 +6,13 @@
 
 ## 例程简介
 
-本例程使用管道 API 建立了 1 路 I2S 输入和 2 路文件输出的音频数据流，功能是同时录制 10 秒的 AMR 和 WAV 音频文件，然后保存到 microSD 卡中，使用元素 API 例程请参考 [element_wav_amr_sdcard](https://github.com/espressif/esp-adf/tree/master/examples/recorder/element_wav_amr_sdcard)。
+本例程使用管道 API 建立了 1 路 I2S 输入和 2 路文件输出的音频数据流，功能是同时录制 10 秒的 AMR 和 WAV 音频文件，然后保存到 microSD 卡中。使用元素 API 例程请参考 [element_wav_amr_sdcard](../element_wav_amr_sdcard/README_CN.md)。
 
 其中，AMR 支持 AMR-NB、AMR-WB 两种种音频编码器。默认选择 AMR-NB 编码器录制音频保存在 microSD 卡中。
 
 录音例程的管道如下所示：
 
-```c
+```
 [mic] ---> codec_chip ---> i2s_stream ---> wav_encoder ---> fatfs_stream ---> [sdcard]
                                       |
                                        ---> raw_stream ---> amr_encoder ---> fatfs_stream ---> [sdcard]
@@ -28,14 +27,14 @@
 
 ### 硬件要求
 
-本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中[例程与乐鑫音频开发板的兼容性表格](../../README_CN.md#例程与乐鑫音频开发板的兼容性)中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中 [例程与乐鑫音频开发板的兼容性表格](../../README_CN.md#例程与乐鑫音频开发板的兼容性) 中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 
 ## 编译和下载
 
 ### IDF 默认分支
 
-本例程默认 IDF 为 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 ### 配置
 
@@ -63,13 +62,13 @@ idf.py -p PORT flash monitor
 
 退出调试界面使用 ``Ctrl-]``。
 
-有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请前往 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/get-started/index.html)，并在页面左上角选择芯片和版本，查看对应的文档。
 
 ## 如何使用例程
 
 ### 功能和用法
 
-例程开始运行后，会打印如下倒计时提示，并提示录音开始。
+例程开始运行后，会提示录音开始，并打印录音读秒时间。日志如下：
 
 ```
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)

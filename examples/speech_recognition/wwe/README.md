@@ -1,49 +1,49 @@
-# 语音唤醒及语音命令词检测 (WWE + MN) 例程
+# Voice Wake-up and Voice Command Word Detection (WWE + MN)
 
-- [English Version](./README.md)
-- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
+- [中文版本](./README_CN.md)
+- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
-## 例程简介
+## Example Brief
 
-本例程演示了从麦克风读取环境声音数据，经过声学前端 (audio front-end, AFE) 算法和 MultiNet 模型处理分析，最后输出唤醒状态或者命令词索引。
+This example demonstrates how to read ambient sound data from a microphone, process it through the audio front-end (AFE) algorithm and MultiNet model, and finally output the wake-up status or command word index.
 
-管道的数据流向，如下图所示：
+The pipeline is as follows:
 
 ```
 mic ---> codec_chip ---> i2s_driver ---> afe ---> multinet ---> audio_recorder ---> output
 ```
 
-## 环境配置
+## Environment Setup
 
-### 硬件要求
+### Hardware Required
 
-本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中 [例程与乐鑫音频开发板的兼容性表格](../../README_CN.md#例程与乐鑫音频开发板的兼容性) 中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
+This example runs on the boards that are marked with a green checkbox in the [table](../../README.md#compatibility-of-examples-with-espressif-audio-boards). Please remember to select the board in menuconfig as discussed in Section [Configuration](#configuration) below.
 
-### Flash 分区要求
+### Flash Partition Requirement
 
-本例程默认选择的开发板是基于 ESP32-S3 的 `ESP32-S3-Korvo-2 v3.0`，因使用到的组件 `esp-sr` 在 ESP32-S3 上需要使用 flash 或者 microSD 卡来存取模型数据，而本例程默认使用的存储介质是 flash，所以需要在 flash 分区表中添加固定的分区：
+The default board for this example is `ESP32-S3-Korvo-2 v3.0` that is based on ESP32-S3. Since the component `esp-sr` used on ESP32-S3 requires a flash or microSD card to access the model data and the default storage medium used in this example is flash, a fixed partition needs to be added to the flash partition table:
 
 ```
 model, data, spiffs,  , 4152K,
 ```
 
-该分区的大小可以根据编译时候产生的日志里面的提示来确定，对应的提示为：
+Size of this partition can be determined based on the prompts generated inside the compiled log as follows:
 
 ```
 Recommended model partition size:  4152KB
 ```
 
-如果选择的是将数据存储在 microSD 卡中，或者是选择基于 ESP32 的开发板来测试本例程，则 flash 分区中不用包含此项。请参阅 [《模型加载方式》](https://github.com/espressif/esp-sr/blob/master/docs/flash_model/README_CN.md)。
+If you choose to store the data in microSD card or choose ESP32 based development board to test this example, there is no need to include this item in the flash partition. For more information, please see [Model loading method](https://github.com/espressif/esp-sr/blob/master/docs/flash_model/README.md).
 
-## 编译和下载
+## Build and Flash
 
-### IDF 默认分支
+### Default IDF Branch
 
-本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's build-in branch `$ADF_PATH/esp-idf`.
 
-### IDF 分支
+### IDF Branch
 
-- IDF release/v4.4 分支切换命令如下：
+- The command to switch to IDF release/v4.4 branch is as follows:
 
 ```
 cd $IDF_PATH
@@ -53,38 +53,38 @@ git checkout release/v4.4
 git submodule update --init --recursive
 ```
 
-本例程还需给 IDF 合入 `idf_v4.4_freertos.patch`，合入命令如下：
+This example also needs to merge `idf_v4.4_freertos.patch` into IDF. The merge command is as follows:
 
 ```
 cd $IDF_PATH
 git apply $ADF_PATH/idf_patches/idf_v4.4_freertos.patch
 ```
 
-### 配置
+### Configuration
 
-本例程默认选择的开发板是 `ESP32-S3-Korvo-2 v3.0`，请复制 `sdkconfg.defaults.esp32s3` 为 `sdkconfig.defaults`。如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`，并复制 `sdkconfg.defaults.esp32` 为 `sdkconfig.defaults`。
+The default board for this example is `ESP32-S3-Korvo-2 v3.0`. Please copy the content of `sdkconfg.defaults.esp32s3` and paste it into `sdkconfig.defaults`. If you need to run this example on another board, select the board configuration in menuconfig, e.g. select `ESP32-Lyrat-Mini V1.1`, and copy the content of `sdkconfg.defaults.esp32` and paste it into `sdkconfig.defaults`.
 
 ```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-### 编译和下载
+### Build and Flash
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
+Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``。
+To exit the serial monitor, type ``Ctrl-]``.
 
-有关配置和使用 ESP-IDF 生成项目的完整步骤，请前往 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/get-started/index.html)，并在页面左上角选择芯片和版本，查看对应的文档。
+For full steps to configure and build an ESP-IDF project, please go to [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) and select the chip and version in the upper left corner of the page.
 
-## 如何使用例程
+## How to Use the Example
 
-### 功能和用法
+### Example Functionality
 
-- 例程开始运行后，程序自动开始检测周围的背景环境声音，打印如下：
+- After the example starts running, it automatically starts detecting background ambient sounds. The log is as follows:
 
 ```
 I (0) cpu_start: App cpu up.
@@ -169,7 +169,7 @@ I (4419) MN: Command ID19, phrase 19: guan bi dian deng
 I (4429) MN: ---------------------------------------------------------
 ```
 
-- 如果此时说了唤醒词（默认为 “hi, lexin”），设备则会被唤醒，并播放提示音“叮”：
+- If the wake word is said at this point ("hi, lexin" by default), the device will be woken up and the tone "ding" will be played:
 
 ```
 I (93419) wwe_example: rec_engine_cb - REC_EVENT_WAKEUP_START
@@ -178,7 +178,7 @@ W (94099) wwe_example: voice read begin
 I (94119) AMRNB_ENCODER: amrnb open
 ```
 
-- 如果在说了唤醒词且听到“叮”的声音之后，说了命令词之一（如“打开空调”），则会通过日志打印出命令词索引（如 `wwe_example: command 0`），并播放语音“好的”：
+- If you say one of the command words (e.g., "打开空调") after saying the wake-up word and hearing the "ding" sound, the command word index (e.g., `wwe_example: command 0`) will be printed out in the log and the audio "好的" will be played.
 
 ```
 phrase_id = 0, the prob = -7.536505
@@ -191,9 +191,9 @@ I (141209) AMRNB_ENCODER: amrnb close
 I (142099) wwe_example: rec_engine_cb - REC_EVENT_WAKEUP_END
 ```
 
-### 日志输出
+### Example Log
 
-以下是本例程的完整日志。
+A complete log is as follows:
 
 ```
 I (0) cpu_start: App cpu up.
@@ -291,10 +291,10 @@ I (10196) AMRNB_ENCODER: amrnb close
 I (11076) wwe_example: rec_engine_cb - REC_EVENT_WAKEUP_END
 ```
 
-## 故障排除
+## Troubleshooting
 
-1. 此应用程序在以 ESP32 为核心的开发板上运行可能会触发任务看门狗。
-2. 使用 `lyrat_msc` 的开发板，请确保 zl38063 上运行的是最新版本的固件，可以通过修改 [zl38063.c](https://github.com/espressif/esp-adf/blob/master/components/audio_hal/driver/zl38063/zl38063.c) 中的函数 `zl38063_codec_init` 来强制下载一次最新固件。开发板启动并下载好 zl38063 固件之后，可以还原到之前的代码，替换代码如下：
+1. This application may trigger a task watchdog when running on an ESP32-based development board.
+2. For development boards using `lyrat_msc`, please make sure that you have the latest version of firmware running on the zl38063. You can enforce a download of the latest firmware once by modifying the function `zl38063_ codec_init` in [zl38063.c](https://github.com/espressif/esp-adf/blob/master/components/audio_hal/driver/zl38063/zl38063.c). After the development board is booted and the zl38063 firmware is downloaded, you can revert to the previous code and replace the code as follows:
 
 ```c
 esp_err_t zl38063_codec_init(audio_hal_codec_config_t *cfg)
@@ -327,11 +327,11 @@ esp_err_t zl38063_codec_init(audio_hal_codec_config_t *cfg)
 }
 ```
 
-## 技术支持
+## Technical Support and Feedback
 
-请按照下面的链接获取技术支持：
+Please use the following feedback channels:
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
-- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
+* For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-我们会尽快回复。
+We will get back to you as soon as possible.
