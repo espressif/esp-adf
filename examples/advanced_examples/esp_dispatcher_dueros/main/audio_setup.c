@@ -137,6 +137,7 @@ void *setup_player(void *cb, void *ctx)
     i2s_writer.type = AUDIO_STREAM_WRITER;
     i2s_writer.i2s_config.sample_rate = 48000;
     i2s_writer.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
+    i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != I2S_BITS_PER_SAMPLE_16BIT);
     esp_audio_output_stream_add(handle, i2s_stream_init(&i2s_writer));
 
     // Set default volume
