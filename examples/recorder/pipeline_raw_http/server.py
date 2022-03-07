@@ -1,11 +1,22 @@
-import os, datetime, sys, urlparse
-import SimpleHTTPServer, BaseHTTPServer
+import os, datetime, sys
 import wave
+import argparse
+import socket
+
+if sys.version_info.major == 3:
+    # Python3
+    from urllib import parse
+    from http.server import HTTPServer
+    from http.server import BaseHTTPRequestHandler
+else:
+    # Python2
+    import urlparse
+    from BaseHTTPServer import HTTPServer
+    from BaseHTTPServer import BaseHTTPRequestHandler
 
 PORT = 8000
-HOST = '0.0.0.0'
 
-class Handler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+class Handler(BaseHTTPRequestHandler):
     def _set_headers(self, length):
         self.send_response(200)
         if length > 0:
@@ -29,18 +40,22 @@ class Handler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         filename = str.format('{}_{}_{}_{}.wav', time, rates, bits, ch)
 
         wavfile = wave.open(filename, 'wb')
-        wavfile.setparams((ch, bits/8, rates, 0, 'NONE', 'NONE'))
-        wavfile.writeframes(bytearray(data))
+        wavfile.setparams((ch, int(bits/8), rates, 0, 'NONE', 'NONE'))
+        wavfile.writeframesraw(bytearray(data))
         wavfile.close()
         return filename
 
     def do_POST(self):
-        urlparts = urlparse.urlparse(self.path)
+        if sys.version_info.major == 3:
+            urlparts = parse.urlparse(self.path)
+        else:
+            urlparts = urlparse.urlparse(self.path)
         request_file_path = urlparts.path.strip('/')
         total_bytes = 0
         sample_rates = 0
         bits = 0
         channel = 0
+        print("Do Post......")
         if (request_file_path == 'upload'
             and self.headers.get('Transfer-Encoding', '').lower() == 'chunked'):
             data = []
@@ -63,15 +78,40 @@ class Handler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                     data += chunk_data
 
             filename = self._write_wav(data, int(sample_rates), int(bits), int(channel))
+            self.send_response(200)
+            self.send_header("Content-type", "text/html;charset=utf-8")
+            self.send_header("Content-Length", str(total_bytes))
+            self.end_headers()
             body = 'File {} was written, size {}'.format(filename, total_bytes)
-            self._set_headers(len(body))
-            self.wfile.write(body)
-            self.wfile.close()
-        else:
-            return SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+            self.wfile.write(body.encode('utf-8'))
 
-httpd = BaseHTTPServer.HTTPServer((HOST, PORT), Handler)
+    def do_GET(self):
+        print("Do GET")
+        self.send_response(200)
+        self.send_header('Content-type', "text/html;charset=utf-8")
+        self.end_headers()
 
-print("Serving HTTP on {} port {}".format(HOST, PORT));
+def get_host_ip():
+    # https://www.cnblogs.com/z-x-y/p/9529930.html
+    try:
+        s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8',80))
+        ip=s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
+
+parser = argparse.ArgumentParser(description='HTTP Server save pipeline_raw_http example voice data to wav file')
+parser.add_argument('--ip', '-i', nargs='?', type = str)
+parser.add_argument('--port', '-p', nargs='?', type = int)
+args = parser.parse_args()
+if not args.ip:
+    args.ip = get_host_ip()
+if not args.port:
+    args.port = PORT
+
+httpd = HTTPServer((args.ip, args.port), Handler)
+
+print("Serving HTTP on {} port {}".format(args.ip, args.port));
 httpd.serve_forever()
 
