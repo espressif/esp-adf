@@ -29,12 +29,7 @@
 #include "periph_wifi.h"
 #include "filter_resample.h"
 #include "input_key_service.h"
-
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
 #include "esp_netif.h"
@@ -44,10 +39,17 @@
 
 static const char *TAG = "REC_RAW_HTTP";
 
-#define DEMO_EXIT_BIT (BIT0)
 
-static audio_pipeline_handle_t pipeline;
+#define EXAMPLE_AUDIO_SAMPLE_RATE  (16000)
+#define EXAMPLE_AUDIO_BITS         (16)
+#define EXAMPLE_AUDIO_CHANNELS     (1)
+
+#define DEMO_EXIT_BIT (BIT0)
 static EventGroupHandle_t EXIT_FLAG;
+
+audio_pipeline_handle_t pipeline;
+audio_element_handle_t i2s_stream_reader;
+audio_element_handle_t http_stream_writer;
 
 esp_err_t _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
@@ -59,9 +61,15 @@ esp_err_t _http_stream_event_handle(http_stream_event_msg_t *msg)
         // set header
         ESP_LOGI(TAG, "[ + ] HTTP client HTTP_STREAM_PRE_REQUEST, lenght=%d", msg->buffer_len);
         esp_http_client_set_method(http, HTTP_METHOD_POST);
-        esp_http_client_set_header(http, "x-audio-sample-rates", "16000");
-        esp_http_client_set_header(http, "x-audio-bits", "16");
-        esp_http_client_set_header(http, "x-audio-channel", "2");
+        char dat[10] = {0};
+        snprintf(dat, sizeof(dat), "%d", EXAMPLE_AUDIO_SAMPLE_RATE);
+        esp_http_client_set_header(http, "x-audio-sample-rates", dat);
+        memset(dat, 0, sizeof(dat));
+        snprintf(dat, sizeof(dat), "%d", EXAMPLE_AUDIO_BITS);
+        esp_http_client_set_header(http, "x-audio-bits", dat);
+        memset(dat, 0, sizeof(dat));
+        snprintf(dat, sizeof(dat), "%d", EXAMPLE_AUDIO_CHANNELS);
+        esp_http_client_set_header(http, "x-audio-channel", dat);
         total_write = 0;
         return ESP_OK;
     }
@@ -118,7 +126,16 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 xEventGroupSetBits(EXIT_FLAG, DEMO_EXIT_BIT);
                 break;
             case INPUT_KEY_USER_ID_REC:
-                ESP_LOGI(TAG, "[ * ] [Rec] input key event, resuming pipeline ...");
+                ESP_LOGE(TAG, "[ * ] [Rec] input key event, resuming pipeline ...");
+                /*
+                 * There is no effect when follow APIs output warning message on the first time record
+                 */
+                audio_pipeline_stop(pipeline);
+                audio_pipeline_wait_for_stop(pipeline);
+                audio_pipeline_reset_ringbuffer(pipeline);
+                audio_pipeline_reset_elements(pipeline);
+                audio_pipeline_terminate(pipeline);
+
                 audio_element_set_uri(http_stream_writer, CONFIG_SERVER_URI);
                 audio_pipeline_run(pipeline);
                 break;
@@ -126,12 +143,11 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
     } else if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE || evt->type == INPUT_KEY_SERVICE_ACTION_PRESS_RELEASE) {
         switch ((int)evt->data) {
             case INPUT_KEY_USER_ID_REC:
-                ESP_LOGI(TAG, "[ * ] [Rec] key released, stop pipeline ...");
-                audio_pipeline_stop(pipeline);
-                audio_pipeline_wait_for_stop(pipeline);
-                audio_pipeline_stop(pipeline);
-                audio_pipeline_wait_for_stop(pipeline);
-                audio_pipeline_terminate(pipeline);
+                ESP_LOGE(TAG, "[ * ] [Rec] key released, stop pipeline ...");
+                /*
+                 * Set the i2s_stream_reader ringbuffer is done to flush the buffering voice data.
+                 */
+                audio_element_set_ringbuf_done(i2s_stream_reader);
                 break;
         }
     }
@@ -141,8 +157,6 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
 
 void app_main(void)
 {
-    audio_element_handle_t http_stream_writer, i2s_stream_reader;
-
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
@@ -195,9 +209,8 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.2] Create i2s stream to read audio data from codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    i2s_cfg.i2s_port = 1;
-#endif
+    i2s_cfg.out_rb_size = 16 * 1024; // Increase buffer to avoid missing data in bad network conditions
+    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
     ESP_LOGI(TAG, "[3.3] Register all elements to audio pipeline");
@@ -217,7 +230,7 @@ void app_main(void)
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
     periph_service_set_callback(input_ser, input_key_service_cb, (void *)http_stream_writer);
 
-    i2s_stream_set_clk(i2s_stream_reader, 16000, 16, 2);
+    i2s_stream_set_clk(i2s_stream_reader, EXAMPLE_AUDIO_SAMPLE_RATE, EXAMPLE_AUDIO_BITS, EXAMPLE_AUDIO_CHANNELS);
 
     ESP_LOGI(TAG, "[ 4 ] Press [Rec] button to record, Press [Mode] to exit");
     xEventGroupWaitBits(EXIT_FLAG, DEMO_EXIT_BIT, true, false, portMAX_DELAY);
