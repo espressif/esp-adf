@@ -59,6 +59,18 @@ menuconfig > Example Configuration > (myssid) WiFi SSID > (myssid) WiFi Password
 
 ### 编译和下载
 
+对于 `esp32-s3` 芯片编译，使用下面命令来选择 esp32-s3 的默认编译选项。
+
+```c
+cp sdkconfig.defaults.esp32s3 sdkconfig
+```
+
+对于 `esp32` 芯片编译，使用下面命令来选择 esp32 的默认编译选项。
+
+```c
+cp sdkconfig.defaults.esp32 sdkconfig
+```
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```
