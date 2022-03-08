@@ -31,11 +31,7 @@
 #include "audio_mem.h"
 #include "smart_config.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 static char *TAG = "SMART_CONFIG";
 static esp_wifi_setting_handle_t sm_setting_handle;

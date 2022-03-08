@@ -42,11 +42,7 @@ extern "C" {
 #include "esp_avrc_api.h"
 #include "bt_keycontrol.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 typedef struct {
     esp_a2d_cb_t                user_a2d_cb;

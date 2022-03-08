@@ -41,11 +41,7 @@
 #include "esp_action_def.h"
 #include "esp_delegate.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 static const char *TAG                  = "WIFI_SERV";
 const static int WIFI_TASK_DESTROY_BIT  = BIT0;

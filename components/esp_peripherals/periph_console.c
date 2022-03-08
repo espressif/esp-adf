@@ -32,11 +32,7 @@
 #include "periph_console.h"
 #include "audio_mem.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 #define CONSOLE_MAX_ARGUMENTS (5)
 static const char *TAG = "PERIPH_CONSOLE";

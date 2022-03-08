@@ -32,11 +32,7 @@
 #include "audio_mem.h"
 #include "sdkconfig.h"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 #if CONFIG_BT_ENABLED
 #include "esp_a2dp_api.h"
