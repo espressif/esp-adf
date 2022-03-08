@@ -33,11 +33,7 @@ static const char *TAG = "APP_BT_INIT";
 
 #define BT_DEVICE_NAME  "ESP_BT_COEX_DEV"
 
-#if __has_include("esp_idf_version.h")
-#include "esp_idf_version.h"
-#else
-#define ESP_IDF_VERSION_VAL(major, minor, patch) 1
-#endif
+#include "audio_idf_version.h"
 
 char sn[16] = {0};
 static bool bt_connected_flag;
