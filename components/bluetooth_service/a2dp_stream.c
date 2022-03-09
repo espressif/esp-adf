@@ -516,17 +516,11 @@ static esp_err_t periph_bt_avrc_passthrough_cmd(esp_periph_handle_t periph, uint
     if(s_aadp_handler.avrcp_conn_tg_state) {
         if (cmd == ESP_AVRC_PT_CMD_VOL_DOWN) {
             int16_t volume = (default_volume - 5) < 0 ? 0 : (default_volume - 5);
-            if(volume <= 0){
-                volume = 0;
-            }
             bt_avrc_volume_set_by_local(volume);
             default_volume = volume;
             return err;
         } else if (cmd == ESP_AVRC_PT_CMD_VOL_UP) {
             int16_t volume = (default_volume + 5) > 0x7f ? 0x7f : (default_volume + 5);
-            if(volume >= 100){
-                volume = 100;
-            }
             bt_avrc_volume_set_by_local(volume);
             default_volume = volume;
             return err;
