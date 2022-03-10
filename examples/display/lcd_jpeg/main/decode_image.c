@@ -20,6 +20,7 @@ format if you want to use a different image file.
 #include "decode_image.h"
 #include "esp_log.h"
 #include "esp_jpeg_dec.h"
+#include "esp_jpeg_common.h"
 
 // Reference the binary-included jpeg file
 extern const uint8_t image_jpg_start[] asm("_binary_image_jpg_start");
@@ -31,12 +32,11 @@ int decode_image(uint16_t ***pixels)
 {
     // Generate default configuration
     jpeg_dec_config_t config = DEFAULT_JPEG_DEC_CONFIG();
-    config.output_type = JPEG_RGB565;
+    config.output_type = JPEG_RAW_TYPE_RGB565;
     // Empty handle to jpeg_decoder
     jpeg_dec_handle_t jpeg_dec = NULL;
     // Create jpeg_dec
     jpeg_dec = jpeg_dec_open(&config);
-
     // Create io_callback handle
     jpeg_dec_io_t *jpeg_io = calloc(1, sizeof(jpeg_dec_io_t));
     if (jpeg_io == NULL) {
@@ -62,9 +62,9 @@ int decode_image(uint16_t ***pixels)
     }
     // Calloc out_put data buffer and update inbuf ptr and inbuf_len
     int outbuf_len;
-    if (config.output_type == JPEG_RGB565) {
+    if (config.output_type == JPEG_RAW_TYPE_RGB565) {
         outbuf_len = out_info->height * out_info->width * 2;
-    } else if (config.output_type == JPEG_RGB888) {
+    } else if (config.output_type == JPEG_RAW_TYPE_RGB888) {
         outbuf_len = out_info->height * out_info->width * 3;
     } else {
         return ESP_FAIL;
