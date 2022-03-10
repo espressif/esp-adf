@@ -25,7 +25,8 @@ ESP Multi-Room Music 是一种基于 Wi-Fi 的多扬声器互联共享音乐通�
 
 ### 使用 IDF 其他分支
 
-此示例需要选择 IDF `release/v4.2` 以上的分支来编译。
+本例程支持 IDF release/v4.2 及以后的分支，例程默认使用 IDF release/v4.4 分支。
+
 ```c
 cd $IDF_PATH
 git checkout master

@@ -36,7 +36,9 @@
 
 ### IDF 分支
 
-选择 IDF 分支，如下所示：
+对于 korvo_du1906 例程，只支持 IDF [audio/stack_on_psram_v3.3](https://github.com/espressif/esp-idf/tree/audio/stack_on_psram_v3.3) 分支。
+
+选择 IDF `audio/stack_on_psram_v3.3` 分支，如下所示：
 
 ```bash
 cd $IDF_PATH

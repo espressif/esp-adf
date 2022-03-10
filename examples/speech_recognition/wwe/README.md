@@ -39,7 +39,7 @@ If you choose to store the data in microSD card or choose ESP32 based developmen
 
 ### Default IDF Branch
 
-This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's build-in branch `$ADF_PATH/esp-idf`.
+This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
 ### IDF Branch
 

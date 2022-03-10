@@ -41,6 +41,7 @@ Recommended model partition size:  4152KB
 
 本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
+
 ### IDF 分支
 
 - IDF release/v4.4 分支切换命令如下：

@@ -36,6 +36,7 @@
 
 本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
+
 ### 配置
 
 本例程需要准备一张 microSD 卡，并预先插入开发板中备用。

@@ -19,7 +19,7 @@ This example runs on the boards that are marked with a green checkbox in the [ta
 
 ### Default IDF Branch
 
-The default IDF branch of this example is ADF's built-in branch `$ADF_PATH/esp-idf`.
+This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
 ### Configuration
 

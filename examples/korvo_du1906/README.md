@@ -36,7 +36,9 @@ Please refer to [度家 AIOT 快速入门](https://cloud.baidu.com/doc/SHC/s/wk7
 
 ### IDF branch
 
-Select the IDF branch as follows:
+The korvo_du1906 example only support the IDF [audio/stack_on_psram_v3.3](https://github.com/espressif/esp-idf/tree/audio/stack_on_psram_v3.3) branch.
+
+Select the IDF `audio/stack_on_psram_v3.3` branch as follows:
 
 ```bash
 cd $IDF_PATH
