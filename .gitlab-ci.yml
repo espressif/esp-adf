@@ -50,7 +50,11 @@ before_script:
   - if [[ ! -d "$ADF_PATH/../adf-libs-ut/" ]]; then git clone ssh://git@gitlab.espressif.cn:27227/adf/adf-libs-ut.git;else echo "adf-libs-ut folder already exists";fi
   - cd -
   - if [ -e $ADF_UT/tools/CreateSectionTable.pyc ]; then rm -f $ADF_UT/tools/CreateSectionTable.pyc; fi
+
+  # To disable set -e for automatic error detection, due to the switch_branch.sh use $? check return value
+  - set +e +o pipefail
   - source $ADF_PATH/tools/ut/switch_branch.sh
+  - set -e -o pipefail
 
   - if [ "$IDF_VERSION" = "release/v4.4" ];then cd $IDF_PATH; git checkout $IDF_VERSION; $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)";fi
 
@@ -130,14 +134,13 @@ before_script:
   script:
     # it's not possible to build 100% out-of-tree and have the "artifacts"
     # mechanism work, but this is the next best thing
-    - cd ${IDF_PATH}
-    - git submodule update --init --recursive
     - cd ${ADF_PATH}
     - rm -rf build_examples
     - mkdir build_examples
     - cd build_examples
-    # build some of examples
     - mkdir -p ${LOG_PATH}
+    - echo "The IDF branch is v3.3(722043f734)"
+    - $ADF_PATH/tools/ci/set_idf.sh "722043f734"
     # enable pedantic flags for compilation
     - export PEDANTIC_CFLAGS="-Werror -Werror=deprecated-declarations -Werror=unused-variable -Werror=unused-but-set-variable -Werror=unused-function"
     - export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
@@ -374,6 +377,8 @@ before_script:
     - mkdir output
     - mkdir output/default
     - mkdir $IDF_PATH/components/idf_test/unit_test
+    - python --version
+    - pyenv global 2.7.15
     - cp configs/default adf_configs/
     - cp sdkconfig output/default/
     - cp -ar build/*.bin output/default
@@ -504,7 +509,7 @@ build_examples_v44_cmake:
 build_examples_v33_make:
   <<: *build_examples_make
 
-build_adf_test:
+.build_adf_test:
   <<: *build_template
   artifacts:
     when: always
@@ -613,7 +618,7 @@ assign_test_v44:
   # gitlab ci do not support match job with RegEx or wildcard now in dependencies.
   # we have a lot build example jobs. now we don't use dependencies, just download all artificats of build stage.
   dependencies:
-    - build_adf_test
+    - build_examples_v44_cmake
     - build_examples_v33_make
   variables:
     TEST_FW_PATH: "$CI_PROJECT_DIR/general-test-framework"
@@ -633,38 +638,6 @@ assign_test_v44:
     - git clone ${TEST_FW_REPO}
     # assign example tests
     - python $TEST_FW_PATH/CIAssignExampleTest.py $CI_PROJECT_DIR/examples $CI_PROJECT_DIR/.gitlab-ci.yml $EXAMPLE_CONFIG_OUTPUT_PATH
-
-.example_test_template: &example_test_template
-  stage: example_test
-  when: on_success
-  dependencies:
-    - assign_test
-    - build_examples_v33_make
-    - build_adf_test
-  artifacts:
-    when: always
-    paths:
-      - $LOG_PATH
-    expire_in: 1 mos
-  variables:
-    TEST_FW_PATH: "$CI_PROJECT_DIR/general-test-framework"
-    TEST_CASE_PATH: "$CI_PROJECT_DIR/examples"
-    CONFIG_FILE: "$CI_PROJECT_DIR/examples/test_configs/$CI_JOB_NAME.yml"
-    LOG_PATH: "$CI_PROJECT_DIR/log_examples"
-    ENV_FILE: "$IDF_PATH/ci-test-runner-configs/$CI_RUNNER_DESCRIPTION/EnvConfig.yml"
-    AUTO_TEST_PATH: "$CI_PROJECT_DIR/audio_auto_test"
-  before_script: *add_gitlab_key_before
-  script:
-    # first test if config file exists, if not exist, exit 0
-    - test -e $CONFIG_FILE || exit 0
-    # run test
-    - python $TEST_FW_PATH/Runner.py $TEST_CASE_PATH -c $CONFIG_FILE -e $ENV_FILE
-
-.example_test_play_mp3: &example_test_play_mp3
-  <<: *example_test_template
-  tags:
-    - ESP32
-    - Example_AUDIO_PLAY
 
 push_to_github:
   stage: deploy
@@ -690,3 +663,4 @@ push_to_github:
 
 include:
   - 'tools/ci/target-ut-test.yml'
+
