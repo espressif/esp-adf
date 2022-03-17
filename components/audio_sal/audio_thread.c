@@ -35,7 +35,7 @@ static const char *TAG = "AUDIO_THREAD";
 
 BaseType_t __attribute__((weak)) xTaskCreateRestrictedPinnedToCore(const TaskParameters_t *const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID)
 {
-    ESP_LOGE(TAG, "Not found right %s.\r\nPlease enter IDF-PATH with \"cd $IDF_PATH\" and apply the IDF patch with \"git apply $ADF_PATH/idf_patches/idf_v3.3_freertos.patch\" first\r\n", __func__);
+    ESP_LOGE(TAG, "Not found right %s.\r\nPlease enter IDF-PATH with \"cd $IDF_PATH\" and apply the IDF patch with \"git apply $ADF_PATH/idf_patches/idf_%.4s_freertos.patch\" first\r\n", __func__, IDF_VER);
     return pdFALSE;
 }
 

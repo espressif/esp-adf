@@ -6,28 +6,47 @@
 
 ## Patch file description
 
-### 1. idf_v3.3_freertos.patch and idf_v4.4_freertos.patch
+### 1. ESP-IDF freertos
 
->  The function of idf_v*.*_freertos.patch is to put the stack of some tasks on PSRAM
+>  The function of freertos patch is to put the stack of some tasks on PSRAM
 
  **Use scenario:**  When using PSRAM, some default tasks stack will be put into PSRAM to save memory. If this patch is not put on, the following errors will occur during compilation .This patch need put on in `IDF` path
 
-```c
-Not found right xTaskCreateRestrictedPinnedToCore. Please apply the `$ADF_PATH/idf_patches/idf_v3.3_freertos.patch` or `$ADF_PATH/idf_patches/idf_v4.4_freertos.patch` first
-There are two versions of patch. This mainly depends on the IDF version number you use. If the version you use is `audio/stack_on_psram_v3.3` or `release/v3.3`, you use `idf_v3.3_freertos.patch` patch. If the IDF version you use is `release/v4.4`, you use `idf_v4.4_freertos.patch`
+- `idf_v3.3_freertos.patch` # for esp-idf version v3.3
+- `idf_v4.1_freertos.patch` # for esp-idf version v4.0
+- `idf_v4.1_freertos.patch` # for esp-idf version v4.1
+- `idf_v4.2_freertos.patch` # for esp-idf version v4.2
+- `idf_v4.3_freertos.patch` # for esp-idf version v4.3
+- `idf_v4.4_freertos.patch` # for esp-idf version v4.4
+
+```
+If the current IDF is not the above IDF versions, you need to manually type this patch
 ```
 
-### 2. idf_v3.3_light_sleep.path
+### 2. ESP-IDF esp-http-client
 
->  The function of idf_v3.3_light_sleep.path is to enable the MCLK of I2S when esp32 enters light sleep
+> The function of esp-http-client patch avoid multiple esp_http_client problems
+
+ **Use scenario:**  `errno` is not thread safe in multiple HTTP-clients, so it is necessary to save the errno number of HTTP clients to avoid reading and writing exceptions of HTTP-clients caused by errno exceptions
+
+- `idf_v3.3_esp_http_client.patch` # for esp-idf version v3.3
+- `idf_v4.1_esp_http_client.patch` # for esp-idf version v4.0
+- `idf_v4.1_esp_http_client.patch` # for esp-idf version v4.1
+- `idf_v4.2_esp_http_client.patch` # for esp-idf version v4.2
+- `idf_v4.3_esp_http_client.patch` # for esp-idf version v4.3
+
+```
+If the current IDF is not the above IDF versions, you need to manually type this patch, but esp-idf release/v4.4 and later versions do not need this patch
+```
+
+ ### 3. ESP_IDF light_sleep
+
+  > The function of idf_v3.3_light_sleep.path is to enable the MCLK of I2S when esp32 enters light sleep
 
  **Use scenario:**  When you need to enter light sleep, but you need to keep real-time with codec when waking up esp32, you need to put this patch on.This patch need put on in `IDF` patch
 
-### 3.idf_v3.3_esp_http_client.patch & adf_http_stream.patch
+- `idf_v3.3_light_sleep.patch` # for esp-idf version v3.3
 
-> The function of idf_v3.3_esp_http_client.patch avoid multiple `esp_http_client` problems
-
->  When problems occur, they are as follows
-> - There are log phenomena such as `Got 104 errno(Connection reset by peer), reconnect to peer` or `Got 11 errno(No more processes), reconnect to peer`, then there will be decoding failures such as m4a/aac
-
-**Use scenario** :When multiple `esp_http_client` are used in `ADF`, the errno may not be accurate, so this patch is needed. `idf_v3.3_esp_http_client.patch` patch need put on in `IDF_PATH` path, `adf_http_stream.patch` patch need put on in `ADF_PATH` path
+```
+ This issue just for esp-idf release/v3.3
+ ```
