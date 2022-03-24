@@ -37,6 +37,7 @@ INPUT = \
     ../../components/audio_stream/include/algorithm_stream.h \
     ../../components/audio_stream/include/pwm_stream.h \
     ../../components/audio_stream/include/tone_stream.h \
+    ../../components/audio_stream/include/embed_flash_stream.h \
     ../../components/audio_stream/include/tts_stream.h \
     ## ESP Codec
     ../../components/esp-adf-libs/esp_codec/include/codec/esp_decoder.h \

@@ -26,7 +26,7 @@
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - :example_file:`advanced_examples/algorithm/main/algorithm_examples.c`
 - :example_file:`advanced_examples/voip/main/voip_app.c`
 
@@ -43,7 +43,7 @@ FatFs 流从 FatFs 文件系统中读取和写入数据，具有读和写两种�
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - 读类型示例：:example:`player/pipeline_play_sdcard_music`
 - 写类型示例：:example:`recorder/pipeline_recording_to_sdcard`
 
@@ -60,14 +60,14 @@ HTTP 流通过 :cpp:func:`esp_http_client` 获取和发送数据，具有读和�
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - 读类型示例
-  
+
   - :example:`player/pipeline_living_stream`
   - :example:`player/pipeline_http_mp3`
 
 - 写类型示例
-  
+
   - :example:`recorder/pipeline_raw_http`
 
 .. include:: /_build/inc/http_stream.inc
@@ -82,7 +82,7 @@ I2S 流通过芯片的 I2S、PDM、ADC、DAC 接口接收和发送音频数据�
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - 读类型示例：:example:`recorder/pipeline_wav_amr_sdcard`
 - 写类型示例：:example:`get-started/play_mp3_control`
 
@@ -99,7 +99,7 @@ PWM 流
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - 写类型示例：:example:`player/pipeline_play_mp3_with_dac_or_pwm`
 
 
@@ -116,7 +116,7 @@ PWM 流
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - 读类型示例：:example:`advanced_examples/voip`
 - 写类型示例：:example:`advanced_examples/downmix_pipeline`
 
@@ -134,7 +134,7 @@ SPIFFS 流从 SPIFFS 读取和写入音频数据。
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - :example:`player/pipeline_spiffs_mp3`
 
 
@@ -151,7 +151,7 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - :example:`get-started/pipeline_tcp_client`
 
 
@@ -168,11 +168,28 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - :example:`player/pipeline_flash_tone`
 
 
 .. include:: /_build/inc/tone_stream.inc
+
+
+.. _api-reference-embed_flash:
+
+嵌入式二进制文件流
+------------------------
+
+嵌入式二进制流 (embed flash stream) 读取 :adf_file:`tools/audio_tone/mk_embed_flash.py` 生成的数据，只支持 ``AUDIO_STREAM_READER`` 类型。
+
+
+应用示例
+^^^^^^^^^^^^^^^^^^^
+
+- :example:`player/pipeline_embed_flash_tone`
+
+
+.. include:: /_build/inc/embed_flash_stream.inc
 
 
 .. _api-reference-stream_tts:
@@ -185,7 +202,7 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 
 应用示例
 ^^^^^^^^^^^^^^^^^^^
- 
+
 - 读类型示例：:example:`player/pipeline_tts_stream`
 
 .. include:: /_build/inc/tts_stream.inc
