@@ -10,8 +10,8 @@ The ESP32-S3-Korvo-2 is a multimedia development board based on the ESP32-S3 chi
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-overview.png
     :align: center
+    :scale: 45%
     :alt: ESP32-S3-Korvo-2 V3.0 with ESP32-S3-WROOM-1 module
-    :figclass: align-center
 
     ESP32-S3-Korvo-2 V3.0 with ESP32-S3-WROOM-1 module
 
@@ -23,11 +23,11 @@ This board mainly consists of the following parts:
 
 This document is mostly dedicated to the main board. For detailed information on other parts, click the links above.
 
-The document consists of the following major sections:
+The document consists of the following sections:
 
 - `Getting started`_: Overview of the board and hardware/software setup instructions to get started.
 - `Hardware Reference`_: More detailed information about the board's hardware.
-- Hardware Revision Details: Hardware revision history, known issues, and links to user guides for previous versions (if any) of the board.
+- `Hardware Revision Details`_: Hardware revision history, known issues, and links to user guides for previous versions (if any) of the board.
 - `Related Documents`_: Links to related documentation.
 
 
@@ -44,8 +44,7 @@ Description of Components
     :align: center
     :scale: 70%
     :alt: ESP32-S3-Korvo-2 V3.0 (click to enlarge)
-    :figclass: align-center
-
+    
     ESP32-S3-Korvo-2 V3.0 (click to enlarge)
 
 The key components of the board are described in a clockwise direction.
@@ -63,9 +62,9 @@ The key components of the board are described in a clockwise direction.
    * - Audio ADC Chip
      - `ES7210 <http://www.everest-semi.com/pdf/ES7210%20PB.pdf>`_ is a high-performance, low-power 4-channel audio analog-to-digital converter for microphone array applications. It is very suitable for music and speech applications. In addition, ES7210 can also be used to collect acoustic echo cancellation (AEC) echo reference signals.
    * - Audio Codec Chip
-     - The audio codec chip, `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_, is a low power mono audio codec. It consists of 1-channel ADC, 1-channel DAC, low noise pre-amplifier, headphone driver, digital sound effects, analog mixing and gain functions. It is interfaced with ESP32-S3-WROOM-1 module over I2S and I2C buses to provide audio processing in hardware independently from the audio application.
+     - The audio codec chip, `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_, is a low-power mono audio codec. It consists of 1-channel ADC, 1-channel DAC, low noise pre-amplifier, headphone driver, digital sound effects, analog mixing, and gain functions. It is interfaced with ESP32-S3-WROOM-1 module over I2S and I2C buses to provide audio processing in hardware independently from the audio application.
    * - Audio PA Chip
-     - NS4150 is a EMI, 3 W mono Class D audio power amplifier, amplifying audio signals from audio codec chips to drive speakers.
+     - NS4150 is an EMI, 3 W mono Class D audio power amplifier, amplifying audio signals from audio codec chips to drive speakers.
    * - Right Microphone
      - Onboard microphone connected to ADC.
    * - Speaker Output Port
@@ -81,11 +80,11 @@ The key components of the board are described in a clockwise direction.
    * - Power Switch
      - Power on/off knob: toggling it down powers the board on; toggling it up powers the board off.
    * - Battery Charger
-     - Constant current and constant voltage linear charger for single cell lithium-ion batteries AP5056. Used for charging of a battery connected to the Battery Socket over the Micro USB Port.
+     - AP5056 is a constant current and constant voltage linear charger for single cell lithium-ion batteries. Used for charging of a battery connected to the Battery Socket over the Micro USB Port.
    * - Function Press Keys
      - Six press keys labeled REC, MUTE, PLAY, SET, VOL- and VOL+. They are routed to ESP32-S3-WROOM-1 module and intended for development and testing of a UI for audio applications using dedicated API.
    * - Boot/Reset Press Keys
-     - | Boot: holding down the Boot button and momentarily pressing the Reset button initiates the firmware upload mode. Then you can upload firmware through the serial port.
+     - | Boot: holding down the Boot key and momentarily pressing the Reset key initiates the firmware upload mode. Then you can upload firmware through the serial port.
        | Reset: pressing this button alone resets the system.
    * - MicroSD Slot
      - The development board supports a microSD card in 1-bit mode, and can store or play audio files in the microSD card. 
@@ -94,7 +93,7 @@ The key components of the board are described in a clockwise direction.
    * - System LEDs
      - Two general purpose LEDs (green and red) controlled by ESP32-S3-WROOM-1 module to indicate certain operation states of the audio application using dedicated API.
    * - Camera Connector
-     - An external camera module that can be connected to the development board with a connector to transmit images. 
+     - An external camera module that can be connected to the development board with the connector to transmit images. 
 
 
 Start Application Development
@@ -118,7 +117,7 @@ Optional Hardware
 ^^^^^^^^^^^^^^^^^
 
 - 1 x MicroSD card 
-- 1 x Li-ion Battery
+- 1 x Li-ion battery
 
 .. note::
 
@@ -127,10 +126,10 @@ Optional Hardware
 Hardware Setup
 ^^^^^^^^^^^^^^
 
-1. Connect the speaker to the Speaker Output.
+1. Connect the speaker to the **Speaker Output**.
 2. Plug in the USB cables to the PC and to both USB ports of the board.
-3. The Standby LED (green) should turn on. Assuming that a battery is not connected, the Charging LED (red) will blink every couple of seconds.
-4. Toggle the Power On Switch.
+3. The standby LED (green) should turn on. Assuming that a battery is not connected, the charging LED (red) will blink every couple of seconds.
+4. Toggle the **Power Switch**.
 5. The red Power On LED should turn on.
 
 
@@ -139,7 +138,7 @@ Hardware Setup
 Software Setup
 ^^^^^^^^^^^^^^
 
-Please proceed to :doc:`/../get-started/index`, where Section :ref:`get-started-step-by-step` will quickly help you set up the development environment and then flash an :adf:`application example <examples>` onto your board.
+Please proceed to :doc:`../../get-started/index`, where Section :ref:`get-started-step-by-step` will quickly help you set up the development environment and then flash an :adf:`application example <examples>` onto your board.
 
 Contents and Packaging
 ----------------------
@@ -186,10 +185,9 @@ The block diagram below shows the components of ESP32-S3-Korvo-2 V3.0 and their 
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-electrical-block-diagram.png
     :align: center
-    :scale: 60%
+    :scale: 55%
     :alt: ESP32-S3-Korvo-2 V3.0 Electrical Block Diagram
-    :figclass: align-center
-
+    
     ESP32-S3-Korvo-2 V3.0 Electrical Block Diagram
 
 
@@ -202,45 +200,45 @@ Power Supply over USB and from Battery
 The main power supply is 5 V and provided by a USB. The secondary power supply is 3.7 V and provided by an optional battery. The USB power itself is fed with a dedicated cable, separate from a USB cable used for an application upload. To further reduce noise from the USB, the battery may be used instead of the USB.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-usb-ps.png
+    :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Dedicated USB Power Supply Socket
-    :figclass: align-center
-
+    
     ESP32-S3-Korvo-2 V3.0 - Dedicated USB Power Supply Socket
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-battery-ps.png
+    :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Power Supply from a Battery
-    :figclass: align-center
-
+    
     ESP32-S3-Korvo-2 V3.0 - Power Supply from a Battery
 
 When the USB power supply and battery power supply are connected at the same time as shown in the figure below, VBUS is high, Q14 is in the off state, VBAT is automatically cut off, and USB becomes the power supply for the system.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-ps-options.png
+    :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Power Supply Options
-    :figclass: align-center
-
+    
     ESP32-S3-Korvo-2 V3.0 - Power Supply Options
 
 Independent Audio and Digital Power Supply
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The board features independent power supplies to the audio components and ESP module. This should reduce noise in the audio signal from digital components and improve overall performance of the components.
+ESP32-S3-Korvo-2 V3.0 features independent power supplies to the audio components and ESP module. This should reduce noise in the audio signal from digital components and improve overall performance of the components.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-digital-ps.png
+    :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Digital Power Supply
-    :figclass: align-center
-
+    
     ESP32-S3-Korvo-2 V3.0 - Digital Power Supply
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-audio-ps.png
+    :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - Audio Power Supply
-    :figclass: align-center
-
+    
     ESP32-S3-Korvo-2 V3.0 - Audio Power Supply
 
 
@@ -662,7 +660,7 @@ The GPIOs allocated to the IO expander are further expanded to multiple GPIOs.
      - PA_CTRL
    * - 5
      - P1
-     - BL_CTRL
+     - LCD_CTRL
      - 
    * - 6
      - P2
@@ -688,8 +686,6 @@ The GPIOs allocated to the IO expander are further expanded to multiple GPIOs.
      - P7
      - 
      - LED2
-
-.. [#three] Pin - IO Expander pin number.
 
 Connector
 ---------
@@ -732,7 +728,7 @@ No.  LCD Signal   ESP32-S3 Pin
 ===  ============  ===========
 No.  LCD Signal    IO Expander
 ===  ============  ===========
-1    ESP_LCD_CTRL  P1
+1    ESP_LCD_CTRL   P1
 2    ESP_LCD_RST   P2
 3    ESP_LCD_CS    P3
 4    ESP_TP_INT    P4
@@ -741,32 +737,32 @@ No.  LCD Signal    IO Expander
 AEC Path
 --------
 
-Acoustic Echo Cancellation (AEC) path provides reference signals for AEC algorithm.
+AEC path provides reference signals for AEC algorithm.
 
-ESP32-S3-Korvo-2 provides two compatible echo reference signal source designs. One is Codec (ES8311) DAC output (DAC_AOUTLP/DAC_AOUTLP), the other is PA (NS4150) output (PA_OUT+/PA_OUT+). The default selection and also a recommendation is to use the former as the echo reference signal, and do not install resistors R132 and R140 NC shown in the figure below.
+ESP32-S3-Korvo-2 provides two compatible echo reference signal source designs. One is Codec (ES8311) DAC output (DAC_AOUTLN/DAC_AOUTLP), the other is PA (NS4150) output (PA_OUTL+/PA_OUTL-). The former is the default and recommended selection. Resistors R132 and R140 marked NC (no component) in the figure below should not be installed.
 
 The echo reference signal is collected by ADC_MIC3P/ADC_MIC3N of ADC (ES7210) and then sent back to ESP32-S3 for AEC algorithm.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-codec-o.png
+    :align: center
     :scale: 60%
-    :alt: ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC Output
-    :figclass: align-center
-
-    ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC Output
+    :alt: ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC Output (click to enlarge)
+    
+    ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC Output (click to enlarge)
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-pa-o.png
+    :align: center
     :scale: 30%
-    :alt: ESP32-S3-Korvo-2 V3.0 - AEC PA Output
-    :figclass: align-center
-
-    ESP32-S3-Korvo-2 V3.0 - AEC PA Output
+    :alt: ESP32-S3-Korvo-2 V3.0 - AEC PA Output (click to enlarge)
+    
+    ESP32-S3-Korvo-2 V3.0 - AEC PA Output (click to enlarge)
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-signal-collection.png
+    :align: center
     :scale: 60%
-    :alt: ESP32-S3-Korvo-2 V3.0 - AEC Reference Signal Collection
-    :figclass: align-center
-
-    ESP32-S3-Korvo-2 V3.0 - AEC Reference Signal Collection
+    :alt: ESP32-S3-Korvo-2 V3.0 - AEC Reference Signal Collection (click to enlarge)
+    
+    ESP32-S3-Korvo-2 V3.0 - AEC Reference Signal Collection (click to enlarge)
 
 Hardware Setup Options
 ----------------------
@@ -777,7 +773,7 @@ Using Automatic Upload
 Entering of the ESP board into upload mode may be done in two ways:
 
 - Manually by pressing both Boot and RST keys and then releasing first RST and then Boot key.
-- Automatically by software performing the upload. The software is using DTR and RTS signals of the serial interface to control states of EN and IO0 of the ESP board. For details see ESP32-S3-Korvo-2 V3.0 schematic.
+- Automatically by software performing the upload. The software is using DTR and RTS signals of the serial interface to control states of EN and IO0 of the ESP board. For details see `ESP32-S3-Korvo-2 V3.0 Schematic`_ (PDF).
 
 
 Allocation of ESP Pins to Test Points
@@ -785,7 +781,7 @@ Allocation of ESP Pins to Test Points
 
 This section describes allocation of test points available on the ESP32-S3-Korvo-2 V3.0 board.
 
-The test points are bare through hole solder pads and have standard 2.54 mm/0.1" pitch. User may need to populate them with pin headers or sockets for easy connection of external hardware.
+The test points are bare through hole solder pads and have standard 2.54 mm/0.1" pitch. You may need to populate them with pin headers or sockets for easy connection of external hardware.
 
 Codec Test Point/J15
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -793,7 +789,7 @@ Codec Test Point/J15
 ===  ==========  ============
 No.  Codec Pin   ESP32-S3 Pin
 ===  ==========  ============
-1    MLCK        GPIO16
+1    MCLK        GPIO16
 2    SCLK        GPIO9 
 3    LRCK        GPIO45 
 4    DSDIN       GPIO8
@@ -807,7 +803,7 @@ ADC Test Point/J16
 ===  ==========  ============
 No.  ADC Pin     ESP32-S3 Pin
 ===  ==========  ============
-1    MLCK        GPIO16
+1    MCLK        GPIO16
 2    SCLK        GPIO9
 3    LRCK        GPIO45 
 4    SDOUT       GPIO10
@@ -849,7 +845,9 @@ Related Documents
 
 - `ESP32-S3 Series Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf>`_ (PDF)
 - `ESP32-S3-WROOM-1/1U Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf>`_ (PDF)
-- `ESP32-S3-Korvo-2 V3.0 Schematic <https://dl.espressif.com/dl/schematics/SCH_ESP32-S3-KORVO-2_V3_0_20210918.pdf>`_ (PDF)
-- `ESP32-S3-Korvo-2 V3.0 PCB layout <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-KORVO-2_V3.0_20210918.pdf>`_ (PDF)
+- `ESP32-S3-Korvo-2 V3.0 Schematic`_ (PDF)
+- `ESP32-S3-Korvo-2 V3.0 PCB Layout <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-KORVO-2_V3.0_20210918.pdf>`_ (PDF)
 
 For further design documentation for the board, please contact us at `sales@espressif.com <sales@espressif.com>`_.
+
+.. _ESP32-S3-Korvo-2 V3.0 Schematic: https://dl.espressif.com/dl/schematics/SCH_ESP32-S3-KORVO-2_V3_0_20210918.pdf
