@@ -38,13 +38,7 @@
 #include "audio_idf_version.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
-
-#ifdef CONFIG_IDF_TARGET_ESP32
 #include "esp32/rom/crc.h"
-#else
-#include "esp32s2beta/rom/crc.h"
-#endif // CONFIG_IDF_TARGET_ESP32
-
 #else
 #include "rom/crc.h"
 #endif //(ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
