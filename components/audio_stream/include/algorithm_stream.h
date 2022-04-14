@@ -112,10 +112,7 @@ typedef struct {
     int task_stack;                             /*!< Task stack size */
     int task_prio;                              /*!< Task peroid */
     int task_core;                              /*!< The core that task to be created */
-    int rec_ch;                                 /*!< Channel number of record signal */
-    int ref_ch;                                 /*!< Channel number of reference signal */
-    int ref_sample_rate;                        /*!< Sample rate of reference signal */
-    int rec_sample_rate;                        /*!< Sample rate of record signal */
+    bool stack_in_ext;                          /*!< Try to allocate stack in external memory */
     int rec_linear_factor;                      /*!< The linear amplication factor of record signal*/
     int ref_linear_factor;                      /*!< The linear amplication factor of reference signal */
     int8_t algo_mask;                           /*!< Choose algorithm to use */
@@ -127,10 +124,7 @@ typedef struct {
     .task_stack = ALGORITHM_STREAM_TASK_STACK_SIZE,                                               \
     .task_prio  = ALGORITHM_STREAM_TASK_PERIOD,                                                   \
     .task_core  = ALGORITHM_STREAM_PINNED_TO_CORE,                                                \
-    .rec_ch     = 1,                                                                              \
-    .ref_ch     = 1,                                                                              \
-    .ref_sample_rate   = 16000,                                                                   \
-    .rec_sample_rate   = 16000,                                                                   \
+    .stack_in_ext = true,                                                                         \
     .rec_linear_factor = 1,                                                                       \
     .ref_linear_factor = 3,                                                                       \
     .algo_mask = (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_AGC | ALGORITHM_STREAM_USE_NS), \
