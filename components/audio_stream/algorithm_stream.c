@@ -37,7 +37,7 @@
 #include "esp_afe_sr_models.h"
 
 #define AEC_FRAME_BYTES                 (1024) // 32ms data frame (32 * 16 * 2)
-#define ALGORITHM_FETCH_TASK_STACK_SIZE (2 * 1024)
+#define ALGORITHM_FETCH_TASK_STACK_SIZE (3 * 1024)
 
 static const char *TAG = "ALGORITHM_STREAM";
 
@@ -139,7 +139,7 @@ static esp_err_t _algo_open(audio_element_handle_t self)
         xEventGroupSetBits(algo->state, FETCH_STOPPED_BIT);
     } else {
         audio_thread_create(NULL, "algo_fetch", _algo_fetch_task, (void *)self, ALGORITHM_FETCH_TASK_STACK_SIZE,
-            ALGORITHM_STREAM_TASK_PERIOD, false, ALGORITHM_STREAM_PINNED_TO_CORE);
+            ALGORITHM_STREAM_TASK_PERIOD, true, ALGORITHM_STREAM_PINNED_TO_CORE);
     }
 
     AUDIO_NULL_CHECK(TAG, algo->afe_data, {
@@ -252,6 +252,7 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     cfg.task_prio = config->task_prio;
     cfg.task_core = config->task_core;
     cfg.multi_in_rb_num = config->input_type;
+    cfg.stack_in_ext = config->stack_in_ext;
     cfg.tag = "algorithm";
 
     cfg.buffer_len = AEC_FRAME_BYTES;
