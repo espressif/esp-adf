@@ -18,14 +18,15 @@
 
 本例程在 `/tools/audio-esp.bin` 和 `/components/audio_flash_tone/` 目录下已经帮助用户生成了例程所需的 bin 文件和音频文件在 flash 中地址的源代码文件。
 
-如果用户需要生成自己的 `audio-esp.bin`，则需把 `mk_audio_bin.py`（位置在 $ADF_PATH/tools/audio_tone/mk_audio_tone.py）和用户提示音文件放在相同的目录下，然后按照下面命令运行 `mk_audio_bin.py` 脚本，最终在脚本目录的上层目录生成 `audio-esp.bin` 文件和 `/components/audio_flash_tone/` 文件夹，其中 `/components/audio_flash_tone/` 文件夹包含提示音在 flash 地址的源代码。
+如果用户需要生成自己的 `audio-esp.bin`，则需要执行 `mk_audio_bin.py` 脚本（位于 $ADF_PATH/tools/audio_tone/mk_audio_tone.py），并且指定相关文件的路径。
 
-
-Python 脚本命令如下：
+ 源 MP3 文件在 `tone_mp3_folder` 文件夹中，生成的 C 文件、H 文件以及二进制 bin 文件都存放在此目录下。
 
 ```
-python $ADF_PATH/tools/audio_tone/mk_audio_tone.py tone_mp3_folder
+python3 $ADF_PATH/tools/audio_tone/mk_audio_tone.py -f ./ -r tone_mp3_folder
 ```
+
+请使用 *python3 $ADF_PATH/tools/audio_tone/mk_audio_tone.py --help* 查看更多脚本信息。
 
 本例程默认的 `audio-esp.bin` 包含如下音频文件：
 
