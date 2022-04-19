@@ -35,8 +35,7 @@
 
 #include "a2dp_stream.h"
 
-#if CONFIG_BT_ENABLED
-
+#if (defined CONFIG_CLASSIC_BT_ENABLED)
 static const char *TAG = "A2DP_STREAM";
 
 typedef struct {

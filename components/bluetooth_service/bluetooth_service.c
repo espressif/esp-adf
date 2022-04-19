@@ -34,7 +34,7 @@
 
 #include "audio_idf_version.h"
 
-#if CONFIG_BT_ENABLED
+#if (defined CONFIG_CLASSIC_BT_ENABLED)
 #include "esp_a2dp_api.h"
 #include "esp_avrc_api.h"
 #include "esp_bt.h"

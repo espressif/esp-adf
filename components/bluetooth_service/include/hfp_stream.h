@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-#if CONFIG_BT_ENABLED
+#if (defined CONFIG_CLASSIC_BT_ENABLED)
 #include "esp_bt.h"
 #include "esp_hf_client_api.h"
 

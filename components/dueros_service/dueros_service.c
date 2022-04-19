@@ -158,7 +158,7 @@ static void duer_login(void)
     int sz = _duer_profile_end - _duer_profile_start;
     char *data = audio_calloc_inner(1, sz);
     if (NULL == data) {
-        ESP_LOGE(TAG, "audio_malloc failed");
+        ESP_LOGE(TAG, "Dueros profile missing, duer profile audio_malloc failed");
         return;
     }
     memcpy(data, _duer_profile_start, sz);

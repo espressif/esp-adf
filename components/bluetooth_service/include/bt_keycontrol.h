@@ -26,7 +26,7 @@
 #define __BT_KEYCONTROL_H__
 
 
-#if CONFIG_BT_ENABLED
+#if (defined CONFIG_CLASSIC_BT_ENABLED)
 
 #include "esp_avrc_api.h"
 
