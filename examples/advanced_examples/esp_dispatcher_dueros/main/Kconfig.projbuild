@@ -16,9 +16,12 @@ config WIFI_PASSWORD
 
 choice WIFI_SETTING_TYPE
     prompt "WiFi Setting type"
-    default ESP_SMARTCONFIG
+    default ESP_BLUFI_PROVISIONING
     help
         Select wifi setting method
+
+config ESP_BLUFI_PROVISIONING
+    bool "Enable esp blufi provisioning"
 
 config ESP_SMARTCONFIG
     bool "Enable esp smartconfig"
@@ -48,4 +51,5 @@ config DUER_AIRKISS_KEY
         The key used to encrypt ssid and password with AES method.
 
 endchoice
+
 endmenu

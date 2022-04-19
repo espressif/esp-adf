@@ -30,7 +30,7 @@
 #include "freertos/timers.h"
 #include "freertos/queue.h"
 
-#if CONFIG_BT_ENABLED
+#if (defined CONFIG_CLASSIC_BT_ENABLED)
 
 #include "audio_error.h"
 #include "esp_system.h"

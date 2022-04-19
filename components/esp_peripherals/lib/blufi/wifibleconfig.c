@@ -30,7 +30,7 @@
 #include "audio_mem.h"
 #include "audio_idf_version.h"
 
-#if defined(CONFIG_BTDM_CTRL_MODE_BLE_ONLY) || defined(CONFIG_BTDM_CTRL_MODE_BTDM)
+#if defined(CONFIG_BT_BLE_BLUFI_ENABLE)
 #include "esp_system.h"
 #include "esp_bt.h"
 #include "esp_log.h"
@@ -40,11 +40,24 @@
 #else
 #include "esp_blufi_api.h"
 #endif
+
+#ifdef CONFIG_BT_BLE_BLUFI_ENABLE
 #include "esp_bt_defs.h"
 #include "esp_gap_ble_api.h"
 #include "esp_bt_device.h"
 #include "esp_bt_main.h"
 #include "esp_gap_bt_api.h"
+#elif CONFIG_BT_NIMBLE_ENABLED
+#include "esp_nimble_hci.h"
+#include "nimble/nimble_port.h"
+#include "nimble/nimble_port_freertos.h"
+#include "host/ble_hs.h"
+#include "host/util/util.h"
+#include "services/gap/ble_svc_gap.h"
+#include "services/gatt/ble_svc_gatt.h"
+#include "console/console.h"
+#endif
+
 #include "esp_smartconfig.h"
 #include "audio_error.h"
 #include "esp_wifi.h"
