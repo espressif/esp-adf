@@ -20,6 +20,7 @@ variables:
   ADF_PATH: "$CI_PROJECT_DIR"
   IDF_PATH: "$CI_PROJECT_DIR/esp-idf"
   CI_TARGET_UT_TEST_CONFIG_FILE: "$CI_PROJECT_DIR/tools/ci/target-ut-test.yml"
+  IDF_SKIP_CHECK_SUBMODULES: 1
 
 .setup_tools_unless_target_test: &setup_tools_unless_target_test |
   if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
@@ -28,6 +29,22 @@ variables:
 
 .set_idf_version_and_update: &set_idf_version_and_update
   $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
+
+.execute_submodules: &execute_submodules
+  if [[ "$DEEP_CLONE" == "true" ]]; then
+  git submodule update --init;
+  else
+  git -c submodule."esp-idf".update=none submodule update --init;
+  git submodule | grep esp-idf;
+  export ORIG_HEAD=`git submodule | grep "esp-idf" | sed -r 's/-(.*) esp-idf/\1/g'`;
+  echo ${ORIG_HEAD};
+  rm esp-idf -rf;mkdir esp-idf;
+  cd esp-idf;git init;
+  git remote add origin ${GITLAB_SSH_SERVER}/idf/esp-idf.git;
+  git fetch origin ${ORIG_HEAD}:${ORIG_HEAD} --depth 1;
+  git checkout ${ORIG_HEAD};
+  cd -;
+  fi
 
 before_script:
   # add gitlab ssh key
@@ -44,7 +61,7 @@ before_script:
   - sed -i "s%https://github.com/espressif/esp-adf-libs%${GITLAB_SSH_SERVER}/adf/esp-adf-libs.git%" .gitmodules
   # - sed -i "s%https://github.com/espressif/esp-sr.git%${GITLAB_SSH_SERVER}/speech-recognition-internal/esp_sr_public.git%" .gitmodules
   - git config --global http.postBuffer 524288000
-  - git submodule update --init
+  - *execute_submodules
   - echo "current path:"$(pwd)
   - cd $ADF_PATH/..
   - if [[ ! -d "$ADF_PATH/../adf-libs-ut/" ]]; then git clone ssh://git@gitlab.espressif.cn:27227/adf/adf-libs-ut.git;else echo "adf-libs-ut folder already exists";fi
@@ -55,8 +72,6 @@ before_script:
   - set +e +o pipefail
   - source $ADF_PATH/tools/ut/switch_branch.sh
   - set -e -o pipefail
-
-  - if [ "$IDF_VERSION" = "release/v4.4" ];then cd $IDF_PATH; git checkout $IDF_VERSION; $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)";fi
 
   # - cd $IDF_PATH
   # - git checkout $IDF_VERSION
@@ -111,7 +126,7 @@ before_script:
     V: "0"
 
 .build_examples_make: &build_examples_make
-  <<: *build_template
+  extends: .build_template
   parallel: 8
   # This is a workaround for a rarely encountered issue with building examples in CI.
   # Probably related to building of Kconfig in 'make clean' stage
@@ -139,11 +154,13 @@ before_script:
     - mkdir build_examples
     - cd build_examples
     - mkdir -p ${LOG_PATH}
-    - echo "The IDF branch is v3.3(722043f734)"
-    - $ADF_PATH/tools/ci/set_idf.sh "722043f734"
+    - echo "The IDF branch is "${IDF_VERSION}
+    - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
+    - *setup_tools_unless_target_test
     # enable pedantic flags for compilation
     - export PEDANTIC_CFLAGS="-Werror -Werror=deprecated-declarations -Werror=unused-variable -Werror=unused-but-set-variable -Werror=unused-function"
     - export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
+    - sed -i 's/ check-submodules $(/ $(/g' ${IDF_PATH}/make/project.mk
     - ${ADF_PATH}/tools/ci/build_examples.sh
     # Check if the tests demand Make built binaries. If not, delete them
     - if [ "$EXAMPLE_TEST_BUILD_SYSTEM" == "make" ]; then exit 0; fi
@@ -310,13 +327,13 @@ before_script:
   - source $IDF_PATH/tools/ci/configure_ci_environment.sh
   - git apply $ADF_PATH/idf_patches/idf_v3.3_freertos.patch
   - git apply $ADF_PATH/idf_patches/idf_v3.3_esp_http_client.patch
-  - cd -
   - cd $IDF_PATH/tools/unit-test-app
   - cp $ADF_UT/sdkconfig.defaults ./
   - rm -rf $IDF_PATH/tools/ci
   - cp -rf $ADF_UT/ci $IDF_PATH/tools
   - sed -i "s%CRITICAL_LEAK_THRESHOLD = 4096%CRITICAL_LEAK_THRESHOLD = 26240%" $IDF_PATH/tools/unit-test-app/components/test_utils/test_runner.c
   - sed -i "s%include \$(IDF_PATH)\/make\/project.mk%include \$(ADF_PATH)\/project.mk%g" Makefile
+  - sed -i 's/ check-submodules $(/ $(/g' ${IDF_PATH}/make/project.mk
 
 .add_adf_components_to_ut_v44_make_build: &add_adf_components_to_ut_v44_make_build
   - cd $ADF_PATH/../adf-libs-ut
@@ -325,13 +342,16 @@ before_script:
   - sed -i '/EXTRA_COMPONENT_DIRS += \$(ADF_PATH)\/components\//a\EXTRA_COMPONENT_DIRS += $(ADF_UT)/esp_audio' project.mk
   - git log -2
   - cd $IDF_PATH
-  - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
+  - git clean -f
+  - git checkout ${IDF_VERSION}
+  - rm -rf $IDF_PATH/components/mqtt/esp-mqtt
+  - git submodule update --init --recursive
   # - if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
   # $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)" || exit 1
   # fi
   - source $IDF_PATH/tools/ci/configure_ci_environment.sh
+  - *setup_tools_unless_target_test
   - git apply $ADF_PATH/idf_patches/idf_v4.4_freertos.patch
-  - cd -
   - cd $IDF_PATH/tools/unit-test-app
   - cp $ADF_UT/sdkconfig_v44.defaults ./sdkconfig.defaults
   - rm -rf $IDF_PATH/tools/ci
@@ -408,7 +428,6 @@ before_script:
     OUTPUT_PATH: ${IDF_PATH}/tools/unit-test-app/output
   script:
     - echo $PATH
-    - xtensa-esp32-elf-gcc -v
     - *add_adf_components_to_ut_v44_make_build
     - MAKEFLAGS= make help # make sure kconfig tools are built in single process
     - make clean
@@ -432,6 +451,7 @@ before_script:
     - git checkout -- $IDF_PATH/components/freertos/include/freertos/task.h $IDF_PATH/components/freertos/tasks.c $IDF_PATH/tools/unit-test-app/Makefile $IDF_PATH/tools/unit-test-app/components/test_utils/test_runner.c $IDF_PATH/tools/unit-test-app/sdkconfig.defaults
     - rm -rf tools/ci/apply_bot_filter.py tools/ci/build_examples.sh tools/ci/build_examples_cmake.sh tools/ci/check-executable.sh tools/ci/check-line-endings.sh tools/ci/check_examples_cmake_make.sh
     # use the 'tools/UnitTestParser.py' of release/v3.3 in order to generate 'idf_test/unit_test/TestCaseAll.yml'
+    - echo "The IDF branch is v3.3(722043f734)"
     - git checkout 722043f734
     - git submodule update --init --recursive
     - cd -
@@ -454,7 +474,7 @@ before_script:
 adf_ut_make_v33:
   extends: .build_esp_adf_tests_make
   variables:
-    IDF_VERSION: 722043f734
+    IDF_VERSION: 722043f734fa556d66d57473ac266fb1d0ec5ad2
     IDF_TARGET: esp32
 
 adf_ut_make_v44:
@@ -462,6 +482,7 @@ adf_ut_make_v44:
   variables:
     IDF_VERSION: release/v4.4
     IDF_TARGET: esp32
+    DEEP_CLONE: "true"
 
 build_examples_v41_cmake:
   extends: .build_examples_cmake
@@ -503,7 +524,9 @@ build_examples_v44_cmake:
     IDF_FIND_APP_PATH_ARG: "-p"
 
 build_examples_v33_make:
-  <<: *build_examples_make
+  extends: .build_examples_make
+  variables:
+    IDF_VERSION: 722043f734fa556d66d57473ac266fb1d0ec5ad2
 
 .build_adf_test:
   <<: *build_template
@@ -659,4 +682,3 @@ push_to_github:
 
 include:
   - 'tools/ci/target-ut-test.yml'
-
