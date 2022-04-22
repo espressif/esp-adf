@@ -12,8 +12,8 @@ echo "Checking out IDF version $1"
 cd $IDF_PATH
 # Cleans out the untracked files in the repo, so the next "git checkout" doesn't fail
 git clean -f
+git fetch origin $1:$1 --depth 1
 git checkout $1
 # Removes the mqtt submodule, so the next submodule update doesn't fail
 rm -rf $IDF_PATH/components/mqtt/esp-mqtt
-git submodule update --init --recursive
-
+python $ADF_PATH/tools/ci/ci_fetch_submodule.py -s all
