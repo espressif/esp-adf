@@ -30,7 +30,7 @@
 #include "audio_mem.h"
 #include "audio_idf_version.h"
 
-#ifdef CONFIG_BLUEDROID_ENABLED
+#if defined(CONFIG_BTDM_CTRL_MODE_BLE_ONLY) || defined(CONFIG_BTDM_CTRL_MODE_BTDM)
 #include "esp_system.h"
 #include "esp_bt.h"
 #include "esp_log.h"
