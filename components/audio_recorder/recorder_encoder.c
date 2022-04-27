@@ -56,6 +56,7 @@ static esp_err_t recorder_encoder_enable(void *handle, bool enable)
         audio_pipeline_run(recorder_encoder->pipeline);
         audio_pipeline_resume(recorder_encoder->pipeline);
     } else {
+        rb_done_write(recorder_encoder->out_rb);
         audio_pipeline_stop(recorder_encoder->pipeline);
         audio_pipeline_reset_elements(recorder_encoder->pipeline);
         audio_pipeline_reset_items_state(recorder_encoder->pipeline);
@@ -69,11 +70,11 @@ static esp_err_t recorder_encoder_get_state(void *handle, void *state)
     recorder_encoder_t *recorder_encoder = (recorder_encoder_t *)handle;
     audio_element_handle_t encoder = recorder_encoder->config.encoder;
     audio_element_handle_t resample = recorder_encoder->config.resample;
-
+    recorder_encoder_state_t *encoder_state = (recorder_encoder_state_t *)state;
     if ((encoder != NULL && AEL_STATE_RUNNING == audio_element_get_state(recorder_encoder->config.encoder)) || (resample != NULL && AEL_STATE_RUNNING == audio_element_get_state(recorder_encoder->config.resample))) {
-        *(recorder_encoder_state_t *)state = true;
+        encoder_state->running = true;
     } else {
-        *(recorder_encoder_state_t *)state = false;
+        encoder_state->running = false;
     }
     return ESP_OK;
 }
