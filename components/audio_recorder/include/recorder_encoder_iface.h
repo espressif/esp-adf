@@ -32,9 +32,11 @@ extern "C" {
 #endif
 
 /**
-* true is running
+* state of encoder
 */
-typedef bool recorder_encoder_state_t;
+typedef struct {
+    bool running; /*!< Encoder running state */
+} recorder_encoder_state_t;
 
 typedef struct {
     /**

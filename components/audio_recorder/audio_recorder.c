@@ -649,7 +649,7 @@ esp_err_t audio_recorder_vad_check_enable(audio_rec_handle_t handle, bool enable
 
 int audio_recorder_data_read(audio_rec_handle_t handle, void *buffer, int length, TickType_t ticks)
 {
-    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
     audio_recorder_t *recorder = (audio_recorder_t *)handle;
     recorder_subproc_iface_t *subproc = NULL;
     int ret = 0;
@@ -672,7 +672,7 @@ int audio_recorder_data_read(audio_rec_handle_t handle, void *buffer, int length
 
 bool audio_recorder_get_wakeup_state(audio_rec_handle_t handle)
 {
-    AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
+    AUDIO_NULL_CHECK(TAG, handle, return false);
     audio_recorder_t *recorder = (audio_recorder_t *)handle;
 
     return recorder->state >= RECORDER_ST_WAKEUP ? true : false;

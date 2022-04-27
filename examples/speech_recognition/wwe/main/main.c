@@ -33,6 +33,7 @@
 #include "esp_log.h"
 
 #include "amrnb_encoder.h"
+#include "amrwb_encoder.h"
 #include "audio_element.h"
 #include "audio_idf_version.h"
 #include "audio_mem.h"
@@ -53,9 +54,14 @@
 
 #include "model_path.h"
 
-#define RECORDER_ENC_ENABLE (false)
+#define NO_ENCODER  (0)
+#define ENC_2_AMRNB (1)
+#define ENC_2_AMRWB (2)
+
+#define RECORDER_ENC_ENABLE (NO_ENCODER)
 #define VOICE2FILE          (false)
 #define WAKENET_ENABLE      (true)
+#define MULTINET_ENABLE     (true)
 #define SPEECH_CMDS_RESET   (false)
 
 #define SPEECH_COMMANDS     ("da kai dian deng,kai dian deng;guan bi dian deng,guan dian deng;guan deng;")
@@ -317,13 +323,16 @@ static void start_recorder()
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
     recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
     recorder_sr_cfg.afe_cfg.wakenet_init = WAKENET_ENABLE;
+    recorder_sr_cfg.multinet_init = MULTINET_ENABLE;
     recorder_sr_cfg.afe_cfg.aec_init = RECORD_HARDWARE_AEC;
 #if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
     recorder_sr_cfg.input_order[0] = DAT_CH_REF0;
     recorder_sr_cfg.input_order[1] = DAT_CH_0;
 #endif
 
-#if RECORDER_ENC_ENABLE == (true)
+#if RECORDER_ENC_ENABLE
+    recorder_encoder_cfg_t recorder_encoder_cfg = { 0 };
+#if RECORDER_ENC_ENABLE == ENC_2_AMRNB
     rsp_filter_cfg_t filter_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     filter_cfg.src_ch = 1;
     filter_cfg.src_rate = 16000;
@@ -336,10 +345,18 @@ static void start_recorder()
     amrnb_cfg.contain_amrnb_header = true;
     amrnb_cfg.stack_in_ext = true;
 
-    recorder_encoder_cfg_t recorder_encoder_cfg = { 0 };
     recorder_encoder_cfg.resample = rsp_filter_init(&filter_cfg);
     recorder_encoder_cfg.encoder = amrnb_encoder_init(&amrnb_cfg);
+#elif RECORDER_ENC_ENABLE == ENC_2_AMRWB
+    amrwb_encoder_cfg_t amrwb_cfg = DEFAULT_AMRWB_ENCODER_CONFIG();
+    amrwb_cfg.contain_amrwb_header = true;
+    amrwb_cfg.stack_in_ext = true;
+    amrwb_cfg.out_rb_size = 4 * 1024;
+
+    recorder_encoder_cfg.encoder = amrwb_encoder_init(&amrwb_cfg);
 #endif
+#endif
+
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
     cfg.read = (recorder_data_read_t)&input_cb_for_afe;
     cfg.sr_handle = recorder_sr_create(&recorder_sr_cfg, &cfg.sr_iface);
@@ -347,7 +364,7 @@ static void start_recorder()
     char err[200];
     recorder_sr_reset_speech_cmd(cfg.sr_handle, SPEECH_COMMANDS, err);
 #endif
-#if RECORDER_ENC_ENABLE == (true)
+#if RECORDER_ENC_ENABLE
     cfg.encoder_handle = recorder_encoder_create(&recorder_encoder_cfg, &cfg.encoder_iface);
 #endif
     cfg.event_cb = rec_engine_cb;

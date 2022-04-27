@@ -52,10 +52,10 @@ typedef struct {
         DISABLED,
         RUNNING,
         SUSPENDED,
-    } afe_state;     /*!< AFE state */
-    bool wwe_enable; /*!< Wake word detection state */
-    bool mn_enable;  /*!< Speech command recognition state */
-    bool vad_enable; /*!< Voice detection state */
+    } afe_state     : 4; /*!< AFE state */
+    bool wwe_enable : 1; /*!< Wake word detection state */
+    bool mn_enable  : 1; /*!< Speech command recognition state */
+    bool vad_enable : 1; /*!< Voice detection state */
 } recorder_sr_state_t;
 
 /**
