@@ -48,6 +48,8 @@ Connect to a Wi-Fi network by running `menuconfig` and then filling in the netwo
 menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
 ```
 
+About how to setup DuerOS data points, please refer to [issue #145](https://github.com/espressif/esp-adf/issues/145#issuecomment-483531246).
+
 In addition, you need to apply for the DuerOS profile on the [DuerOS Open Platform](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown), and replace the empty file in `ADF_PATH/components/dueros_service/duer_profile`.
 
 
