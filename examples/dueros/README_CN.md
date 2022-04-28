@@ -48,6 +48,8 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
 ```
 
+关于如何添加 DuerOS 数据点，请参考 [issue #145](https://github.com/espressif/esp-adf/issues/145#issuecomment-483531246)。
+
 此外，本例程还需 DuerOS 的 profile，用户可自行前往 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 页面进行申请，并且将申请到的 profile 替换 `ADF_PATH/components/dueros_service/duer_profile` 文件夹下的原始空文件。
 
 
