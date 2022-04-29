@@ -39,6 +39,7 @@ extern "C" {
 #define FETCH_TASK_PRIO          (5)
 #define FEED_TASK_PINNED_CORE    (1)
 #define FETCH_TASK_PINNED_CORE   (1)
+#define SR_OUTPUT_RB_SIZE        (6 * 1024)
 
 #define RECORDER_SR_MAX_INPUT_CH (4)
 
@@ -71,6 +72,7 @@ typedef struct {
     int          fetch_task_core;                       /*!< Core id of fetch task */
     int          fetch_task_prio;                       /*!< Priority of fetch task */
     int          fetch_task_stack;                      /*!< Stack size of fetch task */
+    int          rb_size;                               /*!< Ringbuffer size of recorder sr */
 } recorder_sr_cfg_t;
 
 #if CONFIG_AFE_MIC_NUM == (1)
@@ -103,6 +105,7 @@ typedef struct {
     .fetch_task_core  = FETCH_TASK_PINNED_CORE, \
     .fetch_task_prio  = FETCH_TASK_PRIO,        \
     .fetch_task_stack = FETCH_TASK_STACK_SZ,    \
+    .rb_size          = SR_OUTPUT_RB_SIZE,      \
 };
 
 /**

@@ -184,6 +184,7 @@ esp_err_t audio_recorder_vad_check_enable(audio_rec_handle_t handle, bool enable
  * @param ticks   Timeout for reading
  *
  * @return Length of data actually read
+ *         ESP_ERR_INVALID_ARG
  */
 int audio_recorder_data_read(audio_rec_handle_t handle, void *buffer, int length, TickType_t ticks);
 
@@ -202,8 +203,8 @@ esp_err_t audio_recorder_destroy(audio_rec_handle_t handle);
  *
  * @param handle Audio recorder handle
  *
- * @return ESP_TRUE
- *         ESP_FAIL
+ * @return true
+ *         false
  */
 bool audio_recorder_get_wakeup_state(audio_rec_handle_t handle);
 
