@@ -35,6 +35,8 @@
 #include "audio_mem.h"
 #include "audio_thread.h"
 
+#include "ringbuf.h"
+
 #include "esp_afe_sr_iface.h"
 #include "esp_afe_sr_models.h"
 
@@ -49,7 +51,6 @@
 #define FETCH_TASK_DESTROY (BIT(1))
 #define FEED_TASK_RUNNING  (BIT(2))
 #define FETCH_TASK_RUNNING (BIT(3))
-#define DEFAULT_OUT_Q_LEN  (10)
 
 static const char *TAG = "RECORDER_SR";
 
@@ -65,11 +66,6 @@ static const esp_afe_sr_iface_t *esp_afe = &esp_afe_sr_2mic;
 static const esp_mn_iface_t *multinet = &MULTINET_MODEL;
 #endif
 
-typedef struct {
-    int16_t *data; /*!< Data pointer*/
-    int      len;  /*!< Data length */
-} data_pack_t;
-
 typedef struct __recorder_sr {
     int                   feed_task_core;
     int                   feed_task_prio;
@@ -77,7 +73,8 @@ typedef struct __recorder_sr {
     int                   fetch_task_core;
     int                   fetch_task_prio;
     int                   fetch_task_stack;
-    QueueHandle_t         out_queue;
+    ringbuf_handle_t      out_rb;
+    int                   rb_size;
     EventGroupHandle_t    events;
     bool                  feed_running;
     bool                  fetch_running;
@@ -257,12 +254,12 @@ static void fetch_task(void *parameters)
     recorder_sr_t *recorder_sr = (recorder_sr_t *)parameters;
     int afe_chunksize = esp_afe->get_fetch_chunksize(recorder_sr->afe_handle);
     recorder_sr->fetch_running = true;
+    int16_t *buffer = audio_calloc(1, afe_chunksize * sizeof(int16_t));
+    assert(buffer);
 
     while (recorder_sr->fetch_running) {
         xEventGroupWaitBits(recorder_sr->events, FETCH_TASK_RUNNING, false, true, portMAX_DELAY);
 
-        int16_t *buffer = audio_calloc(1, afe_chunksize * sizeof(int16_t));
-        assert(buffer);
         int res = esp_afe->fetch(recorder_sr->afe_handle, buffer);
 #ifdef CONFIG_USE_MULTINET
         recorder_mn_detect(recorder_sr, buffer, res);
@@ -274,44 +271,24 @@ static void fetch_task(void *parameters)
     }
     xEventGroupClearBits(recorder_sr->events, FETCH_TASK_RUNNING);
     xEventGroupSetBits(recorder_sr->events, FETCH_TASK_DESTROY);
+    free(buffer);
     vTaskDelete(NULL);
 }
 
 static esp_err_t recorder_sr_output(recorder_sr_t *recorder_sr, void *buffer, int len)
 {
-    data_pack_t msg = { 0 };
-    if (0 == uxQueueSpacesAvailable(recorder_sr->out_queue)) {
-        xQueueReceive(recorder_sr->out_queue, &msg, 0);
-        if (msg.data) {
-            audio_free(msg.data);
-        }
+    if (rb_bytes_available(recorder_sr->out_rb) < len) {
+        rb_read(recorder_sr->out_rb, NULL, len, 0);
     }
-    msg.data = buffer;
-    msg.len = len;
-    if (xQueueSend(recorder_sr->out_queue, &msg, 0) != pdTRUE) {
-        ESP_LOGE(TAG, "Fail to send data to out queue");
-        return ESP_FAIL;
-    }
-    return ESP_OK;
+    int ret = rb_write(recorder_sr->out_rb, buffer, len, 0);
+    return ret == len ? ESP_OK : ESP_FAIL;
 }
 
 static int recorder_sr_fetch(void *handle, void *buf, int len, TickType_t ticks)
 {
     AUDIO_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG, "Handle is NULL");
     recorder_sr_t *recorder_sr = (recorder_sr_t *)handle;
-    data_pack_t msg = { 0 };
-    if (xQueueReceive(recorder_sr->out_queue, &msg, ticks) == pdTRUE) {
-        if (len < msg.len) {
-            ESP_LOGE(TAG, "Buffer size[%d] < data size[%d], may be out of range", len, msg.len);
-            return 0;
-        }
-        memcpy(buf, msg.data, msg.len);
-        audio_free(msg.data);
-        return msg.len;
-    } else {
-        ESP_LOGE(TAG, "sr fetch timeout");
-        return 0;
-    }
+    return rb_read(recorder_sr->out_rb, buf, len, ticks);
 }
 
 static esp_err_t recorder_sr_suspend(void *handle, bool suspend)
@@ -356,6 +333,10 @@ static esp_err_t recorder_sr_enable(void *handle, bool enable)
                 recorder_sr->fetch_task_core);
         }
         recorder_sr_suspend(handle, !recorder_sr->wwe_enable);
+
+        if (recorder_sr->out_rb) {
+            rb_reset(recorder_sr->out_rb);
+        }
     } else {
         recorder_sr_suspend(handle, false);
 
@@ -373,14 +354,8 @@ static esp_err_t recorder_sr_enable(void *handle, bool enable)
                 ESP_LOGI(TAG, "Feed task destroyed!");
             }
         }
-        if (recorder_sr->out_queue) {
-            data_pack_t msg = { 0 };
-            while (DEFAULT_OUT_Q_LEN != uxQueueSpacesAvailable(recorder_sr->out_queue)) {
-                xQueueReceive(recorder_sr->out_queue, &msg, 0);
-                if (msg.data) {
-                    audio_free(msg.data);
-                }
-            }
+        if (recorder_sr->out_rb) {
+            rb_done_write(recorder_sr->out_rb);
         }
     }
     return ret == ESP_OK ? ESP_OK : ESP_FAIL;
@@ -406,7 +381,6 @@ static esp_err_t recorder_sr_get_state(void *handle, void *state)
     } else {
         sr_state->afe_state = SUSPENDED;
     }
-
     return ESP_OK;
 }
 
@@ -519,8 +493,9 @@ static void recorder_sr_clear(void *handle)
         recorder_sr->mn_handle = NULL;
     }
 #endif
-    if (recorder_sr->out_queue) {
-        vQueueDelete(recorder_sr->out_queue);
+    if (recorder_sr->out_rb) {
+        rb_reset(recorder_sr->out_rb);
+        rb_destroy(recorder_sr->out_rb);
     }
     if (recorder_sr->events) {
         vEventGroupDelete(recorder_sr->events);
@@ -543,6 +518,7 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
     recorder_sr->fetch_task_core  = cfg->fetch_task_core;
     recorder_sr->fetch_task_prio  = cfg->fetch_task_prio;
     recorder_sr->fetch_task_stack = cfg->fetch_task_stack;
+    recorder_sr->rb_size          = cfg->rb_size;
 
     recorder_sr->idx_ch0 = recorder_sr_find_input_ch_idx(cfg->input_order, DAT_CH_0);
     AUDIO_CHECK(TAG, (recorder_sr->idx_ch0 != -1), goto _failed, "channel 0 not found");
@@ -571,8 +547,8 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
 #endif
     recorder_sr->events = xEventGroupCreate();
     AUDIO_NULL_CHECK(TAG, recorder_sr->events, goto _failed);
-    recorder_sr->out_queue = xQueueCreate(DEFAULT_OUT_Q_LEN, sizeof(data_pack_t));
-    AUDIO_NULL_CHECK(TAG, recorder_sr->out_queue, goto _failed);
+    recorder_sr->out_rb = rb_create(recorder_sr->rb_size, 1);
+    AUDIO_NULL_CHECK(TAG, recorder_sr->out_rb, goto _failed);
 
     *iface = &recorder_sr_iface;
 
