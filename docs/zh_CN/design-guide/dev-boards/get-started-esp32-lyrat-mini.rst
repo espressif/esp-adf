@@ -136,6 +136,7 @@ ESP32-LyraT-Mini 上电之前，请首先确认开发板完好无损。
 -----------------
 
 * `ESP32-LyraT-Mini V1.2 原理图`_ (PDF)
+* `ESP32-LyraT-Mini V1.2 尺寸图 <https://dl.espressif.com/dl/schematics/Layout_ESP32-LyraT-Mini_V1.2_20220317.pdf>`_ (PDF)
 * :doc:`board-esp32-lyrat-mini-v1.2`
 * `ESP32 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
 * `ESP32-WROVER-E 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_cn.pdf>`_ (PDF)
