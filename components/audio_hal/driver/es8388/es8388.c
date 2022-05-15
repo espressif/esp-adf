@@ -300,7 +300,7 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     }
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL2, tmp);  //0x00 LINSEL & RINSEL, LIN1/RIN1 as ADC Input; DSSEL,use one DS Reg11; DSR, LINPUT1-RINPUT1
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL3, 0x02);
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL4, 0x0d); // Left/Right data, Left/Right justified mode, Bits length, I2S format
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL4, 0x0c); // 16 Bits length and I2S serial audio data format
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL5, 0x02);  //ADCFsMode,singel SPEED,RATIO=256
     //ALC for Microphone
     res |= es8388_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);      // 0db
