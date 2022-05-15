@@ -496,6 +496,32 @@ Now you are ready to try some other :adf:`examples`, or go right to developing y
 The first line contains ``ADF_PATH`` to point the toolchain to another file in ESP-ADF directory that provides configuration variables and path to ESP-ADF :adf:`components` reacquired by the toolchain. You need similar ``Makefile`` in your own applications developed with the ESP-ADF.
 
 
+VS Code Extension
+=================
+
+1. Follow `Quick Installation Guide <https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/tutorial/install.md>`_ to install ESP-IDF Visual Studio Code Extension. If the previous steps have been done correctly, the following toolbar appears:
+
+.. figure:: ../../_static/vscode-extension-toolbar.png
+    :align: center
+    :alt: VS Code Extension Toolbar
+    :figclass: align-center
+
+    VS Code Extension Toolbar
+
+2. To install the ESP-ADF extension, open ``Command Palette`` and enter ``install adf``. Then, a progress bar shows up in the lower right corner.
+
+  If you have cloned the ESP-ADF repository before, please go to ``.vscode/settings.json`` and manually set the ESP-ADF path in ``idf.espAdfPath`` or ``idf.espAdfPathWin`` (for Windows).
+
+3. In ``Command Palette``, enter ``show examples project``, and then a window will be opened with a list of example projects.
+
+4. Select an example, click ``Create project using example XX``, and select the directory to save the current example.
+
+5. On the toolbar at the bottom of VS Code, click the gear symbol ``menuconfig`` to configure the example and click the column symbol ``Build`` to build the example. See available `shortcut keys <https://github.com/espressif/vscode-esp-idf-extension#available-commands>`_ for VS code extensions.
+
+6. On the toolbar at the bottom of VS Code, click the plug-in symbol ``Select Port`` to configure the serial port and click the lightning symbol ``Flash Device`` to flash firmware. After the firmware is flashed successfully, click ``Monitor Device`` to start the monitor function. Or, you can also use the flame symbol to build, flash, and monitor the example at the same time.
+
+
+
 Update ESP-ADF
 ==============
 
