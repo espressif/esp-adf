@@ -1,12 +1,31 @@
 Services
 ********
 
-To interface an ESP32 based audio device with external physical or virtual devices, like a Bluetooth speaker or a cloud server, the ADF provides services. A service is a software implementation of specific protocol to facilitate communication between devices. Usually it also covers a set of functionalities to execute specific operations that involve either one or both devices, e.g. muting a Bluetooth speaker during playback or recognizing voice commands to adjust the color temperature of light in a room. The service may also provide polices to allow device operation by specific user or application.
+:link_to_translation:`zh_CN:[中文]`
+
+A service is a software implementation of specific product functions, such as input keys, network configuration management, and battery check. Each service is also an abstraction of hardware. For example, the input key service supports ADC keys and GPIO keys. Services can be reused on different products, and high-level APIs and events allow easy and convenient product development.
 
 For details please refer to descriptions listed below.
 
 .. toctree::
     :maxdepth: 1
 
-    Bluetooth <bluetooth_service>
+    Bluetooth Service <bluetooth_service>
 
+    Input Key Service <input_key_service>
+
+    Wi-Fi Service <wifi_service>
+
+    OTA Service <ota_service>
+
+    DuerOS Service <dueros_service>
+
+    Display Service <display_service>
+
+    Battery Service <battery_service>
+
+    Core Dump Upload Service <coredump_upload_service>
+
+
+.. include:: /_build/inc/periph_service.inc
+.. include:: /_build/inc/audio_service.inc

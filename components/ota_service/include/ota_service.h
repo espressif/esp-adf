@@ -34,14 +34,6 @@ extern "C" {
 
 #define OTA_SERVICE_ERR_REASON_BASE  (0x90000)
 
-typedef struct {
-    int task_stack;           /*!< >0 Service task stack; =0 with out task created */
-    int task_prio;            /*!< Service task priority (based on freeRTOS priority) */
-    int task_core;            /*!< Service task running in core (0 or 1) */
-    periph_service_cb evt_cb; /*!< Service callback function */
-    void *cb_ctx;             /*!< Callback context */
-} ota_service_config_t;
-
 #define OTA_SERVICE_DEFAULT_CONFIG() \
     {                                \
         .task_stack = 4096,          \
@@ -51,18 +43,17 @@ typedef struct {
         .cb_ctx = NULL,              \
     }
 
-typedef struct {
-    esp_partition_type_t type;
-    char *label;
-    char *uri;
-    char *cert_pem;
-} ota_node_attr_t;
-
+/**
+ * @brief The OTA service event type
+ */
 typedef enum {
     OTA_SERV_EVENT_TYPE_RESULT,
     OTA_SERV_EVENT_TYPE_FINISH
 } ota_service_event_type_t;
 
+/**
+ * @brief The OTA service error reasons
+ */
 typedef enum {
     OTA_SERV_ERR_REASON_UNKNOWN               = ESP_FAIL,
     OTA_SERV_ERR_REASON_SUCCESS               = ESP_OK,
@@ -81,19 +72,47 @@ typedef enum {
     OTA_SERV_ERR_REASON_GET_NEW_APP_DESC_FAIL = OTA_SERVICE_ERR_REASON_BASE + 13,
 } ota_service_err_reason_t;
 
+/**
+ * @brief The OTA service configuration
+ */
 typedef struct {
-    ota_node_attr_t node;
-    ota_service_err_reason_t (*prepare)(void **handle, ota_node_attr_t *node);
-    ota_service_err_reason_t (*need_upgrade)(void *handle, ota_node_attr_t *node);
-    ota_service_err_reason_t (*execute_upgrade)(void *handle, ota_node_attr_t *node);
-    ota_service_err_reason_t (*finished_check)(void *handle, ota_node_attr_t *node, ota_service_err_reason_t result);
-    bool reboot_flag;
-    bool break_after_fail;
+    int task_stack;           /*!< >0 Service task stack; =0 with out task created */
+    int task_prio;            /*!< Service task priority (based on freeRTOS priority) */
+    int task_core;            /*!< Service task running in core (0 or 1) */
+    periph_service_cb evt_cb; /*!< Service callback function */
+    void *cb_ctx;             /*!< Callback context */
+} ota_service_config_t;
+
+/**
+ * @brief The OTA node attributions
+ */
+typedef struct {
+    esp_partition_type_t type;      /*!< Partition type */
+    char *label;                    /*!< Partition label */
+    char *uri;                      /*!< The upgrade URL */
+    char *cert_pem;                 /*!< SSL server certification, PEM format as string, if the client requires to verify server */
+} ota_node_attr_t;
+
+/**
+ * @brief The upgrade operation
+ */
+typedef struct {
+    ota_node_attr_t node;                                                               /*!< The OTA node */
+    ota_service_err_reason_t (*prepare)(void **handle, ota_node_attr_t *node);          /*!< Functions ready for upgrade */
+    ota_service_err_reason_t (*need_upgrade)(void *handle, ota_node_attr_t *node);      /*!< Detect whether an upgrade is required */
+    ota_service_err_reason_t (*execute_upgrade)(void *handle, ota_node_attr_t *node);   /*!< For execute upgrade  */
+    ota_service_err_reason_t (*finished_check)(void *handle, ota_node_attr_t *node,
+        ota_service_err_reason_t result);                                               /*!< Check result of upgrade */
+    bool reboot_flag;                                                                   /*!< Reboot or not after upgrade */
+    bool break_after_fail;                                                              /*!< Abort upgrade when got failed */
 } ota_upgrade_ops_t;
 
+/**
+ * @brief The result of the OTA upgrade
+ */
 typedef struct {
-    uint8_t   id;
-    ota_service_err_reason_t result;
+    uint8_t   id;                           /*!< The result ID */
+    ota_service_err_reason_t result;        /*!< The error reason */
 } ota_result_t;
 
 /**
@@ -109,7 +128,7 @@ periph_service_handle_t ota_service_create(ota_service_config_t *config);
 
 /**
   * @brief     Configure the upgrade parameter
-  * @Note      This function is not thread safe
+  *            This function is not thread safe
   *
   * This function will set the parameter table to ota service,
   * and the ota service will upgrade the partitions defined in the table one by one,

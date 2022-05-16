@@ -35,8 +35,6 @@ extern "C" {
 /**
  * @brief      Initialize esp_periph_handle_t instance
  *
- * @param      num  led gpio number
- *
  * @return
  *     - NULL, Fail
  *     - Others, Success
