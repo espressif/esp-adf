@@ -25,28 +25,29 @@ static const char *TAG = "HFP_EXAMPLE";
 
 static audio_element_handle_t hfp_in_stream, hfp_out_stream, i2s_stream_writer, i2s_stream_reader;
 static audio_pipeline_handle_t pipeline_in, pipeline_out;
+static int g_hfp_audio_rate = 16000;
 
 static void bt_app_hf_client_audio_open(hfp_data_enc_type_t type)
 {
     ESP_LOGI(TAG, "bt_app_hf_client_audio_open type = %d", type);
-    int sample_rate = 8000;
     if (type == HF_DATA_CVSD) {
-        sample_rate = 8000;
+        g_hfp_audio_rate = 8000;
     } else if (type == HF_DATA_MSBC) {
-        sample_rate = 16000;
+        g_hfp_audio_rate = 16000;
     } else {
         ESP_LOGE(TAG, "error hfp enc type = %d", type);
-        }
-    i2s_stream_set_clk(i2s_stream_reader, sample_rate, 16, 1);
-    i2s_stream_set_clk(i2s_stream_writer, sample_rate, 16, 1);
+    }
+    i2s_stream_set_clk(i2s_stream_reader, g_hfp_audio_rate, 16, 1);
+    i2s_stream_set_clk(i2s_stream_writer, g_hfp_audio_rate, 16, 1);
+    audio_pipeline_run(pipeline_in);
     audio_pipeline_run(pipeline_out);
-    audio_pipeline_resume(pipeline_out);
 }
 
 static void bt_app_hf_client_audio_close(void)
 {
     ESP_LOGI(TAG, "bt_app_hf_client_audio_close");
     audio_pipeline_pause(pipeline_out);
+    audio_pipeline_pause(pipeline_in);
 }
 
 void app_main(void)
@@ -102,6 +103,8 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[3.1] Create i2s stream to write data to codec chip and read data from codec chip");
     i2s_stream_cfg_t i2s_cfg1 = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg1.i2s_config.sample_rate = g_hfp_audio_rate;
+    i2s_cfg1.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
     i2s_cfg1.type = AUDIO_STREAM_READER;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_cfg1.i2s_config.use_apll = false;
@@ -109,6 +112,9 @@ void app_main(void)
 #endif
     i2s_stream_reader = i2s_stream_init(&i2s_cfg1);
     i2s_stream_cfg_t i2s_cfg2 = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg2.i2s_config.sample_rate = g_hfp_audio_rate;
+    i2s_cfg1.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+
     i2s_cfg2.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg2);
 
@@ -147,10 +153,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[5.2] Listening event from peripherals");
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
-    ESP_LOGI(TAG, "[ 6 ] Start audio_pipeline");
-    audio_pipeline_run(pipeline_in);
-
-    ESP_LOGI(TAG, "[ 7 ] Listen for all pipeline events");
+    ESP_LOGI(TAG, "[ 6 ] Listen for all pipeline events");
     while (1) {
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
@@ -167,7 +170,7 @@ void app_main(void)
         }
     }
 
-    ESP_LOGI(TAG, "[ 8 ] Stop audio_pipeline");
+    ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
     audio_pipeline_stop(pipeline_in);
     audio_pipeline_wait_for_stop(pipeline_in);
     audio_pipeline_terminate(pipeline_in);
