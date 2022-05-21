@@ -137,6 +137,7 @@ Related Documents
 -----------------
 
 * `ESP32-LyraT-Mini V1.2 schematic`_ (PDF)
+* `ESP32-LyraT-Mini V1.2 Board Dimensions <https://dl.espressif.com/dl/schematics/Layout_ESP32-LyraT-Mini_V1.2_20220317.pdf>`_ (PDF)
 * :doc:`board-esp32-lyrat-mini-v1.2`
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
 * `ESP32-WROVER-E Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-wrover-e_esp32-wrover-ie_datasheet_en.pdf>`_ (PDF)
