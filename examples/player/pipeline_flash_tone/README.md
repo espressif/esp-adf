@@ -18,14 +18,17 @@ The pipeline for the development board to acquire the MP3 file stored in flash a
 
 Required source file for the bin file address in flash has already been generated in the `/tools/audio-esp.bin` directory, and required source file for the audio file address in flash in the `/components/audio_flash_tone/` directory.
 
-If you need to generate your own `audio-esp.bin`, you need to first put `mk_audio_bin.py` (located in $ADF_PATH/tools/audio_tone/mk_audio_tone.py) and the user prompt tone file in the same directory. Then, run the `mk_audio_bin.py` script with the command below, which will eventually generate the `audio-esp.bin` file and the `/audio_flash_tone/` folder in the upper directory of the script directory. The source file for the tone address in flash is stored in the `/components/audio_flash_tone/` folder.
+If you need to generate your own `audio-esp.bin`, you need to run the `mk_audio_bin.py` (located in $ADF_PATH/tools/audio_tone/mk_audio_tone.py), and specify the path of relevant files.
 
+Source MP3 files are in the `tone_mp3_folder` folder, newly generated C files, H files, and the binary bin files are all stored in this directory.
 
 The Python script command is as follows:
 
 ```
-python $ADF_PATH/tools/audio_tone/mk_audio_tone.py tone_mp3_folder
+python3 $ADF_PATH/tools/audio_tone/mk_audio_tone.py tone_mp3_folder
 ```
+
+Please use `python3 $ADF_PATH/tools/audio_tone/mk_audio_tone.py -- help` to get more script information.
 
 The default `audio-esp.bin` of this example contains the following audio files:
 
