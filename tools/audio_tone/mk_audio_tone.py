@@ -58,7 +58,7 @@ version 1.2 provied more configurable ways to generate the audio bin, and suppor
     - Format 1: 'esp_app_desc_t' struct, crc and tail are contained.
 
 """
-
+# coding=utf-8
 import sys
 import os
 import struct
@@ -70,6 +70,12 @@ __version__ = '1.2'
 SRC_FILE_NAME = 'audio_tone_uri.c'
 HEADER_FILE_NAME = 'audio_tone_uri.h'
 TARGET_FILE_NAME = 'audio_tone.bin'
+
+get_input = None
+if sys.version_info.major == 3:
+    get_input = input
+else:
+    get_input = raw_input
 
 def save_2_file(folder, dst, buffer):
     """
@@ -151,12 +157,22 @@ def pack_tone_app_desc(tone_bin, b_format, b_ver):
             dst += struct.pack("<I",    self.__magic_word)
             dst += struct.pack("<I",    self.__secure_version)
             dst += struct.pack("<2I",   *self.__reserved1)
-            dst += struct.pack("<32s",  self.__version)
-            dst += struct.pack("<32s",  self.__project_name)
-            dst += struct.pack("<16s",  self.__time)
-            dst += struct.pack("<16s",  self.__date)
-            dst += struct.pack("<32s",  self.__idf_ver)
-            dst += struct.pack("<32c",  *self.__app_elf_sha256)
+            if sys.version_info.major == 3:
+                dst += struct.pack("<32s",  (self.__version).encode('utf-8'))
+                dst += struct.pack("<32s",  (self.__project_name).encode('utf-8'))
+                dst += struct.pack("<16s",  (self.__time).encode('utf-8'))
+                dst += struct.pack("<16s",  (self.__date).encode('utf-8'))
+                dst += struct.pack("<32s",  (self.__idf_ver).encode('utf-8'))
+                for x in range(32): # filled self.__app_elf_sha256
+                    dst += struct.pack("<1c",  b'\x00')
+            else:
+                dst += struct.pack("<32s",  self.__version)
+                dst += struct.pack("<32s",  self.__project_name)
+                dst += struct.pack("<16s",  self.__time)
+                dst += struct.pack("<16s",  self.__date)
+                dst += struct.pack("<32s",  self.__idf_ver)
+                dst += struct.pack("<32c",  *self.__app_elf_sha256)
+
             dst += struct.pack("<20I",  *self.__reserved2)
             return dst
 
@@ -223,7 +239,7 @@ def pack_tone_crc(tone_bin, b_format):
     """
     if b_format == 1:
         import zlib
-        tone_bin += struct.pack("<i", zlib.crc32(tone_bin))
+        tone_bin += struct.pack("<I", zlib.crc32(tone_bin))
     return tone_bin
 
 def pack_tone_tail(tone_bin, b_format):
@@ -265,14 +281,13 @@ if __name__ == '__main__':
     argparser.add_argument('-v', '--version', type=str, default='v1.0', help='file version, controlled by user')
     args = argparser.parse_args()
 
-    if raw_input('The bin version will be: %s\r\nContinue?(y/N): ' % (args.version)).lower() == 'y':
+    if get_input('The bin version will be: %s\r\nContinue?(y/N): ' % (args.version)).lower() == 'y':
         file_list = [x for x in os.listdir(args.resources) if ((x.endswith(".wav")) or (x.endswith(".mp3")))]
         file_list.sort()
 
         print ('__version__: ', __version__)
         print ('file_list: ', file_list)
         print ('--------------------')
-
         source = gen_source_code(file_list)
         save_2_file(args.folder, args.cfile, bytearray(source['source'], encoding='utf-8'))
         save_2_file(args.folder, args.hfile, bytearray(source['header'], encoding='utf-8'))
