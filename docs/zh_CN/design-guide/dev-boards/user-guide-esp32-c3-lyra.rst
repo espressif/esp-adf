@@ -1,0 +1,1 @@
+.. include:: ../../../en/design-guide/dev-boards/user-guide-esp32-c3-lyra.rst
