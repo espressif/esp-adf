@@ -86,7 +86,7 @@ audio_element_handle_t tts_stream_init(tts_stream_cfg_t *config);
  * @brief      Set tts stream strings.
  *
  * @param[in]  el       The audio element handle
- * @param[in]  string   The string pointer
+ * @param[in]  strings   The string pointer
  *
  * @return
  *     - ESP_OK
@@ -97,7 +97,7 @@ esp_err_t tts_stream_set_strings(audio_element_handle_t el, const char *strings)
 /**
  * @brief Setting tts stream voice speed.
  *
- * @param[in] handle    The esp_audio instance
+ * @param[in] el       The esp_audio instance
  * @param[in] speed    Speed will be set. 0-5 is legal. 0 is the slowest speed.
  *
  * @return
@@ -109,7 +109,7 @@ esp_err_t tts_stream_set_speed(audio_element_handle_t el, tts_voice_speed_t spee
 /**
  * @brief Get tts stream voice speed.
  *
- * @param[in] handle    The esp_audio instance
+ * @param[in] el        The esp_audio instance
  * @param[in] speed     Return tts stream Speed will be [0,5]
  *
  * @return

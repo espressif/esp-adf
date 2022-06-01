@@ -98,6 +98,7 @@ typedef struct {
 
 /**
  * @brief      Initialize PWM stream
+ *             Only support AUDIO_STREAM_READER type
  *
  * @param      config   The PWM Stream configuration
  *
