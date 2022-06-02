@@ -1,6 +1,6 @@
 # ESP32-Korvo-DU1906 Board
 
-- [中文版本](./README.md)
+- [中文版本](./README_CN.md)
 - Complex Example: ![alt text](../../../docs/_static/level_complex.png "Complex Example")
 
 
