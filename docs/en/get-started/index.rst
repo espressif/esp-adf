@@ -32,6 +32,78 @@ To use ESP-ADF you need set up the ESP-IDF first, and this is described in the n
 
     ESP-ADF provides support for specific `ESP-IDF versions (v3.3, v4.0, v4.1, v4.2, v4.3 and v4.4) <https://docs.espressif.com/projects/esp-idf/en/release-v3.3/versions.html>`_. If your have already set up another version, please switch to a supported ESP-IDF version, or you may not be able to compile ESP-ADF applications.
 
+.. _get-started-quick-start:
+
+Quick Start
+===========
+
+This section provides quick steps to run a simple ADF sample project on an ESP device for experienced users. For beginners, please go through the complete steps from :ref:`get-started-setup-esp-idf` to :ref:`get-started-build-monitor` to build a project.
+
+.. note::
+    If you encounter issues in the following steps, you could refer to the complete steps from :ref:`get-started-setup-esp-idf` to :ref:`get-started-build-monitor` or describe them in `GitHub Issues <https://github.com/espressif/esp-adf/issues>`_ or `ESP Forum <https://esp32.com/viewforum.php?f=20>`_.
+
+
+Linux and macOS
+~~~~~~~~~~~~~~~
+
+The operating environment below is on Linux Ubuntu 18.04 and above.
+
+1. Download the full ESP-ADF repository from `GitHub <https://github.com/espressif/esp-adf>`_ by running::
+
+    git clone --recursive https://github.com/espressif/esp-adf.git
+
+   For users located in China, it is faster to download from `Gitee <https://gitee.com/EspressifSystems/esp-adf>`_::
+
+    git clone --recursive https://gitee.com/EspressifSystems/esp-adf.git
+
+2. Set the ``$ESP-ADF`` path by running::
+
+    cd esp-adf
+    export ADF_PATH=$PWD
+
+3. Configure the ``$ESP-IDF`` compilation environment by running::
+
+    cd $ADF_PATH/esp-idf
+    ./install.sh
+    . ./export.sh
+
+4. After completing the above environment variable configuration, you can compile the ADF sample project ``$ADF_PATH/examples/get-started/play_mp3_control``. Switch to the project's directory, compile, and flash it onto your ESP device by running the following command. Then, you will see the serial port of the routine is printed.
+
+  ::
+
+    cd $ADF_PATH/examples/get-started/play_mp3_control
+    idf.py build flash monitor
+
+
+Windows
+~~~~~~~
+
+1. Download the full ESP-ADF repository from `GitHub <https://github.com/espressif/esp-adf>`_ by running::
+
+    git clone --recursive https://github.com/espressif/esp-adf.git
+
+   For users located in China, it is faster to download from `Gitee <https://gitee.com/EspressifSystems/esp-adf>`_::
+
+    git clone --recursive https://gitee.com/EspressifSystems/esp-adf.git
+
+
+2. Download the full ESP-IDF Windows Installer from `ESP-IDF Windows Installer <https://dl.espressif.com/dl/esp-idf/?idf=4.4>`_.
+
+
+3. Turn off the antivirus software (because it may prevent the installation as the software writes the Windows system regedit) and install the downloaded file. After the installation is complete, open the ESP-IDF-V4.4 CMD shortcut icon on the desktop, the script will automatically help you download submodules, and set environment variables such as ``IDF_PATH``.
+
+
+4. Set the ``$ESP-ADF`` path by running the following commands. Note that ``%userprofile%\esp`` is used as an installation folder for ESP-ADF. You can use any directory, but you will need to adjust paths for the commands accordingly.
+
+    set ADF_PATH=%userprofile%\esp\esp-adf
+    echo %ADF_PATH%
+
+
+5. If your ``ADF_PATH`` variable prints correctly, it's time to compile the ADF routines::
+
+    cd %ADF_PATH%\examples\get-started\play_mp3_control
+    idf.py build flash monitor
+
 
 .. _get-started-step-by-step:
 
