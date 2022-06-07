@@ -372,6 +372,12 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         cfg.write = _i2s_write;
     }
 
+#if ((defined CONFIG_IDF_TARGET_ESP32) || (defined CONFIG_IDF_TARGET_ESP32S2))
+    i2s->config.i2s_config.use_apll = true;
+#else
+    i2s->config.i2s_config.use_apll = false;
+#endif
+
     esp_err_t ret = i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
     if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
         audio_free(i2s);
