@@ -52,6 +52,7 @@
  * @brief Audio Codec Chip Function Definition
  */
 #define FUNC_AUDIO_CODEC_EN       (1)
+#define CODEC_ADC_I2S_PORT        (0)
 #define ES7243_MCLK_GPIO          GPIO_NUM_0
 #define PA_ENABLE_GPIO            GPIO_NUM_12
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
@@ -77,6 +78,9 @@
 #define BUTTON_VOLDOWN_ID         1
 #define BUTTON_MUTE_ID            2
 #define BUTTON_SET_ID             3
+#define BUTTON_REC_ID             (-1)
+#define BUTTON_MODE_ID            (-1)
+#define GREEN_LED_GPIO            (-1)
 
 #define INPUT_KEY_DEFAULT_INFO() {                      \
     {                                                   \

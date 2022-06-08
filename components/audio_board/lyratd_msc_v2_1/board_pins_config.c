@@ -139,9 +139,7 @@ int8_t get_input_voldown_id(void)
     return BUTTON_VOLDOWN_ID;
 }
 
-
 // board related
-
 int8_t get_reset_codec_gpio(void)
 {
     return CODEC_RESET_GPIO;
@@ -150,4 +148,10 @@ int8_t get_reset_codec_gpio(void)
 int8_t get_reset_board_gpio(void)
 {
     return DSP_RESET_GPIO;
+}
+
+// led pins
+int8_t get_green_led_gpio(void)
+{
+    return GREEN_LED_GPIO;
 }

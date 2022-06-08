@@ -153,3 +153,9 @@ int8_t get_reset_board_gpio(void)
 {
     return DSP_RESET_GPIO;
 }
+
+// led pins
+int8_t get_green_led_gpio(void)
+{
+    return GREEN_LED_GPIO;
+}
