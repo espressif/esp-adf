@@ -73,6 +73,7 @@ extern audio_hal_func_t AUDIO_CODEC_ZL38063_DEFAULT_HANDLE;
 #define BUTTON_MODE_ID            3
 #define BUTTON_VOLDOWN_ID         4
 #define BUTTON_VOLUP_ID           5
+#define GREEN_LED_GPIO            (-1)
 
 #define INPUT_KEY_DEFAULT_INFO() {                  \
     {                                               \

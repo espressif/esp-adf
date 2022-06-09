@@ -83,6 +83,13 @@ void *audio_board_lcd_init(esp_periph_set_handle_t set, void *cb);
  *
  * @return The audio display service handle
  */
+display_service_handle_t audio_board_led_init(void);
+
+/**
+ * @brief Initialize led peripheral and display service
+ *
+ * @return The audio display service handle
+ */
 display_service_handle_t audio_board_blue_led_init(void);
 
 /**

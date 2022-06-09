@@ -91,6 +91,7 @@ extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 #define BUTTON_PLAY_ID              3
 #define BUTTON_MODE_ID              4
 #define BUTTON_REC_ID               5
+#define GREEN_LED_GPIO            (-1)
 #define INPUT_KEY_DEFAULT_INFO() {                      \
      {                                                  \
         .type = PERIPH_ID_ADC_BTN,                      \

@@ -79,6 +79,11 @@ esp_err_t _get_lcd_io_bus (void *bus, esp_lcd_panel_io_spi_config_t *io_config,
     return esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)bus, io_config, out_panel_io);
 }
 
+display_service_handle_t audio_board_led_init(void)
+{
+    return NULL;
+}
+
 void *audio_board_lcd_init(esp_periph_set_handle_t set, void *cb)
 {
     esp_tca9554_config_t pca_cfg = {
