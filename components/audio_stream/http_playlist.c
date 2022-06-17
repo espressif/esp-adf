@@ -25,10 +25,10 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <string.h>
-
+#include "join_path.h"
 #include "audio_mem.h"
 
-#include "hls_playlist.h"
+#include "http_playlist.h"
 #include "esp_log.h"
 #include "errno.h"
 
@@ -43,7 +43,7 @@ typedef struct track_ {
     STAILQ_ENTRY(track_) next;
 } track_t;
 
-static void hls_remove_played_entry(playlist_t *playlist)
+static void hls_remove_played_entry(http_playlist_t *playlist)
 {
     track_t *track;
     /* Remove head entry if total_entries are > MAX_PLAYLIST_KEEP_TRACKS */
@@ -58,11 +58,11 @@ static void hls_remove_played_entry(playlist_t *playlist)
     }
 }
 
-void hls_playlist_insert(playlist_t *playlist, char *track_uri)
+void http_playlist_insert(http_playlist_t *playlist, char *track_uri)
 {
     track_t *track;
     const char *host_uri = (const char *) playlist->host_uri;
-
+    ESP_LOGD(TAG, "Insert url %s\n", track_uri);
     while (playlist->total_tracks > MAX_PLAYLIST_TRACKS) {
         track = STAILQ_FIRST(&playlist->tracks);
         if (track == NULL) {
@@ -80,44 +80,8 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
     }
     if (strstr(track_uri, "http") == track_uri) { // Full URI
         track->uri = audio_strdup(track_uri);
-    } else if (strstr(track_uri, "//") == track_uri) { // schemeless URI
-        if (strstr(host_uri, "https") == host_uri) {
-            asprintf(&track->uri, "https:%s", track_uri);
-        } else {
-            asprintf(&track->uri, "http:%s", track_uri);
-        }
-    } else if (strstr(track_uri, "/") == track_uri) { // Root uri
-        char *url = audio_strdup(host_uri);
-        if (url == NULL) {
-            return;
-        }
-        char *host = strstr(url, "//");
-        if (host == NULL) {
-            audio_free(url);
-            return;
-        }
-        host += 2;
-        char *path = strstr(host, "/");
-        if (path == NULL) {
-            audio_free(url);
-            return;
-        }
-        path[0] = 0;
-        asprintf(&track->uri, "%s%s", url, track_uri);
-        audio_free(url);
-    } else { // Relative URI
-        char *url = audio_strdup(host_uri);
-        if (url == NULL) {
-            return;
-        }
-        char *pos = strrchr(url, '/'); // Search for last "/"
-        if (pos == NULL) {
-            audio_free(url);
-            return;
-        }
-        pos[1] = '\0';
-        asprintf(&track->uri, "%s%s", url, track_uri);
-        audio_free(url);
+    } else {
+        track->uri = join_url((char*)host_uri, track_uri);
     }
     if (track->uri == NULL) {
         ESP_LOGE(TAG, "Error insert URI to playlist");
@@ -128,7 +92,7 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
     track_t *find = NULL;
     STAILQ_FOREACH(find, &playlist->tracks, next) {
         if (strcmp(find->uri, track->uri) == 0) {
-            ESP_LOGW(TAG, "URI exist");
+            ESP_LOGD(TAG, "URI exist");
             audio_free(track->uri);
             audio_free(track);
             return;
@@ -141,7 +105,7 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri)
     hls_remove_played_entry(playlist);
 }
 
-char *hls_playlist_get_next_track(playlist_t *playlist)
+char* http_playlist_get_next_track(http_playlist_t *playlist)
 {
     track_t *track;
     hls_remove_played_entry(playlist);
@@ -155,7 +119,7 @@ char *hls_playlist_get_next_track(playlist_t *playlist)
     return NULL;
 }
 
-void hls_playlist_clear(playlist_t *playlist)
+void http_playlist_clear(http_playlist_t *playlist)
 {
     track_t *track, *tmp;
     STAILQ_FOREACH_SAFE(track, &playlist->tracks, next, tmp) {
@@ -170,5 +134,4 @@ void hls_playlist_clear(playlist_t *playlist)
     }
     playlist->is_incomplete = false;
     playlist->total_tracks = 0;
-    playlist->total_read = 0;
 }

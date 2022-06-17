@@ -35,17 +35,20 @@
 
 #include "esp_log.h"
 #include "http_stream.h"
-#include "hls_playlist.h"
+#include "http_playlist.h"
 #include "audio_mem.h"
 #include "audio_element.h"
 #include "esp_system.h"
 #include "esp_http_client.h"
+#include "line_reader.h"
+#include "hls_playlist.h"
 
 static const char *TAG = "HTTP_STREAM";
 #define MAX_PLAYLIST_LINE_SIZE (512)
 #define HTTP_STREAM_BUFFER_SIZE (2048)
 #define HTTP_MAX_CONNECT_TIMES  (5)
 
+#define HLS_PREFER_BITRATE      (200*1024)
 typedef struct http_stream {
     audio_stream_type_t             type;
     bool                            is_open;
@@ -55,11 +58,11 @@ typedef struct http_stream {
     void                            *user_data;
     bool                            enable_playlist_parser;
     bool                            auto_connect_next_track; /* connect next track without open/close */
-    bool                            is_variant_playlist;
     bool                            is_playlist_resolved;
-    playlist_t                      *variant_playlist; /* contains more playlists */
-    playlist_t                      *playlist;         /* media playlist */
-    int                             _errno;            /*  errno code for http  */
+    bool                            is_valid_playlist;
+    bool                            is_main_playlist;
+    http_playlist_t                 *playlist;         /* media playlist */
+    int                             _errno;            /* errno code for http */
     int                             connect_times;     /* max reconnect times */
 } http_stream_t;
 
@@ -143,75 +146,25 @@ static bool _is_playlist(audio_element_info_t *info, const char *uri)
     if (info->codec_fmt == ESP_AUDIO_TYPE_M3U8 || info->codec_fmt == ESP_AUDIO_TYPE_PLS) {
         return true;
     }
-    char *dot = strrchr(uri, '.');
-    if (dot && (strcasecmp(dot, ".m3u") == 0 || strcasecmp(dot, ".m3u8") == 0)) {
-        return true;
-    }
-    return false;
-}
-
-static bool _get_line_in_buffer(http_stream_t *http, char **out)
-{
-    *out = NULL;
-    char c;
-    if (http->playlist->remain > 0) {
-        bool is_end_of_line = false;
-        *out = http->playlist->data + http->playlist->index;
-        int idx = http->playlist->index;
-
-        while ((c = http->playlist->data[idx])) {
-            if (c == '\r' || c == '\n') {
-                http->playlist->data[idx] = 0;
-                is_end_of_line = true;
-            } else if (is_end_of_line) {
-                http->playlist->remain -= idx - http->playlist->index;
-                http->playlist->index = idx;
+    const char* s = uri;
+    while (*s) {
+        if (*s == '.') {
+            if (strncasecmp(s, ".m3u", 3) == 0) {
                 return true;
             }
-            idx++;
         }
-        if (http->playlist->total_read >= http->playlist->content_length) {
-            http->playlist->remain = 0;
-            return true; // This is the last remaining line
-        }
+        s++;
     }
     return false;
 }
 
-static char *_client_read_line(http_stream_t *http)
-{
-    int need_read = MAX_PLAYLIST_LINE_SIZE;
-    int rlen;
-    char *line;
-
-    if (_get_line_in_buffer(http, &line)) {
-        return line;
+static int _hls_uri_cb(char* uri, void* ctx) {
+    http_stream_t *http = (http_stream_t *) ctx;
+    if (uri) {
+        http_playlist_insert(http->playlist, uri);
+        http->is_valid_playlist = true;
     }
-
-    if (http->playlist->total_read >= http->playlist->content_length) {
-        return NULL;
-    }
-
-    need_read -= http->playlist->remain;
-    if (need_read > 0) {
-        if (http->playlist->remain > 0) {
-            memmove(http->playlist->data, http->playlist->data + http->playlist->index, http->playlist->remain);
-            http->playlist->index = 0;
-        }
-        rlen = esp_http_client_read(http->client, http->playlist->data + http->playlist->remain, need_read);
-        if (rlen > 0) {
-            http->playlist->remain += rlen;
-            http->playlist->total_read += rlen;
-            http->playlist->data[http->playlist->remain] = '\0';
-            if (_get_line_in_buffer(http, &line)) {
-                return line;
-            }
-        } else {
-            ESP_LOGD(TAG, "Finish reading data, rlen:%d", rlen);
-            line = NULL;
-        }
-    }
-    return line;
+    return 0;
 }
 
 static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
@@ -219,114 +172,96 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
     audio_element_info_t info;
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     audio_element_getinfo(self, &info);
-
-    if (http->is_playlist_resolved && http->is_variant_playlist) {
-        // We do not support more than 2 levels of redirection in m3u.
-        return ESP_ERR_INVALID_STATE;
+    // backup new uri firstly
+    char* new_uri = audio_strdup(uri);
+    if (new_uri == NULL) {
+        return ESP_FAIL;
     }
-    if (http->is_playlist_resolved) {
-        /**
-         * The one we resolved is variant playlist
-         * We need to move this playlist to variant_playlist and parse this one.
-         */
-        /* If there already is a variant data, free it */
-        hls_playlist_clear(http->variant_playlist);
-        http->is_variant_playlist = true;
-        http->is_playlist_resolved = false;
-        playlist_t *tmp = http->variant_playlist;
-        http->variant_playlist = http->playlist;
-        http->playlist = tmp;
+    if (http->is_main_playlist) {
+        http_playlist_clear(http->playlist);
     }
-
-    http->playlist->content_length = info.total_bytes;
-    http->playlist->remain = 0;
-    http->playlist->index = 0;
-    http->playlist->total_read = 0;
     if (http->playlist->host_uri) {
         audio_free(http->playlist->host_uri);
     }
-    http->playlist->host_uri = audio_strdup(uri);
+    http->playlist->host_uri = new_uri;
+    http->is_valid_playlist = false;
 
-    char *line = NULL;
-    bool valid_playlist = false;
-    bool is_playlist_uri = false;
-
+    // handle PLS playlist
     if (info.codec_fmt == ESP_AUDIO_TYPE_PLS) {
-        /* pls playlist */
-        while ((line = _client_read_line(http))) {
-            ESP_LOGD(TAG, "Playlist line = %s", line);
-            if (!strncmp(line, "File", sizeof("File") - 1)) { //this line contains url
-                int i = 4;
-                while (line[i++] != '='); //Skip till '='
-                hls_playlist_insert(http->playlist, line + i);
-            } else {
-                /* Ignore all other lines */
+        line_reader_t* reader = line_reader_init(MAX_PLAYLIST_LINE_SIZE);
+        if (reader == NULL) {
+            return ESP_FAIL;
+        }
+        int need_read = MAX_PLAYLIST_LINE_SIZE;
+        int rlen = need_read;
+        while (rlen == need_read) {
+            rlen = esp_http_client_read(http->client, http->playlist->data, need_read);
+            if (rlen < 0) {
+                break;
+            }
+            line_reader_add_buffer(reader, (uint8_t*)http->playlist->data, rlen, (rlen < need_read));
+            char* line;
+            while ((line = line_reader_get_line(reader)) != NULL) {
+                if (!strncmp(line, "File", sizeof("File") - 1)) { // This line contains url
+                    int i = 4;
+                    while (line[i++] != '='); // Skip till '='
+                    http_playlist_insert(http->playlist, line + i);
+                    http->is_valid_playlist = true;
+                }
             }
         }
-        return ESP_OK;
+        line_reader_deinit(reader);
+        return http->is_valid_playlist? ESP_OK : ESP_FAIL;
     }
-
-    /* M3U8 playlist */
-    http->playlist->is_incomplete = true;
-
-#define ENDLIST_TAG "#EXT-X-ENDLIST"
-#define VARIANT_TAG "#EXT-X-STREAM-INF"
-
-    while ((line = _client_read_line(http))) {
-        ESP_LOGD(TAG, "Playlist line = %s", line);
-        if (!valid_playlist && strcmp(line, "#EXTM3U") == 0) {
-            valid_playlist = true;
-            continue;
-        }
-        if (strstr(line, "http") == (void *)line) {
-            hls_playlist_insert(http->playlist, line);
-            valid_playlist = true;
-            continue;
-        }
-        if (!valid_playlist) {
+    http->is_main_playlist = false;
+    hls_playlist_cfg_t cfg = {
+        .prefer_bitrate = HLS_PREFER_BITRATE,
+        .cb = _hls_uri_cb,
+        .ctx = http,
+        .uri = (char*)new_uri,
+    };
+    hls_handle_t hls = hls_playlist_open(&cfg);
+    do {
+        if (hls == NULL) {
             break;
         }
-        if (!is_playlist_uri && strstr(line, "#EXTINF") == (void *)line) {
-            is_playlist_uri = true;
-            continue;
-        } else if (!is_playlist_uri && strstr(line, VARIANT_TAG) == (void *)line) {
-            /**
-             * Non-standard attribute.
-             * There are multiple variants of audios. We do not support this for now.
-             */
-            is_playlist_uri = true;
-            continue;
-        } else if (strstr(line, ENDLIST_TAG) == (void *)line) {
-            /* Got the ENDLIST_TAG, mark our playlist as complete and break! */
-            http->playlist->is_incomplete = false;
-            break;
-        } else if (strncmp(line, "#", 1) == 0) {
-            /**
-             * Some other playlist field we don't support.
-             * Simply treat this as a comment and continue to find next line.
-             */
-            continue;
+        int need_read = MAX_PLAYLIST_LINE_SIZE;
+        int rlen = need_read;
+        while (rlen == need_read) {
+            rlen = esp_http_client_read(http->client, http->playlist->data, need_read);
+            if (rlen < 0) {
+                break;
+            }
+            hls_playlist_parse_data(hls, (uint8_t*)http->playlist->data, rlen, (rlen < need_read));
         }
-        if (!is_playlist_uri) {
-            continue;
+        if (hls_playlist_is_master(hls)) {
+            char* url = hls_playlist_get_prefer_url(hls, HLS_STREAM_TYPE_AUDIO);
+            if (url) {
+                http_playlist_insert(http->playlist, url);
+                ESP_LOGI(TAG, "Add media uri %s\n", url);
+                http->is_valid_playlist = true;
+                http->is_main_playlist = true;
+                audio_free(url);
+            }
         }
-        is_playlist_uri = false;
-
-        hls_playlist_insert(http->playlist, line);
+        else {
+            http->playlist->is_incomplete = !hls_playlist_is_media_end(hls);
+            if (http->playlist->is_incomplete) {
+                ESP_LOGI(TAG, "Live stream URI. Need to be fetched again!");
+            }
+        }
+    } while (0);
+    if (hls) {
+        hls_playlist_close(hls);
     }
-
-    if (http->playlist->is_incomplete) {
-        ESP_LOGI(TAG, "Live stream URI. Need to be fetched again!");
-    }
-
-    return valid_playlist ? ESP_OK : ESP_FAIL;
+    return http->is_valid_playlist ? ESP_OK : ESP_FAIL;
 }
 
 static char *_playlist_get_next_track(audio_element_handle_t self)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     if (http->enable_playlist_parser && http->is_playlist_resolved) {
-        return hls_playlist_get_next_track(http->playlist);
+        return http_playlist_get_next_track(http->playlist);
     }
     return NULL;
 }
@@ -378,7 +313,6 @@ _stream_open_begin:
     } else {
         esp_http_client_set_url(http->client, uri);
     }
-
 
     if (info.byte_pos) {
         char rang_header[32];
@@ -444,10 +378,8 @@ _stream_redirect:
         && (esp_http_client_get_status_code(http->client) != 206)) {
         ESP_LOGE(TAG, "Invalid HTTP stream, status code = %d", status_code);
         if (http->enable_playlist_parser) {
-            hls_playlist_clear(http->playlist);
+            http_playlist_clear(http->playlist);
             http->is_playlist_resolved = false;
-            hls_playlist_clear(http->variant_playlist);
-            http->is_variant_playlist = false;
         }
         return ESP_FAIL;
     }
@@ -467,6 +399,7 @@ _stream_redirect:
             ESP_LOGW(TAG, "Http_open got stop cmd at opening");
             return ESP_OK;
         }
+
         if (_resolve_playlist(self, uri) == ESP_OK) {
             http->is_playlist_resolved = true;
             goto _stream_open_begin;
@@ -497,9 +430,7 @@ static esp_err_t _http_close(audio_element_handle_t self)
         }
     }
     if (http->enable_playlist_parser) {
-        hls_playlist_clear(http->playlist);
-        hls_playlist_clear(http->variant_playlist);
-        http->is_variant_playlist = false;
+        http_playlist_clear(http->playlist);
         http->is_playlist_resolved = false;
     }
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
@@ -629,10 +560,6 @@ static esp_err_t _http_destroy(audio_element_handle_t self)
         audio_free(http->playlist->data);
         audio_free(http->playlist);
     }
-    if (http->variant_playlist) {
-        audio_free(http->variant_playlist->data);
-        audio_free(http->variant_playlist);
-    }
     audio_free(http);
     return ESP_OK;
 }
@@ -665,7 +592,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     http->user_data = config->user_data;
 
     if (http->enable_playlist_parser) {
-        http->playlist = audio_calloc(1, sizeof(playlist_t));
+        http->playlist = audio_calloc(1, sizeof(http_playlist_t));
         AUDIO_MEM_CHECK(TAG, http->playlist, {
             audio_free(http);
             return NULL;
@@ -677,21 +604,6 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
             return NULL;
         });
         STAILQ_INIT(&http->playlist->tracks);
-
-        http->variant_playlist = audio_calloc(1, sizeof(playlist_t));
-        AUDIO_MEM_CHECK(TAG, http->variant_playlist, {
-            audio_free(http->playlist);
-            audio_free(http);
-            return NULL;
-        });
-        http->variant_playlist->data = audio_calloc(1, MAX_PLAYLIST_LINE_SIZE + 1);
-        AUDIO_MEM_CHECK(TAG, http->variant_playlist->data, {
-            audio_free(http->playlist);
-            audio_free(http->variant_playlist);
-            audio_free(http);
-            return NULL;
-        });
-        STAILQ_INIT(&http->variant_playlist->tracks);
     }
 
     if (config->type == AUDIO_STREAM_READER) {
@@ -703,7 +615,6 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     el = audio_element_init(&cfg);
     AUDIO_MEM_CHECK(TAG, el, {
         audio_free(http->playlist);
-        audio_free(http->variant_playlist);
         audio_free(http);
         return NULL;
     });
@@ -750,7 +661,7 @@ redirection:
             return ESP_FAIL;
         }
         info.total_bytes = esp_http_client_fetch_headers(http->client);
-        ESP_LOGD(TAG, "total_bytes=%d", (int)info.total_bytes);
+        ESP_LOGI(TAG, "total_bytes=%d", (int)info.total_bytes);
         int status_code = esp_http_client_get_status_code(http->client);
         if (status_code == 301 || status_code == 302) {
             esp_http_client_set_redirection(http->client);
@@ -768,7 +679,7 @@ esp_err_t http_stream_fetch_again(audio_element_handle_t el)
         ESP_LOGI(TAG, "Finished playing.");
         return ESP_ERR_NOT_SUPPORTED;
     } else {
-        ESP_LOGI(TAG, "Fetching again...");
+        ESP_LOGI(TAG, "Fetching again %s %p", http->playlist->host_uri, http->playlist->host_uri);
         audio_element_set_uri(el, http->playlist->host_uri);
         http->is_playlist_resolved = false;
     }

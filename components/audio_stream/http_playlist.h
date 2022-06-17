@@ -40,13 +40,10 @@ typedef struct {
     char            *host_uri;
     char            *data;
     int             index;
-    int             remain;
-    int             total_read;
     track_list_t    tracks;
     int             total_tracks;
-    int             content_length;
     bool            is_incomplete;      /* Indicates if playlist is live stream and must be fetched again */
-} playlist_t;
+} http_playlist_t;
 
 /**
  * @brief       Insert a track into hls_playlist
@@ -55,7 +52,7 @@ typedef struct {
  * @param       track_uri Track URI to be inserted in playlist
  *
  */
-void hls_playlist_insert(playlist_t *playlist, char *track_uri);
+void http_playlist_insert(http_playlist_t *playlist, char *track_uri);
 
 /**
  * @brief       Get next not-played track from playlist
@@ -68,7 +65,7 @@ void hls_playlist_insert(playlist_t *playlist, char *track_uri);
  *
  * @note        returned track must `not` be freed by application
  */
-char *hls_playlist_get_next_track(playlist_t *playlist);
+char *http_playlist_get_next_track(http_playlist_t *playlist);
 
 /**
  * @brief       Clear all the tracks from playlist
@@ -76,7 +73,7 @@ char *hls_playlist_get_next_track(playlist_t *playlist);
  * @param       playlist playlist handle
  *
  */
-void hls_playlist_clear(playlist_t *playlist);
+void http_playlist_clear(http_playlist_t *playlist);
 
 #ifdef __cplusplus
 }
