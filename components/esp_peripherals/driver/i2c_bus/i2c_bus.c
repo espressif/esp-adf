@@ -41,6 +41,7 @@
 typedef struct {
     i2c_config_t i2c_conf;   /*!<I2C bus parameters*/
     i2c_port_t i2c_port;     /*!<I2C port number */
+    int        ref_count;    /*!<Reference Count for multiple client */
 } i2c_bus_t;
 
 static const char *TAG = "I2C_BUS";
@@ -55,11 +56,13 @@ i2c_bus_handle_t i2c_bus_create(i2c_port_t port, i2c_config_t *conf)
     I2C_BUS_CHECK(conf != NULL, "Configuration not initialized", NULL);
     if (i2c_bus[port]) {
         ESP_LOGW(TAG, "%s:%d: I2C bus has been already created, [port:%d]", __FUNCTION__, __LINE__, port);
+        i2c_bus[port]->ref_count++;
         return i2c_bus[port];
     }
     i2c_bus[port] = (i2c_bus_t *) audio_calloc(1, sizeof(i2c_bus_t));
     i2c_bus[port]->i2c_conf = *conf;
     i2c_bus[port]->i2c_port = port;
+    i2c_bus[port]->ref_count++;
     esp_err_t ret = i2c_param_config(i2c_bus[port]->i2c_port, &i2c_bus[port]->i2c_conf);
     if (ret != ESP_OK) {
         goto error;
@@ -161,12 +164,13 @@ esp_err_t i2c_bus_delete(i2c_bus_handle_t bus)
 {
     I2C_BUS_CHECK(bus != NULL, "Handle error", ESP_FAIL);
     i2c_bus_t *p_bus = (i2c_bus_t *) bus;
-    i2c_driver_delete(p_bus->i2c_port);
-    i2c_bus[p_bus->i2c_port] = NULL;
-    audio_free(p_bus);
-    mutex_destroy(_busLock);
-
-    _busLock = NULL;
+    if (--p_bus->ref_count == 0) {
+        i2c_driver_delete(p_bus->i2c_port);
+        i2c_bus[p_bus->i2c_port] = NULL;
+        audio_free(p_bus);
+        mutex_destroy(_busLock);
+        _busLock = NULL;
+    }
     return ESP_OK;
 }
 
