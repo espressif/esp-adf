@@ -18,3 +18,4 @@ get-started/user-guide-esp32-s3-korvo-2-lcd     design-guide/dev-boards/user-gui
 get-started/user-guide-esp32-s3-korvo-2         design-guide/dev-boards/user-guide-esp32-s3-korvo-2
 design-guide/board-esp32-lyrat-mini-v1.2        design-guide/dev-boards/board-esp32-lyrat-mini-v1.2
 design-guide/board-esp32-lyrat-v4.3             design-guide/dev-boards/board-esp32-lyrat-v4.3
+design-guide/dev-boards/user-guide-esp32-c3-lyra    design-guide/dev-boards/user-guide-esp32-c3-lyra-v2.0

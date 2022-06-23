@@ -16,7 +16,11 @@ Below are getting started guides and hardware details of audio development board
 |Getting Started with ESP32-Korvo-DU1906|_     |Getting Started with ESP32-S3-Korvo-2|_
 ---------------------------------------------  ---------------------------------------------
 `Getting Started with ESP32-Korvo-DU1906`_     `Getting Started with ESP32-S3-Korvo-2`_
-=============================================  =============================================
+---------------------------------------------  ---------------------------------------------
+|Getting Started with ESP32-C3-Lyra|_
+---------------------------------------------  ---------------------------------------------
+`Getting Started with ESP32-C3-Lyra`_     
+=============================================  =============================================  
 
 
 .. |Getting Started with ESP32-LyraT| image:: ../../../_static/esp32-lyrat-v4.2-side.jpg
@@ -39,6 +43,8 @@ Below are getting started guides and hardware details of audio development board
 .. |Getting Started with ESP32-S3-Korvo-2| image:: ../../../_static/esp32-s3-korvo-2-v3.0-overview.png
 .. _Getting Started with ESP32-S3-Korvo-2: user-guide-esp32-s3-korvo-2.html
 
+.. |Getting Started with ESP32-C3-Lyra| image:: ../../../_static/esp32-c3-lyra-isometric-raw.png
+.. _Getting Started with ESP32-C3-Lyra: user-guide-esp32-c3-lyra.html
 
 .. toctree::
     :maxdepth: 1
@@ -54,3 +60,5 @@ Below are getting started guides and hardware details of audio development board
     ESP32-Korvo-DU1906 <get-started-esp32-korvo-du1906>
     ESP32-S3-Korvo-2 V3.0 <user-guide-esp32-s3-korvo-2>
     ESP32-S3-Korvo-2-LCD V1.0 <user-guide-esp32-s3-korvo-2-lcd>
+    ESP32-C3-Lyra V2.0 <user-guide-esp32-c3-lyra-v2.0>
+    ESP32-C3-Lyra <user-guide-esp32-c3-lyra>

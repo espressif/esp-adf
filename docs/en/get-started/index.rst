@@ -15,6 +15,7 @@ For easier start with ESP-ADF, Espressif designed ESP32, ESP32-S2, and ESP32-S3 
 - `ESP32-S2-Kaluga-1 <https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html>`_
 - :doc:`ESP32-Korvo-DU1906 <../design-guide/dev-boards/get-started-esp32-korvo-du1906>`
 - :doc:`ESP32-S3-Korvo-2 <../design-guide/dev-boards/user-guide-esp32-s3-korvo-2>`
+- :doc:`ESP32-C3-Lyra <../design-guide/dev-boards/user-guide-esp32-c3-lyra>`
 
 If you do not have any of the above boards, you can still use ESP-ADF for the ESP32 and ESP32-S2 based audio applications. For this, your board needs to have a compatible audio codec or DSP chip; alternatively, you can develop a driver to support communication with your specific chip.
 
