@@ -167,6 +167,9 @@ void *setup_recorder(rec_event_cb_t cb, void *ctx)
 
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    i2s_cfg.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
+#endif
     i2s_cfg.i2s_config.use_apll = 0;
     i2s_cfg.i2s_config.sample_rate = CODEC_ADC_SAMPLE_RATE;
     i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
