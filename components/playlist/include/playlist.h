@@ -77,8 +77,9 @@ typedef struct playlist_handle *playlist_handle_t;
 /**
  * @brief Create a playlist manager handle
  *
- * @return  playlist handle  success
- *          NULL             failed
+ * @return  
+ *     - playlist handle  success
+ *     - NULL             failed
  */
 playlist_handle_t playlist_create(void);
 
@@ -93,8 +94,9 @@ playlist_handle_t playlist_create(void);
  * @param list_handle The playlist handle to be added
  * @param list_id     The playlist id to be registered
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_add(playlist_handle_t handle, playlist_operator_handle_t list_handle, uint8_t list_id);
 
@@ -104,8 +106,9 @@ esp_err_t playlist_add(playlist_handle_t handle, playlist_operator_handle_t list
  * @param handle  Playlist handle
  * @param id      Specified list id
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_checkout_by_id(playlist_handle_t handle, uint8_t id);
 
@@ -114,8 +117,9 @@ esp_err_t playlist_checkout_by_id(playlist_handle_t handle, uint8_t id);
  *
  * @param handle  Playlist handle
  *
- * @return success Number of playlists in handle
- *         failed  -1
+ * @return 
+ *     - success Number of playlists in handle
+ *     - failed  -1
  */
 int playlist_get_list_num(playlist_handle_t handle);
 
@@ -124,8 +128,9 @@ int playlist_get_list_num(playlist_handle_t handle);
  *
  * @param handle  Playlist handle
  *
- * @return success Type of current playlist
- *         failed  -1
+ * @return 
+ *     - success Type of current playlist
+ *     - failed  -1
  */
 playlist_type_t playlist_get_current_list_type(playlist_handle_t handle);
 
@@ -134,8 +139,9 @@ playlist_type_t playlist_get_current_list_type(playlist_handle_t handle);
  *
  * @param handle  Playlist handle
  *
- * @return success Current playlist id
- *         failed  -1
+ * @return 
+ *     - success Current playlist id
+ *     - failed  -1
  */
 int playlist_get_current_list_id(playlist_handle_t handle);
 
@@ -145,8 +151,9 @@ int playlist_get_current_list_id(playlist_handle_t handle);
  * @param      handle        Playlist handle
  * @param[out] url_buff      A second rank pointer to get a address of URL
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_get_current_list_url(playlist_handle_t handle, char **url_buff);
 
@@ -174,8 +181,9 @@ int playlist_get_current_list_url_id(playlist_handle_t handle);
  * @param handle  Playlist handle
  * @param url     The URL to be saved ot sdcard
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_save(playlist_handle_t handle, const char *url);
 
@@ -186,8 +194,9 @@ esp_err_t playlist_save(playlist_handle_t handle, const char *url);
  * @param      step          Next steps from current position
  * @param[out] url_buff      A second rank pointer to get a address of URL
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_next(playlist_handle_t handle, int step, char **url_buff);
 
@@ -198,8 +207,9 @@ esp_err_t playlist_next(playlist_handle_t handle, int step, char **url_buff);
  * @param      step          Previous steps from current position
  * @param[out] url_buff      A second rank pointer to get a address of URL
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_prev(playlist_handle_t handle, int step, char **url_buff);
 
@@ -210,8 +220,9 @@ esp_err_t playlist_prev(playlist_handle_t handle, int step, char **url_buff);
  * @param      url_id          The id of url in current list
  * @param[out] url_buff        A second rank pointer to get a address of URL
  *
- * @return ESP_OK    success
- * @return ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_choose(playlist_handle_t handle, int url_id, char **url_buff);
 
@@ -220,8 +231,9 @@ esp_err_t playlist_choose(playlist_handle_t handle, int url_id, char **url_buff)
  *
  * @param handle  Playlist handle
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_show(playlist_handle_t handle);
 
@@ -230,8 +242,9 @@ esp_err_t playlist_show(playlist_handle_t handle);
  *
  * @param handle   Playlist handle
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_reset(playlist_handle_t handle);
 
@@ -241,8 +254,9 @@ esp_err_t playlist_reset(playlist_handle_t handle);
  * @param handle   Playlist handle
  * @param url      The url to be removed
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_remove_by_url(playlist_handle_t handle, const char *url);
 
@@ -252,8 +266,9 @@ esp_err_t playlist_remove_by_url(playlist_handle_t handle, const char *url);
  * @param handle   Playlist handle
  * @param url_id   The id of url to be removed
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_remove_by_url_id(playlist_handle_t handle, uint16_t url_id);
 
@@ -263,8 +278,9 @@ esp_err_t playlist_remove_by_url_id(playlist_handle_t handle, uint16_t url_id);
  * @param handle   Playlist handle
  * @param url      The url to be checked
  *
- * @return true    existence
- *         false   Non-existent
+ * @return 
+ *     - true    existence
+ *     - false   Non-existent
  */
 bool playlist_exist(playlist_handle_t handle, const char *url);
 
@@ -273,8 +289,9 @@ bool playlist_exist(playlist_handle_t handle, const char *url);
  *
  * @param handle   Playlist handle
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t playlist_destroy(playlist_handle_t handle);
 
