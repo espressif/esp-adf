@@ -34,12 +34,13 @@ extern "C" {
 /**
  * @brief Create a playlist in flash partition by list id
  *
+ * @note  Please add 2 partitions to partition table whose subtype are 0x06 and 0x07 first
+ * 
  * @param[out] handle   The playlist handle from application layer
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
- *
- * @note  Please add 2 partitions to partition table whose subtype are 0x06 and 0x07 first
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t partition_list_create(playlist_operator_handle_t *handle);
 
@@ -49,8 +50,9 @@ esp_err_t partition_list_create(playlist_operator_handle_t *handle);
  * @param handle     Playlist handle
  * @param url        URL to be saved
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t partition_list_save(playlist_operator_handle_t handle, const char *url);
 
@@ -61,8 +63,9 @@ esp_err_t partition_list_save(playlist_operator_handle_t handle, const char *url
  * @param      step            The offset of URL from current URL
  * @param[out] url_buff        A second rank pointer to get a address of URL
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t partition_list_next(playlist_operator_handle_t handle, int step, char **url_buff);
 
@@ -73,8 +76,9 @@ esp_err_t partition_list_next(playlist_operator_handle_t handle, int step, char 
  * @param      step           The offset of URL from current URL
  * @param[out] url_buff       A second rank pointer to get a address of URL
  *
- * return ESP_OK     success
- *        ESP_FAIL   failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t partition_list_prev(playlist_operator_handle_t handle, int step, char **url_buff);
 
@@ -84,8 +88,9 @@ esp_err_t partition_list_prev(playlist_operator_handle_t handle, int step, char 
  * @param handle   Playlist handle
  * @param url      The url to be checked
  *
- * @return true    existence
- *         false   Non-existent
+ * @return 
+ *     - true    existence
+ *     - false   Non-existent
  */
 bool partition_list_exist(playlist_operator_handle_t handle, const char *url);
 
@@ -94,8 +99,9 @@ bool partition_list_exist(playlist_operator_handle_t handle, const char *url);
  *
  * @param handle   Playlist handle
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t partition_list_reset(playlist_operator_handle_t handle);
 
@@ -105,8 +111,9 @@ esp_err_t partition_list_reset(playlist_operator_handle_t handle);
  * @param      handle         Playlist handle
  * @param[out] url_buff       A second rank pointer to get a address of URL
  *
- * @return ESP_OK     success
- *         ESP_FAIL   failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t partition_list_current(playlist_operator_handle_t handle, char **url_buff);
 
@@ -117,8 +124,9 @@ esp_err_t partition_list_current(playlist_operator_handle_t handle, char **url_b
  * @param      url_id          The id of url in partition list
  * @param[out] url_buff        A second rank pointer to get a address of URL
  *
- * @return ESP_OK    success
- * @return ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t partition_list_choose(playlist_operator_handle_t handle, int url_id, char **url_buff);
 
@@ -127,8 +135,9 @@ esp_err_t partition_list_choose(playlist_operator_handle_t handle, int url_id, c
  *
  * @param handle        Playlist handle
  *
- * @return URLs number in partition playlist
- *         ESP_FAIL     Fail to get number of urls
+ * @return 
+ *     - URLs number in partition playlist
+ *     - ESP_FAIL     Fail to get number of urls
  */
 int partition_list_get_url_num(playlist_operator_handle_t handle);
 
@@ -137,8 +146,9 @@ int partition_list_get_url_num(playlist_operator_handle_t handle);
  *
  * @param handle        Playlist handle
  *
- * @return Current url id in partition playlist
- *         ESP_FAIL     Fail to get url id
+ * @return 
+ *     - Current url id in partition playlist
+ *     - ESP_FAIL     Fail to get url id
  */
 int partition_list_get_url_id(playlist_operator_handle_t handle);
 
@@ -147,8 +157,9 @@ int partition_list_get_url_id(playlist_operator_handle_t handle);
  *
  * @param handle     Playlist handle
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t partition_list_show(playlist_operator_handle_t handle);
 
@@ -157,8 +168,9 @@ esp_err_t partition_list_show(playlist_operator_handle_t handle);
  *
  * @param handle     Playlist handle
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t partition_list_destroy(playlist_operator_handle_t handle);
 
