@@ -53,14 +53,5 @@ void pretty_effect_calc_lines(uint16_t *dest, int line, int frame, int linect)
 
 esp_err_t pretty_effect_init(void)
 {
-    if (decode_image(&pixels) != ESP_OK) {
-        return ESP_FAIL;
-    }
-    uint16_t *p = (uint16_t *)pixels;
-    // Swap the RGB565 2 bytes
-    for (int i = 0; i < 320 * 244; ++i) {
-        *p = (*p >> 8) | (*p << 8);
-        p++;
-    }
-    return ESP_OK;
+    return decode_image(&pixels);
 }
