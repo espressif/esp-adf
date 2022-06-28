@@ -42,7 +42,7 @@
 #define LCD_MIRROR_X                (false)
 #define LCD_MIRROR_Y                (true)
 #define LCD_COLOR_INV               (true)
-#define LCD_COLOR_SPACE             ESP_LCD_COLOR_SPACE_RGB
+#define LCD_COLOR_SPACE             ESP_LCD_COLOR_SPACE_BGR
 
 
 /**
