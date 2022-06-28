@@ -70,9 +70,7 @@ typedef struct
 }
 
 /**
- * @brief      Create a handle to an Audio Element to stream data from flash to another Element
- *             or get data from other elements written to flash, depending on the configuration
- *             the stream type, either AUDIO_STREAM_READER or AUDIO_STREAM_WRITER.
+ * @brief      Create an Audio Element handle to stream data from flash to another Element, only support AUDIO_STREAM_READER type
  *
  * @param      config  The configuration
  *
