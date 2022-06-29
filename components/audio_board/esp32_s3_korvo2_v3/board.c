@@ -128,7 +128,7 @@ void *audio_board_lcd_init(esp_periph_set_handle_t set, void *cb)
     };
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = -1,
-        .color_space = ESP_LCD_COLOR_SPACE_BGR,
+        .color_space = ESP_LCD_COLOR_SPACE_RGB,
         .bits_per_pixel = 16,
     };
     periph_lcd_cfg_t cfg = {

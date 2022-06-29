@@ -32,7 +32,7 @@ int decode_image(uint16_t ***pixels)
 {
     // Generate default configuration
     jpeg_dec_config_t config = DEFAULT_JPEG_DEC_CONFIG();
-    config.output_type = JPEG_RAW_TYPE_RGB565;
+    config.output_type = JPEG_RAW_TYPE_RGB565_BE;
     // Empty handle to jpeg_decoder
     jpeg_dec_handle_t jpeg_dec = NULL;
     // Create jpeg_dec
@@ -62,7 +62,8 @@ int decode_image(uint16_t ***pixels)
     }
     // Calloc out_put data buffer and update inbuf ptr and inbuf_len
     int outbuf_len;
-    if (config.output_type == JPEG_RAW_TYPE_RGB565) {
+    if (config.output_type == JPEG_RAW_TYPE_RGB565_LE
+        || config.output_type == JPEG_RAW_TYPE_RGB565_BE) {
         outbuf_len = out_info->height * out_info->width * 2;
     } else if (config.output_type == JPEG_RAW_TYPE_RGB888) {
         outbuf_len = out_info->height * out_info->width * 3;
@@ -70,7 +71,7 @@ int decode_image(uint16_t ***pixels)
         return ESP_FAIL;
     }
     ESP_LOGI(TAG, "The image size is %d bytes, width:%d, height:%d", outbuf_len, out_info->width, out_info->height);
-    unsigned char *out_buf = calloc(1, outbuf_len);
+    unsigned char *out_buf = jpeg_malloc_align(outbuf_len, 16);
     jpeg_io->outbuf = out_buf;
     int inbuf_consumed = jpeg_io->inbuf_len - jpeg_io->inbuf_remain;
     jpeg_io->inbuf = (unsigned char *)(image_jpg_start + inbuf_consumed);
