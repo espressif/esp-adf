@@ -52,7 +52,11 @@ void app_main(void)
     AUDIO_NULL_CHECK(TAG, tone_stream_reader, return);
 
     ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");
+#if defined CONFIG_ESP32_C3_LYRA_V2_BOARD
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_TX_PDM_CFG_DEFAULT();
+#else
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+#endif
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
     AUDIO_NULL_CHECK(TAG, i2s_stream_writer, return);
@@ -72,7 +76,7 @@ void app_main(void)
     audio_pipeline_link(pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[2.6] Set up  uri (file as tone_stream, mp3 as mp3 decoder, and default output is i2s)");
-    audio_element_set_uri(tone_stream_reader, tone_uri[TONE_TYPE_HELLO]);
+    audio_element_set_uri(tone_stream_reader, tone_uri[TONE_TYPE_WECHAT]);
 
     ESP_LOGI(TAG, "[ 3 ] Set up event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();

@@ -71,7 +71,7 @@
 
 ### 配置
 
-本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
+本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。如果选择 `CONFIG_ESP32_C3_LYRA_V2_BOARD`，则需要在 `$ADF_PATH/esp-idf` 目录下应用`idf_v4.4_i2s_c3_pdm_tx.patch`。
 
 ```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1

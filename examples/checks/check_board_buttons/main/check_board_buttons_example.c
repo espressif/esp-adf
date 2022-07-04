@@ -53,6 +53,9 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
         case INPUT_KEY_USER_ID_WAKEUP:
             ESP_LOGI(TAG, "[ * ] [WAKEUP] KEY %s", key_types[evt->type]);
             break;
+        case INPUT_KEY_USER_ID_COLOR:
+            ESP_LOGI(TAG, "[ * ] [COLOR] KEY %s", key_types[evt->type]);
+            break;
         default:
             ESP_LOGE(TAG, "User Key ID[%d] does not support", (int)evt->data);
             break;
