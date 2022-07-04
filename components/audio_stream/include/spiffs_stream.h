@@ -46,7 +46,7 @@ typedef struct {
     bool                    write_header;   /*!< Choose to write amrnb/armwb header in spiffs whether or not (true or false, true means choose to write amrnb header) */
 } spiffs_stream_cfg_t;
 
-#define SPIFFS_STREAM_BUF_SIZE            (2048)
+#define SPIFFS_STREAM_BUF_SIZE            (4096)
 #define SPIFFS_STREAM_TASK_STACK          (3072)
 #define SPIFFS_STREAM_TASK_CORE           (0)
 #define SPIFFS_STREAM_TASK_PRIO           (4)

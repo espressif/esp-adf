@@ -175,7 +175,7 @@ typedef struct {
 } audio_element_cfg_t;
 
 #define DEFAULT_ELEMENT_RINGBUF_SIZE    (8*1024)
-#define DEFAULT_ELEMENT_BUFFER_LENGTH   (1024)
+#define DEFAULT_ELEMENT_BUFFER_LENGTH   (4*1024)
 #define DEFAULT_ELEMENT_STACK_SIZE      (2*1024)
 #define DEFAULT_ELEMENT_TASK_PRIO       (5)
 #define DEFAULT_ELEMENT_TASK_CORE       (0)
