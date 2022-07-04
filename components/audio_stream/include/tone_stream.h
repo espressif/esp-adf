@@ -48,7 +48,7 @@ typedef struct
     bool use_delegate;        /*!< Read tone partition with esp_delegate. If task stack is on extern ram, this MUST be TRUE */
 } tone_stream_cfg_t;
 
-#define TONE_STREAM_BUF_SIZE        (2048)
+#define TONE_STREAM_BUF_SIZE        (4096)
 #define TONE_STREAM_TASK_STACK      (3072)
 #define TONE_STREAM_TASK_CORE       (0)
 #define TONE_STREAM_TASK_PRIO       (4)
