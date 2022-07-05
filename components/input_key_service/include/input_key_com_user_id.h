@@ -47,7 +47,7 @@ typedef enum {
     INPUT_KEY_USER_ID_COLOR                     = 0x0C, /*!< user id for color */
 
     INPUT_KEY_USER_ID_MAX                       = 0x101,
-} input_KEY_user_id_t;
+} input_key_user_id_t;
 
 #ifdef __cplusplus
 }

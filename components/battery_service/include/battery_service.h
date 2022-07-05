@@ -59,11 +59,9 @@ typedef struct {
     periph_service_cb evt_cb; /*!< Service callback function */
     void *cb_ctx;             /*!< Callback context */
 
-    /* Battery monitor */
-    vol_monitor_handle_t vol_monitor;
+    vol_monitor_handle_t vol_monitor;   /*!< Battery monitor */
 
-    /* Charger monitor */
-    void *charger_monitor; /*!< Not supported yet */
+    void *charger_monitor; /*!< Charger monitor. Not supported yet */
 } battery_service_config_t;
 
 #define BATTERY_SERVICE_DEFAULT_CONFIG() \

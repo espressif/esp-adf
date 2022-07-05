@@ -38,7 +38,7 @@ extern "C" {
 /**
   * @brief     get the default process of `app partition` upgrade
   *
-  * @param[in]  handle          pointer to `ota_upgrade_ops_t` structure
+  * @param[in]  ops          pointer to `ota_upgrade_ops_t` structure
   *
   * @return
   *    - void
@@ -48,7 +48,7 @@ void ota_app_get_default_proc(ota_upgrade_ops_t *ops);
 /**
   * @brief     get the default process of `data partition` upgrade
   *
-  * @param[in]  handle          pointer to `ota_upgrade_ops_t` structure
+  * @param[in]  ops          pointer to `ota_upgrade_ops_t` structure
   *
   * @return
   *    - void
@@ -82,10 +82,10 @@ ota_service_err_reason_t ota_data_image_stream_read(void *handle, char *buf, int
 ota_service_err_reason_t ota_data_partition_write(void *handle, char *buf, int size);
 
 /**
-  * @brief     Generate a number by image version
-  * @Note      The version should be (V0.0.0 - V255.255.255)
+  * @brief     Convert string of version to integer
+  *            The version should be (V0.0.0 - V255.255.255)
   *
-  * @param[in]  handle          pointer to upgrade handle
+  * @param[in]  version          pointer to the string of version
   *
   * @return
   *    - -1:      Failed

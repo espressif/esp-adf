@@ -104,19 +104,29 @@ INPUT = \
     ../../components/bluetooth_service/include/bt_keycontrol.h \
     ../../components/bluetooth_service/include/a2dp_stream.h \
     ../../components/input_key_service/include/input_key_service.h \
+    ../../components/input_key_service/include/input_key_com_user_id.h \
     ../../components/dueros_service/include/dueros_service.h \
     ../../components/display_service/include/display_service.h \
+    ../../components/display_service/led_bar/include/led_bar_aw2013.h \
+    ../../components/display_service/led_bar/include/led_bar_is31x.h \
+    ../../components/display_service/led_bar/include/led_bar_ws2812.h \
+    ../../components/display_service/led_indicator/include/led_indicator.h \
     ../../components/coredump_upload_service/include/coredump_upload_service.h \
+    ../../components/battery_service/include/battery_service.h \
+    ../../components/battery_service/monitors/include/voltage_monitor.h \
+    ../../components/ota_service/include/ota_service.h \
+    ../../components/ota_service/include/esp_fs_ota.h \
+    ../../components/ota_service/include/ota_proc_default.h \
     ## Dispatcher framwork
     ../../components/esp_dispatcher/include/periph_service.h \
     ../../components/esp_dispatcher/include/audio_service.h \
-    ../../components/display_service/include/display_service.h \
     ## Cloud Services
     ../../components/wifi_service/include/airkiss_config.h \
     ../../components/wifi_service/include/blufi_config.h \
     ../../components/wifi_service/include/smart_config.h \
     ../../components/wifi_service/include/esp_wifi_setting.h \
     ../../components/wifi_service/include/wifi_service.h \
+    ../../components/wifi_service/include/wifi_ssid_manager.h
     ## Playlist
     ../../components/playlist/include/dram_list.h \
     ../../components/playlist/include/flash_list.h \

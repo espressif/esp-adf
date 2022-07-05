@@ -484,7 +484,7 @@ Related Documents
 
 - Schematic
 
-  - `ESP32-C3-Lyra Schematic <https://dl.espressif.cn/dl/schematics/ESP32-C3-Lyra_V2_20211231.pdf>`_ (PDF)
+  - `ESP32-C3-Lyra Schematic <https://dl.espressif.com/dl/schematics/ESP32-C3-Lyra_V2_20211231.pdf>`_ (PDF)
 
 - PCB Layout
 

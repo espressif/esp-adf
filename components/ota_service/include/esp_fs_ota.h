@@ -39,8 +39,8 @@ typedef void *esp_fs_ota_handle_t;
  * @brief ESP FS OTA configuration
  */
 typedef struct {
-    const char *path; /*!< file path */
-    const int buffer_size;
+    const char *path;           /*!< file path */
+    const int buffer_size;      /*!< Size of buffer */
 } esp_fs_ota_config_t;
 
 /**
