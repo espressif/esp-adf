@@ -49,7 +49,7 @@ typedef struct embed_item_info
     int            size;      /*!< Size of corresponding data */
 } embed_item_info_t;
 
-#define EMBED_FLASH_STREAM_BUF_SIZE        (2048)
+#define EMBED_FLASH_STREAM_BUF_SIZE        (4096)
 #define EMBED_FLASH_STREAM_TASK_STACK      (3072)
 #define EMBED_FLASH_STREAM_TASK_CORE       (0)
 #define EMBED_FLASH_STREAM_TASK_PRIO       (4)

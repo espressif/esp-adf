@@ -48,7 +48,7 @@ typedef struct {
 } fatfs_stream_cfg_t;
 
 
-#define FATFS_STREAM_BUF_SIZE            (2048)
+#define FATFS_STREAM_BUF_SIZE            (4096)
 #define FATFS_STREAM_TASK_STACK          (3072)
 #define FATFS_STREAM_TASK_CORE           (0)
 #define FATFS_STREAM_TASK_PRIO           (4)
