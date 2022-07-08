@@ -28,7 +28,7 @@
 ^^^^^^^^^^^^^^^^^^^
 
 - :example_file:`advanced_examples/algorithm/main/algorithm_examples.c`
-- :example_file:`advanced_examples/voip/main/voip_app.c`
+- :example_file:`protocols/voip/main/voip_app.c`
 
 .. include:: /_build/inc/algorithm_stream.inc
 
@@ -117,7 +117,7 @@ PWM 流
 应用示例
 ^^^^^^^^^^^^^^^^^^^
 
-- 读类型示例：:example:`advanced_examples/voip`
+- 读类型示例：:example:`protocols/voip`
 - 写类型示例：:example:`advanced_examples/downmix_pipeline`
 
 

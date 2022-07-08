@@ -1,0 +1,5 @@
+version: "0.1.0"
+description: Audio Video stream, support DVP I2S UVC(video) UAC(audio) LCD
+dependencies:
+  esp32-camera:
+    git: https://github.com/espressif/esp32-camera.git

@@ -28,7 +28,7 @@ Application Example
 ^^^^^^^^^^^^^^^^^^^
 
 - :example_file:`advanced_examples/algorithm/main/algorithm_examples.c`
-- :example_file:`advanced_examples/voip/main/voip_app.c`
+- :example_file:`protocols/voip/main/voip_app.c`
 
 .. include:: /_build/inc/algorithm_stream.inc
 
@@ -117,7 +117,7 @@ The raw stream is used to obtain the output data of the previous element of the 
 Application Example
 ^^^^^^^^^^^^^^^^^^^
 
-- Reader example: :example:`advanced_examples/voip`
+- Reader example: :example:`protocols/voip`
 - Writer example: :example:`advanced_examples/downmix_pipeline`
 
 
