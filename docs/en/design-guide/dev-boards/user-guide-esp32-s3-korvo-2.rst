@@ -130,7 +130,7 @@ Hardware Setup
 2. Plug in the USB cables to the PC and to both USB ports of the board.
 3. The standby LED (green) should turn on. Assuming that a battery is not connected, the charging LED (red) will blink every couple of seconds.
 4. Toggle the **Power Switch**.
-5. The red Power On LED should turn on.
+5. The Red Power LED should turn on.
 
 
 .. _esp32-s3-korvo-2-v3.0-software-setup:
