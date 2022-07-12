@@ -213,7 +213,7 @@ The main power supply is 5 V and provided by a USB. The secondary power supply i
     
     ESP32-S3-Korvo-2 V3.0 - Power Supply from a Battery
 
-When the USB power supply and battery power supply are connected at the same time as shown in the figure below, VBUS is high, Q14 is in the off state, VBAT is automatically cut off, and USB becomes the power supply for the system.
+As shown in the figure below, if the USB power supply and battery power supply are connected at the same time with a high VBUS, an off-state Q14, and an automatical cut-off VBAT, the USB becomes the power supply for the system.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-ps-options.png
     :align: center
