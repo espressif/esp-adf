@@ -147,7 +147,7 @@ Contents and Packaging
 
 The main board and its accessories can be ordered separately. The accessories include:
 
-- LCD board: ESP32-S3-Korvo-2-LCD
+- LCD extension board: ESP32-S3-Korvo-2-LCD
 - Camera
 - Connectors: 
 
@@ -178,7 +178,7 @@ Hardware Reference
 ==================
 
 
-Block Diagram
+Functional Block Diagram
 -------------
 
 The block diagram below shows the components of ESP32-S3-Korvo-2 V3.0 and their interconnections.
@@ -188,7 +188,7 @@ The block diagram below shows the components of ESP32-S3-Korvo-2 V3.0 and their 
     :scale: 55%
     :alt: ESP32-S3-Korvo-2 V3.0 Electrical Block Diagram
     
-    ESP32-S3-Korvo-2 V3.0 Electrical Block Diagram
+    ESP32-S3-Korvo-2 V3.0 Functional Electrical Block Diagram
 
 
 Notes on Power Distribution
@@ -197,7 +197,7 @@ Notes on Power Distribution
 Power Supply over USB and from Battery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The main power supply is 5 V and provided by a USB. The secondary power supply is 3.7 V and provided by an optional battery. The USB power itself is fed with a dedicated cable, separate from a USB cable used for an application upload. To further reduce noise from the USB, the battery may be used instead of the USB.
+The main power supply is 5 V and provided by a USB. The secondary power supply is 3.7 V and provided by an optional battery. The USB power itself is fed with a dedicated cable, separating from a USB cable used for an application upload. To further reduce noise from the USB, the battery may be used instead of the USB.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-usb-ps.png
     :align: center
@@ -213,7 +213,7 @@ The main power supply is 5 V and provided by a USB. The secondary power supply i
     
     ESP32-S3-Korvo-2 V3.0 - Power Supply from a Battery
 
-When the USB power supply and battery power supply are connected at the same time as shown in the figure below, VBUS is high, Q14 is in the off state, VBAT is automatically cut off, and USB becomes the power supply for the system.
+As shown in the figure below, if the USB power supply and battery power supply are connected at the same time with a high VBUS, an off-state Q14, and an automatical cut-off VBAT, the USB becomes the power supply for the system.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-ps-options.png
     :align: center
