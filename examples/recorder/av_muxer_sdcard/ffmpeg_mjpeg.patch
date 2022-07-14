@@ -1,0 +1,67 @@
+diff --git a/libavformat/flv.h b/libavformat/flv.h
+index 3571b90279..61c9806b2b 100644
+--- a/libavformat/flv.h
++++ b/libavformat/flv.h
+@@ -102,6 +102,7 @@ enum {
+ };
+ 
+ enum {
++    FLV_CODECID_MJPEG   = 1,
+     FLV_CODECID_H263    = 2,
+     FLV_CODECID_SCREEN  = 3,
+     FLV_CODECID_VP6     = 4,
+diff --git a/libavformat/flvdec.c b/libavformat/flvdec.c
+index 44a7e5f93c..c7702ad669 100644
+--- a/libavformat/flvdec.c
++++ b/libavformat/flvdec.c
+@@ -321,6 +321,8 @@ static int flv_same_video_codec(AVCodecParameters *vpar, int flags)
+         return vpar->codec_id == AV_CODEC_ID_VP6A;
+     case FLV_CODECID_H264:
+         return vpar->codec_id == AV_CODEC_ID_H264;
++    case FLV_CODECID_MJPEG:
++        return vpar->codec_id == AV_CODEC_ID_MJPEG;
+     default:
+         return vpar->codec_tag == flv_codecid;
+     }
+@@ -337,6 +339,9 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
+     case FLV_CODECID_H263:
+         par->codec_id = AV_CODEC_ID_FLV1;
+         break;
++    case FLV_CODECID_MJPEG:
++        par->codec_id = AV_CODEC_ID_MJPEG;
++        break;
+     case FLV_CODECID_REALH263:
+         par->codec_id = AV_CODEC_ID_H263;
+         break; // Really mean it this time
+diff --git a/libavformat/flvenc.c b/libavformat/flvenc.c
+index 3f24c7e192..1e01d9c401 100644
+--- a/libavformat/flvenc.c
++++ b/libavformat/flvenc.c
+@@ -46,6 +46,7 @@ static const AVCodecTag flv_video_codec_ids[] = {
+     { AV_CODEC_ID_VP6,      FLV_CODECID_VP6 },
+     { AV_CODEC_ID_VP6A,     FLV_CODECID_VP6A },
+     { AV_CODEC_ID_H264,     FLV_CODECID_H264 },
++    { AV_CODEC_ID_MJPEG,    FLV_CODECID_MJPEG },
+     { AV_CODEC_ID_NONE,     0 }
+ };
+ 
+diff --git a/libavformat/mpegts.c b/libavformat/mpegts.c
+index 29a267436f..24b5d704c6 100644
+--- a/libavformat/mpegts.c
++++ b/libavformat/mpegts.c
+@@ -1017,6 +1017,15 @@ static int new_pes_packet(PESContext *pes, AVPacket *pkt)
+         pes->flags |= AV_PKT_FLAG_CORRUPT;
+     }
+     memset(pkt->data + pkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
++    if (pes->st && pes->stream_type == STREAM_TYPE_PRIVATE_DATA &&
++        pkt->size > 2 && pkt->data[0] == 0xFF && pkt->data[1] == 0xD8) {
++        if (pes->st->codecpar->codec_id != AV_CODEC_ID_MJPEG) {
++            FFStream *const sti = ffstream(pes->st);
++            pes->st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
++            pes->st->codecpar->codec_id   = AV_CODEC_ID_MJPEG;
++            sti->need_context_update = 1;
++        }
++    }
+ 
+     // Separate out the AC3 substream from an HDMV combined TrueHD/AC3 PID
+     if (pes->sub_st && pes->stream_type == 0x83 && pes->extended_stream_id == 0x76)
