@@ -40,6 +40,7 @@
 #include "wifi_service.h"
 #include "airkiss_config.h"
 #include "smart_config.h"
+#include "blufi_config.h"
 
 #include "input_key_service.h"
 #include "input_key_com_user_id.h"
@@ -355,7 +356,7 @@ void duer_app_init(void)
                                 ACTION_EXE_TYPE_WIFI_SETTING_STOP, wifi_action_setting_stop);
     esp_dispatcher_reg_exe_func(dispatcher, dueros_speaker->wifi_serv,
                                 ACTION_EXE_TYPE_WIFI_SETTING_START, wifi_action_setting_start);
-    ESP_LOGI(TAG, "[Step 7.2] Initialize Wi-Fi provisioning type(AIRKISS or SMARTCONFIG)");
+    ESP_LOGI(TAG, "[Step 7.2] Initialize Wi-Fi provisioning type(AIRKISS, SMARTCONFIG or ESP-BLUFI)");
     int reg_idx = 0;
     esp_wifi_setting_handle_t h = NULL;
 #ifdef CONFIG_AIRKISS_ENCRYPT
@@ -367,6 +368,8 @@ void duer_app_init(void)
 #elif (defined CONFIG_ESP_SMARTCONFIG)
     smart_config_info_t info = SMART_CONFIG_INFO_DEFAULT();
     h = smart_config_create(&info);
+#elif (defined CONFIG_ESP_BLUFI_PROVISIONING)
+    h = blufi_config_create(NULL);
 #endif
     esp_wifi_setting_regitster_notify_handle(h, (void *)dueros_speaker->wifi_serv);
     wifi_service_register_setting_handle(dueros_speaker->wifi_serv, h, &reg_idx);

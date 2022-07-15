@@ -31,7 +31,7 @@
 #include "sdkconfig.h"
 #include "hfp_stream.h"
 
-#if CONFIG_BT_ENABLED
+#if (defined CONFIG_CLASSIC_BT_ENABLED)
 static const char *TAG = "HFP_STREAM";
 
 #define ESP_HFP_RINGBUF_SIZE     3600
