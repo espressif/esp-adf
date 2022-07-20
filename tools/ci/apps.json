@@ -64,3 +64,4 @@
 {"app_dir": "/examples/display/lcd_jpeg", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
 {"app_dir": "/examples/display/led_pixels", "board_idf": "esp32c3:ESP32_C3_LYRA_V2:[v44];"}
 {"app_dir": "/examples/display/music_player", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/rtmp", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}

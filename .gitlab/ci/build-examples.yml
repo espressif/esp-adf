@@ -91,6 +91,8 @@
   script:
     # it's not possible to build 100% out-of-tree and have the "artifacts"
     # mechanism work, but this is the next best thing
+    - cmake --version
+    - pip install --upgrade cmake
     - mkdir -p ${BUILD_PATH}
     - mkdir -p ${LOG_PATH}
     - echo "The IDF branch is "${IDF_VERSION}
@@ -140,6 +142,7 @@
   script:
     # it's not possible to build 100% out-of-tree and have the "artifacts"
     # mechanism work, but this is the next best thing
+    - cmake --version
     - mkdir -p ${BUILD_PATH}
     - mkdir -p ${LOG_PATH}
     - echo "The IDF branch is "${IDF_VERSION}
@@ -150,6 +153,8 @@
 
     - pip3 install junit_xml
     - pip3 install netifaces
+    - pip install --upgrade cmake
+    - pip3 install --upgrade cmake
     - export PYTHONPATH=$IDF_PATH/tools/ci/python_packages:$IDF_PATH/tools
     - echo "Ready to scan the examples"
     - python $CI_SCAN_TESTS_PY example_test $EXAMPLE_TEST_DIR -b cmake --exclude $ADF_PATH/examples/korvo_du1906 -c $TEST_CONFIG_FILE -o $EXAMPLE_TEST_OUTPUT_DIR

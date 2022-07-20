@@ -1,0 +1,46 @@
+menu "RTMP APP Configuration"
+
+choice RTMP_APP_MODE
+    prompt "Choose RTMP APP Work Mode"
+    default RTMP_APP_MODE_PUSHER
+    help
+        RTMP support PUSHER, SOURCE, SERVER and PUSHER_SERVER mode.
+        In PUSHER_SERVER mode it both support PUSHER and SERVER.
+
+config RTMP_APP_MODE_PUSHER
+    bool "PUSHER only"
+
+config RTMP_APP_MODE_SOURCE
+    bool "SOURCE only"
+
+config RTMP_APP_MODE_SERVER
+    bool "SERVER only"
+
+config RTMP_APP_MODE_PUSHER_SERVER
+    bool "SERVER and PUSHER"
+
+endchoice
+
+config RTMP_USB_CAMERA_SUPPORT
+    bool "Support for USB camera"
+    default false
+
+config WIFI_SSID
+    string "WiFi SSID"
+    default "my_ssid"
+    help
+    SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+    default "my_password"
+    help
+    WiFi password (WPA or WPA2) for the example to use.
+
+config RTMP_SERVER_URI
+    string "RTMP Server URI"
+    default "rtmp://127.0.0.1:1935/live/stream"
+    help
+    The RTMP server URI with port, app name, stream name
+
+endmenu
