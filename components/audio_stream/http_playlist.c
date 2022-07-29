@@ -119,6 +119,20 @@ char* http_playlist_get_next_track(http_playlist_t *playlist)
     return NULL;
 }
 
+char* http_playlist_get_last_track(http_playlist_t *playlist)
+{
+    track_t *track;
+    char* uri = NULL;
+    STAILQ_FOREACH(track, &playlist->tracks, next) {
+        if (!track->is_played) {
+            break;
+        } else {
+            uri = track->uri;
+        }
+    }
+    return uri;
+}
+
 void http_playlist_clear(http_playlist_t *playlist)
 {
     track_t *track, *tmp;

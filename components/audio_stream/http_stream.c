@@ -276,12 +276,16 @@ static esp_err_t _http_open(audio_element_handle_t self)
 
     if (http->is_open) {
         ESP_LOGE(TAG, "already opened");
-        return ESP_FAIL;
+        return ESP_OK;
     }
     http->_errno = 0;
+    audio_element_getinfo(self, &info);
 _stream_open_begin:
-
-    uri = _playlist_get_next_track(self);
+    if (info.byte_pos == 0) {
+        uri = _playlist_get_next_track(self);
+    } else if (http->is_playlist_resolved) {
+        uri = http_playlist_get_last_track(http->playlist);
+    }
     if (uri == NULL) {
         if (http->is_playlist_resolved && http->enable_playlist_parser) {
             if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
@@ -318,6 +322,8 @@ _stream_open_begin:
         char rang_header[32];
         snprintf(rang_header, 32, "bytes=%d-", (int)info.byte_pos);
         esp_http_client_set_header(http->client, "Range", rang_header);
+    } else {
+        esp_http_client_delete_header(http->client, "Range");
     }
 
     if (dispatch_hook(self, HTTP_STREAM_PRE_REQUEST, NULL, 0) != ESP_OK) {
@@ -429,11 +435,11 @@ static esp_err_t _http_close(audio_element_handle_t self)
             break;
         }
     }
-    if (http->enable_playlist_parser) {
-        http_playlist_clear(http->playlist);
-        http->is_playlist_resolved = false;
-    }
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
+        if (http->enable_playlist_parser) {
+            http_playlist_clear(http->playlist);
+            http->is_playlist_resolved = false;
+        }
         audio_element_report_pos(self);
         audio_element_set_byte_pos(self, 0);
     }

@@ -42,14 +42,14 @@ typedef struct {
     int             index;
     track_list_t    tracks;
     int             total_tracks;
-    bool            is_incomplete;      /* Indicates if playlist is live stream and must be fetched again */
+    bool            is_incomplete;       /*!< Indicates if playlist is live stream and must be fetched again */
 } http_playlist_t;
 
 /**
  * @brief       Insert a track into hls_playlist
  *
- * @param       playlist playlist handle
- * @param       track_uri Track URI to be inserted in playlist
+ * @param       playlist: Playlist handle
+ * @param       track_uri: Track URI to be inserted in playlist
  *
  */
 void http_playlist_insert(http_playlist_t *playlist, char *track_uri);
@@ -57,20 +57,33 @@ void http_playlist_insert(http_playlist_t *playlist, char *track_uri);
 /**
  * @brief       Get next not-played track from playlist
  *
- * @param       playlist playlist handle
+ * @param       playlist: Playlist handle
  *
  * @return
- *      - NULL if no playable track
- *      - Playable track
+ *      - NULL: If no playable track
+ *      - Others: Playable track
  *
  * @note        returned track must `not` be freed by application
  */
 char *http_playlist_get_next_track(http_playlist_t *playlist);
 
 /**
+ * @brief       Get last played track from playlist
+ *
+ * @param       playlist: Playlist handle
+ *
+ * @return
+ *      - NULL: If no playable track
+ *      - Others: Playable track
+ *
+ * @note        returned track must `not` be freed by application
+ */
+char *http_playlist_get_last_track(http_playlist_t *playlist);
+
+/**
  * @brief       Clear all the tracks from playlist
  *
- * @param       playlist playlist handle
+ * @param       playlist: Playlist handle
  *
  */
 void http_playlist_clear(http_playlist_t *playlist);
