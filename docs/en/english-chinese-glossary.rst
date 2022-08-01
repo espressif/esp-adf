@@ -1,7 +1,7 @@
 English-Chinese Glossary
 ========================
 
-This document lists terms that are used in Espressif Audio Development Framework Guide and other audio related documenation. Each term is followed by its Chinese equivalents and some have definitions.
+This document lists terms that are used in Espressif Audio Development Framework Guide and other audio related documentation. Each term is followed by its Chinese equivalents and some have definitions.
 
 .. glossary::
 
@@ -12,6 +12,11 @@ This document lists terms that are used in Espressif Audio Development Framework
     
     acoustic
       Chinese equivalent: 声学
+
+    acoustic calibrator
+      Chinese equivalent: 声校准器
+
+      Also known as sound level calibrator.
     
     acoustic echo cancellation
       Chinese equivalent: 声学回声消除
@@ -32,11 +37,22 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: A2DP.
 
       Abbreviation for Advanced Audio Distribution Profile.
+    
+    A2DP sink
+      Chinese equivalent: A2DP sink
 
+    A2DP source
+      Chinese equivalent: A2DP source
+
+    AFE
+      Chinese equivalent: AFE
+
+      Abbreviation for audio front end. `Espressif audio front-end algorithm framework <https://github.com/espressif/esp-sr/blob/master/docs/audio_front_end/README.md>`_ is developed by Espressif AI Lab to provide high-quality and stable audio data to the host.
+ 
     AirKiss
       Chinese equivalent: AirKiss
 
-      AirKiss is a quick-connection technique provided by Weixin device platform for Wi-Fi devices to configure netwrok connection. 
+      AirKiss is a quick-connection technique provided by Weixin device platform for Wi-Fi devices to configure network connection. 
     
     AMR
       Chinese equivalent: AMR
@@ -67,7 +83,7 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: 音频编码解码器
 
     audio forge
-      Chinese equivalent: 音频铸造
+      Chinese equivalent: 音频塑造
 
       A combination of several audio backend processing techniques, including resample, downmix, automatic level control, equalizer and sonic. Users can enable or disable certain techniques as needed.
     
@@ -81,6 +97,12 @@ This document lists terms that are used in Espressif Audio Development Framework
 
       Abbreviation for audio gate.
 
+    audio front end
+
+      Chinese equivalent: 声学前端
+
+      Spelled-out form of AFE.
+    
     audio passthru
       Chinese equivalent: 音频透传
 
@@ -125,6 +147,11 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: 自动语音识别
 
       Spelled-out form of ASR.
+
+    aux cable
+      Chinese equivalent: aux 音频线
+
+      Also known as auxiliary cable. 
     
     ASR
       Chinese equivalent: ASR
@@ -147,17 +174,28 @@ This document lists terms that are used in Espressif Audio Development Framework
 
       A Wi-Fi network configuration function via Bluetooth channel. See `ESP-IDF Programming Guide <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/blufi.html>`_ for more information.   
     
+    cavity
+      Chinese equivalent: 腔体
+    
     command word
       Chinese equivalent: 命令词
     
     core dump
       Chinese equivalent: 核心转储
+
+    cutoff frequency
+      Chinese equivalent: 截止频率
     
     decoder
       Chinese equivalent: 解码器
+
+    digital media renderer
+      Chinese equivalent: 数字媒体渲染器
+
+      Spelled-out form of DMR.
     
     digital signal processor
-      Chinese equivalent: 数字信号处理
+      Chinese equivalent: 数字信号处理器
 
       Spelled-out form of DSP.
     
@@ -170,7 +208,13 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: 数字模拟转换器
 
       Spelled-out form of DAC.
-    
+
+    dispatcher
+      Chinese equivalent: 调度器
+
+    distortion
+      Chinese equivalent: 失真
+      
     DAC
       Chinese equivalent: DAC
 
@@ -185,16 +229,29 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: DLNA
 
       Abbreviation for Digital Living Network Alliance.
+
+    DMR
+      Chinese equivalent: DMR
+
+      Abbreviation for digital media renderer.
     
     downmix
       Chinese equivalent: 向下混叠
 
       An audio processing technique that mixes more audio streams to less output audio streams.
     
+    DuerOS
+      Chinese equivalent: DuerOS
+
+      DuerOS is a conversational AI system developed by Baidu.
+
     echo
       Chinese equivalent: 回声
 
        A reflection of sound that arrives at the listener with a delay after the direct sound. 
+
+    echo reference signal
+      Chinese equivalent: 回声参考信号
     
     electret condenser microphone
       Chinese equivalent: 驻极体麦克风
@@ -245,7 +302,20 @@ This document lists terms that are used in Espressif Audio Development Framework
     
     flexible pipeline
       Chinese equivalent: 灵活管道
+
+    FPS
+      Chinese equivalent: FPS
+
+      Abbreviation for frames per second.
     
+    frames per second
+      Chinese equivalent: 每秒传输帧数
+
+      Spelled-out form of FPS.
+    
+    frequency response
+      Chinese equivalent: 频率响应
+  
     full band
       Chinese equivalent: 全频带
 
@@ -266,8 +336,17 @@ This document lists terms that are used in Espressif Audio Development Framework
 
       Abbreviation for Hands-Free.
     
+    Hands-Free Audio Gateway
+
+      Chinese equivalent: 免提音频网关
+
+      Spelled-out form of HFP-AG.
+    
     Hands-Free Profile
       Chinese equivalent: 免提规范
+
+    Hands-Free Unit
+      Chinese equivalent: 免提组件
     
     HFP
       Chinese equivalent: HFP
@@ -286,15 +365,44 @@ This document lists terms that are used in Espressif Audio Development Framework
 
     headset
       Chinese equivalent: 耳机
-    
+
+    HFP-AG
+      Chinese equivalent: HFP-AG
+
+      Abbreviation for Hands-Free Audio Gateway.
+
+    Hi-Fi speaker
+      Chinese equivalent: 高保真音箱
+
+      Also known as high-fidelity speaker.
+
     High Frequency
       Chinese equivalent: 高频
+
+    high-fidelity microphone
+      Chinese equivalent: 高保真麦克风
     
+    HLS
+      Chinese equivalent: HLS
+
+      Abbreviation for HTTP Live Streaming.
+
     HTTP stream
       Chinese equivalent: HTTP 流
-    
+
+    HTTP Live Streaming
+      Chinese equivalent: HTTP 直播流
+
+      Spelled-out form of HLS.
+
     I2S stream
       Chinese equivalent: I2S 流
+
+    insertion loss
+      Chinese equivalent: 插入损失
+    
+    Internet radio
+      Chinese equivalent: 网络电台
     
     Internet of Things
       Chinese equivalent: 物联网
@@ -304,6 +412,29 @@ This document lists terms that are used in Espressif Audio Development Framework
 
       Abbreviation for Internet of Things.
 
+    JPEG
+      Chinese equivalent: JPEG
+
+      A commonly used method of lossy compression for digital images. Same as JPG.
+
+    JPG
+      Chinese equivalent: JPG
+
+      A commonly used method of lossy compression for digital images. Same as JPEG.
+
+    Light and Versatile Graphics Library
+      Chinese equivalent: 轻量级多功能图形库
+
+      Spelled-out form of LVGL
+    
+    low-pass filter
+      Chinese equivalent: 低通滤波器
+
+    LVGL
+      Chinese equivalent: LVGL
+      
+      Abbreviation for Light and Versatile Graphics Library.
+    
     M3U8
       Chinese equivalent: M3U8
 
@@ -356,6 +487,9 @@ This document lists terms that are used in Espressif Audio Development Framework
     microphone gain
       Chinese equivalent: 麦克风增益
     
+    microphone hole
+      Chinese equivalent: 麦克孔
+    
     microSD card
       Chinese equivalent: microSD 卡
     
@@ -364,6 +498,11 @@ This document lists terms that are used in Espressif Audio Development Framework
     
     MP4
       Chinese equivalent: MP4
+    
+    MultiNet
+      Chinese equivalent: MultiNet
+    
+      `MultiNet <https://github.com/espressif/esp-sr/blob/master/docs/speech_command_recognition/README.md>`_ is a lightweight model specially designed based on `CRNN <https://arxiv.org/pdf/1703.05390.pdf>`_ and `CTC <https://github.com/espressif/esp-sr/blob/master/docs/speech_command_recognition/README.md>`_ for the implementation of multi-command recognition.
     
     multi-room
       Chinese equivalent: 多房间
@@ -388,6 +527,16 @@ This document lists terms that are used in Espressif Audio Development Framework
 
        An open-source Bluetooth Low Energy or Bluetooth Smart stack.
     
+    noise criteria curve
+      Chinese equivalent: 噪声标准曲线
+
+      Also known as NC curve.
+
+    noise rating curve
+      Chinese equivalent: 噪声评价曲线
+
+      Also known as NR curve.
+    
     noise floor
       Chinese equivalent: 本底噪声
     
@@ -401,6 +550,16 @@ This document lists terms that are used in Espressif Audio Development Framework
 
       Abbreviation for noise suppression.
 
+    non-volatile storage
+      Chinese equivalent: 非易失性存储
+
+      Spelled-out form of NVS.
+    
+    NVS
+      Chinese equivalent: NVS
+
+      Abbreviation for non-volatile storage.
+
     OGG
       Chinese equivalent: OGG
 
@@ -410,6 +569,19 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: OPUS
 
       A lossy audio coding format.
+    
+    PCM
+      Chinese equivalent: PCM
+
+      Abbreviation for pulse-code modulation.
+    
+    pixel
+      Chinese equivalent: 像素
+
+    playback
+      Chinese equivalent: 回放
+
+      It is a noun. The verb is "play back".
     
     programmable gain amplifier
       Chinese equivalent: 可编程增益放大器
@@ -421,6 +593,14 @@ This document lists terms that are used in Espressif Audio Development Framework
 
       Abbreviation for programmable gain amplifier.
     
+    protractor
+      Chinese equivalent: 量角尺
+    
+    pulse-code modulation
+      Chinese equivalent: 脉冲编码调制
+
+      Spelled-out form of PCM.
+  
     raw stream
       Chinese equivalent: 原始流
     
@@ -430,31 +610,50 @@ This document lists terms that are used in Espressif Audio Development Framework
     resample filter
       Chinese equivalent: 重采样过滤器
     
+    resonant frequency
+      Chinese equivalent: 谐振频率
+    
+    reverberation
+      Chinese equivalent: 混响
+    
+    RGB
+      Chinese equivalent: RGB
+    
+      The RGB color model is an additive color model in which the red, green, and blue primary colors of light are added together in various ways to reproduce a broad array of colors.
+    
     ring buffer
       Chinese equivalent: 环形缓冲区
     
+    SBC
+      Chinese equivalent: SBC
+
+      Abbreviation for subband codec.
+    
     SD card 
       Chinese equivalent: SD 卡
+    
+    Session Initiation Protocol
+      Chinese equivalent: 会话发起协议
+
+      Spelled-out form of SIP.
+    
+    signal-to-echo ratio
+      Chinese equivalent: 信回比
     
     signal-to-noise ratio
       Chinese equivalent: 信噪比
 
       Spelled-out form of SNR.
+    
+    SIP
+      Chinese equivalent: SIP
+
+      Abbreviation for Session Initiation Protocol.
 
     SNR
       Chinese equivalent: SNR
 
       Abbreviation for signal-to-noise ratio.
-
-    Session Initiation Protocol
-      Chinese equivalent: SIP
-      
-      Spelled-out form of SIP.
-
-    SIP
-      Chinese equivalent: SIP
-      
-      Abbreviation for Session Initiation Protocol.
 
     SmartConfig
       Chinese equivalent: SmartConfig
@@ -465,6 +664,27 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: 变声
 
       An audio processing technique that modifies sound frequency and speed.
+    
+    sound card
+      Chinese equivalent: 声卡
+      
+      Also known as audio card.
+
+    sound level meter
+      Chinese equivalent: 分贝仪
+      
+      Also known as sound pressure level meter.
+    
+    sound pickup hole
+      Chinese equivalent: 拾音孔
+    
+    sound pickup tube
+      Chinese equivalent: 拾音管道
+    
+    sound transmission loss
+      Chinese equivalent: 传声损失
+
+      Spelled-out form of STL.
     
     speech
       Chinese equivalent: 语音
@@ -492,6 +712,16 @@ This document lists terms that are used in Espressif Audio Development Framework
     SPIFFS stream
       Chinese equivalent: SPIFFS 流
     
+    subband codec
+      Chinese equivalent: 次频带编码
+
+      Spelled-out form of SBC.
+
+    STL
+      Chinese equivalent: STL
+
+      Abbreviation for sound transmission loss.
+
     super wide band
       Chinese equivalent: 超宽频带
 
@@ -501,6 +731,9 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: SWB
 
       Abbreviation for super wide band.
+    
+    tape measure
+      Chinese equivalent: 卷尺
 
     text-to-speech
       Chinese equivalent: 语音合成
@@ -511,6 +744,12 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: TTS
 
       Abbreviation for text-to-speech.
+    
+    tolerance
+      Chinese equivalent: 公差
+    
+    tone
+      Chinese equivalent: 提示音
     
     total harmonic distortion
       Chinese equivalent: 总谐波失真
@@ -540,6 +779,21 @@ This document lists terms that are used in Espressif Audio Development Framework
     wake word
       Chinese equivalent: 唤醒词
     
+    wake word engine
+      Chinese equivalent: 唤醒词引擎
+
+      Spelled-out form of WWE.
+
+    WakeNet
+      Chinese equivalent: WakeNet
+
+      `WakeNet <https://github.com/espressif/esp-sr/blob/master/docs/wake_word_engine/README.md>`_ is a wake word engine built upon neural network for low-power embedded MCUs.
+
+    wake-up
+      Chinese equivalent: 唤醒
+
+      It is a noun.
+
     wideband
       Chinese equivalent: 宽带
 
@@ -549,3 +803,13 @@ This document lists terms that are used in Espressif Audio Development Framework
       Chinese equivalent: WB
 
       Abbreviation for wideband.
+    
+    WWE
+      Chinese equivalent: WWE
+
+      Abbreviation for wake word engine.    
+
+    YUV
+      Chinese equivalent: YUV
+
+      A color model typically used as part of a color image pipeline.
