@@ -50,7 +50,8 @@ typedef enum  {
 typedef enum {
     SD_MODE_SPI    = 0x0,  /*!< sd_card SPI*/
     SD_MODE_1_LINE = 0x1,  /*!< sd_card 1-line SD mode*/
-    SD_MODE_4_LINE = 0x2,  /*!< sd_card 4-line SD mode*/
+    SD_MODE_4_LINE = 0x4,  /*!< sd_card 4-line SD mode*/
+    SD_MODE_8_LINE = 0x8,  /*!< sd_card 8-line SD mode*/
     SD_MODE_MAX,
 } periph_sdcard_mode_t;
 
