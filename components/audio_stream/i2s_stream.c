@@ -247,12 +247,12 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
 
     if (i2s->config.need_expand && (i2s->config.i2s_config.bits_per_sample != i2s->config.expand_src_bits)) {
         i2s_write_expand(i2s->config.i2s_port,
-                        buffer,
-                        len,
-                        i2s->config.expand_src_bits,
-                        i2s->config.i2s_config.bits_per_sample,
-                        &bytes_written,
-                        ticks_to_wait);
+                         buffer,
+                         len,
+                         i2s->config.expand_src_bits,
+                         i2s->config.i2s_config.bits_per_sample,
+                         &bytes_written,
+                         ticks_to_wait);
     } else {
         i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
     }
@@ -395,6 +395,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
 #endif
     {
         i2s_pin_config_t i2s_pin_cfg = {0};
+        memset(&i2s_pin_cfg, -1, sizeof(i2s_pin_cfg));
         get_i2s_pins(i2s->config.i2s_port, &i2s_pin_cfg);
         i2s_set_pin(i2s->config.i2s_port, &i2s_pin_cfg);
     }
@@ -435,7 +436,7 @@ esp_err_t i2s_stream_sync_delay(audio_element_handle_t i2s_stream, int delay_ms)
         uint32_t r_size = audio_element_input(i2s_stream, in_buffer, drop_size);
         audio_free(in_buffer);
 
-        if(r_size > 0) {
+        if (r_size > 0) {
             audio_element_update_byte_pos(i2s_stream, r_size);
         } else {
             ESP_LOGW(TAG, "Can't get enough data to drop.");
