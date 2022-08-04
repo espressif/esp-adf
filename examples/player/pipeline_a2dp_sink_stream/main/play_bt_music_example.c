@@ -136,6 +136,7 @@ void app_main(void)
     rsp_cfg.src_ch = 2;
     rsp_cfg.dest_rate = 48000;
     rsp_cfg.dest_ch = 2;
+    rsp_cfg.task_prio = 19;
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
     audio_pipeline_register(pipeline, filter, "filter");
     i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
