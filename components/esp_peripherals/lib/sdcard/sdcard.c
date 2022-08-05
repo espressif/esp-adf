@@ -80,8 +80,14 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 
         sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
         // slot_config.gpio_cd = g_gpio;
-        slot_config.width = mode & 0X01;
-        // Enable internal pullups on enabled pins. The internal pullups
+        if (mode == SD_MODE_1_LINE){
+            slot_config.width = 1;
+        } else if (mode == SD_MODE_4_LINE){
+            slot_config.width = 4;
+        } else {
+            return ESP_FAIL;
+        }
+	// Enable internal pullups on enabled pins. The internal pullups
         // are insufficient however, please make sure 10k external pullups are
         // connected on the bus. This is for debug / example purpose only.
         slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
