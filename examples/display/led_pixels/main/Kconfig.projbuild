@@ -1,0 +1,30 @@
+menu "Example Configuration"
+
+    config EXAMPLE_LED_TX_CHANNEL
+        int "spi/rmt tx channel"
+        range 0 10
+        default 0
+    config EXAMPLE_LED_CTRL_IO
+        int "Led ctrl io"
+        range 0 30
+        default 7
+    config EXAMPLE_TOTAL_LEDS
+        int "Total leds"
+        default 30
+    config EXAMPLE_AUDIO_SAMPLE
+        int "Audio_sample"
+        default 16000
+    config EXAMPLE_N_SAMPLE
+        int "N sample"
+        default 256
+    config EXAMPLE_MIN_SOUND_ENERGY
+        int "Min sound energy"
+        default 1000000
+    config EXAMPLE_FFT_DEBUG
+        bool "FFT debug"
+        default false
+    config EXAMPLE_SOURCE_DATA_DEBUG
+        bool "Source data debug"
+        default false
+
+endmenu
