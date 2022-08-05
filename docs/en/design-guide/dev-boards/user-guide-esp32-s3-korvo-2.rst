@@ -18,7 +18,7 @@ The ESP32-S3-Korvo-2 is a multimedia development board based on the ESP32-S3 chi
 This board mainly consists of the following parts:
 
 - Main board: ESP32-S3-Korvo-2
-- LCD board: :doc:`ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>`
+- LCD extension board: :doc:`ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>`
 - Camera
 
 This document is mostly dedicated to the main board. For detailed information on other parts, click the links above.
@@ -70,11 +70,11 @@ The key components of the board are described in a clockwise direction.
    * - Speaker Output Port
      - Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm/0.08” pitch.
    * - USB-to-UART Bridge Chip
-     - A single chip USB-UART bridge CP2102N provides up to 3 Mbps transfers rates for software download and debugging.
+     - A single chip USB-UART bridge CP2102N provides up to 3 Mbps transfer rates for software download and debugging.
    * - USB-to-UART Port
      - Functions as the communication interface between a PC and the ESP32-S3-WROOM-1 module.
    * - USB Power Port
-     - Provides power to the board. It is recommended to use at least 5V/2A power adapter to ensure stable power supply.
+     - Provides power to the board. It is recommended to use at least 5V/2A power adapter to ensure a stable power supply.
    * - Battery Socket
      - Two pins socket to connect a single cell Li-ion battery.
    * - Power Switch
@@ -82,16 +82,16 @@ The key components of the board are described in a clockwise direction.
    * - Battery Charger
      - AP5056 is a constant current and constant voltage linear charger for single cell lithium-ion batteries. Used for charging of a battery connected to the Battery Socket over the Micro USB Port.
    * - Function Press Keys
-     - Six press keys labeled REC, MUTE, PLAY, SET, VOL- and VOL+. They are routed to ESP32-S3-WROOM-1 module and intended for development and testing of a UI for audio applications using dedicated API.
+     - Six press keys labeled REC, MUTE, PLAY, SET, VOL- and VOL+. They are routed to ESP32-S3-WROOM-1 module and intended for development and testing of a UI for audio applications using a dedicated API.
    * - Boot/Reset Press Keys
      - | Boot: holding down the Boot key and momentarily pressing the Reset key initiates the firmware upload mode. Then you can upload firmware through the serial port.
        | Reset: pressing this button alone resets the system.
    * - MicroSD Slot
      - The development board supports a microSD card in 1-bit mode, and can store or play audio files in the microSD card. 
    * - LCD Connector
-     - A FPC connector with 0.5 mm pitch to connect LCD extension board.
+     - A FPC connector with 0.5 mm pitch to connect to the LCD extension board.
    * - System LEDs
-     - Two general purpose LEDs (green and red) controlled by ESP32-S3-WROOM-1 module to indicate certain operation states of the audio application using dedicated API.
+     - Two general-purpose LEDs (green and red) controlled by ESP32-S3-WROOM-1 module to indicate certain operation states of the audio application using dedicated API.
    * - Camera Connector
      - An external camera module that can be connected to the development board with the connector to transmit images. 
 
@@ -121,7 +121,7 @@ Optional Hardware
 
 .. note::
 
-  Be sure to use a Li-ion battery that has built-in protection circuit.
+  Be sure to use a Li-ion battery that has a built-in protection circuit.
 
 Hardware Setup
 ^^^^^^^^^^^^^^
@@ -147,7 +147,7 @@ Contents and Packaging
 
 The main board and its accessories can be ordered separately. The accessories include:
 
-- LCD board: ESP32-S3-Korvo-2-LCD
+- LCD extension board: ESP32-S3-Korvo-2-LCD
 - Camera
 - Connectors: 
 
@@ -197,7 +197,7 @@ Notes on Power Distribution
 Power Supply over USB and from Battery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The main power supply is 5 V and provided by a USB. The secondary power supply is 3.7 V and provided by an optional battery. The USB power itself is fed with a dedicated cable, separate from a USB cable used for an application upload. To further reduce noise from the USB, the battery may be used instead of the USB.
+The main power supply is 5 V and provided by a USB. The secondary power supply is 3.7 V and provided by an optional battery. The USB power itself is fed with a dedicated cable, separating from a USB cable used for an application upload. To further reduce noise from the USB, the battery may be used instead of the USB.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-usb-ps.png
     :align: center
@@ -213,7 +213,7 @@ The main power supply is 5 V and provided by a USB. The secondary power supply i
     
     ESP32-S3-Korvo-2 V3.0 - Power Supply from a Battery
 
-When the USB power supply and battery power supply are connected at the same time as shown in the figure below, VBUS is high, Q14 is in the off state, VBAT is automatically cut off, and USB becomes the power supply for the system.
+As shown in the figure below, if the USB power supply and battery power supply are connected at the same time with a high VBUS, an off-state Q14, and an automatic cut-off VBAT, the USB becomes the power supply for the system.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-ps-options.png
     :align: center
@@ -779,9 +779,9 @@ Entering of the ESP board into upload mode may be done in two ways:
 Allocation of ESP Pins to Test Points
 -------------------------------------
 
-This section describes allocation of test points available on the ESP32-S3-Korvo-2 V3.0 board.
+This section describes the allocation of test points available on the ESP32-S3-Korvo-2 V3.0 board.
 
-The test points are bare through hole solder pads and have standard 2.54 mm/0.1" pitch. You may need to populate them with pin headers or sockets for easy connection of external hardware.
+The test points are bare through hole solder pads and have a standard 2.54 mm/0.1" pitch. You may need to populate them with pin headers or sockets for easy connection of external hardware.
 
 Codec Test Point/J15
 ^^^^^^^^^^^^^^^^^^^^^^
