@@ -40,18 +40,16 @@
 #include "i2s_stream.h"
 #include "esp_alc.h"
 #include "board_pins_config.h"
+#include "audio_idf_version.h"
 
 static const char *TAG = "I2S_STREAM";
 
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 2, 0))
-#define SOC_I2S_SUPPORTS_ADC_DAC 1
-#include "driver/dac.h"
-#endif
 
-#else
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 2, 0)
 #define SOC_I2S_SUPPORTS_ADC_DAC 1
-#endif // defined(ESP_IDF_VERSION)
+#elif (SOC_DAC_SUPPORTED)
+#define SOC_I2S_SUPPORTS_ADC_DAC 1
+#endif
 
 typedef struct i2s_stream {
     audio_stream_type_t type;
@@ -62,7 +60,7 @@ typedef struct i2s_stream {
     int                 volume;
     bool                uninstall_drv;
 } i2s_stream_t;
-#ifdef CONFIG_IDF_TARGET_ESP32
+#ifdef SOC_I2S_SUPPORTS_ADC_DAC
 static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
 {
     if (bits == 16) {
@@ -89,9 +87,7 @@ static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
     }
     return ESP_OK;
 }
-#endif
 
-#if SOC_I2S_SUPPORTS_ADC_DAC
 /**
  * @brief Scale data to 16bit/32bit for I2S DMA output.
  *        DAC can only output 8bit data value.
@@ -247,12 +243,12 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
 
     if (i2s->config.need_expand && (i2s->config.i2s_config.bits_per_sample != i2s->config.expand_src_bits)) {
         i2s_write_expand(i2s->config.i2s_port,
-                         buffer,
-                         len,
-                         i2s->config.expand_src_bits,
-                         i2s->config.i2s_config.bits_per_sample,
-                         &bytes_written,
-                         ticks_to_wait);
+                        buffer,
+                        len,
+                        i2s->config.expand_src_bits,
+                        i2s->config.i2s_config.bits_per_sample,
+                        &bytes_written,
+                        ticks_to_wait);
     } else {
         i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
     }
@@ -372,12 +368,6 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         cfg.write = _i2s_write;
     }
 
-#if ((defined CONFIG_IDF_TARGET_ESP32) || (defined CONFIG_IDF_TARGET_ESP32S2))
-    i2s->config.i2s_config.use_apll = true;
-#else
-    i2s->config.i2s_config.use_apll = false;
-#endif
-
     esp_err_t ret = i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
     if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
         audio_free(i2s);
@@ -401,7 +391,6 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
 #endif
     {
         i2s_pin_config_t i2s_pin_cfg = {0};
-        memset(&i2s_pin_cfg, -1, sizeof(i2s_pin_cfg));
         get_i2s_pins(i2s->config.i2s_port, &i2s_pin_cfg);
         i2s_set_pin(i2s->config.i2s_port, &i2s_pin_cfg);
     }
@@ -442,7 +431,7 @@ esp_err_t i2s_stream_sync_delay(audio_element_handle_t i2s_stream, int delay_ms)
         uint32_t r_size = audio_element_input(i2s_stream, in_buffer, drop_size);
         audio_free(in_buffer);
 
-        if (r_size > 0) {
+        if(r_size > 0) {
             audio_element_update_byte_pos(i2s_stream, r_size);
         } else {
             ESP_LOGW(TAG, "Can't get enough data to drop.");
