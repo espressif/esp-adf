@@ -99,7 +99,7 @@ esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
     adc_btn_tag.adc_ch = ADC1_CHANNEL_2;
     adc_btn_tag.total_steps = 6;
     int btn_array[7] = {190, 600, 1000, 1375, 1775, 2195, 2700};
-    adc_btn_tag.adc_level_step = &btn_array;
+    adc_btn_tag.adc_level_step = (int *)(&btn_array);
     adc_btn_cfg.arr = &adc_btn_tag;
     adc_btn_cfg.arr_size = 1;
     esp_periph_handle_t adc_btn_handle = periph_adc_button_init(&adc_btn_cfg);

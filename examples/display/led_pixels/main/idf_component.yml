@@ -1,0 +1,2 @@
+dependencies:
+  espressif/esp-dsp: "==1.2.0"
