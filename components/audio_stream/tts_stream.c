@@ -31,12 +31,20 @@
 
 static const char *TAG = "TTS_STREAM";
 
+#define TTS_MEM_CHECK(x, action) do { \
+    if (x) {                          \
+        action;                       \
+    }                                 \
+}while (0)
+
+/*  */
 typedef struct tts_stream {
-    audio_stream_type_t type;
-    esp_tts_voice_t *voice;
-    esp_tts_handle_t *tts_handle;
-    char *prompt;
-    unsigned int speed;
+    audio_stream_type_t     type;
+    esp_tts_voice_t         *voice;
+    esp_tts_handle_t        *tts_handle;
+    char                    *prompt;
+    unsigned int            speed;
+    spi_flash_mmap_handle_t mmap;
     bool is_open;
 } tts_stream_t;
 
@@ -58,7 +66,6 @@ static esp_err_t _tts_stream_open(audio_element_handle_t self)
     } else {
         ESP_LOGE(TAG, "The Chinese string parse failed");
     }
-
     return ESP_FAIL;
 }
 
@@ -70,11 +77,10 @@ static int _tts_stream_read(audio_element_handle_t self, char *buffer, int len, 
     if (rlen <= 0) {
         ESP_LOGW(TAG, "No more data,ret:%d", rlen);
     } else {
-        memcpy(buffer, pcm_data, rlen * 2);
-        audio_element_update_byte_pos(self, rlen * 2);
+        memcpy(buffer, pcm_data, rlen << 1);
+        audio_element_update_byte_pos(self, rlen << 1);
     }
-
-    return rlen * 2 ;
+    return rlen << 1 ;
 }
 
 static int _tts_stream_process(audio_element_handle_t self, char *in_buffer, int in_len)
@@ -96,17 +102,16 @@ static esp_err_t _tts_stream_close(audio_element_handle_t self)
         esp_tts_stream_reset(tts_stream->tts_handle);
         tts_stream->is_open = false;
     }
-
     return ESP_OK;
 }
 
 static esp_err_t _tts_stream_destroy(audio_element_handle_t self)
 {
     tts_stream_t *tts_stream = (tts_stream_t *)audio_element_getdata(self);
+    spi_flash_munmap(tts_stream->mmap);
     esp_tts_voice_set_free(tts_stream->voice);
     esp_tts_destroy(tts_stream->tts_handle);
     audio_free(tts_stream);
-
     return ESP_OK;
 }
 
@@ -123,7 +128,6 @@ esp_err_t tts_stream_set_speed(audio_element_handle_t el, tts_voice_speed_t spee
     }
     tts_stream_t *tts_stream = (tts_stream_t *)audio_element_getdata(el);
     tts_stream->speed = speed;
-
     return ESP_OK;
 }
 
@@ -136,7 +140,6 @@ esp_err_t tts_stream_get_speed(audio_element_handle_t el, tts_voice_speed_t *spe
 
     tts_stream_t *tts_stream = (tts_stream_t *)audio_element_getdata(el);
     *speed = tts_stream->speed;
-
     return ESP_OK;
 }
 
@@ -168,32 +171,26 @@ audio_element_handle_t tts_stream_init(tts_stream_cfg_t *config)
     const esp_partition_t* part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "voice_data");
     AUDIO_MEM_CHECK(TAG, part, {
         ESP_LOGE(TAG, "Couldn't find voice data partition!");
-        audio_free(tts_stream);
-        return NULL;
+        goto _tts_stream_init_exit;
     });
 
-    spi_flash_mmap_handle_t mmap;
-    uint16_t* voicedata;
-    esp_err_t err = esp_partition_mmap(part, 0, 3 * 1024 * 1024, SPI_FLASH_MMAP_DATA, (const void**)&voicedata, &mmap);
+    uint16_t* voicedata = NULL;
+    esp_err_t err = esp_partition_mmap(part, 0, 3 * 1024 * 1024, SPI_FLASH_MMAP_DATA, (const void**)&voicedata, &tts_stream->mmap);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Couldn't map voice data partition!");
-        audio_free(tts_stream);
-        return NULL;
+        goto _tts_stream_init_exit;
     }
 
     tts_stream->voice = esp_tts_voice_set_init(&esp_tts_voice_template, voicedata);
     AUDIO_MEM_CHECK(TAG, tts_stream->voice, {
         ESP_LOGE(TAG, "Couldn't init tts voice set!");
-        audio_free(tts_stream);
-        return NULL;
+        goto _tts_stream_init_exit;
     });
 
     tts_stream->tts_handle = esp_tts_create(tts_stream->voice);
     AUDIO_MEM_CHECK(TAG, tts_stream->tts_handle, {
         ESP_LOGE(TAG, "Couldn't create tts voice handle!");
-        esp_tts_voice_set_free(tts_stream->voice);
-        audio_free(tts_stream);
-        return NULL;
+        goto _tts_stream_init_exit;
     });
 
     tts_stream->speed = TTS_VOICE_SPEED_3;
@@ -205,8 +202,9 @@ audio_element_handle_t tts_stream_init(tts_stream_cfg_t *config)
     return el;
 
 _tts_stream_init_exit:
-    esp_tts_voice_set_free(tts_stream->voice);
-    esp_tts_destroy(tts_stream->tts_handle);
+    TTS_MEM_CHECK(tts_stream->mmap, spi_flash_munmap(tts_stream->mmap));
+    TTS_MEM_CHECK(tts_stream->voice, esp_tts_voice_set_free(tts_stream->voice));
+    TTS_MEM_CHECK(tts_stream->tts_handle, esp_tts_destroy(tts_stream->tts_handle));
     audio_free(tts_stream);
     return NULL;
 }
