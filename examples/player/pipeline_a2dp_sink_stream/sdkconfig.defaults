@@ -6,6 +6,7 @@ CONFIG_CLASSIC_BT_ENABLED=y
 CONFIG_A2DP_ENABLE=y
 CONFIG_A2DP_SINK_ENABLE=y
 CONFIG_BTDM_CONTROLLER_MODE_BR_EDR_ONLY=y
+CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY=y
 
 # Increase default app partition size to accommodate BT
 # by providing new partition table in "partitions_bt_sink_example.csv"
