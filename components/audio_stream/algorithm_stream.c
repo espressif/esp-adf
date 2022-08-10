@@ -46,7 +46,6 @@ const int FETCH_STOPPED_BIT = BIT0;
 typedef struct {
     char *scale_buff;
     int16_t *div_buff;
-    int16_t *aec_buff;
     int8_t algo_mask;
     bool afe_fetch_run;
     int rec_linear_factor;
@@ -74,11 +73,6 @@ static esp_err_t _algo_close(audio_element_handle_t self)
         algo->afe_data = NULL;
     }
 
-    if (algo->aec_buff) {
-        audio_free(algo->aec_buff);
-        algo->aec_buff = NULL;
-    }
-
     if (algo->scale_buff) {
         audio_free(algo->scale_buff);
         algo->scale_buff = NULL;
@@ -103,8 +97,8 @@ void _algo_fetch_task(void *pv)
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
 
     while (algo->afe_fetch_run && algo->afe_data) {
-        algo->afe_handle->fetch(algo->afe_data, algo->aec_buff);
-        audio_element_output(self, (char *)algo->aec_buff, AEC_FRAME_BYTES);
+        afe_fetch_result_t *res = algo->afe_handle->fetch(algo->afe_data);
+        audio_element_output(self, (char *)res->data, res->data_size);
     }
 
     ESP_LOGI(TAG, "_algo_fetch_task is stopped");
@@ -117,13 +111,13 @@ static esp_err_t _algo_open(audio_element_handle_t self)
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
     AUDIO_NULL_CHECK(TAG, algo, return ESP_FAIL);
 
-    algo->afe_handle = &esp_afe_sr_1mic;
+    algo->afe_handle = &ESP_AFE_SR_HANDLE;
     afe_config_t afe_config = AFE_CONFIG_DEFAULT();
     afe_config.vad_init = false;
     afe_config.wakenet_init = false;
     afe_config.afe_perferred_core = 1;
     afe_config.wakenet_mode = DET_MODE_90;
-    afe_config.alloc_from_psram = 3;
+    afe_config.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;;
     if (!(algo->algo_mask & ALGORITHM_STREAM_USE_NS)) {
         afe_config.se_init = false;
     }
@@ -269,9 +263,6 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     });
     bool _success = true;
     _success &= ((algo->scale_buff = audio_calloc(1, 2 * AEC_FRAME_BYTES)) != NULL);
-    if (algo->algo_mask & ALGORITHM_STREAM_USE_AEC) {
-        _success &= ((algo->aec_buff = audio_calloc(1, AEC_FRAME_BYTES)) != NULL);
-    }
 
     if (algo->input_type == ALGORITHM_STREAM_INPUT_TYPE2) {
         _success &= ((algo->div_buff = audio_calloc(1, 2 * AEC_FRAME_BYTES)) != NULL);

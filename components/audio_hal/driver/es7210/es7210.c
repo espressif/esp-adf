@@ -361,7 +361,7 @@ esp_err_t es7210_adc_init(audio_hal_codec_config_t *codec_cfg)
     ret |= es7210_write_reg(ES7210_MAINCLK_REG02, 0xc1);              /* Set the frequency division coefficient and use dll except clock doubler, and need to set 0xc1 to clear the state */
     ret |= es7210_config_sample(i2s_cfg->samples);
     ret |= es7210_mic_select(ES7210_MIC_SELECT);
-    ret |= es7210_adc_set_gain(GAIN_30DB);
+    ret |= es7210_adc_set_gain(GAIN_24DB);
     return ESP_OK;
 }
 
