@@ -198,9 +198,6 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
         return recorder;
     }
 
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    srmodel_spiffs_init();
-#endif
     audio_element_handle_t i2s_stream_reader;
     audio_pipeline_handle_t pipeline;
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -230,6 +227,12 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg.src_rate = CODEC_ADC_SAMPLE_RATE;
     rsp_cfg.dest_rate = 16000;
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    rsp_cfg.mode = RESAMPLE_UNCROSS_MODE;
+    rsp_cfg.src_ch = 4;
+    rsp_cfg.dest_ch = 4;
+    rsp_cfg.max_indata_bytes = 1024;
+#endif
     audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
     audio_pipeline_register(pipeline, filter, "filter");
     link_tag[1] = "filter";
@@ -242,8 +245,8 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
 
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
     recorder_sr_cfg.afe_cfg.aec_init = false;
-    recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
-    recorder_sr_cfg.afe_cfg.agc_mode = 0;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
 #if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
     recorder_sr_cfg.input_order[0] = DAT_CH_REF0;
     recorder_sr_cfg.input_order[1] = DAT_CH_0;
