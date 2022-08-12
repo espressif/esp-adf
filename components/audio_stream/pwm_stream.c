@@ -117,10 +117,10 @@ static pwm_data_handle_t pwm_data_list_create(int size)
         return NULL;
     }
 
-    pwm_data_handle_t data = audio_calloc(1, sizeof(data_list_t));
+    pwm_data_handle_t data = heap_caps_calloc(1, sizeof(data_list_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     AUDIO_NULL_CHECK(TAG, data, goto data_error);
 
-    data->buf = audio_calloc(1, size);
+    data->buf = heap_caps_calloc(1, size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     AUDIO_NULL_CHECK(TAG, data->buf, goto data_error);
 
     data->semaphore = xSemaphoreCreateBinary();
@@ -327,7 +327,7 @@ static esp_err_t audio_pwm_init(const audio_pwm_config_t *cfg)
     }
 
     audio_pwm_handle_t handle = NULL;
-    handle = audio_calloc(1, sizeof(audio_pwm_t));
+    handle = heap_caps_calloc(1, sizeof(audio_pwm_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     AUDIO_NULL_CHECK(TAG, handle, goto init_error);
 
     handle->data = pwm_data_list_create(cfg->data_len);
