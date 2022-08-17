@@ -42,6 +42,7 @@
 #include "esp_http_client.h"
 #include "line_reader.h"
 #include "hls_playlist.h"
+#include "audio_idf_version.h"
 
 static const char *TAG = "HTTP_STREAM";
 #define MAX_PLAYLIST_LINE_SIZE (512)
@@ -146,7 +147,7 @@ static bool _is_playlist(audio_element_info_t *info, const char *uri)
     if (info->codec_fmt == ESP_AUDIO_TYPE_M3U8 || info->codec_fmt == ESP_AUDIO_TYPE_PLS) {
         return true;
     }
-    const char* s = uri;
+    const char *s = uri;
     while (*s) {
         if (*s == '.') {
             if (strncasecmp(s, ".m3u", 3) == 0) {
@@ -158,7 +159,8 @@ static bool _is_playlist(audio_element_info_t *info, const char *uri)
     return false;
 }
 
-static int _hls_uri_cb(char* uri, void* ctx) {
+static int _hls_uri_cb(char *uri, void *ctx)
+{
     http_stream_t *http = (http_stream_t *) ctx;
     if (uri) {
         http_playlist_insert(http->playlist, uri);
@@ -173,7 +175,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     audio_element_getinfo(self, &info);
     // backup new uri firstly
-    char* new_uri = audio_strdup(uri);
+    char *new_uri = audio_strdup(uri);
     if (new_uri == NULL) {
         return ESP_FAIL;
     }
@@ -188,7 +190,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
 
     // handle PLS playlist
     if (info.codec_fmt == ESP_AUDIO_TYPE_PLS) {
-        line_reader_t* reader = line_reader_init(MAX_PLAYLIST_LINE_SIZE);
+        line_reader_t *reader = line_reader_init(MAX_PLAYLIST_LINE_SIZE);
         if (reader == NULL) {
             return ESP_FAIL;
         }
@@ -199,8 +201,8 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
             if (rlen < 0) {
                 break;
             }
-            line_reader_add_buffer(reader, (uint8_t*)http->playlist->data, rlen, (rlen < need_read));
-            char* line;
+            line_reader_add_buffer(reader, (uint8_t *)http->playlist->data, rlen, (rlen < need_read));
+            char *line;
             while ((line = line_reader_get_line(reader)) != NULL) {
                 if (!strncmp(line, "File", sizeof("File") - 1)) { // This line contains url
                     int i = 4;
@@ -211,14 +213,14 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
             }
         }
         line_reader_deinit(reader);
-        return http->is_valid_playlist? ESP_OK : ESP_FAIL;
+        return http->is_valid_playlist ? ESP_OK : ESP_FAIL;
     }
     http->is_main_playlist = false;
     hls_playlist_cfg_t cfg = {
         .prefer_bitrate = HLS_PREFER_BITRATE,
         .cb = _hls_uri_cb,
         .ctx = http,
-        .uri = (char*)new_uri,
+        .uri = (char *)new_uri,
     };
     hls_handle_t hls = hls_playlist_open(&cfg);
     do {
@@ -232,10 +234,10 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
             if (rlen < 0) {
                 break;
             }
-            hls_playlist_parse_data(hls, (uint8_t*)http->playlist->data, rlen, (rlen < need_read));
+            hls_playlist_parse_data(hls, (uint8_t *)http->playlist->data, rlen, (rlen < need_read));
         }
         if (hls_playlist_is_master(hls)) {
-            char* url = hls_playlist_get_prefer_url(hls, HLS_STREAM_TYPE_AUDIO);
+            char *url = hls_playlist_get_prefer_url(hls, HLS_STREAM_TYPE_AUDIO);
             if (url) {
                 http_playlist_insert(http->playlist, url);
                 ESP_LOGI(TAG, "Add media uri %s\n", url);
@@ -243,8 +245,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
                 http->is_main_playlist = true;
                 audio_free(url);
             }
-        }
-        else {
+        } else {
             http->playlist->is_incomplete = !hls_playlist_is_media_end(hls);
             if (http->playlist->is_incomplete) {
                 ESP_LOGI(TAG, "Live stream URI. Need to be fetched again!");
@@ -311,6 +312,9 @@ _stream_open_begin:
             .user_data = self,
             .timeout_ms = 30 * 1000,
             .buffer_size = HTTP_STREAM_BUFFER_SIZE,
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
+            .buffer_size_tx = 1024,
+#endif
         };
         http->client = esp_http_client_init(&http_cfg);
         AUDIO_MEM_CHECK(TAG, http->client, return ESP_ERR_NO_MEM);
