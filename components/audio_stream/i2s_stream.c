@@ -40,18 +40,16 @@
 #include "i2s_stream.h"
 #include "esp_alc.h"
 #include "board_pins_config.h"
+#include "audio_idf_version.h"
 
 static const char *TAG = "I2S_STREAM";
 
-#if defined(ESP_IDF_VERSION)
-#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 2, 0))
-#define SOC_I2S_SUPPORTS_ADC_DAC 1
-#include "driver/dac.h"
-#endif
 
-#else
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 2, 0)
 #define SOC_I2S_SUPPORTS_ADC_DAC 1
-#endif // defined(ESP_IDF_VERSION)
+#elif (SOC_DAC_SUPPORTED)
+#define SOC_I2S_SUPPORTS_ADC_DAC 1
+#endif
 
 typedef struct i2s_stream {
     audio_stream_type_t type;
@@ -62,7 +60,7 @@ typedef struct i2s_stream {
     int                 volume;
     bool                uninstall_drv;
 } i2s_stream_t;
-#ifdef CONFIG_IDF_TARGET_ESP32
+#ifdef SOC_I2S_SUPPORTS_ADC_DAC
 static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
 {
     if (bits == 16) {
@@ -89,9 +87,7 @@ static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
     }
     return ESP_OK;
 }
-#endif
 
-#if SOC_I2S_SUPPORTS_ADC_DAC
 /**
  * @brief Scale data to 16bit/32bit for I2S DMA output.
  *        DAC can only output 8bit data value.
