@@ -28,12 +28,13 @@
 #include "esp_afe_sr_iface.h"
 #include "esp_err.h"
 #include "recorder_sr_iface.h"
+#include "esp_mn_models.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define FEED_TASK_STACK_SZ       (5 * 1024)
+#define FEED_TASK_STACK_SZ       (7 * 1024)
 #define FETCH_TASK_STACK_SZ      (5 * 1024)
 #define FEED_TASK_PRIO           (5)
 #define FETCH_TASK_PRIO          (5)
@@ -73,6 +74,8 @@ typedef struct {
     int          fetch_task_prio;                       /*!< Priority of fetch task */
     int          fetch_task_stack;                      /*!< Stack size of fetch task */
     int          rb_size;                               /*!< Ringbuffer size of recorder sr */
+    char         *partition_label;                      /*!< Partition label which stored the model data */
+    char         *mn_language;                          /*!< Command language for multinet to load */
 } recorder_sr_cfg_t;
 
 #if CONFIG_AFE_MIC_NUM == (1)
@@ -106,6 +109,8 @@ typedef struct {
     .fetch_task_prio  = FETCH_TASK_PRIO,        \
     .fetch_task_stack = FETCH_TASK_STACK_SZ,    \
     .rb_size          = SR_OUTPUT_RB_SIZE,      \
+    .partition_label  = "model",                \
+    .mn_language      = ESP_MN_CHINESE,         \
 };
 
 /**

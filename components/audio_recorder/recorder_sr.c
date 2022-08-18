@@ -37,12 +37,16 @@
 
 #include "ringbuf.h"
 
-#include "esp_afe_sr_iface.h"
 #include "esp_afe_sr_models.h"
+#include "esp_wn_iface.h"
+#include "esp_wn_models.h"
+#include "model_path.h"
 
 #ifdef CONFIG_USE_MULTINET
 #include "esp_mn_iface.h"
 #include "esp_mn_models.h"
+#include "esp_mn_speech_commands.h"
+#include "esp_process_sdkconfig.h"
 #endif
 
 #include "recorder_sr.h"
@@ -54,16 +58,15 @@
 
 static const char *TAG = "RECORDER_SR";
 
+static const esp_afe_sr_iface_t *esp_afe = &ESP_AFE_SR_HANDLE;
 #if CONFIG_AFE_MIC_NUM == (1)
 #define RECORDER_CHANNEL_NUM (2)
-static const esp_afe_sr_iface_t *esp_afe = &esp_afe_sr_1mic;
 #else
 #define RECORDER_CHANNEL_NUM (4)
-static const esp_afe_sr_iface_t *esp_afe = &esp_afe_sr_2mic;
 #endif
 
 #ifdef CONFIG_USE_MULTINET
-static const esp_mn_iface_t *multinet = &MULTINET_MODEL;
+static const esp_mn_iface_t *multinet = NULL;
 #endif
 
 typedef struct __recorder_sr {
@@ -80,16 +83,20 @@ typedef struct __recorder_sr {
     bool                  fetch_running;
     recorder_data_read_t  read;
     void                  *read_ctx;
+    srmodel_list_t        *models;
     esp_afe_sr_data_t     *afe_handle;
     recorder_sr_monitor_t afe_monitor;
     void                  *afe_monitor_ctx;
     bool                  wwe_enable;
     bool                  vad_enable;
+    char                  *partition_label;
+    bool                  aec_enable;
 #ifdef CONFIG_USE_MULTINET
     model_iface_data_t    *mn_handle;
     recorder_sr_monitor_t mn_monitor;
     void                  *mn_monitor_ctx;
     bool                  mn_enable;
+    char                  *mn_language;
 #endif /* CONFIG_USE_MULTINET */
     int8_t                idx_ch0;
     int8_t                idx_ch1;
@@ -144,24 +151,28 @@ static void recorder_sr_input_ch_pick(recorder_sr_t *recorder_sr, int16_t *buffe
     }
 }
 
-static inline int recorder_sr_afe_result_convert(recorder_sr_t *recorder_sr, int result)
+static inline int recorder_sr_afe_result_convert(recorder_sr_t *recorder_sr, afe_fetch_result_t *result)
 {
     int ret = SR_RESULT_UNKNOW;
-    switch (result) {
-        case AFE_FETCH_CHANNEL_VERIFIED:
+    ESP_LOGV(TAG, "wake %d, vad %d", result->wakeup_state, result->vad_state);
+    switch (result->wakeup_state) {
+        case WAKENET_CHANNEL_VERIFIED:
             ret = SR_RESULT_VERIFIED;
             break;
-        case AFE_FETCH_NOISE:
+        case WAKENET_NO_DETECT:
             if (recorder_sr->vad_enable) {
-                ret = SR_RESULT_NOISE;
+                if (result->vad_state == AFE_VAD_SILENCE) {
+                    ret = SR_RESULT_NOISE;
+                } else if (result->vad_state == AFE_VAD_SPEECH) {
+                    ret = SR_RESULT_SPEECH;
+                } else {
+                    ESP_LOGE(TAG, "vad state error");
+                }
             } else {
                 ret = SR_RESULT_SPEECH;
             }
             break;
-        case AFE_FETCH_SPEECH:
-            ret = SR_RESULT_SPEECH;
-            break;
-        case AFE_FETCH_WWE_DETECTED:
+        case WAKENET_DETECTED:
             ret = SR_RESULT_WAKEUP;
             break;
         default:
@@ -171,47 +182,71 @@ static inline int recorder_sr_afe_result_convert(recorder_sr_t *recorder_sr, int
 }
 
 #ifdef CONFIG_USE_MULTINET
+
+#ifdef CONFIG_IDF_TARGET_ESP32
+static void recorder_sr_enable_wakenet_aec(recorder_sr_t *recorder_sr)
+{
+    esp_afe->enable_wakenet(recorder_sr->afe_handle);
+    if (recorder_sr->aec_enable) {
+        esp_afe->enable_aec(recorder_sr->afe_handle);
+    }
+}
+
+static void recorder_sr_disable_wakenet_aec(recorder_sr_t *recorder_sr)
+{
+    esp_afe->disable_wakenet(recorder_sr->afe_handle);
+    if (recorder_sr->aec_enable) {
+        esp_afe->disable_aec(recorder_sr->afe_handle);
+    }
+}
+#endif
+
 static esp_err_t recorder_mn_detect(recorder_sr_t *recorder_sr, int16_t *buffer, int afe_res)
 {
     static int detect_flag = 0;
-    int command_id = -3;
+
     if (!recorder_sr->mn_enable) {
         if (detect_flag == 1) {
-            esp_afe->enable_wakenet(recorder_sr->afe_handle);
-            esp_afe->enable_aec(recorder_sr->afe_handle);
+#if CONFIG_IDF_TARGET_ESP32
+            recorder_sr_enable_wakenet_aec(recorder_sr);
+#endif
             detect_flag = 0;
         }
         return ESP_OK;
     }
 #if CONFIG_IDF_TARGET_ESP32
-    if (afe_res == AFE_FETCH_WWE_DETECTED) {
+    if (afe_res == WAKENET_DETECTED) {
         detect_flag = 1;
-        esp_afe->disable_wakenet(recorder_sr->afe_handle);
-        esp_afe->disable_aec(recorder_sr->afe_handle);
+        recorder_sr_disable_wakenet_aec(recorder_sr);
     }
 #elif CONFIG_IDF_TARGET_ESP32S3
-    if (afe_res == AFE_FETCH_CHANNEL_VERIFIED) {
+    if (afe_res == WAKENET_CHANNEL_VERIFIED) {
         detect_flag = 1;
-        esp_afe->disable_wakenet(recorder_sr->afe_handle);
-        esp_afe->disable_aec(recorder_sr->afe_handle);
     }
 #endif
     if (detect_flag == 1) {
-        command_id = multinet->detect(recorder_sr->mn_handle, buffer);
-        if (command_id > -1) {
+        esp_mn_state_t mn_state = multinet->detect(recorder_sr->mn_handle, buffer);
+
+        if (mn_state == ESP_MN_STATE_DETECTING) {
+            return ESP_OK;
+        }
+        if (mn_state == ESP_MN_STATE_DETECTED) {
+            esp_mn_results_t *mn_result = multinet->get_results(recorder_sr->mn_handle);
             if (recorder_sr->mn_monitor) {
-                recorder_sr->mn_monitor(command_id, recorder_sr->mn_monitor_ctx);
+                recorder_sr->mn_monitor(mn_result->command_id[0], recorder_sr->mn_monitor_ctx);
             }
-            esp_afe->enable_wakenet(recorder_sr->afe_handle);
-            esp_afe->enable_aec(recorder_sr->afe_handle);
+#if CONFIG_IDF_TARGET_ESP32
+            recorder_sr_enable_wakenet_aec(recorder_sr);
+#endif
             detect_flag = 0;
         }
 
-        if (command_id == -2) {
-            esp_afe->enable_wakenet(recorder_sr->afe_handle);
-            esp_afe->enable_aec(recorder_sr->afe_handle);
+        if (mn_state == ESP_MN_STATE_TIMEOUT) {
+#if CONFIG_IDF_TARGET_ESP32
+            recorder_sr_enable_wakenet_aec(recorder_sr);
+#endif
             detect_flag = 0;
-            ESP_LOGI(TAG,"MN dect quit");
+            ESP_LOGI(TAG, "MN dect quit");
         }
     }
     return ESP_OK;
@@ -252,26 +287,22 @@ static void feed_task(void *parameters)
 static void fetch_task(void *parameters)
 {
     recorder_sr_t *recorder_sr = (recorder_sr_t *)parameters;
-    int afe_chunksize = esp_afe->get_fetch_chunksize(recorder_sr->afe_handle);
     recorder_sr->fetch_running = true;
-    int16_t *buffer = audio_calloc(1, afe_chunksize * sizeof(int16_t));
-    assert(buffer);
 
     while (recorder_sr->fetch_running) {
         xEventGroupWaitBits(recorder_sr->events, FETCH_TASK_RUNNING, false, true, portMAX_DELAY);
 
-        int res = esp_afe->fetch(recorder_sr->afe_handle, buffer);
+        afe_fetch_result_t *res = esp_afe->fetch(recorder_sr->afe_handle);
 #ifdef CONFIG_USE_MULTINET
-        recorder_mn_detect(recorder_sr, buffer, res);
+        recorder_mn_detect(recorder_sr, res->data, res->wakeup_state);
 #endif
         if (recorder_sr->afe_monitor) {
             recorder_sr->afe_monitor(recorder_sr_afe_result_convert(recorder_sr, res), recorder_sr->afe_monitor_ctx);
         }
-        recorder_sr_output(recorder_sr, buffer, afe_chunksize * sizeof(int16_t));
+        recorder_sr_output(recorder_sr, res->data, res->data_size);
     }
     xEventGroupClearBits(recorder_sr->events, FETCH_TASK_RUNNING);
     xEventGroupSetBits(recorder_sr->events, FETCH_TASK_DESTROY);
-    free(buffer);
     vTaskDelete(NULL);
 }
 
@@ -455,8 +486,11 @@ static esp_err_t recorder_sr_mn_enable(void *handle, bool enable)
     }
 
     if (recorder_sr->mn_enable && !recorder_sr->mn_handle) {
-        recorder_sr->mn_handle = multinet->create((const model_coeff_getter_t *)&MULTINET_COEFF, 5760);
+        char *mn_name = esp_srmodel_filter(recorder_sr->models, ESP_MN_PREFIX, recorder_sr->mn_language);
+        multinet = esp_mn_handle_from_name(mn_name);
+        recorder_sr->mn_handle = multinet->create(mn_name, 5760);
         AUDIO_NULL_CHECK(TAG, recorder_sr->mn_handle, return ESP_FAIL);
+        esp_mn_commands_update_from_sdkconfig((esp_mn_iface_t *)multinet, recorder_sr->mn_handle);
     }
     return ESP_OK;
 #else
@@ -493,6 +527,10 @@ static void recorder_sr_clear(void *handle)
         recorder_sr->mn_handle = NULL;
     }
 #endif
+    if (recorder_sr->models) {
+        free(recorder_sr->models);
+        recorder_sr->models = NULL;
+    }
     if (recorder_sr->out_rb) {
         rb_reset(recorder_sr->out_rb);
         rb_destroy(recorder_sr->out_rb);
@@ -519,6 +557,11 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
     recorder_sr->fetch_task_prio  = cfg->fetch_task_prio;
     recorder_sr->fetch_task_stack = cfg->fetch_task_stack;
     recorder_sr->rb_size          = cfg->rb_size;
+    recorder_sr->partition_label  = cfg->partition_label;
+    recorder_sr->aec_enable       = cfg->afe_cfg.aec_init;
+#ifdef CONFIG_USE_MULTINET
+    recorder_sr->mn_language      = cfg->mn_language;
+#endif
 
     recorder_sr->idx_ch0 = recorder_sr_find_input_ch_idx(cfg->input_order, DAT_CH_0);
     AUDIO_CHECK(TAG, (recorder_sr->idx_ch0 != -1), goto _failed, "channel 0 not found");
@@ -530,6 +573,10 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
 #endif
     recorder_sr->idx_ref = recorder_sr_find_input_ch_idx(cfg->input_order, DAT_CH_REF0);
 
+    recorder_sr->models = esp_srmodel_init(recorder_sr->partition_label);
+    char *wn_name = esp_srmodel_filter(recorder_sr->models, ESP_WN_PREFIX, NULL);
+    AUDIO_NULL_CHECK(TAG, wn_name, goto _failed);
+    cfg->afe_cfg.wakenet_model_name = wn_name;
     recorder_sr->afe_handle = esp_afe->create_from_config(&cfg->afe_cfg);
     AUDIO_NULL_CHECK(TAG, recorder_sr->afe_handle, goto _failed);
     if (cfg->afe_cfg.wakenet_init == true) {
@@ -540,9 +587,13 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
     }
 #ifdef CONFIG_USE_MULTINET
     if (cfg->multinet_init) {
-        recorder_sr->mn_handle = multinet->create((const model_coeff_getter_t *)&MULTINET_COEFF, 5760);
-        recorder_sr->mn_enable = true;
+        char *mn_name = esp_srmodel_filter(recorder_sr->models, ESP_MN_PREFIX, recorder_sr->mn_language);
+        AUDIO_NULL_CHECK(TAG, mn_name, goto _failed);
+        multinet = esp_mn_handle_from_name(mn_name);
+        recorder_sr->mn_handle = multinet->create(mn_name, 5760);
         AUDIO_NULL_CHECK(TAG, recorder_sr->mn_handle, goto _failed);
+        recorder_sr->mn_enable = true;
+        esp_mn_commands_update_from_sdkconfig((esp_mn_iface_t *)multinet, recorder_sr->mn_handle);
     }
 #endif
     recorder_sr->events = xEventGroupCreate();
@@ -574,11 +625,42 @@ esp_err_t recorder_sr_reset_speech_cmd(recorder_sr_handle_t handle, char *comman
 {
 #ifdef CONFIG_USE_MULTINET
     AUDIO_CHECK(TAG, handle, return ESP_FAIL, "Handle is NULL");
+    AUDIO_CHECK(TAG, command_str, return ESP_FAIL, "command_str is NULL");
+
     recorder_sr_t *recorder_sr = (recorder_sr_t *)handle;
+    esp_err_t err = ESP_OK;
+    char *buf = audio_calloc(1, strlen(command_str) + 1);
+    AUDIO_NULL_CHECK(TAG, buf, return ESP_ERR_NO_MEM);
+    char *tmp = buf;
 
-    multinet->reset(recorder_sr->mn_handle, command_str, err_phrase_id);
+    esp_mn_commands_clear();
 
-    return ESP_OK;
+    uint8_t cmd_id = 0;
+    char *cmd_str = NULL;
+    char *phrase = NULL;
+    strcpy(buf, command_str);
+    char *p = NULL;
+    while ((p = strtok_r(buf, ";", &cmd_str)) != NULL) {
+        buf = p;
+        while ((p = strtok_r(buf, ",", &phrase)) != NULL) {
+            buf = NULL;
+            ESP_LOGI(TAG, "cmd [%d : %s]", cmd_id, p);
+            err = esp_mn_commands_add(cmd_id, p);
+            if (err != ESP_OK) {
+                strcpy(err_phrase_id, p);
+                free(tmp);
+                return err;
+            }
+        }
+        buf = NULL;
+        if (++cmd_id > ESP_MN_MAX_PHRASE_NUM) {
+            break;
+        }
+    }
+    free(tmp);
+    esp_mn_commands_print();
+    esp_mn_error_t *mn_err = esp_mn_commands_update(multinet, recorder_sr->mn_handle);
+    return mn_err == NULL ? ESP_OK : ESP_FAIL;
 #else
     ESP_LOGW(TAG, "Multinet is not enabled");
     return ESP_FAIL;

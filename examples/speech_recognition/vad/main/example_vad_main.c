@@ -85,7 +85,7 @@ void app_main()
     audio_pipeline_run(pipeline);
 
     ESP_LOGI(TAG, "[ 6 ] Initialize VAD handle");
-    vad_handle_t vad_inst = vad_create(VAD_MODE_4, VAD_SAMPLE_RATE_HZ, VAD_FRAME_LENGTH_MS);
+    vad_handle_t vad_inst = vad_create(VAD_MODE_4);
 
     int16_t *vad_buff = (int16_t *)malloc(VAD_BUFFER_LENGTH * sizeof(short));
     if (vad_buff == NULL) {
@@ -97,7 +97,7 @@ void app_main()
         raw_stream_read(raw_read, (char *)vad_buff, VAD_BUFFER_LENGTH * sizeof(short));
 
         // Feed samples to the VAD process and get the result
-        vad_state_t vad_state = vad_process(vad_inst, vad_buff);
+        vad_state_t vad_state = vad_process(vad_inst, vad_buff, VAD_SAMPLE_RATE_HZ, VAD_FRAME_LENGTH_MS);
         if (vad_state == VAD_SPEECH) {
             ESP_LOGI(TAG, "Speech detected");
         }
