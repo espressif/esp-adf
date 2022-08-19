@@ -1,0 +1,49 @@
+.add_gitlab_key_before_ut:
+  before_script: &add_gitlab_key_before_ut
+    - echo "Not fetching submodules"
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo -n $GITLAB_KEY > ~/.ssh/id_rsa_base64
+    - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    - source $IDF_PATH/tools/ci/setup_python.sh
+    - source $IDF_PATH/tools/ci/configure_ci_environment.sh
+
+.assign_test_template: &assign_test_template
+  tags:
+    - adf_assign_test
+  image: $CI_DOCKER_REGISTRY/ubuntu-test-env:old1
+  stage: assign_test
+  artifacts:
+    paths:
+      - $IDF_PATH/components/idf_test/*/CIConfigs
+      - $IDF_PATH/components/idf_test/*/TC.sqlite
+    when: always
+    expire_in: 1 week
+  before_script: *add_gitlab_key_before_ut
+  script:
+    - ls
+    - pwd
+    - python $UNIT_ASSIGN_SCRIPT $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml $CI_TARGET_UT_TEST_CONFIG_FILE $IDF_PATH/components/idf_test/unit_test/CIConfigs
+  interruptible: false
+
+assign_test_v33:
+  extends:
+    - .rules:build:not_example_test
+  <<: *assign_test_template
+  dependencies:
+    - adf_ut_make_v33
+  variables:
+    UNIT_ASSIGN_SCRIPT: "esp-idf/tools/tiny-test-fw/CIAssignUnitTest.py"
+    PYTHON_VER: 3.7.7
+
+assign_test_v44:
+  extends:
+    - .rules:build:not_example_test
+  <<: *assign_test_template
+  dependencies:
+    - adf_ut_make_v44
+  variables:
+    UNIT_ASSIGN_SCRIPT: "esp-idf/tools/tiny-test-fw/CIAssignUnitTest.py"
+    PYTHON_VER: 3.7.7

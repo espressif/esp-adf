@@ -1,0 +1,289 @@
+
+
+.setup_tools_unless_target_test: &setup_tools_unless_target_test |
+  if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
+  $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)" || exit 1
+  fi
+
+.build_template: &build_template
+  stage: build
+  image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
+  tags:
+    - build
+  variables:
+    BATCH_BUILD: "1"
+    V: "0"
+  interruptible: true
+
+.build_template_v44: &build_template_v44
+  stage: build
+  image: $CI_DOCKER_REGISTRY/esp-env:v4.4-1
+  tags:
+    - build
+  variables:
+    BATCH_BUILD: "1"
+    V: "0"
+  interruptible: true
+
+.build_examples_make: &build_examples_make
+  extends: .build_template
+  parallel: 8
+  # This is a workaround for a rarely encountered issue with building examples in CI.
+  # Probably related to building of Kconfig in 'make clean' stage
+  retry: 1
+  artifacts:
+    when: always
+    paths:
+      - build_examples/*/*/*/build/*.bin
+      - build_examples/*/*/*/sdkconfig
+      - build_examples/*/*/*/build/*.elf
+      - build_examples/*/*/*/build/*.map
+      - build_examples/*/*/*/build/download.config
+      - build_examples/*/*/*/build/bootloader/*.bin
+      - build_examples/*/*/*/*/build/partition_table/*.bin
+      - $LOG_PATH
+    expire_in: 4 days
+  variables:
+    IDF_CI_BUILD: "1"
+    LOG_PATH: "$CI_PROJECT_DIR/log_examples_make"
+  script:
+    # it's not possible to build 100% out-of-tree and have the "artifacts"
+    # mechanism work, but this is the next best thing
+    - cd ${ADF_PATH}
+    - rm -rf build_examples
+    - mkdir build_examples
+    - cd build_examples
+    - mkdir -p ${LOG_PATH}
+    - echo "The IDF branch is "${IDF_VERSION}
+    - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
+    - *setup_tools_unless_target_test
+    # enable pedantic flags for compilation
+    - export PEDANTIC_CFLAGS="-Werror -Werror=deprecated-declarations -Werror=unused-variable -Werror=unused-but-set-variable -Werror=unused-function"
+    - export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
+    - sed -i 's/ check-submodules $(/ $(/g' ${IDF_PATH}/make/project.mk
+    - ${ADF_PATH}/tools/ci/build_examples.sh
+    # Check if the tests demand Make built binaries. If not, delete them
+    - if [ "$EXAMPLE_TEST_BUILD_SYSTEM" == "make" ]; then exit 0; fi
+    - cd ..
+    - rm -rf build_examples
+
+# same as above, but for CMake
+.build_examples_cmake: &build_examples_cmake
+  extends: .build_template
+  parallel: 8
+  artifacts:
+    when: always
+    paths:
+      - build_examples/list.json
+      - build_examples/list_job_*.json
+      - build_examples/*/*/*/sdkconfig
+      - build_examples/*/*/*/build/*.bin
+      - build_examples/*/*/*/build/*.elf
+      - build_examples/*/*/*/build/*.map
+      - build_examples/*/*/*/build/flasher_args.json
+      - build_examples/*/*/*/build/bootloader/*.bin
+      - build_examples/*/*/*/build/partition_table/*.bin
+      - $LOG_PATH
+    expire_in: 4 days
+  variables:
+    LOG_PATH: "$CI_PROJECT_DIR/log_examples"
+    BUILD_PATH: "$CI_PROJECT_DIR/build_examples"
+  script:
+    # it's not possible to build 100% out-of-tree and have the "artifacts"
+    # mechanism work, but this is the next best thing
+    - mkdir -p ${BUILD_PATH}
+    - mkdir -p ${LOG_PATH}
+    - echo "The IDF branch is "${IDF_VERSION}
+    - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
+    - *setup_tools_unless_target_test
+    - export PEDANTIC_CFLAGS="-Werror -Wno-implicit-fallthrough"
+    - export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
+    - ${ADF_PATH}/tools/ci/build_examples_cmake.sh
+    # Check if the tests demand CMake built binaries. If not, delete them
+    - if [ "$EXAMPLE_TEST_BUILD_SYSTEM" == "cmake" ]; then exit 0; fi
+    - cd ..
+    - rm -rf build_examples
+
+# same as above, but for v4.4
+.build_examples_cmake_v44: &build_examples_cmake_v44
+  <<: *build_template_v44
+  parallel: 7
+  artifacts:
+    when: always
+    paths:
+      - build_examples/list.json
+      - build_examples/list_job_*.json
+      - build_examples/*/*/*/sdkconfig
+      - build_examples/*/*/*/build/*.bin
+      - build_examples/*/*/*/build/*.elf
+      - build_examples/*/*/*/build/*.map
+      - build_examples/*/*/*/build/flasher_args.json
+      - build_examples/*/*/*/build/bootloader/*.bin
+      - build_examples/*/*/*/build/partition_table/*.bin
+      - $LOG_PATH
+      - $EXAMPLE_TEST_OUTPUT_DIR
+    expire_in: 4 days
+  variables:
+    SIZE_INFO_LOCATION: "$CI_PROJECT_DIR/size_info.txt"
+    LOG_PATH: "$CI_PROJECT_DIR/log_examples"
+    BUILD_PATH: "$CI_PROJECT_DIR/build_examples"
+    EXAMPLE_TEST_OUTPUT_DIR: ${CI_PROJECT_DIR}/examples/test_configs
+    CI_SCAN_TESTS_PY: ${CI_PROJECT_DIR}/esp-idf/tools/ci/python_packages/ttfw_idf/CIScanTests.py
+    EXAMPLE_TEST_DIR: ${CI_PROJECT_DIR}/examples
+    TEST_PREFIX: examples
+    TEST_RELATIVE_DIR: examples
+    TEST_TYPE: example_test
+    SCAN_TEST_JSON: ${CI_PROJECT_DIR}/${TEST_RELATIVE_DIR}/test_configs/scan_${IDF_TARGET}_${BUILD_SYSTEM}.json
+    PYTHON_VER: 3
+    TEST_CONFIG_FILE: "$CI_PROJECT_DIR/esp-idf/.gitlab/ci/target-test.yml"
+
+  script:
+    # it's not possible to build 100% out-of-tree and have the "artifacts"
+    # mechanism work, but this is the next best thing
+    - mkdir -p ${BUILD_PATH}
+    - mkdir -p ${LOG_PATH}
+    - echo "The IDF branch is "${IDF_VERSION}
+
+    - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
+    - source $IDF_PATH/tools/ci/configure_ci_environment.sh
+    - *setup_tools_unless_target_test
+
+    - pip3 install junit_xml
+    - pip3 install netifaces
+    - export PYTHONPATH=$IDF_PATH/tools/ci/python_packages:$IDF_PATH/tools
+    - echo "Ready to scan the examples"
+    - python $CI_SCAN_TESTS_PY example_test $EXAMPLE_TEST_DIR -b cmake --exclude $ADF_PATH/examples/korvo_du1906 -c $TEST_CONFIG_FILE -o $EXAMPLE_TEST_OUTPUT_DIR
+
+    # - export PEDANTIC_CFLAGS="-Werror -Wno-implicit-fallthrough"
+    - export PEDANTIC_CFLAGS="-Wno-error=deprecated-declarations -Wno-deprecated-declarations"
+    - export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
+
+    - set +e +o pipefail
+    - source tools/ci/check_apps_json_and_sdkcfg.sh ${SDKCFG_DEFAULTS} ${AUDIO_HAL}
+    - set -e -o pipefail
+    - $ADF_PATH/tools/ci/build_examples_cmake.sh
+    # Check if the tests demand CMake built binaries. If not, delete them
+    # - if [ "$EXAMPLE_TEST_BUILD_SYSTEM" == "cmake" ]; then exit 0; fi
+    # - cd ..
+    # - rm -rf build_examples
+    # - cd ..
+    # - rm build_examples/*/*/*/build -r
+
+build_examples_v33_default_board_make:
+  extends:
+    - .rules:build:not_example_test
+    - .build_examples_make
+  variables:
+    IDF_VERSION: 722043f734fa556d66d57473ac266fb1d0ec5ad2
+
+build_examples_v41_default_board_cmake:
+  image: $CI_DOCKER_REGISTRY/esp-env:v4.4-1
+  extends:
+    - .rules:build:not_example_test
+    - .build_examples_cmake
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION: release/v4.1
+    AUDIO_HAL: ""
+    IDF_FIND_APP_PATH_ARG: ""
+
+build_examples_v42_default_board_cmake:
+  image: $CI_DOCKER_REGISTRY/esp-env:v4.4-1
+  extends:
+    - .rules:build:not_example_test
+    - .build_examples_cmake
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION: release/v4.2
+    AUDIO_HAL: ""
+    IDF_FIND_APP_PATH_ARG: ""
+
+build_examples_v43_esp32_lyrat_v4_3_cmake:
+  extends:
+    - .rules:build:not_example_test
+    - .build_examples_cmake_v44
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION: release/v4.3
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
+    AUDIO_HAL: ESP_LYRAT_V4_3
+    BUILD_SYSTEM: cmake
+    IDF_FIND_APP_PATH_ARG: "-p"
+    TEST_CONFIG_FILE: ${CI_PROJECT_DIR}/esp-idf/tools/ci/config/target-test.yml
+
+build_examples_v44_esp32_lyrat_v4_3_cmake:
+  when: always
+  extends: .build_examples_cmake_v44
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION: release/v4.4
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
+    AUDIO_HAL: ESP_LYRAT_V4_3
+    BUILD_SYSTEM: cmake
+    IDF_FIND_APP_PATH_ARG: "-p"
+
+build_examples_v44_esp32_lyratd_msc_v2_2_cmake:
+  stage: build
+  extends:
+    - .rules:build:example_test
+    - .build_examples_cmake_v44
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION: release/v4.4
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
+    AUDIO_HAL: ESP_LYRATD_MSC_V2_2
+    BUILD_SYSTEM: cmake
+    IDF_FIND_APP_PATH_ARG: "-p"
+
+build_examples_v44_esp32_lyrat_mini_v1_1_cmake:
+  stage: build
+  extends:
+    - .rules:build:example_test
+    - .build_examples_cmake_v44
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION: release/v4.4
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
+    AUDIO_HAL: ESP_LYRAT_MINI_V1_1
+    BUILD_SYSTEM: cmake
+    IDF_FIND_APP_PATH_ARG: "-p"
+
+build_examples_v44_esp32s2-kaluga_v1_2_cmake:
+  stage: build
+  extends:
+    - .rules:build:example_test
+    - .build_examples_cmake_v44
+  variables:
+    IDF_TARGET: esp32s2
+    IDF_VERSION: release/v4.4
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32s2"
+    AUDIO_HAL: ESP32_S2_KALUGA_1_V1_2
+    BUILD_SYSTEM: cmake
+    IDF_FIND_APP_PATH_ARG: "-p"
+
+build_examples_v44_esp32s3_korvo_v2_cmake:
+  stage: build
+  extends:
+    - .rules:build:example_test
+    - .build_examples_cmake_v44
+  variables:
+    IDF_TARGET: esp32s3
+    IDF_VERSION: release/v4.4
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32s3"
+    AUDIO_HAL: ESP32_S3_KORVO2_V3
+    BUILD_SYSTEM: cmake
+    IDF_FIND_APP_PATH_ARG: "-p"
+
+build_examples_v44_esp32c3_lyra_v2_cmake:
+  stage: build
+  parallel: 2
+  extends:
+    - .rules:build:example_test
+    - .build_examples_cmake_v44
+  variables:
+    IDF_TARGET: esp32c3
+    IDF_VERSION: release/v4.4
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32c3"
+    AUDIO_HAL: ESP32_C3_LYRA_V2
+    BUILD_SYSTEM: cmake
+    IDF_FIND_APP_PATH_ARG: "-p"
