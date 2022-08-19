@@ -88,13 +88,16 @@ ${IDF_PATH}/tools/find_apps.py \
     --config 'sdkconfig.ci.*=' \
     --config '=default' \
 
+if [[ ! -z ${AUDIO_HAL} ]]; then
+PYTHONIOENCODING=utf-8 python $ADF_PATH/tools/ci/parse_apps_json.py -B ${AUDIO_HAL} -b ${IDF_VERSION}
+fi
+
 # --config rules above explained:
 # 1. If sdkconfig.ci exists, use it build the example with configuration name "default"
 # 2. If sdkconfig.ci.* exists, use it to build the "*" configuration
 # 3. If none of the above exist, build the default configuration under the name "default"
 
 # The part below is where the actual builds happen
-
 ${IDF_PATH}/tools/build_apps.py \
     -vv \
     --format json \

@@ -61,7 +61,7 @@ typedef struct {
 #define I2S_STREAM_TASK_CORE            (0)
 #define I2S_STREAM_RINGBUFFER_SIZE      (8 * 1024)
 
-#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 3, 0))
+#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 2, 0))
 #define I2S_STREAM_CFG_DEFAULT() {                                              \
     .type = AUDIO_STREAM_WRITER,                                                \
     .i2s_config = {                                                             \
