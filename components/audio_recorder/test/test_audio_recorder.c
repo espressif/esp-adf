@@ -452,12 +452,8 @@ TEST_CASE("Use [resample, amrnb]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
 
 TEST_CASE("Use [sr - wwe don't init, vad don't init, mn don't init]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
 {
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    srmodel_spiffs_init();
-#endif
-
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     recorder_sr_cfg.afe_cfg.wakenet_init = false;
     recorder_sr_cfg.afe_cfg.vad_init = false;
     recorder_sr_cfg.multinet_init = false;
@@ -504,13 +500,9 @@ TEST_CASE("Use [sr - wwe don't init, vad don't init, mn don't init]", "[audio][t
 
 TEST_CASE("Use [sr - wwe disabled, vad disabled, mn disabled]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
 {
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    srmodel_spiffs_init();
-#endif
-
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
-    recorder_sr_cfg.afe_cfg.agc_mode = 0;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
 
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
 #if CONFIG_AFE_MIC_NUM == (1)
@@ -556,13 +548,9 @@ TEST_CASE("Use [sr - wwe disabled, vad disabled, mn disabled]", "[audio][timeout
 
 TEST_CASE("Use [sr - wwe enable, vad disabled, mn disabled]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
 {
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    srmodel_spiffs_init();
-#endif
-
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
-    recorder_sr_cfg.afe_cfg.agc_mode = 0;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
 
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
 #if CONFIG_AFE_MIC_NUM == (1)
@@ -603,13 +591,9 @@ TEST_CASE("Use [sr - wwe enable, vad disabled, mn disabled]", "[audio][timeout=1
 
 TEST_CASE("Use [sr - wwe disable, vad enabled, mn disabled]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
 {
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    srmodel_spiffs_init();
-#endif
-
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
-    recorder_sr_cfg.afe_cfg.agc_mode = 0;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
     recorder_sr_cfg.afe_cfg.wakenet_init = false;
     recorder_sr_cfg.multinet_init = false;
 
@@ -654,13 +638,9 @@ TEST_CASE("Use [sr - wwe disable, vad enabled, mn disabled]", "[audio][timeout=1
 
 TEST_CASE("Use [sr - wwe enable, vad enabled, mn disabled]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
 {
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    srmodel_spiffs_init();
-#endif
-
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
-    recorder_sr_cfg.afe_cfg.agc_mode = 0;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
 
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
 #if CONFIG_AFE_MIC_NUM == (1)
@@ -700,13 +680,9 @@ TEST_CASE("Use [sr - wwe enable, vad enabled, mn disabled]", "[audio][timeout=10
 
 TEST_CASE("Use [sr - all enable]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
 {
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    srmodel_spiffs_init();
-#endif
-
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
-    recorder_sr_cfg.afe_cfg.agc_mode = 0;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
 
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
 #if CONFIG_AFE_MIC_NUM == (1)
@@ -748,13 +724,9 @@ TEST_CASE("Use [sr - all enable]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
 
 TEST_CASE("Use [sr - all enable, resample, encoder]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
 {
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    srmodel_spiffs_init();
-#endif
-
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.alloc_from_psram = 3;
-    recorder_sr_cfg.afe_cfg.agc_mode = 0;
+    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
 
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
 #if CONFIG_AFE_MIC_NUM == (1)
