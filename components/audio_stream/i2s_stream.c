@@ -48,7 +48,9 @@ static const char *TAG = "I2S_STREAM";
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 2, 0)
 #define SOC_I2S_SUPPORTS_ADC_DAC 1
 #elif (SOC_DAC_SUPPORTED)
+#if CONFIG_IDF_TARGET_ESP32
 #define SOC_I2S_SUPPORTS_ADC_DAC 1
+#endif
 #endif
 
 typedef struct i2s_stream {
