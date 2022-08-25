@@ -33,6 +33,7 @@
 #if (defined CONFIG_CLASSIC_BT_ENABLED)
 
 #include "audio_error.h"
+#include "audio_mutex.h"
 #include "esp_system.h"
 #include "bt_keycontrol.h"
 #include "esp_log.h"
@@ -50,6 +51,7 @@ typedef struct {
     uint32_t key_code;
     TimerHandle_t key_tmr;
     uint8_t tl;
+    void *lock;
 } key_act_cb_t;
 
 static void key_act_state_hdl_idle(key_act_cb_t *key_cb, bt_key_act_param_t *param);
@@ -61,6 +63,7 @@ static key_act_cb_t key_cb;
 
 void bt_key_act_state_machine(bt_key_act_param_t *param)
 {
+    mutex_lock(key_cb.lock);
     ESP_LOGD(BTKEYCTRL_TAG, "key_ctrl cb: tl %d, state: %d", key_cb.tl, key_cb.state);
     switch (key_cb.state) {
     case KEY_ACT_STATE_IDLE:
@@ -76,6 +79,7 @@ void bt_key_act_state_machine(bt_key_act_param_t *param)
         ESP_LOGD(BTKEYCTRL_TAG, "Invalid key_ctrl state: %d", key_cb.state);
         break;
     }
+    mutex_unlock(key_cb.lock);
 }
 
 static void key_act_time_out(void *p)
@@ -104,6 +108,12 @@ esp_err_t bt_key_act_sm_init(void)
         ESP_LOGW(BTKEYCTRL_TAG, "%s timer creation failure", __func__);
         return false;
     }
+    key_cb.lock = mutex_create();
+    if (key_cb.lock == NULL) {
+        xTimerDelete(key_cb.key_tmr, portMAX_DELAY);
+        key_cb.key_tmr = NULL;
+        return false;
+    }
     return true;
 }
 
@@ -113,7 +123,10 @@ void bt_key_act_sm_deinit(void)
         xTimerDelete(key_cb.key_tmr, portMAX_DELAY);
         key_cb.key_tmr = NULL;
     }
-
+    if (key_cb.lock) {
+        mutex_destroy(key_cb.lock);
+        key_cb.lock = NULL;
+    }
     memset(&key_cb, 0, sizeof(key_act_cb_t));
 }
 
