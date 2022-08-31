@@ -206,10 +206,6 @@ void *setup_recorder(rec_event_cb_t cb, void *ctx)
     recorder_sr_cfg.afe_cfg.aec_init = false;
     recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
-#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
-    recorder_sr_cfg.input_order[0] = DAT_CH_REF0;
-    recorder_sr_cfg.input_order[1] = DAT_CH_0;
-#endif
 
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
     cfg.read = (recorder_data_read_t)&input_cb_for_afe;
