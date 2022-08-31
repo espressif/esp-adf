@@ -29,6 +29,7 @@
 #include "esp_err.h"
 #include "recorder_sr_iface.h"
 #include "esp_mn_models.h"
+#include "ch_sort.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,30 +43,17 @@ extern "C" {
 #define FETCH_TASK_PINNED_CORE   (1)
 #define SR_OUTPUT_RB_SIZE        (6 * 1024)
 
-#define RECORDER_SR_MAX_INPUT_CH (4)
-
 /**
  * @brief SR processor handle
  */
 typedef void *recorder_sr_handle_t;
 
 /**
- * @brief SR data channel definition
- */
-enum recorder_sr_input_ch {
-    DAT_CH_IDLE,
-    DAT_CH_0,
-    DAT_CH_1,
-    DAT_CH_2,
-    DAT_CH_REF0 = 10,
-};
-
-/**
  * @brief SR processor configuration
  */
 typedef struct {
     afe_config_t afe_cfg;                               /*!< Configuration of AFE */
-    uint8_t      input_order[RECORDER_SR_MAX_INPUT_CH]; /*!< Channel order of the input data */
+    int8_t       input_order[DAT_CH_MAX];               /*!< Channel order of the input data */
     bool         multinet_init;                         /*!< Enable of speech command recognition */
     int          feed_task_core;                        /*!< Core id of feed task */
     int          feed_task_prio;                        /*!< Priority of feed task*/
@@ -80,14 +68,14 @@ typedef struct {
 
 #if CONFIG_AFE_MIC_NUM == (1)
 #define INPUT_ORDER_DEFAULT() { \
+        DAT_CH_1,               \
         DAT_CH_0,               \
-        DAT_CH_REF0,            \
         DAT_CH_IDLE,            \
         DAT_CH_IDLE,            \
     }
 #elif CONFIG_AFE_MIC_NUM == (2)
 #define INPUT_ORDER_DEFAULT() { \
-        DAT_CH_REF0,            \
+        DAT_CH_2,               \
         DAT_CH_0,               \
         DAT_CH_IDLE,            \
         DAT_CH_1,               \
