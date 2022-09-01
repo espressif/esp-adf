@@ -51,6 +51,7 @@
 #include "recorder_encoder.h"
 #include "recorder_sr.h"
 #include "tone_stream.h"
+#include "es7210.h"
 
 #include "model_path.h"
 
@@ -126,8 +127,12 @@ static esp_audio_handle_t setup_player()
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.i2s_config.sample_rate = 48000;
+#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
+    i2s_writer.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
+#else
     i2s_writer.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
     i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != I2S_BITS_PER_SAMPLE_16BIT);
+#endif
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
     esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
@@ -286,7 +291,11 @@ static void start_recorder()
     i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
     i2s_cfg.i2s_config.use_apll = 0;
     i2s_cfg.i2s_config.sample_rate = CODEC_ADC_SAMPLE_RATE;
+#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
+    i2s_cfg.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
+#else
     i2s_cfg.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
+#endif
     i2s_cfg.type = AUDIO_STREAM_READER;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
@@ -295,7 +304,7 @@ static void start_recorder()
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg.src_rate = CODEC_ADC_SAMPLE_RATE;
     rsp_cfg.dest_rate = 16000;
-#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 2)
     rsp_cfg.mode = RESAMPLE_UNCROSS_MODE;
     rsp_cfg.src_ch = 4;
     rsp_cfg.dest_ch = 4;
@@ -329,6 +338,15 @@ static void start_recorder()
     recorder_sr_cfg.multinet_init = MULTINET_ENABLE;
     recorder_sr_cfg.afe_cfg.aec_init = RECORD_HARDWARE_AEC;
     recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
+#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
+    recorder_sr_cfg.afe_cfg.pcm_config.mic_num = 1;
+    recorder_sr_cfg.afe_cfg.pcm_config.ref_num = 1;
+    recorder_sr_cfg.afe_cfg.pcm_config.total_ch_num = 2;
+    recorder_sr_cfg.input_order[0] = DAT_CH_0;
+    recorder_sr_cfg.input_order[1] = DAT_CH_1;
+
+    es7210_mic_select(ES7210_INPUT_MIC1 | ES7210_INPUT_MIC3);
+#endif
 
 #if RECORDER_ENC_ENABLE
     recorder_encoder_cfg_t recorder_encoder_cfg = { 0 };
