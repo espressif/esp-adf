@@ -36,18 +36,22 @@
 #include "esp_afe_sr_iface.h"
 #include "esp_afe_sr_models.h"
 
-#define AEC_FRAME_BYTES                 (1024) // 32ms data frame (32 * 16 * 2)
-#define ALGORITHM_FETCH_TASK_STACK_SIZE (3 * 1024)
+#define ALGORITHM_CHUNK_MAX_SIZE            (1024)
+#define ALGORITHM_FETCH_TASK_STACK_SIZE     (3 * 1024)
+#define ALGORITHM_GET_REFERENCE_TIMEOUT     (32 / portTICK_PERIOD_MS)
 
 static const char *TAG = "ALGORITHM_STREAM";
 
 const int FETCH_STOPPED_BIT = BIT0;
 
 typedef struct {
-    char *scale_buff;
-    int16_t *div_buff;
+    int16_t *record;
+    int16_t *reference;
+    int16_t *aec_buff;
     int8_t algo_mask;
+    int8_t mic_ch;
     bool afe_fetch_run;
+    int sample_rate;
     int rec_linear_factor;
     int ref_linear_factor;
     algorithm_stream_input_type_t input_type;
@@ -55,7 +59,22 @@ typedef struct {
     esp_afe_sr_data_t *afe_data;
     EventGroupHandle_t state;
     bool debug_input;
+    bool swap_ch;
+    int agc_gain;
 } algo_stream_t;
+
+esp_err_t algorithm_mono_fix(uint8_t *sbuff, uint32_t len)
+{
+    int16_t *temp_buf = (int16_t *)sbuff;
+    int16_t temp_box;
+    int k = len >> 1;
+    for (int i = 0; i < k; i += 2) {
+        temp_box = temp_buf[i];
+        temp_buf[i] = temp_buf[i + 1];
+        temp_buf[i + 1] = temp_box;
+    }
+    return ESP_OK;
+}
 
 static esp_err_t _algo_close(audio_element_handle_t self)
 {
@@ -65,7 +84,7 @@ static esp_err_t _algo_close(audio_element_handle_t self)
 
     /* Feed some data to prevent afe->fetch getting stuck */
     while (xEventGroupWaitBits(algo->state, FETCH_STOPPED_BIT, false, true, 10 / portTICK_PERIOD_MS) != FETCH_STOPPED_BIT) {
-        algo->afe_handle->feed(algo->afe_data, (int16_t *)algo->scale_buff);
+        algo->afe_handle->feed(algo->afe_data, algo->aec_buff);
     }
 
     if (algo->afe_data) {
@@ -73,14 +92,21 @@ static esp_err_t _algo_close(audio_element_handle_t self)
         algo->afe_data = NULL;
     }
 
-    if (algo->scale_buff) {
-        audio_free(algo->scale_buff);
-        algo->scale_buff = NULL;
+    if (algo->aec_buff) {
+        audio_free(algo->aec_buff);
+        algo->aec_buff = NULL;
     }
 
-    if (algo->div_buff) {
-        audio_free(algo->div_buff);
-        algo->div_buff = NULL;
+    if (algo->input_type == ALGORITHM_STREAM_INPUT_TYPE2) {
+        if (algo->record) {
+            audio_free(algo->record);
+            algo->record = NULL;
+        }
+
+        if (algo->reference) {
+            audio_free(algo->reference);
+            algo->reference = NULL;
+        }
     }
 
     if (algo) {
@@ -96,9 +122,21 @@ void _algo_fetch_task(void *pv)
     audio_element_handle_t self = pv;
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
 
+    int afe_chunksize = algo->afe_handle->get_fetch_chunksize(algo->afe_data);
+
     while (algo->afe_fetch_run && algo->afe_data) {
-        afe_fetch_result_t *res = algo->afe_handle->fetch(algo->afe_data);
-        audio_element_output(self, (char *)res->data, res->data_size);
+        afe_fetch_result_t* res = algo->afe_handle->fetch(algo->afe_data);
+        if (res && res->ret_value != ESP_FAIL) {
+            audio_element_output(self, (char *)res->data, afe_chunksize * sizeof(int16_t));
+            switch (res->vad_state) {
+                case AFE_VAD_SILENCE:
+                    ESP_LOGD(TAG, "VAD state : SILENCE");
+                    break;
+                case AFE_VAD_SPEECH:
+                    ESP_LOGD(TAG, "VAD state : SPEECH");
+                    break;
+            }
+        }
     }
 
     ESP_LOGI(TAG, "_algo_fetch_task is stopped");
@@ -111,19 +149,36 @@ static esp_err_t _algo_open(audio_element_handle_t self)
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
     AUDIO_NULL_CHECK(TAG, algo, return ESP_FAIL);
 
-    algo->afe_handle = &ESP_AFE_SR_HANDLE;
+    algo->afe_handle = &ESP_AFE_VC_HANDLE;
     afe_config_t afe_config = AFE_CONFIG_DEFAULT();
     afe_config.vad_init = false;
     afe_config.wakenet_init = false;
     afe_config.afe_perferred_core = 1;
-    afe_config.wakenet_mode = DET_MODE_90;
-    afe_config.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;;
+    afe_config.afe_perferred_priority = 21;
+    afe_config.voice_communication_init = true;
+    afe_config.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    afe_config.pcm_config.mic_num = algo->mic_ch;
+    afe_config.pcm_config.ref_num = 1;
+    afe_config.pcm_config.total_ch_num = algo->mic_ch + 1;
+    afe_config.pcm_config.sample_rate = algo->sample_rate;
+
+    if (!(algo->algo_mask & ALGORITHM_STREAM_USE_AEC)) {
+        afe_config.aec_init = false;
+    }
+
     if (!(algo->algo_mask & ALGORITHM_STREAM_USE_NS)) {
         afe_config.se_init = false;
     }
-    if (!(algo->algo_mask & ALGORITHM_STREAM_USE_AGC)) {
-        afe_config.agc_mode = false;
+
+    if (algo->algo_mask & ALGORITHM_STREAM_USE_VAD) {
+        afe_config.vad_init = true;
     }
+
+    if (algo->algo_mask & ALGORITHM_STREAM_USE_AGC) {
+        afe_config.voice_communication_agc_init = true;
+        afe_config.voice_communication_agc_gain = algo->agc_gain;
+    }
+
     algo->afe_data = algo->afe_handle->create_from_config(&afe_config);
     algo->afe_fetch_run = true;
 
@@ -152,16 +207,14 @@ static esp_err_t algorithm_data_gain(int16_t *raw_buff, int len, int linear_lfac
     return ESP_OK;
 }
 
-static esp_err_t algorithm_data_divided(int16_t *raw_buff, int len, int16_t *left_channel, int linear_lfac, int16_t *right_channel, int linear_rfac)
+// Swap left and right channels
+static esp_err_t algorithm_data_swap(int16_t *raw_buff, int len)
 {
-    // To improve efficiency, data splitting and linear amplification are integrated into one function
+    int16_t tmp;
     for (int i = 0; i < len / 4; i++) {
-        if (left_channel) {
-            left_channel[i] = raw_buff[i << 1] * linear_lfac;
-        }
-        if (right_channel) {
-            right_channel[i] = raw_buff[(i << 1) + 1] * linear_rfac;
-        }
+        tmp = raw_buff[i << 1];
+        raw_buff[i << 1]         = raw_buff[(i << 1) + 1];
+        raw_buff[(i << 1) + 1]   = tmp;
     }
     return ESP_OK;
 }
@@ -169,46 +222,57 @@ static esp_err_t algorithm_data_divided(int16_t *raw_buff, int len, int16_t *lef
 static int algorithm_data_process_for_type1(audio_element_handle_t self)
 {
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
-    int in_ret = 0;
+    int bytes_read = 0;
 
-    in_ret = audio_element_input(self, algo->scale_buff, 2 * AEC_FRAME_BYTES);
-    if (in_ret > 0) {
+    int audio_chunksize = algo->afe_handle->get_feed_chunksize(algo->afe_data);
+    int size = audio_chunksize * 2 * sizeof(int16_t);
+
+    bytes_read = audio_element_input(self, (char *)algo->aec_buff, size);
+    if (bytes_read > 0) {
+        if (algo->swap_ch) {
+            algorithm_data_swap((int16_t *)algo->aec_buff, bytes_read);
+        }
         if (algo->debug_input) {
-            audio_element_output(self, algo->scale_buff, 2 * AEC_FRAME_BYTES);
+            audio_element_output(self, (char *)algo->aec_buff, size);
         } else {
-            algorithm_data_gain((int16_t *)algo->scale_buff, 2 * AEC_FRAME_BYTES, algo->rec_linear_factor, algo->ref_linear_factor);
-            algo->afe_handle->feed(algo->afe_data, (int16_t *)algo->scale_buff);
+            algorithm_data_gain(algo->aec_buff, size, algo->rec_linear_factor, algo->ref_linear_factor);
+            algo->afe_handle->feed(algo->afe_data, algo->aec_buff);
         }
     }
-    return in_ret;
+    return bytes_read;
 }
 
 static int algorithm_data_process_for_type2(audio_element_handle_t self)
 {
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
-    int in_ret = 0;
-    char *record = audio_calloc(1, AEC_FRAME_BYTES);
-    char *reference = audio_calloc(1, AEC_FRAME_BYTES);
+    int bytes_read = 0;
 
-    in_ret = audio_element_input(self, record, AEC_FRAME_BYTES);
-    in_ret |= audio_element_multi_input(self, (char *)algo->div_buff, 2 * AEC_FRAME_BYTES, 0, portMAX_DELAY);
-    if (in_ret > 0) {
-        int16_t *temp = (int16_t *)algo->scale_buff;
-        algorithm_data_divided(algo->div_buff, 2 * AEC_FRAME_BYTES, (int16_t *)reference, 1, NULL, 0);
-        for (int i = 0; i < (AEC_FRAME_BYTES / 2); i++) {
-            temp[i << 1] = ((int16_t *)record)[i];
-            temp[(i << 1) + 1] = ((int16_t *)reference)[i];
+    int audio_chunksize = algo->afe_handle->get_feed_chunksize(algo->afe_data);
+    int size = audio_chunksize * sizeof(int16_t);
+
+    memset(algo->reference, 0, size);
+    bytes_read = audio_element_multi_input(self, (char *)algo->reference, size, 0, ALGORITHM_GET_REFERENCE_TIMEOUT);
+    if (bytes_read == AEL_IO_TIMEOUT) {
+        bytes_read = size;
+    } else if (bytes_read < 0) {
+        return bytes_read;
+    }
+
+    bytes_read = audio_element_input(self, (char *)algo->record, size);
+    if (bytes_read > 0) {
+        int16_t *temp = algo->aec_buff;
+        for (int i = 0; i < (size / 2); i++) {
+            temp[i << 1] = algo->record[i];
+            temp[(i << 1) + 1] = algo->reference[i];
         }
 
         if (algo->debug_input) {
-            audio_element_output(self, (char *)temp, 2 * AEC_FRAME_BYTES);
+            audio_element_output(self, (char *)algo->aec_buff, 2 * size);
         } else {
-            algo->afe_handle->feed(algo->afe_data, temp);
+            algo->afe_handle->feed(algo->afe_data, algo->aec_buff);
         }
     }
-    audio_free(record);
-    audio_free(reference);
-    return in_ret;
+    return bytes_read;
 }
 
 static audio_element_err_t _algo_process(audio_element_handle_t self, char *in_buffer, int in_len)
@@ -247,9 +311,13 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     cfg.task_core = config->task_core;
     cfg.multi_in_rb_num = config->input_type;
     cfg.stack_in_ext = config->stack_in_ext;
+    cfg.out_rb_size = config->out_rb_size;
     cfg.tag = "algorithm";
 
-    cfg.buffer_len = AEC_FRAME_BYTES;
+    algo->swap_ch = config->swap_ch;
+    algo->agc_gain = config->agc_gain;
+    algo->mic_ch = config->mic_ch;
+    algo->sample_rate = config->sample_rate;
     algo->input_type = config->input_type;
     algo->algo_mask = config->algo_mask;
     algo->rec_linear_factor = config->rec_linear_factor;
@@ -261,11 +329,12 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
         audio_free(algo);
         return NULL;
     });
-    bool _success = true;
-    _success &= ((algo->scale_buff = audio_calloc(1, 2 * AEC_FRAME_BYTES)) != NULL);
 
+    bool _success = true;
+    _success &= ((algo->aec_buff = audio_calloc(1, 2 * ALGORITHM_CHUNK_MAX_SIZE)) != NULL);
     if (algo->input_type == ALGORITHM_STREAM_INPUT_TYPE2) {
-        _success &= ((algo->div_buff = audio_calloc(1, 2 * AEC_FRAME_BYTES)) != NULL);
+        _success &= ((algo->record = audio_calloc(1, ALGORITHM_CHUNK_MAX_SIZE)) != NULL);
+        _success &= ((algo->reference = audio_calloc(1, ALGORITHM_CHUNK_MAX_SIZE)) != NULL);
     }
 
     AUDIO_NULL_CHECK(TAG, _success, {

@@ -31,13 +31,15 @@
 extern "C" {
 #endif
 
-#define ALGORITHM_STREAM_PINNED_TO_CORE   0
-#define ALGORITHM_STREAM_TASK_PERIOD      5
-#define ALGORITHM_STREAM_TASK_STACK_SIZE (5 * 1024)
+#define ALGORITHM_STREAM_PINNED_TO_CORE     0
+#define ALGORITHM_STREAM_TASK_PERIOD        21
+#define ALGORITHM_STREAM_RINGBUFFER_SIZE    1024
+#define ALGORITHM_STREAM_TASK_STACK_SIZE    (5 * 1024)
 
-#define ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ   16000 //Hz
+#define ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ   8000
 #define ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT       16
-#define ALGORITHM_STREAM_DEFAULT_CHANNEL          1
+#define ALGORITHM_STREAM_DEFAULT_MIC_CHANNELS     1
+#define ALGORITHM_STREAM_DEFAULT_AGC_GAIN_DB      5
 
 /*
 
@@ -101,7 +103,8 @@ typedef enum {
 typedef enum {
     ALGORITHM_STREAM_USE_AEC = (0x1 << 0), /*!< Use AEC */
     ALGORITHM_STREAM_USE_AGC = (0x1 << 1), /*!< Use AGC */
-    ALGORITHM_STREAM_USE_NS  = (0x1 << 2)  /*!< Use NS  */
+    ALGORITHM_STREAM_USE_NS  = (0x1 << 2), /*!< Use NS  */
+    ALGORITHM_STREAM_USE_VAD = (0x1 << 3)  /*!< Use VAD  */
 } algorithm_stream_mask_t;
 
 /**
@@ -112,23 +115,35 @@ typedef struct {
     int task_stack;                             /*!< Task stack size */
     int task_prio;                              /*!< Task peroid */
     int task_core;                              /*!< The core that task to be created */
+    int out_rb_size;                            /*!< Size of output ringbuffer */
     bool stack_in_ext;                          /*!< Try to allocate stack in external memory */
     int rec_linear_factor;                      /*!< The linear amplication factor of record signal*/
     int ref_linear_factor;                      /*!< The linear amplication factor of reference signal */
-    int8_t algo_mask;                           /*!< Choose algorithm to use */
     bool debug_input;                           /*!< debug algorithm input data */
+    bool swap_ch;                               /*!< Swap left and right channels */
+    int8_t algo_mask;                           /*!< Choose algorithm to use */
+    int sample_rate;                            /*!< The sampling rate of the input PCM (in Hz) */
+    int mic_ch;                                 /*!< MIC channel num */
+    int agc_gain;                               /*!< AGC gain(dB) for voice communication */
 } algorithm_stream_cfg_t;
+
+#define ALGORITHM_STREAM_DEFAULT_MASK    (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_AGC | ALGORITHM_STREAM_USE_NS)
 
 #define ALGORITHM_STREAM_CFG_DEFAULT() {                                                          \
     .input_type = ALGORITHM_STREAM_INPUT_TYPE1,                                                   \
     .task_stack = ALGORITHM_STREAM_TASK_STACK_SIZE,                                               \
     .task_prio  = ALGORITHM_STREAM_TASK_PERIOD,                                                   \
     .task_core  = ALGORITHM_STREAM_PINNED_TO_CORE,                                                \
+    .out_rb_size = ALGORITHM_STREAM_RINGBUFFER_SIZE,                                              \
     .stack_in_ext = true,                                                                         \
     .rec_linear_factor = 1,                                                                       \
-    .ref_linear_factor = 3,                                                                       \
-    .algo_mask = (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_AGC | ALGORITHM_STREAM_USE_NS), \
+    .ref_linear_factor = 1,                                                                       \
     .debug_input = false,                                                                         \
+    .swap_ch = false,                                                                             \
+    .algo_mask = ALGORITHM_STREAM_DEFAULT_MASK,                                                   \
+    .sample_rate = ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ,                                       \
+    .mic_ch = ALGORITHM_STREAM_DEFAULT_MIC_CHANNELS,                                              \
+    .agc_gain = ALGORITHM_STREAM_DEFAULT_AGC_GAIN_DB,                                             \
 }
 
 /**
@@ -160,6 +175,18 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config);
  *     - ESP_ERR_INVALID_ARG
  */
 audio_element_err_t algo_stream_set_delay(audio_element_handle_t el, ringbuf_handle_t ringbuf, int delay_ms);
+
+/**
+ * @brief      Fix I2S mono noise issue
+ *
+ * @note       This API only for ESP32 with I2S 16bits
+ *
+ * @param      sbuff    I2S data buffer
+ * @param      len      I2S data len
+ *
+ * @return     ESP_OK
+ */
+esp_err_t algorithm_mono_fix(uint8_t *sbuff, uint32_t len);
 
 #ifdef __cplusplus
 }

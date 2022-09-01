@@ -647,6 +647,9 @@ esp_err_t es8311_start(es_module_t mode)
     ret |= es8311_write_reg(ES8311_DAC_REG37, 0x48);
     ret |= es8311_write_reg(ES8311_GP_REG45, 0x00);
 
+    /* set internal reference signal (ADCL + DACR) */
+    ret |= es8311_write_reg(ES8311_GPIO_REG44, 0x50);
+
     return ret;
 }
 
