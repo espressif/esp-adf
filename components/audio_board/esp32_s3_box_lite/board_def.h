@@ -77,6 +77,7 @@
 #define CODEC_ADC_BITS_PER_SAMPLE   I2S_BITS_PER_SAMPLE_32BIT
 #define CODEC_ADC_SAMPLE_RATE       (48000)
 #define RECORD_HARDWARE_AEC         (false)
+#define BOARD_PA_GAIN               (0) /* Power amplifier gain defined by board (dB) */
 
 extern audio_hal_func_t AUDIO_CODEC_ES8156_DEFAULT_HANDLE;
 extern audio_hal_func_t AUDIO_CODEC_ES7243E_DEFAULT_HANDLE;

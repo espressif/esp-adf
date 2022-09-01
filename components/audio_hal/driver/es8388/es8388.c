@@ -26,7 +26,8 @@
 #include "esp_log.h"
 #include "i2c_bus.h"
 #include "es8388.h"
-#include "board_pins_config.h"
+#include "board.h"
+#include "audio_volume.h"
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 #include "headphone_detect.h"
@@ -34,6 +35,19 @@
 
 static const char *ES_TAG = "ES8388_DRIVER";
 static i2c_bus_handle_t i2c_handle;
+static codec_dac_volume_config_t *dac_vol_handle;
+
+#define ES8388_DAC_VOL_CFG_DEFAULT() {                      \
+    .max_dac_volume = 0,                                    \
+    .min_dac_volume = -96,                                  \
+    .board_pa_gain = BOARD_PA_GAIN,                         \
+    .volume_accuracy = 0.5,                                 \
+    .dac_vol_symbol = -1,                                   \
+    .zero_volume_reg = 0,                                   \
+    .reg_value = 0,                                         \
+    .user_volume = 0,                                       \
+    .offset_conv_volume = NULL,                             \
+}
 
 #define ES_ASSERT(a, format, b, ...) \
     if ((a) != 0) { \
@@ -237,6 +251,7 @@ esp_err_t es8388_deinit(void)
     headphone_detect_deinit();
 #endif
 
+    audio_codec_volume_deinit(dac_vol_handle);
     return res;
 }
 
@@ -275,9 +290,14 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, 0x00); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL17, 0x90); // only left DAC to left mixer enable 0db
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL20, 0x90); // only right DAC to right mixer enable 0db
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL23, 0x00);   //vroi=0
-    res |= es8388_set_adc_dac_volume(ES_MODULE_DAC, 0, 0);          // 0db
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); // set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL23, 0x00); // vroi=0
+
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL24, 0x1E); // Set L1 R1 L2 R2 volume. 0x00: -30dB, 0x1E: 0dB, 0x21: 3dB
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, 0x1E);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, 0);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, 0);
+    // res |= es8388_set_adc_dac_volume(ES_MODULE_DAC, 0, 0);       // 0db
     int tmp = 0;
     if (AUDIO_HAL_DAC_OUTPUT_LINE2 == cfg->dac_output) {
         tmp = DAC_OUTPUT_LOUT1 | DAC_OUTPUT_ROUT1;
@@ -304,9 +324,21 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL5, 0x02);  //ADCFsMode,singel SPEED,RATIO=256
     //ALC for Microphone
     res |= es8388_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);      // 0db
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0x09); //Power on ADC, Enable LIN&RIN, Power off MICBIAS, set int1lp to low power mode
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0x09);    // Power on ADC, enable LIN&RIN, power off MICBIAS, and set int1lp to low power mode
+    
+    /* es8388 PA gpio_config */
+    gpio_config_t  io_conf;
+    memset(&io_conf, 0, sizeof(io_conf));
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
     /* enable es8388 PA */
     es8388_pa_power(true);
+
+    codec_dac_volume_config_t vol_cfg = ES8388_DAC_VOL_CFG_DEFAULT();
+    dac_vol_handle = audio_codec_volume_init(&vol_cfg);
     ESP_LOGI(ES_TAG, "init,out:%02x, in:%02x", cfg->dac_output, cfg->adc_input);
     return res;
 }
@@ -339,45 +371,45 @@ esp_err_t es8388_config_fmt(es_module_t mode, es_i2s_fmt_t fmt)
 }
 
 /**
- * @param volume: 0 ~ 100
+ * @brief Set voice volume
+ *
+ * @note Register values. 0xC0: -96 dB, 0x64: -50 dB, 0x00: 0 dB
+ * @note Accuracy of gain is 0.5 dB
+ *
+ * @param volume: voice volume (0~100)
  *
  * @return
- *     - (-1)  Error
- *     - (0)   Success
+ *     - ESP_OK
+ *     - ESP_FAIL
  */
 esp_err_t es8388_set_voice_volume(int volume)
 {
     esp_err_t res = ESP_OK;
-    if (volume < 0)
-        volume = 0;
-    else if (volume > 100)
-        volume = 100;
-    volume /= 3;
-    res = es_write_reg(ES8388_ADDR, ES8388_DACCONTROL24, volume);
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, volume);
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, 0);
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, 0);
+    uint8_t reg = 0;
+    reg = audio_codec_get_dac_reg_value(dac_vol_handle, volume);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL5, reg);
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL4, reg);
+    ESP_LOGD(ES_TAG, "Set volume:%.2d reg_value:0x%.2x dB:%.1f", dac_vol_handle->user_volume, reg,
+            audio_codec_cal_dac_volume(dac_vol_handle));
     return res;
 }
 
-/**
- *
- * @return
- *           volume
- */
 esp_err_t es8388_get_voice_volume(int *volume)
 {
     esp_err_t res = ESP_OK;
     uint8_t reg = 0;
-    res = es_read_reg(ES8388_DACCONTROL24, &reg);
+    res = es_read_reg(ES8388_DACCONTROL4, &reg);
     if (res == ESP_FAIL) {
         *volume = 0;
     } else {
-        *volume = reg;
-        *volume *= 3;
-        if (*volume == 99)
-            *volume = 100;
+        if (reg == dac_vol_handle->reg_value) {
+            *volume = dac_vol_handle->user_volume;
+        } else {
+            *volume = 0;
+            res = ESP_FAIL;
+        }
     }
+    ESP_LOGD(ES_TAG, "Get volume:%.2d reg_value:0x%.2x", *volume, reg);
     return res;
 }
 
@@ -539,13 +571,6 @@ esp_err_t es8388_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_ifa
 
 void es8388_pa_power(bool enable)
 {
-    gpio_config_t  io_conf;
-    memset(&io_conf, 0, sizeof(io_conf));
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
-    io_conf.pull_down_en = 0;
-    io_conf.pull_up_en = 0;
-    gpio_config(&io_conf);
     if (enable) {
         gpio_set_level(get_pa_enable_gpio(), 1);
     } else {

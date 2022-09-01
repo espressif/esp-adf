@@ -55,6 +55,8 @@
 #define CODEC_ADC_I2S_PORT        (0)
 #define ES7243_MCLK_GPIO          GPIO_NUM_0
 #define PA_ENABLE_GPIO            GPIO_NUM_12
+#define BOARD_PA_GAIN             (10) /* Power amplifier gain defined by board (dB) */
+
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
