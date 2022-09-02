@@ -159,6 +159,7 @@ esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_p
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
+    // This API must call before BluFI's network
     esp_periph_handle_t bt_periph = app_bluetooth_init(set);
 
     esp_audio_cfg_t default_cfg = DEFAULT_ESP_AUDIO_CONFIG();
