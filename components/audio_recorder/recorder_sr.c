@@ -50,6 +50,7 @@
 #endif
 
 #include "recorder_sr.h"
+#include "ch_sort.h"
 
 #define FEED_TASK_DESTROY  (BIT(0))
 #define FETCH_TASK_DESTROY (BIT(1))
@@ -98,58 +99,10 @@ typedef struct __recorder_sr {
     bool                  mn_enable;
     char                  *mn_language;
 #endif /* CONFIG_USE_MULTINET */
-    int8_t                idx_ch0;
-    int8_t                idx_ch1;
-    int8_t                idx_ref;
+    int8_t                input_order[DAT_CH_MAX];
 } recorder_sr_t;
 
 static esp_err_t recorder_sr_output(recorder_sr_t *recorder_sr, void *buffer, int len);
-
-static int8_t recorder_sr_find_input_ch_idx(uint8_t *order, uint8_t target_ch)
-{
-    for (int8_t idx = 0; idx < RECORDER_SR_MAX_INPUT_CH; idx++) {
-        if (order[idx] == target_ch) {
-            return idx;
-        }
-    }
-    ESP_LOGW(TAG, "Can't match the target channel %d", target_ch);
-    return -1;
-}
-
-static void recorder_sr_input_ch_pick(recorder_sr_t *recorder_sr, int16_t *buffer, int len)
-{
-    if (RECORDER_CHANNEL_NUM == 4) {
-        if (recorder_sr->idx_ch0 == 0 && recorder_sr->idx_ch1 == 1 && recorder_sr->idx_ref == 2) {
-            ESP_LOGV(TAG, "Same as needed for 4ch");
-            return;
-        }
-
-        for (int i = 0; i < (len / 8); i++) {
-            int16_t ref = 0;
-            if (recorder_sr->idx_ref != -1) {
-                ref = buffer[4 * i + recorder_sr->idx_ref];
-            }
-            buffer[3 * i + 0] = buffer[4 * i + recorder_sr->idx_ch0];
-            buffer[3 * i + 1] = buffer[4 * i + recorder_sr->idx_ch1];
-            buffer[3 * i + 2] = ref;
-        }
-    } else if (RECORDER_CHANNEL_NUM == 2) {
-        if (recorder_sr->idx_ch0 == 0 && recorder_sr->idx_ref == 1) {
-            ESP_LOGV(TAG, "Same as needed for 2ch");
-            return;
-        }
-        for (int i = 0; i < (len / 4); i++) {
-            int16_t ref = 0;
-            if (recorder_sr->idx_ref != -1) {
-                ref = buffer[2 * i + recorder_sr->idx_ref];
-            }
-            buffer[2 * i] = buffer[2 * i + 1];
-            buffer[2 * i + 1] = ref;
-        }
-    } else {
-        ESP_LOGE(TAG, "unknown channel num");
-    }
-}
 
 static inline int recorder_sr_afe_result_convert(recorder_sr_t *recorder_sr, afe_fetch_result_t *result)
 {
@@ -258,8 +211,11 @@ static void feed_task(void *parameters)
     recorder_sr_t *recorder_sr = (recorder_sr_t *)parameters;
     int chunksize = esp_afe->get_feed_chunksize(recorder_sr->afe_handle);
     int buf_size = chunksize * sizeof(int16_t) * RECORDER_CHANNEL_NUM;
-    int16_t *buffer = audio_calloc(1, buf_size);
-    assert(buffer);
+    int16_t *i_buf = audio_calloc(1, buf_size);
+    assert(i_buf);
+    int16_t *o_buf = audio_calloc(1, buf_size);;
+    assert(o_buf);
+
     int fill_cnt = 0;
 
     recorder_sr->feed_running = true;
@@ -267,18 +223,23 @@ static void feed_task(void *parameters)
     while (recorder_sr->feed_running) {
         xEventGroupWaitBits(recorder_sr->events, FEED_TASK_RUNNING, false, true, portMAX_DELAY);
 
-        int ret = recorder_sr->read((char *)buffer + fill_cnt, buf_size - fill_cnt, recorder_sr->read_ctx, portMAX_DELAY);
+        int ret = recorder_sr->read((char *)i_buf + fill_cnt, buf_size - fill_cnt, recorder_sr->read_ctx, portMAX_DELAY);
         fill_cnt += ret;
         if (fill_cnt == buf_size) {
-            recorder_sr_input_ch_pick(recorder_sr, buffer, fill_cnt);
-            esp_afe->feed(recorder_sr->afe_handle, buffer);
+#if RECORDER_CHANNEL_NUM == 2
+            ch_sort_16bit_2ch(i_buf, o_buf, fill_cnt, recorder_sr->input_order);
+#else /* RECORDER_CHANNEL_NUM == 2 */
+            ch_sort_16bit_4ch(i_buf, o_buf, fill_cnt, recorder_sr->input_order);
+#endif /* RECORDER_CHANNEL_NUM == 2 */
+            esp_afe->feed(recorder_sr->afe_handle, o_buf);
             fill_cnt -= buf_size;
         } else if (fill_cnt > buf_size) {
             ESP_LOGE(TAG, "fill cnt > buffer_size, there may be memory out of range");
             recorder_sr->feed_running = false;
         }
     }
-    audio_free(buffer);
+    audio_free(i_buf);
+    audio_free(o_buf);
     xEventGroupClearBits(recorder_sr->events, FEED_TASK_RUNNING);
     xEventGroupSetBits(recorder_sr->events, FEED_TASK_DESTROY);
     vTaskDelete(NULL);
@@ -563,15 +524,7 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
     recorder_sr->mn_language      = cfg->mn_language;
 #endif
 
-    recorder_sr->idx_ch0 = recorder_sr_find_input_ch_idx(cfg->input_order, DAT_CH_0);
-    AUDIO_CHECK(TAG, (recorder_sr->idx_ch0 != -1), goto _failed, "channel 0 not found");
-#if CONFIG_AFE_MIC_NUM == (2)
-    recorder_sr->idx_ch1 = recorder_sr_find_input_ch_idx(cfg->input_order, DAT_CH_1);
-    AUDIO_CHECK(TAG, (recorder_sr->idx_ch1 != -1), goto _failed, "channel 1 not found");
-#else
-    recorder_sr->idx_ch1 = -1;
-#endif
-    recorder_sr->idx_ref = recorder_sr_find_input_ch_idx(cfg->input_order, DAT_CH_REF0);
+    memcpy(recorder_sr->input_order, cfg->input_order, DAT_CH_MAX);
 
     recorder_sr->models = esp_srmodel_init(recorder_sr->partition_label);
     char *wn_name = esp_srmodel_filter(recorder_sr->models, ESP_WN_PREFIX, NULL);
