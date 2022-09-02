@@ -34,11 +34,15 @@ extern "C" {
 /*
  * @brief Initialize tone player
  *
+ * @param      sample_rate      I2S sample rate
+ * @param      channel_format   I2S channel format
+ * @param      bits_per_sample  I2S sample bits in one channel
+ *
  * @return
  *     - ESP_OK : on success
  *     - ESP_FAIL : other errors
  */
-audio_err_t audio_player_int_tone_init(void);
+audio_err_t audio_player_int_tone_init(int sample_rate, int channel_format, int bits_per_sample);
 
 /*
  * @brief Play tone

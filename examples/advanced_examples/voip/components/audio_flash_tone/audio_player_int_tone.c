@@ -29,17 +29,42 @@
 #include "tone_stream.h"
 #include "mp3_decoder.h"
 #include "i2s_stream.h"
+#include "algorithm_stream.h"
 #include "audio_player_int_tone.h"
 
 static const char *TAG = "PLAYER_INT_TONE";
 
 static esp_audio_handle_t player;
 
-audio_err_t audio_player_int_tone_init()
+static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
+{
+    size_t bytes_write = 0;
+
+    /* Drop right channel */
+    int16_t *tmp = (int16_t *)buf;
+    for (int i = 0; i < len / 4; i++) {
+        tmp[i] = tmp[i << 1];
+    }
+
+#if CONFIG_IDF_TARGET_ESP32
+    algorithm_mono_fix((uint8_t *)buf, len);
+#endif
+
+    audio_element_info_t info;
+    audio_element_getinfo(el, &info);
+    int ret = i2s_write_expand(I2S_NUM_0, buf, len / 2, 16, info.bits, &bytes_write, wait_time);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "i2s write failed");
+    }
+
+    return bytes_write;
+}
+
+audio_err_t audio_player_int_tone_init(int sample_rate, int channel_format, int bits_per_sample)
 {
     esp_audio_cfg_t cfg = DEFAULT_ESP_AUDIO_CONFIG();
     cfg.prefer_type = ESP_AUDIO_PREFER_MEM;
-    cfg.resample_rate = 16000;
+    cfg.resample_rate = sample_rate;
     player = esp_audio_create(&cfg);
     AUDIO_MEM_CHECK(TAG, player, return ESP_FAIL;);
 
@@ -55,13 +80,17 @@ audio_err_t audio_player_int_tone_init()
     mp3_dec_cfg.task_prio = 20;
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
 
-    // Create writers and add to esp_audio
-    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
-    i2s_writer.type = AUDIO_STREAM_WRITER;
-    i2s_writer.stack_in_ext = true;
-    i2s_writer.i2s_config.sample_rate = 16000;
-    i2s_writer.task_core = 1;
-    esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
+    i2s_stream_cfg_t i2s_writer_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_writer_cfg.type = AUDIO_STREAM_WRITER;
+    i2s_writer_cfg.stack_in_ext = true;
+    i2s_writer_cfg.i2s_config.sample_rate = sample_rate;
+    i2s_writer_cfg.i2s_config.channel_format = channel_format;
+    i2s_writer_cfg.i2s_config.bits_per_sample = bits_per_sample;
+    i2s_writer_cfg.task_core = 1;
+    audio_element_handle_t i2s_writer = i2s_stream_init(&i2s_writer_cfg);
+    esp_audio_output_stream_add(player, i2s_writer);
+    audio_element_set_write_cb(i2s_writer, i2s_write_cb, NULL);
+    audio_element_set_output_timeout(i2s_writer, portMAX_DELAY);
 
     return ESP_OK;
 }
