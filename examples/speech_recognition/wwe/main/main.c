@@ -329,10 +329,6 @@ static void start_recorder()
     recorder_sr_cfg.multinet_init = MULTINET_ENABLE;
     recorder_sr_cfg.afe_cfg.aec_init = RECORD_HARDWARE_AEC;
     recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
-#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
-    recorder_sr_cfg.input_order[0] = DAT_CH_REF0;
-    recorder_sr_cfg.input_order[1] = DAT_CH_0;
-#endif
 
 #if RECORDER_ENC_ENABLE
     recorder_encoder_cfg_t recorder_encoder_cfg = { 0 };
