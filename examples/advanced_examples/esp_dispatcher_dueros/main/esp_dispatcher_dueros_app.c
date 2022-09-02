@@ -27,13 +27,16 @@
 #include <stdlib.h>
 
 #include "sdkconfig.h"
+#include "esp_log.h"
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+
 #include "esp_peripherals.h"
 #include "audio_mem.h"
 #include "audio_setup.h"
 #include "esp_dispatcher_dueros_app.h"
 #include "esp_player_wrapper.h"
 #include "duer_audio_action.h"
-#include "esp_log.h"
 
 #include "display_service.h"
 #include "dueros_service.h"
@@ -247,6 +250,39 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
     return ESP_OK;
 }
 
+static esp_err_t initialize_ble_stack(void)
+{
+    esp_err_t ret = ESP_OK;
+    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ret = esp_bt_controller_init(&bt_cfg);
+    if (ret) {
+        ESP_LOGE(TAG, "%s initialize bt controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return ret;
+    }
+
+    ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    if (ret) {
+        ESP_LOGE(TAG, "%s enable bt controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return ret;
+    }
+
+    ret = esp_bluedroid_init();
+    if (ret) {
+       ESP_LOGE(TAG, "%s init bluedroid failed: %s\n", __func__, esp_err_to_name(ret));
+        return ret;
+    }
+
+    ret = esp_bluedroid_enable();
+    if (ret) {
+        ESP_LOGE(TAG, "%s init bluedroid failed: %s\n", __func__, esp_err_to_name(ret));
+        return ret;
+    }
+    return ESP_OK;
+}
+
+
 void duer_app_init(void)
 {
     esp_log_level_set("*", ESP_LOG_INFO);
@@ -369,6 +405,7 @@ void duer_app_init(void)
     smart_config_info_t info = SMART_CONFIG_INFO_DEFAULT();
     h = smart_config_create(&info);
 #elif (defined CONFIG_ESP_BLUFI_PROVISIONING)
+    initialize_ble_stack();
     h = blufi_config_create(NULL);
 #endif
     esp_wifi_setting_regitster_notify_handle(h, (void *)dueros_speaker->wifi_serv);
