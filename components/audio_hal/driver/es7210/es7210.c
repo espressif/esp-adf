@@ -311,6 +311,9 @@ esp_err_t es7210_mic_select(es7210_input_mics_t mic)
     if (mic_num >= ENABLE_TDM_MAX_NUM) {
         ret |= es7210_write_reg(ES7210_SDP_INTERFACE2_REG12, 0x02);
         ESP_LOGW(TAG, "Enable TDM mode. ES7210_SDP_INTERFACE2_REG12: %X", es7210_read_reg(ES7210_SDP_INTERFACE2_REG12));
+    } else {
+        ret |= es7210_write_reg(ES7210_SDP_INTERFACE2_REG12, 0x00);
+        ESP_LOGW(TAG, "Disable TDM mode. ES7210_SDP_INTERFACE2_REG12: %X", es7210_read_reg(ES7210_SDP_INTERFACE2_REG12));
     }
     return ret;
 }
