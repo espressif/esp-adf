@@ -244,8 +244,6 @@ static void wifi_ble_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_par
 #if (defined CONFIG_BT_BLE_BLUFI_ENABLE) || (defined CONFIG_BLUEDROID_ENABLED)
 esp_err_t esp_blufi_host_init(void)
 {
-    ESP_ERROR_CHECK(esp_bluedroid_init());
-    ESP_ERROR_CHECK(esp_bluedroid_enable());
     ESP_LOGI(TAG, "BD ADDR: "ESP_BD_ADDR_STR"\n", ESP_BD_ADDR_HEX(esp_bt_dev_get_address()));
     return ESP_OK;
 }
@@ -365,10 +363,6 @@ esp_wifi_setting_handle_t blufi_config_create(void *info)
         return NULL;
     });
     esp_wifi_setting_set_data(bc_setting_handle, cfg);
-    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
-    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
-    ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_BLE));
     ESP_ERROR_CHECK(esp_blufi_host_and_cb_init(&wifi_ble_callbacks));
     esp_wifi_setting_register_function(bc_setting_handle, _ble_config_start, _ble_config_stop, NULL);
     return bc_setting_handle;
