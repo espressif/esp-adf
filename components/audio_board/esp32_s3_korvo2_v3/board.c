@@ -67,7 +67,7 @@ esp_err_t _lcd_rest(esp_periph_handle_t self, void *ctx)
 {
     // Reset the LCD
     tca9554_set_output_state(LCD_RST_GPIO, TCA9554_IO_LOW);
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
     tca9554_set_output_state(LCD_RST_GPIO, TCA9554_IO_HIGH);
     vTaskDelay(200 / portTICK_PERIOD_MS);
     return ESP_OK;
