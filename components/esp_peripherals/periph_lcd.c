@@ -118,6 +118,7 @@ esp_periph_handle_t periph_lcd_init(periph_lcd_cfg_t *config)
     periph_lcd->lcd_mirror_x = config->lcd_mirror_x;
     periph_lcd->lcd_mirror_y = config->lcd_mirror_y;
     periph_lcd->lcd_color_invert = config->lcd_color_invert;
+    periph_lcd->rest_cb = config->rest_cb;
 
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_LCD, "periph_lcd");
     AUDIO_MEM_CHECK(TAG, periph, {audio_free(periph_lcd);
