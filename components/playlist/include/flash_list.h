@@ -36,8 +36,9 @@ extern "C" {
  *
  * @param[out] handle  Playlist handle
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t flash_list_create(playlist_operator_handle_t *handle);
 
@@ -47,8 +48,9 @@ esp_err_t flash_list_create(playlist_operator_handle_t *handle);
  * @param handle    Playlist handle
  * @param url       URL to be saved
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t flash_list_save(playlist_operator_handle_t handle, const char *url);
 
@@ -57,8 +59,9 @@ esp_err_t flash_list_save(playlist_operator_handle_t handle, const char *url);
  *
  * @param handle     Playlist handle
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t flash_list_show(playlist_operator_handle_t handle);
 
@@ -69,8 +72,9 @@ esp_err_t flash_list_show(playlist_operator_handle_t handle);
  * @param      step           The offset of URL from current URL
  * @param[out] url_buff       A second rank pointer to get a address of URL
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t flash_list_next(playlist_operator_handle_t handle, int step, char **url_buff);
 
@@ -81,8 +85,9 @@ esp_err_t flash_list_next(playlist_operator_handle_t handle, int step, char **ur
  * @param      step           The offset of URL from current URL
  * @param[out] url_buff       A second rank pointer to get a address of URL
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t flash_list_prev(playlist_operator_handle_t handle, int step, char **url_buff);
 
@@ -92,8 +97,9 @@ esp_err_t flash_list_prev(playlist_operator_handle_t handle, int step, char **ur
  * @param      handle          Playlist handle
  * @param[out] url_buff        A second rank pointer to get a address of URL
  *
- * @return ESP_OK    success
- * @return ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t flash_list_current(playlist_operator_handle_t handle, char **url_buff);
 
@@ -103,8 +109,9 @@ esp_err_t flash_list_current(playlist_operator_handle_t handle, char **url_buff)
  * @param handle   Playlist handle
  * @param url      The url to be checked
  *
- * @return true    existence
- *         false   Non-existent
+ * @return 
+ *     - true    existence
+ *     - false   Non-existent
  */
 bool flash_list_exist(playlist_operator_handle_t handle, const char *url);
 
@@ -113,8 +120,9 @@ bool flash_list_exist(playlist_operator_handle_t handle, const char *url);
  *
  * @param handle   Playlist handle
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t flash_list_reset(playlist_operator_handle_t handle);
 
@@ -125,8 +133,9 @@ esp_err_t flash_list_reset(playlist_operator_handle_t handle);
  * @param      url_id          The id of url in flash list
  * @param[out] url_buff        A second rank pointer to get a address of URL
  *
- * @return ESP_OK    success
- * @return ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t flash_list_choose(playlist_operator_handle_t handle, int url_id, char **url_buff);
 
@@ -135,8 +144,9 @@ esp_err_t flash_list_choose(playlist_operator_handle_t handle, int url_id, char 
  *
  * @param handle        Playlist handle
  *
- * @return URLs number in flash playlist
- *         ESP_FAIL     Fail to get number of urls
+ * @return 
+ *     - URLs number in flash playlist
+ *     - ESP_FAIL     Fail to get number of urls
  */
 int flash_list_get_url_num(playlist_operator_handle_t handle);
 
@@ -145,8 +155,9 @@ int flash_list_get_url_num(playlist_operator_handle_t handle);
  *
  * @param handle        Playlist handle
  *
- * @return Curernt url id in flash playlist
- *         ESP_FAIL     Fail to get url id
+ * @return 
+ *     - Curernt url id in flash playlist
+ *     - ESP_FAIL     Fail to get url id
  */
 int flash_list_get_url_id(playlist_operator_handle_t handle);
 
@@ -155,8 +166,9 @@ int flash_list_get_url_id(playlist_operator_handle_t handle);
  *
  * @param handle     Playlist handle
  *
- * @return ESP_OK    success
- *         ESP_FAIL  failed
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t flash_list_destroy(playlist_operator_handle_t handle);
 

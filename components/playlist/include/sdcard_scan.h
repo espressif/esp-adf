@@ -34,6 +34,9 @@ typedef void (*sdcard_scan_cb_t)(void *user_data, char *url);
 /**
  * @brief Scan files in SD card and use callback function to save files that meet filtering conditions.
  *
+ * @note   example  sdcard_scan(callback, "/sdcard", 5, const char *[]{"mp3", "aac"}, 2, user_data);
+ * Scan 5 levels folder in sdcard and save mp3 files and aac files.
+ * 
  * @param cb              The callback function
  * @param path            The path to be scanned
  * @param depth           The depth of file scanning                             // .e.g. if you only want to save files in "/test" , depth = 0.
@@ -42,11 +45,9 @@ typedef void (*sdcard_scan_cb_t)(void *user_data, char *url);
  * @param filter_num      Number of filters
  * @param user_data       The data to be used by callback function
  *
- * @return ESP_OK   success
- *         ESP_FAIL failed
- *
- * //example  sdcard_scan(callback, "/sdcard", 5, const char *[]{"mp3", "aac"}, 2, user_data);
- * Scan 5 levels folder in sdcard and save mp3 files and aac files.
+ * @return 
+ *     - ESP_OK   success
+ *     - ESP_FAIL failed
  */
 esp_err_t sdcard_scan(sdcard_scan_cb_t cb, const char *path, int depth, const char *file_extension[], int filter_num, void *user_data);
 

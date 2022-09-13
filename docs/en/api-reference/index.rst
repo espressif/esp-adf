@@ -71,6 +71,7 @@ See a table of contents below with links to description of all the above compone
 
     Framework <framework/index>
     Streams <streams/index>
+    Playlist <playlist/index>
     Codecs <codecs/index>
     Audio Processing <audio-processing/index>
     Services <services/index>

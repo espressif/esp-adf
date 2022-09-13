@@ -126,7 +126,7 @@ INPUT = \
     ../../components/wifi_service/include/smart_config.h \
     ../../components/wifi_service/include/esp_wifi_setting.h \
     ../../components/wifi_service/include/wifi_service.h \
-    ../../components/wifi_service/include/wifi_ssid_manager.h
+    ../../components/wifi_service/include/wifi_ssid_manager.h \
     ## Playlist
     ../../components/playlist/include/dram_list.h \
     ../../components/playlist/include/flash_list.h \
