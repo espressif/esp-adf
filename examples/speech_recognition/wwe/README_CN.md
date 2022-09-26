@@ -63,7 +63,7 @@ git apply $ADF_PATH/idf_patches/idf_v4.4_freertos.patch
 
 ### 配置
 
-本例程默认选择的开发板是 `ESP32-S3-Korvo-2 v3.0`，请复制 `sdkconfg.defaults.esp32s3` 为 `sdkconfig.defaults`。如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`，并复制 `sdkconfg.defaults.esp32` 为 `sdkconfig.defaults`。
+本例程默认选择的开发板是 `ESP32-S3-Korvo-2 v3.0`，请先使用 `idf.py set-target esp32s3` 将目标设定为 ESP32S3。如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`，并使用 `idf.py set-target esp32` 将目标设定为 ESP32。在 ESP32 上，`Multinet` 已不再支持，并默认关闭。
 
 ```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
