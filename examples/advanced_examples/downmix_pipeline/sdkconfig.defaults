@@ -1,8 +1,5 @@
 # Override some downmix pipeline defaults
 
-
-
-
 CONFIG_ESP32_DEFAULT_CPU_FREQ_240=y
 CONFIG_ESPTOOLPY_FLASHMODE="dio"
 CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
