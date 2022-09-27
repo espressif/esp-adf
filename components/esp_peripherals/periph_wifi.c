@@ -473,8 +473,11 @@ static esp_err_t _wifi_destroy(esp_periph_handle_t self)
     audio_free(periph_wifi);
     g_periph = NULL;
 
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    ESP_ERROR_CHECK(esp_event_loop_delete_default());
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
     esp_netif_destroy_default_wifi(sta);
+#endif
 #endif
     return ESP_OK;
 }
