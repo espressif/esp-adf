@@ -25,6 +25,7 @@
 #ifndef __CHANNEL_SORT__
 #define __CHANNEL_SORT__
 
+#include <string.h>
 #include "esp_err.h"
 
 #ifdef __cplusplus

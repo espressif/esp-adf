@@ -1,0 +1,27 @@
+.if-label-example_test: &if-label-example_test
+  if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example_test(?:,[^,\n\r]+)*$/i'
+
+.if-schedule: &if-schedule
+  if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+.if-web: &if-web
+  if: '$CI_PIPELINE_SOURCE == "web"'
+
+.if-not-schedule-web: &if-not-schedule-web
+  if: '$CI_PIPELINE_SOURCE != "schedule" && $CI_PIPELINE_SOURCE != "web"'
+
+.if-bot-label-unit-test: &if-bot-label-unit-test
+  if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
+
+.rules:build:example_test:
+  rules:
+    - <<: *if-schedule
+    - <<: *if-web
+    - <<: *if-label-example_test
+
+.rules:build:not_example_test:
+  rules:
+    - if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example_test(?:,[^,\n\r]+)*$/i'
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - <<: *if-bot-label-unit-test
