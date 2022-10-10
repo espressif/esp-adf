@@ -62,7 +62,7 @@ git apply $ADF_PATH/idf_patches/idf_v4.4_freertos.patch
 
 ### Configuration
 
-The default board for this example is `ESP32-S3-Korvo-2 v3.0`. Please copy the content of `sdkconfg.defaults.esp32s3` and paste it into `sdkconfig.defaults`. If you need to run this example on another board, select the board configuration in menuconfig, e.g. select `ESP32-Lyrat-Mini V1.1`, and copy the content of `sdkconfg.defaults.esp32` and paste it into `sdkconfig.defaults`.
+The default board for this example is `ESP32-S3-Korvo-2 v3.0`. Please set target to ESP32S3 with `idf.py set-target esp32s3` first. If you need to run this example on another board, select the board configuration in menuconfig, e.g. select `ESP32-Lyrat-Mini V1.1`, and set target to ESP32 with `idf.py set-target esp32`. For esp32, `Multinet` is no long supported, and it's disabled by default.
 
 ```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
