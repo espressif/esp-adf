@@ -32,6 +32,12 @@
 extern "C" {
 #endif
 
+#define   CNV_AUDIO_VERSION "2.0.0"
+
+#define   CNV_AUDIO_RESOLUTION_BITS          (12)    /*!< The resolution of the Audio determines the maximum loudness level >!*/
+#define   CNV_AUDIO_WINDOW_MAX_WIDTH_DB      (24)    /*!< Represent that the loudness range of led display will not exceed 24 db >!*/
+#define   CNV_AUDIO_REGRESS_THRESHOLD_VOL    (30)    /*!< When the sound is below 30%, the maximum volume value starts to decrease gradually until the default value >!*/
+
 /**
  * @brief Functional options for audio processes
  */
@@ -42,30 +48,27 @@ typedef enum {
     CNV_NONE,
 } cnv_audio_func_option_t;
 
-typedef struct cnv_audio {
-    uint16_t   n_samples;       /*!< The number of audio samples at a time */ 
-    uint16_t   samplerate;      /*!< Audio sampling rate */
-    float      max_rec;         /*!< Dynamic recording of raw audio data maximum threshold. Used to calculate volume */
-    float      default_max_rec; /*!< In a silent environment, this value corresponds to a volume of 100% */
-    float      audio_energy;    /*!< The energy of a frame of data */
-    float      volume;          /*!< Percentage of sound intensity */
-    union {
-        float  energy_ratio;    /*!< Not used */
-        float  energy_sum;      /*!< Audio minimum energy */
-    } min_sound_limit;          /*!< Used to judge whether the minimum sound (source data) threshold is reached */
-} cnv_audio_t;
-
 /**
- * @brief      Calculate the volume, in db
- *
- * @param[in]  source_data           Source data
- * @param[in]  len                   Length of source_data
- * @param[in]  sound_intensity_db    Sound intensity (in DB)
- * 
- * @return
- *     - ESP_OK
+ * @brief Volume calculation type
  */
-esp_err_t cnv_audio_calculate_volume_decibel(char *source_data, int len, float *sound_intensity_db);
+typedef enum {
+    CNV_AUDIO_VOLUME_STATIC,                /*!< Fixed 'energy_max' */
+    CNV_AUDIO_VOLUME_DYNAMIC,               /*!< If the audio frame energy is greater than "variable_energy_max", "variable_energy_max" will be refreshed. Of course, when the signal is small, in order to display the small signal, "variable_energy_max" will quickly fall back to the default setting */
+} cnv_audio_vol_calc_types_t;
+
+typedef struct cnv_audio {
+    uint16_t   n_samples;                   /*!< The number of audio samples at a time */
+    uint16_t   samplerate;                  /*!< Audio sampling rate */
+    uint16_t   window_max_width_db;         /*!< Maximum Loudness level range displayed by led */
+    uint16_t   regress_threshold_vol;       /*!< If the sound energy is lower than this value, the maximum volume will gradually return to the set default maximum value */
+    uint16_t   maxenergy_fall_back_cycle;   /*!< Indicates how many cycles are required for `variable_energy_max` to fall back to `default_energy_max` */
+    float      default_energy_min;          /*!< Audio minimum energy */
+    float      default_energy_max;          /*!< In a silent environment, this value corresponds to a volume of 100% */
+    float      variable_energy_max;         /*!< Maximum energy used to calculate volume */
+    float      audio_energy;                /*!< The energy of a frame of data */
+    float      volume;                      /*!< Percentage of sound intensity */
+    cnv_audio_vol_calc_types_t  vol_calc_types;  /*!< Volume calculation type */
+} cnv_audio_t;
 
 /**
  * @brief      Calculate volume ratio
@@ -101,15 +104,37 @@ esp_err_t cnv_audio_get_volume(cnv_audio_t *audio, uint8_t *volume);
 esp_err_t cnv_audio_adjust_volume_range(cnv_audio_t *audio);
 
 /**
- * @brief      Set the minimum energy sum. Below this value, it is considered as a silent environment
+ * @brief      Set Audio resolution bits.
  *
- * @param[in]  audio             Audio object
- * @param[in]  min_energy_sum    Min energy sum
+ * @param[in]  audio    Audio object
+ * @param[in]  bits     Audio resolution bits
  *
  * @return
  *     - ESP_OK
  */
-esp_err_t cnv_audio_set_min_energy_sum(cnv_audio_t *audio, float min_energy_sum);
+esp_err_t cnv_audio_set_resolution_bits(cnv_audio_t *audio, uint8_t bits);
+
+/**
+ * @brief      Set the minimum energy sum. Below this value, it is considered as a silent environment
+ *
+ * @param[in]  audio                 Audio object
+ * @param[in]  default_energy_min    Default Min energy
+ *
+ * @return
+ *     - ESP_OK
+ */
+esp_err_t cnv_audio_set_min_default_energy(cnv_audio_t *audio, float default_energy_min);
+
+/**
+ * @brief      Set the Default max energy.
+ *
+ * @param[in]  audio                 Audio object
+ * @param[in]  default_energy_max    Default max energy
+ *
+ * @return
+ *     - ESP_OK
+ */
+esp_err_t cnv_audio_set_max_default_energy(cnv_audio_t *audio, float default_energy_max);
 
 /**
  * @brief      Refresh the luminance value of rgb according to the 'volume'
@@ -136,6 +161,16 @@ esp_err_t cnv_audio_update_rgb_by_volume(esp_color_rgb_t *in_color, esp_color_rg
  */
 void cnv_audio_process(cnv_audio_t *audio, void *source_data, void *fft, int in_len, cnv_audio_func_option_t vaule);
 
+/**
+ * @brief      Calculate Loudness level, in db
+ *
+ * @param[in]  rms_value             Audio object
+ * @param[in]  db                    Loudness level
+ *
+ * @return
+ *     - ESP_OK
+ */
+esp_err_t cnv_audio_calculate_loudness_level(float rms_value, float *db);
 #ifdef __cplusplus
 }
 #endif

@@ -1,28 +1,50 @@
 menu "Example Configuration"
 
     config EXAMPLE_LED_TX_CHANNEL
-        int "spi/rmt tx channel"
+        int "SPI/RMT TX channel"
         range 0 10
         default 0
     config EXAMPLE_LED_CTRL_IO
-        int "Led ctrl io"
+        int "LED ctrl IO"
         range 0 30
         default 7
     config EXAMPLE_TOTAL_LEDS
-        int "Total leds"
-        default 30
-    config EXAMPLE_AUDIO_SAMPLE
-        int "Audio_sample"
-        default 16000
-    config EXAMPLE_N_SAMPLE
-        int "N sample"
-        default 256
-    config EXAMPLE_MIN_SOUND_ENERGY
-        int "Min sound energy"
-        default 1000000
-    config EXAMPLE_FFT_DEBUG
-        bool "FFT debug"
-        default false
+        int "Total LEDs"
+        default 16
+
+    menu "Audio"
+        config EXAMPLE_AUDIO_SAMPLE
+            int "Audio sampling rate"
+            default 16000
+        config EXAMPLE_N_SAMPLE
+            int "Number of sampling points of FFT"
+            default 256
+        config EXAMPLE_MIN_SOUND_ENERGY
+            int "Min sound energy threshold"
+            default 12
+        config EXAMPLE_DEFAULT_ENERGY_MAX
+            int "Default max sound energy threshold"
+            default 64
+        choice EXAMPLE_VOL_CALC_TYPES
+            prompt "Volume calculate types"
+            default EXAMPLE_VOL_DYNAMIC_CALC_TYPE
+
+            config EXAMPLE_VOL_STATIC_CALC_TYPE
+                bool "Volume staic calculate"
+                help
+                    Fixed 'energy_max'
+
+            config EXAMPLE_VOL_DYNAMIC_CALC_TYPE
+                bool "Volume dynamic calculation"
+                help
+                    If the audio frame energy is greater than "variable_energy_max", "variable_energy_max" will be refreshed.
+                    Of course, when the signal is small, in order to display the small signal, "variable_energy_max" will quickly fall back to the default setting.
+        endchoice
+        config EXAMPLE_FFT_DEBUG
+            bool "FFT debug"
+            default false
+    endmenu
+
     config EXAMPLE_SOURCE_DATA_DEBUG
         bool "Source data debug"
         default false

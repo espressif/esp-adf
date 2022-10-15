@@ -33,6 +33,7 @@ extern "C" {
 
 #define   SRC_DRV_ADC_CFG_DEFAULT() {                         \
             .audio_samplerate = CNV_AUDIO_SAMPLE,             \
+            .filter_win_size = 20,                            \
 }
 
 /**
@@ -40,6 +41,7 @@ extern "C" {
  */
 typedef struct {
     uint16_t audio_samplerate;   /*!< Audio sampling rate */
+    uint16_t filter_win_size;    /*!< Window size of Slide Avg Filter  */
 } src_drv_config_t;
 
 /**

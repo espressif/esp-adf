@@ -355,6 +355,115 @@ esp_err_t cnv_pattern_energy_mode(cnv_handle_t *handle)
     return ESP_OK;
 }
 
+esp_err_t cnv_pattern_energy_chase_mode(cnv_handle_t *handle)
+{
+    static int32_t rhythm_exit_delay = 0, led_head_pos = 0, move_sign = 0, anti_shake = 0;
+    static uint16_t level, level_pre, x_forward, x_reverse;
+    uint16_t led_total = handle->total_leds;
+    esp_color_rgb_t *color = handle->color;
+    cnv_data_t *out_data = handle->output_data;
+    out_data->frame.coord = audio_calloc(led_total, sizeof(cnv_coord_t));
+    AUDIO_NULL_CHECK(TAG, out_data->frame.coord, return ESP_FAIL);
+    out_data->frame.color = audio_calloc(led_total, sizeof(esp_color_rgb_t));
+    AUDIO_NULL_CHECK(TAG, out_data->frame.color, return ESP_FAIL);
+    out_data->command = PIXELS_REFRESH;
+    out_data->frame_format = COORD_RGB;
+    out_data->length = 0;
+
+    cnv_coord_t coord;
+    coord.y = 0;
+    coord.z = 0;
+    cnv_audio_process(handle->audio, handle->source_data, NULL, handle->audio->n_samples, CNV_AUDIO_VOLUME);
+    if ((handle->audio->audio_energy <= handle->audio->default_energy_min) && (level_pre == 0)) {
+        anti_shake = 0;
+        if (rhythm_exit_delay <= 0) {
+            out_data->frame_format = ONLY_RGB;
+            esp_color_update_rainbow(color);
+            for (int i = 0; i < led_total; i ++) {
+                if ((led_head_pos % led_total == i) || ((led_head_pos + (led_total >> 1)) % led_total == i)) {
+                    cnv_pattern_set_rgb_data((int8_t)color->r * 5 / 100, (int8_t)color->g * 5 / 100, (int8_t)color->b * 5 / 100, out_data);
+                } else if (((led_head_pos + 1) % led_total == i) || ((led_head_pos + 1 + (led_total >> 1)) % led_total == i)) {
+                    cnv_pattern_set_rgb_data((int8_t)color->r * 10 / 100, (int8_t)color->g * 10 / 100, (int8_t)color->b * 10 / 100, out_data);
+                } else if (((led_head_pos + 2) % led_total == i) || ((led_head_pos + 2 + (led_total >> 1)) % led_total == i)) {
+                    cnv_pattern_set_rgb_data((int8_t)color->r * 30 / 100, (int8_t)color->g * 30 / 100, (int8_t)color->b * 30 / 100, out_data);
+                } else if (((led_head_pos + 3) % led_total == i) || ((led_head_pos + 3 + (led_total >> 1)) % led_total == i)) {
+                    cnv_pattern_set_rgb_data((int8_t)color->r * 50 / 100, (int8_t)color->g * 50 / 100, (int8_t)color->b * 50 / 100, out_data);
+                } else if (((led_head_pos + 4) % led_total == i) || ((led_head_pos + 4 + (led_total >> 1)) % led_total == i)) {
+                    cnv_pattern_set_rgb_data(color->r, color->g, color->b, out_data);
+                } else {
+                    cnv_pattern_set_rgb_data(0, 0, 0, out_data);
+                }
+            }
+
+            if (move_sign > 5) {
+                led_head_pos ++;
+                move_sign = 0;
+            }
+            move_sign ++;
+        } else {
+            rhythm_exit_delay --;
+            if (rhythm_exit_delay < 0) {
+                rhythm_exit_delay = 0;
+            }
+        }
+    } else {
+        if ((anti_shake > 2) || (rhythm_exit_delay > 50)) {
+            rhythm_exit_delay = 60;
+            if (!(x_forward | x_reverse)) {
+                x_reverse = (led_total - 1) >> 1;
+                if ((led_total - 1) % 2) {
+                    x_forward = x_reverse + 1;
+                } else {
+                    x_forward = x_reverse;
+                }
+            }
+
+            uint8_t volume = 0;
+            out_data->frame_format = COORD_RGB;
+            cnv_audio_get_volume(handle->audio, &volume);
+            level = (volume * (led_total - 1) / 100) >> 1;
+
+            if (level > level_pre) {
+                level_pre = level;
+                for (int x = 0; x <= level; x ++) {
+                    uint8_t color_r = CNV_PATTERN_RED_BASE_VALUE - CNV_PATTERN_COLOR_SPAN * x * 4;
+                    uint8_t color_g = 0;
+                    uint8_t color_b = CNV_PATTERN_GREEN_BASE_VALUE + CNV_PATTERN_COLOR_SPAN * x * 4;
+                    coord.x = x_forward + x;
+                    cnv_pattern_set_coord_rgb_data(&coord, color_r, color_g, color_b, out_data);
+                    coord.x = x_reverse - x;
+                    cnv_pattern_set_coord_rgb_data(&coord, color_r, color_g, color_b, out_data);
+                }
+            } else {
+                if (level_pre != 0) {
+                    for (int i = (led_total - 1) >> 1; i >= level_pre - 1; i --) {
+                        coord.x = x_forward + (i);
+                        cnv_pattern_set_coord_rgb_data(&coord, 0, 0, 0, out_data);
+                        coord.x = x_reverse - (i);
+                        cnv_pattern_set_coord_rgb_data(&coord, 0, 0, 0, out_data);
+                    }
+                    level_pre --;
+                }
+            }
+        }
+        anti_shake ++;
+    }
+
+    esp_err_t ret = pixel_renderer_fill_data(pixel_renderer_handle, (pixel_renderer_data_t *)out_data, CNV_PATTERN_SEND_TIMEOUT);
+    if (ret) {
+        if (out_data->frame.coord) {
+            free(out_data->frame.coord);
+        }
+        if (out_data->frame.color) {
+            free(out_data->frame.color);
+        }
+        return ESP_FAIL;
+    }
+    /* Since there is no FFT operation, the acquisition frequency is high. The delay here is to compensate for the time it takes to get enough source data */
+    vTaskDelay(5 / portTICK_PERIOD_MS);
+    return ESP_OK;
+}
+
 esp_err_t cnv_pattern_coord_rgb_fmt_test(cnv_handle_t *handle)
 {
     esp_color_rgb_t *color = handle->color;
@@ -371,7 +480,7 @@ esp_err_t cnv_pattern_coord_rgb_fmt_test(cnv_handle_t *handle)
     cnv_coord_t coord;
     coord.y = 0;
     coord.z = 0;
-    for (int x = 0; x < (handle->total_leds >> 1); x ++) {
+    for (int x = 0; x < handle->total_leds; x ++) {
         coord.x = x;
         cnv_pattern_set_coord_rgb_data(&coord, color->r, color->g, color->b, out_data);
     }
