@@ -42,7 +42,7 @@ static const char *TAG = "TAS5805M";
     }
 
 esp_err_t tas5805m_ctrl(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);
-esp_err_t tas5805m_conig_iface(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
+esp_err_t tas5805m_config_iface(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
 static i2c_bus_handle_t     i2c_handler;
 
 /*
@@ -62,7 +62,7 @@ audio_hal_func_t AUDIO_CODEC_TAS5805M_DEFAULT_HANDLE = {
     .audio_codec_initialize = tas5805m_init,
     .audio_codec_deinitialize = tas5805m_deinit,
     .audio_codec_ctrl = tas5805m_ctrl,
-    .audio_codec_config_iface = tas5805m_conig_iface,
+    .audio_codec_config_iface = tas5805m_config_iface,
     .audio_codec_set_mute = tas5805m_set_mute,
     .audio_codec_set_volume = tas5805m_set_volume,
     .audio_codec_get_volume = tas5805m_get_volume,
@@ -258,7 +258,7 @@ esp_err_t tas5805m_ctrl(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state
     return ESP_OK;
 }
 
-esp_err_t tas5805m_conig_iface(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
+esp_err_t tas5805m_config_iface(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
 {
     //TODO
     return ESP_OK;
