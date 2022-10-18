@@ -28,22 +28,12 @@
     - python $UNIT_ASSIGN_SCRIPT $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml $CI_TARGET_UT_TEST_CONFIG_FILE $IDF_PATH/components/idf_test/unit_test/CIConfigs
   interruptible: false
 
-assign_test_v33:
-  extends:
-    - .rules:build:not_example_test
-  <<: *assign_test_template
-  dependencies:
-    - adf_ut_make_v33
-  variables:
-    UNIT_ASSIGN_SCRIPT: "esp-idf/tools/tiny-test-fw/CIAssignUnitTest.py"
-    PYTHON_VER: 3.7.7
-
 assign_test_v44:
   extends:
-    - .rules:build:not_example_test
+    - .rules:build:unit_test
   <<: *assign_test_template
   dependencies:
-    - adf_ut_make_v44
+    - build_ut_v44_make
   variables:
     UNIT_ASSIGN_SCRIPT: "esp-idf/tools/tiny-test-fw/CIAssignUnitTest.py"
     PYTHON_VER: 3.7.7

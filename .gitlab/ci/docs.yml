@@ -1,0 +1,75 @@
+.patterns-docs: &patterns-docs
+  - ".gitlab/ci/docs.yml"
+  - "docs/**/*"
+  - "components/**/*.h"
+  - "components/**/Kconfig*"
+  - "components/**/CMakeList.txt"
+  - "components/**/sdkconfig*"
+  - "tools/kconfig_new/**/*"
+  - "CONTRIBUTING.rst"
+
+.patterns-docs-preview: &patterns-docs-preview
+  - "docs/**/*"
+
+.if-merge_request_event: &if-merge_request_event
+  if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+.if-open-merge-request: &if-open-merge-request
+  if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && ($CI_PIPELINE_SOURCE == "push")'
+
+.if-dev-push: &if-dev-push
+  if: '$CI_COMMIT_REF_NAME != "master" && $CI_COMMIT_BRANCH !~ /^release\/v/ && $CI_COMMIT_TAG !~ /^v\d+\.\d+(\.\d+)?($|-)/ && ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event")'
+
+.if-protected: &if-protected
+  if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/)'
+
+.if-label-build_docs: &if-label-build_docs
+  if: '$BOT_LABEL_BUILD_DOCS || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*build_docs(?:,[^,\n\r]+)*$/i'
+
+.doc-rules:build:docs:
+  rules:
+    - <<: *if-protected
+    - <<: *if-merge_request_event
+    - <<: *if-open-merge-request
+      when: never
+    - <<: *if-label-build_docs
+    - <<: *if-dev-push
+      changes: *patterns-docs
+
+build_docs:
+  stage: build
+  extends:
+    - .doc-rules:build:docs
+  image: $CI_DOCKER_REGISTRY/esp-idf-doc-env:v7
+  when: always
+  tags:
+    - build_docs
+  artifacts:
+    when: always
+    paths:
+      # English version of documentation
+      - docs/en/doxygen-warning-log.txt
+      - docs/en/sphinx-warning-log.txt
+      - docs/en/sphinx-warning-log-sanitized.txt
+      - docs/en/_build/html
+      # Chinese version of documentation
+      - docs/zh_CN/doxygen-warning-log.txt
+      - docs/zh_CN/sphinx-warning-log.txt
+      - docs/zh_CN/sphinx-warning-log-sanitized.txt
+      - docs/zh_CN/_build/html
+    expire_in: 1 mos
+  script:
+    - source /opt/pyenv/activate && pyenv global 3.6.10
+    - pip install "setuptools<57.5.0"
+    - pip install "funcparserlib==0.3.6"
+    - /opt/pyenv/pyenv-1.2.16/versions/3.6.10/bin/python -m pip install --user -r docs/requirements.txt
+    - cd docs
+    - ./check_lang_folder_sync.sh
+    - cd en
+    - make gh-linkcheck
+    - make html
+    - ../check_doc_warnings.sh
+    - cd ../zh_CN
+    - make gh-linkcheck
+    - make html
+    - ../check_doc_warnings.sh
