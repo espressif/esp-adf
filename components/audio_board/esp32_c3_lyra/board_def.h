@@ -25,6 +25,13 @@
 #ifndef _AUDIO_BOARD_DEFINITION_H_
 #define _AUDIO_BOARD_DEFINITION_H_
 
+
+/**
+ * @brief Audio Codec Chip Function Definition
+ */
+#define BOARD_PA_GAIN               (10) /* Power amplifier gain defined by board (dB) */
+
+
 /**
  * @brief ADC Function Definition
  */

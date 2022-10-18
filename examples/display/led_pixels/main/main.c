@@ -48,6 +48,7 @@ void cnv_pattern_register_all_cb(cnv_handle_t *handle)
     cnv_register_pattern_cb(handle, (void *)cnv_pattern_energy_mode, (const char*)"cnv_pattern_energy_mode");
     cnv_register_pattern_cb(handle, (void *)cnv_pattern_spectrum_mode, (const char*)"cnv_pattern_spectrum_mode");
     cnv_register_pattern_cb(handle, (void *)cnv_pattern_only_rgb_fmt_test, (const char*)"cnv_pattern_only_rgb_fm_test");
+    cnv_register_pattern_cb(handle, (void *)cnv_pattern_energy_chase_mode, (const char*)"cnv_pattern_energy_chase_mode");
     cnv_register_pattern_cb(handle, (void *)cnv_pattern_energy_uprush_mode, (const char*)"cnv_pattern_energy_uprush_mode");
     cnv_register_pattern_cb(handle, (void *)cnv_pattern_coord_rgb_fmt_test, (const char*)"cnv_pattern_coord_rgb_fmt_test");
 }
@@ -57,6 +58,7 @@ void cnv_pattern_unregister(cnv_handle_t *handle)
     cnv_unregister_pattern_cb(handle, "cnv_pattern_energy_mode");
     cnv_unregister_pattern_cb(handle, "cnv_pattern_spectrum_mode");
     cnv_unregister_pattern_cb(handle, "cnv_pattern_only_rgb_fm_test");
+    cnv_unregister_pattern_cb(handle, "cnv_pattern_energy_chase_mode");
     cnv_unregister_pattern_cb(handle, "cnv_pattern_energy_uprush_mode");
     cnv_unregister_pattern_cb(handle, "cnv_pattern_coord_rgb_fmt_test");
 }
@@ -118,7 +120,6 @@ int32_t app_main(void)
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
     esp_log_level_set("CNV", ESP_LOG_DEBUG);
-    esp_log_level_set("CNV_AUDIO", ESP_LOG_DEBUG);
     esp_log_level_set("PIXEL_RENDERER", ESP_LOG_DEBUG);
 
     /* Initialize ADC collects audio */
@@ -134,8 +135,9 @@ int32_t app_main(void)
     // cnv_set_cur_pattern(cnv_handle, "cnv_pattern_only_rgb_fm_test");
 #else
     // cnv_set_cur_pattern(cnv_handle, "cnv_pattern_energy_mode");
+    cnv_set_cur_pattern(cnv_handle, "cnv_pattern_energy_chase_mode");
     // cnv_set_cur_pattern(cnv_handle, "cnv_pattern_energy_uprush_mode");
-    cnv_set_cur_pattern(cnv_handle, "cnv_pattern_coord_rgb_fmt_test");
+    // cnv_set_cur_pattern(cnv_handle, "cnv_pattern_coord_rgb_fmt_test");
 #endif
     /* Start-up CNV */
     cnv_run(cnv_handle);

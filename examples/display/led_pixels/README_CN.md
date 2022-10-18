@@ -4,11 +4,11 @@
 
 ## 例程简介
 
-例程演示了通过 ESP32-C3 ADC 获取音频数据，经过 FFT 和能量计算后输出到 LED 像素矩阵进行显示的过程。例程中实现了部分样式，可在 main.c 用 cnv_set_cur_pattern 进行配置。LED 驱动支持了 WS2812，可使用 SPI、RMT 输出。
+例程演示了通过 ESP32-C3 ADC 获取音频数据，经过 FFT 和能量计算后输出到 LED 像素矩阵进行显示的过程。例程中实现了部分样式，可在 main.c 用 `cnv_set_cur_pattern` 进行配置。LED 驱动支持了 WS2812，可使用 SPI、RMT 输出。
 
 ### 例程流程
 
- 1. 通过 `SRC_DRV` 获取源数据。例程使用内部 12 位 ADC，MIC 与音源需要保持较近距离。
+ 1. 通过 `SRC_DRV` 获取源数据。例程使用内部 12 位 ADC。
  2. `CONVERT` 组件会使用在初始化时注册的 source_data_cb 获取源数据。
  3. `CONVERT` 组件会调用在初始化时注册的 PATTERN 回调函数进行 LED 像素的映射。
  4. `CONVERT` 会将映射之后的 LED 数据发到 `PIXEL_RENDERER` 组件。
@@ -163,6 +163,18 @@ LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列�
 - 此例程选择 `ADC1_CHANNEL_0` 采集 ADC 数据。
 - 此例程选择 `GPIO_NUM_7` 发送 WS2812 命令，即 JP2 接口的 GPIO7 连接 LED 的 data 引脚。
 
+### LED 接线方式
+
+请根据负载选择正确的供电方式。详情参考 [esp32-c3-lyra-user-guide](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-c3-lyra-v2.0.html)
+
+| ESP32-C3-Lyra | WS2812 LED |
+| ------------- | ---------- |
+| VCC           | 5V / 12V   |
+| DIN           | DIN        |
+| GND           | GND        |
+
+<div align="center"><img src="./docs/LED_CONNECT.jpg" alt ="ADF Block Diagram" align="center" /></div>
+
 ## 编译和下载
 
 ### IDF 默认分支
@@ -192,13 +204,22 @@ idf.py -p PORT flash monitor
 
 ## 如何使用例程
 
-以下配置都可以使用 `menuconfig` 配置。
+例程默认使用 `cnv_pattern_energy_chase_mode` 模式，可调用 `esp_err_t cnv_set_cur_pattern(cnv_handle_t *handle, const char *pattern_tag)` 选择其他模式。
+
+**参数配置**
+
+以下默认参数可以使用 `menuconfig` 重新配置。
+
+`menuconfig -> Example Configuration -> Audio -> Volume calculate types` 中的两种音量计算方式分别如下：
+- Volume staic calculate：配置此参数则固定了响度级的量程范围，即在响度级量程范围内，响度级越大, 计算出的音量越大，点亮的 LED 越多。反之，响度级越小，计算出的音量越小，点亮的 LED 越少。这里以 `default_energy_max` 计算出的响度级作为固定量程的上限，并以 `default_energy_min` 计算出的响度级作为固定量程的下限。
+- Volume dynamic calculation： 配置此参数使得远距离音源与近距离音源有相似的 LED 响应效果。LED 反映出的响度级窗口量程是可移动的（量程的响度级上限与下限会变化），但量程宽度不会超过 `window_max_width_db`。
+
 ### cnv.h 中可更改配置
 ```
 #define   CNV_AUDIO_SAMPLE          (CONFIG_EXAMPLE_AUDIO_SAMPLE)        /*!< 音频采样率，默认为 16000 */
 #define   CNV_N_SAMPLES             (CONFIG_EXAMPLE_N_SAMPLE)            /*!< FFT 采样点数，默认为 256 */
-#define   CNV_MIN_SOUND_ENERGY      (CONFIG_EXAMPLE_MIN_SOUND_ENERGY)    /*!< 最小声音能量阈值，低于此值被认定为静音环境，默认 10000000 */
-#define   CNV_TOTAL_LEDS            (CONFIG_EXAMPLE_TOTAL_LEDS)          /*!< LED 总数，默认 30 */
+#define   CNV_MIN_SOUND_ENERGY      (CONFIG_EXAMPLE_MIN_SOUND_ENERGY)    /*!< 最小声音能量阈值，低于此值被认定为静音环境，默认 12 */
+#define   CNV_TOTAL_LEDS            (CONFIG_EXAMPLE_TOTAL_LEDS)          /*!< LED 总数，默认 16 */
 #define   CNV_SOURCE_DATA_DEBUG     (CONFIG_EXAMPLE_SOURCE_DATA_DEBUG)   /*!< 原始数据显示 >!*/
 #define   CNV_FFT_DEBUG             (CONFIG_EXAMPLE_FFT_DEBUG)           /*!< FFT数据显示 >!*/
 ```
@@ -274,7 +295,6 @@ I (437) CONVERT: Percentage of sound intensity: 0 %
 
 ## 故障排除
 
-- 数据的流向：SRC_DRV --> CONVERT --> PIXEL_RENDERER。
 - 源数据输入检测：DEBUG 原始数据（例如：ADC 能否录取正常的 1KHz / 2KHz 等音频），可在 `menuconfig` 中开启 `SOURCE_DATA_DEBUG` 打印 `source_data[]`。
 - FFT检测：可在 `menuconfig` 中开启 `FFT_DEBUG` 获取 FFT 操作之后的数据。（注意：频率计算公式：采样率 * X 轴坐标 / 采样点数 = 频率）
 - LED驱动检测：确认 SPI / RMT 引脚配置正确并能生成正确的 WS2812 命令。

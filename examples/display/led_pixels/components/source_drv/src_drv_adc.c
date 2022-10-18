@@ -26,26 +26,39 @@
 #include "freertos/FreeRTOS.h"
 #include "esp_log.h"
 #include "driver/adc.h"
+#include "audio_mem.h"
 #include "src_drv_adc.h"
 
-#define   SRC_DRV_TIMES                (CONFIG_EXAMPLE_N_SAMPLE * 4)
-#define   SRC_DRV_GET_UNIT(x)          ((x>>3) & 0x1)
+#define   SRC_DRV_TIMES                     (CONFIG_EXAMPLE_N_SAMPLE * 4)
+#define   SRC_DRV_GET_UNIT(x)               ((x>>3) & 0x1)
 
 #if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(4, 4, 0))
 #if CONFIG_IDF_TARGET_ESP32C3
-#define   SRC_DRV_ADC_RESULT_BYTE      (4)
-#define   SRC_DRV_ADC_CONV_LIMIT_EN    (0)
-#define   SRC_DRV_ADC_CONV_MODE        (ADC_CONV_ALTER_UNIT)     /* ESP32C3 only supports alter mode */
-#define   SRC_DRV_ADC_OUTPUT_TYPE      (ADC_DIGI_OUTPUT_FORMAT_TYPE2)
-#define   SRC_DRV_ADC_CHANNEL          (ADC1_CHANNEL_0)
+#define   SRC_DRV_ADC_RESULT_BYTE           (4)
+#define   SRC_DRV_ADC_CONV_LIMIT_EN         (0)
+#define   SRC_DRV_ADC_CONV_MODE             (ADC_CONV_ALTER_UNIT)     /* ESP32C3 only supports alter mode */
+#define   SRC_DRV_ADC_OUTPUT_TYPE           (ADC_DIGI_OUTPUT_FORMAT_TYPE2)
+#define   SRC_DRV_ADC_CHANNEL               (ADC1_CHANNEL_0)
 #else
-#define   SRC_DRV_ADC_CHANNEL          (ADC1_CHANNEL_0)
+#define   SRC_DRV_ADC_RESULT_BYTE           (4)
+#define   SRC_DRV_ADC_CHANNEL               (ADC1_CHANNEL_0)
 #endif
-#define   SRC_DRV_ADC_MAX_BUF_SIZE     (4096)
-#define   SRC_DRV_ADC_CONV_LIMIT_NUM   (250)
-#define   SRC_DRV_ADC_DEFAULT_DC       (2374)
+
+#define   SRC_DRV_ADC_UNIT                  (1)
+#define   SRC_DRV_ADC_MAX_BUF_SIZE          (4096)
+#define   SRC_DRV_ADC_CONV_LIMIT_NUM        (250)
+#define   SRC_DRV_ADC_DC_COMPONENT_TIMES    (16000 * 3)
+
+typedef struct {
+    int32_t w_size;
+    int32_t index;
+    float   sum;
+    float  *cache;
+} src_drv_slide_filter_t;
 
 static const char *TAG = "SRC_DRV";
+
+static src_drv_slide_filter_t *filter;
 
 #if CONFIG_IDF_TARGET_ESP32C3
 static uint8_t s_result[SRC_DRV_TIMES] = {0};
@@ -53,6 +66,46 @@ static uint16_t adc1_chan_mask = BIT(SRC_DRV_ADC_CHANNEL);
 static uint16_t adc2_chan_mask = 0;
 static adc_channel_t channel[1] = {SRC_DRV_ADC_CHANNEL};
 #endif
+
+src_drv_slide_filter_t *src_drv_adc_slide_filter_init(int32_t w_size)
+{
+    src_drv_slide_filter_t *filter = audio_calloc(1, sizeof(src_drv_slide_filter_t));
+    if (!filter) {
+        ESP_LOGE(TAG, "Initialization failed");
+        return NULL;
+    }
+    filter->cache = (float *)audio_calloc(1, sizeof(float) * w_size);
+    if (!filter->cache) {
+        ESP_LOGE(TAG, "Cache space request failed");
+        return NULL;
+    }
+    memset(filter->cache, 0, sizeof(float) * w_size);
+
+    filter->w_size = w_size;
+    filter->sum = 0;
+    filter->index = 0;
+    return filter;
+}
+
+esp_err_t src_drv_adc_slide_filter_deinit(src_drv_slide_filter_t *filter)
+{
+    if (filter) {
+        if (filter->cache) {
+            free(filter->cache);
+        }
+        free(filter);
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
+float src_drv_adc_slide_filter(src_drv_slide_filter_t *filter, float value)
+{
+    filter->cache[filter->index] = value;
+    filter->index = (filter->index + 1) % filter->w_size;
+    filter->sum = filter->sum + value - filter->cache[filter->index];
+    return (filter->sum / (float)filter->w_size);
+}
 
 /**
  * @brief      The ADC initialization
@@ -100,6 +153,8 @@ esp_err_t src_drv_adc_init(src_drv_config_t *config)
     ESP_ERROR_CHECK(adc_digi_controller_configure(&dig_cfg));
     ret |= adc_digi_start();
 #endif
+
+    filter = src_drv_adc_slide_filter_init(config->filter_win_size);
     return ret;
 }
 
@@ -108,6 +163,7 @@ esp_err_t src_drv_adc_deinit(void)
     esp_err_t ret = ESP_OK;
     ret |= adc_digi_stop();
     ret |= adc_digi_deinitialize();
+    ret |= src_drv_adc_slide_filter_deinit(filter);
     return ret;
 }
 
@@ -125,7 +181,7 @@ static uint16_t get_audio_data(float *source_data, int size, int16_t dc_componen
     uint16_t count = 0;
 
 #if CONFIG_IDF_TARGET_ESP32C3
-    uint32_t ret_num = 0, adc_unit = 1;
+    uint32_t ret_num = 0;
     adc_digi_read_bytes(s_result, size, &ret_num, 10);
 
     for (int i = 0; i < ret_num; i += SRC_DRV_ADC_RESULT_BYTE) {
@@ -133,8 +189,8 @@ static uint16_t get_audio_data(float *source_data, int size, int16_t dc_componen
         if (p->type2.channel >= SOC_ADC_CHANNEL_NUM((const unsigned int)p->type2.unit)) {
             ESP_LOGW(TAG, "Invalid data [%d_%d_%x]", p->type2.unit + 1, p->type2.channel, p->type2.data);
         } else {
-            if ((p->type2.unit + 1 == adc_unit) && (p->type2.channel == SRC_DRV_ADC_CHANNEL) && ((float)p->type2.data > 0.001 )) {
-                source_data[count] = (float)(p->type2.data - dc_component);
+            if ((p->type2.unit + 1 == SRC_DRV_ADC_UNIT) && (p->type2.channel == SRC_DRV_ADC_CHANNEL) && ((float)p->type2.data > 0.001 )) {
+                source_data[count] = src_drv_adc_slide_filter(filter, (float)(p->type2.data - dc_component));
                 count ++;
             }
         }
@@ -149,19 +205,32 @@ void src_drv_get_adc_data(void *source_data, int size, void *ctx)
 {
     float *data = (float *)source_data;
     static int16_t dc_component = 0;
-    if (dc_component == 0) {
+    if (!dc_component) {
         /* Calculate the DC component */
-        uint16_t count = get_audio_data(data, size, dc_component);
-        for (int i = 1; i < count; i ++) {
-            data[0] += data[i];
-        }
-        dc_component = data[0] / count;
-        ESP_LOGI(TAG, "dc_component: %d", dc_component);
-        if ((dc_component > (SRC_DRV_ADC_DEFAULT_DC + 100)) || (dc_component < (SRC_DRV_ADC_DEFAULT_DC - 100))) {
-            dc_component = SRC_DRV_ADC_DEFAULT_DC;    /* DC component default value */
+        uint32_t count = 0,ret_num = 0;
+        static uint8_t s_dc_result[SRC_DRV_ADC_DC_COMPONENT_TIMES] = {0};
+        memset(s_dc_result, 0xcc, SRC_DRV_ADC_DC_COMPONENT_TIMES);
+        double dc = 0;
+        while (1) {
+            adc_digi_read_bytes(s_dc_result, SRC_DRV_ADC_DC_COMPONENT_TIMES >> 1, &ret_num, ADC_MAX_DELAY);
+            for (int i = 0; i < ret_num; i += SRC_DRV_ADC_RESULT_BYTE) {
+                adc_digi_output_data_t *p = (void*)&s_dc_result[i];
+                if (p->type2.channel >= SOC_ADC_CHANNEL_NUM((const unsigned int)p->type2.unit)) {
+                    ESP_LOGW(TAG, "Invalid data [%d_%d_%x]", p->type2.unit + 1, p->type2.channel, p->type2.data);
+                } else {
+                    if ((p->type2.unit + 1 == SRC_DRV_ADC_UNIT) && (p->type2.channel == SRC_DRV_ADC_CHANNEL) && ((float)p->type2.data > 0.001 )) {
+                        dc += (double)(p->type2.data);
+                        count ++;
+                    }
+                }
+            }
+            if (count > SRC_DRV_ADC_DC_COMPONENT_TIMES) {
+                dc_component = dc / count;
+                ESP_LOGI(TAG, "The dc_component %d", dc_component);
+                break;
+            }
         }
     }
-
     get_audio_data(data, size, dc_component);
 }
 
