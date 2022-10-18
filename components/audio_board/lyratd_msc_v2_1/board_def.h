@@ -44,6 +44,7 @@
 #define CODEC_ADC_BITS_PER_SAMPLE I2S_BITS_PER_SAMPLE_16BIT
 #define CODEC_ADC_SAMPLE_RATE     (44100)
 #define RECORD_HARDWARE_AEC       (false)
+#define BOARD_PA_GAIN             (20) /* Power amplifier gain defined by board (dB) */
 
 extern audio_hal_func_t AUDIO_CODEC_ZL38063_DEFAULT_HANDLE;
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \

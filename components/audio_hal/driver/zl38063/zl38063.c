@@ -30,13 +30,24 @@
 #include "driver/gpio.h"
 #include "tw_spi_access.h"
 #include "board.h"
-
+#include "audio_volume.h"
 
 static const char *TAG = "zl38063";
 
-static int8_t tw_vol[15] = { -90, -45, -30, -23, -16, -10, -4, -1, 0, 1, 2, 3, 4, 5, 6};
-
 static int codec_init_flag = 0;
+static codec_dac_volume_config_t *dac_vol_handle;
+
+#define ZL38063_DAC_VOL_CFG_DEFAULT() {                     \
+    .max_dac_volume = 6,                                    \
+    .min_dac_volume = -90,                                  \
+    .board_pa_gain = BOARD_PA_GAIN,                         \
+    .volume_accuracy = 1,                                   \
+    .dac_vol_symbol = 1,                                    \
+    .zero_volume_reg = 0,                                   \
+    .reg_value = 0,                                         \
+    .user_volume = 0,                                       \
+    .offset_conv_volume = NULL,                             \
+}
 
 audio_hal_func_t AUDIO_CODEC_ZL38063_DEFAULT_HANDLE = {
     .audio_codec_initialize = zl38063_codec_init,
@@ -81,6 +92,9 @@ esp_err_t zl38063_codec_init(audio_hal_codec_config_t *cfg)
     gpio_set_level(get_pa_enable_gpio(), 1);            //enable PA
     gpio_set_level(get_reset_board_gpio(), 0);      //enable DSP
     codec_init_flag = 1;
+
+    codec_dac_volume_config_t vol_cfg = ZL38063_DAC_VOL_CFG_DEFAULT();
+    dac_vol_handle = audio_codec_volume_init(&vol_cfg);
     return ESP_OK;
 }
 
@@ -89,6 +103,7 @@ esp_err_t zl38063_codec_deinit(void)
     gpio_set_level(get_pa_enable_gpio(), 0);
     gpio_set_level(get_reset_board_gpio(), 1);
     codec_init_flag = 0;
+    audio_codec_volume_deinit(dac_vol_handle);
     return ESP_OK;
 }
 
@@ -108,29 +123,38 @@ esp_err_t zl38063_codec_set_voice_mute(bool mute)
     return ESP_OK;
 }
 
+/**
+ * @param volume: 0 ~ 100, 0 means mute
+ *
+ * @note Register values. 0xA6: -90 dB, 0xCE: -50 dB, 0x00: 0 dB, 0x06: 6 dB
+ * @note Accuracy of gain is 1 dB
+ *
+ * @return
+ *     - (-1)  Error
+ *     - (0)   Success
+ */
 esp_err_t zl38063_codec_set_voice_volume(int volume)
 {
     int ret = 0;
-    if (volume < 0 ) {
-        volume = 0;
-    } else if (volume >= 100) {
-        volume = 100;
-    }
-    int k = volume / 7;
-    ret = VprocTwolfSetVolume(tw_vol[k]);
+    uint8_t reg = 0;
+    reg = audio_codec_get_dac_reg_value(dac_vol_handle, volume);
+    ret = VprocTwolfSetVolume(reg);
+    ESP_LOGD(TAG, "Set volume:%.2d reg_value:0x%.2x dB:%.1f", dac_vol_handle->user_volume, reg,
+            (int8_t) reg * 1.0);
     return ret;
 }
 
 esp_err_t zl38063_codec_get_voice_volume(int *volume)
 {
     int ret = 0;
-    int8_t vol = 0;
-    ret = VprocTwolfGetVolume(&vol);
-    *volume = 0;
-    for (int i = 0; i < sizeof(tw_vol); ++i) {
-        if (vol == tw_vol[i]) {
-            *volume = i * 7;
-        }
+    int8_t reg = 0;
+    ret = VprocTwolfGetVolume(&reg);
+    if (reg == (int8_t) dac_vol_handle->reg_value) {
+        *volume = dac_vol_handle->user_volume;
+    } else {
+        *volume = 0;
+        ret = ESP_FAIL;
     }
+    ESP_LOGD(TAG, "Get volume:%.2d reg_value:0x%x", *volume, (uint8_t)reg);
     return ret;
 }

@@ -27,6 +27,7 @@
 #include "board.h"
 #include "esp_log.h"
 #include "es8311.h"
+#include "audio_volume.h"
 
 /* ES8311 address
  * 0x32:CE=1;0x30:CE=0
@@ -50,6 +51,19 @@
 #define MCLK_DIV_FRE        256
 
 static i2c_bus_handle_t i2c_handle;
+static codec_dac_volume_config_t *dac_vol_handle;
+
+#define ES8311_DAC_VOL_CFG_DEFAULT() {                      \
+    .max_dac_volume = 32,                                   \
+    .min_dac_volume = -95.5,                                \
+    .board_pa_gain = BOARD_PA_GAIN,                         \
+    .volume_accuracy = 0.5,                                 \
+    .dac_vol_symbol = 1,                                    \
+    .zero_volume_reg = 0xBF,                                \
+    .reg_value = 0,                                         \
+    .user_volume = 0,                                       \
+    .offset_conv_volume = NULL,                             \
+}
 
 /*
  * operate function of codec
@@ -279,13 +293,6 @@ static void es8311_suspend(void)
 */
 void es8311_pa_power(bool enable)
 {
-    gpio_config_t  io_conf;
-    memset(&io_conf, 0, sizeof(io_conf));
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
-    io_conf.pull_down_en = 0;
-    io_conf.pull_up_en = 0;
-    gpio_config(&io_conf);
     if (enable) {
         gpio_set_level(get_pa_enable_gpio(), 1);
     } else {
@@ -480,13 +487,26 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
     ret |= es8311_write_reg(ES8311_ADC_REG1B, 0x0A);
     ret |= es8311_write_reg(ES8311_ADC_REG1C, 0x6A);
 
+    /* pa power gpio init */
+    gpio_config_t  io_conf;
+    memset(&io_conf, 0, sizeof(io_conf));
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+    /* enable pa power */
     es8311_pa_power(true);
+
+    codec_dac_volume_config_t vol_cfg = ES8311_DAC_VOL_CFG_DEFAULT();
+    dac_vol_handle = audio_codec_volume_init(&vol_cfg);
     return ESP_OK;
 }
 
 esp_err_t es8311_codec_deinit()
 {
     i2c_bus_delete(i2c_handle);
+    audio_codec_volume_deinit(dac_vol_handle);
     return ESP_OK;
 }
 
@@ -660,17 +680,26 @@ esp_err_t es8311_stop(es_module_t mode)
     return ret;
 }
 
+/**
+ * @brief Set voice volume
+ *
+ * @note Register values. 0x00: -95.5 dB, 0x5B: -50 dB, 0xBF: 0 dB, 0xFF: 32 dB
+ * @note Accuracy of gain is 0.5 dB
+ *
+ * @param volume: voice volume (0~100)
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
 esp_err_t es8311_codec_set_voice_volume(int volume)
 {
     esp_err_t res = ESP_OK;
-    if (volume < 0) {
-        volume = 0;
-    } else if (volume > 100) {
-        volume = 100;
-    }
-    int vol = (volume) * 2550 / 1000;
-    ESP_LOGD(TAG, "SET: volume:%d", vol);
-    es8311_write_reg(ES8311_DAC_REG32, vol);
+    uint8_t reg = 0;
+    reg = audio_codec_get_dac_reg_value(dac_vol_handle, volume);
+    res = es8311_write_reg(ES8311_DAC_REG32, reg);
+    ESP_LOGD(TAG, "Set volume:%.2d reg_value:0x%.2x dB:%.1f", dac_vol_handle->user_volume, reg,
+            audio_codec_cal_dac_volume(dac_vol_handle));
     return res;
 }
 
@@ -683,9 +712,14 @@ esp_err_t es8311_codec_get_voice_volume(int *volume)
         *volume = 0;
         res = ESP_FAIL;
     } else {
-        *volume = regv * 100 / 256;
+        if (regv == dac_vol_handle->reg_value) {
+            *volume = dac_vol_handle->user_volume;
+        } else {
+            *volume = 0;
+            res = ESP_FAIL;
+        }
     }
-    ESP_LOGD(TAG, "GET: res:%d, volume:%d", regv, *volume);
+    ESP_LOGD(TAG, "Get volume:%.2d reg_value:0x%.2x", *volume, regv);
     return res;
 }
 

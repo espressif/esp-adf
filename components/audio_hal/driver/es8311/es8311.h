@@ -171,7 +171,7 @@ esp_err_t es8311_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i
 esp_err_t es8311_set_voice_mute(bool enable);
 
 /**
- * @brief  Set voice volume
+ * @brief Set voice volume
  *
  * @param volume:  voice volume (0~100)
  *
