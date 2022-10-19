@@ -25,6 +25,8 @@
 #include "wav_encoder.h"
 #elif defined (CONFIG_CHOICE_OPUS_ENCODER)
 #include "opus_encoder.h"
+#elif defined (CONFIG_CHOICE_AAC_ENCODER)
+#include "aac_encoder.h"
 #if defined (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
 #include "filter_resample.h"
 #endif
@@ -44,6 +46,12 @@ static const char *TAG = "RECORD_TO_SDCARD";
 #define CHANNEL             1
 #define BIT_RATE            64000
 #define COMPLEXITY          10
+#endif
+
+#if defined (CONFIG_CHOICE_AAC_ENCODER)
+#define SAMPLE_RATE         16000
+#define CHANNEL             2
+#define BIT_RATE            80000
 #endif
 
 void app_main(void)
@@ -80,6 +88,17 @@ void app_main(void)
     i2s_cfg.type = AUDIO_STREAM_READER;
 #if defined (CONFIG_CHOICE_WAV_ENCODER)
 #elif defined (CONFIG_CHOICE_OPUS_ENCODER)
+    i2s_cfg.i2s_config.sample_rate = SAMPLE_RATE;
+    if (CHANNEL == 1) {
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+#else
+        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+#endif
+    } else {
+        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+    }
+#elif defined (CONFIG_CHOICE_AAC_ENCODER)
     i2s_cfg.i2s_config.sample_rate = SAMPLE_RATE;
     if (CHANNEL == 1) {
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
@@ -140,6 +159,26 @@ void app_main(void)
     }
 #endif
     audio_encoder = encoder_opus_init(&opus_cfg);
+#elif defined (CONFIG_CHOICE_AAC_ENCODER)
+    aac_encoder_cfg_t aac_cfg = DEFAULT_AAC_ENCODER_CONFIG();
+    aac_cfg.sample_rate        = SAMPLE_RATE;
+    aac_cfg.channel            = CHANNEL;
+    aac_cfg.bitrate            = BIT_RATE;
+#if defined (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
+    rsp_filter_cfg_t rsp_file_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_file_cfg.src_rate = SAMPLE_RATE;
+    rsp_file_cfg.src_ch = 2;
+    rsp_file_cfg.dest_rate = SAMPLE_RATE;
+    rsp_file_cfg.dest_ch = 1;
+    rsp_file_cfg.complexity = 0;
+    rsp_file_cfg.down_ch_idx = 1;
+    audio_element_handle_t resample = rsp_filter_init(&rsp_file_cfg);
+    if (aac_cfg.channel == 2) {
+        ESP_LOGE(TAG, "esp_lyrat_mini only support one channel");
+        return;
+    }
+#endif
+    audio_encoder = aac_encoder_init(&aac_cfg);
 #elif defined CONFIG_CHOICE_AMR_WB_ENCODER
     amrwb_encoder_cfg_t amrwb_enc_cfg = DEFAULT_AMRWB_ENCODER_CONFIG();
     audio_encoder = amrwb_encoder_init(&amrwb_enc_cfg);
@@ -155,6 +194,8 @@ void app_main(void)
     audio_pipeline_register(pipeline, audio_encoder, "wav");
 #elif defined (CONFIG_CHOICE_OPUS_ENCODER)
     audio_pipeline_register(pipeline, audio_encoder, "opus");
+#elif defined (CONFIG_CHOICE_AAC_ENCODER)
+    audio_pipeline_register(pipeline, audio_encoder, "aac");
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     audio_pipeline_register(pipeline, resample, "res");
 #endif
@@ -177,6 +218,14 @@ void app_main(void)
     const char *link_tag[3] = {"i2s", "opus", "file"};
     audio_pipeline_link(pipeline, &link_tag[0], 3);
 #endif
+#elif defined (CONFIG_CHOICE_AAC_ENCODER)
+#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+    const char *link_tag[4] = {"i2s", "res", "aac", "file"};
+    audio_pipeline_link(pipeline, &link_tag[0], 4);
+#else
+    const char *link_tag[3] = {"i2s", "aac", "file"};
+    audio_pipeline_link(pipeline, &link_tag[0], 3);
+#endif
 #elif defined (CONFIG_CHOICE_AMR_WB_ENCODER)
     const char *link_tag[3] = {"i2s", "Wamr", "file"};
     audio_pipeline_link(pipeline, &link_tag[0], 3);
@@ -196,6 +245,8 @@ void app_main(void)
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.wav");
 #elif defined (CONFIG_CHOICE_OPUS_ENCODER)
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.opus");
+#elif defined (CONFIG_CHOICE_AAC_ENCODER)
+    audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.aac");
 #elif defined (CONFIG_CHOICE_AMR_WB_ENCODER)
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/rec.Wamr");
 #elif defined (CONFIG_CHOICE_AMR_NB_ENCODER)
@@ -227,7 +278,6 @@ void app_main(void)
             }
             continue;
         }
-
         /* Stop when the last pipeline element (fatfs_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) fatfs_stream_writer
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
@@ -246,7 +296,7 @@ void app_main(void)
     audio_pipeline_unregister(pipeline, i2s_stream_reader);
     audio_pipeline_unregister(pipeline, fatfs_stream_writer);
 
-#if defined (CONFIG_CHOICE_OPUS_ENCODER) && defined (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
+#if defined (CONFIG_CHOICE_OPUS_ENCODER) && defined (CONFIG_CHOICE_AAC_ENCODER) && defined (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
     audio_pipeline_unregister(pipeline, resample);
 #endif
 
@@ -264,7 +314,7 @@ void app_main(void)
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(fatfs_stream_writer);
     audio_element_deinit(i2s_stream_reader);
-#if defined (CONFIG_CHOICE_OPUS_ENCODER) && defined (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
+#if defined (CONFIG_CHOICE_OPUS_ENCODER) && defined (CONFIG_CHOICE_AAC_ENCODER) && defined (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
     audio_element_deinit(resample);
 #endif
     audio_element_deinit(audio_encoder);

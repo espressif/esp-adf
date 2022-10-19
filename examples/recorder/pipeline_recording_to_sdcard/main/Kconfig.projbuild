@@ -12,6 +12,9 @@ config CHOICE_WAV_ENCODER
 config CHOICE_OPUS_ENCODER
     bool "opus encoder"
 
+config CHOICE_AAC_ENCODER
+    bool "aac encoder"
+
 config CHOICE_AMR_NB_ENCODER
     bool "amrnb encoder"
 
