@@ -149,7 +149,6 @@ ESP32-C3-Lyra 的主要组件和连接方式如下图所示。
 
 默认固件测试
 ^^^^^^^^^^^^^^^^^^^^^^^^
-
    .. note::
 
      若您使用《ESP32-C3 物联网工程开发实战》套餐二中的 ESP32-C3-Lyra 进行开发，请跳过此环节。
@@ -221,7 +220,7 @@ ESP32-C3-Lyra 的开发框架是 `ESP-ADF <https://github.com/espressif/esp-adf>
      - –
    * - 扬声器
      - 1
-     - 建建议使用 4 欧姆 3 瓦的扬声器，并配备 PH 2 mm 间距，1 x 2 P 的插孔端子。如果没有这种类型的插头，也可以使用杜邦母跳线进行开发。
+     - 建议使用 4 欧姆 3 瓦的扬声器，并配备 PH 2 mm 间距，1 x 2 P 的插孔端子。如果没有这种类型的插头，也可以使用杜邦母跳线进行开发。
 
 
 可选硬件
@@ -237,15 +236,13 @@ ESP32-C3-Lyra 的开发框架是 `ESP-ADF <https://github.com/espressif/esp-adf>
    * - 12 V 直流适配器
      - 1
      - 适配器为 12 V LED 灯带提供电源，最大工作电流为 2 A。
-   * - 5 V 或 12 V 可寻址 LED 灯带
+   * - 5 V 或 12 V 可寻址 LED 灯带/灯环
      - 1
-     - 应为带有 4 x 1 P，2.54 mm 间距的排母连接器。建议使用 WS2812 或 WS2811 LED 灯带。此 LED 灯带应连接到 **可寻址 LED 灯带端口** (:ref:`JP2 <addressable-led-strip-connector>`)。
+     - 建议使用 WS2812 或 WS2811 LED 灯带（4 x 1 P，2.54 mm 间距的排母连接器）/16 颗灯珠的 WS2812 LED 灯环（3 x 1 P，2.54 mm 间距的排母连接器）。此 LED 灯带/灯环应连接到 **可寻址 LED 灯带端口** (:ref:`JP2 <addressable-led-strip-connector>`)。
    * - 5 V 或 12 V RGB LED 灯带
      - 1
      - 应为带有 4 x 1 P，2.54 mm 间距的排母连接器。此 LED 灯带应连接到 **RGB LED 灯带端口** (:ref:`JP1 <rgb-led-strip-connector>`)。
-   * - NeoPixel 灯环
-     - 1
-     - 带有集成驱动器的 12 x 5050 RGB LED 灯环。
+
 
 电源选项
 --------------------
@@ -293,7 +290,7 @@ ESP32-C3-Lyra 的开发框架是 `ESP-ADF <https://github.com/espressif/esp-adf>
 GPIO 分配列表
 ---------------
 
-表 `table <../../_static/esp32-c3-lyra-gpio-allocation.pdf>`_ 为 ESP32-C3-WROOM-02 模组管脚的 GPIO 分配列表，用于控制开发板的特定组件或功能。
+`表 <../../../_static/esp32-c3-lyra-gpio-allocation.pdf>`_ 为 ESP32-C3-WROOM-02 模组管脚的 GPIO 分配列表，用于控制开发板的特定组件或功能。
 
 供电说明
 ------------------
