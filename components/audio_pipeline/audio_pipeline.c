@@ -840,6 +840,8 @@ esp_err_t audio_pipeline_breakup_elements(audio_pipeline_handle_t pipeline, audi
                     kept = false;
                     audio_element_set_input_ringbuf(el_item->el, NULL);
                     break;
+                } else {
+                    el_item->linked = false;
                 }
             }
         }
