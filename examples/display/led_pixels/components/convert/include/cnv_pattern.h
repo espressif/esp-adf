@@ -65,6 +65,17 @@ esp_err_t cnv_pattern_energy_uprush_mode(cnv_handle_t *handle);
 esp_err_t cnv_pattern_energy_mode(cnv_handle_t *handle);
 
 /**
+ * @brief      Energy chasing mode
+ *
+ * @param[in]  handle    The Convert handle
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t cnv_pattern_energy_chase_mode(cnv_handle_t *handle);
+
+/**
  * @brief      Coord RGB data test mode
  *
  * @param[in]  handle    The Convert handle

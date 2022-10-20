@@ -33,7 +33,6 @@
 #include "pixel_renderer.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
-#define   CNV_AUDIO_DEFAULT_MAX_REC (3000000)
 #define   CNV_STOP_WAITTIME         (8000 / portTICK_RATE_MS)
 
 static const char *TAG = "CNV";
@@ -62,11 +61,20 @@ cnv_handle_t *cnv_init(cnv_config_t *config)
     handle->audio = audio_calloc(1, sizeof(cnv_audio_t));
     AUDIO_NULL_CHECK(TAG, handle->audio, goto _cnv_failed);
     handle->audio->audio_energy = 0;
-    handle->audio->max_rec = 0;
-    handle->audio->default_max_rec = CNV_AUDIO_DEFAULT_MAX_REC;
-    handle->audio->min_sound_limit.energy_sum = config->min_energy_sum;
+    handle->audio->variable_energy_max = config->default_energy_max;
+    handle->audio->default_energy_max = config->default_energy_max;
+    handle->audio->default_energy_min = config->default_energy_min;
+    handle->audio->window_max_width_db = config->window_max_width_db;
+    handle->audio->regress_threshold_vol = config->regress_threshold_vol;
     handle->audio->samplerate = config->audio_samplerate;
     handle->audio->n_samples = config->n_samples;
+#if CONFIG_EXAMPLE_VOL_STATIC_CALC_TYPE
+    handle->audio->vol_calc_types = CNV_AUDIO_VOLUME_STATIC;
+#elif CONFIG_EXAMPLE_VOL_DYNAMIC_CALC_TYPE
+    handle->audio->vol_calc_types = CNV_AUDIO_VOLUME_DYNAMIC;
+    handle->audio->maxenergy_fall_back_cycle = 3;
+#endif
+    cnv_audio_set_resolution_bits(handle->audio, CNV_AUDIO_RESOLUTION_BITS);
 
     /* Create fft related array */
     handle->fft_array = config->fft_array;

@@ -46,7 +46,6 @@ The main features of the board are listed below:
 Block Diagram
 -------------
 
-
 The block diagram below shows the components of ESP32-C3-Lyra and their interconnections.
 
 .. figure:: ../../../_static/esp32-c3-lyra-block-diagram.png
@@ -114,7 +113,7 @@ The key components of the board are described in a clockwise direction.
    * - Microphone
      - On-board ECM microphone. Signals picked up by it are amplified via transistors and sent to the analog-to-digital converter (ADC) of ESP32-C3-WROOM-02.
    * - System LED
-     - It is controlled via GPIO by ESP32-C3-WROOM-02 to indicate certain operation states of the audio application using dedicated APIs.
+     - It is an RGB LED, model WS2812C, controlled by the ESP32-C3-WROOM-02 via GPIO, which can be used to indicate the operating status of the audio application.
 
 
 Default Firmware and Function Test
@@ -122,6 +121,9 @@ Default Firmware and Function Test
 
 Each ESP32-C3-Lyra comes with a pre-built default firmware that allows you to test its functions including LED control (LEDC), remote control transceiver (RMT), ADC, and pulse-density modulation (PDM_TX). This section describes how to test peripheral's function with the pre-built firmware.
 
+   .. note::
+
+    The default firmware of ESP32-C3-Lyra sold in the Developing IoT Projects with ESP32-C3 Package II provides a musical rhythm light ring effect.
 
 Preparing Hardware
 ^^^^^^^^^^^^^^^^^^
@@ -147,6 +149,9 @@ Connecting Hardware
 
 Testing Default Firmware
 ^^^^^^^^^^^^^^^^^^^^^^^^
+   .. note::
+
+     If you are developing with ESP32-C3-Lyra provided in the Developing IoT Projects with ESP32-C3 Package II, please skip this step.
 
 #. Press the **Reset Press Key** on the board.
 #. The board automatically starts the flash test. The log shown on a PC connected to **USB-to-UART Port** is as follows:
@@ -237,6 +242,9 @@ Optional Hardware
    * - 5 V or 12 V RGB LED strip
      - 1
      - It should have a female connector with 4 x 1 pins and a 2.54 mm pitch. This LED strip should be connected to **RGB LED Strip Port** (:ref:`JP1 <rgb-led-strip-connector>`).
+   * - NeoPixel Ring
+     - 1
+     - 12 x 5050 RGB LED with Integrated Drivers.
 
 
 Power Supply Options
@@ -255,8 +263,8 @@ Prepare the board for loading of the first sample application:
 
 #. Connect the speaker to the **Speaker Output Port**.
 #. (Optional) Connect the LED strip to the development board through the **Addressable LED Strip Port** or the **RGB LED Port** depending on the type of your LED strip.
-#. Connect the power supply to the development board through the **USB Power Port** (5 V) or the **12 V DC Power Port** depending on the working voltage and current of your LED strip.  
-#. (Optional) Toggle the **LED Strip Power Selection Switch** accordingly to supply power for your LED strip. 
+#. Connect the power supply to the development board through the **USB Power Port** (5 V) or the **12 V DC Power Port** accordingly to supply power for your LED strip.
+#. (Optional) Toggle the **LED Strip Power Selection Switch** depending on the working voltage and current of your LED strip.
 
    .. note::
 
@@ -306,9 +314,9 @@ There are two ways to power the development board: 5 V USB Power Port or 12 V/2 
 
 .. figure:: ../../../_static/esp32-c3-lyra-12v-dc-ps.png
     :align: center
-    :alt: ESP32-C3-Lyra - Power Supply from 12V DC Input
+    :alt: ESP32-C3-Lyra - Power Supply from 12 V DC Input
 
-    ESP32-C3-Lyra - Power Supply from 12V DC Input
+    ESP32-C3-Lyra - Power Supply from 12 V DC Input
 
 
 LED Strip Power Selection Switch
@@ -469,9 +477,9 @@ Ordering
 
 If you order a few samples, each board comes in an individual package.
 
-For retail orders, please go to https://www.espressif.com/en/company/contact/buy-a-sample.
+For retail orders, please go to the official website https://www.espressif.com/en/company/contact/buy-a-sample, or directly order in our Taobao shop https://world.taobao.com/item/677273363812.htm?spm=a21wu.12321156-tw.recommend-tpp.4.19a61924ZMaqpf.
 
-For wholesale orders, please go to https://www.espressif.com/en/contact-us/sales-questions.
+For wholesale orders, please go to the official website https://www.espressif.com/en/contact-us/sales-questions.
 
 
 Related Documents

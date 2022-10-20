@@ -41,15 +41,18 @@ extern "C" {
 #define   CNV_SOURCE_DATA_DEBUG     (CONFIG_EXAMPLE_SOURCE_DATA_DEBUG)   /*!< Print source data >!*/
 #define   CNV_FFT_DEBUG             (CONFIG_EXAMPLE_FFT_DEBUG)           /*!< Print the data after FFT >!*/
 
-#define   CNV_CFG_DEFAULT() {                                          \
-            .source_size             = 2048,                           \
-            .audio_samplerate        = CNV_AUDIO_SAMPLE,               \
-            .n_samples               = CNV_N_SAMPLES,                  \
-            .min_energy_sum          = CNV_MIN_SOUND_ENERGY,           \
-            .total_leds              = CNV_TOTAL_LEDS,                 \
-            .task_stack              = 3072,                           \
-            .task_core               = 0,                              \
-            .task_prio               = 12,                             \
+#define   CNV_CFG_DEFAULT() {                                             \
+            .source_size             = 2048,                              \
+            .audio_samplerate        = CNV_AUDIO_SAMPLE,                  \
+            .n_samples               = CNV_N_SAMPLES,                     \
+            .default_energy_min      = CNV_MIN_SOUND_ENERGY,              \
+            .default_energy_max      = CONFIG_EXAMPLE_DEFAULT_ENERGY_MAX, \
+            .window_max_width_db     = CNV_AUDIO_WINDOW_MAX_WIDTH_DB,     \
+            .regress_threshold_vol   = CNV_AUDIO_REGRESS_THRESHOLD_VOL,   \
+            .total_leds              = CNV_TOTAL_LEDS,                    \
+            .task_stack              = 3072,                              \
+            .task_core               = 0,                                 \
+            .task_prio               = 12,                                \
 }
 
 typedef struct cnv_handle_s cnv_handle_t;
@@ -64,8 +67,8 @@ typedef struct pixel_coord_s cnv_coord_t;
  */
 typedef struct cnv_pattern_func_s {
     STAILQ_ENTRY(cnv_pattern_func_s) next;
-    cnv_pattern_func                 cb;        /*!< Pattern callback function */
-    const char                      *tag;       /*!< Function tag */
+    cnv_pattern_func                 cb;         /*!< Pattern callback function */
+    const char                      *tag;        /*!< Function tag */
 } cnv_pattern_func_t;
 
 /**
@@ -102,16 +105,20 @@ struct cnv_handle_s {
  * @brief Convert component configuration
  */
 typedef struct {
-    cnv_source_data_func      source_data_cb;    /*!< Callback function to get source data */
-    uint16_t                  source_size;       /*!< The size of the source_data collected by the SRC_DRV(in bytes) */
-    uint16_t                  audio_samplerate;  /*!< Audio sampling rate */
-    uint16_t                  n_samples;         /*!< Number of sampling points */
-    float                     min_energy_sum;    /*!< As the minimum energy threshold */
-    cnv_fft_array_t          *fft_array;         /*!< Array to be created for fft operation */
-    uint16_t                  total_leds;        /*!< Total number of LEDs at initialization */
-    int32_t                   task_stack;        /*!< CONVERT task stack */
-    int32_t                   task_prio;         /*!< CONVERT task priority (based on freeRTOS priority) */
-    int32_t                   task_core;         /*!< CONVERT task running in core (0 or 1) */
+    cnv_source_data_func      source_data_cb;              /*!< Callback function to get source data */
+    uint16_t                  source_size;                 /*!< The size of the source_data collected by the SRC_DRV(in bytes) */
+    uint16_t                  audio_samplerate;            /*!< Audio sampling rate */
+    uint16_t                  n_samples;                   /*!< Number of sampling points */
+    uint16_t                  window_max_width_db;         /*!< Maximum loudness level range displayed by led */
+    uint16_t                  regress_threshold_vol;       /*!< If the sound energy is lower than this value, the maximum volume will gradually return to the set default maximum value */
+    uint16_t                  maxenergy_fall_back_cycle;   /*!< Indicates how many cycles are required for `variable_energy_max` to fall back to `default_energy_max` */
+    float                     default_energy_min;          /*!< As the default minimum energy threshold */
+    float                     default_energy_max;          /*!< As the default maximum energy threshold */
+    cnv_fft_array_t          *fft_array;                   /*!< Array to be created for fft operation */
+    uint16_t                  total_leds;                  /*!< Total number of LEDs at initialization */
+    int32_t                   task_stack;                  /*!< CONVERT task stack */
+    int32_t                   task_prio;                   /*!< CONVERT task priority (based on freeRTOS priority) */
+    int32_t                   task_core;                   /*!< CONVERT task running in core (0 or 1) */
 } cnv_config_t;
 
 /**

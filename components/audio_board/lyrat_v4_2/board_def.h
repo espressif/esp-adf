@@ -53,8 +53,9 @@
 #define CODEC_ADC_BITS_PER_SAMPLE I2S_BITS_PER_SAMPLE_16BIT
 #define CODEC_ADC_SAMPLE_RATE     (48000)
 #define RECORD_HARDWARE_AEC       (false)
-extern audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE;
+#define BOARD_PA_GAIN             (10) /* Power amplifier gain defined by board (dB) */
 
+extern audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE;
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \

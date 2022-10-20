@@ -27,13 +27,12 @@
 #include "esp_log.h"
 #include "tas5805m.h"
 #include "tas5805m_reg_cfg.h"
+#include "audio_volume.h"
 
 static const char *TAG = "TAS5805M";
 
 #define TAS5805M_ADDR          0x5c
 #define TAS5805M_RST_GPIO      get_pa_enable_gpio()
-#define TAS5805M_VOLUME_MAX    100
-#define TAS5805M_VOLUME_MIN    0
 
 #define TAS5805M_ASSERT(a, format, b, ...) \
     if ((a) != 0) { \
@@ -42,8 +41,23 @@ static const char *TAG = "TAS5805M";
     }
 
 esp_err_t tas5805m_ctrl(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state);
+
 esp_err_t tas5805m_config_iface(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface);
+
 static i2c_bus_handle_t     i2c_handler;
+static codec_dac_volume_config_t *dac_vol_handle;
+
+#define TAS5805M_DAC_VOL_CFG_DEFAULT() {                     \
+    .max_dac_volume = 24,                                    \
+    .min_dac_volume = -103,                                  \
+    .board_pa_gain = BOARD_PA_GAIN,                          \
+    .volume_accuracy = 0.5,                                  \
+    .dac_vol_symbol = -1,                                    \
+    .zero_volume_reg = 0x30,                                 \
+    .reg_value = 0,                                          \
+    .user_volume = 0,                                        \
+    .offset_conv_volume = NULL,                              \
+}
 
 /*
  * i2c default configuration
@@ -129,44 +143,55 @@ esp_err_t tas5805m_init(audio_hal_codec_config_t *codec_cfg)
     ret |= tas5805m_transmit_registers(tas5805m_registers, sizeof(tas5805m_registers) / sizeof(tas5805m_registers[0]));
 
     TAS5805M_ASSERT(ret, "Fail to iniitialize tas5805m PA", ESP_FAIL);
+
+    codec_dac_volume_config_t vol_cfg = TAS5805M_DAC_VOL_CFG_DEFAULT();
+    dac_vol_handle = audio_codec_volume_init(&vol_cfg);
     return ret;
 }
 
-esp_err_t tas5805m_set_volume(int vol)
+/**
+ * @brief Set voice volume
+ *
+ * @note Register values. 0xFE: -103 dB, 0x94: -50 dB, 0x30: 0 dB, 0x00: 24 dB
+ * @note Accuracy of gain is 0.5 dB
+ *
+ * @param volume: voice volume (0~100)
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t tas5805m_set_volume(int volume)
 {
-    int vol_idx = 0;
-
-    if (vol < TAS5805M_VOLUME_MIN) {
-        vol = TAS5805M_VOLUME_MIN;
-    }
-    if (vol > TAS5805M_VOLUME_MAX) {
-        vol = TAS5805M_VOLUME_MAX;
-    }
-    vol_idx = vol / 5;
-
+    uint8_t reg = 0;
     uint8_t cmd[2] = {0, 0};
     esp_err_t ret = ESP_OK;
 
+    reg = audio_codec_get_dac_reg_value(dac_vol_handle, volume);
+
     cmd[0] = MASTER_VOL_REG_ADDR;
-    cmd[1] = tas5805m_volume[vol_idx];
+    cmd[1] = reg;
+
     ret = i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
-    ESP_LOGW(TAG, "volume = 0x%x", cmd[1]);
+
+    ESP_LOGD(TAG, "Set volume:%.2d reg_value:0x%.2x dB:%.1f", dac_vol_handle->user_volume, reg,
+            audio_codec_cal_dac_volume(dac_vol_handle));
     return ret;
 }
 
-esp_err_t tas5805m_get_volume(int *value)
+esp_err_t tas5805m_get_volume(int *volume)
 {
     /// FIXME: Got the digit volume is not right.
     uint8_t cmd[2] = {MASTER_VOL_REG_ADDR, 0x00};
     esp_err_t ret = i2c_bus_read_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
     TAS5805M_ASSERT(ret, "Fail to get volume", ESP_FAIL);
-    int i;
-    for (i = 0; i < sizeof(tas5805m_volume); i++) {
-        if (cmd[1] >= tas5805m_volume[i])
-            break;
+    if (cmd[1] == dac_vol_handle->reg_value) {
+        *volume = dac_vol_handle->user_volume;
+    } else {
+        *volume = 0;
+        ret = ESP_FAIL;
     }
-    ESP_LOGI(TAG, "Volume is %d", i * 5);
-    *value = 5 * i;
+    ESP_LOGD(TAG, "Get volume:%.2d reg_value:0x%.2x", *volume, cmd[1]);
     return ret;
 }
 
@@ -249,6 +274,8 @@ esp_err_t tas5805m_set_damp_mode(int value)
 esp_err_t tas5805m_deinit(void)
 {
     // TODO
+    i2c_bus_delete(i2c_handler);
+    audio_codec_volume_deinit(dac_vol_handle);
     return ESP_OK;
 }
 
