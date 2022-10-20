@@ -291,6 +291,9 @@ static esp_err_t recorder_sr_suspend(void *handle, bool suspend)
     if (suspend) {
         xEventGroupClearBits(recorder_sr->events, FEED_TASK_RUNNING);
         xEventGroupClearBits(recorder_sr->events, FETCH_TASK_RUNNING);
+        if (recorder_sr->out_rb) {
+            rb_done_write(recorder_sr->out_rb);
+        }
     } else {
         xEventGroupSetBits(recorder_sr->events, FEED_TASK_RUNNING);
         xEventGroupSetBits(recorder_sr->events, FETCH_TASK_RUNNING);
@@ -443,6 +446,7 @@ static esp_err_t recorder_sr_mn_enable(void *handle, bool enable)
     recorder_sr->mn_enable = enable;
     if (!recorder_sr->mn_enable && recorder_sr->mn_handle) {
         multinet->destroy(recorder_sr->mn_handle);
+        esp_mn_commands_free();
         recorder_sr->mn_handle = NULL;
     }
 
@@ -485,12 +489,12 @@ static void recorder_sr_clear(void *handle)
 #ifdef CONFIG_USE_MULTINET
     if (recorder_sr->mn_handle) {
         multinet->destroy(recorder_sr->mn_handle);
+        esp_mn_commands_free();
         recorder_sr->mn_handle = NULL;
     }
 #endif
     if (recorder_sr->models) {
-        free(recorder_sr->models);
-        recorder_sr->models = NULL;
+        esp_srmodel_deinit(recorder_sr->models);
     }
     if (recorder_sr->out_rb) {
         rb_reset(recorder_sr->out_rb);
