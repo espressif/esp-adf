@@ -236,15 +236,12 @@ Optional Hardware
    * - 12 V DC adapter
      - 1
      - The maximum operating current of the adapter is 2 A. It provides power supply for 12 V LED strips. 
-   * - 5 V or 12 V addressable LED strip
+   * - 5 V or 12 V addressable LED strip/ring
      - 1
-     - It should have a female connector with 4 x 1 pins and a 2.54 mm pitch. WS2812 or WS2811 LED strip is recommended. This LED strip should be connected to **Addressable LED Strip Port** (:ref:`JP2 <addressable-led-strip-connector>`). 
+     - It is recommended to use WS2812/WS2811 LED strip (a female connector with 4 x 1 pins and a 2.54 mm pitch), or a WS2812 LED ring with 16 individually addressable RGB LEDs assembled (a female connector with 3 x 1 pins and a 2.54 mm pitch). This LED strip/ring should be connected to the **Addressable LED Strip Port** (:ref:`JP2 <addressable-led-strip-connector>`). 
    * - 5 V or 12 V RGB LED strip
      - 1
      - It should have a female connector with 4 x 1 pins and a 2.54 mm pitch. This LED strip should be connected to **RGB LED Strip Port** (:ref:`JP1 <rgb-led-strip-connector>`).
-   * - NeoPixel Ring
-     - 1
-     - 12 x 5050 RGB LED with Integrated Drivers.
 
 
 Power Supply Options
@@ -293,7 +290,7 @@ This section provides more detailed information about the board's hardware.
 GPIO Allocation
 ---------------
 
-The `table <../../_static/esp32-c3-lyra-gpio-allocation.pdf>`_ provides the allocation of GPIOs exposed on terminals of the ESP32-C3-WROOM-02 module to control specific components or functions of the board.
+The `table <../../../_static/esp32-c3-lyra-gpio-allocation.pdf>`_ provides the allocation of GPIOs exposed on terminals of the ESP32-C3-WROOM-02 module to control specific components or functions of the board.
 
 Power Distribution
 ------------------
