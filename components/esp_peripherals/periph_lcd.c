@@ -130,8 +130,10 @@ esp_periph_handle_t periph_lcd_init(periph_lcd_cfg_t *config)
     periph_lcd->rest_cb_ctx = config->rest_cb_ctx;
 
     esp_periph_set_data(periph, periph_lcd);
-    esp_periph_set_function(periph, _lcd_init, _lcd_run, _lcd_destroy);
+    esp_periph_set_function(periph, NULL, _lcd_run, _lcd_destroy);
+
     _setup_lcd(periph);
+     _lcd_init(periph);
     return periph;
 }
 
