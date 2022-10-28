@@ -109,6 +109,10 @@ static esp_err_t _algo_close(audio_element_handle_t self)
         }
     }
 
+    if (algo->state) {
+        vEventGroupDelete(algo->state);
+    }
+
     if (algo) {
         audio_free(algo);
         algo = NULL;
