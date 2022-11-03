@@ -144,7 +144,11 @@ void app_main(void)
         const char *link_tag[3] = {"file", "wav", "raw"};
         audio_pipeline_link(pipeline[i], &link_tag[0], 3);
         ringbuf_handle_t rb = audio_element_get_input_ringbuf(el_raw_write[i]);
-        audio_element_set_multi_input_ringbuf(audio_forge, rb, i);
+        if (NUMBER_SOURCE_FILE != 1) {
+            audio_element_set_multi_input_ringbuf(audio_forge, rb, i);
+        } else {
+            audio_element_set_input_ringbuf(audio_forge, rb);
+        }
         audio_pipeline_set_listener(pipeline[i], evt);
     }
     audio_pipeline_set_listener(pipeline_mix, evt);
