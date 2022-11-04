@@ -60,6 +60,7 @@ typedef struct {
     EventGroupHandle_t state;
     bool debug_input;
     bool swap_ch;
+    bool aec_low_cost;
     int agc_gain;
 } algo_stream_t;
 
@@ -153,18 +154,23 @@ static esp_err_t _algo_open(audio_element_handle_t self)
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
     AUDIO_NULL_CHECK(TAG, algo, return ESP_FAIL);
 
-    algo->afe_handle = &ESP_AFE_VC_HANDLE;
     afe_config_t afe_config = AFE_CONFIG_DEFAULT();
     afe_config.vad_init = false;
     afe_config.wakenet_init = false;
     afe_config.afe_perferred_core = 1;
     afe_config.afe_perferred_priority = 21;
-    afe_config.voice_communication_init = true;
     afe_config.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     afe_config.pcm_config.mic_num = algo->mic_ch;
     afe_config.pcm_config.ref_num = 1;
     afe_config.pcm_config.total_ch_num = algo->mic_ch + 1;
-    afe_config.pcm_config.sample_rate = algo->sample_rate;
+
+    if (!algo->aec_low_cost) {
+        afe_config.pcm_config.sample_rate = algo->sample_rate;
+        afe_config.voice_communication_init = true;
+        algo->afe_handle = &ESP_AFE_VC_HANDLE;
+    } else {
+        algo->afe_handle = &ESP_AFE_SR_HANDLE;
+    }
 
     if (!(algo->algo_mask & ALGORITHM_STREAM_USE_AEC)) {
         afe_config.aec_init = false;
@@ -324,6 +330,7 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     algo->sample_rate = config->sample_rate;
     algo->input_type = config->input_type;
     algo->algo_mask = config->algo_mask;
+    algo->aec_low_cost = config->aec_low_cost;
     algo->rec_linear_factor = config->rec_linear_factor;
     algo->ref_linear_factor = config->ref_linear_factor;
     algo->state = xEventGroupCreate();
