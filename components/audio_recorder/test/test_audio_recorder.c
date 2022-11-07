@@ -493,9 +493,6 @@ TEST_CASE("Use [sr - wwe don't init, vad don't init, mn don't init]", "[audio][t
     TEST_ASSERT(ESP_OK == recorder_sr_destroy(cfg.sr_handle));
 
     test_deinit();
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    esp_vfs_spiffs_unregister("model");
-#endif
 }
 
 TEST_CASE("Use [sr - wwe disabled, vad disabled, mn disabled]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
@@ -541,9 +538,6 @@ TEST_CASE("Use [sr - wwe disabled, vad disabled, mn disabled]", "[audio][timeout
     TEST_ASSERT(ESP_OK == recorder_sr_destroy(cfg.sr_handle));
 
     test_deinit();
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    esp_vfs_spiffs_unregister("model");
-#endif
 }
 
 TEST_CASE("Use [sr - wwe enable, vad disabled, mn disabled]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
@@ -584,9 +578,6 @@ TEST_CASE("Use [sr - wwe enable, vad disabled, mn disabled]", "[audio][timeout=1
     TEST_ASSERT(ESP_OK == recorder_sr_destroy(cfg.sr_handle));
 
     test_deinit();
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    esp_vfs_spiffs_unregister("model");
-#endif
 }
 
 TEST_CASE("Use [sr - wwe disable, vad enabled, mn disabled]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
@@ -631,9 +622,6 @@ TEST_CASE("Use [sr - wwe disable, vad enabled, mn disabled]", "[audio][timeout=1
     TEST_ASSERT(ESP_OK == recorder_sr_destroy(cfg.sr_handle));
 
     test_deinit();
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    esp_vfs_spiffs_unregister("model");
-#endif
 }
 
 TEST_CASE("Use [sr - wwe enable, vad enabled, mn disabled]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
@@ -673,9 +661,6 @@ TEST_CASE("Use [sr - wwe enable, vad enabled, mn disabled]", "[audio][timeout=10
     TEST_ASSERT(ESP_OK == recorder_sr_destroy(cfg.sr_handle));
 
     test_deinit();
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    esp_vfs_spiffs_unregister("model");
-#endif
 }
 
 TEST_CASE("Use [sr - all enable]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
@@ -717,9 +702,6 @@ TEST_CASE("Use [sr - all enable]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
     TEST_ASSERT(ESP_OK == recorder_sr_destroy(cfg.sr_handle));
 
     test_deinit();
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    esp_vfs_spiffs_unregister("model");
-#endif
 }
 
 TEST_CASE("Use [sr - all enable, resample, encoder]", "[audio][timeout=100][test_env=UT_T1_AUDIO]")
@@ -784,7 +766,4 @@ TEST_CASE("Use [sr - all enable, resample, encoder]", "[audio][timeout=100][test
     TEST_ASSERT(ESP_OK == recorder_sr_destroy(cfg.sr_handle));
 
     test_deinit();
-#ifdef CONFIG_MODEL_IN_SPIFFS
-    esp_vfs_spiffs_unregister("model");
-#endif
 }
