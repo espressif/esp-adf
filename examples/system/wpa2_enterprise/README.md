@@ -1,6 +1,6 @@
 # Connect to WPA2 Enterprise Encryption Routers
 
-- [中文版本](./README.md)
+- [中文版本](./README_CN.md)
 - Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
 
