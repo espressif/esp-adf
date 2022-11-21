@@ -138,7 +138,6 @@
     - mkdir $IDF_PATH/components/idf_test/unit_test
     - cp configs/default adf_configs/
     - cp -ar adf_configs $ADF_UT
-    - find / -name $ADF_UT/adf_configs
     - cp sdkconfig output/default/
     - cp -ar build/*.bin output/default
     - cp -ar build/*.elf output/default

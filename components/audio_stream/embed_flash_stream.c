@@ -117,6 +117,7 @@ static esp_err_t _embed_close(audio_element_handle_t self)
     if (stream->is_open) {
        stream->is_open = false;
     }
+    audio_element_set_byte_pos(self, 0);
     return ESP_OK;
 }
 
