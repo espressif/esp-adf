@@ -93,19 +93,20 @@ static ota_service_err_reason_t ota_service_process(ota_upgrade_ops_t *upgrade_i
     ret = upgrade_info->prepare(&handle, &upgrade_info->node);
     if (ret != OTA_SERV_ERR_REASON_SUCCESS) {
         ESP_LOGE(TAG, "OTA prepared fail");
-        return ret;
+        goto __end;
     }
     ret = upgrade_info->need_upgrade(handle, &upgrade_info->node);
     if (ret != OTA_SERV_ERR_REASON_SUCCESS) {
         ESP_LOGE(TAG, "No need to upgrade");
-        return ret;
+        goto __end;
     }
     ret = upgrade_info->execute_upgrade(handle, &upgrade_info->node);
     if (ret != OTA_SERV_ERR_REASON_SUCCESS) {
         ESP_LOGE(TAG, "Fail to execute upgrade");
-        return ret;
+        goto __end;
     }
 
+__end:
     AUDIO_CHECK(TAG, upgrade_info->finished_check != NULL, return OTA_SERV_ERR_REASON_NULL_POINTER, "finished_check should not be NULL");
     return upgrade_info->finished_check(handle, &upgrade_info->node, ret);
 }
