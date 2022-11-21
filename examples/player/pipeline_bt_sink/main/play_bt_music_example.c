@@ -27,6 +27,22 @@
 
 static const char *TAG = "BLUETOOTH_EXAMPLE";
 
+static void bt_app_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *p_param)
+{
+    esp_avrc_ct_cb_param_t *rc = p_param;
+    switch (event) {
+        case ESP_AVRC_CT_METADATA_RSP_EVT: {
+            uint8_t *tmp = audio_calloc(1, rc->meta_rsp.attr_length + 1);
+            memcpy(tmp, rc->meta_rsp.attr_text, rc->meta_rsp.attr_length);
+            ESP_LOGI(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", rc->meta_rsp.attr_id, tmp);
+            audio_free(tmp);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 void app_main(void)
 {
     audio_pipeline_handle_t pipeline;
@@ -47,6 +63,7 @@ void app_main(void)
     bluetooth_service_cfg_t bt_cfg = {
         .device_name = "ESP-ADF-SPEAKER",
         .mode = BLUETOOTH_A2DP_SINK,
+        .user_callback.user_avrc_ct_cb = bt_app_avrc_ct_cb,
     };
     bluetooth_service_start(&bt_cfg);
 

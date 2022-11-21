@@ -29,6 +29,12 @@
 #include "audio_error.h"
 #include "audio_element.h"
 #include "esp_peripherals.h"
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+#include "esp_bt_device.h"
+#include "esp_gap_bt_api.h"
+#include "esp_a2dp_api.h"
+#include "esp_avrc_api.h"
 #include "bt_keycontrol.h"
 
 #ifdef __cplusplus
@@ -46,12 +52,23 @@ typedef enum {
 } bluetooth_service_mode_t;
 
 /**
+ * brief      Bluetooth service user callback
+ */
+typedef struct {
+    esp_a2d_cb_t                user_a2d_cb;                /*!< callback for a2dp */
+    esp_a2d_sink_data_cb_t      user_a2d_sink_data_cb;      /*!< callback for a2dp sink data */
+    esp_a2d_source_data_cb_t    user_a2d_source_data_cb;    /*!< callback for a2dp source data */
+    esp_avrc_ct_cb_t            user_avrc_ct_cb;            /*!< callback for avrc ct */
+} bluetooth_service_user_cb_t;
+
+/**
  *brief      Bluetooth service configuration
  */
 typedef struct {
     const char                  *device_name;   /*!< Bluetooth local device name */
     const char                  *remote_name;   /*!< Bluetooth remote device name */
     bluetooth_service_mode_t    mode;           /*!< Bluetooth working mode */
+    bluetooth_service_user_cb_t user_callback;  /*!< Bluetooth user callback */
 } bluetooth_service_cfg_t;
 
 /**
