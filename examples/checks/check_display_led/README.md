@@ -1,6 +1,6 @@
 # Check LED Display of Development Boards
 
-- [中文版本](./README.md)
+- [中文版本](./README_CN.md)
 - Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
 
@@ -44,7 +44,7 @@ idf.py -p PORT flash monitor
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project. 
+See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project.
 
 
 ## How to Use the Example
@@ -52,7 +52,7 @@ See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/r
 
 ### Example Functionality
 
-After the example starts to run, the LEDs loop through different display patterns in order. The log is as follows: 
+After the example starts to run, the LEDs loop through different display patterns in order. The log is as follows:
 
 ```c
 rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)

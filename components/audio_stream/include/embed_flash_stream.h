@@ -28,7 +28,7 @@
 #include "audio_element.h"
 
 /**
- * @brief   Embed flash Stream configurations, if any entry is zero then the configuration will be set to default values
+ * @brief   Flash-embedding stream configurations, if any entry is zero then the configuration will be set to default values
  */
 typedef struct
 {

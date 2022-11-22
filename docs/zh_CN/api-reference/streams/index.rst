@@ -177,10 +177,10 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 
 .. _api-reference-embed_flash:
 
-嵌入式二进制文件流
+嵌入 Flash 流
 ------------------------
 
-嵌入式二进制流 (embed flash stream) 读取 :adf_file:`tools/audio_tone/mk_embed_flash.py` 生成的数据，只支持 ``AUDIO_STREAM_READER`` 类型。
+嵌入 Flash 流 (flash-embedding stream) 读取 :adf_file:`tools/audio_tone/mk_embed_flash.py` 生成的数据，只支持 ``AUDIO_STREAM_READER`` 类型。
 
 
 应用示例

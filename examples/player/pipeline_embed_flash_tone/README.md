@@ -1,71 +1,71 @@
-# 从嵌入 Flash 二进制数据中播放 MP3 文件
+# Play MP3 Files Embedded in Flash as Binary Data
 
-- [English Version](./README.md)
-- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
+- [中文版本](./README_CN.md)
+- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
 
-## 例程简介
+## Example Brief
 
-本例程演示了 ADF 使用音频管道 API 播放存储在嵌入 flash 二进制数据中的 MP3 文件，一般可在项目中作为系统提示音使用。
+This example demonstrates how the ESP-ADF uses the audio pipeline API to play MP3 files embedded in flash as binary data, which can generally be used as system prompt tone files in a project.
 
-开发板获取嵌入 flash 二进制数据中存储的 MP3 文件并解码播放的管道如下：
+The pipeline for the development board to acquire the MP3 file embedded in flash as binary data and decode it for playback is as follows:
 
 ```
 [flash] ---> embed_stream ---> mp3_decoder ---> i2s_stream ---> [codec_chip]
 ```
 
-### 预备知识
+### Prerequisites
 
-本例程在 `${PROJECT_DIR}/main/` 目录下已经帮助用户生成了例程所需音频文件在 flash 中地址的源代码文件 `audio_embed_tone.h` 和 `embed_tone.cmake` 文件，并更新了 `CMakeLists.txt` 和 `conponents.mk`。
+Required source file `audio_embed_tone.h` and `embed_tone.cmake` for the audio file address in flash has already been generated in the `${PROJECT_DIR}/main/` directory. `CMakeLists.txt` and `conponents.mk` are also updated.
 
-如果用户需要生成自己的嵌入二进制文件，则需把用户提示音文件放到 `$PROJECT_DIR/main` 文件夹下，然后按照以下命令运行 `mk_embed_audio_bin.py` 脚本。更多有关嵌入二进制的信息，请参见 [嵌入二进制数据](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/api-guides/build-system.html#cmake-embed-data)
+If you need to generate your own embedding binary file, you need to put the user prompt file in the `$PROJECT_DIR/main` folder and run the `mk_embed_audio_bin.py` script with the following command. For more information regarding embedding binary, please refer to [Embedding Binary Data](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html#cmake-embed-data).
 
-Python 脚本命令如下：
+The Python script command is as follows:
 
 ```
 python $ADF_PATH/tools/audio_tone/mk_embed_audio_tone.py -p $(ADF_PATH)/examples/player/pipeline_embed_flash_tone/main
 ```
 
 
-## 环境配置
+## Environment Setup
 
-### 硬件要求
+### Hardware Required
 
-本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中[例程与乐鑫音频开发板的兼容性表格](../../README_CN.md#例程与乐鑫音频开发板的兼容性)中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
+This example runs on the boards that are marked with a green checkbox in the [table](../../README.md#compatibility-of-examples-with-espressif-audio-boards). Please remember to select the board in `menuconfig` as discussed in Section [Configuration](#configuration) below.
 
 
-## 编译和下载
+## Build and Flash
 
-### IDF 默认分支
+### Default IDF Branch
 
-本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
-### 配置
+### Configuration
 
-本例程默认选择的开发板是 `ESP32-LyraT V1.1`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-LyraT-Mini V1.1`。
+The default board for this example is `ESP32-LyraT V1.1`. If you need to run this example on other development boards, select the board in menuconfig, such as `ESP32-LyraT-Mini V1.1`.
 
 ```
 menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 ```
 
-### 编译和下载
+### Build and Flash
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
+Build the project and flash it to the board, then run monitor tool to view serial output (replace PORT with your board's serial port name):
 
 ```
 idf.py -p PORT flash monitor
 ```
 
-退出调试界面使用 ``Ctrl-]``。
+To exit the serial monitor, type ``Ctrl-]``.
 
-有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
+See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project.
 
 
-## 如何使用例程
+## How to Use the Example
 
-### 功能和用法
+### Example Functionality
 
-- 例程开始运行后，将获取 flash 嵌入二进制数据中的 MP3 音频进行播放，打印如下：
+- After the example starts running, the MP3 audio embedded in flash as binary data will be obtained for playback. The log is as follows:
 
 ```c
 
@@ -143,10 +143,10 @@ W (3401) AUDIO_ELEMENT: [flash] Element has not create when AUDIO_ELEMENT_TERMIN
 ```
 
 
-## 技术支持
-请按照下面的链接获取技术支持：
+## Technical Support and Feedback
+Please use the following feedback channels:
 
-- 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
-- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
+- For technical queries, go to the [esp32.com](https://esp32.com/viewforum.php?f=20) forum
+- For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-adf/issues)
 
-我们会尽快回复。
+We will get back to you as soon as possible.

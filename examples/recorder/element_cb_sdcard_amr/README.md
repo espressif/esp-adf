@@ -1,6 +1,6 @@
 # Record AMR Files to MicroSD Card Using Callback Function
 
-- [中文版本](./README.md)
+- [中文版本](./README_CN.md)
 - Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
 
 

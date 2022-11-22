@@ -1,6 +1,6 @@
 # Play MP3 Files from Flash
 
-- [中文版本](./README.md)
+- [中文版本](./README_CN.md)
 - Regular Example: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
 
 
@@ -96,7 +96,7 @@ idf.py -p PORT flash monitor
 ```
 
 
-In addition, this example also needs to flash `/tools/audio-esp.bin` to the `flashTone` partition of `partition_flash_tone.csv`. Please use the following command. 
+In addition, this example also needs to flash `/tools/audio-esp.bin` to the `flashTone` partition of `partition_flash_tone.csv`. Please use the following command.
 If using `config_ ESP32_ C3_ LYRA_ V2_ Board`, please replace `esp32` in the following command with `esp32c3`.
 
 ```
