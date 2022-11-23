@@ -1,0 +1,57 @@
+menu "Audio Codec Device Configuration"
+
+    config CODEC_ES8311_SUPPORT
+        bool "Support ES8311 Codec Chip"
+        default y
+        help
+            Enable this option to support codec ES8311.
+
+    config CODEC_ES7210_SUPPORT
+        bool "Support ES7210 Codec Chip"
+        default y
+        help
+            Enable this option to support codec ES7210.
+    
+    config CODEC_ES7243_SUPPORT
+        bool "Support ES7243 Codec Chip"
+        default y
+        help
+            Enable this option to support codec ES7243.
+
+    config CODEC_ES7243E_SUPPORT
+        bool "Support ES7243E Codec Chip"
+        default y
+        help
+            Enable this option to support codec ES7243E.
+    
+    config CODEC_ES8156_SUPPORT
+        bool "Support ES8156 Codec Chip"
+        default y
+        help
+            Enable this option to support codec ES8156.
+
+    config CODEC_ES8374_SUPPORT
+        bool "Support ES8374 Codec Chip"
+        default y
+        help
+            Enable this option to support codec ES8374.
+
+     config CODEC_ES8388_SUPPORT
+        bool "Support ES8388 Codec Chip"
+        default y
+        help
+            Enable this option to support codec ES8388.
+
+    config CODEC_TAS5805M_SUPPORT
+        bool "Support TAS5805M Codec Chip"
+        default y
+        help
+            Enable this option to support codec TAS5805M.
+
+    config CODEC_ZL38063_SUPPORT
+        bool "Support ZL38063 Codec Chip"
+        default n
+        help
+            Enable this option to support codec ZL38063.
+            ZL38063 firmware only support xtensa, don't enable for RISC-V IC.
+ endmenu
