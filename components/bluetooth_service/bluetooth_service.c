@@ -81,15 +81,92 @@ typedef struct bluetooth_service {
     uint8_t tl;
     bool avrc_connected;
     int a2dp_sample_rate;
+    bluetooth_service_user_cb_t user_callback;
 } bluetooth_service_t;
+
+/* AVRCP used transaction labels */
+#define APP_RC_CT_TL_GET_CAPS            (0)
+#define APP_RC_CT_TL_GET_META_DATA       (1)
+#define APP_RC_CT_TL_RN_TRACK_CHANGE     (2)
+#define APP_RC_CT_TL_RN_PLAYBACK_CHANGE  (3)
+#define APP_RC_CT_TL_RN_PLAY_POS_CHANGE  (4)
 
 bluetooth_service_t *g_bt_service = NULL;
 
 static const char *conn_state_str[] = { "Disconnected", "Connecting", "Connected", "Disconnecting" };
 static const char *audio_state_str[] = { "Suspended", "Stopped", "Started" };
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+static esp_avrc_rn_evt_cap_mask_t s_avrc_peer_rn_cap;
+#endif
+
+static void bt_av_new_track(void)
+{
+    uint8_t attr_mask = ESP_AVRC_MD_ATTR_TITLE |
+                        ESP_AVRC_MD_ATTR_ARTIST |
+                        ESP_AVRC_MD_ATTR_ALBUM |
+                        ESP_AVRC_MD_ATTR_GENRE;
+    esp_avrc_ct_send_metadata_cmd(APP_RC_CT_TL_GET_META_DATA, attr_mask);
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    if (esp_avrc_rn_evt_bit_mask_operation(ESP_AVRC_BIT_MASK_OP_TEST, &s_avrc_peer_rn_cap,
+                                           ESP_AVRC_RN_TRACK_CHANGE)) {
+        esp_avrc_ct_send_register_notification_cmd(APP_RC_CT_TL_RN_TRACK_CHANGE,
+                                                   ESP_AVRC_RN_TRACK_CHANGE, 0);
+    }
+#else
+    esp_avrc_ct_send_register_notification_cmd(APP_RC_CT_TL_RN_TRACK_CHANGE, ESP_AVRC_RN_TRACK_CHANGE, 0);
+#endif
+}
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+static void bt_av_playback_changed(void)
+{
+    if (esp_avrc_rn_evt_bit_mask_operation(ESP_AVRC_BIT_MASK_OP_TEST, &s_avrc_peer_rn_cap,
+                                           ESP_AVRC_RN_PLAY_STATUS_CHANGE)) {
+        esp_avrc_ct_send_register_notification_cmd(APP_RC_CT_TL_RN_PLAYBACK_CHANGE,
+                                                   ESP_AVRC_RN_PLAY_STATUS_CHANGE, 0);
+    }
+}
+
+static void bt_av_play_pos_changed(void)
+{
+    if (esp_avrc_rn_evt_bit_mask_operation(ESP_AVRC_BIT_MASK_OP_TEST, &s_avrc_peer_rn_cap,
+                                           ESP_AVRC_RN_PLAY_POS_CHANGED)) {
+        esp_avrc_ct_send_register_notification_cmd(APP_RC_CT_TL_RN_PLAY_POS_CHANGE,
+                                                   ESP_AVRC_RN_PLAY_POS_CHANGED, 10);
+    }
+}
+
+static void bt_av_notify_evt_handler(uint8_t event_id, esp_avrc_rn_param_t *event_parameter)
+{
+    switch (event_id) {
+    /* when new track is loaded, this event comes */
+    case ESP_AVRC_RN_TRACK_CHANGE:
+        bt_av_new_track();
+        break;
+    /* when track status changed, this event comes */
+    case ESP_AVRC_RN_PLAY_STATUS_CHANGE:
+        ESP_LOGI(TAG, "Playback status changed: 0x%x", event_parameter->playback);
+        bt_av_playback_changed();
+        break;
+    /* when track playing position changed, this event comes */
+    case ESP_AVRC_RN_PLAY_POS_CHANGED:
+        ESP_LOGI(TAG, "Play position changed: %d-ms", event_parameter->play_pos);
+        bt_av_play_pos_changed();
+        break;
+    /* others */
+    default:
+        ESP_LOGI(TAG, "unhandled event: %d", event_id);
+        break;
+    }
+}
+#endif
 
 static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param)
 {
+    if (g_bt_service->user_callback.user_a2d_cb) {
+        g_bt_service->user_callback.user_a2d_cb(event, p_param);
+    }
     esp_a2d_cb_param_t *a2d = NULL;
     switch (event) {
         case ESP_A2D_CONNECTION_STATE_EVT:
@@ -173,6 +250,9 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *p_param
 
 static void bt_a2d_sink_data_cb(const uint8_t *data, uint32_t len)
 {
+    if (g_bt_service->user_callback.user_a2d_sink_data_cb) {
+        g_bt_service->user_callback.user_a2d_sink_data_cb(data, len);
+    }
     if (g_bt_service->stream) {
         if (audio_element_get_state(g_bt_service->stream) == AEL_STATE_RUNNING) {
             audio_element_output(g_bt_service->stream, (char *)data, len);
@@ -182,6 +262,9 @@ static void bt_a2d_sink_data_cb(const uint8_t *data, uint32_t len)
 
 static int32_t bt_a2d_source_data_cb(uint8_t *data, int32_t len)
 {
+    if (g_bt_service->user_callback.user_a2d_source_data_cb) {
+        g_bt_service->user_callback.user_a2d_source_data_cb(data, len);
+    }
     if (g_bt_service->stream) {
         if (audio_element_get_state(g_bt_service->stream) == AEL_STATE_RUNNING) {
             if (len < 0 || data == NULL) {
@@ -298,6 +381,9 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
 
 static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *p_param)
 {
+    if (g_bt_service->user_callback.user_avrc_ct_cb) {
+        g_bt_service->user_callback.user_avrc_ct_cb(event, p_param);
+    }
     esp_avrc_ct_cb_param_t *rc = p_param;
     switch (event) {
         case ESP_AVRC_CT_CONNECTION_STATE_EVT: {
@@ -306,8 +392,14 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
                 if (rc->conn_stat.connected) {
                     ESP_LOGD(TAG, "ESP_AVRC_CT_CONNECTION_STATE_EVT");
                     bt_key_act_sm_init();
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+                    esp_avrc_ct_send_get_rn_capabilities_cmd(APP_RC_CT_TL_GET_CAPS);
+#endif
                 } else if (0 == rc->conn_stat.connected) {
                     bt_key_act_sm_deinit();
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+                    s_avrc_peer_rn_cap.bits = 0;
+#endif
                 }
 
                 ESP_LOGD(TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
@@ -329,15 +421,24 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
             }
         case ESP_AVRC_CT_METADATA_RSP_EVT: {
                 ESP_LOGD(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", rc->meta_rsp.attr_id, rc->meta_rsp.attr_text);
-                // free(rc->meta_rsp.attr_text);
                 break;
             }
         case ESP_AVRC_CT_CHANGE_NOTIFY_EVT: {
                 ESP_LOGD(TAG, "AVRC event notification: %d", rc->change_ntf.event_id);
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+                bt_av_notify_evt_handler(rc->change_ntf.event_id, &rc->change_ntf.event_parameter);
+#else
+                if (rc->change_ntf.event_id == ESP_AVRC_RN_TRACK_CHANGE) {
+                    bt_av_new_track();
+                }
+#endif
                 break;
             }
         case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
                 ESP_LOGD(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
+#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
+                bt_av_new_track();
+#endif
                 break;
             }
 
@@ -345,6 +446,10 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
         case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT: {
                 ESP_LOGD(TAG, "remote rn_cap: count %d, bitmask 0x%x", rc->get_rn_caps_rsp.cap_count,
                          rc->get_rn_caps_rsp.evt_set.bits);
+                s_avrc_peer_rn_cap.bits = rc->get_rn_caps_rsp.evt_set.bits;
+                bt_av_new_track();
+                bt_av_playback_changed();
+                bt_av_play_pos_changed();
                 break;
             }
 #endif
@@ -417,6 +522,9 @@ static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
 }
 static void bt_a2d_source_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
 {
+    if (g_bt_service->user_callback.user_a2d_cb) {
+        g_bt_service->user_callback.user_a2d_cb(event, param);
+    }
     ESP_LOGI(TAG, "%s state %d, evt 0x%x", __func__, g_bt_service->source_a2d_state, event);
     switch (g_bt_service->source_a2d_state) {
         case BT_SOURCE_STATE_DISCOVERING:
@@ -479,6 +587,7 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
 
     g_bt_service = audio_calloc(1, sizeof(bluetooth_service_t));
     AUDIO_MEM_CHECK(TAG, g_bt_service, return ESP_ERR_NO_MEM);
+    memcpy(&g_bt_service->user_callback, &config->user_callback, sizeof(bluetooth_service_user_cb_t));
 
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_BLE));
 
@@ -517,6 +626,11 @@ esp_err_t bluetooth_service_start(bluetooth_service_cfg_t *config)
     esp_avrc_ct_register_callback(bt_avrc_ct_cb);
 
     if (config->mode == BLUETOOTH_A2DP_SINK) {
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+        esp_avrc_rn_evt_cap_mask_t evt_set = {0};
+        esp_avrc_rn_evt_bit_mask_operation(ESP_AVRC_BIT_MASK_OP_SET, &evt_set, ESP_AVRC_RN_VOLUME_CHANGE);
+        ESP_ERROR_CHECK(esp_avrc_tg_set_rn_evt_cap(&evt_set));
+#endif
         esp_a2d_sink_init();
         esp_a2d_sink_register_data_callback(bt_a2d_sink_data_cb);
         esp_a2d_register_callback(bt_a2d_sink_cb);
