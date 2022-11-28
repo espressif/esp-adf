@@ -24,16 +24,22 @@
 
 #include "freertos/FreeRTOS.h"
 #include "esp_log.h"
-#include "src_drv_adc.h"
 #include "cnv.h"
 #include "cnv_pattern.h"
 #include "ws2812_spi.h"
 #include "pixel_renderer.h"
 
-// #define   SPECTRUM_MODE_ENABLE   (1)       /* This mode requires 'led_numbers' to be configured as 64 in menuconfig */
+#if CONFIG_EXAMPLE_ADC_REC_TYPE
+#include "src_drv_adc.h"
+#elif CONFIG_EXAMPLE_I2S_REC_TYPE
+#include "src_drv_i2s.h"
+#endif
+
+// #define   SPECTRUM_MODE_ENABLE   (1)       /* This mode requires that the "Total number of LEDs" be configured as 64 in menuconfig, and FFT is enabled */
 
 static const char *TAG = "LED_PIXELS";
-#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)) || (!CONFIG_ESP32_C3_LYRA_V2_BOARD)
+
+#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)) || ((!CONFIG_ESP32_C3_LYRA_V2_BOARD) && (!CONFIG_ESP32_C3_DEVKITM_1))
 void app_main(void)
 {
     ESP_LOGW(TAG, "Do nothing, just to pass CI test with older IDF");
@@ -65,21 +71,44 @@ void cnv_pattern_unregister(cnv_handle_t *handle)
 
 void source_init(void)
 {
+#if CONFIG_EXAMPLE_ADC_REC_TYPE
     src_drv_config_t src_drv_config = SRC_DRV_ADC_CFG_DEFAULT();
     src_drv_adc_init(&src_drv_config);
+#elif CONFIG_EXAMPLE_I2S_REC_TYPE
+    src_drv_config_t src_drv_config = SRC_DRV_I2S_CFG_DEFAULT();
+    src_drv_i2s_init(&src_drv_config);
+#endif
+
 }
 
 void source_deinit(void)
 {
+#if CONFIG_EXAMPLE_ADC_REC_TYPE
     src_drv_adc_deinit();
+#elif CONFIG_EXAMPLE_I2S_REC_TYPE
+    src_drv_i2s_deinit();
+#endif
 }
 
 cnv_handle_t *convert_init(void)
 {
     cnv_config_t  config = CNV_CFG_DEFAULT();
-    /* Set source data function and initialize fft */
+    /* Set source data function */
+#if CONFIG_EXAMPLE_ADC_REC_TYPE
     config.source_data_cb = src_drv_get_adc_data;
-    config.fft_array = cnv_fft_dsps2r_init(CNV_N_SAMPLES);
+#elif CONFIG_EXAMPLE_I2S_REC_TYPE
+    config.source_data_cb = src_drv_get_i2s_data;
+#endif
+
+#if CONFIG_EXAMPLE_FFT
+    /* Initialize fft */
+    #if CONFIG_EXAMPLE_SC16_TYPE
+        config.fft_array = cnv_fft_dsps2r_sc16_init(CNV_N_SAMPLES);
+    #elif CONFIG_EXAMPLE_FC32_TYPE
+        config.fft_array = cnv_fft_dsps2r_fc32_init(CNV_N_SAMPLES);
+    #endif
+#endif
+
     cnv_handle_t *handle = cnv_init(&config);
     /* Register the default audio collection callback function */
     cnv_pattern_register_all_cb(handle);
@@ -89,7 +118,13 @@ cnv_handle_t *convert_init(void)
 esp_err_t convert_deinit(cnv_handle_t *handle)
 {
     cnv_pattern_unregister(handle);
-    cnv_fft_dsps2r_deinit(handle->fft_array);
+#if CONFIG_EXAMPLE_FFT
+    #if CONFIG_EXAMPLE_SC16_TYPE
+        cnv_fft_dsps2r_sc16_deinit(handle->fft_array);
+    #elif CONFIG_EXAMPLE_FC32_TYPE
+        cnv_fft_dsps2r_fc32_deinit(handle->fft_array);
+    #endif
+#endif
     cnv_deinit(handle);
     return ESP_OK;
 }
@@ -139,11 +174,11 @@ int32_t app_main(void)
     // cnv_set_cur_pattern(cnv_handle, "cnv_pattern_energy_uprush_mode");
     // cnv_set_cur_pattern(cnv_handle, "cnv_pattern_coord_rgb_fmt_test");
 #endif
+
     /* Start-up CNV */
     cnv_run(cnv_handle);
     /* Start-up PIXEL_RENDERER */
     pixel_renderer_run(pixel_renderer_handle);
     return 0;
 }
-
 #endif

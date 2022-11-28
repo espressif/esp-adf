@@ -50,13 +50,13 @@
 #define   SRC_DRV_ADC_DC_COMPONENT_TIMES    (16000 * 3)
 
 typedef struct {
-    int32_t w_size;
-    int32_t index;
-    float   sum;
-    float  *cache;
+    int32_t   w_size;
+    int32_t   index;
+    int32_t   sum;
+    int16_t  *cache;
 } src_drv_slide_filter_t;
 
-static const char *TAG = "SRC_DRV";
+static const char *TAG = "SRC_DRV_ADC";
 
 static src_drv_slide_filter_t *filter;
 
@@ -74,12 +74,12 @@ src_drv_slide_filter_t *src_drv_adc_slide_filter_init(int32_t w_size)
         ESP_LOGE(TAG, "Initialization failed");
         return NULL;
     }
-    filter->cache = (float *)audio_calloc(1, sizeof(float) * w_size);
+    filter->cache = (int16_t *)audio_calloc(1, sizeof(int16_t) * w_size);
     if (!filter->cache) {
         ESP_LOGE(TAG, "Cache space request failed");
         return NULL;
     }
-    memset(filter->cache, 0, sizeof(float) * w_size);
+    memset(filter->cache, 0, sizeof(int16_t) * w_size);
 
     filter->w_size = w_size;
     filter->sum = 0;
@@ -99,12 +99,12 @@ esp_err_t src_drv_adc_slide_filter_deinit(src_drv_slide_filter_t *filter)
     return ESP_FAIL;
 }
 
-float src_drv_adc_slide_filter(src_drv_slide_filter_t *filter, float value)
+float src_drv_adc_slide_filter(src_drv_slide_filter_t *filter, int16_t value)
 {
     filter->cache[filter->index] = value;
     filter->index = (filter->index + 1) % filter->w_size;
     filter->sum = filter->sum + value - filter->cache[filter->index];
-    return (filter->sum / (float)filter->w_size);
+    return (filter->sum / (int16_t)filter->w_size);
 }
 
 /**
@@ -167,17 +167,9 @@ esp_err_t src_drv_adc_deinit(void)
     return ret;
 }
 
-/**
- * @brief      ADC get data
- *
- * @param[in]  dc_component    DC component
- * @param[in]  source_data     Audio source data
- *
- * @return
- *     - count                 Number of data
- */
-static uint16_t get_audio_data(float *source_data, int size, int16_t dc_component)
+void src_drv_get_adc_data(void *source_data, int size, void *ctx)
 {
+    int16_t *data = (int16_t *)source_data;
     uint16_t count = 0;
 
 #if CONFIG_IDF_TARGET_ESP32C3
@@ -189,8 +181,8 @@ static uint16_t get_audio_data(float *source_data, int size, int16_t dc_componen
         if (p->type2.channel >= SOC_ADC_CHANNEL_NUM((const unsigned int)p->type2.unit)) {
             ESP_LOGW(TAG, "Invalid data [%d_%d_%x]", p->type2.unit + 1, p->type2.channel, p->type2.data);
         } else {
-            if ((p->type2.unit + 1 == SRC_DRV_ADC_UNIT) && (p->type2.channel == SRC_DRV_ADC_CHANNEL) && ((float)p->type2.data > 0.001 )) {
-                source_data[count] = src_drv_adc_slide_filter(filter, (float)(p->type2.data - dc_component));
+            if ((p->type2.unit + 1 == SRC_DRV_ADC_UNIT) && (p->type2.channel == SRC_DRV_ADC_CHANNEL)) {
+                data[count] = src_drv_adc_slide_filter(filter, (int16_t)(p->type2.data));
                 count ++;
             }
         }
@@ -198,40 +190,5 @@ static uint16_t get_audio_data(float *source_data, int size, int16_t dc_componen
 #endif
 
     ESP_LOGD(TAG, "The ADC acquisition count %d", count);
-    return count;
 }
-
-void src_drv_get_adc_data(void *source_data, int size, void *ctx)
-{
-    float *data = (float *)source_data;
-    static int16_t dc_component = 0;
-    if (!dc_component) {
-        /* Calculate the DC component */
-        uint32_t count = 0,ret_num = 0;
-        static uint8_t s_dc_result[SRC_DRV_ADC_DC_COMPONENT_TIMES] = {0};
-        memset(s_dc_result, 0xcc, SRC_DRV_ADC_DC_COMPONENT_TIMES);
-        double dc = 0;
-        while (1) {
-            adc_digi_read_bytes(s_dc_result, SRC_DRV_ADC_DC_COMPONENT_TIMES >> 1, &ret_num, ADC_MAX_DELAY);
-            for (int i = 0; i < ret_num; i += SRC_DRV_ADC_RESULT_BYTE) {
-                adc_digi_output_data_t *p = (void*)&s_dc_result[i];
-                if (p->type2.channel >= SOC_ADC_CHANNEL_NUM((const unsigned int)p->type2.unit)) {
-                    ESP_LOGW(TAG, "Invalid data [%d_%d_%x]", p->type2.unit + 1, p->type2.channel, p->type2.data);
-                } else {
-                    if ((p->type2.unit + 1 == SRC_DRV_ADC_UNIT) && (p->type2.channel == SRC_DRV_ADC_CHANNEL) && ((float)p->type2.data > 0.001 )) {
-                        dc += (double)(p->type2.data);
-                        count ++;
-                    }
-                }
-            }
-            if (count > SRC_DRV_ADC_DC_COMPONENT_TIMES) {
-                dc_component = dc / count;
-                ESP_LOGI(TAG, "The dc_component %d", dc_component);
-                break;
-            }
-        }
-    }
-    get_audio_data(data, size, dc_component);
-}
-
 #endif

@@ -60,10 +60,10 @@ cnv_handle_t *cnv_init(cnv_config_t *config)
     /* Create audio */
     handle->audio = audio_calloc(1, sizeof(cnv_audio_t));
     AUDIO_NULL_CHECK(TAG, handle->audio, goto _cnv_failed);
-    handle->audio->audio_energy = 0;
-    handle->audio->variable_energy_max = config->default_energy_max;
-    handle->audio->default_energy_max = config->default_energy_max;
-    handle->audio->default_energy_min = config->default_energy_min;
+    handle->audio->cur_rms = 0;
+    handle->audio->variable_rms_max = config->default_rms_max;
+    handle->audio->default_rms_max = config->default_rms_max;
+    handle->audio->default_rms_min = config->default_rms_min;
     handle->audio->window_max_width_db = config->window_max_width_db;
     handle->audio->regress_threshold_vol = config->regress_threshold_vol;
     handle->audio->samplerate = config->audio_samplerate;
@@ -72,9 +72,13 @@ cnv_handle_t *cnv_init(cnv_config_t *config)
     handle->audio->vol_calc_types = CNV_AUDIO_VOLUME_STATIC;
 #elif CONFIG_EXAMPLE_VOL_DYNAMIC_CALC_TYPE
     handle->audio->vol_calc_types = CNV_AUDIO_VOLUME_DYNAMIC;
-    handle->audio->maxenergy_fall_back_cycle = 3;
+    handle->audio->max_rms_fall_back_cycle = 3;
 #endif
-    cnv_audio_set_resolution_bits(handle->audio, CNV_AUDIO_RESOLUTION_BITS);
+
+#if CONFIG_EXAMPLE_IIR_HPF_FILTER
+    cnv_audio_get_iir_hpf_coeffs(handle->audio, (float)CONFIG_EXAMPLE_CUT_OFF_FREQ, (float)CONFIG_EXAMPLE_Q_FACTOR);
+#endif
+    cnv_audio_set_resolution_bits(handle->audio, config->audio_resolution_bits);
 
     /* Create fft related array */
     handle->fft_array = config->fft_array;
@@ -152,12 +156,11 @@ static void cnv_task(void *arg)
 {
     cnv_handle_t *handle = (cnv_handle_t *)arg;
     uint16_t in_len = handle->audio->n_samples;
-    float *source_data = (float *)handle->source_data;
 
     while (handle->task_run) {
         ESP_LOGD(TAG, "CNV is running");
-        handle->source_data_cb(source_data, (in_len * sizeof(float)), NULL);
-        /* The following is the pattern function, which can be implemented by 'handle->fft_array' or 'handle->volume' */
+        handle->source_data_cb(handle->source_data, (in_len * sizeof(float)), NULL);
+        /* The following is the pattern callback function, which can be implemented by 'handle->fft_array' or 'handle->volume' */
         if (handle->cur_pattern != NULL) {
             handle->cur_pattern->cb(handle);
         } else {

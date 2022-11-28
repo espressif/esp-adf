@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2022 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ * Copyright (c) 2023 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,43 +22,28 @@
  *
  */
 
-#ifndef _CNV_DEBUG_H_
-#define _CNV_DEBUG_H_
+#include <string.h>
+#include "esp_log.h"
+#include "driver/gpio.h"
+#include "board.h"
+#include "audio_mem.h"
+#include "audio_error.h"
 
-#include "esp_err.h"
+static const char *TAG = "ESP32C3 DEVKIT";
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+esp_err_t get_i2s_pins(i2s_port_t port, i2s_pin_config_t *i2s_config)
+{
+    AUDIO_NULL_CHECK(TAG, i2s_config, return ESP_FAIL);
+    if (port == I2S_NUM_0) {
+        i2s_config->bck_io_num = GPIO_NUM_6;
+        i2s_config->ws_io_num = GPIO_NUM_7;
+        i2s_config->data_out_num = -1;
+        i2s_config->data_in_num = GPIO_NUM_2;
+    } else {
+        memset(i2s_config, -1, sizeof(i2s_pin_config_t));
+        ESP_LOGE(TAG, "i2s port %d is not supported", port);
+        return ESP_FAIL;
+    }
 
-typedef enum {
-    CNV_DEBUG_INT16_DATA,
-    CNV_DEBUG_INT32_DATA,
-    CNV_DEBUG_FLOAT_DATA,
-} cnv_debug_data_type_t;
-
-/**
- * @brief Printing display direction
- */
-typedef enum {
-    CNV_DISPLAY_HORIZONTALLY,       /*!< Horizontal display */
-    CNV_DISPLAY_PORTRAIT,           /*!< Portrait display */
-} cnv_debug_display_t;
-
-/**
- * @brief      Use this method to print the debugging information of source_data[]/fft_y_cf[]
- *
- * @param[in]  data         Address to start printing
- * @param[in]  data_len     Data length
- * @param[in]  tpye         Type of data
- * @param[in]  direction    Display direction: vertical display or horizontal display
- *
- * @return
- *     - ESP_OK
- */
-esp_err_t cnv_debug_display(void *data, uint16_t data_len, cnv_debug_data_type_t tpye, cnv_debug_display_t direction);
-
-#ifdef __cplusplus
+    return ESP_OK;
 }
-#endif
-#endif
