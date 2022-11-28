@@ -43,6 +43,7 @@
 #include "line_reader.h"
 #include "hls_playlist.h"
 #include "audio_idf_version.h"
+#include "gzip_miniz.h"
 
 static const char *TAG = "HTTP_STREAM";
 #define MAX_PLAYLIST_LINE_SIZE (512)
@@ -69,6 +70,8 @@ typedef struct http_stream {
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
     esp_err_t                      (*crt_bundle_attach)(void *conf); /*  Function pointer to esp_crt_bundle_attach*/
 #endif
+    bool                            gzip_encoding;     /* Content is encoded */
+    gzip_miniz_handle_t             gzip;             /* GZIP instance */
 } http_stream_t;
 
 static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
@@ -114,18 +117,38 @@ static esp_codec_type_t get_audio_type(const char *content_type)
     return ESP_CODEC_TYPE_UNKNOW;
 }
 
+static int _gzip_read_data(uint8_t *data, int size, void *ctx)
+{
+    http_stream_t *http = (http_stream_t *) ctx;
+    return esp_http_client_read(http->client, (char *)data, size);
+}
+
 static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
 {
     audio_element_handle_t el = (audio_element_handle_t)evt->user_data;
     if (evt->event_id != HTTP_EVENT_ON_HEADER) {
         return ESP_OK;
     }
-
     if (strcasecmp(evt->header_key, "Content-Type") == 0) {
         ESP_LOGD(TAG, "%s = %s", evt->header_key, evt->header_value);
         audio_element_set_codec_fmt(el, get_audio_type(evt->header_value));
     }
-
+    else if (strcasecmp(evt->header_key, "Content-Encoding") == 0) {
+        http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+        http->gzip_encoding = true;
+        if (strcasecmp(evt->header_value, "gzip") == 0) {
+            gzip_miniz_cfg_t cfg = {
+                .chunk_size = 1024,
+                .ctx = http,
+                .read_cb = _gzip_read_data,
+            };
+            http->gzip = gzip_miniz_init(&cfg);
+        }
+        if (http->gzip == NULL) {
+            ESP_LOGE(TAG, "Content-Encoding %s not supported", evt->header_value);
+            return ESP_FAIL;
+        }
+    }
     return ESP_OK;
 }
 
@@ -173,6 +196,15 @@ static int _hls_uri_cb(char *uri, void *ctx)
     return 0;
 }
 
+static int _http_read_data(http_stream_t *http, char *buffer, int len)
+{
+    if (http->gzip_encoding == false) {
+        return esp_http_client_read(http->client, buffer, len);
+    }
+    // use gzip to uncompress data
+    return gzip_miniz_read(http->gzip, (uint8_t*) buffer, len);
+}
+
 static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
 {
     audio_element_info_t info;
@@ -201,7 +233,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         int need_read = MAX_PLAYLIST_LINE_SIZE;
         int rlen = need_read;
         while (rlen == need_read) {
-            rlen = esp_http_client_read(http->client, http->playlist->data, need_read);
+            rlen = _http_read_data(http, http->playlist->data, need_read);
             if (rlen < 0) {
                 break;
             }
@@ -234,7 +266,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         int need_read = MAX_PLAYLIST_LINE_SIZE;
         int rlen = need_read;
         while (rlen == need_read) {
-            rlen = esp_http_client_read(http->client, http->playlist->data, need_read);
+            rlen = _http_read_data(http, http->playlist->data, need_read);
             if (rlen < 0) {
                 break;
             }
@@ -354,6 +386,11 @@ _stream_open_begin:
     char *buffer = NULL;
     int post_len = esp_http_client_get_post_field(http->client, &buffer);
 _stream_redirect:
+    if (http->gzip_encoding) {
+        gzip_miniz_deinit(http->gzip);
+        http->gzip = NULL;
+        http->gzip_encoding = false;
+    }
     if ((err = esp_http_client_open(http->client, post_len)) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to open http stream");
         return err;
@@ -401,7 +438,6 @@ _stream_redirect:
         }
         return ESP_FAIL;
     }
-
     /**
      * `audio_element_setinfo` is risky affair.
      * It overwrites URI pointer as well. Pay attention to that!
@@ -455,6 +491,10 @@ static esp_err_t _http_close(audio_element_handle_t self)
         audio_element_report_pos(self);
         audio_element_set_byte_pos(self, 0);
     }
+    if (http->gzip) {
+        gzip_miniz_deinit(http->gzip);
+        http->gzip = NULL;
+    }
     if (http->client) {
         esp_http_client_close(http->client);
         esp_http_client_cleanup(http->client);
@@ -484,11 +524,11 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
     int wrlen = dispatch_hook(self, HTTP_STREAM_ON_RESPONSE, buffer, len);
     int rlen = wrlen;
     if (rlen == 0) {
-        rlen = esp_http_client_read(http->client, buffer, len);
+        rlen = _http_read_data(http, buffer, len);
     }
     if (rlen <= 0 && http->auto_connect_next_track) {
         if (http_stream_auto_connect_next_track(self) == ESP_OK) {
-            rlen = esp_http_client_read(http->client, buffer, len);
+            rlen = _http_read_data(http, buffer, len);
         }
     }
     if (rlen <= 0) {
