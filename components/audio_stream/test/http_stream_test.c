@@ -473,4 +473,97 @@ TEST_CASE("http stream living test", "[esp-adf-stream]")
     TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_destroy(set));
 }
 
+TEST_CASE("https stream test", "[esp-adf-stream]")
+{
 
+extern const char howsmyssl_com_root_cert_pem_start[] asm("_binary_howsmyssl_com_root_cert_pem_start");
+extern const char howsmyssl_com_root_cert_pem_end[]   asm("_binary_howsmyssl_com_root_cert_pem_end");
+
+    audio_pipeline_handle_t pipeline;
+    audio_element_handle_t http_stream_reader, fatfs_stream_writer;
+
+    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("AUDIO_ELEMENT", ESP_LOG_DEBUG);
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    tcpip_adapter_init();
+
+    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
+    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
+    TEST_ASSERT_NOT_NULL(set);
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set, SD_MODE_1_LINE));
+
+    periph_wifi_cfg_t wifi_cfg = {
+        .ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
+        .password = UNITETS_HTTP_STREAM_WIFI_SSID,
+    };
+    esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
+    TEST_ASSERT_NOT_NULL(wifi_handle);
+
+    TEST_ASSERT_EQUAL(ESP_OK, esp_periph_start(set, wifi_handle));
+    TEST_ASSERT_EQUAL(ESP_OK, periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY));
+
+    audio_board_handle_t board_handle = audio_board_init();
+    TEST_ASSERT_EQUAL(ESP_OK, audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_ENCODE, AUDIO_HAL_CTRL_START));
+
+    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    pipeline = audio_pipeline_init(&pipeline_cfg);
+    TEST_ASSERT_NOT_NULL(pipeline);
+
+    fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
+    fatfs_cfg.type = AUDIO_STREAM_WRITER;
+    fatfs_stream_writer = fatfs_stream_init(&fatfs_cfg);
+    TEST_ASSERT_NOT_NULL(fatfs_stream_writer);
+    TEST_ASSERT_EQUAL(ESP_OK, audio_element_set_uri(fatfs_stream_writer, "/sdcard/test.txt"));
+
+    http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
+    http_cfg.type = AUDIO_STREAM_READER;
+    http_cfg.cert_pem =  howsmyssl_com_root_cert_pem_start;
+    http_stream_reader = http_stream_init(&http_cfg);
+    TEST_ASSERT_NOT_NULL(http_stream_reader);
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_register(pipeline, http_stream_reader, "http"));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_register(pipeline, fatfs_stream_writer,  "fatfs"));
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_link(pipeline, (const char *[]) { "http", "fatfs" }, 2));
+
+    audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
+    audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_set_listener(pipeline, evt));
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt));
+
+    TEST_ASSERT_EQUAL(ESP_OK, audio_element_set_uri(http_stream_reader, "http://httpbin.org/redirect-to?url=https%3A%2F%2Fwww.howsmyssl.com"));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_run(pipeline));
+
+    while (1) {
+        audio_event_iface_msg_t msg;
+        esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
+            continue;
+        }
+
+      if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) http_stream_reader
+            && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_ERROR_OPEN) {
+                break;
+            continue;
+        }
+    }
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_terminate(pipeline));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_unregister(pipeline, http_stream_reader));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_unregister(pipeline, fatfs_stream_writer));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_remove_listener(pipeline));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_stop_all(set));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_event_iface_remove_listener(esp_periph_set_get_event_iface(set), evt));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_event_iface_destroy(evt));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_pipeline_deinit(pipeline));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(http_stream_reader));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(fatfs_stream_writer));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_destroy(set));
+}

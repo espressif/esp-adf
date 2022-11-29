@@ -65,6 +65,10 @@ typedef struct http_stream {
     http_playlist_t                 *playlist;         /* media playlist */
     int                             _errno;            /* errno code for http */
     int                             connect_times;     /* max reconnect times */
+    const char                     *cert_pem;
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
+    esp_err_t                      (*crt_bundle_attach)(void *conf); /*  Function pointer to esp_crt_bundle_attach*/
+#endif
 } http_stream_t;
 
 static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
@@ -315,6 +319,10 @@ _stream_open_begin:
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
             .buffer_size_tx = 1024,
 #endif
+            .cert_pem = http->cert_pem,
+#if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+            .crt_bundle_attach = http->crt_bundle_attach,
+#endif //  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
         };
         http->client = esp_http_client_init(&http_cfg);
         AUDIO_MEM_CHECK(TAG, http->client, return ESP_ERR_NO_MEM);
@@ -600,6 +608,19 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     http->hook = config->event_handle;
     http->stream_type = config->type;
     http->user_data = config->user_data;
+    http->cert_pem = config->cert_pem;
+
+    if (config->crt_bundle_attach) {
+#if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
+    #if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+        http->crt_bundle_attach = config->crt_bundle_attach;
+    #else
+        ESP_LOGW(TAG, "Please enbale CONFIG_MBEDTLS_CERTIFICATE_BUNDLE configuration in menuconfig");
+    #endif
+#else
+        ESP_LOGW(TAG, "Just support MBEDTLS_CERTIFICATE_BUNDLE on esp-idf to v4.3 or later");
+#endif // ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)
+    }
 
     if (http->enable_playlist_parser) {
         http->playlist = audio_calloc(1, sizeof(http_playlist_t));
@@ -700,5 +721,12 @@ esp_err_t http_stream_restart(audio_element_handle_t el)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
     http->is_playlist_resolved = false;
+    return ESP_OK;
+}
+
+esp_err_t http_stream_set_server_cert(audio_element_handle_t el, const char *cert)
+{
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+    http->cert_pem = cert;
     return ESP_OK;
 }
