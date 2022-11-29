@@ -85,6 +85,9 @@ typedef struct {
     bool                        auto_connect_next_track;/*!< connect next track without open/close */
     bool                        enable_playlist_parser; /*!< Enable playlist parser*/
     int                         multi_out_num;          /*!< The number of multiple output */
+    const char                  *cert_pem;              /*!< SSL server certification, PEM format as string, if the client requires to verify server */
+    esp_err_t (*crt_bundle_attach)(void *conf);       /*!< Function pointer to esp_crt_bundle_attach. Enables the use of certification
+                                                          bundle for server verification, must be enabled in menuconfig */
 } http_stream_cfg_t;
 
 
@@ -105,6 +108,8 @@ typedef struct {
     .auto_connect_next_track = false,            \
     .enable_playlist_parser = false,             \
     .multi_out_num = 0,                          \
+    .cert_pem  = NULL,                           \
+    .crt_bundle_attach = NULL,                   \
 }
 
 /**
@@ -145,6 +150,18 @@ esp_err_t http_stream_restart(audio_element_handle_t el);
  *     - ESP_ERR_NOT_SUPPORTED if playlist is finished
  */
 esp_err_t http_stream_fetch_again(audio_element_handle_t el);
+
+/**
+ * @brief       Set SSL server certification
+ * @note        EM format as string, if the client requires to verify server
+ *
+ * @param       el    The http_stream element handle
+ * @param       cert  server certification
+ *
+ * @return
+ *     - ESP_OK on success
+ */
+esp_err_t http_stream_set_server_cert(audio_element_handle_t el, const char *cert);
 
 #ifdef __cplusplus
 }
