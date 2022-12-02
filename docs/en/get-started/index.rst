@@ -499,7 +499,7 @@ The first line contains ``ADF_PATH`` to point the toolchain to another file in E
 VS Code Extension
 =================
 
-1. Follow `Quick Installation Guide <https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/tutorial/install.md>`_ to install ESP-IDF Visual Studio Code Extension. If the previous steps have been done correctly, the following toolbar appears:
+1. Follow `VS Code Extension Quick Installation Guide <https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/tutorial/install.md>`_ to install ESP-IDF Visual Studio Code Extension. If the previous steps have been done correctly, the following toolbar appears:
 
 .. figure:: ../../_static/vscode-extension-toolbar.png
     :align: center
@@ -510,7 +510,7 @@ VS Code Extension
 
 2. To install the ESP-ADF extension, open ``Command Palette`` and enter ``install adf``. Then, a progress bar shows up in the lower right corner.
 
-  If you have cloned the ESP-ADF repository before, please go to ``.vscode/settings.json`` and manually set the ESP-ADF path in ``idf.espAdfPath`` or ``idf.espAdfPathWin`` (for Windows).
+  If you have cloned the ESP-ADF repository before, please enter ``open settings(ui)`` in  ``Command Palette``. Go to ``User > Extensions > ESP_IDF`` and manually set the ESP-ADF path in ``idf.espAdfPath`` or ``idf.espAdfPathWin`` (for Windows). You can also set the ESP-ADF path in ``.vscode/settings.json``.
 
 3. In ``Command Palette``, enter ``show examples project``, and then a window will be opened with a list of example projects.
 
@@ -520,6 +520,62 @@ VS Code Extension
 
 6. On the toolbar at the bottom of VS Code, click the plug-in symbol ``Select Port`` to configure the serial port and click the lightning symbol ``Flash Device`` to flash firmware. After the firmware is flashed successfully, click ``Monitor Device`` to start the monitor function. Or, you can also use the flame symbol to build, flash, and monitor the example at the same time.
 
+
+IDF Eclipse Plugin and Espressif IDE
+====================================
+
+Install and Set up environment variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Follow `IDF Eclipse Plugin Quick Installation Guide <https://github.com/espressif/idf-eclipse-plugin/blob/master/README.md>`_ to install IDF Eclipse Plugin or download and install Espressif IDE from `Espressif IDE Download Link <https://github.com/espressif/idf-eclipse-plugin/releases>`_. If the previous steps have been done correctly, you can create, build and flash IDF project in Eclipse environment.
+
+.. figure:: ../../_static/espressif-ide-reskinned-eclipse.png
+    :align: center
+    :alt: Espressif IDE (Reskinned Eclipse)
+    :figclass: align-center
+
+    Espressif IDE (Reskinned Eclipse)
+
+2. To install ESP-ADF, follow section :ref:`get-started-get-esp-adf`.
+
+3. To set ``ADF_PATH`` environment variable, open ``Window > Preferences > C/C++ > Build > Environment`` panel, click **Add** button and fill in ``ADF_PATH`` and ESP-ADF path. After you complete the above steps, select ``ADF_PATH`` in ``Environment variables`` table and click **Edit** and **Ok** button without changing any value(There is a bug in Eclipse CDT that is appending a null value before the path hence we need to click on edit and save it.).
+
+  If this step does not work, you can delete ``ADF_PATH`` set in Eclipse and set ``ADF_PATH`` as system environment variable. For Windows, set environment variable in ``Advanced System Setting`` panel. For Linux and macOS, add ``export ADF_PATH=your adf path`` in file ``/etc/profile``. However, it is not recommended. Doing so activates ADF virtual environment in every terminal session (including those where ADF is not needed), defeating the purpose of the virtual environment and likely affecting other software.
+
+Create a new project
+~~~~~~~~~~~~~~~~~~~~
+
+1. To create new project, go to ``File > New > Espressif IDF Project`` and provide project name. 
+
+2. Click **Finish** to create empty project. Or click **Next** and check ``Create a project using one of the templates`` to create project using ESP-IDF templates. 
+
+After creating a new project, you can use ESP-IDF and ESP-ADF to develop the project.
+
+Import existing project
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To import existing ESP-ADF examples, go to ``File > Import > Espressif > Existing IDF Project`` and select ESP-ADF example(Opening existing project directly may not be able to set the ESP target).
+
+Quick started
+~~~~~~~~~~~~~
+
+1. Select a project from ``Project Explorer``. 
+
+2. Select ``Run`` from the first drop-down, which is called **Launch Mode**. 
+
+3. Select your application from the second drop-down, which is called **Launch Configuration** (Auto-detected).
+
+4. Select ESP target from the third drop-down, which is called **Launch Target**. Click gear symbol **Edit** button of **Launch Target** to set ``Serial Port``.
+
+5. Double click ``sdkconfig`` file to launch the ``SDK Configuration Editor``.
+
+6. Click **Build** button to build the project.
+
+7. Click **Launch** button to flash the project.
+
+8. Click **Open a Terminal** button and select **ESP-IDF Serial Monitor** to view serial output.
+
+For more information about IDF Eclipse Plugin and Espressif IDE, please refer to `ESP-IDF Eclipse Plugin <https://github.com/espressif/idf-eclipse-plugin>`_.
 
 
 Update ESP-ADF
