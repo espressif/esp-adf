@@ -1,0 +1,14 @@
+menu "Example Configuration"
+
+choice CAMERA_CAPTURE_DATA_FORMAT
+    prompt "camera capture data format"
+    default CAMERA_DATA_FORMAT_RGB565
+
+config CAMERA_DATA_FORMAT_YUV422
+    bool "YUV422"
+
+config CAMERA_DATA_FORMAT_RGB565
+    bool "RGB565"
+
+endchoice
+endmenu

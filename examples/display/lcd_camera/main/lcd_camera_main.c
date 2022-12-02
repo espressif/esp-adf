@@ -8,8 +8,10 @@
 */
 #include <stdio.h>
 #include "string.h"
-#include "board.h"
 #include "esp_log.h"
+#include "board.h"
+#include "audio_mem.h"
+#include "esp_jpeg_common.h"
 
 static const char *TAG = "LCD_Camera";
 
@@ -25,6 +27,16 @@ void app_main(void)
 #include "esp_lcd_panel_ops.h"
 #include "esp_camera.h"
 
+#define EXAMPLE_LCD_H_RES    (320)
+#define EXAMPLE_LCD_V_RES    (240)
+
+#if defined CONFIG_CAMERA_DATA_FORMAT_YUV422
+static const pixformat_t s_camera_format = PIXFORMAT_YUV422;
+#else
+static const pixformat_t s_camera_format = PIXFORMAT_RGB565;
+#endif // CONFIG_CAMERA_DATA_FORMAT_YUV422
+
+static uint8_t *rgb_buffer;
 
 static camera_config_t camera_config = {
     .pin_pwdn = CAM_PIN_PWDN,
@@ -49,12 +61,11 @@ static camera_config_t camera_config = {
     .xclk_freq_hz = 40000000,
     .ledc_timer = LEDC_TIMER_0,
     .ledc_channel = LEDC_CHANNEL_0,
-
-    .pixel_format = PIXFORMAT_RGB565, //YUV422,GRAYSCALE,RGB565,JPEG
+    .pixel_format = s_camera_format, //YUV422,GRAYSCALE,RGB565,JPEG
     .frame_size = FRAMESIZE_QVGA,    //QQVGA-UXGA Do not use sizes above QVGA when not JPEG
 
-    .jpeg_quality = 12, //0-63 lower number means higher quality
-    .fb_count = 1,       //if more than one, i2s runs in continuous mode. Use only with JPEG
+    .jpeg_quality = 12,            //0-63 lower number means higher quality
+    .fb_count = 2,                 //if more than one, i2s runs in continuous mode. Use only with JPEG
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
 };
 
@@ -70,6 +81,24 @@ static esp_err_t init_camera()
     return ESP_OK;
 }
 
+/* example: RGB565 -> LCD */
+static esp_err_t example_lcd_rgb_draw(esp_lcd_panel_handle_t panel_handle, uint8_t *image)
+{
+    uint32_t lines_num = 40;
+    for (int i = 0; i < EXAMPLE_LCD_V_RES / lines_num; ++i) {
+        esp_lcd_panel_draw_bitmap(panel_handle, 0, i * lines_num, EXAMPLE_LCD_H_RES, lines_num + i * lines_num, image + EXAMPLE_LCD_H_RES * i * lines_num * 2);
+    }
+    return ESP_OK;
+}
+
+/* example: YUV422 -> RGB565 -> LCD */
+static esp_err_t example_lcd_yuv422_draw(esp_lcd_panel_handle_t panel_handle, uint8_t *image)
+{
+    jpeg_yuv2rgb(JPEG_SUB_SAMPLE_YUV422, JPEG_RAW_TYPE_RGB565_BE, image, EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES, rgb_buffer);
+    example_lcd_rgb_draw(panel_handle, rgb_buffer);
+    return ESP_OK;
+}
+
 void app_main(void)
 {
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
@@ -79,6 +108,10 @@ void app_main(void)
     if (ESP_OK != init_camera()) {
         return;
     }
+    if (s_camera_format == PIXFORMAT_YUV422) {
+        rgb_buffer = audio_calloc(1, EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * 2);
+        AUDIO_MEM_CHECK(TAG, rgb_buffer, return);
+    }
 
     while (1) {
         ESP_LOGI(TAG, "Taking picture...");
@@ -86,11 +119,21 @@ void app_main(void)
 
         // use pic->buf to access the image
         ESP_LOGI(TAG, "Picture taken! The size was: %zu bytes, w:%d, h:%d", pic->len, pic->width, pic->height);
-        uint32_t lines_num = 40;
-        for (int i = 0; i < pic->height / lines_num; ++i) {
-            esp_lcd_panel_draw_bitmap(panel_handle, 0, i * lines_num, 320, lines_num + i * lines_num, pic->buf + 320 * i * lines_num * 2);
+
+        if (s_camera_format == PIXFORMAT_YUV422) {
+            example_lcd_yuv422_draw(panel_handle, pic->buf);
+        } else {
+            // PIXFORMAT_YUV565
+            example_lcd_rgb_draw(panel_handle, pic->buf);
         }
+
+        AUDIO_MEM_SHOW(TAG);
         esp_camera_fb_return(pic);
     }
+
+    if (s_camera_format == PIXFORMAT_YUV422) {
+        audio_free(rgb_buffer);
+    }
 }
+
 #endif
