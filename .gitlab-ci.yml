@@ -21,6 +21,7 @@ variables:
   IDF_PATH: "$CI_PROJECT_DIR/esp-idf"
   CI_TARGET_UT_TEST_CONFIG_FILE: "$CI_PROJECT_DIR/.gitlab/ci/target-ut-test.yml"
   IDF_SKIP_CHECK_SUBMODULES: 1
+  GIT_DEPTH: 1
 
 .set_idf_version_and_update: &set_idf_version_and_update
   $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
@@ -156,6 +157,8 @@ check_labels:
   image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
   stage: pre_check
   rules:
+    - if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/) && $CI_PIPELINE_SOURCE != "schedule"'
+      when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && ($CI_PIPELINE_SOURCE == "push")'
       when: never
