@@ -230,9 +230,9 @@ void app_main(void)
                     ESP_LOGI(TAG, "[ * ] Finished, advancing to the next song");
                     sdcard_list_next(sdcard_list_handle, 1, &url);
                     ESP_LOGW(TAG, "URL: %s", url);
-                    /* In previous versions, audio_pipeline_terminal() was called here. It will close all the elememnt task and when use
-                     * the pipeline next time, all the tasks should be restart again. It speed too much time when we switch to another music.
-                     * So we use another method to acheive this as below.
+                    /* In previous versions, audio_pipeline_terminal() was called here. It will close all the element task and when we use
+                     * the pipeline next time, all the tasks should be restarted again. It wastes too much time when we switch to another music.
+                     * So we use another method to achieve this as below.
                      */
                     audio_element_set_uri(fatfs_stream_reader, url);
                     audio_pipeline_reset_ringbuffer(pipeline);
