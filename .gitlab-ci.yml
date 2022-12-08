@@ -1,6 +1,6 @@
 stages:
+  - pre_check
   - build
-  - build_ut
   - assign_test
   - target_test
 #  - example_test
@@ -68,9 +68,6 @@ before_script:
   - source $ADF_PATH/tools/ut/switch_branch.sh
   - set -e -o pipefail
 
-  # - cd $IDF_PATH
-  # - git checkout $IDF_VERSION
-  # - $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)"
   - source $IDF_PATH/tools/ci/setup_python.sh
   - if [ "$IDF_VERSION" != "release/v4.4" ];then source esp-idf/tools/ci/configure_ci_environment.sh;fi
 
@@ -126,41 +123,6 @@ before_script:
     - make
     - make print_flash_cmd > build/download.config
 
-build_docs:
-  stage: build
-  image: $CI_DOCKER_REGISTRY/esp-idf-doc-env:v7
-  tags:
-    - build_docs
-  artifacts:
-    when: always
-    paths:
-      # English version of documentation
-      - docs/en/doxygen-warning-log.txt
-      - docs/en/sphinx-warning-log.txt
-      - docs/en/sphinx-warning-log-sanitized.txt
-      - docs/en/_build/html
-      # Chinese version of documentation
-      - docs/zh_CN/doxygen-warning-log.txt
-      - docs/zh_CN/sphinx-warning-log.txt
-      - docs/zh_CN/sphinx-warning-log-sanitized.txt
-      - docs/zh_CN/_build/html
-    expire_in: 1 mos
-  script:
-    - source /opt/pyenv/activate && pyenv global 3.6.10
-    - pip install "setuptools<57.5.0"
-    - pip install "funcparserlib==0.3.6"
-    - /opt/pyenv/pyenv-1.2.16/versions/3.6.10/bin/python -m pip install --user -r docs/requirements.txt
-    - cd docs
-    - ./check_lang_folder_sync.sh
-    - cd en
-    - make gh-linkcheck
-    - make html
-    - ../check_doc_warnings.sh
-    - cd ../zh_CN
-    - make gh-linkcheck
-    - make html
-    - ../check_doc_warnings.sh
-
 .assign_test:
   tags:
     - assign_test
@@ -190,11 +152,24 @@ build_docs:
     # assign example tests
     - python $TEST_FW_PATH/CIAssignExampleTest.py $CI_PROJECT_DIR/examples $CI_PROJECT_DIR/.gitlab-ci.yml $EXAMPLE_CONFIG_OUTPUT_PATH
 
+check_labels:
+  image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
+  stage: pre_check
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && ($CI_PIPELINE_SOURCE == "push")'
+      when: never
+    - if: '$CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE != "master"'
+  before_script:
+    - echo "skip default before_script"
+  script:
+    - if [[ "$CI_MERGE_REQUEST_LABELS" =~ "unit_test" ]]; then echo "unit_test label exists"; else echo "warning:unit_test label is missing.Please add the unit_test and example_test label to the MR for the pipeline to succeed"; exit 1; fi
+    - if [[ "$CI_MERGE_REQUEST_LABELS" =~ "example_test" ]]; then echo "example_test label exists"; else echo "waring:example_test label is missing.Please add the example_test and unit_test label to the MR for the pipeline to succeed"; exit 1; fi
+
 push_to_github:
   stage: deploy
-  only:
-    - master
-    - /^release\/v/
+  rules:
+    - if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/) && $CI_PIPELINE_SOURCE != "schedule"'
 #  when: on_success
   image: $CI_DOCKER_REGISTRY/esp32-ci-env
   variables:
@@ -218,3 +193,4 @@ include:
   - '.gitlab/ci/assign-test.yml'
   - '.gitlab/ci/target-ut-test.yml'
   - '.gitlab/ci/rules.yml'
+  - '.gitlab/ci/docs.yml'
