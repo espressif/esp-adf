@@ -186,6 +186,7 @@ push_to_github:
     - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    - git fetch --unshallow
     - git remote remove github &>/dev/null || true
     - git remote add github git@github.com:espressif/esp-adf.git
     - tools/ci/push_to_github.sh
