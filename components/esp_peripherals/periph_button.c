@@ -70,6 +70,7 @@ static esp_err_t _button_run(esp_periph_handle_t self, audio_event_iface_msg_t *
 static esp_err_t _button_destroy(esp_periph_handle_t self)
 {
     periph_button_t *periph_btn = esp_periph_get_data(self);
+    esp_periph_stop_timer(self);
     button_destroy(periph_btn->btn);
     audio_free(periph_btn);
     return ESP_OK;

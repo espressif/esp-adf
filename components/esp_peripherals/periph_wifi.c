@@ -77,6 +77,7 @@ static const int SMARTCONFIG_DONE_BIT = BIT2;
 static const int SMARTCONFIG_ERROR_BIT = BIT3;
 
 static esp_periph_handle_t g_periph = NULL;
+static wifi_config_t wifi_config;
 
 esp_err_t periph_wifi_wait_for_connected(esp_periph_handle_t periph, TickType_t tick_to_wait)
 {
@@ -380,10 +381,23 @@ static esp_err_t _wifi_run(esp_periph_handle_t self, audio_event_iface_msg_t *ms
     return ESP_OK;
 }
 
+esp_err_t esp_wifi_set_listen_interval(esp_periph_handle_t periph, int interval)
+{
+    if (wifi_config.sta.listen_interval != interval) {
+        esp_wifi_disconnect();
+        periph_wifi_wait_for_disconnected(periph, portMAX_DELAY);
+        wifi_config.sta.listen_interval = interval;
+        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+        periph_wifi_wait_for_connected(periph, portMAX_DELAY);
+    } else {
+        ESP_LOGW(TAG, "Wifi listen interval %d is already set", interval);
+    }
+    return ESP_OK;
+}
+
 static esp_err_t _wifi_init(esp_periph_handle_t self)
 {
     periph_wifi_handle_t periph_wifi = (periph_wifi_handle_t)esp_periph_get_data(self);
-    wifi_config_t wifi_config;
 
     if (periph_wifi->is_open) {
         ESP_LOGE(TAG, "Wifi has initialized");
@@ -421,6 +435,7 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+        ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MAX_MODEM));
     }
     if (periph_wifi->wpa2_e_cfg->diasble_wpa2_e) {
         unsigned int ca_pem_bytes = periph_wifi->wpa2_e_cfg->ca_pem_end - periph_wifi->wpa2_e_cfg->ca_pem_start;
@@ -474,6 +489,7 @@ static esp_err_t _wifi_destroy(esp_periph_handle_t self)
     g_periph = NULL;
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
+    esp_event_loop_delete_default();
     esp_netif_destroy_default_wifi(sta);
 #endif
     return ESP_OK;

@@ -111,6 +111,7 @@ static esp_err_t _sdcard_destroy(esp_periph_handle_t self)
         ESP_LOGE(TAG, "stop sdcard error!");
     }
     periph_sdcard_t *sdcard = esp_periph_get_data(self);
+    esp_periph_stop_timer(self);
     audio_free(sdcard->root);
     audio_free(sdcard);
     return ret;

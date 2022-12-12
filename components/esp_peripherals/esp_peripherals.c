@@ -85,6 +85,12 @@ static esp_err_t process_peripheral_event(audio_event_iface_msg_t *msg, void *co
     return ESP_OK;
 }
 
+esp_err_t esp_periph_set_change_waiting_time(esp_periph_set_handle_t periph_set_handle, int time_ms)
+{
+    audio_event_iface_set_cmd_waiting_timeout(esp_periph_set_get_event_iface(periph_set_handle), time_ms / portTICK_RATE_MS);
+    return ESP_OK;
+}
+
 static void esp_periph_task(void *pv)
 {
     esp_periph_handle_t periph;
@@ -176,6 +182,12 @@ _periph_init_failed:
         periph_sets = NULL;
     }
     return NULL;
+}
+
+esp_err_t esp_periph_remove_from_set(esp_periph_set_handle_t periph_set_handle, esp_periph_handle_t periph)
+{
+    STAILQ_REMOVE(&periph_set_handle->periph_list, periph, esp_periph, entries);
+    return ESP_OK;
 }
 
 esp_err_t esp_periph_set_destroy(esp_periph_set_handle_t periph_set_handle)

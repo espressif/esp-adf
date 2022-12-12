@@ -98,6 +98,7 @@ static esp_err_t _touch_init(esp_periph_handle_t self)
 static esp_err_t _touch_destroy(esp_periph_handle_t self)
 {
     periph_touch_t *periph_touch = esp_periph_get_data(self);
+    esp_periph_stop_timer(self);
     esp_touch_destroy(periph_touch->touch);
     audio_free(periph_touch);
     return ESP_OK;
