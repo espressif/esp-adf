@@ -85,7 +85,7 @@ function update_audio_hal() {
             cat $ADF_PATH${line}"/"$1
         fi
     else
-        echo -e "\e[33m WARNING: " $ADF_PATH${line}"/"$1 " skip \e[0m"
+        echo -e "\e[32m " $ADF_PATH${line}"/"$1 " skip \e[0m"
     fi
 }
 
