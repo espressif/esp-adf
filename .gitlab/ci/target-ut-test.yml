@@ -4,13 +4,12 @@
   CONFIG_FILE="${CONFIG_FILE_PATH}/${JOG_FULL_NAME}.yml"
   
 .unit_test_template: &unit_test_template
+  image: $CI_DOCKER_REGISTRY/rpi-test-env:old1
   stage: target_test
   when: on_success
   rules:
-    - if: $BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example_test(?:,[^,\n\r]+)*$/i
-      when: never
     - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
-    - if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/)'
+    - if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/) && $CI_PIPELINE_SOURCE != "schedule"'
     - if: $CI_PIPELINE_SOURCE == "triggers"
     - if: $CI_PIPELINE_SOURCE == "schedules"
   artifacts:
@@ -55,24 +54,10 @@
     - python $TEST_SCRIPT $TEST_CASE_PATH -c $CONFIG_FILE -e $ENV_FILE
   interruptible: false
 
-.job_template: &job_template
-  <<: *unit_test_template
-  dependencies:
-    - adf_ut_make_v33
-    - assign_test_v33
-  variables:
-    TEST_SCRIPT: "esp-idf/tools/tiny-test-fw/Runner.py"
-    TEST_CASE_PATH: "esp-idf/tools/unit-test-app"
-    CONFIG_FILE_PATH: "esp-idf/components/idf_test/unit_test/CIConfigs"
-    LOG_PATH: "esp-idf/TEST_LOGS"
-    ENV_FILE: "ci-test-runner-configs/$CI_RUNNER_DESCRIPTION/EnvConfig.yml"
-    CHECKOUT_REF_SCRIPT: "esp-idf/tools/ci/checkout_project_ref.py"
-    PYTHON_VER: 3.7.7
-
 .job_v44_template: &job_v44_template
   <<: *unit_test_template
   dependencies:
-    - adf_ut_make_v44
+    - build_ut_v44_make
     - assign_test_v44
   variables:
     TEST_SCRIPT: "esp-idf/tools/tiny-test-fw/Runner.py"
@@ -162,76 +147,4 @@ UT_009_V44:
     - ESP32_IDF
     - 8Mpsram
     - V44
-  retry: 2
-
-UT_001:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_002:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_003:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L1
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_004:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L2
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_005:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L3
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_006:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L4
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_007:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_L5
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_008:
-  <<: *job_template
-  tags:
-    - UT_T1_1
-    - ESP32_IDF
-    - 8Mpsram
-  retry: 2
-
-UT_009:
-  <<: *job_template
-  tags:
-    - UT_T1_AUDIO_E6
-    - ESP32_IDF
-    - 8Mpsram
   retry: 2
