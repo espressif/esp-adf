@@ -352,8 +352,9 @@ _stream_open_begin:
     }
 
     char *buffer = NULL;
-    int post_len = esp_http_client_get_post_field(http->client, &buffer);
+    int post_len = 0;
 _stream_redirect:
+    post_len = esp_http_client_get_post_field(http->client, &buffer);
     if ((err = esp_http_client_open(http->client, post_len)) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to open http stream");
         return err;
@@ -681,8 +682,9 @@ esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el)
     if (track) {
         esp_http_client_set_url(http->client, track);
         char *buffer = NULL;
-        int post_len = esp_http_client_get_post_field(http->client, &buffer);
+        int post_len = 0;
 redirection:
+        post_len = esp_http_client_get_post_field(http->client, &buffer);
         if ((esp_http_client_open(http->client, post_len)) != ESP_OK) {
             ESP_LOGE(TAG, "Failed to open http stream");
             return ESP_FAIL;
