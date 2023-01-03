@@ -44,6 +44,17 @@
 #include "hls_playlist.h"
 #include "audio_idf_version.h"
 #include "gzip_miniz.h"
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
+#include "aes/esp_aes.h"
+#elif (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+#if CONFIG_IDF_TARGET_ESP32
+#include "esp32/aes.h"
+#elif CONFIG_IDF_TARGET_ESP32S2
+#include "esp32s2/aes.h"
+#endif
+#else
+#include "hwcrypto/aes.h"
+#endif
 
 static const char *TAG = "HTTP_STREAM";
 #define MAX_PLAYLIST_LINE_SIZE (512)
@@ -51,6 +62,18 @@ static const char *TAG = "HTTP_STREAM";
 #define HTTP_MAX_CONNECT_TIMES  (5)
 
 #define HLS_PREFER_BITRATE      (200*1024)
+#define HLS_KEY_CACHE_SIZE      (32)
+typedef struct {
+    bool             key_loaded;
+    char             *key_url;
+    uint8_t          key_cache[HLS_KEY_CACHE_SIZE];
+    uint8_t          key_size;
+    hls_stream_key_t key;
+    uint64_t         sequence_no;
+    esp_aes_context  aes_ctx;
+    bool             aes_used;
+} http_stream_hls_key_t;
+
 typedef struct http_stream {
     audio_stream_type_t             type;
     bool                            is_open;
@@ -72,6 +95,8 @@ typedef struct http_stream {
 #endif
     bool                            gzip_encoding;     /* Content is encoded */
     gzip_miniz_handle_t             gzip;             /* GZIP instance */
+    http_stream_hls_key_t           *hls_key;
+    hls_handle_t                    *hls_media;
 } http_stream_t;
 
 static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
@@ -205,11 +230,64 @@ static int _http_read_data(http_stream_t *http, char *buffer, int len)
     return gzip_miniz_read(http->gzip, (uint8_t*) buffer, len);
 }
 
+static esp_err_t _resolve_hls_key(http_stream_t *http)
+{
+    int ret = _http_read_data(http, (char*)http->hls_key->key_cache, sizeof(http->hls_key->key_cache));
+    if (ret < 0) {
+        return ESP_FAIL;
+    }
+    http->hls_key->key_size = (uint8_t)ret;
+    http->hls_key->key_loaded = true;
+    return ESP_OK;
+}
+
+static esp_err_t _prepare_crypt(http_stream_t *http)
+{
+    http_stream_hls_key_t* hls_key = http->hls_key;
+    if (hls_key->aes_used) {
+        esp_aes_free(&hls_key->aes_ctx);
+        hls_key->aes_used = false;
+    }
+    int ret = hls_playlist_parse_key(http->hls_media, http->hls_key->key_cache, http->hls_key->key_size);
+    if (ret < 0) {
+        return ESP_FAIL;
+    }
+    ret = hls_playlist_get_key(http->hls_media, http->hls_key->sequence_no, &http->hls_key->key);
+    if (ret != 0) {
+        return ESP_FAIL;
+    }
+    esp_aes_init(&hls_key->aes_ctx);
+    esp_aes_setkey(&hls_key->aes_ctx, (unsigned char*)hls_key->key.key, 128);
+    hls_key->aes_used = true;
+    http->hls_key->sequence_no++;
+    return ESP_OK;
+}
+
+static void _free_hls_key(http_stream_t *http)
+{
+    if (http->hls_key == NULL) {
+        return;
+    }
+    if (http->hls_key->aes_used) {
+        esp_aes_free(&http->hls_key->aes_ctx);
+        http->hls_key->aes_used = false;
+    }
+    if (http->hls_key->key_url) {
+        audio_free(http->hls_key->key_url);
+    }
+    audio_free(http->hls_key);
+    http->hls_key = NULL;
+}
+
 static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
 {
     audio_element_info_t info;
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     audio_element_getinfo(self, &info);
+    if (http->hls_media) {
+        hls_playlist_close(http->hls_media);
+        http->hls_media = NULL;
+    }
     // backup new uri firstly
     char *new_uri = audio_strdup(uri);
     if (new_uri == NULL) {
@@ -289,7 +367,39 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         }
     } while (0);
     if (hls) {
-        hls_playlist_close(hls);
+        if (hls_playlist_is_encrypt(hls) == false) {
+            _free_hls_key(http);
+            hls_playlist_close(hls);
+        } else {
+            // When content is encrypted, need keep hls instance
+            http->hls_media = hls;
+            const char *key_url = hls_playlist_get_key_uri(hls);
+            if (key_url == NULL) {
+                ESP_LOGE(TAG, "Hls do not have key url");
+                return ESP_FAIL;
+            }
+            if (http->hls_key == NULL) {
+                http->hls_key = (http_stream_hls_key_t *) calloc(1, sizeof(http_stream_hls_key_t));
+                if (http->hls_key == NULL) {
+                    ESP_LOGE(TAG, "No memory for hls key");
+                    return ESP_FAIL;
+                }
+            }
+            if (http->hls_key->key_url && strcmp(http->hls_key->key_url, key_url) == 0) {
+                http->hls_key->key_loaded = true;
+            } else {
+                if (http->hls_key->key_url) {
+                    audio_free(http->hls_key->key_url);
+                }
+                http->hls_key->key_loaded = false;
+                http->hls_key->key_url = audio_strdup(key_url);
+                if (http->hls_key->key_url == NULL) {
+                    ESP_LOGE(TAG, "No memory for hls key url");
+                    return ESP_FAIL;
+                } 
+            }
+            http->hls_key->sequence_no = hls_playlist_get_sequence_no(hls);
+        }
     }
     return http->is_valid_playlist ? ESP_OK : ESP_FAIL;
 }
@@ -318,7 +428,9 @@ static esp_err_t _http_open(audio_element_handle_t self)
     http->_errno = 0;
     audio_element_getinfo(self, &info);
 _stream_open_begin:
-    if (info.byte_pos == 0) {
+    if (http->hls_key && http->hls_key->key_loaded == false) {
+        uri = http->hls_key->key_url;
+    } else if (info.byte_pos == 0) {
         uri = _playlist_get_next_track(self);
     } else if (http->is_playlist_resolved) {
         uri = http_playlist_get_last_track(http->playlist);
@@ -443,7 +555,7 @@ _stream_redirect:
      * It overwrites URI pointer as well. Pay attention to that!
      */
     audio_element_set_total_bytes(self, info.total_bytes);
-
+    
     if (_is_playlist(&info, uri) == true) {
         /**
          * `goto _stream_open_begin` blocks on http_open until it gets valid URL.
@@ -459,7 +571,20 @@ _stream_redirect:
             goto _stream_open_begin;
         }
     }
-
+    // Load key and parse key
+    if (http->hls_key) {
+        if (http->hls_key->key_loaded == false) {
+            if (_resolve_hls_key(http) != ESP_OK) {
+                return ESP_FAIL;
+            }
+            // Load media url after key loaded
+            goto _stream_open_begin;
+        } else {
+            if (_prepare_crypt(http) != ESP_OK) {
+                return ESP_FAIL;
+            }
+        }
+    }
     http->is_open = true;
     audio_element_report_codec_fmt(self);
     return ESP_OK;
@@ -491,6 +616,11 @@ static esp_err_t _http_close(audio_element_handle_t self)
         audio_element_report_pos(self);
         audio_element_set_byte_pos(self, 0);
     }
+    _free_hls_key(http);
+    if (http->hls_media) {
+        hls_playlist_close(http->hls_media);
+        http->hls_media = NULL;
+    }
     if (http->gzip) {
         gzip_miniz_deinit(http->gzip);
         http->gzip = NULL;
@@ -514,7 +644,6 @@ static esp_err_t _http_reconnect(audio_element_handle_t self)
     err |= _http_open(self);
     return err;
 }
-
 
 static int _http_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
@@ -551,6 +680,36 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         }
         return ESP_OK;
     } else {
+        if (http->hls_key) {
+            int ret = esp_aes_crypt_cbc(&http->hls_key->aes_ctx, ESP_AES_DECRYPT, 
+                 rlen, (unsigned char*)http->hls_key->key.iv, 
+                 (unsigned char*)buffer, (unsigned char*)buffer);
+            if (rlen % 16 != 0) {
+                ESP_LOGE(TAG, "Data length %d not aligned", rlen);
+            }
+            if (ret != 0) {
+                ESP_LOGE(TAG, "Fail to decrypt aes ret %d", ret);
+                return ESP_FAIL;
+            }
+            if ((info.total_bytes && rlen + info.byte_pos >= info.total_bytes) ||
+                rlen < len) {
+                // Remove padding according PKCS#7
+                uint8_t padding = buffer[rlen-1];
+                if (padding && padding <= rlen) {
+                    int idx = rlen - padding;
+                    int paddin_n = padding -1;
+                    while (paddin_n) {
+                        if (buffer[idx++] != padding) {
+                            break;
+                        }
+                        paddin_n--;
+                    }
+                    if (paddin_n == 0) {
+                        rlen -= padding;
+                    }
+                }
+            }
+        }
         audio_element_update_byte_pos(self, rlen);
     }
     ESP_LOGD(TAG, "req lengh=%d, read=%d, pos=%d/%d", len, rlen, (int)info.byte_pos, (int)info.total_bytes);

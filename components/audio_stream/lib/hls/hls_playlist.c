@@ -49,6 +49,7 @@ typedef struct {
 
 /**
  * @brief Key tag information
+ *        Notes: only support identify KEYFORMAT currently
  */
 typedef struct {
     hls_encrypt_method_t method;
@@ -239,6 +240,26 @@ static int hls_main_tag_cb(hls_tag_info_t* tag_info, void* ctx)
     return 0;
 }
 
+static uint8_t h_to_i(char c)
+{
+    if (c >= 'a' && c <= 'z') {
+        return c - 'a';
+    }
+    if (c >= 'A' && c <= 'Z') {
+        return c - 'A';
+    }
+    return c - '0';
+}
+
+static void hls_hex_to_bin(uint8_t* v, char* s, int n)
+{
+    int i = 0;
+    while (i < n) {
+        *(v++) = (h_to_i(s[i]) << 4) + h_to_i(s[i+1]);
+        i += 2;
+    }
+}
+
 static int hls_media_tag_cb(hls_tag_info_t* tag_info, void* ctx)
 {
     hls_t* hls = (hls_t*)ctx;
@@ -272,8 +293,37 @@ static int hls_media_tag_cb(hls_tag_info_t* tag_info, void* ctx)
             break;
         case HLS_TAG_KEY:
             if (tag_info->attr_num) {
-                //TODO how to process key
-                ESP_LOGW(TAG, "key not support currently");
+                // Only support one key currently
+                media->key_num = 1;
+                if (media->key == NULL) {
+                    media->key = (hls_key_t*) audio_calloc(1, sizeof(hls_key_t));
+                }
+                if (media->key == NULL) {
+                    ESP_LOGE(TAG, "No memory for key");
+                    break;
+                }
+                for (int i = 0; i < tag_info->attr_num; i++) {
+                    switch (tag_info->k[i]) {
+                        case HLS_ATTR_METHOD:
+                            media->key[0].method = (hls_encrypt_method_t)tag_info->v[i].v;
+                            break;
+                        case HLS_ATTR_IV: {
+                            char* v = tag_info->v[i].s;
+                            // Skip leading 0x
+                            if (strncasecmp(v, "0x", 2) == 0) {
+                                v += 2;
+                            }
+                            hls_hex_to_bin(media->key[0].iv, v, strlen(v));
+                            break;
+                        }
+                        case HLS_ATTR_URI:
+                            HLS_FREE(media->key[0].uri);
+                            media->key[0].uri = join_url(media->uri, tag_info->v[i].s);
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
             break;
 
@@ -486,6 +536,96 @@ int hls_playlist_parse_data(hls_handle_t h, uint8_t* buffer, int size, bool eos)
         hls_parse(&hls->parser, hls_media_tag_cb, hls);
     }
     return 0;
+}
+
+int hls_playlist_parse_key(hls_handle_t h, uint8_t* buffer, int size)
+{
+    hls_t* hls = (hls_t*)h;
+    if (hls == NULL) {
+        return -1;
+    }
+    if (hls->type == HLS_FILE_TYPE_MASTER_PLAYLIST) {
+        return 0;
+    }
+    hls_media_playlist_t* media = hls->media_playlist;
+    if (media == NULL || media->key_num == 0) {
+        return 0;
+    }
+    if (media->key[0].method == HLS_ENCRYPT_METHOD_AES128) {
+        if (size == 16) {
+            memcpy(media->key[0].k, buffer, size);
+        } else if (size == 32) {
+            hls_hex_to_bin(media->key[0].k, (char*)buffer, 32);
+        } else {
+            ESP_LOGE(TAG, "Bad AES key size %d", size);
+        }
+        return 0;
+    }
+    return -1;
+}
+
+bool hls_playlist_is_encrypt(hls_handle_t h)
+{
+    hls_t* hls = (hls_t*)h;
+    if (hls == NULL || hls->type == HLS_FILE_TYPE_MASTER_PLAYLIST) {
+        return false;
+    }
+    hls_media_playlist_t* media = hls->media_playlist;
+    if (media && media->key_num && media->key[0].method != HLS_ENCRYPT_METHOD_NONE) {
+        return true;
+    }
+    return false;
+}
+
+const char* hls_playlist_get_key_uri(hls_handle_t h)
+{
+    hls_t* hls = (hls_t*)h;
+    if (hls == NULL || hls->media_playlist == NULL) {
+        return NULL;
+    }
+    hls_media_playlist_t* media = hls->media_playlist;
+    if (media->key_num && media->key[0].uri) {
+        return media->key[0].uri;
+    }
+    return NULL;
+}
+
+uint64_t hls_playlist_get_sequence_no(hls_handle_t h)
+{
+    hls_t* hls = (hls_t*)h;
+    if (hls == NULL || hls->media_playlist == NULL) {
+        return 0;
+    }
+    hls_media_playlist_t* media = hls->media_playlist;
+    return media->media_sequence;
+}
+
+int hls_playlist_get_key(hls_handle_t h, uint64_t sequence_no, hls_stream_key_t* key)
+{
+    hls_t* hls = (hls_t*)h;
+    if (hls == NULL || hls->media_playlist == NULL) {
+        return -1;
+    }
+    hls_media_playlist_t* media = hls->media_playlist;
+    if (media->key_num) {
+        memcpy(key->key, media->key[0].k, sizeof(key->key));
+        // Check has iv or not
+        if (media->key[0].iv[0]) {
+            memcpy(key->iv, media->key[0].iv, sizeof(key->iv));
+        } else {
+            // Convert sequence_no to iv
+            int idx = sizeof(key->iv)-1;
+            while (sequence_no) {
+                key->iv[idx--] = (sequence_no & 0xFF);
+                sequence_no >>= 8;
+            }
+            while (idx >= 0) {
+                key->iv[idx--] = 0;
+            }
+        }
+        return 0;
+    }
+    return -1;
 }
 
 bool hls_playlist_is_master(hls_handle_t h)

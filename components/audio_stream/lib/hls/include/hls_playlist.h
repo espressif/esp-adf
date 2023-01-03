@@ -45,6 +45,14 @@ typedef enum {
 } hls_stream_type_t;
 
 /**
+ * @brief HLS AES key information
+ */
+typedef struct {
+   char key[16];
+   char iv[16];
+} hls_stream_key_t;
+
+/**
  * @brief Callback for HLS media uri
  */
 typedef int (*hls_uri_callback) (char* uri, void* tag);
@@ -102,15 +110,58 @@ char* hls_playlist_get_prefer_url(hls_handle_t h, hls_stream_type_t type);
  * @param           size: Input data size
  * @param           eos: Whether input data reach file end or not
  * @return          -0: On sucess
- *                  other: Parse fail
+ *                  -Others: Parse fail
  */
 int hls_playlist_parse_data(hls_handle_t h, uint8_t* data, int size, bool eos);
+
+/**
+ * @brief         Check whether playlist is encrypt or not
+ * @param         h: HLS handle
+ * @return        -true: Content is encrypt
+ *                -false: Content is clear
+ */
+bool hls_playlist_is_encrypt(hls_handle_t h);
+
+/**
+ * @brief         Get key URI string
+ * @param         h: HLS handle
+ * @return        -NULL: URI not existed
+ *                -Others: URI string
+ */
+const char *hls_playlist_get_key_uri(hls_handle_t h);
+
+/**
+ * @brief         Get sequence number
+ * @param         h: HLS handle
+ * @return        Sequence number of first media url
+ */
+uint64_t hls_playlist_get_sequence_no(hls_handle_t h);
+
+/**
+ * @brief         Get AES key information
+ * @param         h: HLS handle
+ * @param         sequence_no: Sequence number
+ * @param         key[out]: Key information
+ * @return         0: Get key success
+ *                -1: Key not existed
+ */
+int hls_playlist_get_key(hls_handle_t h, uint64_t sequence_no, hls_stream_key_t* key);
+
+/**
+ * @brief           Parse HLS key
+ * @param           h: HLS handle
+ * @param           buffer: Buffer for key content
+ * @param           size: Key size
+ * @return          0: On success
+ *                  -1: Parse key fail
+ */
+int hls_playlist_parse_key(hls_handle_t h, uint8_t* buffer, int size);
 
 /**
  * @brief         Close parse for HLS playlist
  *
  * @param           h: HLS handle
- * @return          -0: On sucess
+ * @return          -0: On success
  *                  other: Invalid input
  */
 int hls_playlist_close(hls_handle_t h);
