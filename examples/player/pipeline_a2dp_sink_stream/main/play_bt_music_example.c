@@ -235,8 +235,8 @@ void app_main(void)
     audio_pipeline_deinit(pipeline);
     audio_element_deinit(bt_stream_reader);
     audio_element_deinit(i2s_stream_writer);
-    esp_periph_set_destroy(set);
     periph_service_destroy(input_ser);
+    esp_periph_set_destroy(set);
     esp_bluedroid_disable();
     esp_bluedroid_deinit();
     esp_bt_controller_disable();
