@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2022 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ * Copyright (c) 2023 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _CNV_DEBUG_H_
-#define _CNV_DEBUG_H_
+#ifndef _SRC_DRV_I2S_H_
+#define _SRC_DRV_I2S_H_
 
 #include "esp_err.h"
 
@@ -31,34 +31,45 @@
 extern "C" {
 #endif
 
-typedef enum {
-    CNV_DEBUG_INT16_DATA,
-    CNV_DEBUG_INT32_DATA,
-    CNV_DEBUG_FLOAT_DATA,
-} cnv_debug_data_type_t;
+#define   SRC_DRV_I2S_CFG_DEFAULT() {                         \
+            .audio_samplerate = CNV_AUDIO_SAMPLE,             \
+}
 
 /**
- * @brief Printing display direction
+ * @brief SRC_DRV_I2S configuration
  */
-typedef enum {
-    CNV_DISPLAY_HORIZONTALLY,       /*!< Horizontal display */
-    CNV_DISPLAY_PORTRAIT,           /*!< Portrait display */
-} cnv_debug_display_t;
+typedef struct {
+    uint16_t audio_samplerate;   /*!< Audio sampling rate */
+} src_drv_config_t;
 
 /**
- * @brief      Use this method to print the debugging information of source_data[]/fft_y_cf[]
+ * @brief      The SRC_DRV_I2S component initialization
  *
- * @param[in]  data         Address to start printing
- * @param[in]  data_len     Data length
- * @param[in]  tpye         Type of data
- * @param[in]  direction    Display direction: vertical display or horizontal display
+ * @param[in]  config    SRC_DRV_I2S configuration information
  *
  * @return
  *     - ESP_OK
  */
-esp_err_t cnv_debug_display(void *data, uint16_t data_len, cnv_debug_data_type_t tpye, cnv_debug_display_t direction);
+esp_err_t src_drv_i2s_init(src_drv_config_t *config);
+
+/**
+ * @brief      Deinitialize SRC_DRV_I2S components
+ *
+ * @return
+ *     - ESP_OK
+ */
+esp_err_t src_drv_i2s_deinit(void);
+
+/**
+ * @brief      Get source data
+ *
+ * @param[io]  source_data    Pointer to source data address
+ * @param[in]  size           Expected data size
+ * @param[in]  ctx            Caller context
+ */
+void src_drv_get_i2s_data(void *source_data, int size, void *ctx);
 
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif // _SRC_DRV_I2S_H_

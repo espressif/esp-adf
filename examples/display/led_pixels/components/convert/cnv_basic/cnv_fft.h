@@ -56,7 +56,18 @@ typedef struct {
  *     - FFT related array
  *     - NULL
  */
-cnv_fft_array_t * cnv_fft_dsps2r_init(uint16_t n_samples);
+cnv_fft_array_t *cnv_fft_dsps2r_sc16_init(uint16_t n_samples);
+
+/**
+ * @brief      Initialize the fft component
+ *
+ * @param[in]  n_samples    Length of the window array
+ *
+ * @return
+ *     - FFT related array
+ *     - NULL
+ */
+cnv_fft_array_t * cnv_fft_dsps2r_fc32_init(uint16_t n_samples);
 
 /**
  * @brief      Deinitialization the fft component
@@ -67,7 +78,18 @@ cnv_fft_array_t * cnv_fft_dsps2r_init(uint16_t n_samples);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t cnv_fft_dsps2r_deinit(cnv_fft_array_t * fft_array);
+esp_err_t cnv_fft_dsps2r_sc16_deinit(cnv_fft_array_t * fft_array);
+
+/**
+ * @brief      Deinitialization the fft component
+ *
+ * @param[in]  fft_array    FFT related array
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t cnv_fft_dsps2r_fc32_deinit(cnv_fft_array_t * fft_array);
 
 /**
  * @brief      The source data in the 'source_data' array is FFT transformed and stored in the 'fft_array->y_cf2' array
@@ -80,7 +102,33 @@ esp_err_t cnv_fft_dsps2r_deinit(cnv_fft_array_t * fft_array);
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t cnv_fft_dsps2r(cnv_fft_array_t * fft_array, float *source_data, float *out_y_cf);
+esp_err_t cnv_fft_dsps2r_sc16(cnv_fft_array_t * fft_array, int16_t *source_data, float *out_y_cf);
+
+/**
+ * @brief      The source data in the 'source_data' array is FFT transformed and stored in the 'fft_array->y_cf2' array
+ *
+ * @param[in]  fft_array    FFT related array
+ * @param[in]  source_data  Source data before fft operation
+ * @param[out] out_y_cf     Data after fft operation
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t cnv_fft_dsps2r_fc32(cnv_fft_array_t * fft_array, int16_t *source_data, float *out_y_cf);
+
+/**
+ * @brief      Frequency normalized and sorted from small to large. The sorted data is stored in 'fft_array->value'
+ *
+ * @param[in]  y_cf               Frequency array after fft operation
+ * @param[io]  fft_array          FFT related array
+ * @param[in]  normaliton_flag    Flag bit for normalization operation. true: means enable
+ * 
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t cnv_fft_data_arrangement(float * y_cf, cnv_fft_array_t *fft_array, bool normaliton_flag);
 
 #ifdef __cplusplus
 }

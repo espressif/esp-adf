@@ -9,21 +9,39 @@ menu "Example Configuration"
         range 0 30
         default 7
     config EXAMPLE_TOTAL_LEDS
-        int "Total LEDs"
+        int "Total number of LEDs"
         default 16
 
     menu "Audio"
+        choice EXAMPLE_REC_TYPE
+            prompt "Audio capture types"
+            default EXAMPLE_ADC_REC_TYPE
+
+            config EXAMPLE_ADC_REC_TYPE
+                bool "ADC"
+                help
+                    ADC recording using esp32c3-lyra
+
+            config EXAMPLE_I2S_REC_TYPE
+                bool "I2S"
+                help
+                    I2S recording using esp32c3
+        endchoice
+
         config EXAMPLE_AUDIO_SAMPLE
             int "Audio sampling rate"
             default 16000
-        config EXAMPLE_N_SAMPLE
-            int "Number of sampling points of FFT"
-            default 256
-        config EXAMPLE_MIN_SOUND_ENERGY
-            int "Min sound energy threshold"
+        config EXAMPLE_AUDIO_EFFECTIVE_RESOLUTION_BITS
+            int "Audio effective resolution bits"
             default 12
-        config EXAMPLE_DEFAULT_ENERGY_MAX
-            int "Default max sound energy threshold"
+        config EXAMPLE_N_SAMPLE
+            int "The number of sample points to use for each calculation. Also used for FFT calculations"
+            default 256
+        config EXAMPLE_DEFAULT_AUDIO_MIN_RMS
+            int "Min audio Root-Mean-Square threshold"
+            default 12
+        config EXAMPLE_DEFAULT_AUDIO_MAX_RMS
+            int "Max audio Root-Mean-Square threshold"
             default 64
         choice EXAMPLE_VOL_CALC_TYPES
             prompt "Volume calculate types"
@@ -32,21 +50,55 @@ menu "Example Configuration"
             config EXAMPLE_VOL_STATIC_CALC_TYPE
                 bool "Volume staic calculate"
                 help
-                    Fixed 'energy_max'
+                    Fixed 'rms_max'
 
             config EXAMPLE_VOL_DYNAMIC_CALC_TYPE
                 bool "Volume dynamic calculation"
                 help
-                    If the audio frame energy is greater than "variable_energy_max", "variable_energy_max" will be refreshed.
-                    Of course, when the signal is small, in order to display the small signal, "variable_energy_max" will quickly fall back to the default setting.
+                    If the audio frame Root-Mean-Square Value is greater than "variable_rms_max", "variable_rms_max" will be refreshed.
+                    Of course, when the signal is small, in order to display the small signal, "variable_rms_max" will quickly fall back to the default setting.
         endchoice
+
+        config EXAMPLE_IIR_HPF_FILTER
+            bool "IIR filter"
+            default false
+        config EXAMPLE_CUT_OFF_FREQ
+            depends on EXAMPLE_IIR_HPF_FILTER
+            int "Cut-off frequency"
+            default 100
+        config EXAMPLE_Q_FACTOR
+            depends on EXAMPLE_IIR_HPF_FILTER
+            int "Q factor of filter"
+            default 1
+        config EXAMPLE_FFT
+            bool "FFT operation"
+            default false
+        choice EXAMPLE_FFT_TYPE
+            depends on EXAMPLE_FFT
+            prompt "FFT types"
+            default EXAMPLE_FC32_TYPE
+
+            config EXAMPLE_SC16_TYPE
+                bool "SR16"
+                help
+                    sr16
+
+            config EXAMPLE_FC32_TYPE
+                bool "FC32"
+                help
+                    fc32
+        endchoice
+        config EXAMPLE_DATA_DEBUG
+            bool "Date debug"
+            default false
+        config EXAMPLE_SOURCE_DATA_DEBUG
+            depends on EXAMPLE_DATA_DEBUG
+            bool "Source data debug"
+            default false
         config EXAMPLE_FFT_DEBUG
+            depends on EXAMPLE_DATA_DEBUG
             bool "FFT debug"
             default false
     endmenu
-
-    config EXAMPLE_SOURCE_DATA_DEBUG
-        bool "Source data debug"
-        default false
 
 endmenu

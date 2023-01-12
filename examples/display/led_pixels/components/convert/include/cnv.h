@@ -34,31 +34,30 @@
 extern "C" {
 #endif
 
-#define   CNV_AUDIO_SAMPLE          (CONFIG_EXAMPLE_AUDIO_SAMPLE)        /*!< Audio sampling rate */
-#define   CNV_N_SAMPLES             (CONFIG_EXAMPLE_N_SAMPLE)            /*!< FFT sampling points */
-#define   CNV_MIN_SOUND_ENERGY      (CONFIG_EXAMPLE_MIN_SOUND_ENERGY)    /*!< Used as the minimum energy threshold, below which it can be considered as a silent environment */
-#define   CNV_TOTAL_LEDS            (CONFIG_EXAMPLE_TOTAL_LEDS)          /*!< Total number of LEDs */
-#define   CNV_SOURCE_DATA_DEBUG     (CONFIG_EXAMPLE_SOURCE_DATA_DEBUG)   /*!< Print source data >!*/
-#define   CNV_FFT_DEBUG             (CONFIG_EXAMPLE_FFT_DEBUG)           /*!< Print the data after FFT >!*/
+#define   CNV_AUDIO_SAMPLE          (CONFIG_EXAMPLE_AUDIO_SAMPLE)             /*!< Audio sampling rate */
+#define   CNV_N_SAMPLES             (CONFIG_EXAMPLE_N_SAMPLE)                 /*!< FFT sampling points */
+#define   CNV_AUDIO_MIN_RMS         (CONFIG_EXAMPLE_DEFAULT_AUDIO_MIN_RMS)    /*!< Used as the minimum Root-Mean-Square threshold, below which it can be considered as a silent environment */
+#define   CNV_TOTAL_LEDS            (CONFIG_EXAMPLE_TOTAL_LEDS)               /*!< Total number of LEDs */
 
-#define   CNV_CFG_DEFAULT() {                                             \
-            .source_size             = 2048,                              \
-            .audio_samplerate        = CNV_AUDIO_SAMPLE,                  \
-            .n_samples               = CNV_N_SAMPLES,                     \
-            .default_energy_min      = CNV_MIN_SOUND_ENERGY,              \
-            .default_energy_max      = CONFIG_EXAMPLE_DEFAULT_ENERGY_MAX, \
-            .window_max_width_db     = CNV_AUDIO_WINDOW_MAX_WIDTH_DB,     \
-            .regress_threshold_vol   = CNV_AUDIO_REGRESS_THRESHOLD_VOL,   \
-            .total_leds              = CNV_TOTAL_LEDS,                    \
-            .task_stack              = 3072,                              \
-            .task_core               = 0,                                 \
-            .task_prio               = 12,                                \
+#define   CNV_CFG_DEFAULT() {                                                \
+            .source_size             = 2048,                                 \
+            .audio_samplerate        = CNV_AUDIO_SAMPLE,                     \
+            .n_samples               = CNV_N_SAMPLES,                        \
+            .default_rms_min         = CNV_AUDIO_MIN_RMS,                    \
+            .default_rms_max         = CONFIG_EXAMPLE_DEFAULT_AUDIO_MAX_RMS, \
+            .window_max_width_db     = CNV_AUDIO_WINDOW_MAX_WIDTH_DB,        \
+            .regress_threshold_vol   = CNV_AUDIO_REGRESS_THRESHOLD_VOL,      \
+            .audio_resolution_bits   = CNV_AUDIO_RESOLUTION_BITS,            \
+            .total_leds              = CNV_TOTAL_LEDS,                       \
+            .task_stack              = 3072,                                 \
+            .task_core               = 0,                                    \
+            .task_prio               = 12,                                   \
 }
 
 typedef struct cnv_handle_s cnv_handle_t;
 typedef STAILQ_HEAD(cnv_pattern_func_list, cnv_pattern_func_s) cnv_pattern_func_list_t;
-typedef void (*cnv_source_data_func)(void *source_data, int size, void *ctx);   /*!< Callback function to get source data */
-typedef esp_err_t (*cnv_pattern_func)(cnv_handle_t *handle);                        /*!< Pattern function pointer */
+typedef void (*cnv_source_data_func)(void *source_data, int size, void *ctx);    /*!< Callback function to get source data */
+typedef esp_err_t (*cnv_pattern_func)(cnv_handle_t *handle);                     /*!< Pattern function pointer */
 typedef struct pixel_renderer_data_s cnv_data_t;
 typedef struct pixel_coord_s cnv_coord_t;
 
@@ -108,12 +107,13 @@ typedef struct {
     cnv_source_data_func      source_data_cb;              /*!< Callback function to get source data */
     uint16_t                  source_size;                 /*!< The size of the source_data collected by the SRC_DRV(in bytes) */
     uint16_t                  audio_samplerate;            /*!< Audio sampling rate */
+    uint8_t                   audio_resolution_bits;       /*!< Audio resolution bits */
     uint16_t                  n_samples;                   /*!< Number of sampling points */
     uint16_t                  window_max_width_db;         /*!< Maximum loudness level range displayed by led */
-    uint16_t                  regress_threshold_vol;       /*!< If the sound energy is lower than this value, the maximum volume will gradually return to the set default maximum value */
-    uint16_t                  maxenergy_fall_back_cycle;   /*!< Indicates how many cycles are required for `variable_energy_max` to fall back to `default_energy_max` */
-    float                     default_energy_min;          /*!< As the default minimum energy threshold */
-    float                     default_energy_max;          /*!< As the default maximum energy threshold */
+    uint16_t                  regress_threshold_vol;       /*!< If the current volume is lower than this value, the maximum volume will gradually return to the set default maximum value */
+    uint16_t                  max_rms_fall_back_cycle;     /*!< Indicates how many cycles are required for `variable_rms_max` to fall back to `default_rms_max` */
+    float                     default_rms_min;             /*!< As the default minimum Root-Mean-Square threshold */
+    float                     default_rms_max;             /*!< As the default maximum Root-Mean-Square threshold */
     cnv_fft_array_t          *fft_array;                   /*!< Array to be created for fft operation */
     uint16_t                  total_leds;                  /*!< Total number of LEDs at initialization */
     int32_t                   task_stack;                  /*!< CONVERT task stack */

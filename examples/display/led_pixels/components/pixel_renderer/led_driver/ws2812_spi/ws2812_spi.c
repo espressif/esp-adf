@@ -195,7 +195,7 @@ ws2812_t *ws2812_spi_init(uint8_t channel, uint8_t gpio_num, uint16_t led_num)
         ws2812_spi_set_bit(0, led_dev->buf + i * WS2812_SPI_LED_BUF + 3);
         ws2812_spi_set_bit(0, led_dev->buf + i * WS2812_SPI_LED_BUF + 6);
     }
-
+    led_dev->parent.refresh(pStrip, 100);
     return pStrip;
 
 MALLOC_EXIT:

@@ -1,0 +1,14 @@
+menu "LED Board"
+
+choice CUSTOMER_AUDIO_BOARD
+    prompt "LED board"
+    default ESP32_C3_DEVKITM_1
+    help
+        Select an led board to use with the ESP-ADF
+
+config ESP32_C3_DEVKITM_1
+    bool "ESP32 C3 DevKitM-1"
+
+endchoice
+
+endmenu

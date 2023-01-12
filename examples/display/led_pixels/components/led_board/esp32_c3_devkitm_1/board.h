@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2022 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ * Copyright (c) 2023 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,43 +22,11 @@
  *
  */
 
-#ifndef _CNV_DEBUG_H_
-#define _CNV_DEBUG_H_
+#ifndef _AUDIO_BOARD_H_
+#define _AUDIO_BOARD_H_
 
-#include "esp_err.h"
+#include "board_pins_config.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define BOARD_PA_GAIN    (10) /* Power amplifier gain defined by board (dB) */
 
-typedef enum {
-    CNV_DEBUG_INT16_DATA,
-    CNV_DEBUG_INT32_DATA,
-    CNV_DEBUG_FLOAT_DATA,
-} cnv_debug_data_type_t;
-
-/**
- * @brief Printing display direction
- */
-typedef enum {
-    CNV_DISPLAY_HORIZONTALLY,       /*!< Horizontal display */
-    CNV_DISPLAY_PORTRAIT,           /*!< Portrait display */
-} cnv_debug_display_t;
-
-/**
- * @brief      Use this method to print the debugging information of source_data[]/fft_y_cf[]
- *
- * @param[in]  data         Address to start printing
- * @param[in]  data_len     Data length
- * @param[in]  tpye         Type of data
- * @param[in]  direction    Display direction: vertical display or horizontal display
- *
- * @return
- *     - ESP_OK
- */
-esp_err_t cnv_debug_display(void *data, uint16_t data_len, cnv_debug_data_type_t tpye, cnv_debug_display_t direction);
-
-#ifdef __cplusplus
-}
-#endif
 #endif

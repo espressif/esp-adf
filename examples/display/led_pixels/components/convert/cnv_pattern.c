@@ -374,7 +374,7 @@ esp_err_t cnv_pattern_energy_chase_mode(cnv_handle_t *handle)
     coord.y = 0;
     coord.z = 0;
     cnv_audio_process(handle->audio, handle->source_data, NULL, handle->audio->n_samples, CNV_AUDIO_VOLUME);
-    if ((handle->audio->audio_energy <= handle->audio->default_energy_min) && (level_pre == 0)) {
+    if ((handle->audio->cur_rms <= handle->audio->default_rms_min) && (level_pre == 0)) {
         anti_shake = 0;
         if (rhythm_exit_delay <= 0) {
             out_data->frame_format = ONLY_RGB;

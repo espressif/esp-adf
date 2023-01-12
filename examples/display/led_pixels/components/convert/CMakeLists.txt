@@ -1,4 +1,4 @@
-idf_component_register(SRCS . "cnv.c" "cnv_pattern.c"
+idf_component_register(SRCS . "cnv.c" "cnv_pattern.c" "cnv_audio/cnv_audio.c"
                     INCLUDE_DIRS "include" "cnv_audio" "cnv_basic"
                     REQUIRES driver esp-dsp source_drv audio_sal utilis pixel_renderer)
 
@@ -8,3 +8,4 @@ add_prebuilt_library(convert "${CMAKE_CURRENT_SOURCE_DIR}/lib/${CONFIG_IDF_TARGE
                         REQUIRES driver source_drv audio_sal utilis pixel_renderer)
 
 target_link_libraries(${COMPONENT_TARGET} INTERFACE convert)
+

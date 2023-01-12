@@ -1,14 +1,15 @@
 # LED 像素显示示例
-- [English Version](./README.md)
-- 例程难度：![alt text](./_static/level_basic.png "初级")
+- 例程难度：![alt text](../../../docs/_static/level_basic.png "初级")
 
 ## 例程简介
 
-例程演示了通过 ESP32-C3 ADC 获取音频数据，经过 FFT 和能量计算后输出到 LED 像素矩阵进行显示的过程。例程中实现了部分样式，可在 main.c 用 `cnv_set_cur_pattern` 进行配置。LED 驱动支持了 WS2812，可使用 SPI、RMT 输出。
+例程演示了通过 ESP32-C3 获取音频数据，再经过 FFT 或响度计算后输出到 LED 像素矩阵/灯环进行显示的过程。例程中实现了部分样式，可在 main.c 用 `cnv_set_cur_pattern` 进行配置。LED 驱动支持了 WS2812，可使用 SPI、RMT 输出。
+
+注意：《ESP32-C3 物联网工程开发实战》中 ESP32-C3 的默认固件为当声音有效值超过 `default_rms_min` 时，LED 随着音乐律动，否则为流水灯效果。 `default_rms_min` 可通过 `menuconfig -> Example Configuration -> Min audio rms threshold` 配置。
 
 ### 例程流程
 
- 1. 通过 `SRC_DRV` 获取源数据。例程使用内部 12 位 ADC。
+ 1. 通过 `SRC_DRV` 获取源数据。
  2. `CONVERT` 组件会使用在初始化时注册的 source_data_cb 获取源数据。
  3. `CONVERT` 组件会调用在初始化时注册的 PATTERN 回调函数进行 LED 像素的映射。
  4. `CONVERT` 会将映射之后的 LED 数据发到 `PIXEL_RENDERER` 组件。
@@ -22,13 +23,13 @@
 
 | memory_total (byte) |
 |---------------------|
-| 17840               |
+| 18992               |
 
 初始化 FFT 的内存消耗：
 
 | memory_total (byte) |
 |---------------------|
-| 48072               |
+| 35236               |
 
 ### 预备知识
 
@@ -45,16 +46,16 @@ LED 像素坐标的建立需要在 `PIXEL_RENDERER` 组件中完成。此组件�
 
 ### LED 矩阵排列方式
 LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列方式，即 y_axis_points 为 6，x_axis_points 为 7。（例程默认以排列一方式建立坐标系）
- - 排列一的坐标原点为第 6 颗灯珠，led_index 为 5，origin_offset 为 5；坐标 (1,0) 为第 ７ 颗灯珠，led_index 为 ６。
+ - 排列一的坐标原点为第 6 颗灯珠，led_index 为 5，origin_offset 为 5；坐标 (1,0) 为第 7 颗灯珠。
  - 排列二的坐标原点为第 1 颗灯珠，led_index 为 0，origin_offset 为 0；坐标 (1,0) 为第 12 颗灯珠，需重定义像素坐标映射。
- - 排列三的坐标原点为第 1 颗灯珠，led_index 为 0，origin_offset 为 0；坐标 (1,0) 为第 ７ 颗灯珠，需重定义像素坐标映射。
+ - 排列三的坐标原点为第 1 颗灯珠，led_index 为 0，origin_offset 为 0；坐标 (1,0) 为第 7 颗灯珠，需重定义像素坐标映射。
 
 ```
 符号 ｀*｀ 代表 LED 灯珠
 符号 `|` 与 `-` 代表电路
 下方排列认为左下角灯珠为坐标原点。
 
-排列一：６ X 7
+排列一：6 X 7
   ->-*   *---*   *---*   *---*
      |   |   |   |   |   |   |
      *   *   *   *   *   *   *
@@ -67,7 +68,7 @@ LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列�
      |   |   |   |   |   |   |
      *---*   *---*   *---*   *->-
 
-排列二：６ X 7
+排列二：6 X 7
      *---*   *---*   *---*   *->-
      |   |   |   |   |   |   |
      *   *   *   *   *   *   *
@@ -80,7 +81,7 @@ LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列�
      |   |   |   |   |   |   |
   ->-*   *---*   *---*   *---*
 
-排列三：６ X 7
+排列三：6 X 7
      *---  *---  *---  *---  *---  *---  *->-
      |  |  |  |  |  |  |  |  |  |  |  |  |
      *  |  *  |  *  |  *  |  *  |  *  |  *
@@ -107,6 +108,7 @@ LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列�
 │   |   └── component.mk
 │   |── convert
 │   |   ├── cnv_audio
+│   |   │   ├── cnv_audio.c
 │   |   │   └── cnv_audio.h                <!-- 音频相关，例如：声强/音量计算 -->
 │   |   ├── cnv_basic
 │   |   │   ├── cnv_debug.h
@@ -138,10 +140,17 @@ LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列�
 │   │   ├── pixel.c
 │   │   ├── CMakeLists.txt
 │   │   └── component.mk
-│   └── utilis
+│   ├── utilis
+│   │   ├── CMakeLists.txt
+│   │   ├── esp_color.c
+│   │   └── esp_color.h                    <!-- 色彩相关，例如：RGB -> HSV / HSV -> RGB -->
+│   └── my_board
 │       ├── CMakeLists.txt
-│       ├── esp_color.c
-│       └── esp_color.h                    <!-- 色彩相关，例如：RGB -> HSV / HSV -> RGB -->
+│       ├── component.mk
+│       ├── Kconfig.projbuild
+│       └── esp32_c3_devkitm_1
+│           ├── board_pins_config.c
+│           └── board.h
 ├── CMakeLists.txt
 ├── main
 │   ├── CMakeLists.txt
@@ -159,21 +168,38 @@ LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列�
 
 本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中 [例程与乐鑫音频开发板的兼容性表格](../../README_CN.md#例程与乐鑫音频开发板的兼容性) 中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
-- ESP32-C3-Lyra-v2.0 开发板、WS2812 灯带。
-- 此例程选择 `ADC1_CHANNEL_0` 采集 ADC 数据。
-- 此例程选择 `GPIO_NUM_7` 发送 WS2812 命令，即 JP2 接口的 GPIO7 连接 LED 的 data 引脚。
-
 ### LED 接线方式
 
-请根据负载选择正确的供电方式。详情参考 [esp32-c3-lyra-user-guide](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-c3-lyra-v2.0.html)
+若您选择 ESP32-C3-Lyra + WS2812 进行开发：点击 [ESP32-C3-Lyra 用户指南](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-c3-lyra-v2.0.html) 了解更多。
 
 | ESP32-C3-Lyra | WS2812 LED |
 | ------------- | ---------- |
 | VCC           | 5V / 12V   |
-| DIN           | DIN        |
+| DIN           | DI         |
 | GND           | GND        |
 
-<div align="center"><img src="./docs/LED_CONNECT.jpg" alt ="ADF Block Diagram" align="center" /></div>
+<div align="center"><img src="./docs/CONNECT_1.jpg" alt ="ESP32-C3-Lyra Connect Diagram" align="center" /></div>
+
+<br>
+
+若您选择 ESP32-C3-DevKitM-1 + WS2812 + MEMS 麦克风进行开发：点击 [ESP32-C3-DevKitM-1 用户指南](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32c3/hw-reference/esp32c3/user-guide-devkitm-1.html) 了解更多。
+
+| ESP32-C3-DevKitM-1 | WS2812 LED |
+| ------------- | ---------- |
+| 5V            | 5V         |
+| IO10          | DI         |
+| GND           | GND        |
+
+| ESP32-C3-DevKitM-1 | MEMS 麦克风 |
+| ------------- | ---------- |
+| 3.3V          | VDD        |
+| IO2           | SD         |
+| GND           | GND        |
+| IO6           | SCK        |
+| IO7           | WS         |
+| GND           | L/R        |
+
+<div align="center"><img src="./docs/CONNECT_2.jpg" alt ="ESP32-C3-DevKitM-1 Connect Diagram" align="center" /></div>
 
 ## 编译和下载
 
@@ -189,13 +215,35 @@ LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列�
 menuconfig > Audio HAL > ESP32-C3-Lyra-v2.0
 ```
 
+注意：若选择 `ESP32-C3-DevKitM-1` 开发板，则需要使用 sdkconfig.defaults.esp32c3.devkit 替换 sdkconfig.defaults.esp32c3。命令如下：
+
+```
+cp sdkconfig.defaults.esp32c3.devkit sdkconfig.defaults.esp32c3
+```
+
 ### 编译和下载
 
-请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出（替换 PORT 为端口名称）：
+切换至例程路径
+```
+cd $ADF_PATH/examples/display/led_pixels
+```
+
+设置芯片版本
 
 ```
 idf.py set-target esp32c3
+```
+
+编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
+
+```
 idf.py -p PORT flash monitor
+```
+
+或直接烧录 ESP32-C3-DevKitM-1 的固件，注意替换 PORT 为端口名称。(点击 [esptool.py](https://github.com/espressif/esptool) 了解更多)
+
+```
+$IDF_PATH/components/esptool_py/esptool/esptool.py -p PORT -b 460800 --before default_reset --after hard_reset --chip esp32c3  write_flash --flash_mode dio --flash_size detect --flash_freq 40m 0x0 bin/esp32c3_devkit/led_pixels.bin
 ```
 
 退出调试界面使用 ``Ctrl-]``。
@@ -211,23 +259,21 @@ idf.py -p PORT flash monitor
 以下默认参数可以使用 `menuconfig` 重新配置。
 
 `menuconfig -> Example Configuration -> Audio -> Volume calculate types` 中的两种音量计算方式分别如下：
-- Volume staic calculate：配置此参数则固定了响度级的量程范围，即在响度级量程范围内，响度级越大, 计算出的音量越大，点亮的 LED 越多。反之，响度级越小，计算出的音量越小，点亮的 LED 越少。这里以 `default_energy_max` 计算出的响度级作为固定量程的上限，并以 `default_energy_min` 计算出的响度级作为固定量程的下限。
+- Volume staic calculate：配置此参数则固定了响度级的量程范围，即在响度级量程范围内，响度级越大, 计算出的音量越大，点亮的 LED 越多。反之，响度级越小，计算出的音量越小，点亮的 LED 越少。这里以 `default_rms_max` 计算出的响度级作为固定量程的上限，并以 `default_rms_min` 计算出的响度级作为固定量程的下限。
 - Volume dynamic calculation： 配置此参数使得远距离音源与近距离音源有相似的 LED 响应效果。LED 反映出的响度级窗口量程是可移动的（量程的响度级上限与下限会变化），但量程宽度不会超过 `window_max_width_db`。
 
 ### cnv.h 中可更改配置
 ```
-#define   CNV_AUDIO_SAMPLE          (CONFIG_EXAMPLE_AUDIO_SAMPLE)        /*!< 音频采样率，默认为 16000 */
-#define   CNV_N_SAMPLES             (CONFIG_EXAMPLE_N_SAMPLE)            /*!< FFT 采样点数，默认为 256 */
-#define   CNV_MIN_SOUND_ENERGY      (CONFIG_EXAMPLE_MIN_SOUND_ENERGY)    /*!< 最小声音能量阈值，低于此值被认定为静音环境，默认 12 */
-#define   CNV_TOTAL_LEDS            (CONFIG_EXAMPLE_TOTAL_LEDS)          /*!< LED 总数，默认 16 */
-#define   CNV_SOURCE_DATA_DEBUG     (CONFIG_EXAMPLE_SOURCE_DATA_DEBUG)   /*!< 原始数据显示 >!*/
-#define   CNV_FFT_DEBUG             (CONFIG_EXAMPLE_FFT_DEBUG)           /*!< FFT数据显示 >!*/
+#define   CNV_AUDIO_SAMPLE          (CONFIG_EXAMPLE_AUDIO_SAMPLE)            /*!< 音频采样率，默认为 16000 */
+#define   CNV_N_SAMPLES             (CONFIG_EXAMPLE_N_SAMPLE)                /*!< FFT 采样点数，默认为 256 */
+#define   CNV_AUDIO_MIN_RMS         (CONFIG_EXAMPLE_DEFAULT_AUDIO_MIN_RMS)   /*!< 最小声音有效值阈值，低于此值被认定为静音环境*/
+#define   CNV_TOTAL_LEDS            (CONFIG_EXAMPLE_TOTAL_LEDS)              /*!< LED 总数，默认 16 */
 ```
 
 ### pixel_renderer.h 中可更改配置
 ```
-#define   PIXEL_RENDERER_TX_CHANNEL (CONFIG_EXAMPLE_LED_TX_CHANNEL)      /*!< 通道，ESP32C3 默认使用 CHANNEL_0 */
-#define   PIXEL_RENDERER_CTRL_IO    (CONFIG_EXAMPLE_LED_CTRL_IO)         /*!< 信号控制引脚，ESP32C3 默认使用 GPIO_NUM_7 */
+#define   PIXEL_RENDERER_TX_CHANNEL (CONFIG_EXAMPLE_LED_TX_CHANNEL)          /*!< 通道，ESP32C3 默认使用 CHANNEL_0 */
+#define   PIXEL_RENDERER_CTRL_IO    (CONFIG_EXAMPLE_LED_CTRL_IO)             /*!< 信号控制引脚，ESP32C3 默认使用 GPIO_NUM_7 */
 ```
 
 ### 日志输出
@@ -287,10 +333,6 @@ I (262) sleep: Configure to isolate all GPIO pins in sleep state
 I (268) sleep: Enable automatic switching of GPIO sleep configuration
 I (276) cpu_start: Starting scheduler.
 I (280) WS2812: MEM Total:321096 Bytes
-W (285) CONVERT: The RGB color array is not set, Please use API 'bottom_color_array_set' Settings
-I (410) CONVERT: Percentage of sound intensity: 0 %
-I (424) CONVERT: Percentage of sound intensity: 0 %
-I (437) CONVERT: Percentage of sound intensity: 0 %
 ```
 
 ## 故障排除
