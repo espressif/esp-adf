@@ -1,0 +1,69 @@
+diff --git a/tools/ci/python_packages/ttfw_idf/IDFAssignTest.py b/tools/ci/python_packages/ttfw_idf/IDFAssignTest.py
+index 3b68618c86..6681fde079 100644
+--- a/tools/ci/python_packages/ttfw_idf/IDFAssignTest.py
++++ b/tools/ci/python_packages/ttfw_idf/IDFAssignTest.py
+@@ -21,11 +21,11 @@ import gitlab_api
+ from tiny_test_fw.Utility import CIAssignTest
+ 
+ try:
+-    from idf_py_actions.constants import PREVIEW_TARGETS, SUPPORTED_TARGETS
++    from idf_py_actions.constants import PREVIEW_TARGETS, SUPPORTED_TARGETS, ADF_TARGETS
+ except ImportError:
+     sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+ 
+-    from idf_py_actions.constants import PREVIEW_TARGETS, SUPPORTED_TARGETS
++    from idf_py_actions.constants import PREVIEW_TARGETS, SUPPORTED_TARGETS, ADF_TARGETS
+ 
+ IDF_PATH_FROM_ENV = os.getenv('IDF_PATH', '')
+ 
+@@ -88,7 +88,7 @@ class IDFAssignTest(CIAssignTest.AssignTest):
+ class ExampleGroup(IDFCaseGroup):
+     SORT_KEYS = CI_JOB_MATCH_KEYS = ['env_tag', 'target']
+ 
+-    EXAMPLE_TARGETS = SUPPORTED_TARGETS + PREVIEW_TARGETS
++    EXAMPLE_TARGETS = SUPPORTED_TARGETS + PREVIEW_TARGETS + ADF_TARGETS
+     BUILD_JOB_NAMES = ['build_examples_cmake_{}'.format(target) for target in EXAMPLE_TARGETS]  # type: ignore
+ 
+ 
+@@ -98,7 +98,7 @@ class TestAppsGroup(ExampleGroup):
+ 
+ 
+ class ComponentUTGroup(TestAppsGroup):
+-    UNIT_TEST_TARGETS = SUPPORTED_TARGETS + PREVIEW_TARGETS
++    UNIT_TEST_TARGETS = SUPPORTED_TARGETS + PREVIEW_TARGETS + ADF_TARGETS
+     BUILD_JOB_NAMES = ['build_component_ut_{}'.format(target) for target in UNIT_TEST_TARGETS]  # type: ignore
+ 
+ 
+@@ -106,7 +106,7 @@ class UnitTestGroup(IDFCaseGroup):
+     SORT_KEYS = ['test environment', 'tags', 'chip_target']
+     CI_JOB_MATCH_KEYS = ['test environment']
+ 
+-    UNIT_TEST_TARGETS = SUPPORTED_TARGETS + PREVIEW_TARGETS
++    UNIT_TEST_TARGETS = SUPPORTED_TARGETS + PREVIEW_TARGETS + ADF_TARGETS
+     BUILD_JOB_NAMES = ['build_esp_idf_tests_cmake_{}'.format(target) for target in UNIT_TEST_TARGETS]  # type: ignore
+ 
+     MAX_CASE = 50
+diff --git a/tools/idf_py_actions/constants.py b/tools/idf_py_actions/constants.py
+index f225534da8..1a6e2ee94c 100644
+--- a/tools/idf_py_actions/constants.py
++++ b/tools/idf_py_actions/constants.py
+@@ -34,6 +34,19 @@ URL_TO_DOC = 'https://docs.espressif.com/projects/esp-idf'
+ 
+ SUPPORTED_TARGETS = ['esp32', 'esp32s2', 'esp32c3', 'esp32s3', 'esp32c2']
+ PREVIEW_TARGETS = ['linux', 'esp32h2']
++ADF_TARGETS = ['esp32_lyrat_v4_3_idfv5_0',
++               'esp32_lyratd_msc_v2_2_idfv5_0',
++               'esp32_lyrat_mini_v1_1_idfv5_0',
++               'esp32s2_kaluga_v1_2_idfv5_0',
++               'esp32s3_korvo_v2_idfv5_0',
++               'esp32c3_lyra_v2_idfv5_0',
++               'esp32_lyrat_v4_3_idfv5_1',
++               'esp32_lyratd_msc_v2_2_idfv5_1',
++               'esp32_lyrat_mini_v1_1_idfv5_1',
++               'esp32s2_kaluga_v1_2_idfv5_1',
++               'esp32s3_korvo_v2_idfv5_1',
++               'esp32c3_lyra_v2_idfv5_1'
++]
+ 
+ OPENOCD_TAGET_CONFIG_DEFAULT = '-f interface/ftdi/esp32_devkitj_v1.cfg -f target/{target}.cfg'
+ OPENOCD_TAGET_CONFIG: Dict[str, str] = {

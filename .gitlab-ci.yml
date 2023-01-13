@@ -3,44 +3,32 @@ stages:
   - build
   - assign_test
   - target_test
-#  - example_test
   - deploy
 
 variables:
-  IDF_SKIP_CHECK_SUBMODULES: 1
-  GIT_DEPTH: 1
-  GIT_STRATEGY: clone
-  GIT_SUBMODULE_STRATEGY: none
+  # System environment
+  # Common parameters for the 'make' during CI tests
+  MAKEFLAGS: "-j5 --no-keep-going"
+  # more attempts for more robust
   GET_SOURCES_ATTEMPTS: "10"
   ARTIFACT_DOWNLOAD_ATTEMPTS: "10"
-  GIT_SSH_KEY: "$GITLAB_KEY"
+  GIT_STRATEGY: clone
+  GIT_SUBMODULE_STRATEGY: none
   ADF_PATH: "$CI_PROJECT_DIR"
   IDF_PATH: "$CI_PROJECT_DIR/esp-idf"
-  MAKEFLAGS: "-j5 --no-keep-going"
+  ADF_TEST_PACKAGE_PATH: "${ADF_PATH}/tools/adf_test_package"
   CI_TARGET_UT_TEST_CONFIG_FILE: "$CI_PROJECT_DIR/.gitlab/ci/target-ut-test.yml"
+  CI_TARGET_TEST_CONFIG_FILE: "$CI_PROJECT_DIR/.gitlab/ci/target-test.yml"
+  IDF_SKIP_CHECK_SUBMODULES: 1
+  GIT_DEPTH: 1
 
-.set_idf_version_and_update: &set_idf_version_and_update
-  $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
-
-.config_ssh_key: &config_ssh_key
-  - mkdir -p ~/.ssh
-  - chmod 700 ~/.ssh
-  - echo -n $GIT_SSH_KEY > ~/.ssh/id_rsa_base64
-  - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-
-.replace_repository_address: &replace_repository_address
-  - sed -i "s%https://github.com/espressif/esp-idf%${GITLAB_SSH_SERVER}/idf/esp-idf.git%" .gitmodules
-  - sed -i "s%https://github.com/espressif/esp-adf-libs%${GITLAB_SSH_SERVER}/adf/esp-adf-libs.git%" .gitmodules
-  - sed -i "s%https://github.com/espressif/esp-sr.git%${GITLAB_SSH_SERVER}/speech-recognition-framework/esp-sr.git%" .gitmodules
-
-.execute_submodules: &execute_submodules
+.execute_submodules: &execute_submodules |
   if [[ "$DEEP_CLONE" == "true" ]]; then
     git submodule update --init;
   else
     git -c submodule."esp-idf".update=none submodule update --init;
     git submodule | grep esp-idf;
-    export ORIG_HEAD=`git submodule | grep "esp-idf" | sed -r 's/-(.*) esp-idf/\1/g'`;
+    export ORIG_HEAD=`git submodule | grep "esp-idf" | sed -r 's/-(.*) esp-idf/\1/g' | awk '{print $1}'`;
     echo ${ORIG_HEAD};
     rm esp-idf -rf; mkdir esp-idf;
     cd esp-idf; git init;
@@ -51,126 +39,51 @@ variables:
   fi
 
 before_script:
-  - *config_ssh_key
-  - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-  - git config --global http.postBuffer 524288000
-  - *replace_repository_address
+  - source $ADF_PATH/tools/ci/utils.sh
+  - add_gitlab_ssh_keys
+
+  # replace submodule to internal repository to speedup cloning
+  - update_submodule_remote
   - *execute_submodules
-  - echo "current path:"$(pwd)
-  - cd $ADF_PATH/..
-  - if [[ ! -d "$ADF_PATH/../adf-libs-ut/" ]]; then git clone ssh://git@gitlab.espressif.cn:27227/adf/adf-libs-ut.git;else echo "adf-libs-ut folder already exists";fi
-  - cd -
-  - if [ -e $ADF_UT/tools/CreateSectionTable.pyc ]; then rm -f $ADF_UT/tools/CreateSectionTable.pyc; fi
 
   # To disable set -e for automatic error detection, due to the switch_branch.sh use $? check return value
   - set +e +o pipefail
   - source $ADF_PATH/tools/ci/switch_branch.sh
   - set -e -o pipefail
-
-  - source $IDF_PATH/tools/ci/setup_python.sh
-  - if [ "$IDF_VERSION" != "release/v4.4" ];then source $IDF_PATH/tools/ci/configure_ci_environment.sh;fi
-
-  # (the same regular expressions are used to set these are used in 'only:' sections below
   # - source esp-idf/tools/ci/configure_ci_environment.sh
-  # fetch the submodules (& if necessary re-fetch repo) from gitlab
-
-.add_gitlab_key_before:
-  before_script: &add_gitlab_key_before
-    - echo "Not fetching submodules"
-    - source $IDF_PATH/tools/ci/configure_ci_environment.sh
-    - *config_ssh_key
-    - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-
-.build_template: &build_template
-  stage: build
-  image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
-  tags:
-    - build
-  variables:
-    BATCH_BUILD: "1"
-    V: "0"
-
-.build_adf_test:
-  <<: *build_template
-  artifacts:
-    when: always
-    paths:
-      - adf-cli/build/*.bin
-      - adf-cli/build/*.elf
-      - adf-cli/build/*.map
-      - adf-cli/build/download.config
-      - adf-cli/build/bootloader/*.bin
-      - $IDF_PATH/tools/ci
-      - $IDF_PATH/components/esptool_py
-      - $IDF_PATH/components/partition_table
-    expire_in: 1 month
-  script:
-    - cd ${IDF_PATH}
-    - git submodule update --init --recursive
-    - cd ${ADF_PATH}/components/esp-adf-libs
-    - git log -2
-    - cd ${ADF_PATH}
-    - git clone ${ADF_TEST_CLI_REPO}
-    - cd adf-cli
-    - git checkout ${CI_COMMIT_REF_NAME} || echo "Using adf-cli default branch..."
-    - make defconfig
-    - make
-    - make print_flash_cmd > build/download.config
-
-.assign_test:
-  tags:
-    - assign_test
-  image: $CI_DOCKER_REGISTRY/audio_test_env$BOT_DOCKER_IMAGE_TAG
-  stage: assign_test
-  # gitlab ci do not support match job with RegEx or wildcard now in dependencies.
-  # we have a lot build example jobs. now we don't use dependencies, just download all artificats of build stage.
-  dependencies:
-    - build_examples_v44_cmake
-    - build_examples_v33_make
-  variables:
-    TEST_FW_PATH: "$CI_PROJECT_DIR/general-test-framework"
-    EXAMPLE_CONFIG_OUTPUT_PATH: "$CI_PROJECT_DIR/examples/test_configs"
-    AUTO_TEST_PATH: "$CI_PROJECT_DIR/audio_auto_test"
-    GIT_SSH_KEY: "$AUTO_KEY"
-  artifacts:
-    paths:
-      - $TEST_FW_PATH
-      - $EXAMPLE_CONFIG_OUTPUT_PATH
-      - $AUTO_TEST_PATH
-    expire_in: 1 mos
-  before_script: *add_gitlab_key_before
-  script:
-    - source /opt/pyenv/activate
-    - pyenv global 3.5.5
-    - git clone ${AUDIO_AUTO_REPO}
-    - git clone ${TEST_FW_REPO}
-    # assign example tests
-    - python $TEST_FW_PATH/CIAssignExampleTest.py $CI_PROJECT_DIR/examples $CI_PROJECT_DIR/.gitlab-ci.yml $EXAMPLE_CONFIG_OUTPUT_PATH
 
 push_to_github:
   stage: deploy
   rules:
-    - if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/) && $CI_PIPELINE_SOURCE != "schedule"'
+    - if:
+        '($CI_COMMIT_REF_NAME == "master" ||
+        $CI_COMMIT_BRANCH =~ /^release\/v/ ||
+        $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/) &&
+        $CI_PIPELINE_SOURCE != "schedule"'
   when: on_success
   image: $CI_DOCKER_REGISTRY/esp32-ci-env
   variables:
     GIT_STRATEGY: clone
-    GIT_SSH_KEY: "$GH_PUSH_KEY"
   before_script:
     - echo "skip default before_script"
   script:
-    - *config_ssh_key
-    - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    - source $ADF_PATH/tools/ci/utils.sh
+    - add_github_ssh_keys
     - git fetch --unshallow
     - git remote remove github &>/dev/null || true
     - git remote add github git@github.com:espressif/esp-adf.git
     - tools/ci/push_to_github.sh
 
 include:
-  - '.gitlab/ci/docs.yml'
   - '.gitlab/ci/rules.yml'
+  - '.gitlab/ci/docs.yml'
   - '.gitlab/ci/pre-check.yml'
   - '.gitlab/ci/build-ut.yml'
+  - '.gitlab/ci/build-examples-v5-1.yml'
+  - '.gitlab/ci/build-examples-v5-0.yml'
   - '.gitlab/ci/build-examples.yml'
   - '.gitlab/ci/assign-test.yml'
+  - '.gitlab/ci/assign-test-v5x.yml'
   - '.gitlab/ci/target-ut-test.yml'
+  - '.gitlab/ci/target-examples-test-v5-1.yml'
+  - '.gitlab/ci/target-examples-test-v5-0.yml'

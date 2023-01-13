@@ -1,0 +1,77 @@
+.build_examples_cmake_v5_0: &build_examples_cmake_v5_0
+  extends: .build_cmake_template
+  image: $ADF_DOCKER_REGISTRY/env_v5.0:4
+  variables:
+    IDF_TAG_FLAG: "false"
+    IDF_VERSION_TAG: v5.0
+    EXAMPLE_TEST_DIR: ${CI_PROJECT_DIR}/examples
+  script:
+    - fetch_idf_branch ${IDF_VERSION_TAG}
+    - common_before_scripts
+    - setup_tools_and_idf_python_venv
+    - set_env_variable
+    - check_apps_and_filter
+    - cd $ADF_PATH
+    # CI specific options start from "--collect-size-info xxx". could ignore when running locally
+    - cd $IDF_PATH; git apply $ADF_PATH/idf_patches/idf_v5.0_freertos.patch; cd -
+    - run_cmd python $IDF_PATH/tools/ci/ci_build_apps.py ${EXAMPLES} -v \
+                  -t $IDF_TARGET --copy-sdkconfig \
+                  --collect-size-info size_info.txt \
+                  --collect-app-info list_job_${CI_NODE_INDEX:-1}.json \
+                  --parallel-count ${CI_NODE_TOTAL:-1} \
+                  --parallel-index ${CI_NODE_INDEX:-1}
+
+build_examples_cmake_esp32_lyrat_v4_3_idfv5_0:
+  when: always
+  extends:
+    - .rules:build:adf_idfs_example_test
+    - .build_examples_cmake_v5_0
+  variables:
+    IDF_TARGET: esp32
+    AUDIO_BOARD: ESP_LYRAT_V4_3
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
+
+build_examples_cmake_esp32_lyratd_msc_v2_2_idfv5_0:
+  extends:
+    - .rules:ref:master-schedule
+    - .build_examples_cmake_v5_0
+  variables:
+    IDF_TARGET: esp32
+    AUDIO_BOARD: ESP_LYRATD_MSC_V2_2
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
+
+build_examples_cmake_esp32_lyrat_mini_v1_1_idfv5_0:
+  extends:
+    - .rules:ref:master-schedule
+    - .build_examples_cmake_v5_0
+  variables:
+    IDF_TARGET: esp32
+    AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
+
+build_examples_cmake_esp32s2_kaluga_v1_2_idfv5_0:
+  extends:
+    - .rules:build:enable_adf_example_test
+    - .build_examples_cmake_v5_0
+  variables:
+    IDF_TARGET: esp32s2
+    AUDIO_BOARD: ESP32_S2_KALUGA_1_V1_2
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32s2"
+
+build_examples_cmake_esp32s3_korvo_v2_idfv5_0:
+  extends:
+    - .rules:build:enable_adf_example_test
+    - .build_examples_cmake_v5_0
+  variables:
+    IDF_TARGET: esp32s3
+    AUDIO_BOARD: ESP32_S3_KORVO2_V3
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32s3"
+
+.build_examples_cmake_esp32c3_lyra_v2_idfv5_0:
+  extends:
+    - .rules:build:enable_adf_example_test
+    - .build_examples_cmake_v5_0
+  variables:
+    IDF_TARGET: esp32c3
+    AUDIO_BOARD: ESP32_C3_LYRA_V2
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32c3"

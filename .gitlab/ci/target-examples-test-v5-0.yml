@@ -1,0 +1,26 @@
+.example_test_template_v5_0:
+  extends: .target_test_job_template
+  needs:
+    - assign_example_test_v5_0
+  variables:
+    TEST_CASE_PATH: "$CI_PROJECT_DIR/examples"
+    CONFIG_FILE_PATH: "${CI_PROJECT_DIR}/examples/test_configs/v5_0"
+    CHECKOUT_REF_SCRIPT: "${IDF_PATH}/tools/ci/checkout_project_ref.py"
+
+example_test_esp32_lyrat_v4_3_idfv5_0:
+  extends: .example_test_template_v5_0
+  tags:
+    - ADF_EXAMPLE_GENERIC
+    - ESP32
+
+example_test_esp32s2_kaluga_v1_2_idfv5_0:
+  extends: .example_test_template_v5_0
+  tags:
+    - ADF_EXAMPLE_GENERIC
+    - ESP32S2
+
+example_test_esp32s3_korvo_v2_idfv5_0:
+  extends: .example_test_template_v5_0
+  tags:
+    - ADF_EXAMPLE_GENERIC
+    - ESP32S3

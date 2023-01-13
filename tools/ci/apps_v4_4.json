@@ -1,0 +1,74 @@
+{"app_dir": "/examples/advanced_examples/dlna", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42]:[v-v];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44]];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/algorithm", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/downmix_pipeline", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/esp_dispatcher_dueros", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/flexible_pipeline", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/http_play_and_save_to_file", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/multi-room", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/nvs_dispatcher", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/record_while_play", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/advanced_examples/wifi_bt_ble_coex", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];"}
+
+{"app_dir": "/examples/audio_processing/pipeline_alc", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/audio_processing/pipeline_audio_forge", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/audio_processing/pipeline_equalizer", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/audio_processing/pipeline_passthru", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];"}
+{"app_dir": "/examples/audio_processing/pipeline_resample", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/audio_processing/pipeline_sonic", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/audio_processing/pipeline_spiffs_amr_resample", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+
+{"app_dir": "/examples/cli", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/checks/check_board_buttons", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];esp32c3:ESP32_C3_LYRA_V2:[v44];"}
+{"app_dir": "/examples/checks/check_display_led", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];esp32c3:ESP32_C3_LYRA_V2:[v44];"}
+{"app_dir": "/examples/cloud_services/google_translate_device", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/cloud_services/pipeline_aws_polly_mp3", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/cloud_services/pipeline_baidu_speech_mp3", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+
+{"app_dir": "/examples/get-started/pipeline_a2dp_sink_and_hfp", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];"}
+{"app_dir": "/examples/get-started/play_mp3_control", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/get-started/pipeline_tcp_client", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/ota", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/dueros", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/korvo_du1906", "board_idf": "esp32:ESP32_KORVO_DU1906:[v33-v42];"}
+
+{"app_dir": "/examples/player/pipeline_a2dp_sink_stream", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];"}
+{"app_dir": "/examples/player/pipeline_a2dp_source_stream", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];"}
+{"app_dir": "/examples/player/pipeline_bt_sink", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];"}
+{"app_dir": "/examples/player/pipeline_bt_source", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];"}
+{"app_dir": "/examples/player/pipeline_flash_tone", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/player/pipeline_hfp_stream", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];"}
+{"app_dir": "/examples/player/pipeline_http_mp3", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/player/pipeline_http_select_decoder", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/player/pipeline_living_stream", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/player/pipeline_play_sdcard_music", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/player/pipeline_sdcard_mp3_control", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/player/pipeline_tts_stream", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/player/pipeline_spiffs_mp3", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/player/pipeline_play_mp3_with_dac_or_pwm", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];"}
+{"app_dir": "/examples/player/pipeline_embed_flash_tone", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/player/pipeline_loop_playback_without_gap", "board_idf": "esp32:ESP_LYRAT_V4_3:[v42-v44];esp32:ESP_LYRATD_MSC_V2_2:[v42-v44];esp32:ESP_LYRAT_MINI_V1_1:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v42-v44];"}
+
+{"app_dir": "/examples/recorder/element_cb_sdcard_amr", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/recorder/element_wav_amr_sdcard", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/recorder/pipeline_raw_http", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/recorder/pipeline_wav_amr_sdcard", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/recorder/pipeline_recording_to_sdcard", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/recorder/av_muxer_sdcard", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+
+{"app_dir": "/examples/speech_recognition/wwe", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/speech_recognition/vad", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/system/battery", "board_idf": "esp32:ESP32_KORVO_DU1906:[v33-v42];"}
+{"app_dir": "/examples/system/coredump", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/system/wpa2_enterprise", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/system/power_save", "board_idf": "esp32:ESP_LYRAT_V4_3:[v44];esp32:ESP_LYRATD_MSC_V2_2:[v44];esp32:ESP_LYRAT_MINI_V1_1:[v44];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+
+{"app_dir": "/examples/display/lcd_camera", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/display/lcd_jpeg", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/display/led_pixels", "board_idf": "esp32c3:ESP32_C3_LYRA_V2:[v44];"}
+{"app_dir": "/examples/display/music_player", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+
+{"app_dir": "/examples/protocols/voip", "board_idf": "esp32:ESP_LYRAT_MINI_V1_1:[v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/protocols/esp-rtc", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/protocols/esp-rtsp", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/protocols/rtmp", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+

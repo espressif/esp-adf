@@ -1,8 +1,3 @@
-.define_config_file_name: &define_config_file_name
-  JOB_NAME_PREFIX=$(echo ${CI_JOB_NAME} | awk '{print $1}')
-  JOG_FULL_NAME="${JOB_NAME_PREFIX}_${CI_NODE_INDEX}"
-  CONFIG_FILE="${CONFIG_FILE_PATH}/${JOG_FULL_NAME}.yml"
-  
 .unit_test_template: &unit_test_template
   image: $CI_DOCKER_REGISTRY/rpi-test-env:old1
   stage: target_test
@@ -20,24 +15,18 @@
     reports:
         junit: $LOG_PATH/*/XUNIT_RESULT.xml
   before_script:
+    - source ${ADF_PATH}/tools/ci/utils.sh
     - echo "Not fetching submodules"
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - echo -n $GITLAB_KEY > ~/.ssh/id_rsa_base64
-    - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    - add_gitlab_ssh_keys
     - source $IDF_PATH/tools/ci/setup_python.sh
     - source $IDF_PATH/tools/ci/configure_ci_environment.sh
   script:
-    - *define_config_file_name
+    - define_config_file_name
     - find / -name UT_001_.yml
     - find / -name UT_002_.yml
-    - pwd
-    - ls
     - test -e $CONFIG_FILE || exit 0
-    - echo $JOG_FULL_NAME
-    - echo $CONFIG_FILE
+    - echo "JOB_FULL_NAME $CONFIG_FILE"
+    - echo $JOB_FULL_NAME $CONFIG_FILE
     - ls -al $CONFIG_FILE
     - ls -al $TEST_SCRIPT
     - ls -al $TEST_CASE_PATH
@@ -46,19 +35,16 @@
     - ./esp-idf/tools/ci/retry_failed.sh git clone $TEST_ENV_CONFIG_REPOSITORY
     - python $CHECKOUT_REF_SCRIPT ci-test-runner-configs ci-test-runner-configs
     # run test
-    - echo $TEST_SCRIPT
-    - echo $TEST_CASE_PATH
-    - echo $CONFIG_FILE
-    - echo $ENV_FILE
-    - pwd
+    - echo "TEST_SCRIPT TEST_CASE_PATH CONFIG_FILE ENV_FILE"
+    - echo $TEST_SCRIPT $TEST_CASE_PATH $CONFIG_FILE $ENV_FILE
     - python $TEST_SCRIPT $TEST_CASE_PATH -c $CONFIG_FILE -e $ENV_FILE
   interruptible: true
 
 .job_v44_template: &job_v44_template
   <<: *unit_test_template
-  dependencies:
-    - build_ut_v44_make
-    - assign_test_v44
+  needs:
+    - build_make_ut_v4_4
+    - assign_ut_test_v4_4
   variables:
     TEST_SCRIPT: "esp-idf/tools/tiny-test-fw/Runner.py"
     TEST_CASE_PATH: "esp-idf/tools/unit-test-app"

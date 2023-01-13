@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 #
-# This script is used to check the sdkconfig.defaults / sdkconfig.defaults.xxx & apps.json.
+# This script is used to check the sdkconfig.defaults / sdkconfig.defaults.xxx & apps_v4_4.json.
 # The first parameter is the name of the configuration file to check.
 # The second parameter is the name of the development board to be checked
 
 [ -z ${IDF_PATH} ] && die "IDF_PATH is not set"
 [ -z ${ADF_PATH} ] && die "ADF_PATH is not set"
+[ -z ${BUILD_PATH} ] && die "BUILD_PATH is not set"
 
 set +e
+
+export LIST_JSON_PATH=${BUILD_PATH}/list.json
 
 if ! type jq >/dev/null 2>&1;then
     apt-get update
@@ -16,8 +19,9 @@ else
     echo "The jq tool has been installed"
 fi
 
-cat apps.txt | grep -o '/examples/.*' > check_apps_json_and_sdk.txt
-BOARD_NAME=(`cat $ADF_PATH/tools/ci/apps.json | grep -E "ESP+[0-9a-zA-Z_]+" -o | sort -u -r`)
+jq -r .app_dir ${LIST_JSON_PATH} > examples.txt
+cat examples.txt | grep -o '/examples/.*' > check_apps_json_and_sdk.txt
+BOARD_NAME=(`cat $ADF_PATH/tools/ci/apps_v4_4.json | grep -E "ESP+[0-9a-zA-Z_]+" -o | sort -u -r`)
 APPS_CHECK_RESULT="OK"
 
 function check_sdkcfg() {
@@ -48,7 +52,7 @@ function check_audio_board() {
     done
 
     if [ ! -n "$result" ];then
-        echo "The error occurs in the definition of" ${line} "in apps.json"
+        echo "The error occurs in the definition of" ${line} "in apps_v4_4.json"
         echo -e "\e[31m ERROR: not found support board \e[0m"
         APPS_CHECK_RESULT="FAIL"
     fi
@@ -61,7 +65,7 @@ function check_audio_board_idf_ver() {
     do
         idf_ver=$(echo $chip_board_idf_ver | grep '\[v[0-9][0-9]' -o)
         if [ ! -n "$idf_ver" ];then
-            echo "The error occurs in the definition of" ${line} "in apps.json"
+            echo "The error occurs in the definition of" ${line} "in apps_v4_4.json"
             echo -e "\e[31m ERROR: not found" $chip_board_idf_ver "support idf version \e[0m"
             APPS_CHECK_RESULT="FAIL"
         fi
@@ -81,13 +85,13 @@ function update_audio_hal() {
             cat $ADF_PATH${line}"/"$1
         fi
     else
-        echo -e "\e[33m WARNING: " $ADF_PATH${line}"/"$1 " skip \e[0m"
+        echo -e "\e[32m " $ADF_PATH${line}"/"$1 " skip \e[0m"
     fi
 }
 
 while read line
 do
-    result=$(cat ${ADF_PATH}/tools/ci/apps.json | grep -E $line)
+    result=$(cat ${ADF_PATH}/tools/ci/apps_v4_4.json | grep -E $line)
     if [ -n "$result" ];then
         audio_boards=${result#*:*:}
 
@@ -102,7 +106,7 @@ do
         update_audio_hal $1 $2
 
     else
-        echo -e "\e[31m ERROR:" $line "exist but not found it in apps.json \e[0m"
+        echo -e "\e[31m ERROR:" $line "exist but not found it in apps_v4_4.json \e[0m"
         APPS_CHECK_RESULT="FAIL"
     fi
 done < check_apps_json_and_sdk.txt

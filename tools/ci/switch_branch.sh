@@ -2,7 +2,6 @@
 
 [ -z ${IDF_PATH} ] && die "IDF_PATH is not set"
 [ -z ${ADF_PATH} ] && die "ADF_PATH is not set"
-[ -z ${BUILD_PATH} ] && die "BUILD_PATH is not set"
 
 set -o errexit
 
