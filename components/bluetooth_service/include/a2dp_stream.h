@@ -208,6 +208,8 @@ esp_err_t periph_bt_volume_up(esp_periph_handle_t periph);
 esp_err_t periph_bt_volume_down(esp_periph_handle_t periph);
 #endif
 
+esp_err_t periph_bt_get_connected_bd_addr(esp_periph_handle_t periph, uint8_t *dest);
+
 #endif
 
 #ifdef __cplusplus

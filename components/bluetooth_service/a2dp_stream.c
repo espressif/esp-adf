@@ -47,6 +47,8 @@ typedef struct {
     bool avrcp_conn_state;
     audio_stream_type_t stream_type;
     uint8_t trans_label;
+    esp_bd_addr_t connected_bd_addr;
+    uint8_t connected_flag;
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     audio_hal_handle_t audio_hal;
@@ -121,6 +123,8 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
                      bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
             if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
                 ESP_LOGI(TAG, "A2DP connection state =  DISCONNECTED");
+                s_aadp_handler.connected_flag = 0;
+                memset(s_aadp_handler.connected_bd_addr, 0x00, ESP_BD_ADDR_LEN);
                 if (s_aadp_handler.sink_stream) {
                     audio_element_report_status(s_aadp_handler.sink_stream, AEL_STATUS_INPUT_DONE);
                 }
@@ -129,6 +133,8 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
                 }
             } else if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
                 ESP_LOGI(TAG, "A2DP connection state =  CONNECTED");
+                memcpy(s_aadp_handler.connected_bd_addr, bda, ESP_BD_ADDR_LEN);
+                s_aadp_handler.connected_flag = 1;
                 if (s_aadp_handler.bt_avrc_periph) {
                     esp_periph_send_event(s_aadp_handler.bt_avrc_periph, PERIPH_BLUETOOTH_CONNECTED, NULL, 0);
                 }
@@ -209,15 +215,20 @@ static void bt_a2d_source_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param
     }
     switch (event) {
         case ESP_A2D_CONNECTION_STATE_EVT:
+            uint8_t *bda = param->conn_stat.remote_bda;
             if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
                 ESP_LOGI(TAG, "a2dp source connected");
                 ESP_LOGI(TAG, "a2dp media ready checking ...");
+                memcpy(s_aadp_handler.connected_bd_addr, bda, ESP_BD_ADDR_LEN);
+                s_aadp_handler.connected_flag = 1;
                 esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_CHECK_SRC_RDY);
                 if (s_aadp_handler.bt_avrc_periph) {
                     esp_periph_send_event(s_aadp_handler.bt_avrc_periph, PERIPH_BLUETOOTH_CONNECTED, NULL, 0);
                 }
             } else if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
                 ESP_LOGI(TAG, "a2dp source disconnected");
+                s_aadp_handler.connected_flag = 0;
+                memset(s_aadp_handler.connected_bd_addr, 0x00, ESP_BD_ADDR_LEN);
                 esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
                 if (s_aadp_handler.bt_avrc_periph) {
                     esp_periph_send_event(s_aadp_handler.bt_avrc_periph, PERIPH_BLUETOOTH_DISCONNECTED, NULL, 0);
@@ -305,6 +316,8 @@ audio_element_handle_t a2dp_stream_init(a2dp_stream_config_t *config)
     esp_avrc_tg_set_rn_evt_cap(&evt_set);
 #endif
 
+    s_aadp_handler.connected_flag = 0;
+
     if (config->type == AUDIO_STREAM_READER) {
         // A2DP sink
         s_aadp_handler.stream_type = AUDIO_STREAM_READER;
@@ -352,6 +365,8 @@ esp_err_t a2dp_destroy()
     } else if (s_aadp_handler.stream_type == AUDIO_STREAM_WRITER) {
         esp_a2d_source_deinit();
     }
+    s_aadp_handler.connected_flag = 0;
+
     return ESP_OK;
 }
 
@@ -613,5 +628,15 @@ esp_err_t periph_bt_volume_down(esp_periph_handle_t periph)
     return periph_bt_avrc_passthrough_cmd(periph, ESP_AVRC_PT_CMD_VOL_DOWN);
 }
 #endif
+
+esp_err_t periph_bt_get_connected_bd_addr(esp_periph_handle_t periph, uint8_t *dest)
+{
+    if (!dest)
+        return ESP_ERR_INVALID_ARG;
+    if (!s_aadp_handler.connected_flag)
+        return ESP_ERR_INVALID_STATE;
+    memcpy(dest, s_aadp_handler.connected_bd_addr, ESP_BD_ADDR_LEN);
+    return ESP_OK;
+}
 
 #endif
