@@ -453,7 +453,7 @@ static void write_thread(void *arg)
                 write_time += get_cur_time() - start_time;
                 write_size += size;
                 if (write_time >= 2000) {
-                    ESP_LOGD(TAG, "Upload speed %d\n", write_size * 1000 / write_time);
+                    ESP_LOGD(TAG, "Upload speed %d\n", (int)(write_size * 1000 / write_time));
                     write_time = write_size = 0;
                 }
                 if (ret != 0) {
@@ -618,7 +618,8 @@ static void video_record_thread(void *arg)
             uint32_t elapse = get_cur_time() - fetch_time;
             data_queue_query(av_record.stream_buffer_q, &q_num, &q_size);
             ESP_LOGI(TAG, "s:%d fps:%d vpts:%d apts:%d q:%d/%d", frame_data.size,
-                     av_record.record_cfg.video_fps * (vid_pts - av_record.last_video_pts) / elapse, vid_pts, cur_pts,
+                     (int)(av_record.record_cfg.video_fps * (vid_pts - av_record.last_video_pts) / elapse), 
+                     (int)vid_pts, (int)cur_pts,
                      q_num, q_size);
             fetch_time = get_cur_time();
             av_record.last_video_pts = vid_pts;

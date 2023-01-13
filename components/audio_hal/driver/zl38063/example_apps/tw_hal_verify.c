@@ -305,8 +305,9 @@ int test_zl38063(void* arg)
         ESP_LOGD(TAG,"Device boot loading failed.....");
         ESP_LOGD(TAG,"Test 4 - completed - FAIL!!!");
 
-    } else
+    } else {
         ESP_LOGD(TAG,"Test 4 - completed - PASS");
-        VprocTwolfHbiCleanup();
+    }
+    VprocTwolfHbiCleanup();
     return 0;
 }

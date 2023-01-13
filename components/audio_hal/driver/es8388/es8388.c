@@ -97,7 +97,7 @@ void es8388_read_all()
     for (int i = 0; i < 50; i++) {
         uint8_t reg = 0;
         es_read_reg(i, &reg);
-        ets_printf("%x: %x\n", i, reg);
+        ESP_LOGI(ES_TAG, "%x: %x", i, reg);
     }
 }
 
@@ -389,7 +389,7 @@ esp_err_t es8388_set_voice_volume(int volume)
     reg = audio_codec_get_dac_reg_value(dac_vol_handle, volume);
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL5, reg);
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL4, reg);
-    ESP_LOGD(ES_TAG, "Set volume:%.2d reg_value:0x%.2x dB:%.1f", dac_vol_handle->user_volume, reg,
+    ESP_LOGD(ES_TAG, "Set volume:%.2d reg_value:0x%.2x dB:%.1f", (int)dac_vol_handle->user_volume, reg,
             audio_codec_cal_dac_volume(dac_vol_handle));
     return res;
 }

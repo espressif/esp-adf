@@ -1,0 +1,5 @@
+dependencies:
+  espressif/jsmn:
+    version: "^1.1.0"
+    rules:
+      - if: "idf_version >=5.0"

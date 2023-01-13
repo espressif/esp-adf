@@ -27,16 +27,17 @@
 #include "esp_netif.h"
 #include "rtsp_service.h"
 #include "media_lib_adapter.h"
+#include "media_lib_netif.h"
 
 static const char *TAG = "RTSP_SERVICE";
 
 static esp_rtsp_mode_t rtsp_mode;
 
-static ip4_addr_t _get_network_ip()
+static char *_get_network_ip()
 {
-    tcpip_adapter_ip_info_t ip;
-    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip);
-    return ip.ip;
+    media_lib_ipv4_info_t ip_info;
+    media_lib_netif_get_ipv4_info(MEDIA_LIB_NET_TYPE_STA, &ip_info);
+    return media_lib_ipv4_ntoa(&ip_info.ip);
 }
 
 static int _esp_rtsp_state_handler(esp_rtsp_state_t state, void *ctx)
@@ -109,7 +110,6 @@ esp_rtsp_handle_t rtsp_service_start(av_stream_handle_t av_stream, esp_rtsp_mode
     AUDIO_NULL_CHECK(TAG, av_stream, return NULL);
     media_lib_add_default_adapter();
 
-    ip4_addr_t ip = _get_network_ip();
     esp_rtsp_video_info_t vcodec_info = {
         .vcodec = RTSP_VCODEC_MJPEG,
         .width = av_resolution[RTSP_FRAME_SIZE].width,
@@ -131,7 +131,7 @@ esp_rtsp_handle_t rtsp_service_start(av_stream_handle_t av_stream, esp_rtsp_mode
         .video_enable = true,
         .acodec = RTSP_ACODEC_G711A,
         .video_info = &vcodec_info,
-        .local_addr = ip4addr_ntoa(&ip),
+        .local_addr = _get_network_ip(),
         .stack_size = RTSP_STACK_SZIE,
         .task_prio = RTSP_TASK_PRIO,
         .state = _esp_rtsp_state_handler,

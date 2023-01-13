@@ -73,12 +73,16 @@ void app_main()
     esp_periph_start(set, wifi_handle);
 
     ESP_LOGI(TAG, "[ 3 ] Get ip info");
-    tcpip_adapter_ip_info_t ip_info;
-    memset(&ip_info, 0, sizeof(tcpip_adapter_ip_info_t));
-
     while (1) {
         vTaskDelay(2000 / portTICK_PERIOD_MS);
-        if (tcpip_adapter_get_ip_info(ESP_IF_WIFI_STA, &ip_info) == 0) {
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+        esp_netif_ip_info_t ip_info;
+        int ret = esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_info);
+#else
+        tcpip_adapter_ip_info_t ip_info;
+        int ret = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+#endif
+        if (ret == 0) {
             ESP_LOGI(TAG, "IP:"IPSTR, IP2STR(&ip_info.ip));
             ESP_LOGI(TAG, "MASK:"IPSTR, IP2STR(&ip_info.netmask));
             ESP_LOGI(TAG, "GW:"IPSTR, IP2STR(&ip_info.gw));

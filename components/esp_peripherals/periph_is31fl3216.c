@@ -23,6 +23,7 @@
  */
 
 #include <string.h>
+#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -189,7 +190,7 @@ static void is31fl3216_run_task(void *Para)
     uint16_t act_times = 0;
     while (task_run) {
         if (xQueueReceive(is31->evt, &msg, (wait_time_ms / portTICK_PERIOD_MS))) {
-            ESP_LOGD(TAG, "cmd:%d, data:%d", msg.type, msg.data);
+            ESP_LOGD(TAG, "cmd:%d, data:%"PRIu32, msg.type, msg.data);
             switch (msg.type) {
                 case PERIPH_IS31_CMD_CHG_STATE:
                     memcpy(&is31_arg, is31->arg, sizeof(periph_is31_arg_t));
@@ -421,12 +422,8 @@ esp_periph_handle_t periph_is31fl3216_init(periph_is31fl3216_cfg_t *is31fl3216_c
     is31fl3216->arg->duty_step = DEFAULT_FLASH_STEP;
     is31fl3216->arg->shift_mode = PERIPH_IS31_SHIFT_MODE_ACC;
 
-    if (is31fl3216_config->duty == NULL) {
-        ESP_LOGW(TAG, "The duty array is NULL");
-    } else {
-        for (int i = 0; i < IS31FL3216_CH_NUM; i++) {
-            is31fl3216->duty[i] = is31fl3216_config->duty[i];
-        }
+    for (int i = 0; i < IS31FL3216_CH_NUM; i++) {
+        is31fl3216->duty[i] = is31fl3216_config->duty[i];
     }
     is31fl3216->handle = is31fl3216_init();
     AUDIO_MEM_CHECK(TAG, is31fl3216, {

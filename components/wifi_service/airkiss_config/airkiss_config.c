@@ -41,9 +41,14 @@
 #include "airkiss_config.h"
 #include "esp_wifi_setting.h"
 
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#include "esp_netif.h"
+#else
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
 #include "tcpip_adapter_types.h"
 #endif
+#endif
+
 
 #define AIRKISS_DEBUG_ON                0
 
@@ -285,7 +290,6 @@ void airkiss_ssdp_notify(airkiss_lan_pack_param_t *lan_param)
 
 static void airkiss_send_ack_task(void *pvParameters)
 {
-    tcpip_adapter_ip_info_t local_ip;
     struct sockaddr_in server_addr;
     socklen_t sin_size = sizeof(server_addr);
     int send_socket = 0;
@@ -306,7 +310,13 @@ static void airkiss_send_ack_task(void *pvParameters)
 
     while (1) {
         /* Get local IP address of station */
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+        esp_netif_ip_info_t local_ip;
+        ret = esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &local_ip);
+#else
+        tcpip_adapter_ip_info_t local_ip;
         ret = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &local_ip);
+#endif
         if ((ESP_OK == ret) && (local_ip.ip.addr != INADDR_ANY)) {
             /* Create UDP socket. */
             send_socket = socket(AF_INET, SOCK_DGRAM, 0);

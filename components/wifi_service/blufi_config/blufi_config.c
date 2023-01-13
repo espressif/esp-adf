@@ -23,6 +23,7 @@
  */
 
 #include <string.h>
+#include <inttypes.h>
 #include "audio_mem.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
@@ -232,7 +233,7 @@ static void wifi_ble_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_par
             break;
         }
         case ESP_BLUFI_EVENT_RECV_CUSTOM_DATA:
-            ESP_LOGI(TAG, "Recv Custom Data %d\n", param->custom_data.data_len);
+            ESP_LOGI(TAG, "Recv Custom Data %" PRIu32 "\n", param->custom_data.data_len);
             esp_log_buffer_hex("Custom Data", param->custom_data.data, param->custom_data.data_len);
             break;
         default:

@@ -22,6 +22,7 @@
  *
  */
 #include <string.h>
+#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -37,6 +38,7 @@
 #include "soc/ledc_reg.h"
 #include "pwm_stream.h"
 #include "audio_idf_version.h"
+#include "soc/timer_group_struct.h"
 
 static const char *TAG = "PWM_STREAM";
 
@@ -113,7 +115,7 @@ static esp_err_t pwm_data_list_destroy(pwm_data_handle_t data)
 static pwm_data_handle_t pwm_data_list_create(int size)
 {
     if (size < (BUFFER_MIN_SIZE << 2)) {
-        ESP_LOGE(TAG, "Invalid buffer size, Minimum = %d", (int32_t)(BUFFER_MIN_SIZE << 2));
+        ESP_LOGE(TAG, "Invalid buffer size, Minimum = %d", (int)(BUFFER_MIN_SIZE << 2));
         return NULL;
     }
 
@@ -244,7 +246,11 @@ static void IRAM_ATTR timer_group_isr(void *para)
     if (handle->timg_dev->int_st_timers.val & BIT(handle->config.timer_num)) {
         handle->timg_dev->int_clr_timers.val |= (1UL << handle->config.timer_num);
     }
+    #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+    handle->timg_dev->hw_timer[handle->config.timer_num].config.tx_alarm_en = TIMER_ALARM_EN;
+    #else
     handle->timg_dev->hw_timer[handle->config.timer_num].config.alarm_en = TIMER_ALARM_EN;
+    #endif
 #elif CONFIG_IDF_TARGET_ESP32S3
     if (handle->timg_dev->int_st_timers.val & BIT(handle->config.timer_num)) {
         handle->timg_dev->int_clr_timers.val |= (1UL << handle->config.timer_num);
@@ -433,7 +439,7 @@ esp_err_t audio_pwm_set_param(int rate, ledc_timer_bit_t bits, int ch)
 
     timer_init(handle->config.tg_num, handle->config.timer_num, &config);
     timer_set_counter_value(handle->config.tg_num, handle->config.timer_num, 0x00000000ULL);
-    timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, (TIMER_BASE_CLK / config.divider) / handle->framerate);
+    timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, (APB_CLK_FREQ / config.divider) / handle->framerate);
     timer_enable_intr(handle->config.tg_num, handle->config.timer_num);
     timer_isr_register(handle->config.tg_num, handle->config.timer_num, timer_group_isr, NULL, ESP_INTR_FLAG_IRAM, NULL);
     return res;
@@ -457,12 +463,16 @@ esp_err_t audio_pwm_set_sample_rate(int rate)
     div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.tx_divider;
 #endif
 #elif CONFIG_IDF_TARGET_ESP32
+    #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+    div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.tx_divider;
+    #else
     div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.divider;
+    #endif
 #elif CONFIG_IDF_TARGET_ESP32S3
     div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.tn_divider;
 #endif
 
-    res = timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, (TIMER_BASE_CLK / div) / handle->framerate);
+    res = timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, (APB_CLK_FREQ / div) / handle->framerate);
     return res;
 }
 
@@ -514,7 +524,7 @@ static esp_err_t pwm_data_convert(pwm_data_handle_t data, uint8_t *inbuf, int32_
             }
         }
     } else {
-        ESP_LOGE(TAG, "Only support bits (16 or 32), now bits_per is %d", bits_per);
+        ESP_LOGE(TAG, "Only support bits (16 or 32), now bits_per is %"PRId32, bits_per);
     }
     return ESP_OK;
 }

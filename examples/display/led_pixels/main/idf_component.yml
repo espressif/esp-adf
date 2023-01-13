@@ -1,2 +1,3 @@
 dependencies:
-  espressif/esp-dsp: "==1.2.0"
+  esp-dsp:
+    git: https://github.com/espressif/esp-dsp.git

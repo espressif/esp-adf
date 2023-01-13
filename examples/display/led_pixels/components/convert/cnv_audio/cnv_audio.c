@@ -23,6 +23,7 @@
  */
 
 #include <math.h>
+#include <stdbool.h>
 #include "esp_log.h"
 #include "cnv_audio.h"
 #include "cnv_debug.h"

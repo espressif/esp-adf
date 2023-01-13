@@ -340,7 +340,7 @@ static void gpio_task_example(void* arg)
 
     xSemaphoreTake(gpio_semaphore, portMAX_DELAY);
 
-    ESP_LOGI(TAG, "GPIO[%d], val: %d", gpio_wakeup_num, gpio_get_level(gpio_wakeup_num));
+    ESP_LOGI(TAG, "GPIO[%d], val: %d", (int)gpio_wakeup_num, (int)gpio_get_level(gpio_wakeup_num));
 
     light_sleep_gpio_disable(gpio_wakeup_num);
 

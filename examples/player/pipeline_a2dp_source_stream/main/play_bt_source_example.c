@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 #include <string.h>
+#include <inttypes.h>
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_peripherals.h"
@@ -90,11 +91,11 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
         switch (p->type) {
             case ESP_BT_GAP_DEV_PROP_COD:
                 cod = *(uint32_t *)(p->val);
-                ESP_LOGI(TAG, "--Class of Device: 0x%x", cod);
+                ESP_LOGI(TAG, "--Class of Device: 0x%" PRIx32, cod);
                 break;
             case ESP_BT_GAP_DEV_PROP_RSSI:
                 rssi = *(int8_t *)(p->val);
-                ESP_LOGI(TAG, "--RSSI: %d", rssi);
+                ESP_LOGI(TAG, "--RSSI: %" PRId32, rssi);
                 break;
             case ESP_BT_GAP_DEV_PROP_EIR:
                 eir = (uint8_t *)(p->val);

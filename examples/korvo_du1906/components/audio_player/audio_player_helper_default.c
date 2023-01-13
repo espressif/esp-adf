@@ -149,7 +149,7 @@ audio_err_t audio_player_helper_default_play(ap_ops_attr_t *at, ap_ops_para_t *p
     AUDIO_NULL_CHECK(TAG, at, return ESP_ERR_AUDIO_INVALID_PARAMETER);
     audio_err_t ret = ESP_OK;
     ESP_LOGI(TAG, "%s, type:%x,url:%s,pos:%d,block:%d,auto:%d,mixed:%d,inter:%d", __func__,
-             para->media_src, para->url, para->pos, at->blocked, at->auto_resume, at->mixed, at->interrupt);
+             para->media_src, para->url, (int)para->pos, at->blocked, at->auto_resume, at->mixed, at->interrupt);
 
     ret = ap_manager_play(para->url, para->pos, at->blocked, at->auto_resume, at->mixed, at->interrupt, para->media_src);
     return ret;

@@ -28,6 +28,7 @@
 #include "board.h"
 #include "audio_error.h"
 #include "audio_mem.h"
+#include "soc/soc_caps.h"
 
 static const char *TAG = "ESP32_S3_BOX_LITE";
 
@@ -89,7 +90,7 @@ esp_err_t get_spi_pins(spi_bus_config_t *spi_config, spi_device_interface_config
 
 esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
 {
-    if (i2s_num >= I2S_NUM_MAX) {
+    if (i2s_num >= SOC_I2S_NUM) {
         ESP_LOGE(TAG, "Does not support i2s number(%d)", i2s_num);
         return ESP_ERR_INVALID_ARG;
     }

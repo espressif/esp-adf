@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 #include "board.h"
 #include "audio_event_iface.h"
 #include "esp_peripherals.h"
@@ -53,14 +54,17 @@ static int muxer_format_test(char* fmt, uint32_t duration)
         return ret;
     }
     ESP_LOGI(TAG, "Start muxer success");
-    total_data_size = 0;
     while (av_muxer_get_pts() < duration) {
         media_lib_thread_sleep(1000);
         if (av_muxer_running() == false) {
             break;
         }
+        if (total_data_size) {
+            ESP_LOGI(TAG, "%" PRIu32 " Write size %d", av_muxer_get_pts(), total_data_size);
+        }
+        total_data_size = 0;
     }
-    ESP_LOGI(TAG, "Stop muxer filesize %d", total_data_size);
+    ESP_LOGI(TAG, "Start to stop muxer");
     av_muxer_stop();
     return 0;
 }

@@ -178,7 +178,7 @@ void tca9554_read_all()
 {
     for (int i = 0; i < 0x04; i++) {
         uint8_t reg = tca9554_read_reg(i);
-        ets_printf("REG:%02x, %02x\n", i, reg);
+        ESP_LOGI(TAG, "REG:%02x, %02x", i, reg);
     }
 }
 

@@ -537,8 +537,8 @@ static VprocStatusType HbiSrecBoot_alt(twFirmware* st_firmware)
     }
 
     /* print out the srecord program info */
-    DEBUG_LOGI(TAG_SPI, "prgmBase 0x%08x\n", st_firmware->prgmBase);
-    DEBUG_LOGI(TAG_SPI, "execAddr 0x%08x\n", st_firmware->execAddr);
+    DEBUG_LOGI(TAG_SPI, "prgmBase 0x%08x\n", (int)st_firmware->prgmBase);
+    DEBUG_LOGI(TAG_SPI, "execAddr 0x%08x\n", (int)st_firmware->execAddr);
     DEBUG_LOGI(TAG_SPI, "DONE\n");
     return VPROC_STATUS_SUCCESS;
 }

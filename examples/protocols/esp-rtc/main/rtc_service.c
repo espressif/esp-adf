@@ -27,14 +27,15 @@
 #include "esp_netif.h"
 #include "rtc_service.h"
 #include "media_lib_adapter.h"
+#include "media_lib_netif.h"
 
 static const char *TAG = "RTC_SERVICE";
 
-static ip4_addr_t _get_network_ip()
+static char *_get_network_ip()
 {
-    tcpip_adapter_ip_info_t ip;
-    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip);
-    return ip.ip;
+    media_lib_ipv4_info_t ip_info;
+    media_lib_netif_get_ipv4_info(MEDIA_LIB_NET_TYPE_STA, &ip_info);
+    return media_lib_ipv4_ntoa(&ip_info.ip);
 }
 
 static int _esp_rtc_event_handler(esp_rtc_event_t event, void *ctx)
@@ -136,7 +137,6 @@ esp_rtc_handle_t rtc_service_start(av_stream_handle_t av_stream, const char *uri
     AUDIO_NULL_CHECK(TAG, av_stream, return NULL);
     media_lib_add_default_adapter();
 
-    ip4_addr_t ip = _get_network_ip();
     esp_rtc_video_info_t vcodec_info = {
         .vcodec = RTC_VCODEC_MJPEG,
         .width = av_resolution[VIDEO_FRAME_SIZE].width,
@@ -152,7 +152,7 @@ esp_rtc_handle_t rtc_service_start(av_stream_handle_t av_stream, const char *uri
     };
     esp_rtc_config_t rtc_service_config = {
         .uri = uri,
-        .local_addr = ip4addr_ntoa(&ip),
+        .local_addr = _get_network_ip(),
         .acodec_type = RTC_ACODEC_G711A,
         .vcodec_info = &vcodec_info,
         .data_cb = &data_cb,

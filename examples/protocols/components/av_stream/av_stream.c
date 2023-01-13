@@ -39,6 +39,7 @@
 #include "esp_jpeg_dec.h"
 #include "esp_jpeg_enc.h"
 #include "esp_camera.h"
+#include "esp_timer.h"
 #include "av_stream.h"
 
 static const char *TAG = "AV_STREAM";
@@ -866,7 +867,7 @@ int av_video_enc_read(av_stream_frame_t *frame, void *ctx)
             av_stream->sys_time = _time_ms()/1000;
             av_stream->image_count = 0;
         }
-        ESP_LOGD(TAG, "send video %d !", enc.len);
+        ESP_LOGD(TAG, "send video %d !", (int)enc.len);
     }
 
     return ESP_OK;
@@ -896,7 +897,7 @@ static void uac_frame_cb(mic_frame_t *frame, void *ptr)
 {
     av_stream_handle_t av_stream = (av_stream_handle_t) ptr;
     ESP_LOGD(TAG, "mic callback! bit_resolution = %u, samples_frequence = %u, data_bytes = %u",
-            frame->bit_resolution, frame->samples_frequence, frame->data_bytes);
+            frame->bit_resolution, (int)frame->samples_frequence, (int)frame->data_bytes);
     if (av_stream->aenc_run && rb_write(av_stream->ringbuf_rec, frame->data, frame->data_bytes, 0) <= 0) {
         ESP_LOGW(TAG, "ringbuf_rec write timeout");
     }

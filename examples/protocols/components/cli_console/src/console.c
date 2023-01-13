@@ -26,6 +26,7 @@
 #include "esp_system.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
+#include "esp_timer.h"
 #include "audio_mem.h"
 #include "audio_sys.h"
 #include "console.h"
@@ -53,10 +54,10 @@ static void initialize_console(void)
 static int free_mem(int argc, char **argv)
 {
 #ifdef CONFIG_SPIRAM_BOOT_INIT
-    printf("Func:%s, Line:%d, MEM Total:%d Bytes, Inter:%d Bytes, Dram:%d Bytes\r\n", __FUNCTION__, __LINE__, esp_get_free_heap_size(),
-           heap_caps_get_free_size(MALLOC_CAP_INTERNAL), heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    printf("Func:%s, Line:%d, MEM Total:%d Bytes, Inter:%d Bytes, Dram:%d Bytes\r\n", __FUNCTION__, __LINE__, (int)esp_get_free_heap_size(),
+           (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
 #else
-    printf("Func:%s, Line:%d, MEM Total:%d Bytes\r\n", __FUNCTION__, __LINE__, esp_get_free_heap_size());
+    printf("Func:%s, Line:%d, MEM Total:%d Bytes\r\n", __FUNCTION__, __LINE__, (int)esp_get_free_heap_size());
 #endif
     return 0;
 }

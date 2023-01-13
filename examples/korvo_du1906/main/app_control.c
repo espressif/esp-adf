@@ -285,7 +285,7 @@ void app_init(void)
     if (bits & WIFI_CONNECTED_BIT) {
         // app_ota_start();
     } else {
-        ESP_LOGW(TAG, "WIFI  connection timeout(%dms), skipped OTA service", WIFI_WAIT_CONNECT_TIME_MS);
+        ESP_LOGW(TAG, "WIFI  connection timeout(%dms), skipped OTA service", (int)WIFI_WAIT_CONNECT_TIME_MS);
     }
     vEventGroupDelete(WIFI_CONNECTED_FLAG);
     WIFI_CONNECTED_FLAG = NULL;

@@ -28,6 +28,10 @@
 #include "esp_log.h"
 #include "esp_partition.h"
 #include "esp_tts_voice_template.h"
+#include "esp_idf_version.h"
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#include "spi_flash_mmap.h"
+#endif
 
 static const char *TAG = "TTS_STREAM";
 

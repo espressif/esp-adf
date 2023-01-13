@@ -23,6 +23,8 @@ CONFIG_FATFS_LFN_HEAP=y
 CONFIG_FATFS_MAX_LFN=255
 CONFIG_FATFS_FS_LOCK=5
 
+CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
+
 
 # Increase default app partition size to accommodate audio forge pipeline example
 # by providing new partition table in "partitions_audio_forge_example.csv"

@@ -69,7 +69,7 @@ bool do_http_post(char *url, uint8_t *data, size_t len)
     int response = 0;
     if (esp_http_client_perform(http_client) == ESP_OK) {
         response = esp_http_client_get_status_code(http_client);
-        ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %d", response, esp_http_client_get_content_length(http_client));
+        ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %d", response, (int)esp_http_client_get_content_length(http_client));
     } else {
         ESP_LOGE(TAG, "Post failed");
     }

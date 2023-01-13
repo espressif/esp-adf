@@ -94,7 +94,7 @@ record_src_handle_t open_i2s_record(void *cfg, int cfg_size)
     uint32_t size = audio_element_get_output_ringbuf_size(i2s_src->i2s_reader);
     i2s_src->pcm_buffer = rb_create(size, 1);
     if (i2s_src->pcm_buffer == NULL) {
-        ESP_LOGE(TAG, "Fail to create ringfifo size %d", size);
+        ESP_LOGE(TAG, "Fail to create ringfifo size %d", (int)size);
         close_i2s_record(i2s_src);
         return NULL;
     }

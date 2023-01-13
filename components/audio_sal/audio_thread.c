@@ -30,8 +30,15 @@
 #include "audio_mem.h"
 #include "audio_error.h"
 #include "audio_thread.h"
+#include "audio_idf_version.h"
 
 static const char *TAG = "AUDIO_THREAD";
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#define TASK_HANDLE_T TaskHandle_t
+#else
+#define TASK_HANDLE_T xTaskHandle
+#endif
 
 BaseType_t __attribute__((weak)) xTaskCreateRestrictedPinnedToCore(const TaskParameters_t *const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID)
 {
@@ -68,7 +75,7 @@ esp_err_t audio_thread_create(audio_thread_t *p_handle, const char *name, void(*
                 }
             }
         };
-        if (xTaskCreateRestrictedPinnedToCore(&xRegParameters, (xTaskHandle)p_handle, core_id) != pdPASS) {
+        if (xTaskCreateRestrictedPinnedToCore(&xRegParameters, (TASK_HANDLE_T)p_handle, core_id) != pdPASS) {
             ESP_LOGE(TAG, "Error creating RestrictedPinnedToCore %s", name);
             goto audio_thread_create_error;
         }

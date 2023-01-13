@@ -14,7 +14,13 @@
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
 #include "battery_service.h"
+#include "esp_idf_version.h"
 
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#define ADC_ATTEN_11db ADC_ATTEN_DB_11
+#define ADC_WIDTH_12Bit ADC_BITWIDTH_12
+#define ADC_WIDTH_13Bit ADC_BITWIDTH_13
+#endif
 /**
  * @brief Battery adc configure
  */

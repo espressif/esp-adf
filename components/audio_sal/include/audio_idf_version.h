@@ -35,7 +35,6 @@ extern "C" {
 #define ESP_IDF_VERSION_VAL(major, minor, patch) 1
 #endif
 
-
 #ifdef __cplusplus
 }
 #endif

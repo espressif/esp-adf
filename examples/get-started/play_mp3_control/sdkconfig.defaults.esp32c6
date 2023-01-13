@@ -1,0 +1,4 @@
+#
+# Audio HAL
+#
+CONFIG_ESP32_C6_DEVKIT_BOARD=y

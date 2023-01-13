@@ -125,10 +125,10 @@ void *audio_calloc_inner(size_t n, size_t size)
 void audio_mem_print(const char *tag, int line, const char *func)
 {
 #ifdef CONFIG_SPIRAM_BOOT_INIT
-    ESP_LOGI(tag, "Func:%s, Line:%d, MEM Total:%d Bytes, Inter:%d Bytes, Dram:%d Bytes\r\n", func, line, esp_get_free_heap_size(),
-             heap_caps_get_free_size(MALLOC_CAP_INTERNAL), heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    ESP_LOGI(tag, "Func:%s, Line:%d, MEM Total:%d Bytes, Inter:%d Bytes, Dram:%d Bytes\r\n", func, line, (int)esp_get_free_heap_size(),
+            (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
 #else
-    ESP_LOGI(tag, "Func:%s, Line:%d, MEM Total:%d Bytes\r\n", func, line, esp_get_free_heap_size());
+    ESP_LOGI(tag, "Func:%s, Line:%d, MEM Total:%d Bytes\r\n", func, line, (int)esp_get_free_heap_size());
 #endif
 }
 
@@ -155,7 +155,7 @@ bool audio_mem_spiram_stack_is_enabled(void)
     uint8_t chip_ver = esp_efuse_get_chip_ver();
 #endif
     if (chip_ver < 3) {
-        ESP_LOGW("AUIDO_MEM", "Can't support stack on external memory due to ESP32 chip is %d", chip_ver);
+        ESP_LOGW("AUIDO_MEM", "Can't support stack on external memory due to ESP32 chip is %d", (int)chip_ver);
         ret = false;
     }
 #endif

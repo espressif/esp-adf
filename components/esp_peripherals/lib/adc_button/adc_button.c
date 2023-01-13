@@ -34,6 +34,13 @@
 #include "adc_button.h"
 #include "esp_log.h"
 #include "audio_thread.h"
+#include "audio_idf_version.h"
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#define ADC_ATTEN_11db ADC_ATTEN_DB_11
+#define ADC_WIDTH_12Bit ADC_BITWIDTH_12
+#define ADC_WIDTH_13Bit ADC_BITWIDTH_13
+#endif
 
 #define V_REF                           1100
 
@@ -139,6 +146,7 @@ static int get_adc_voltage(int channel)
     uint32_t data[ADC_SAMPLES_NUM] = { 0 };
     uint32_t sum = 0;
     int tmp = 0;
+#if CONFIG_IDF_TARGET_ESP32 || CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32S3
     esp_adc_cal_characteristics_t characteristics;
 #if CONFIG_IDF_TARGET_ESP32
     esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_11db, ADC_WIDTH_12Bit, V_REF, &characteristics);
@@ -147,10 +155,11 @@ static int get_adc_voltage(int channel)
 #else
     esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_11db, ADC_WIDTH_12Bit, 0, &characteristics);
 #endif
+
     for (int i = 0; i < ADC_SAMPLES_NUM; ++i) {
         esp_adc_cal_get_voltage(channel, &characteristics, &data[i]);
     }
-
+#endif
     for (int j = 0; j < ADC_SAMPLES_NUM - 1; j++) {
         for (int i = 0; i < ADC_SAMPLES_NUM - j - 1; i++) {
             if (data[i] > data[i + 1]) {

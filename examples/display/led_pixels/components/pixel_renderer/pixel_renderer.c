@@ -30,6 +30,7 @@
 #include "audio_error.h"
 #include "audio_thread.h"
 #include "pixel_renderer.h"
+#include "esp_rom_sys.h"
 
 #define   PIXEL_RENDERER_RESET_US          (280)
 #define   PIXEL_RENDERER_STOP_WAITTIME     (8000 / portTICK_RATE_MS)
@@ -206,7 +207,7 @@ static void pixel_renderer_task(void *arg)
                 case PIXELS_CLEAR:
                     pixel_renderer_clear_all(handle);
                     pixel_renderer_refresh(handle);
-                    ets_delay_us(PIXEL_RENDERER_RESET_US);
+                    esp_rom_delay_us(PIXEL_RENDERER_RESET_US);
                     break;
                 case PIXELS_REFRESH:
                     color = in_data->frame.color;
@@ -231,7 +232,7 @@ static void pixel_renderer_task(void *arg)
                     }
                     /* The `pixel_renderer_refresh` function actually sends ws2812 data */
                     pixel_renderer_refresh(handle);
-                    ets_delay_us(PIXEL_RENDERER_RESET_US);
+                    esp_rom_delay_us(PIXEL_RENDERER_RESET_US);
                     break;
                 default:
                     break;
