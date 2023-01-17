@@ -127,6 +127,6 @@ build_ut_v44_make:
     - .rules:build:unit_test
     - .build_esp_adf_tests_v44_make
   variables:
-    IDF_VERSION: release/v4.4
+    IDF_VERSION: 552beab8a94a7787c5a210e5dc6bf04354741707
     IDF_TARGET: esp32
     DEEP_CLONE: "true"
