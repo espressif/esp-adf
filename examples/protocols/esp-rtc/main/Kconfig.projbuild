@@ -1,0 +1,21 @@
+menu "ESP-RTC App Configuration"
+
+config WIFI_SSID
+    string "WiFi SSID"
+    default "myssid"
+    help
+    SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+    default "mypassword"
+    help
+    WiFi password (WPA or WPA2) for the example to use.
+
+config SIP_URI
+    string "SIP URI"
+    default "udp://100:100@192.168.1.123:5060"
+    help
+    The SIP URI with username, password, address, port and transport type
+
+endmenu

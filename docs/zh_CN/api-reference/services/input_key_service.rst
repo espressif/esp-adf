@@ -13,7 +13,7 @@
 
 * :example:`checks/check_board_buttons`
 * :example:`player/pipeline_sdcard_mp3_control`
-* :example:`advanced_examples/voip`
+* :example:`protocols/voip`
 
 .. include:: /_build/inc/input_key_service.inc
 .. include:: /_build/inc/input_key_com_user_id.inc
