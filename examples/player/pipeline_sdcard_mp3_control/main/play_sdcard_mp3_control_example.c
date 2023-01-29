@@ -270,6 +270,6 @@ void app_main(void)
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(mp3_decoder);
     audio_element_deinit(rsp_handle);
-    esp_periph_set_destroy(set);
     periph_service_destroy(input_ser);
+    esp_periph_set_destroy(set);
 }
