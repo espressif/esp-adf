@@ -1,4 +1,4 @@
-.define_config_file_name: &define_config_file_name |
+.define_config_file_name: &define_config_file_name
   JOB_NAME_PREFIX=$(echo ${CI_JOB_NAME} | awk '{print $1}')
   JOG_FULL_NAME="${JOB_NAME_PREFIX}_${CI_NODE_INDEX}"
   CONFIG_FILE="${CONFIG_FILE_PATH}/${JOG_FULL_NAME}.yml"
@@ -52,7 +52,7 @@
     - echo $ENV_FILE
     - pwd
     - python $TEST_SCRIPT $TEST_CASE_PATH -c $CONFIG_FILE -e $ENV_FILE
-  interruptible: false
+  interruptible: true
 
 .job_v44_template: &job_v44_template
   <<: *unit_test_template

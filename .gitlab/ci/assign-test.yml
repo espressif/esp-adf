@@ -26,7 +26,7 @@
     - ls
     - pwd
     - python $UNIT_ASSIGN_SCRIPT $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml $CI_TARGET_UT_TEST_CONFIG_FILE $IDF_PATH/components/idf_test/unit_test/CIConfigs
-  interruptible: false
+  interruptible: true
 
 assign_test_v44:
   extends:

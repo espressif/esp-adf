@@ -1,6 +1,6 @@
-.setup_tools_unless_target_test: &setup_tools_unless_target_test |
+.setup_tools_unless_target_test: &setup_tools_unless_target_test
   if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
-  $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)" || exit 1
+    $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)" || exit 1;
   fi
 
 .build_ut_template: &build_ut_template
@@ -46,7 +46,7 @@
   - git clean -f
   - git checkout ${IDF_VERSION}
   - rm -rf $IDF_PATH/components/mqtt/esp-mqtt
-  - git submodule update --init --recursive
+  - git submodule update --init --recursive --depth 1
   - source $IDF_PATH/tools/ci/configure_ci_environment.sh
   - *setup_tools_unless_target_test
   - git apply $ADF_PATH/idf_patches/idf_v4.4_freertos.patch
@@ -104,7 +104,7 @@
     # use the 'tools/UnitTestParser.py' of release/v3.3 in order to generate 'idf_test/unit_test/TestCaseAll.yml'
     - echo "The IDF branch is v3.3(722043f734)"
     - git checkout 722043f734
-    - git submodule update --init --recursive
+    - git submodule update --init --recursive --depth 1
     - cd -
     - pyenv install 2.7.15
     - pyenv global 2.7.15
