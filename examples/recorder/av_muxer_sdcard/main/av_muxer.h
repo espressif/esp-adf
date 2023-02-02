@@ -33,15 +33,16 @@ typedef enum {
     MUXER_VIDEO_QUALITY_VGA,      /*!< 640x480 */
     MUXER_VIDEO_QUALITY_XVGA,     /*!< 1024x768 */
     MUXER_VIDEO_QUALITY_HD,       /*!< 1280x720 */
+    MUXER_VIDEO_QUALITY_FHD,      /*!< 1920x1080 */
 } muxer_video_quality_t;
 
 /**
  * @brief AV Muxer configuration
  */
 typedef struct {
+    uint8_t               muxer_flag;        /*!< Muxer flag, muxer audio or video or both */
     char                  fmt[4];            /*!< Container format */
     muxer_video_quality_t quality;           /*!< Video quality */
-    uint8_t               muxer_flag;        /*!< Muxer flag, muxer audio or video or both */
     uint16_t              audio_sample_rate; /*!< Audio sample rate */
     _av_muxer_data_cb     data_cb;           /*!< Muxer data callback */
     void*                 ctx;               /*!< Muxer input context */

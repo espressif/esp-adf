@@ -35,6 +35,7 @@ typedef enum {
 typedef enum {
     RECORD_SRC_VIDEO_FMT_NONE,
     RECORD_SRC_VIDEO_FMT_YUV422,
+    RECORD_SRC_VIDEO_FMT_YUV420,
     RECORD_SRC_VIDEO_FMT_JPEG,
 } record_src_video_fmt_t;
 
@@ -76,6 +77,14 @@ typedef struct {
     void (*close_record)(record_src_handle_t handle);
 } record_src_api_t;
 
+
+/**
+ * @brief         Register record source according configuration
+ * @return        - ESP_MEDIA_ERR_OK: Register success
+ *                - Others: Fail to register
+ */
+int record_src_register_default();
+
 /**
  * @brief         Register of record source
  *
@@ -100,7 +109,7 @@ int record_src_i2s_aud_register();
  * @return        - ESP_MEDIA_ERR_OK: Register success
  *                - Others: Fail to register
  */
-int record_src_spi_cam_register();
+int record_src_dvp_cam_register();
 
 /**
  * @brief         Register of USB Camera source

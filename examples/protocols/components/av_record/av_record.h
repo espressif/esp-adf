@@ -46,11 +46,13 @@ typedef enum {
     AV_RECORD_VIDEO_QUALITY_VGA,      /*!< 640x480 */
     AV_RECORD_VIDEO_QUALITY_XVGA,     /*!< 1024x768 */
     AV_RECORD_VIDEO_QUALITY_HD,       /*!< 1280x720 */
+    AV_RECORD_VIDEO_QUALITY_FHD,      /*!< 1920x1080 */
 } av_record_video_quality_t;
 
 typedef enum {
     AV_RECORD_VIDEO_FMT_NONE,
     AV_RECORD_VIDEO_FMT_MJPEG,
+    AV_RECORD_VIDEO_FMT_H264,
 } av_record_video_fmt_t;
 
 typedef enum {
@@ -114,6 +116,20 @@ uint32_t av_record_get_pts();
  * @param[out]    height: Video height
  */
 void av_record_get_video_size(av_record_video_quality_t quality, uint16_t *width, uint16_t *height);
+
+/**
+ * @brief         Get audio format string
+ * @param         afmt: Audio format
+ * @return        Audio format string
+ */
+const char* av_record_get_afmt_str(av_record_audio_fmt_t afmt);
+
+/**
+ * @brief         Get video format string
+ * @param         vfmt: Audio format
+ * @return        Audio format string
+ */
+const char* av_record_get_vfmt_str(av_record_video_fmt_t vfmt);
 
 #ifdef __cplusplus
 }

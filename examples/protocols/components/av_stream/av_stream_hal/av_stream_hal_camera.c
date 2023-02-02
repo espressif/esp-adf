@@ -164,7 +164,12 @@ int av_stream_camera_init(av_stream_hal_config_t *config, void *cb, void *arg)
         camera_config.frame_size = config->video_framesize;
         if (config->video_soft_enc) {
             camera_config.pixel_format = PIXFORMAT_YUV422;
-            camera_config.conv_mode = YUV422_TO_YUV420,
+#ifdef CONFIG_CAMERA_CONVERTER_ENABLE
+            camera_config.conv_mode = YUV422_TO_YUV420;
+#else
+            ESP_LOGE(TAG, "Please enable CONFIG_CAMERA_CONVERTER_ENABLE");
+            return ESP_FAIL;
+#endif
             camera_config.xclk_freq_hz = 40000000;
         }
         if (config->uac_en) {

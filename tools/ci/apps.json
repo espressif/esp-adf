@@ -8,7 +8,6 @@
 {"app_dir": "/examples/advanced_examples/nvs_dispatcher", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s2:ESP32_S2_KALUGA_1_V1_2:[v42-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
 {"app_dir": "/examples/advanced_examples/record_while_play", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
 {"app_dir": "/examples/advanced_examples/wifi_bt_ble_coex", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32:ESP32_KORVO_DU1906:[v33-v42];"}
-{"app_dir": "/examples/advanced_examples/rtmp", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
 
 {"app_dir": "/examples/audio_processing/pipeline_alc", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
 {"app_dir": "/examples/audio_processing/pipeline_audio_forge", "board_idf": "esp32:ESP_LYRAT_V4_3:[v33-v44];esp32:ESP_LYRATD_MSC_V2_2:[v33-v44];esp32:ESP_LYRAT_MINI_V1_1:[v33-v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
@@ -69,3 +68,4 @@
 {"app_dir": "/examples/protocols/voip", "board_idf": "esp32:ESP_LYRAT_MINI_V1_1:[v44];esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
 {"app_dir": "/examples/protocols/esp-rtc", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
 {"app_dir": "/examples/protocols/esp-rtsp", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}
+{"app_dir": "/examples/protocols/rtmp", "board_idf": "esp32s3:ESP32_S3_KORVO2_V3:[v44];"}

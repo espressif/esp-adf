@@ -13,7 +13,7 @@
 #include "board.h"
 #include "esp_log.h"
 
-#define TAG           "SPI_Cam"
+#define TAG           "DVP_Cam"
 
 #define CAM_PIN_PWDN  -1 // Power down is not used
 #define CAM_PIN_RESET -1 // Software reset will be performed
@@ -38,7 +38,7 @@
 
 typedef struct {
     camera_fb_t *pic;
-} record_src_spi_cam_t;
+} record_src_dvp_cam_t;
 
 framesize_t get_video_quality(int width, int height)
 {
@@ -57,16 +57,19 @@ framesize_t get_video_quality(int width, int height)
     if (width == 1280 && height == 720) {
         return FRAMESIZE_HD;
     }
+    if (width == 1920 && height == 1080) {
+        return FRAMESIZE_FHD;
+    }
     return FRAMESIZE_QVGA;
 }
 
-record_src_handle_t open_spi_cam(void *cfg, int cfg_size)
+record_src_handle_t open_dvp_cam(void *cfg, int cfg_size)
 {
     if (cfg == NULL || cfg_size != sizeof(record_src_video_cfg_t)) {
         return NULL;
     }
-    record_src_spi_cam_t *spi_cam_src = (record_src_spi_cam_t *) calloc(sizeof(record_src_spi_cam_t), 1);
-    if (spi_cam_src == NULL) {
+    record_src_dvp_cam_t *dvp_cam_src = (record_src_dvp_cam_t *) calloc(sizeof(record_src_dvp_cam_t), 1);
+    if (dvp_cam_src == NULL) {
         return NULL;
     }
     record_src_video_cfg_t *vid_cfg = (record_src_video_cfg_t *) cfg;
@@ -103,65 +106,79 @@ record_src_handle_t open_spi_cam(void *cfg, int cfg_size)
         camera_config.pixel_format = PIXFORMAT_YUV422;
         camera_config.xclk_freq_hz = 40000000;
     }
-    if (CAM_PIN_XCLK == -1) {
-        ESP_LOGE(TAG, "Camera pin not configured on this platform yet");
-        return NULL;
-    }
-    camera_config.frame_size = get_video_quality(vid_cfg->width, vid_cfg->height);
-    esp_err_t err = esp_camera_init(&camera_config);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Camera Init Failed");
-        return NULL;
-    }
-    return (record_src_handle_t) spi_cam_src;
+    do {
+        if (vid_cfg->video_fmt == RECORD_SRC_VIDEO_FMT_YUV420) {
+            camera_config.pixel_format = PIXFORMAT_YUV422;
+            camera_config.xclk_freq_hz = 40000000;
+    #if CONFIG_CAMERA_CONVERTER_ENABLED
+            camera_config.conv_mode = YUV422_TO_YUV420;
+    #else
+            ESP_LOGE(TAG, "Please enable CONFIG_CAMERA_CONVERTER_ENABLED");
+            break;
+    #endif
+        }
+        if (CAM_PIN_XCLK == -1) {
+            ESP_LOGE(TAG, "Camera pin not configured on this platform yet");
+            break;
+        }
+        camera_config.frame_size = get_video_quality(vid_cfg->width, vid_cfg->height);
+        esp_err_t err = esp_camera_init(&camera_config);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Camera Init Failed");
+            break;
+        }
+        return (record_src_handle_t) dvp_cam_src;
+    } while (0);
+    free(dvp_cam_src);
+    return NULL;
 }
 
-int read_spi_cam(record_src_handle_t handle, record_src_frame_data_t *frame_data, int timeout)
+int read_dvp_cam(record_src_handle_t handle, record_src_frame_data_t *frame_data, int timeout)
 {
     if (handle == NULL || frame_data == NULL) {
         return ESP_MEDIA_ERR_INVALID_ARG;
     }
-    record_src_spi_cam_t *spi_cam_src = (record_src_spi_cam_t *) handle;
+    record_src_dvp_cam_t *dvp_cam_src = (record_src_dvp_cam_t *) handle;
     camera_fb_t *pic = esp_camera_fb_get();
     if (pic == NULL) {
         return ESP_MEDIA_ERR_NOT_FOUND;
     }
     frame_data->data = pic->buf;
     frame_data->size = pic->len;
-    spi_cam_src->pic = pic;
+    dvp_cam_src->pic = pic;
     return ESP_MEDIA_ERR_OK;
 }
 
-int unlock_spi_cam(record_src_handle_t handle)
+int unlock_dvp_cam(record_src_handle_t handle)
 {
     if (handle == NULL) {
         return ESP_MEDIA_ERR_INVALID_ARG;
     }
-    record_src_spi_cam_t *spi_cam_src = (record_src_spi_cam_t *) handle;
-    if (spi_cam_src->pic) {
-        esp_camera_fb_return(spi_cam_src->pic);
-        spi_cam_src->pic = NULL;
+    record_src_dvp_cam_t *dvp_cam_src = (record_src_dvp_cam_t *) handle;
+    if (dvp_cam_src->pic) {
+        esp_camera_fb_return(dvp_cam_src->pic);
+        dvp_cam_src->pic = NULL;
     }
     return ESP_MEDIA_ERR_OK;
 }
 
-void close_spi_cam(record_src_handle_t handle)
+void close_dvp_cam(record_src_handle_t handle)
 {
     if (handle == NULL) {
         return;
     }
-    record_src_spi_cam_t *spi_cam_src = (record_src_spi_cam_t *) handle;
+    record_src_dvp_cam_t *dvp_cam_src = (record_src_dvp_cam_t *) handle;
     esp_camera_deinit();
-    free(spi_cam_src);
+    free(dvp_cam_src);
 }
 
-int record_src_spi_cam_register()
+int record_src_dvp_cam_register()
 {
-    record_src_api_t spi_cam_record = {
-        .open_record = open_spi_cam,
-        .read_frame = read_spi_cam,
-        .unlock_frame = unlock_spi_cam,
-        .close_record = close_spi_cam,
+    record_src_api_t dvp_cam_record = {
+        .open_record = open_dvp_cam,
+        .read_frame = read_dvp_cam,
+        .unlock_frame = unlock_dvp_cam,
+        .close_record = close_dvp_cam,
     };
-    return record_src_register(RECORD_SRC_TYPE_SPI_CAM, &spi_cam_record);
+    return record_src_register(RECORD_SRC_TYPE_SPI_CAM, &dvp_cam_record);
 }

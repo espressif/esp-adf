@@ -18,8 +18,8 @@
 #include "av_muxer.h"
 
 #define MUXER_FILE_DURATION          (30000) // Unit ms
-#define MUXER_FILE_AUDIO_SAMPLE_RATE (22050)
-#define MUXER_FILE_VIDEO_QUALITY     (MUXER_VIDEO_QUALITY_HVGA)
+#define MUXER_FILE_AUDIO_SAMPLE_RATE (16000)
+#define MUXER_FILE_VIDEO_QUALITY     (MUXER_VIDEO_QUALITY_QVGA)
 
 static const char* TAG = "AV Muxer";
 static int total_data_size = 0;
@@ -45,7 +45,7 @@ static int muxer_format_test(char* fmt, uint32_t duration)
         .save_to_file = true,
         .muxer_flag = AV_MUXER_AUDIO_FLAG | AV_MUXER_VIDEO_FLAG,
     };
-    strncpy(cfg.fmt, fmt, sizeof(cfg.fmt));
+    strncpy(cfg.fmt, fmt, sizeof(cfg.fmt)-1);
     ESP_LOGI(TAG, "Start muxer to %s", fmt);
     int ret = av_muxer_start(&cfg);
     if (ret != 0) {
@@ -53,17 +53,14 @@ static int muxer_format_test(char* fmt, uint32_t duration)
         return ret;
     }
     ESP_LOGI(TAG, "Start muxer success");
+    total_data_size = 0;
     while (av_muxer_get_pts() < duration) {
         media_lib_thread_sleep(1000);
         if (av_muxer_running() == false) {
             break;
         }
-        if (total_data_size) {
-            ESP_LOGI(TAG, "%d Write size %d", av_muxer_get_pts(), total_data_size);
-        }
-        total_data_size = 0;
     }
-    ESP_LOGI(TAG, "Start to stop muxer");
+    ESP_LOGI(TAG, "Stop muxer filesize %d", total_data_size);
     av_muxer_stop();
     return 0;
 }
