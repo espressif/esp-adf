@@ -64,7 +64,7 @@ ringbuf_handle_t rb_create(int block_size, int n_blocks)
     char *buf = NULL;
     bool _success =
         (
-            (rb             = audio_malloc(sizeof(struct ringbuf))) &&
+            (rb             = audio_calloc(1, sizeof(struct ringbuf))) &&
             (buf            = audio_calloc(n_blocks, block_size))   &&
             (rb->can_read   = xSemaphoreCreateBinary())             &&
             (rb->lock       = xSemaphoreCreateMutex())              &&

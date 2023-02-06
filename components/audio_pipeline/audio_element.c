@@ -904,7 +904,7 @@ esp_err_t audio_element_wait_for_stop(audio_element_handle_t el)
 {
     if (el->is_running == false) {
         ESP_LOGD(TAG, "[%s] Element already stopped, return without waiting", el->tag);
-        return ESP_FAIL;
+        return ESP_OK;
     }
     EventBits_t uxBits = xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, DEFAULT_MAX_WAIT_TIME);
     esp_err_t ret = ESP_ERR_TIMEOUT;
@@ -1279,7 +1279,7 @@ esp_err_t audio_element_wait_for_stop_ms(audio_element_handle_t el, TickType_t t
 {
     if (el->is_running == false) {
         ESP_LOGD(TAG, "[%s] Element already stopped, return without waiting", el->tag);
-        return ESP_FAIL;
+        return ESP_OK;
     }
     EventBits_t uxBits = xEventGroupWaitBits(el->state_event, STOPPED_BIT, false, true, ticks_to_wait);
     esp_err_t ret = ESP_ERR_TIMEOUT;
