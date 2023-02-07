@@ -90,7 +90,7 @@ static audio_element_handle_t create_i2s_stream(int sample_rates, int bits, int 
     i2s_info.bits = bits;
     i2s_info.channels = channels;
     i2s_info.sample_rates = sample_rates;
-    audio_element_setinfo(i2s_stream, &i2s_info);
+    audio_element_set_music_info(i2s_stream, i2s_info.sample_rates, i2s_info.channels, i2s_info.bits);
     return i2s_stream;
 }
 

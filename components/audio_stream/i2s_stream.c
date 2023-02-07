@@ -44,6 +44,7 @@
 
 static const char *TAG = "I2S_STREAM";
 
+#define I2S_BUFFER_ALINED_BYTES_SIZE (12)
 
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 2, 0)
 #define SOC_I2S_SUPPORTS_ADC_DAC 1
@@ -58,9 +59,10 @@ typedef struct i2s_stream {
     i2s_stream_cfg_t    config;
     bool                is_open;
     bool                use_alc;
-    void                *volume_handle;
+    void               *volume_handle;
     int                 volume;
     bool                uninstall_drv;
+    int                 data_bit_width;
 } i2s_stream_t;
 #ifdef SOC_I2S_SUPPORTS_ADC_DAC
 static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
@@ -119,6 +121,19 @@ static int i2s_dac_data_scale(int bits, uint8_t *sBuff, uint32_t len)
     return 0;
 }
 #endif
+
+static inline esp_err_t i2s_stream_check_data_bits(i2s_stream_t *i2s, int bits)
+{
+#if CONFIG_IDF_TARGET_ESP32
+    if (bits == I2S_BITS_PER_SAMPLE_24BIT) {
+        i2s->config.expand_src_bits = bits;
+        i2s->data_bit_width = I2S_BITS_PER_SAMPLE_24BIT;
+    } else {
+        i2s->data_bit_width = 0;
+    }
+#endif
+    return ESP_OK;
+}
 
 static int i2s_stream_clear_dma_buffer(audio_element_handle_t self)
 {
@@ -226,12 +241,13 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
 static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
-    len = len >> 2 << 2;
     size_t bytes_written = 0;
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
+    int target_bits = info.bits;
     if (len > 0) {
 #ifdef CONFIG_IDF_TARGET_ESP32
+        target_bits = I2S_BITS_PER_SAMPLE_32BIT;
         if (info.channels == 1) {
             i2s_mono_fix(info.bits, (uint8_t *)buffer, len);
         }
@@ -243,16 +259,18 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
 #endif
     }
 
-    if (i2s->config.need_expand && (i2s->config.i2s_config.bits_per_sample != i2s->config.expand_src_bits)) {
-        i2s_write_expand(i2s->config.i2s_port,
-                         buffer,
-                         len,
-                         i2s->config.expand_src_bits,
-                         i2s->config.i2s_config.bits_per_sample,
-                         &bytes_written,
-                         ticks_to_wait);
-    } else {
-        i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
+    if (len) {
+        if ((i2s->config.need_expand && (target_bits != i2s->config.expand_src_bits)) || (i2s->data_bit_width == I2S_BITS_PER_SAMPLE_24BIT)) {
+            i2s_write_expand(i2s->config.i2s_port,
+                            buffer,
+                            len,
+                            i2s->config.expand_src_bits,
+                            target_bits,
+                            &bytes_written,
+                            ticks_to_wait);
+        } else {
+            i2s_write(i2s->config.i2s_port, buffer, len, &bytes_written, ticks_to_wait);
+        }
     }
 
     return bytes_written;
@@ -304,6 +322,8 @@ esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bi
     }
     audio_element_set_music_info(i2s_stream, rate, ch, bits);
 
+    i2s_zero_dma_buffer(i2s->config.i2s_port);
+    i2s_stream_check_data_bits(i2s, bits);
     if (_i2s_set_clk(i2s->config.i2s_port, rate, bits, ch) == ESP_FAIL) {
         ESP_LOGE(TAG, "i2s_set_clk failed, type = %d,port:%d", i2s->config.type, i2s->config.i2s_port);
         err = ESP_FAIL;
@@ -353,7 +373,12 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     cfg.out_rb_size = config->out_rb_size;
     cfg.multi_out_rb_num = config->multi_out_num;
     cfg.tag = "iis";
-    cfg.buffer_len = I2S_STREAM_BUF_SIZE;
+    cfg.buffer_len = config->buffer_len;
+
+    if (cfg.buffer_len % I2S_BUFFER_ALINED_BYTES_SIZE) {
+        ESP_LOGE(TAG, "The size of buffer must be a multiple of %d, current size is %d", I2S_BUFFER_ALINED_BYTES_SIZE, cfg.buffer_len);
+        return NULL;
+    }
 
     i2s_stream_t *i2s = audio_calloc(1, sizeof(i2s_stream_t));
     AUDIO_MEM_CHECK(TAG, i2s, return NULL);
@@ -375,6 +400,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         audio_free(i2s);
         return NULL;
     }
+    i2s_stream_check_data_bits(i2s, i2s->config.i2s_config.bits_per_sample);
 
     el = audio_element_init(&cfg);
     AUDIO_MEM_CHECK(TAG, el, {

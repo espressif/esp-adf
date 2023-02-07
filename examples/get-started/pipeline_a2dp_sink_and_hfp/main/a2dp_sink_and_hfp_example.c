@@ -495,7 +495,6 @@ void app_main(void)
             rsp_filter_set_src_info(filter_d, music_info.sample_rates, music_info.channels);
             i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
 #else
-            audio_element_setinfo(i2s_stream_writer, &music_info);
             i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
 #endif
 
