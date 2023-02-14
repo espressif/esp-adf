@@ -20,13 +20,13 @@ import re
 import os
 import argparse
 
-IDF_SUPPORT_CHIP = {'722043f734':['v33'], 
-                    'release/v3.3':['v33'], 
-                    'release/v4.1':['v41'], 
-                    'release/v4.2':['v42'], 
-                    'release/v4.3':['v43'], 
+IDF_SUPPORT_CHIP = {'722043f734':['v33'],
+                    'release/v3.3':['v33'],
+                    'release/v4.1':['v41'],
+                    'release/v4.2':['v42'],
+                    'release/v4.3':['v43'],
+                    'v4.3.4':['v43'],
                     'release/v4.4':['v44'],
-                    '552beab8a94a7787c5a210e5dc6bf04354741707':['v44'],
                     'release/v5.0':['v50']}
 
 ADF_PATH = os.getenv('ADF_PATH')
