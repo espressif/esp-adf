@@ -159,7 +159,8 @@ build_examples_v43_esp32_lyrat_v4_3_cmake:
     - .build_examples_cmake_v44
   variables:
     IDF_TARGET: esp32
-    IDF_VERSION: v4.3.4
+    IDF_TAG_VERSION: v4.3.4
+    IDF_VERSION: "${IDF_TAG_VERSION}"
     SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
     AUDIO_HAL: ESP_LYRAT_V4_3
     BUILD_SYSTEM: cmake
