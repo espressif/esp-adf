@@ -19,6 +19,14 @@
 #include "board.h"
 #include "audio_idf_version.h"
 
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 4))
+#define SPI_HOST_NUM SPI2_HOST
+#elif (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#define SPI_HOST_NUM SPI3_HOST
+#else
+#define SPI_HOST_NUM HSPI_HOST
+#endif
+
 static spi_device_handle_t g_spi = NULL;
 
 int VprocHALInit(void)
@@ -41,15 +49,9 @@ int VprocHALInit(void)
     if (g_spi) {
         return ret;
     }
-#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
-    ret = spi_bus_initialize(HSPI_HOST, &buscfg, 0);
+    ret = spi_bus_initialize(SPI_HOST_NUM, &buscfg, 0);
     assert(ret == ESP_OK);
-    ret = spi_bus_add_device(HSPI_HOST, &devcfg, &g_spi);
-#else
-    ret = spi_bus_initialize(SPI3_HOST, &buscfg, 0);
-    assert(ret == ESP_OK);
-    ret = spi_bus_add_device(SPI3_HOST, &devcfg, &g_spi);
-#endif
+    ret = spi_bus_add_device(SPI_HOST_NUM, &devcfg, &g_spi);
     assert(ret == ESP_OK);
     gpio_set_pull_mode(0, GPIO_FLOATING);
     return ret;
@@ -70,11 +72,8 @@ void VprocHALcleanup(void)
     int ret = 0;
     ret = spi_bus_remove_device(g_spi);
     assert(ret == ESP_OK);
-#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
-    ret = spi_bus_free(HSPI_HOST);
-#else
-    ret = spi_bus_free(SPI3_HOST);
-#endif
+    ret = spi_bus_free(SPI_HOST_NUM);
+    ret = spi_bus_free(SPI_HOST_NUM);
 
     assert(ret == ESP_OK);
 }

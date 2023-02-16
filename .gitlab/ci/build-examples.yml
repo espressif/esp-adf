@@ -159,7 +159,8 @@ build_examples_v43_esp32_lyrat_v4_3_cmake:
     - .build_examples_cmake_v44
   variables:
     IDF_TARGET: esp32
-    IDF_VERSION: release/v4.3
+    IDF_TAG_VERSION: v4.3.4
+    IDF_VERSION: "${IDF_TAG_VERSION}"
     SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
     AUDIO_HAL: ESP_LYRAT_V4_3
     BUILD_SYSTEM: cmake
@@ -173,7 +174,7 @@ build_examples_v44_esp32_lyrat_v4_3_cmake:
     - .build_examples_cmake_v44
   variables:
     IDF_TARGET: esp32
-    IDF_VERSION: 552beab8a94a7787c5a210e5dc6bf04354741707
+    IDF_VERSION: release/v4.4
     SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
     AUDIO_HAL: ESP_LYRAT_V4_3
     BUILD_SYSTEM: cmake
@@ -186,7 +187,7 @@ build_examples_v44_esp32_lyratd_msc_v2_2_cmake:
     - .build_examples_cmake_v44
   variables:
     IDF_TARGET: esp32
-    IDF_VERSION: 552beab8a94a7787c5a210e5dc6bf04354741707
+    IDF_VERSION: release/v4.4
     SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
     AUDIO_HAL: ESP_LYRATD_MSC_V2_2
     BUILD_SYSTEM: cmake
@@ -199,7 +200,7 @@ build_examples_v44_esp32_lyrat_mini_v1_1_cmake:
     - .build_examples_cmake_v44
   variables:
     IDF_TARGET: esp32
-    IDF_VERSION: 552beab8a94a7787c5a210e5dc6bf04354741707
+    IDF_VERSION: release/v4.4
     SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
     AUDIO_HAL: ESP_LYRAT_MINI_V1_1
     BUILD_SYSTEM: cmake
@@ -213,7 +214,7 @@ build_examples_v44_esp32s2-kaluga_v1_2_cmake:
     - .build_examples_cmake_v44
   variables:
     IDF_TARGET: esp32s2
-    IDF_VERSION: 552beab8a94a7787c5a210e5dc6bf04354741707
+    IDF_VERSION: release/v4.4
     SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32s2"
     AUDIO_HAL: ESP32_S2_KALUGA_1_V1_2
     BUILD_SYSTEM: cmake
@@ -227,7 +228,7 @@ build_examples_v44_esp32s3_korvo_v2_cmake:
     - .build_examples_cmake_v44
   variables:
     IDF_TARGET: esp32s3
-    IDF_VERSION: 552beab8a94a7787c5a210e5dc6bf04354741707
+    IDF_VERSION: release/v4.4
     SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32s3"
     AUDIO_HAL: ESP32_S3_KORVO2_V3
     BUILD_SYSTEM: cmake
@@ -241,7 +242,7 @@ build_examples_v44_esp32c3_lyra_v2_cmake:
     - .build_examples_cmake_v44
   variables:
     IDF_TARGET: esp32c3
-    IDF_VERSION: 552beab8a94a7787c5a210e5dc6bf04354741707
+    IDF_VERSION: release/v4.4
     SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32c3"
     AUDIO_HAL: ESP32_C3_LYRA_V2
     BUILD_SYSTEM: cmake
