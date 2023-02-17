@@ -12,7 +12,7 @@
 #include "media_lib_err.h"
 
 static record_src_api_t *i2s_aud_api;
-static record_src_api_t *spi_cam_api;
+static record_src_api_t *dvp_cam_api;
 static record_src_api_t *usb_cam_api;
 
 typedef struct {
@@ -30,7 +30,7 @@ record_src_api_t **get_record_api(record_src_type_t type)
             src_api = &i2s_aud_api;
             break;
         case RECORD_SRC_TYPE_SPI_CAM:
-            src_api = &spi_cam_api;
+            src_api = &dvp_cam_api;
             break;
         case RECORD_SRC_TYPE_USB_CAM:
             src_api = &usb_cam_api;
@@ -45,9 +45,9 @@ void record_src_unregister_all()
         free(i2s_aud_api);
         i2s_aud_api = NULL;
     }
-    if (spi_cam_api) {
-        free(spi_cam_api);
-        spi_cam_api = NULL;
+    if (dvp_cam_api) {
+        free(dvp_cam_api);
+        dvp_cam_api = NULL;
     }
     if (usb_cam_api) {
         free(usb_cam_api);
@@ -124,4 +124,25 @@ void record_src_close(record_src_handle_t handle)
     }
     record_src->record_api->close_record(record_src->handle);
     free(record_src);
+}
+
+int record_src_register_default()
+{
+    int ret = record_src_i2s_aud_register();
+    if (ret != 0) {
+        return ret;
+    }
+#ifdef CONFIG_DVP_CAMERA_SUPPORT
+    ret = record_src_dvp_cam_register();
+    if (ret != 0) {
+        return ret;
+    }
+#endif
+#ifdef CONFIG_USB_CAMERA_SUPPORT
+    ret = record_src_usb_cam_register();
+    if (ret != 0) {
+        return ret;
+    }
+#endif
+    return ret;
 }

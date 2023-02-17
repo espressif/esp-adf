@@ -79,15 +79,21 @@ int rtmp_server_app_run(char *uri, uint32_t duration)
         ESP_LOGE(TAG, "Bad uri setting %s", uri);
         return -1;
     }
+    media_lib_tls_server_cfg_t ssl_cfg;
     rtmp_server_cfg_t cfg = {
         .app_name = app_name,
         .chunk_size = RTMP_SERVER_CHUNK_SIZE,
         .port = port,
-        .thread_cfg = {.core_id = 0, .priority = 10, .stack_size = 4096},
+        .auth_cb = rtmp_server_verify,
         .max_clients = RTMP_SERVER_MAX_CLIENT,
         .client_cache_size = RTMP_SERVER_CLIENT_CACHE_SIZE,
-        .auth_cb = rtmp_server_verify,
+        .thread_cfg = {.priority = 10, .stack_size = 5*1024},
     };
+    if (strncmp(uri, "rtmps://", 8) == 0) {
+        cfg.ssl_cfg = &ssl_cfg;
+        rtmp_setting_get_server_ssl_cfg(&ssl_cfg);
+    }
+    ESP_LOGI(TAG, "Start run server on %s", uri);
     rtmp_server_handle_t server = esp_rtmp_server_open(&cfg);
     media_lib_free(app_name);
     if (server == NULL) {

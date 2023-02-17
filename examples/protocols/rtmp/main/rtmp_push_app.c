@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include <string.h>
 #include "esp_timer.h"
 #include "rtmp_src_app.h"
 #include "esp_rtmp_push.h"
@@ -17,7 +18,12 @@
 
 #define TAG                         "RTMP Push_App"
 #define RTMP_PUSH_CHUNK_SIZE        (1024 * 4)
+
+#ifdef CONFIG_USB_CAMERA_SUPPORT
+#define RTMP_PUSH_VIDEO_SRC         RECORD_SRC_TYPE_USB_CAM
+#else
 #define RTMP_PUSH_VIDEO_SRC         RECORD_SRC_TYPE_SPI_CAM
+#endif
 #define RTMP_PUSH_AUDIO_SRC         RECORD_SRC_TYPE_I2S_AUD
 
 static esp_rtmp_audio_codec_t map_audio_codec(av_record_audio_fmt_t codec)
@@ -41,6 +47,8 @@ static esp_rtmp_video_codec_t map_video_codec(av_record_video_fmt_t codec)
     switch (codec) {
         case AV_RECORD_VIDEO_FMT_MJPEG:
             return RTMP_VIDEO_CODEC_MJPEG;
+        case AV_RECORD_VIDEO_FMT_H264:
+            return RTMP_VIDEO_CODEC_H264;
         default:
             return RTMP_VIDEO_CODEC_NONE;
     }
@@ -85,33 +93,23 @@ int rtmp_push_data_received(av_record_data_t *frame, void *ctx)
 int rtmp_push_app_run(char *uri, uint32_t duration)
 {
     int ret;
+    media_lib_tls_cfg_t ssl_cfg;
     rtmp_push_cfg_t cfg = {
         .url = uri,
         .chunk_size = RTMP_PUSH_CHUNK_SIZE,
-        .thread_cfg = {.core_id = 0, .priority = 20, .stack_size = 4096},
+        .thread_cfg = {.priority = 10, .stack_size = 10*1024},
     };
+    if (strncmp(uri, "rtmps://", 8) == 0) {
+        cfg.ssl_cfg = &ssl_cfg;
+        rtmp_setting_get_client_ssl_cfg(uri, &ssl_cfg);
+    }
+    ESP_LOGI(TAG, "Start to push to %s", uri);
     rtmp_push_handle_t rtmp_push = esp_rtmp_push_open(&cfg);
     if (rtmp_push == NULL) {
         ESP_LOGE(TAG, "Fail to open rtmp Pusher\n");
         return -1;
     }
-    ret = record_src_i2s_aud_register();
-    if (ret != 0) {
-        ESP_LOGE(TAG, "Fail to initialize i2s driver");
-        return -1;
-    }
-    ret = record_src_spi_cam_register();
-    if (ret != 0) {
-        ESP_LOGE(TAG, "Fail to initialize spi camera driver");
-        return -1;
-    }
-#ifdef CONFIG_RTMP_USB_CAMERA_SUPPORT
-    ret = record_src_usb_cam_register();
-    if (ret != 0) {
-        ESP_LOGE(TAG, "Fail to initialize usb camera driver");
-        return -1;
-    }
-#endif
+    ret = record_src_register_default();
     esp_rtmp_audio_info_t audio_info = {
         .bits_per_sample = 16,
         .sample_rate = rtmp_setting_get_audio_sample_rate(),
@@ -156,7 +154,6 @@ int rtmp_push_app_run(char *uri, uint32_t duration)
             .ctx = rtmp_push,
         };
         av_record_start(&record_cfg);
-
         uint32_t start_time = esp_timer_get_time() / 1000;
         while (av_record_running() && rtmp_setting_get_allow_run()) {
             media_lib_thread_sleep(1000);

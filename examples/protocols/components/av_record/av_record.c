@@ -21,12 +21,13 @@
 #include "esp_g711.h"
 #include "esp_aac_enc.h"
 #include "esp_idf_version.h"
+#include "esp_h264_enc.h"
 
 #define AUDIO_FRAME_DURATION        (16)
 // Add buffer queue so that when writing takes a long time, it does not block fetch data from camera and I2S
 #define RECORD_Q_BUFFER_SIZE        (200 * 1024)
-#define RECORD_AV_MAX_LATENCY       (500) // unit ms
-#define VIDEO_ENCODE_MAX_FRAME_SIZE (40 * 1024)
+#define RECORD_AV_MAX_LATENCY       (1000) // unit ms
+#define VIDEO_ENCODE_MAX_FRAME_SIZE (80 * 1024)
 #define TAG                         "AV Record"
 
 #define LOG_ON_ERR(ret, fmt, ...)        \
@@ -42,12 +43,14 @@ typedef struct {
 typedef struct {
     av_record_cfg_t     record_cfg;
     bool                encode_video;
-    void               *jpeg_enc;
+    void               *video_enc;
     void               *aud_enc;
     data_queue_t       *stream_buffer_q;
     bool                write_running;
     bool                audio_recording;
     bool                video_recording;
+    bool                video_reached;
+    bool                audio_reached;
     bool                stopping;
     record_src_handle_t video_src_handle;
     record_src_handle_t audio_src_handle;
@@ -87,6 +90,10 @@ void av_record_get_video_size(av_record_video_quality_t quality, uint16_t *width
             *width = 1280;
             *height = 720;
             break;
+        case AV_RECORD_VIDEO_QUALITY_FHD:
+            *width = 1920;
+            *height = 1080;
+            break;
     }
 }
 
@@ -118,42 +125,110 @@ static uint32_t get_video_pts()
     return (uint32_t) ((uint64_t) av_record.video_frames * 1000 / av_record.record_cfg.video_fps);
 }
 
-#if (ESP_IDF_VERSION_MAJOR >= 4) && (ESP_IDF_VERSION_MINOR > 3)
+static bool start_frame_synced()
+{
+    if (av_record.audio_recording && av_record.video_recording) {
+        return av_record.audio_reached && av_record.video_reached;
+    }
+    return true;
+}
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
 
 static int start_video_encoder()
 {
+    uint16_t width = 0, height = 0;
+    av_record_get_video_size(av_record.record_cfg.video_quality, &width, &height);
     if (av_record.record_cfg.video_fmt == AV_RECORD_VIDEO_FMT_MJPEG) {
-        uint16_t width = 0, height = 0;
-        av_record_get_video_size(av_record.record_cfg.video_quality, &width, &height);
         jpeg_enc_info_t info = DEFAULT_JPEG_ENC_CONFIG();
         info.width = width;
         info.height = height;
         info.src_type = JPEG_RAW_TYPE_YCbYCr;
         info.subsampling = JPEG_SUB_SAMPLE_YUV420;
         info.quality = 40;
-        av_record.jpeg_enc = jpeg_enc_open(&info);
-        if (av_record.jpeg_enc == NULL) {
+        av_record.video_enc = jpeg_enc_open(&info);
+        if (av_record.video_enc == NULL) {
             ESP_LOGE(TAG, "Fail to create jpeg encoder");
+            return ESP_MEDIA_ERR_NOT_SUPPORT;
+        }
+    } else if (av_record.record_cfg.video_fmt == AV_RECORD_VIDEO_FMT_H264) {
+        esp_h264_enc_cfg_t cfg = {
+            .pic_type = ESP_H264_RAW_FMT_YUV422,
+            .width = width,
+            .height = height,
+            .fps = 30,
+            .gop_size = av_record.record_cfg.video_fps * 3,
+            .target_bitrate = 400000,
+        };
+        int ret = esp_h264_enc_open(&cfg, (esp_h264_enc_t*)&av_record.video_enc);
+        if (av_record.video_enc == NULL) {
+            ESP_LOGE(TAG, "Fail to create h264 encoder %d", ret);
             return ESP_MEDIA_ERR_NOT_SUPPORT;
         }
     }
     return 0;
 }
 
-static int video_encoder_process(uint8_t *raw, int raw_size, uint8_t *pic, int pic_limit, int *pic_size)
+static int video_encoder_process(uint8_t *raw, int raw_size, uint8_t *pic, int pic_limit, int *pic_size, uint32_t *pts)
 {
     int ret = -1;
-    if (av_record.jpeg_enc) {
-        ret = jpeg_enc_process(av_record.jpeg_enc, raw, raw_size, pic, pic_limit, pic_size);
+    if (av_record.video_enc) {
+        switch (av_record.record_cfg.video_fmt) {
+            case AV_RECORD_VIDEO_FMT_MJPEG:
+            return jpeg_enc_process(av_record.video_enc, raw, raw_size, pic, pic_limit, pic_size);
+
+            case AV_RECORD_VIDEO_FMT_H264: {
+                esp_h264_enc_frame_t out_frame = { 0 };
+                esp_h264_raw_frame_t in_frame = {
+                    .pts = *pts,
+                    .raw_data.buffer = raw,
+                    .raw_data.len = raw_size,
+                };
+                ret = esp_h264_enc_process((esp_h264_enc_t)av_record.video_enc, &in_frame, &out_frame);
+                if (ret == 0) {
+                    *pic_size = 0;
+                    if (out_frame.layer_num && out_frame.layer_data) {
+                        int total_size = 0, i;
+                        for (i = 0; i < out_frame.layer_num; i++) {
+                            total_size += out_frame.layer_data[i].len;
+                        }
+                        *pts = out_frame.pts;
+                        if (total_size > pic_limit) {
+                            ESP_LOGI(TAG, "Frame size exceed limit %d > %d", total_size, pic_limit);
+                        } else {
+                            int fill_size = 0;
+                            for (i = 0; i < out_frame.layer_num; i++) {
+                                memcpy(pic + fill_size, out_frame.layer_data[i].buffer, out_frame.layer_data[i].len);
+                                fill_size += out_frame.layer_data[i].len;
+                            }
+                            *pic_size = fill_size;
+                        }
+                        return 0;
+                    }
+                }
+                return ret;
+            }
+            default:
+            break;            
+        }
     }
     return ret;
 }
 
 static void stop_video_encoder()
 {
-    if (av_record.jpeg_enc) {
-        jpeg_enc_close(av_record.jpeg_enc);
-        av_record.jpeg_enc = NULL;
+    if (av_record.video_enc) {
+        switch (av_record.record_cfg.video_fmt) {
+            case AV_RECORD_VIDEO_FMT_MJPEG:
+            jpeg_enc_close(av_record.video_enc);
+            break;
+            case AV_RECORD_VIDEO_FMT_H264:
+            esp_h264_enc_close((esp_h264_enc_t)av_record.video_enc);
+            break;
+            default:
+            break;            
+        }
+        av_record.video_enc = NULL;
     }
 }
 
@@ -166,7 +241,7 @@ static int start_video_encoder()
     return -1;
 }
 
-static int video_encoder_process(uint8_t *raw, int raw_size, uint8_t *pic, int pic_limit, int *pic_size)
+static int video_encoder_process(uint8_t *raw, int raw_size, uint8_t *pic, int pic_limit, int *pic_size, uint32_t* pts)
 {
     return -1;
 }
@@ -357,7 +432,6 @@ static void write_thread(void *arg)
         if (buffer == NULL) {
             break;
         }
-
         if (size > 0) {
             if (check_latency(h->pts, false)) {
                 read_q_release(size);
@@ -455,6 +529,10 @@ static void audio_record_thread(void *arg)
             ESP_LOGE(TAG, "Fail to read audio data ret %d", ret);
             break;
         }
+        av_record.audio_reached = true;
+        if (start_frame_synced() == false) {
+            continue;
+        }
         uint8_t *buffer = (uint8_t *) get_q_data(q_size);
         if (buffer == NULL) {
             break;
@@ -464,6 +542,7 @@ static void audio_record_thread(void *arg)
             int enc_size = audio_record_encode_data(aligned_raw, frame_data.size, buffer, q_size);
             if (enc_size <= 0) {
                 send_q_data(0);
+                av_record.audio_frames += frame_data.size / sample_size;
                 continue;
             }
             fill_q_header(buffer, enc_size, 0, aud_pts);
@@ -495,6 +574,7 @@ static void video_record_thread(void *arg)
             ESP_LOGE(TAG, "Fail to read video frame");
             break;
         }
+        av_record.video_reached = true;
         uint32_t vid_pts = get_video_pts();
         uint32_t cur_pts;
         // when audio running use audio pts
@@ -504,7 +584,7 @@ static void video_record_thread(void *arg)
             cur_pts = get_cur_time() - video_start;
         }
         // video drop data according real time or audio pts
-        if (cur_pts < vid_pts) {
+        if (start_frame_synced() == false || cur_pts < vid_pts) {
             record_src_unlock_frame(av_record.video_src_handle);
             continue;
         }
@@ -517,7 +597,7 @@ static void video_record_thread(void *arg)
         }
         if (av_record.encode_video) {
             int enc_size = pic_size;
-            ret = video_encoder_process(frame_data.data, frame_data.size, buffer, pic_size, &enc_size);
+            ret = video_encoder_process(frame_data.data, frame_data.size, buffer, pic_size, &enc_size, &vid_pts);
             if (ret != 0) {
                 ESP_LOGE(TAG, "Encode error ret %d", ret);
                 send_q_data(0);
@@ -566,19 +646,18 @@ int av_record_start(av_record_cfg_t *cfg)
                 cfg->video_fmt = AV_RECORD_VIDEO_FMT_NONE;
             }
         }
-
         if (cfg->video_fmt == AV_RECORD_VIDEO_FMT_NONE && cfg->audio_fmt == AV_RECORD_AUDIO_FMT_NONE) {
             break;
         }
         av_record.write_running = true;
         media_lib_thread_handle_t thread_handle;
-        if (media_lib_thread_create(&thread_handle, "writer", write_thread, NULL, 3 * 1024, 15, 0) != ESP_OK) {
+        if (media_lib_thread_create(&thread_handle, "writer", write_thread, NULL, 4 * 1024, 15, 0) != ESP_OK) {
             av_record.write_running = false;
             break;
         }
         if (cfg->video_fmt != AV_RECORD_VIDEO_FMT_NONE) {
             av_record.video_recording = true;
-            if (media_lib_thread_create(&thread_handle, "v_record", video_record_thread, NULL, 3 * 1024, 15, 1) !=
+            if (media_lib_thread_create(&thread_handle, "v_record", video_record_thread, NULL, 12 * 1024, 15, 1) !=
                 ESP_OK) {
                 av_record.video_recording = false;
                 break;
@@ -586,7 +665,7 @@ int av_record_start(av_record_cfg_t *cfg)
         }
         if (cfg->audio_fmt != AV_RECORD_AUDIO_FMT_NONE) {
             av_record.audio_recording = true;
-            if (media_lib_thread_create(&thread_handle, "a_record", audio_record_thread, NULL, 6 * 1024, 15, 0) !=
+            if (media_lib_thread_create(&thread_handle, "a_record", audio_record_thread, NULL, 4 * 1024, 15, 0) !=
                 ESP_OK) {
                 av_record.audio_recording = false;
                 break;
@@ -620,6 +699,7 @@ int av_record_stop()
     av_record.audio_frames = av_record.video_frames = 0;
     av_record.last_video_pts = 0;
     av_record.stopping = false;
+    av_record.audio_reached = av_record.video_reached = false;
     ESP_LOGI(TAG, "Stop av record done");
     return 0;
 }
@@ -637,4 +717,32 @@ uint32_t av_record_get_pts()
         pts = video_pts;
     }
     return pts;
+}
+
+const char* av_record_get_afmt_str(av_record_audio_fmt_t afmt)
+{
+    switch (afmt) {
+    case AV_RECORD_AUDIO_FMT_PCM:
+        return "pcm";
+    case AV_RECORD_AUDIO_FMT_G711A:
+        return "g711a";
+    case AV_RECORD_AUDIO_FMT_G711U:
+        return "g711u";
+    case AV_RECORD_AUDIO_FMT_AAC:
+        return "aac";
+    default:
+        return "undef";
+    }
+}
+
+const char* av_record_get_vfmt_str(av_record_video_fmt_t vfmt)
+{
+    switch (vfmt) {
+    case AV_RECORD_VIDEO_FMT_MJPEG:
+        return "mjpeg";
+    case AV_RECORD_VIDEO_FMT_H264:
+        return "h264";
+    default:
+        return "undef";
+    }
 }

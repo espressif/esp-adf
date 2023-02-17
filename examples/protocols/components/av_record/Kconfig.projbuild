@@ -1,0 +1,11 @@
+menu "AV Record Configuration"
+
+config DVP_CAMERA_SUPPORT
+    bool "Support for DVP camera"
+    default y
+
+config USB_CAMERA_SUPPORT
+    bool "Support for USB camera"
+    default n
+
+endmenu

@@ -10,6 +10,7 @@
 #define _RTMP_APP_SETTING_H
 
 #include "av_record.h"
+#include "media_lib_tls.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,6 +63,15 @@ void rtmp_setting_set_audio_sample_rate(int sample_rate);
 
 /* Get audio sample rate */
 int rtmp_setting_get_audio_sample_rate();
+
+/* Skip server CA verify */
+void rtmp_setting_set_allow_insecure(bool insecure);
+
+/* Get server SSL setting */
+void rtmp_setting_get_server_ssl_cfg(media_lib_tls_server_cfg_t *ssl_cfg);
+
+/* Get client SSL setting */
+void rtmp_setting_get_client_ssl_cfg(const char *url, media_lib_tls_cfg_t *ssl_cfg);
 
 #ifdef __cplusplus
 }

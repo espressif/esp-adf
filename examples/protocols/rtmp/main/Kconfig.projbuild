@@ -5,7 +5,7 @@ choice RTMP_APP_MODE
     default RTMP_APP_MODE_PUSHER
     help
         RTMP support PUSHER, SOURCE, SERVER and PUSHER_SERVER mode.
-        In PUSHER_SERVER mode it both support PUSHER and SERVER.
+        In PUSHER_SERVER mode it both supports PUSHER and SERVER.
 
 config RTMP_APP_MODE_PUSHER
     bool "PUSHER only"
@@ -20,10 +20,6 @@ config RTMP_APP_MODE_PUSHER_SERVER
     bool "SERVER and PUSHER"
 
 endchoice
-
-config RTMP_USB_CAMERA_SUPPORT
-    bool "Support for USB camera"
-    default false
 
 config WIFI_SSID
     string "WiFi SSID"

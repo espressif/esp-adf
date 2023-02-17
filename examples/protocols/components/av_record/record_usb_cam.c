@@ -8,42 +8,20 @@
 */
 
 #include "record_src.h"
-#include "esp_camera.h"
+#include "record_src_cfg.h"
 #include "media_lib_err.h"
 #include "media_lib_os.h"
-#include "uvc_stream.h"
+#include "usb_stream.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 
-#define TAG                                     "USB_Cam"
+#define TAG                           "USB_Cam"
 
-#define USB_CAM_PIN_PWDN                        GPIO_NUM_48
+#define USB_CAM_FRAME_BUFFER_SIZE     (32 * 1024) // Double buffer
+#define USB_CAM_DATA_ARRIVE_BIT       (1)
+#define USB_CAM_DATA_CONSUMED_BIT     (1 << 1)
 
-/* USB Camera Descriptors Related MACROS,
-the quick demo skip the standred get descriptors process,
-users need to get params from camera descriptors from PC side,
-eg. run `lsusb -v` in linux,
-then hardcode the related MACROS below
-*/
-#define DESCRIPTOR_CONFIGURATION_INDEX          1
-#define DESCRIPTOR_FORMAT_MJPEG_INDEX           2
-#define DESCRIPTOR_FRAME_640_480_INDEX          1
-#define DESCRIPTOR_FRAME_480_320_INDEX          2
-#define DESCRIPTOR_FRAME_352_288_INDEX          3
-#define DESCRIPTOR_FRAME_320_240_INDEX          4
-
-#define DESCRIPTOR_STREAM_INTERFACE_INDEX       1
-#define DESCRIPTOR_STREAM_INTERFACE_ALT_MPS_128 1
-#define DESCRIPTOR_STREAM_INTERFACE_ALT_MPS_256 2
-#define DESCRIPTOR_STREAM_INTERFACE_ALT_MPS_512 3
-#define DESCRIPTOR_STREAM_ISOC_ENDPOINT_ADDR    0x81
-
-#define USB_CAM_ISOC_EP_MPS                     512
-#define USB_CAM_FRAME_BUFFER_SIZE               (32 * 1024) // Double buffer
-#define USB_CAM_DATA_ARRIVE_BIT                 (1)
-#define USB_CAM_DATA_CONSUMED_BIT               (1 << 1)
-
-#define _SET_BITS(group, bit)                   media_lib_event_group_set_bits(group, bit)
+#define _SET_BITS(group, bit)          media_lib_event_group_set_bits(group, bit)
 // Need manual clear bits
 #define _WAIT_BITS(group, bit)                                            \
     media_lib_event_group_wait_bits(group, bit, MEDIA_LIB_MAX_LOCK_TIME); \
@@ -59,6 +37,9 @@ typedef struct {
 
 static int power_on_usb_cam(bool on)
 {
+    if (USB_CAM_PIN_PWDN == -1) {
+        return 0;
+    }
     gpio_config_t usb_camera_pins_cfg = {
         .intr_type = GPIO_INTR_DISABLE,
         .mode = GPIO_MODE_OUTPUT,
@@ -98,8 +79,8 @@ void close_usb_cam(record_src_handle_t handle)
         usb_cam_src->pic_frame = NULL;
         _SET_BITS(usb_cam_src->event, USB_CAM_DATA_CONSUMED_BIT);
         _SET_BITS(usb_cam_src->event, USB_CAM_DATA_ARRIVE_BIT);
-        uvc_streaming_stop();
         usb_cam_src->started = false;
+        usb_streaming_stop();
     }
     power_on_usb_cam(false);
     if (usb_cam_src->event) {
@@ -120,6 +101,9 @@ void close_usb_cam(record_src_handle_t handle)
 static void usb_cam_frame_cb(uvc_frame_t *frame, void *ptr)
 {
     record_src_usb_cam_t *usb_cam_src = (record_src_usb_cam_t *) ptr;
+    if (usb_cam_src->started == false) {
+        return;
+    }
     usb_cam_src->pic_frame = frame;
     _SET_BITS(usb_cam_src->event, USB_CAM_DATA_ARRIVE_BIT);
     _WAIT_BITS(usb_cam_src->event, USB_CAM_DATA_CONSUMED_BIT);
@@ -137,6 +121,10 @@ record_src_handle_t open_usb_cam(void *cfg, int cfg_size)
     }
     record_src_video_cfg_t *vid_cfg = (record_src_video_cfg_t *) cfg;
     do {
+        if (vid_cfg->video_fmt != RECORD_SRC_VIDEO_FMT_JPEG) {
+            ESP_LOGE(TAG, "Usb camera only support MJPEG");
+            break;
+        }
         media_lib_event_group_create(&usb_cam_src->event);
         if (usb_cam_src->event == NULL) {
             ESP_LOGE(TAG, "No memory for resource");
@@ -159,32 +147,31 @@ record_src_handle_t open_usb_cam(void *cfg, int cfg_size)
         }
         power_on_usb_cam(true);
         uvc_config_t uvc_config = {
-            .dev_speed = USB_SPEED_FULL,
-            .configuration = DESCRIPTOR_CONFIGURATION_INDEX,
             .format_index = DESCRIPTOR_FORMAT_MJPEG_INDEX,
             .frame_width = vid_cfg->width,
             .frame_height = vid_cfg->height,
             .frame_index = get_frame_index(vid_cfg->width, vid_cfg->height),
             .frame_interval = 10000000 / vid_cfg->fps,
-            .interface = DESCRIPTOR_STREAM_INTERFACE_INDEX,
+            .interface = 1,
             .interface_alt = DESCRIPTOR_STREAM_INTERFACE_ALT_MPS_512,
-            .isoc_ep_addr = DESCRIPTOR_STREAM_ISOC_ENDPOINT_ADDR,
-            .isoc_ep_mps = USB_CAM_ISOC_EP_MPS,
+            .ep_addr = DESCRIPTOR_STREAM_ISOC_ENDPOINT_ADDR,
+            .ep_mps = USB_CAM_ISOC_EP_MPS,
             .xfer_buffer_size = USB_CAM_FRAME_BUFFER_SIZE,
             .xfer_buffer_a = usb_cam_src->transfer_buffer[0],
-            .xfer_buffer_b = usb_cam_src->transfer_buffer[0],
+            .xfer_buffer_b = usb_cam_src->transfer_buffer[1],
             .frame_buffer_size = USB_CAM_FRAME_BUFFER_SIZE,
-            .frame_buffer = usb_cam_src->frame_buffer,
+            .frame_buffer =  usb_cam_src->frame_buffer,
+            .frame_cb = usb_cam_frame_cb,
+            .frame_cb_arg = usb_cam_src,
         };
-        /* pre-config UVC driver with params from known USB Camera Descriptors*/
         esp_err_t ret = uvc_streaming_config(&uvc_config);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Fail to config uvc stream");
+            ESP_LOGE(TAG, "UVC streaming config failed");
             break;
         }
-        ret = uvc_streaming_start(usb_cam_frame_cb, usb_cam_src);
+        ret = usb_streaming_start();
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Fail to start uvc stream");
+            ESP_LOGE(TAG, "Fail to start UVC stream");
             break;
         }
         usb_cam_src->started = true;

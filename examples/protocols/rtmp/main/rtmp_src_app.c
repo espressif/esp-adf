@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include <string.h>
 #include "esp_timer.h"
 #include "rtmp_src_app.h"
 #include "esp_rtmp_src.h"
@@ -43,12 +44,17 @@ static int write_file(void *data, int size)
 int rtmp_src_app_run(char *uri, uint32_t duration)
 {
     int ret;
+    media_lib_tls_cfg_t ssl_cfg;
     rtmp_src_cfg_t cfg = {
         .url = uri,
         .chunk_size = RTMP_SRC_CHUNK_SIZE,
         .fifo_size = RTMP_SRC_RING_FIFO_SIZE,
-        .thread_cfg = {.core_id = 0, .priority = 10, .stack_size = 4096},
+        .thread_cfg = {.priority = 10, .stack_size = 5*1024},
     };
+    if (strncmp(uri, "rtmps://", 8) == 0) {
+        cfg.ssl_cfg = &ssl_cfg;
+        rtmp_setting_get_client_ssl_cfg(uri, &ssl_cfg);
+    }
     rtmp_src_handle_t *rtmp_src = esp_rtmp_src_open(&cfg);
     if (rtmp_src == NULL) {
         ESP_LOGE(TAG, "Fail to open rtmp src");
