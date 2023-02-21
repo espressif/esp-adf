@@ -118,6 +118,18 @@ esp_err_t periph_wifi_wait_for_connected(esp_periph_handle_t periph, TickType_t 
 periph_wifi_state_t periph_wifi_is_connected(esp_periph_handle_t periph);
 
 /**
+ * @brief      Set Wi-Fi listen interval for ESP32 station to receive beacon
+ *
+ * @param[in]  periph  The wifi periph
+ * @param[in]  interval  listen interval. units: AP beacon intervals(see BcnInt, default: 100ms)
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t esp_wifi_set_listen_interval(esp_periph_handle_t periph, int interval);
+
+/**
  * @brief      Start Wi-Fi network setup in `mode`
  *
  * @param[in]  periph   The periph

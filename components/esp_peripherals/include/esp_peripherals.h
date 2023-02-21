@@ -228,6 +228,30 @@ esp_err_t esp_periph_set_list_run(esp_periph_set_handle_t periph_set_handle, aud
 esp_err_t esp_periph_set_list_destroy(esp_periph_set_handle_t periph_set_handle);
 
 /**
+ * @brief      Call this function to remove periph from periph_set.
+ *
+ * @param      periph_set_handle    The esp_periph_set_handle_t instance
+ * @param      periph               The esp_periph_handle_t instance
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t esp_periph_remove_from_set(esp_periph_set_handle_t periph_set_handle, esp_periph_handle_t periph);
+
+/**
+ * @brief      Call this function to change periph_set waiting time.
+ *
+ * @param      periph_set_handle    The esp_periph_set_handle_t instance
+ * @param      time_ms              The waiting time
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t esp_periph_set_change_waiting_time(esp_periph_set_handle_t periph_set_handle, int time_ms);
+
+/**
  * @brief      Call this function to initialize a new peripheral
  *
  * @param[in]  periph_id  The periph identifier
