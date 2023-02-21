@@ -39,7 +39,7 @@ extern "C" {
 #define DEBUG_AEC_INPUT             false
 #define DEBUG_AEC_OUTPUT            false
 
-#define AUDIO_DEFAULT_SAMPLE_RATE   8000
+#define AUDIO_CODEC_SAMPLE_RATE     8000
 #define PCM_FRAME_SIZE              320     // 20ms 8K 1channel
 #define AAC_FRAME_SIZE              2*1024  // 16K 1channel with 1024 sample
 
@@ -82,6 +82,7 @@ typedef struct {
     void                        *ctx;               /*!< AV stream user context */
     int8_t                      algo_mask;          /*!< Choose the algorithm to be used */
     av_stream_acodec_t          acodec_type;        /*!< Audio codec type */
+    uint32_t                    acodec_samplerate;  /*!< If the sample rate is different with HAL, av_stream will resample to match it */
     av_stream_vcodec_t          vcodec_type;        /*!< Video codec type */
     av_stream_hal_config_t      hal;                /*!< Audio Video hal config */
 } av_stream_config_t;

@@ -131,6 +131,7 @@ void app_main()
     ESP_LOGI(TAG, "[ 2 ] Initialize av stream");
     av_stream_config_t av_stream_config = {
         .algo_mask = ALGORITHM_STREAM_DEFAULT_MASK,
+        .acodec_samplerate = AUDIO_CODEC_SAMPLE_RATE,
         .acodec_type = AV_ACODEC_G711A,
         .vcodec_type = AV_VCODEC_MJPEG,
         .hal = {
@@ -139,7 +140,7 @@ void app_main()
             .uac_en = false,
             .uvc_en = false,
             .video_soft_enc = false,
-            .audio_samplerate = 8000,
+            .audio_samplerate = AUDIO_HAL_SAMPLE_RATE,
             .audio_framesize = PCM_FRAME_SIZE,
             .video_framesize = VIDEO_FRAME_SIZE,
         },
@@ -148,7 +149,7 @@ void app_main()
     AUDIO_NULL_CHECK(TAG, av_stream, return);
 
     ESP_LOGI(TAG, "[ 3 ] Initialize tone player");
-    audio_player_int_tone_init(AUDIO_DEFAULT_SAMPLE_RATE, I2S_CHANNELS, I2S_DEFAULT_BITS);
+    audio_player_int_tone_init(AUDIO_HAL_SAMPLE_RATE, I2S_CHANNELS, I2S_DEFAULT_BITS);
 
     ESP_LOGI(TAG, "[ 4 ] Initialize rtc service");
     esp_rtc = rtc_service_start(av_stream, LOGIN_URL);

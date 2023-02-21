@@ -31,7 +31,7 @@
 static const char *TAG = "AV_STREAM_HAL";
 
 #if CONFIG_IDF_TARGET_ESP32
-static int uac_device_init(void *mic_cb, void *arg)
+static int uac_device_init(void *mic_cb, void *arg, uint32_t sample_rate)
 {
     /* Not Support */
     return ESP_FAIL;
@@ -44,18 +44,18 @@ users need to get params from camera descriptors from PC side,
 eg. run `lsusb -v` in linux,
 then hardcode the related MACROS below
 */
-static int uac_device_init(void *mic_cb, void *arg)
+static int uac_device_init(void *mic_cb, void *arg, uint32_t sample_rate)
 {
     esp_err_t ret = ESP_FAIL;
     uac_config_t uac_config = {
         .mic_interface = 4,
         .mic_bit_resolution = 16,
-        .mic_samples_frequence = 16000,
+        .mic_samples_frequence = sample_rate,
         .mic_ep_addr = 0x82,
         .mic_ep_mps = 32,
         .spk_interface = 3,
         .spk_bit_resolution = 16,
-        .spk_samples_frequence = 16000,
+        .spk_samples_frequence = sample_rate,
         .spk_ep_addr = 0x02,
         .spk_ep_mps = 32,
         .spk_buf_size = 16*1024,
@@ -179,38 +179,22 @@ int av_stream_audio_read(char *buf, int len, TickType_t wait_time, bool uac_en)
 
 int av_stream_audio_write(char *buf, int len, TickType_t wait_time, bool uac_en)
 {
-    size_t bytes_writen = 0, data_size = len;
-    int16_t *buf_w = (int16_t *)buf;;
+    size_t bytes_writen = 0;
 
     if (uac_en) {
         #if !CONFIG_IDF_TARGET_ESP32
-        bytes_writen = uac_spk_streaming_write(buf_w, data_size, wait_time);
+        bytes_writen = uac_spk_streaming_write(buf, len, wait_time);
         #endif
     } else {
-        #ifdef CONFIG_ESP32_S3_KORVO2L_V1_BOARD
-        // 1ch -> 2ch
-        data_size = 2 * len;
-        int16_t *buf_2ch = audio_calloc(1, data_size);
-        for (int i = 0; i < len / 2; i++) {
-            buf_2ch[i << 1]         = buf_w[i];
-            buf_2ch[(i << 1) + 1]   = buf_w[i];
-        }
-        buf_w = buf_2ch;
-        #endif
-
         #if CONFIG_IDF_TARGET_ESP32
-        algorithm_mono_fix((uint8_t *)buf_w, data_size);
+        algorithm_mono_fix((uint8_t *)buf, len);
         #endif
 
-        int ret = i2s_write_expand(I2S_DEFAULT_PORT, buf_w, data_size, 16, I2S_DEFAULT_BITS, &bytes_writen, wait_time);
+        int ret = i2s_write_expand(I2S_DEFAULT_PORT, buf, len, 16, I2S_DEFAULT_BITS, &bytes_writen, wait_time);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "i2s write failed");
         }
-        #ifdef CONFIG_ESP32_S3_KORVO2L_V1_BOARD
-        free(buf_2ch);
-        #endif
     }
-
     return bytes_writen;
 }
 
@@ -219,7 +203,7 @@ audio_board_handle_t av_stream_audio_init(void *ctx, void *arg, av_stream_hal_co
     AUDIO_NULL_CHECK(TAG, config, return NULL);
 
     if (config->uac_en) {
-        uac_device_init(ctx, arg);
+        uac_device_init(ctx, arg, config->audio_samplerate);
     } else {
         return i2s_device_init(config->audio_samplerate);
     }
