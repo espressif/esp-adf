@@ -1,27 +1,12 @@
 /****************************************************************************
-* Microsemi Semiconductor, Kanata, ON
-****************************************************************************
 *
-* Description: Voice Processor devices high level access module function
-*                definitions
+* vprocTwolf_access.h - Voice Processor devices high level access module function
+*                prototypes, variables
 *
-* NOTE: The registers of the device are 16-bit wide. A 32-bit access
-*       is not required. However, the 32-bit access functions are provided
-*       only if the host wants to access two consecutives 16-bit registers
-*       in one single access.
-*  Author: Jean Bony
 ****************************************************************************
-* Copyright Microsemi Semiconductor Ltd., 2013. All rights reserved. This
-* copyrighted work constitutes an unpublished work created in 2013. The use
-* of the copyright notice is intended to provide notice that Microsemi
-* Semiconductor Ltd. owns a copyright in this unpublished work; the main
-* copyright notice is not an admission that publication has occurred. This
-* work contains confidential, proprietary information and trade secrets of
-* Microsemi Semiconductor Ltd.; it may not be used, reproduced or transmitted,
-* in whole or in part, in any form or by any means without the prior
-* written permission of Microsemi Semiconductor Ltd. This work is provided on
-* a right to use basis subject to additional restrictions set out in the
-* applicable license or other agreement.
+* Copyright Microsemi Inc, 2018. All rights reserved.
+* Licensed under the MIT License. See LICENSE.txt in the project
+* root for license information.
 *
 ***************************************************************************/
 
