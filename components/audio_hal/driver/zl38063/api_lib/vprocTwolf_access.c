@@ -1,14 +1,18 @@
-/*
- * User Space API wrapper for the "/dev/microsemi_spis_tw" linux kernel driver
- * if USING_MICROSEMI_LINUX_KERNEL_DRIVER is defined
- * or else this code is Operating System independent.
- * A host can use these functions to access the the microsemi Z
- * L38040/050/051/060/080 Voice Processing devices over a spi interface.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * Microsemi Inc. 2014, Jean Bony
- */
+/****************************************************************************
+* vprocTwolf_access.c - Voice Processor devices high level access module function
+*                definitions
+*
+* NOTE: The registers of the device are 16-bit wide. A 32-bit access
+*       is not required. However, the 32-bit access functions are provided
+*       only if the host wants to access two consecutives 16-bit registers
+*       in one single access.
+*
+****************************************************************************
+* Copyright Microsemi Inc, 2018. All rights reserved.
+* Licensed under the MIT License. See LICENSE.txt in the project
+* root for license information.
+*
+***************************************************************************/
 
 #include "vprocTwolf_access.h"
 
