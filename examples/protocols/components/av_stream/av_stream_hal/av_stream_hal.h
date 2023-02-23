@@ -36,6 +36,7 @@ extern "C" {
 #define VIDEO_DEC_SIZE              320*240*2
 #define VIDEO_MAX_SIZE              50*1024
 #define AUDIO_MAX_SIZE              2*1024
+#define AUDIO_HAL_SAMPLE_RATE       8000
 
 /* USB Camera Descriptors Related MACROS,
 the quick demo skip the standred get descriptors process,
@@ -57,7 +58,8 @@ then hardcode the related MACROS below
 
 #define I2S_DEFAULT_PORT            I2S_NUM_0
 #define I2S_DEFAULT_BITS            CODEC_ADC_BITS_PER_SAMPLE
-#if CONFIG_ESP32_S3_KORVO2L_V1_BOARD
+
+#if CONFIG_ESP32_S3_KORVO2L_V1_BOARD // ES8311 need ADCL + DACR for AEC feature
 #define I2S_CHANNELS                I2S_CHANNEL_FMT_RIGHT_LEFT
 #else
 #define I2S_CHANNELS                I2S_CHANNEL_FMT_ONLY_LEFT
