@@ -50,7 +50,7 @@ int raw_stream_read(audio_element_handle_t pipeline, char *buffer, int len)
     int ret = audio_element_input(pipeline, buffer, len);
     if (ret == AEL_IO_DONE || ret == AEL_IO_OK) {
         audio_element_report_status(pipeline, AEL_STATUS_STATE_FINISHED);
-    } else if (ret < 0) {
+    } else if ((ret < 0) && (ret != AEL_IO_TIMEOUT)) {
         audio_element_report_status(pipeline, AEL_STATUS_STATE_STOPPED);
     }
     return ret;
@@ -61,7 +61,7 @@ int raw_stream_write(audio_element_handle_t pipeline, char *buffer, int len)
     int ret = audio_element_output(pipeline, buffer, len);
     if (ret == AEL_IO_DONE || ret == AEL_IO_OK) {
         audio_element_report_status(pipeline, AEL_STATUS_STATE_FINISHED);
-    } else if (ret < 0) {
+    } else if ((ret < 0) && (ret != AEL_IO_TIMEOUT)) {
         audio_element_report_status(pipeline, AEL_STATUS_STATE_STOPPED);
     }
     return ret;
