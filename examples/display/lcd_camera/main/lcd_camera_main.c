@@ -103,11 +103,15 @@ void app_main(void)
 {
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
-    esp_lcd_panel_handle_t panel_handle = audio_board_lcd_init(set, NULL);
 
+    // Because the current development board camera shares the i2c interface with the expansion chip.
+    // The expansion chip operation may be abnormal, so the camera is initialized in advance
     if (ESP_OK != init_camera()) {
         return;
     }
+
+    esp_lcd_panel_handle_t panel_handle = audio_board_lcd_init(set, NULL);
+
     if (s_camera_format == PIXFORMAT_YUV422) {
         rgb_buffer = audio_calloc(1, EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * 2);
         AUDIO_MEM_CHECK(TAG, rgb_buffer, return);
