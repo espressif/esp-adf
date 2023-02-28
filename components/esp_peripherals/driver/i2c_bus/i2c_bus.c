@@ -160,8 +160,8 @@ esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int r
     }
     ret |= i2c_master_read_byte(cmd, &outdata[datalen - 1], 1);
 
-    ret = i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
+    ret |= i2c_master_stop(cmd);
+    ret |= i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
 
     mutex_unlock(_busLock);

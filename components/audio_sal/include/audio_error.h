@@ -67,10 +67,15 @@ extern "C" {
 
 
 
-#define AUDIO_CHECK(TAG, a, action, msg) if (!(a)) {                                       \
+#define AUDIO_CHECK(TAG, a, action, msg) if (!(a)) {                                     \
         ESP_LOGE(TAG,"%s:%d (%s): %s", __FILENAME__, __LINE__, __FUNCTION__, msg);       \
-        action;                                                                   \
+        action;                                                                          \
         }
+
+#define AUDIO_RET_ON_FALSE(TAG, a, action, msg) if (unlikely(a == ESP_FAIL)) {           \
+        ESP_LOGE(TAG,"%s:%d (%s): %s", __FILENAME__, __LINE__, __FUNCTION__, msg);       \
+        action;                                                                          \
+}
 
 #define AUDIO_MEM_CHECK(TAG, a, action)  AUDIO_CHECK(TAG, a, action, "Memory exhausted")
 

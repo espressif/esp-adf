@@ -107,7 +107,7 @@ esp_err_t _setup_lcd(esp_periph_handle_t self)
 esp_periph_handle_t periph_lcd_init(periph_lcd_cfg_t *config)
 {
     periph_lcd_t *periph_lcd = audio_calloc(1, sizeof(periph_lcd_t));
-    AUDIO_MEM_CHECK(TAG, periph_lcd, return NULL;);
+    AUDIO_MEM_CHECK(TAG, periph_lcd, return NULL);
     periph_lcd->io_bus = config->io_bus;
 
     memcpy(&periph_lcd->lcd_io_cfg, config->lcd_io_cfg, sizeof(esp_lcd_panel_io_spi_config_t));

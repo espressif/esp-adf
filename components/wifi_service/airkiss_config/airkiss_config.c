@@ -156,7 +156,6 @@ static void airkiss_notify_task(void *pvParameters)
     if (ret != AIRKISS_LAN_PAKE_READY) {
         ESP_LOGE(TAG, "Pack lan packet error!");
         goto _fail;
-        return;
     }
     do {
         send_socket = socket(AF_INET, SOCK_DGRAM, 0);

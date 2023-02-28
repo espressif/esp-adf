@@ -628,7 +628,7 @@ static int es8374_set_d2se_pga(es_d2se_pga_t gain)
         res = es8374_read_reg(0x21, &reg);
         reg &= 0xfb;
         reg |= gain << 2;
-        res = es8374_write_reg(0x21, reg); //MIC PGA
+        res |= es8374_write_reg(0x21, reg); //MIC PGA
     } else {
         res = 0xff;
         LOG_8374("invalid microphone gain!");
@@ -733,10 +733,17 @@ esp_err_t es8374_codec_init(audio_hal_codec_config_t *cfg)
 
 esp_err_t es8374_codec_deinit(void)
 {
+    if (!es8374_codec_initialized()) {
+        ESP_LOGW(ES8374_TAG, "The es8374 codec has already been deinit!");
+        return ESP_FAIL;
+    }
+    esp_err_t res = ESP_OK;
     codec_init_flag = 0;
-    i2c_bus_delete(i2c_handle);
-    return es8374_write_reg(0x00, 0x7F); // IC Reset and STOP
+    res = es8374_write_reg(0x00, 0x7F); // IC Reset and STOP
+    res |= i2c_bus_delete(i2c_handle);
+    return res;
 }
+
 esp_err_t es8374_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
 {
     esp_err_t res = ESP_OK;

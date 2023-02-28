@@ -171,7 +171,7 @@ static int i2c_init()
         .master.clk_speed = 100000,
     };
     ret = get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
-    AUDIO_CHECK(TAG, !ret, return ESP_FAIL;, "getting i2c pins error");
+    AUDIO_RET_ON_FALSE(TAG, ret, return ESP_FAIL, "getting i2c pins error");
     es7210_handle.i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
     return ret;
 }
@@ -199,7 +199,6 @@ int es7210_read_reg(uint8_t reg_addr)
 
 esp_err_t es7210_config_sample(audio_hal_iface_samples_t sample)
 {
-    uint8_t regv;
     int coeff;
     int sample_fre = 0;
     int mclk_fre = 0;
@@ -242,6 +241,7 @@ esp_err_t es7210_config_sample(audio_hal_iface_samples_t sample)
     /* Set clock parammeters */
     if (coeff >= 0) {
         /* Set adc_div & doubler & dll */
+        uint8_t regv;
         regv = es7210_read_reg(ES7210_MAINCLK_REG02) & 0x00;
         regv |= coeff_div[coeff].adc_div;
         regv |= coeff_div[coeff].doubler << 6;
