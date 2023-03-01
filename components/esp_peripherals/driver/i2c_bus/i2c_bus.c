@@ -23,6 +23,7 @@
   */
 
 #include <stdio.h>
+#include <string.h>
 #include "esp_log.h"
 #include "driver/i2c.h"
 #include "i2c_bus.h"
@@ -54,11 +55,19 @@ i2c_bus_handle_t i2c_bus_create(i2c_port_t port, i2c_config_t *conf)
 {
     I2C_BUS_CHECK(port < I2C_NUM_MAX, "I2C port error", NULL);
     I2C_BUS_CHECK(conf != NULL, "Configuration not initialized", NULL);
+
     if (i2c_bus[port]) {
-        ESP_LOGW(TAG, "%s:%d: I2C bus has been already created, [port:%d]", __FUNCTION__, __LINE__, port);
-        i2c_bus[port]->ref_count++;
-        return i2c_bus[port];
+        // Check whether it is the same group i2c
+        if (memcmp(conf, &i2c_bus[port]->i2c_conf, sizeof(i2c_config_t)) == 0) {
+            i2c_bus[port]->ref_count++;
+            ESP_LOGW(TAG, "I2C bus has been already created, [port:%d]", port);
+            return i2c_bus[port];
+        } else {
+           ESP_LOGE(TAG, "Have not enough slot(%d) to create I2C bus", port);
+           return NULL;
+        }
     }
+
     i2c_bus[port] = (i2c_bus_t *) audio_calloc(1, sizeof(i2c_bus_t));
     i2c_bus[port]->i2c_conf = *conf;
     i2c_bus[port]->i2c_port = port;
@@ -204,4 +213,3 @@ esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr)
     /* Get probe result if ESP_OK equals to ret_val */
     return ret_val;
 }
-
