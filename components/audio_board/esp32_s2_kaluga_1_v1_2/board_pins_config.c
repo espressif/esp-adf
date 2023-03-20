@@ -53,8 +53,8 @@ esp_err_t get_i2s_pins(i2s_port_t port, i2s_pin_config_t *i2s_config)
     i2s_config->bck_io_num = GPIO_NUM_18;
     i2s_config->ws_io_num = GPIO_NUM_17;
     i2s_config->data_out_num = GPIO_NUM_12;
-    i2s_config->data_in_num = GPIO_NUM_46;
-
+    i2s_config->data_in_num = GPIO_NUM_34;
+    i2s_config->mck_io_num = GPIO_NUM_35;
     return ESP_OK;
 }
 
@@ -77,14 +77,6 @@ esp_err_t get_spi_pins(spi_bus_config_t *spi_config, spi_device_interface_config
 
 esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
 {
-    if (i2s_num >= I2S_NUM_MAX) {
-        ESP_LOGE(TAG, "Does not support i2s number(%d)", i2s_num);
-        return ESP_ERR_INVALID_ARG;
-    }
-    gpio_num = (gpio_num_t)GPIO_NUM_35;
-    ESP_LOGD(TAG, "I2S%d, MCLK output by GPIO%d", i2s_num, gpio_num);
-    gpio_matrix_out(gpio_num, CLK_I2S_MUX_IDX, 0, 0);
-
     return ESP_OK;
 }
 
