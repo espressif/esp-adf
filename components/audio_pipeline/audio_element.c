@@ -731,7 +731,7 @@ esp_err_t audio_element_reset_output_ringbuf(audio_element_handle_t el)
             }
         }
     }
-    return ESP_OK;
+    return ret;
 }
 
 esp_err_t audio_element_abort_input_ringbuf(audio_element_handle_t el)
@@ -748,7 +748,7 @@ esp_err_t audio_element_abort_input_ringbuf(audio_element_handle_t el)
             }
         }
     }
-    return ESP_OK;
+    return ret;
 }
 
 esp_err_t audio_element_abort_output_ringbuf(audio_element_handle_t el)
@@ -765,15 +765,15 @@ esp_err_t audio_element_abort_output_ringbuf(audio_element_handle_t el)
             }
         }
     }
-    return ESP_OK;
+    return ret;
 }
 
 esp_err_t audio_element_set_ringbuf_done(audio_element_handle_t el)
 {
-    int ret = ESP_OK;
     if (NULL == el) {
         return ESP_FAIL;
     }
+    int ret = ESP_OK;
     if (el->out.output_rb && el->write_type == IO_TYPE_RB) {
         ret |= rb_done_write(el->out.output_rb);
         for (int i = 0; i < el->multi_out.max_rb_num; ++i) {

@@ -539,7 +539,7 @@ esp_audio_handle_t ut_setup_esp_audio_instance(esp_audio_cfg_t *cfg)
         cfg = &default_cfg;
     }
     esp_audio_handle_t handle = esp_audio_create(cfg);
-    AUDIO_MEM_CHECK(TAG, handle, return NULL;);
+    AUDIO_MEM_CHECK(TAG, handle, return NULL);
     // Create readers and add to esp_audio
     fatfs_stream_cfg_t fs_reader = FATFS_STREAM_CFG_DEFAULT();
     fs_reader.type = AUDIO_STREAM_READER;

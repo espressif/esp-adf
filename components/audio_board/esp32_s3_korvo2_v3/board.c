@@ -145,14 +145,13 @@ void *audio_board_lcd_init(esp_periph_set_handle_t set, void *cb)
         .lcd_color_invert = LCD_COLOR_INV,
     };
     esp_periph_handle_t periph_lcd = periph_lcd_init(&cfg);
-    AUDIO_NULL_CHECK(TAG, periph_lcd, return NULL;);
+    AUDIO_NULL_CHECK(TAG, periph_lcd, return NULL);
     esp_periph_start(set, periph_lcd);
     return (void *)periph_lcd_get_panel_handle(periph_lcd);
 }
 
 esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
 {
-    esp_err_t ret = ESP_OK;
     periph_adc_button_cfg_t adc_btn_cfg = PERIPH_ADC_BUTTON_DEFAULT_CONFIG();
     adc_arr_t adc_btn_tag = ADC_DEFAULT_ARR();
     adc_btn_tag.total_steps = 6;
@@ -163,8 +162,7 @@ esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
     adc_btn_cfg.arr_size = 1;
     esp_periph_handle_t adc_btn_handle = periph_adc_button_init(&adc_btn_cfg);
     AUDIO_NULL_CHECK(TAG, adc_btn_handle, return ESP_ERR_ADF_MEMORY_LACK);
-    ret = esp_periph_start(set, adc_btn_handle);
-    return ret;
+    return esp_periph_start(set, adc_btn_handle);
 }
 
 esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set, periph_sdcard_mode_t mode)
