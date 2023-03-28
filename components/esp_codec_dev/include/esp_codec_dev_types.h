@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#define ESP_CODEC_DEV_VERSION  "1.0.0"
+#define ESP_CODEC_DEV_VERSION  "1.0.1"
 
 /**
  * @brief Define error number of codec device module

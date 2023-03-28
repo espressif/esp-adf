@@ -220,6 +220,8 @@ static int es7210_mic_select(audio_codec_es7210_t *codec, es7210_input_mics_t mi
     if (mic_num >= ENABLE_TDM_MAX_NUM) {
         ret |= es7210_write_reg(codec, ES7210_SDP_INTERFACE2_REG12, 0x02);
         ESP_LOGI(TAG, "Enable TDM mode");
+    } else {
+        ret |= es7210_write_reg(codec, ES7210_SDP_INTERFACE2_REG12, 0x00);
     }
     return ret;
 }

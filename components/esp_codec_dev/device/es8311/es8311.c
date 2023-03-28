@@ -547,6 +547,8 @@ static int es8311_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (codec_cfg->no_dac_ref == false) {
         /* set internal reference signal (ADCL + DACR) */
         ret |= es8311_write_reg(codec, ES8311_GPIO_REG44, 0x50);
+    } else {
+        ret |= es8311_write_reg(codec, ES8311_GPIO_REG44, 0);
     }
     if (ret != 0) {
         return ESP_CODEC_DEV_WRITE_FAIL;
