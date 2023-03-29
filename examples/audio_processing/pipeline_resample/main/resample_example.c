@@ -82,12 +82,7 @@ static audio_element_handle_t create_i2s_stream(int sample_rates, int bits, int 
 #endif
     audio_element_handle_t i2s_stream = i2s_stream_init(&i2s_cfg);
     mem_assert(i2s_stream);
-    audio_element_info_t i2s_info = {0};
-    audio_element_getinfo(i2s_stream, &i2s_info);
-    i2s_info.bits = bits;
-    i2s_info.channels = channels;
-    i2s_info.sample_rates = sample_rates;
-    audio_element_setinfo(i2s_stream, &i2s_info);
+    audio_element_set_music_info(i2s_stream, sample_rates, channels, bits);
     return i2s_stream;
 }
 

@@ -53,10 +53,11 @@ typedef struct {
     bool                    uninstall_drv;      /*!< whether uninstall the i2s driver when stream destroyed*/
     bool                    need_expand;        /*!< whether to expand i2s data */
     i2s_bits_per_sample_t   expand_src_bits;    /*!< The source bits per sample when data expand */
+    int                     buffer_len;         /*!< Buffer length use for an Element. Note: when 'bits_per_sample' is 24 bit, the buffer length must be a multiple of 3. The recommended value is 3600 */
 } i2s_stream_cfg_t;
 
 #define I2S_STREAM_TASK_STACK           (3072+512)
-#define I2S_STREAM_BUF_SIZE             (2048)
+#define I2S_STREAM_BUF_SIZE             (3600)
 #define I2S_STREAM_TASK_PRIO            (23)
 #define I2S_STREAM_TASK_CORE            (0)
 #define I2S_STREAM_RINGBUFFER_SIZE      (8 * 1024)
@@ -89,6 +90,7 @@ typedef struct {
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
     .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
+    .buffer_len = I2S_STREAM_BUF_SIZE,                                          \
 }
 
 #define I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT() {                                 \
@@ -175,6 +177,7 @@ typedef struct {
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
     .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
+    .buffer_len = I2S_STREAM_BUF_SIZE,                                          \
 }
 
 #define I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT() {                                 \

@@ -114,7 +114,7 @@ void app_main(void)
             audio_element_getinfo(mp3_decoder, &music_info);
             ESP_LOGI(TAG, "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
                      music_info.sample_rates, music_info.bits, music_info.channels);
-            audio_element_setinfo(output_stream_writer, &music_info);
+            audio_element_set_music_info(output_stream_writer, music_info.sample_rates, music_info.channels, music_info.bits);
 #ifdef CONFIG_PLAY_OUTPUT_PWM
             pwm_stream_set_clk(output_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
 #elif (defined(CONFIG_PLAY_OUTPUT_DAC))

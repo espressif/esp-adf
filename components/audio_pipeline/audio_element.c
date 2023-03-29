@@ -1240,6 +1240,10 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
         ESP_LOGD(TAG, "[%s] Element has not create when AUDIO_ELEMENT_STOP", el->tag);
         return ESP_FAIL;
     }
+    if (el->state == AEL_STATE_PAUSED) {
+        audio_event_iface_set_cmd_waiting_timeout(el->iface_event, 0);
+        audio_element_set_byte_pos(el, 0);
+    }
     if (el->is_running == false) {
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
         audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
@@ -1257,9 +1261,6 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
         audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
         return ESP_OK;
-    }
-    if (el->state == AEL_STATE_PAUSED) {
-        audio_event_iface_set_cmd_waiting_timeout(el->iface_event, 0);
     }
     if (el->stopping) {
         ESP_LOGD(TAG, "[%s] Stop command has already sent, %d", el->tag, el->stopping);
