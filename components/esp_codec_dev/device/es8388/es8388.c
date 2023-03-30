@@ -28,7 +28,7 @@ static const esp_codec_dev_vol_range_t vol_range = {
     .min_vol =
     {
         .vol = 0xC0,
-        .db_value = -96.5,
+        .db_value = -96,
     },
     .max_vol =
     {
@@ -250,6 +250,12 @@ static int es8388_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     res |= es8388_write_reg(codec, ES8388_DACCONTROL21, 0x80);
     res |= es8388_write_reg(codec, ES8388_DACCONTROL23, 0x00);    // vroi=0
     res |= es8388_set_adc_dac_volume(codec, ES_MODULE_DAC, 0, 0); // 0db
+
+    res |= es8388_write_reg(codec, ES8388_DACCONTROL24, 0x1E); // Set L1 R1 L2 R2 volume. 0x00: -30dB, 0x1E: 0dB, 0x21: 3dB
+    res |= es8388_write_reg(codec, ES8388_DACCONTROL25, 0x1E);
+    res |= es8388_write_reg(codec, ES8388_DACCONTROL26, 0);
+    res |= es8388_write_reg(codec, ES8388_DACCONTROL27, 0);
+
     // TODO default use DAC_ALL
     int tmp = DAC_OUTPUT_LOUT1 | DAC_OUTPUT_LOUT2 | DAC_OUTPUT_ROUT1 | DAC_OUTPUT_ROUT2;
     res |= es8388_write_reg(codec, ES8388_DACPOWER, tmp); // 0x3c Enable DAC and Enable Lout/Rout/1/2
@@ -324,10 +330,8 @@ static int es8388_set_vol(const audio_codec_if_t *h, float db_value)
     }
     db_value -= codec->hw_gain;
     int volume = esp_codec_dev_vol_calc_reg(&vol_range, db_value);
-    int res = es8388_write_reg(codec, ES8388_DACCONTROL24, volume);
-    res |= es8388_write_reg(codec, ES8388_DACCONTROL25, volume);
-    res |= es8388_write_reg(codec, ES8388_DACCONTROL26, 0);
-    res |= es8388_write_reg(codec, ES8388_DACCONTROL27, 0);
+    int res = es8388_write_reg(codec, ES8388_DACCONTROL5, volume);
+    res |= es8388_write_reg(codec, ES8388_DACCONTROL4, volume);
     ESP_LOGD(TAG, "Set volume reg:%x db:%f", volume, db_value);
     return res ? ESP_CODEC_DEV_WRITE_FAIL : ESP_CODEC_DEV_OK;
 }
