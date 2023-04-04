@@ -74,7 +74,7 @@ typedef struct {
  * @return        NULL: Failed
  *                Others: Codec GPIO interface
  */
-const audio_codec_gpio_if_t *audio_codec_new_gpio();
+const audio_codec_gpio_if_t *audio_codec_new_gpio(void);
 
 /**
  * @brief         Get default SPI control interface
@@ -93,7 +93,7 @@ const audio_codec_ctrl_if_t *audio_codec_new_i2c_ctrl(audio_codec_i2c_cfg_t *i2c
 /**
  * @brief         Get default I2S data interface
  * @return        NULL: Failed
- *                Others: I2S data interface    
+ *                Others: I2S data interface
  */
 const audio_codec_data_if_t *audio_codec_new_i2s_data(audio_codec_i2s_cfg_t *i2s_cfg);
 

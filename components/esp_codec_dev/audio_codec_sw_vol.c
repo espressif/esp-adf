@@ -47,7 +47,7 @@ static int _sw_vol_open(const audio_codec_vol_if_t *h, esp_codec_dev_sample_info
     return ESP_CODEC_DEV_OK;
 }
 
-static int _sw_vol_process(const audio_codec_vol_if_t *h, uint8_t *in, int len, 
+static int _sw_vol_process(const audio_codec_vol_if_t *h, uint8_t *in, int len,
                            uint8_t *out, int out_len)
 {
     audio_vol_t *vol = (audio_vol_t *) h;
@@ -124,7 +124,7 @@ static int _sw_vol_set(const audio_codec_vol_if_t *h, float db_value)
     return ESP_CODEC_DEV_OK;
 }
 
-const audio_codec_vol_if_t *audio_codec_new_sw_vol()
+const audio_codec_vol_if_t *audio_codec_new_sw_vol(void)
 {
     audio_vol_t *vol = calloc(1, sizeof(audio_vol_t));
     if (vol == NULL) {
