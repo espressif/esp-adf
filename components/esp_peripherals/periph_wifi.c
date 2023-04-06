@@ -384,11 +384,7 @@ static esp_err_t _wifi_run(esp_periph_handle_t self, audio_event_iface_msg_t *ms
 esp_err_t esp_wifi_set_listen_interval(esp_periph_handle_t periph, int interval)
 {
     if (wifi_config.sta.listen_interval != interval) {
-        esp_wifi_disconnect();
-        periph_wifi_wait_for_disconnected(periph, portMAX_DELAY);
         wifi_config.sta.listen_interval = interval;
-        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-        periph_wifi_wait_for_connected(periph, portMAX_DELAY);
     } else {
         ESP_LOGW(TAG, "Wifi listen interval %d is already set", interval);
     }
@@ -424,7 +420,6 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    memset(&wifi_config, 0x00, sizeof(wifi_config_t));
     if (periph_wifi->ssid) {
         strcpy((char *)wifi_config.sta.ssid, periph_wifi->ssid);
         ESP_LOGD(TAG, "WIFI_SSID=%s", wifi_config.sta.ssid);
@@ -435,7 +430,7 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-        ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MAX_MODEM));
+        ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
     }
     if (periph_wifi->wpa2_e_cfg->diasble_wpa2_e) {
         unsigned int ca_pem_bytes = periph_wifi->wpa2_e_cfg->ca_pem_end - periph_wifi->wpa2_e_cfg->ca_pem_start;
@@ -519,6 +514,7 @@ esp_periph_handle_t periph_wifi_init(periph_wifi_cfg_t *config)
         goto _periph_wifi_init_failed;
     });
     memcpy(periph_wifi->wpa2_e_cfg, &config->wpa2_e_cfg, sizeof(periph_wpa2_enterprise_cfg_t));
+    memset(&wifi_config, 0x00, sizeof(wifi_config_t));
 
     esp_periph_set_data(periph, periph_wifi);
     esp_periph_set_function(periph, _wifi_init, _wifi_run, _wifi_destroy);
