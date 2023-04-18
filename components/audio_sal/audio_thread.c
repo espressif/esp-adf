@@ -73,9 +73,14 @@ esp_err_t audio_thread_create(audio_thread_t *p_handle, const char *name, void(*
             goto audio_thread_create_error;
         }
     } else {
+        if (stack_in_ext) {
+            ESP_LOGW(TAG, "Make sure selected the `CONFIG_SPIRAM_BOOT_INIT` and `CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY` by `make menuconfig`");
+        }
         if (xTaskCreatePinnedToCore(main_func, name, stack, arg, prio, (xTaskHandle)p_handle, core_id) != pdPASS) {
             ESP_LOGE(TAG, "Error creating task %s", name);
             goto audio_thread_create_error;
+        } else {
+            ESP_LOGI(TAG, "The %s task allocate stack on internal memory", name);
         }
     }
     return ESP_OK;
