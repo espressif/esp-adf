@@ -53,6 +53,7 @@ typedef struct {
     bool                    uninstall_drv;      /*!< whether uninstall the i2s driver when stream destroyed*/
     bool                    need_expand;        /*!< whether to expand i2s data */
     i2s_bits_per_sample_t   expand_src_bits;    /*!< The source bits per sample when data expand */
+    int                     adc_atten_db;
 } i2s_stream_cfg_t;
 
 #define I2S_STREAM_TASK_STACK           (3072+512)
