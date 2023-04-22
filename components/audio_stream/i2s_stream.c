@@ -389,6 +389,10 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
 #if SOC_I2S_SUPPORTS_ADC_DAC
     if ((config->i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
         i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
+    } else if ((config->i2s_config.mode & I2S_MODE_ADC_BUILT_IN) != 0) {
+        i2s_set_adc_mode(ADC_UNIT_1, ADC1_CHANNEL_7);
+        adc1_config_channel_atten(ADC1_CHANNEL_7, i2s->config.adc_atten_db);
+        i2s_adc_enable(i2s->config.i2s_port);
     } else
 #endif
     {
