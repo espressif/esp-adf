@@ -144,11 +144,11 @@ bool audio_mem_spiram_is_enabled(void)
 }
 #endif
 
-#if defined(CONFIG_SPIRAM_BOOT_INIT)
+#if defined(CONFIG_SPIRAM_BOOT_INIT) && (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY)
 bool audio_mem_spiram_stack_is_enabled(void)
 {
     bool ret = true;
-#if defined(CONFIG_IDF_TARGET_ESP32) && (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY)
+#if defined(CONFIG_IDF_TARGET_ESP32)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 4)
     uint32_t chip_ver = efuse_hal_chip_revision();
 #else
@@ -158,8 +158,6 @@ bool audio_mem_spiram_stack_is_enabled(void)
         ESP_LOGW("AUIDO_MEM", "Can't support stack on external memory due to ESP32 chip is %d", chip_ver);
         ret = false;
     }
-#elif defined(CONFIG_IDF_TARGET_ESP32)
-    ret = false;
 #endif
     return ret;
 }
