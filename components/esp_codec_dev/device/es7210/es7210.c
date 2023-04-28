@@ -23,6 +23,7 @@ typedef struct {
     bool                         enabled;
     es7210_input_mics_t          mic_select;
     es7210_gain_value_t          gain;
+    bool                         master_mode;
     uint8_t                      off_reg;
     uint16_t                     mclk_div;
 } audio_codec_es7210_t;
@@ -85,6 +86,7 @@ static const struct _coeff_div coeff_div[] = {
     {19200000, 24000, 0x00, 0x0a, 0x00, 0x01, 0x28, 0x00, 0x03, 0x20},
 
  /* 32k */
+    {8192000,  32000, 0x00, 0x01, 0x01, 0x01, 0x20, 0x00, 0x01, 0x00},
     {12288000, 32000, 0x00, 0x03, 0x00, 0x00, 0x20, 0x00, 0x01, 0x80},
     {16384000, 32000, 0x00, 0x01, 0x01, 0x00, 0x20, 0x00, 0x02, 0x00},
     {19200000, 32000, 0x00, 0x05, 0x00, 0x00, 0x1e, 0x00, 0x02, 0x58},
@@ -138,6 +140,9 @@ static int get_coeff(uint32_t mclk, uint32_t lrck)
 
 static int es7210_config_sample(audio_codec_es7210_t *codec, int sample_fre)
 {
+    if (codec->master_mode == false) {
+        return ESP_CODEC_DEV_OK;
+    }
     int regv;
     int coeff;
     int mclk_fre = 0;
@@ -169,10 +174,20 @@ static int es7210_config_sample(audio_codec_es7210_t *codec, int sample_fre)
     return ret;
 }
 
+static bool es7210_is_tdm_mode(audio_codec_es7210_t *codec)
+{
+    uint16_t mic_num = 0;
+    for (int i = ES7210_INPUT_MIC1; i <= ES7210_INPUT_MIC4; i = i << 1) {
+        if (codec->mic_select & i) {
+            mic_num++;
+        }
+    }
+    return (mic_num >= ENABLE_TDM_MAX_NUM);
+}
+
 static int es7210_mic_select(audio_codec_es7210_t *codec, es7210_input_mics_t mic)
 {
     int ret = 0;
-    uint16_t mic_num = 0;
     if (codec->mic_select & (ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2 | ES7210_INPUT_MIC3 | ES7210_INPUT_MIC4)) {
         for (int i = 0; i < 4; i++) {
             ret |= es7210_update_reg_bit(codec, ES7210_MIC1_GAIN_REG43 + i, 0x10, 0x00);
@@ -211,13 +226,7 @@ static int es7210_mic_select(audio_codec_es7210_t *codec, es7210_input_mics_t mi
         ESP_LOGE(TAG, "Microphone selection error");
         return ESP_FAIL;
     }
-
-    for (int i = ES7210_INPUT_MIC1; i <= ES7210_INPUT_MIC4; i = i << 1) {
-        if (codec->mic_select & i) {
-            mic_num++;
-        }
-    }
-    if (mic_num >= ENABLE_TDM_MAX_NUM) {
+    if (es7210_is_tdm_mode(codec)) {
         ret |= es7210_write_reg(codec, ES7210_SDP_INTERFACE2_REG12, 0x02);
         ESP_LOGI(TAG, "Enable TDM mode");
     } else {
@@ -280,6 +289,7 @@ static int es7210_set_bits(audio_codec_es7210_t *codec, uint8_t bits)
             break;
     }
     ret |= es7210_write_reg(codec, ES7210_SDP_INTERFACE1_REG11, adc_iface);
+    ESP_LOGI(TAG, "Bits %d", bits);
     return ret;
 }
 
@@ -294,6 +304,9 @@ static int es7210_start(audio_codec_es7210_t *codec, uint8_t clock_reg_value)
     ret |= es7210_write_reg(codec, ES7210_MIC3_POWER_REG49, 0x08);
     ret |= es7210_write_reg(codec, ES7210_MIC4_POWER_REG4A, 0x08);
     ret |= es7210_mic_select(codec, codec->mic_select);
+    ret |= es7210_write_reg(codec, ES7210_ANALOG_REG40, 0x43);
+    ret |= es7210_write_reg(codec, ES7210_RESET_REG00, 0x71);
+    ret |= es7210_write_reg(codec, ES7210_RESET_REG00, 0x41);
     return ret;
 }
 
@@ -316,7 +329,7 @@ static es7210_gain_value_t get_db(float db)
 {
     db += 0.5;
     if (db < 33) {
-        int idx = db < 3 ? 0 : (db - 3) / 3;
+        int idx = db < 3 ? 0 : db / 3;
         return GAIN_0DB + idx;
     }
     if (db < 34.5) {
@@ -331,23 +344,22 @@ static es7210_gain_value_t get_db(float db)
     return GAIN_37_5DB;
 }
 
-static int _es7210_set_gain(audio_codec_es7210_t *codec, float db)
+static int _es7210_set_channel_gain(audio_codec_es7210_t *codec, uint16_t channel_mask, float db)
 {
     int ret = 0;
     es7210_gain_value_t gain = get_db(db);
-    if (codec->mic_select & ES7210_INPUT_MIC1) {
+    if ((codec->mic_select & ES7210_INPUT_MIC1) & (channel_mask & ESP_CODEC_DEV_MAKE_CHANNEL_MASK(0))) {
         ret |= es7210_update_reg_bit(codec, ES7210_MIC1_GAIN_REG43, 0x0f, gain);
     }
-    if (codec->mic_select & ES7210_INPUT_MIC2) {
+    if ((codec->mic_select & ES7210_INPUT_MIC2) & (channel_mask & ESP_CODEC_DEV_MAKE_CHANNEL_MASK(1))) {
         ret |= es7210_update_reg_bit(codec, ES7210_MIC2_GAIN_REG44, 0x0f, gain);
     }
-    if (codec->mic_select & ES7210_INPUT_MIC3) {
+    if ((codec->mic_select & ES7210_INPUT_MIC3) & (channel_mask & ESP_CODEC_DEV_MAKE_CHANNEL_MASK(2))) {
         ret |= es7210_update_reg_bit(codec, ES7210_MIC3_GAIN_REG45, 0x0f, gain);
     }
-    if (codec->mic_select & ES7210_INPUT_MIC4) {
+    if ((codec->mic_select & ES7210_INPUT_MIC4) & (channel_mask & ESP_CODEC_DEV_MAKE_CHANNEL_MASK(3))) {
         ret |= es7210_update_reg_bit(codec, ES7210_MIC4_GAIN_REG46, 0x0f, gain);
     }
-    codec->gain = gain;
     return ret == 0 ? ESP_CODEC_DEV_OK : ESP_CODEC_DEV_WRITE_FAIL;
 }
 
@@ -442,10 +454,11 @@ static int es7210_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
         codec->mic_select = ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2;
     }
     ret |= es7210_mic_select(codec, codec->mic_select);
-    ret |= _es7210_set_gain(codec, 30.0);
+    ret |= _es7210_set_channel_gain(codec, 0xF, 30.0);
     if (ret != 0) {
         return ESP_CODEC_DEV_WRITE_FAIL;
     }
+    codec->master_mode = codec_cfg->master_mode;
     codec->mclk_div = codec_cfg->mclk_div;
     if (codec->mclk_div == 0) {
         codec->mclk_div = MCLK_DEFAULT_DIV;
@@ -468,7 +481,12 @@ static int es7210_set_fs(const audio_codec_if_t *h, esp_codec_dev_sample_info_t 
         return ESP_CODEC_DEV_WRONG_STATE;
     }
     int ret = 0;
-    ret |= es7210_set_bits(codec, fs->bits_per_sample);
+    uint8_t bits = fs->bits_per_sample;
+    // Use 2 channel to fetch TDM data
+    if (es7210_is_tdm_mode(codec) && fs->channel <= 2 && fs->channel_mask == 0) {
+        bits >>= 1;
+    }
+    ret |= es7210_set_bits(codec, bits);
     ret |= es7210_config_sample(codec, fs->sample_rate);
     ret |= es7210_config_fmt(codec, ES_I2S_NORMAL);
     return ret == 0 ? ESP_CODEC_DEV_OK : ESP_CODEC_DEV_WRITE_FAIL;
@@ -483,7 +501,19 @@ static int es7210_set_gain(const audio_codec_if_t *h, float db)
     if (codec->is_open == false) {
         return ESP_CODEC_DEV_WRONG_STATE;
     }
-    return _es7210_set_gain(codec, db);
+    return _es7210_set_channel_gain(codec, 0xF, db);
+}
+
+static int es7210_set_channel_gain(const audio_codec_if_t *h, uint16_t channel_mask, float db)
+{
+    audio_codec_es7210_t *codec = (audio_codec_es7210_t *) h;
+    if (codec == NULL) {
+        return ESP_CODEC_DEV_INVALID_ARG;
+    }
+    if (codec->is_open == false) {
+        return ESP_CODEC_DEV_WRONG_STATE;
+    }
+    return _es7210_set_channel_gain(codec, channel_mask, db);
 }
 
 static int es7210_set_mute(const audio_codec_if_t *h, bool mute)
@@ -570,6 +600,7 @@ const audio_codec_if_t *es7210_codec_new(es7210_codec_cfg_t *codec_cfg)
     codec->base.enable = es7210_enable;
     codec->base.set_fs = es7210_set_fs;
     codec->base.set_mic_gain = es7210_set_gain;
+    codec->base.set_mic_channel_gain = es7210_set_channel_gain;
     codec->base.mute_mic = es7210_set_mute;
     codec->base.set_reg = es7210_set_reg;
     codec->base.get_reg = es7210_get_reg;

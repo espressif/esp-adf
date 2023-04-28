@@ -18,7 +18,7 @@ extern "C" {
  * @return        NULL: Memory not enough
  *                -Others: Software volume interface handle
  */
-const audio_codec_vol_if_t* audio_codec_new_sw_vol();
+const audio_codec_vol_if_t* audio_codec_new_sw_vol(void);
 
 #ifdef __cplusplus
 }

@@ -174,9 +174,16 @@ int esp_codec_dev_open(esp_codec_dev_handle_t handle, esp_codec_dev_sample_info_
         return ESP_CODEC_DEV_NOT_SUPPORT;
     }
     const audio_codec_if_t *codec = dev->codec_if;
+    const audio_codec_data_if_t *data_if = dev->data_if;
+    if (data_if->set_fmt) {
+        data_if->set_fmt(data_if, dev->dev_caps, fs);
+    }
+    if (data_if->enable) {
+        data_if->enable(data_if, dev->dev_caps, true);
+    }
     if (codec) {
         // TODO not set codec fs
-        if (0 && codec->set_fs) {
+        if (codec->set_fs) {
             if (codec->set_fs(codec, fs) != 0) {
                 return ESP_CODEC_DEV_NOT_SUPPORT;
             }
@@ -187,10 +194,6 @@ int esp_codec_dev_open(esp_codec_dev_handle_t handle, esp_codec_dev_sample_info_
                 return ESP_CODEC_DEV_DRV_ERR;
             }
         }
-    }
-    const audio_codec_data_if_t *data_if = dev->data_if;
-    if (data_if->set_fmt) {
-        data_if->set_fmt(data_if, fs);
     }
     if (dev->output_opened) {
         if (codec == NULL || codec->set_vol == NULL) {
@@ -385,6 +388,24 @@ int esp_codec_dev_set_in_gain(esp_codec_dev_handle_t handle, float db)
     return ESP_CODEC_DEV_NOT_SUPPORT;
 }
 
+int esp_codec_dev_set_in_channel_gain(esp_codec_dev_handle_t handle, uint16_t channel_mask, float db)
+{
+    codec_dev_t *dev = (codec_dev_t *) handle;
+    if (dev == NULL || channel_mask == 0) {
+        return ESP_CODEC_DEV_INVALID_ARG;
+    }
+    int ret = _verify_codec_setting(dev, false);
+    if (ret != ESP_CODEC_DEV_OK) {
+        return ret;
+    }
+    const audio_codec_if_t *codec = dev->codec_if;
+    if (codec && codec->set_mic_channel_gain) {
+        codec->set_mic_channel_gain(codec, channel_mask, (int) db);
+        return ESP_CODEC_DEV_OK;
+    }
+    return ESP_CODEC_DEV_NOT_SUPPORT;
+}
+
 int esp_codec_dev_get_in_gain(esp_codec_dev_handle_t handle, float *db_value)
 {
     codec_dev_t *dev = (codec_dev_t *) handle;
@@ -456,6 +477,10 @@ int esp_codec_dev_close(esp_codec_dev_handle_t handle)
         if (codec->enable) {
             codec->enable(codec, false);
         }
+    }
+    const audio_codec_data_if_t *data_if = dev->data_if;
+    if (data_if->enable) {
+        data_if->enable(data_if, dev->dev_caps, false);
     }
     if (dev->sw_vol) {
         dev->sw_vol->close(dev->sw_vol);
