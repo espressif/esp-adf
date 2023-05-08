@@ -115,23 +115,26 @@ static void uart_wakeup_task(void *arg)
     }
 
     uint8_t* dtmp = (uint8_t*) malloc(EXAMPLE_READ_BUF_SIZE);
+    uint8_t uart_rx_len = 0;
 
     while(1) {
         // Waiting for UART event.
         if (xQueueReceive(uart_evt_que, (void * )&event, (TickType_t)portMAX_DELAY)) {
+#if !SOC_UART_SUPPORT_WAKEUP_INT
             if (xEventGroupGetBits(wakeup_event_group) & ENTER_SLEEP_BIT) {
                 esp_pm_lock_acquire(s_pm_cpu_lock);
                 ESP_LOGW(TAG, "Send uart wakeup group event");
                 xEventGroupSetBits(wakeup_event_group, UART_WAKEUP_BIT);
                 vTaskDelay(10 / portTICK_RATE_MS);
             }
-            ESP_LOGI(TAG, "Uart%d recved event:%d", EXAMPLE_UART_NUM, event.type);
+#endif
+            ESP_LOGD(TAG, "Uart%d recved event:%d", EXAMPLE_UART_NUM, event.type);
             switch(event.type) {
                 case UART_DATA:
-                    ESP_LOGI(TAG, "[UART DATA]: %d", event.size);
-                    uart_read_bytes(EXAMPLE_UART_NUM, dtmp, event.size, portMAX_DELAY);
-                    dtmp[event.size] = '\0';
-                    ESP_LOGI(TAG, "[DATA EVT]: %s", dtmp);
+                    uart_rx_len = uart_read_bytes(EXAMPLE_UART_NUM, dtmp, SOC_UART_FIFO_LEN, 100 / portTICK_RATE_MS);
+                    dtmp[uart_rx_len] = '\0';
+                    ESP_LOGI(TAG, "[UART DATA]: %s, data size: %d", dtmp, uart_rx_len);
+                    uart_wait_tx_idle_polling(EXAMPLE_UART_NUM);
                     break;
                 // Event of HW FIFO overflow detected
                 case UART_FIFO_OVF:
@@ -162,6 +165,15 @@ static void uart_wakeup_task(void *arg)
                 case UART_FRAME_ERR:
                     ESP_LOGI(TAG, "Uart frame error");
                     break;
+                // ESP32 can wakeup by uart but there is no wake up interrupt
+#if SOC_UART_SUPPORT_WAKEUP_INT
+                // Event of waking up by UART
+                case UART_WAKEUP:
+                    esp_pm_lock_acquire(s_pm_cpu_lock);
+                    ESP_LOGI(TAG, "Uart wakeup");
+                    xEventGroupSetBits(wakeup_event_group, UART_WAKEUP_BIT);
+                    break;
+#endif
                 default:
                     ESP_LOGI(TAG, "Uart event type: %d", event.type);
                     break;
@@ -210,6 +222,8 @@ static esp_err_t uart_wakeup_config(void)
     /* Only uart0 and uart1 (if has) support to be configured as wakeup source */
     ESP_RETURN_ON_ERROR(esp_sleep_enable_uart_wakeup(EXAMPLE_UART_NUM),
                         TAG, "Configure uart as wakeup source failed");
+    gpio_sleep_sel_dis(EXAMPLE_UART_RX_IO_NUM);
+    gpio_sleep_sel_dis(EXAMPLE_UART_TX_IO_NUM);
     return ESP_OK;
 }
 
@@ -412,8 +426,7 @@ esp_pm_lock_handle_t get_power_manage_lock_handle(void)
     }
 }
 
-// Set DHCP_COARSE_TIMER_MSECS and ARP_TMR_INTERVAL to 10000 can get lower power.
-// This optimization will apply in next version, but you can change it manually.
+// Set ARP_TMR_INTERVAL to 10000 can get lower power.
 void power_manage_init(void)
 {
     // Reset the wake-up pin function to ensure the normal use of the application

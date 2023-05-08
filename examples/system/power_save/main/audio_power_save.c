@@ -44,18 +44,19 @@ static audio_event_iface_handle_t     evt;
 esp_err_t wifi_power_save_init(esp_periph_set_handle_t set, esp_periph_handle_t wifi_handle)
 {
     esp_periph_start(set, wifi_handle);
+    periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
     // Set maximum transmitting power to maximum value
     esp_wifi_set_max_tx_power(80);
-    // Set wifi listen interval to default value, see listen_interval of wifi_sta_config_t
-    return esp_wifi_set_listen_interval(wifi_handle, 3);
+    // Set wifi to minimum modem power saving mode
+    return esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
 }
 
 esp_err_t wifi_power_save_deinit(esp_periph_set_handle_t set, esp_periph_handle_t wifi_handle)
 {
     // Set maximum transmitting power to minimum value
     esp_wifi_set_max_tx_power(8);
-    // Set wifi listen interval to config value, increase the listen interval to reduce power consumption
-    esp_wifi_set_listen_interval(wifi_handle, CONFIG_EXAMPLE_WIFI_LISTEN_INTERVAL);
+    // Set wifi to maximum modem power saving mode
+    esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
     return esp_periph_remove_from_set(set, wifi_handle);
 }
 
@@ -196,12 +197,18 @@ void wifi_low_power_test(void)
         .reconnect_timeout_ms = 100
     };
     wifi_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(set, wifi_handle);
+    // Please place it between periph_wifi_init() and esp_periph_start()
     esp_wifi_set_listen_interval(wifi_handle, CONFIG_EXAMPLE_WIFI_LISTEN_INTERVAL);
+    esp_periph_start(set, wifi_handle);
+    periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
+
     // Set maximum transmitting power to minimum value
     esp_wifi_set_max_tx_power(8);
+    esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
+
     esp_periph_remove_from_set(set, wifi_handle);
     esp_periph_set_destroy(set);
+
     power_manage_config(CONFIG_EXAMPLE_MAX_CPU_FREQ_MHZ, CONFIG_EXAMPLE_MIN_CPU_FREQ_MHZ, true);
     /* Block other tasks for Wi-Fi power save test */
     while (1) {
@@ -236,6 +243,8 @@ void app_main(void)
         .reconnect_timeout_ms = 100
     };
     wifi_handle = periph_wifi_init(&wifi_cfg);
+    // Please place it between periph_wifi_init() and esp_periph_start()
+    esp_wifi_set_listen_interval(wifi_handle, CONFIG_EXAMPLE_WIFI_LISTEN_INTERVAL);
 
     int count = 4;
 
@@ -250,6 +259,8 @@ void app_main(void)
             ESP_LOGW(TAG, "Wifi will be destroy");
         }
         audio_deinit();
+        // Shut down the power amplifier for the purpose of eliminating noise.
+        gpio_set_level(get_pa_enable_gpio(), 0);
         enter_power_manage();
     }
 
