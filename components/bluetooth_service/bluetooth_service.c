@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -151,7 +152,7 @@ static void bt_av_notify_evt_handler(uint8_t event_id, esp_avrc_rn_param_t *even
         break;
     /* when track playing position changed, this event comes */
     case ESP_AVRC_RN_PLAY_POS_CHANGED:
-        ESP_LOGI(TAG, "Play position changed: %d-ms", event_parameter->play_pos);
+        ESP_LOGI(TAG, "Play position changed: %" PRId32 "-ms", event_parameter->play_pos);
         bt_av_play_pos_changed();
         break;
     /* others */
@@ -342,11 +343,11 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
         switch (p->type) {
             case ESP_BT_GAP_DEV_PROP_COD:
                 cod = *(uint32_t *)(p->val);
-                ESP_LOGI(TAG, "--Class of Device: 0x%x", cod);
+                ESP_LOGI(TAG, "--Class of Device: 0x%" PRIx32, cod);
                 break;
             case ESP_BT_GAP_DEV_PROP_RSSI:
                 rssi = *(int8_t *)(p->val);
-                ESP_LOGI(TAG, "--RSSI: %d", rssi);
+                ESP_LOGI(TAG, "--RSSI: %" PRIi32, rssi);
                 break;
             case ESP_BT_GAP_DEV_PROP_EIR:
                 eir = (uint8_t *)(p->val);
@@ -435,7 +436,7 @@ static void bt_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *
                 break;
             }
         case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
-                ESP_LOGD(TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
+                ESP_LOGD(TAG, "AVRC remote features %" PRIx32, rc->rmt_feats.feat_mask);
 #if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 0, 0))
                 bt_av_new_track();
 #endif

@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <esp_fs_ota.h>
 #include <esp_log.h>
 #include <esp_ota_ops.h>
@@ -106,7 +107,7 @@ esp_err_t esp_fs_ota_begin(esp_fs_ota_config_t *ota_config, esp_fs_ota_handle_t 
         err = ESP_FAIL;
         goto failure;
     }
-    ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%x",
+    ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%" PRIx32,
         fs_ota_handle->update_partition->subtype, fs_ota_handle->update_partition->address);
 
     const int alloc_size = (ota_config->buffer_size > DEFAULT_OTA_BUF_SIZE) ? ota_config->buffer_size : DEFAULT_OTA_BUF_SIZE;

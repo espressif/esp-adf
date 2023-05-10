@@ -40,6 +40,7 @@
 #include "esp_event.h"
 #include "esp_action_def.h"
 #include "esp_delegate.h"
+#include "esp_timer.h"
 
 #include "audio_idf_version.h"
 
@@ -165,7 +166,7 @@ static void wifi_event_cb(void *arg, esp_event_base_t event_base,
                 break;
         }
     } else {
-        ESP_LOGW(TAG, "WiFi Event cb, Unhandle event_base:%s, event_id:%d", event_base, event_id);
+        ESP_LOGW(TAG, "WiFi Event cb, Unhandle event_base:%s, event_id:%d", event_base, (int)event_id);
     }
 }
 #else

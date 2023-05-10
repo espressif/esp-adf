@@ -24,6 +24,7 @@
 
 #include <string.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -99,7 +100,7 @@ static ota_service_err_reason_t ota_http_tone_image_need_upgrade(void *handle, o
         ESP_LOGE(TAG, "not audio tone bin");
         return OTA_SERV_ERR_REASON_UNKNOWN;
     }
-    ESP_LOGI(TAG, "format %d : %d", cur_header.format, incoming_header.format);
+    ESP_LOGI(TAG, "format %" PRIu32 "  : %" PRIu32, cur_header.format, incoming_header.format);
     /* upgrade the tone bin when incoming bin format is 0 */
     if (incoming_header.format == 0) {
         goto write_flash;
@@ -109,7 +110,7 @@ static ota_service_err_reason_t ota_http_tone_image_need_upgrade(void *handle, o
     if (ota_data_image_stream_read(handle, (char *)&incoming_desc, sizeof(esp_app_desc_t)) != ESP_OK) {
         return OTA_SERV_ERR_REASON_STREAM_RD_FAIL;
     }
-    ESP_LOGI(TAG, "imcoming magic_word %X, project_name %s", incoming_desc.magic_word, incoming_desc.project_name);
+    ESP_LOGI(TAG, "incoming magic_word %" PRIX32 ", project_name %s", incoming_desc.magic_word, incoming_desc.project_name);
     /* check the incoming app desc */
     if (incoming_desc.magic_word != FLASH_TONE_MAGIC_WORD) {
         return OTA_SERV_ERR_REASON_ERROR_MAGIC_WORD;

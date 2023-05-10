@@ -37,6 +37,7 @@
 
 #include "sdcard.h"
 #include "board.h"
+#include "esp_idf_version.h"
 
 static const char *TAG = "SDCARD";
 int g_gpio = -1;
@@ -111,6 +112,26 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
     } else {
         ESP_LOGI(TAG, "Using SPI mode, base path=%s", base_path);
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+        sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+        spi_bus_config_t bus_cfg = {
+            .mosi_io_num = PIN_NUM_MOSI,
+            .miso_io_num = PIN_NUM_MISO,
+            .sclk_io_num = PIN_NUM_CLK,
+            .quadwp_io_num = -1,
+            .quadhd_io_num = -1,
+            .max_transfer_sz = 4000,
+        };
+        ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CH_AUTO);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to initialize bus.");
+            return ret;
+        }
+        sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+        slot_config.gpio_cs = PIN_NUM_CS;
+        slot_config.host_id = host.slot;
+        ret = esp_vfs_fat_sdspi_mount(base_path, &host, &slot_config, &mount_config, &card);
+#else
         sdmmc_host_t host = SDSPI_HOST_DEFAULT();
         sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
         slot_config.gpio_miso = PIN_NUM_MISO;
@@ -119,6 +140,7 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         slot_config.gpio_cs   = PIN_NUM_CS;
 
         ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
+#endif
     }
 
     switch (ret) {

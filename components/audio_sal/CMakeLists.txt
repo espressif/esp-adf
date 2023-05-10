@@ -9,4 +9,6 @@ set(COMPONENT_SRCS "audio_mem.c"
                     "audio_queue.c"
                     "media_os_ctype.c")
 
+list(APPEND COMPONENT_REQUIRES efuse)
+
 register_component()

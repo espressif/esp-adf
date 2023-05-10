@@ -1,5 +1,7 @@
 set(COMPONENT_ADD_INCLUDEDIRS .
                             include)
+set(COMPONENT_SRCDIRS  .)
+set(COMPONENT_REQUIRES mbedtls freertos esp-tls)
 
 register_component()
 

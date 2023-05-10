@@ -173,7 +173,7 @@ esp_err_t tas5805m_set_volume(int volume)
 
     ret = i2c_bus_write_bytes(i2c_handler, TAS5805M_ADDR, &cmd[0], 1, &cmd[1], 1);
 
-    ESP_LOGD(TAG, "Set volume:%.2d reg_value:0x%.2x dB:%.1f", dac_vol_handle->user_volume, reg,
+    ESP_LOGD(TAG, "Set volume:%.2d reg_value:0x%.2x dB:%.1f", (int)dac_vol_handle->user_volume, reg,
             audio_codec_cal_dac_volume(dac_vol_handle));
     return ret;
 }

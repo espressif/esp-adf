@@ -22,6 +22,7 @@
  *
  */
 
+#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/timers.h"
@@ -406,7 +407,7 @@ int duer_dcs_audio_get_play_progress()
     int position = 0;
     ret = esp_audio_pos_get(player, &position);
     if (ret == 0) {
-        ESP_LOGI(TAG, "Get play position %d of %d", position, total_size);
+        ESP_LOGI(TAG, "Get play position %d of %" PRIu32, position, total_size);
         return position;
     } else {
         ESP_LOGE(TAG, "Failed to get play progress.");

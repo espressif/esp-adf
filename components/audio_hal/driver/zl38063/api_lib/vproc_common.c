@@ -11,10 +11,10 @@
 
 #include "vproc_common.h"
 #include <stdio.h>
+#include <arpa/inet.h>
 #include "driver/spi_master.h"
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
-#include "mbedtls/net.h"
 #include "lwip/def.h"
 #include "board.h"
 #include "audio_idf_version.h"
@@ -25,6 +25,10 @@
 #define SPI_HOST_NUM SPI3_HOST
 #else
 #define SPI_HOST_NUM HSPI_HOST
+#endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#include "esp_rom_sys.h"
 #endif
 
 static spi_device_handle_t g_spi = NULL;
@@ -73,7 +77,6 @@ void VprocHALcleanup(void)
     ret = spi_bus_remove_device(g_spi);
     assert(ret == ESP_OK);
     ret = spi_bus_free(SPI_HOST_NUM);
-    ret = spi_bus_free(SPI_HOST_NUM);
 
     assert(ret == ESP_OK);
 }
@@ -90,7 +93,11 @@ void VprocHALcleanup(void)
 
 void Vproc_msDelay(unsigned short time)
 {
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+    esp_rom_delay_us(time * 1000);
+#else
     ets_delay_us(time * 1000);
+#endif
 }
 
 /* VprocWait(): use this function to
@@ -101,7 +108,11 @@ void Vproc_msDelay(unsigned short time)
 */
 void VprocWait(unsigned long int time)
 {
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+    esp_rom_delay_us(time * 1000);
+#else
     ets_delay_us(time * 1000);
+#endif
 }
 
 #define BIGENDIAN 1

@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 #include <string.h>
+#include <inttypes.h>
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -34,6 +35,7 @@
 #if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
 #include "filter_resample.h"
 #endif
+#include "bt_keycontrol.h"
 
 #include "audio_idf_version.h"
 
@@ -258,7 +260,7 @@ void bt_hf_client_cb(esp_hf_client_cb_event_t event, esp_hf_client_cb_param_t *p
 
     switch (event) {
     case ESP_HF_CLIENT_CONNECTION_STATE_EVT:
-        ESP_LOGE(BT_HF_TAG, "--connection state %s, peer feats 0x%x, chld_feats 0x%x",
+        ESP_LOGE(BT_HF_TAG, "--connection state %s, peer feats 0x%" PRIx32 ", chld_feats 0x%" PRIx32,
                  c_connection_state_str[param->conn_stat.state],
                  param->conn_stat.peer_feat,
                  param->conn_stat.chld_feat);

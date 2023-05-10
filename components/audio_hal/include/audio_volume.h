@@ -49,7 +49,7 @@ typedef struct {
     int8_t  dac_vol_symbol;  /*!< Whether the dac volume is positively correlated with the register value */
     uint8_t zero_volume_reg; /*!< Codec register value for zero dac volume */
     uint8_t reg_value;       /*!< Record current dac volume register value */
-    int32_t user_volume;     /*!< Record the user set volume */
+    int     user_volume;     /*!< Record the user set volume */
     audio_codec_dac_vol_offset offset_conv_volume; /*!<  Convert user volume to dac volume offset */
 } codec_dac_volume_config_t;
 

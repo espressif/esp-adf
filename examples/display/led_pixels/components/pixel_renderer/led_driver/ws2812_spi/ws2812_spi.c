@@ -32,6 +32,10 @@
 #include "driver/spi_master.h"
 #include "ws2812_spi.h"
 
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#include "soc/spi_struct.h"
+#include "soc/spi_periph.h"
+#endif
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
 static const char *TAG = "WS2812_SPI";
 

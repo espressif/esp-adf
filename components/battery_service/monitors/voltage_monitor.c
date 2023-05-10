@@ -32,6 +32,7 @@
 #include "audio_error.h"
 #include "audio_mem.h"
 #include "audio_mutex.h"
+#include "esp_timer.h"
 
 #include "voltage_monitor.h"
 

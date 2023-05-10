@@ -31,12 +31,22 @@
 #include "esp_core_dump.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
-#include "esp_spi_flash.h"
+
 #include "esp_system.h"
 
 #include "audio_error.h"
 #include "audio_mem.h"
 #include "coredump_upload_service.h"
+
+#include "audio_idf_version.h"
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#include "esp_rom_spiflash.h"
+#define SPI_READ esp_rom_spiflash_read
+#else
+#include "esp_spi_flash.h"
+#define SPI_READ spi_flash_read
+#endif
 
 typedef struct {
     xQueueHandle cmd_q;
@@ -71,7 +81,7 @@ static bool coredump_read(uint8_t **des, size_t *len)
     }
     *des = audio_calloc(1, *len);
     AUDIO_MEM_CHECK(TAG, *des, return false);
-    if (spi_flash_read(addr, *des, *len) != ESP_OK) {
+    if (SPI_READ(addr, *des, *len) != ESP_OK) {
         ESP_LOGE(TAG, "Core dump read ERROR");
         free(*des);
         *des = NULL;
@@ -94,7 +104,7 @@ static bool coredump_do_http_post(char *url, uint8_t *data, size_t len)
     int response = 0;
     if (esp_http_client_perform(http_client) == ESP_OK) {
         response = esp_http_client_get_status_code(http_client);
-        ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %d", response, esp_http_client_get_content_length(http_client));
+        ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %lld", response, (int64_t)esp_http_client_get_content_length(http_client));
     } else {
         ESP_LOGE(TAG, "Post failed");
     }

@@ -18,7 +18,7 @@ list(APPEND COMPONENT_SRCS  "lib/hls/hls_parse.c"
 
 list(APPEND COMPONENT_SRCS  "lib/gzip/gzip_miniz.c")
 
-set(COMPONENT_REQUIRES audio_pipeline audio_sal esp_http_client tcp_transport spiffs esp-adf-libs audio_board bootloader_support esp_dispatcher esp_actions tone_partition)
+set(COMPONENT_REQUIRES audio_pipeline driver audio_sal esp_http_client tcp_transport spiffs audio_board esp-adf-libs bootloader_support esp_dispatcher esp_actions tone_partition mbedtls)
 
 if((${IDF_TARGET} STREQUAL "esp32") OR (${IDF_TARGET} STREQUAL "esp32s3"))
     list(APPEND COMPONENT_SRCS "algorithm_stream.c" "tts_stream.c")

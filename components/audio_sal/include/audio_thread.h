@@ -32,7 +32,7 @@
 extern "C" {
 #endif
 
-#define audio_thread_t xTaskHandle
+typedef void* audio_thread_t;
 
 /**
  * @brief       Allocate handle if not allocated and create a thread

@@ -79,7 +79,11 @@ esp_err_t es7243_adc_set_addr(int addr)
 
 static esp_err_t es7243_mclk_active(uint8_t mclk_gpio)
 {
+    #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+    esp_rom_gpio_pad_select_gpio(mclk_gpio);
+    #else
     gpio_pad_select_gpio(mclk_gpio);
+    #endif
     gpio_set_direction(mclk_gpio, GPIO_MODE_OUTPUT);
     /*
         Before initializing es7243, it is necessary to output

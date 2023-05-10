@@ -39,6 +39,10 @@
 #include "audio_thread.h"
 #include "audio_player_manager.h"
 #include "esp_event_cast.h"
+#include "esp_idf_version.h"
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#include "esp_random.h"
+#endif
 
 const static int EP_TSK_INIT_BIT                = BIT0;
 const static int EP_TSK_DELETE_BIT              = BIT1;
@@ -641,7 +645,7 @@ audio_err_t ap_manager_play(const char *url, uint32_t pos, bool blocked, bool au
     esp_audio_state_t st = {0};
     esp_audio_state_get(s_player->audio_handle, &st);
     s_player->prepare_playing = true;
-    ESP_LOGI(TAG, "AP_MANAGER_PLAY, Enter:%s, pos:%d, block:%d, auto:%d, mix:%d, inter:%d, type:%x, st:%s", __func__, pos, blocked, auto_resume, mixed, interrupt,
+    ESP_LOGI(TAG, "AP_MANAGER_PLAY, Enter:%s, pos:%d, block:%d, auto:%d, mix:%d, inter:%d, type:%x, st:%s", __func__, (int)pos, blocked, auto_resume, mixed, interrupt,
              type, ESP_AUDIO_STATUS_STRING[st.status]);
     mutex_lock(s_player->lock_handle);
     if (interrupt == true) {

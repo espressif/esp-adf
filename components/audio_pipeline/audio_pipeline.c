@@ -387,7 +387,7 @@ esp_err_t audio_pipeline_terminate_with_ticks(audio_pipeline_handle_t pipeline, 
 {
     audio_element_item_t *el_item;
     esp_err_t ret = ESP_OK;
-    ESP_LOGD(TAG, "Destroy audio_pipeline elements with ticks[%d]", ticks_to_wait);
+    ESP_LOGD(TAG, "Destroy audio_pipeline elements with ticks[%d]", (int)ticks_to_wait);
     STAILQ_FOREACH(el_item, &pipeline->el_list, next) {
         if (el_item->linked) {
             ret |= audio_element_terminate_with_ticks(el_item->el, ticks_to_wait);

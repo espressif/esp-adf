@@ -32,6 +32,7 @@
 
 #include "partition_action.h"
 #include "tone_partition.h"
+#include <inttypes.h>
 
 #define FLASH_TONE_FILE_TAG        (0x28)
 #define FLASH_TONE_FILE_INFO_BLOCK (64)
@@ -137,7 +138,7 @@ static esp_err_t tone_partition_get_tail(tone_partition_handle_t handle, uint16_
         tone_file_info_t last_file = { 0 };
         tone_partition_get_file_info(handle, handle->header.total_num - 1, &last_file);
         int tail_addr = last_file.song_adr + last_file.song_len + ((4 - last_file.song_len % 4) % 4) + 4;
-        ESP_LOGD(TAG, "addr %X, len %X, tail %X", last_file.song_adr, last_file.song_len, tail_addr);
+        ESP_LOGD(TAG, "addr %"PRIX32", len %"PRIX32", tail %X", last_file.song_adr, last_file.song_len, tail_addr);
         return handle->read(handle->partition, tail_addr, tail, sizeof(uint16_t));
     } else {
         *tail = 0;
@@ -189,7 +190,7 @@ tone_partition_handle_t tone_partition_init(const char *partition_label, bool us
             goto error;
         }
     }
-    ESP_LOGI(TAG, "tone partition format %d, total %d", tone->header.format, tone->header.total_num);
+    ESP_LOGI(TAG, "tone partition format %"PRIu32", total %"PRIu16, tone->header.format, tone->header.total_num);
     return (tone_partition_handle_t)tone;
 
 error:

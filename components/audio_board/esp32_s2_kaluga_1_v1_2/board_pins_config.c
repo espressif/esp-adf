@@ -28,7 +28,12 @@
 #include "board.h"
 #include "audio_error.h"
 #include "audio_mem.h"
-
+#include "soc/soc_caps.h"
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#include "rom/gpio.h"
+#include "soc/gpio_sig_map.h"
+#endif
 static const char *TAG = "KALUGA_V1_2";
 
 esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)

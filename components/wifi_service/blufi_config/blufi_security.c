@@ -42,6 +42,9 @@
 #else
 #include "rom/crc.h"
 #endif //(ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#include "esp_random.h"
+#endif
 
 #define BLUFI_SECURITY_TAG "BLUFI_SECURITY"
 /*
@@ -119,7 +122,12 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
                 }
                 audio_free(blufi_sec->dh_param);
                 blufi_sec->dh_param = NULL;
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+                const int dhm_len = mbedtls_dhm_get_len(&blufi_sec->dhm);
+                ret = mbedtls_dhm_make_public(&blufi_sec->dhm, dhm_len, blufi_sec->self_public_key, dhm_len, myrand, NULL);
+#else
                 ret = mbedtls_dhm_make_public(&blufi_sec->dhm, (int) mbedtls_mpi_size( &blufi_sec->dhm.P ), blufi_sec->self_public_key, blufi_sec->dhm.len, myrand, NULL);
+#endif
                 if (ret) {
                     ESP_LOGE(BLUFI_SECURITY_TAG, "%s Make public failed %d", __func__, ret);
                     return;
@@ -137,7 +145,9 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
 
                 /* Alloc output data */
                 *output_data = &blufi_sec->self_public_key[0];
-                *output_len = blufi_sec->dhm.len;
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+                *output_len = dhm_len;
+#endif
                 *need_free = false;
 
             }

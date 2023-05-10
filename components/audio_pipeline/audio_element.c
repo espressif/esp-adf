@@ -1124,7 +1124,7 @@ static inline esp_err_t __audio_element_term(audio_element_handle_t el, TickType
         ESP_LOGD(TAG, "[%s-%p] Element task destroyed", el->tag, el);
         ret = ESP_OK;
     } else {
-        ESP_LOGW(TAG, "[%s-%p] Element task destroy timeout[%d]", el->tag, el, ticks_to_wait);
+        ESP_LOGW(TAG, "[%s-%p] Element task destroy timeout[%d]", el->tag, el, (int)ticks_to_wait);
     }
     return ret;
 }
@@ -1146,7 +1146,7 @@ esp_err_t audio_element_terminate(audio_element_handle_t el)
 esp_err_t audio_element_terminate_with_ticks(audio_element_handle_t el, TickType_t ticks_to_wait)
 {
     if (!el->task_run) {
-        ESP_LOGW(TAG, "[%s] Element has not create when AUDIO_ELEMENT_TERMINATE, tick:%d", el->tag, ticks_to_wait);
+        ESP_LOGW(TAG, "[%s] Element has not create when AUDIO_ELEMENT_TERMINATE, tick:%d", el->tag, (int)ticks_to_wait);
         return ESP_OK;
     }
     if (el->task_stack <= 0) {
