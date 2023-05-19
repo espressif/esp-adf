@@ -36,6 +36,9 @@
 #include "esp_resample.h"
 #include "filter_resample.h"
 
+#if CONFIG_IDF_TARGET_ESP32S3
+#include "esp_h264_enc.h"
+#endif
 #include "esp_jpeg_dec.h"
 #include "esp_jpeg_enc.h"
 #include "esp_camera.h"
@@ -50,7 +53,7 @@ struct _av_stream_handle {
     bool venc_run;
     bool aenc_run;
     bool adec_run;
-    void *jpeg_enc;
+    void *video_enc;
     void *aac_enc;
     void *aac_dec;
     int16_t *rec_buf;
@@ -163,12 +166,12 @@ static int audio_read_cb(audio_element_handle_t el, char *buf, int len, TickType
     av_stream_handle_t av_stream = (av_stream_handle_t) ctx;
     int16_t *temp = (int16_t *)buf;
 
-    if ((av_stream->config.algo_mask & ALGORITHM_STREAM_USE_AEC) && !_have_hardware_ref(av_stream)) {
+    if ((av_stream->config.algo_mask != 0) && !_have_hardware_ref(av_stream)) {
+        memset(av_stream->ref_buf, 0, AUDIO_MAX_SIZE);
         /* Copy reference data from decoded pcm */
-        if (av_stream->adec_run) {
-            memset(av_stream->ref_buf, 0, AUDIO_MAX_SIZE);
+        if (av_stream->adec_run && (rb_bytes_filled(av_stream->ringbuf_ref) != 0)) {
             ref_read = rb_read(av_stream->ringbuf_ref, (char *)av_stream->ref_buf, len/2, get_audio_max_delay(av_stream, len/2) / portTICK_PERIOD_MS);
-            if (ref_read != bytes_read) {
+            if (ref_read == AEL_IO_TIMEOUT) {
                 // ESP_LOGW(TAG, "Get AEC reference timeout ref %d ref_read %d", rb_bytes_filled(av_stream->ringbuf_ref), ref_read);
             }
         }
@@ -259,6 +262,9 @@ static void _audio_enc(void* pv)
 int av_audio_enc_start(av_stream_handle_t av_stream)
 {
     AUDIO_NULL_CHECK(TAG, av_stream, return ESP_ERR_INVALID_ARG);
+    if (av_stream->aenc_run) {
+        return ESP_OK;
+    }
 
     if (av_stream->config.acodec_type == AV_ACODEC_AAC_LC) {
         // esp_aac_enc_config_t aac_cfg = DEFAULT_ESP_AAC_ENC_CONFIG();
@@ -278,11 +284,28 @@ int av_audio_enc_start(av_stream_handle_t av_stream)
         AUDIO_NULL_CHECK(TAG, av_stream->ref_buf, return ESP_FAIL);
     }
 
-    if (av_stream->config.algo_mask & ALGORITHM_STREAM_USE_AEC) {
-        audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
-        av_stream->audio_enc = audio_pipeline_init(&pipeline_cfg);
-        AUDIO_NULL_CHECK(TAG, av_stream->audio_enc, return ESP_FAIL);
+    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    av_stream->audio_enc = audio_pipeline_init(&pipeline_cfg);
+    AUDIO_NULL_CHECK(TAG, av_stream->audio_enc, return ESP_FAIL);
 
+    raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
+    raw_cfg.type = AUDIO_STREAM_READER;
+    raw_cfg.out_rb_size = av_stream->config.hal.audio_framesize;
+    av_stream->audio_enc_read = raw_stream_init(&raw_cfg);
+    audio_element_set_output_timeout(av_stream->audio_enc_read, get_audio_max_delay(av_stream, AUDIO_MAX_SIZE) / portTICK_PERIOD_MS);
+
+    #if (DEBUG_AEC_INPUT || DEBUG_AEC_OUTPUT)
+        wav_encoder_cfg_t wav_cfg = DEFAULT_WAV_ENCODER_CONFIG();
+        wav_cfg.task_core = 1;
+        audio_element_handle_t wav_encoder = wav_encoder_init(&wav_cfg);
+
+        fatfs_stream_cfg_t fatfs_wd_cfg = FATFS_STREAM_CFG_DEFAULT();
+        fatfs_wd_cfg.type = AUDIO_STREAM_WRITER;
+        fatfs_wd_cfg.task_core = 1;
+        audio_element_handle_t fatfs_stream_writer = fatfs_stream_init(&fatfs_wd_cfg);
+    #endif
+
+    if (av_stream->config.algo_mask != 0) {
         algorithm_stream_cfg_t algo_config = ALGORITHM_STREAM_CFG_DEFAULT();
     #if DEBUG_AEC_INPUT
         algo_config.debug_input = true;
@@ -304,17 +327,8 @@ int av_audio_enc_start(av_stream_handle_t av_stream)
         audio_pipeline_register(av_stream->audio_enc, av_stream->element_algo, "algo");
 
     #if (DEBUG_AEC_INPUT || DEBUG_AEC_OUTPUT)
-        wav_encoder_cfg_t wav_cfg = DEFAULT_WAV_ENCODER_CONFIG();
-        wav_cfg.task_core = 1;
-        audio_element_handle_t wav_encoder = wav_encoder_init(&wav_cfg);
         audio_pipeline_register(av_stream->audio_enc, wav_encoder, "wav_enc");
-
-        fatfs_stream_cfg_t fatfs_wd_cfg = FATFS_STREAM_CFG_DEFAULT();
-        fatfs_wd_cfg.type = AUDIO_STREAM_WRITER;
-        fatfs_wd_cfg.task_core = 1;
-        audio_element_handle_t fatfs_stream_writer = fatfs_stream_init(&fatfs_wd_cfg);
         audio_pipeline_register(av_stream->audio_enc, fatfs_stream_writer, "fatfs_stream");
-
         const char *link_tag[3] = {"algo", "wav_enc", "fatfs_stream"};
         audio_pipeline_link(av_stream->audio_enc, &link_tag[0], 3);
 
@@ -331,22 +345,23 @@ int av_audio_enc_start(av_stream_handle_t av_stream)
         audio_element_set_uri(fatfs_stream_writer, "/sdcard/aec.wav");
         audio_pipeline_run(av_stream->audio_enc);
         av_stream->aenc_run = true;
-    #else
-        raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
-        raw_cfg.type = AUDIO_STREAM_READER;
-        raw_cfg.out_rb_size = av_stream->config.hal.audio_framesize;
-        av_stream->audio_enc_read = raw_stream_init(&raw_cfg);
-        audio_element_set_output_timeout(av_stream->audio_enc_read, portMAX_DELAY);
+        return ESP_OK;
+    #endif
+    }
 
+    audio_element_handle_t filter = NULL;
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_cfg.src_rate = av_stream->config.hal.audio_samplerate;
+    rsp_cfg.dest_rate = av_stream->config.acodec_samplerate;
+    rsp_cfg.src_ch = 1;
+    rsp_cfg.dest_ch = 1;
+    rsp_cfg.complexity = 5;
+    rsp_cfg.task_core = 1;
+    rsp_cfg.out_rb_size = av_stream->config.hal.audio_framesize;
+
+    if (av_stream->config.algo_mask != 0) {
         if (av_stream->config.acodec_samplerate != av_stream->config.hal.audio_samplerate) {
-            rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-            rsp_cfg.src_rate = av_stream->config.hal.audio_samplerate;
-            rsp_cfg.dest_rate = av_stream->config.acodec_samplerate;
-            rsp_cfg.src_ch = 1;
-            rsp_cfg.dest_ch = 1;
-            rsp_cfg.complexity = 5;
-            rsp_cfg.out_rb_size = av_stream->config.hal.audio_framesize;
-            audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+            filter = rsp_filter_init(&rsp_cfg);
             audio_pipeline_register(av_stream->audio_enc, filter, "filter");
             audio_pipeline_register(av_stream->audio_enc, av_stream->audio_enc_read, "raw");
             const char *link_tag[3] = {"algo", "filter", "raw"};
@@ -356,27 +371,45 @@ int av_audio_enc_start(av_stream_handle_t av_stream)
             const char *link_tag[2] = {"algo", "raw"};
             audio_pipeline_link(av_stream->audio_enc, &link_tag[0], 2);
         }
-        audio_pipeline_run(av_stream->audio_enc);
-    #endif
     } else {
-        raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
-        raw_cfg.type = AUDIO_STREAM_READER;
-        raw_cfg.out_rb_size = av_stream->config.hal.audio_framesize;
-        av_stream->audio_enc_read = raw_stream_init(&raw_cfg);
-        audio_element_set_read_cb(av_stream->audio_enc_read, audio_read_cb, av_stream);
-        audio_element_set_input_timeout(av_stream->audio_enc_read, get_audio_max_delay(av_stream, AUDIO_MAX_SIZE) / portTICK_PERIOD_MS);
+    #if (DEBUG_AEC_INPUT || DEBUG_AEC_OUTPUT)
+        audio_pipeline_register(av_stream->audio_enc, wav_encoder, "wav_enc");
+        audio_pipeline_register(av_stream->audio_enc, fatfs_stream_writer, "fatfs_stream");
+        audio_element_set_read_cb(wav_encoder, audio_read_cb, av_stream);
+        audio_element_set_input_timeout(wav_encoder, portMAX_DELAY);
+        const char *link_tag[2] = {"wav_enc", "fatfs_stream"};
+        audio_pipeline_link(av_stream->audio_enc, &link_tag[0], 2);
+
+        audio_element_info_t fat_info = {0};
+        audio_element_getinfo(fatfs_stream_writer, &fat_info);
+        fat_info.sample_rates = av_stream->config.hal.audio_samplerate;
+        fat_info.bits = 16;
+        fat_info.channels = 1;
+        audio_element_setinfo(fatfs_stream_writer, &fat_info);
+        audio_element_set_uri(fatfs_stream_writer, "/sdcard/input.wav");
+        audio_pipeline_run(av_stream->audio_enc);
+        av_stream->aenc_run = true;
+        return ESP_OK;
+    #else
+        filter = rsp_filter_init(&rsp_cfg);
+        audio_pipeline_register(av_stream->audio_enc, filter, "filter");
+        audio_pipeline_register(av_stream->audio_enc, av_stream->audio_enc_read, "raw");
+        audio_element_set_read_cb(filter, audio_read_cb, av_stream);
+        audio_element_set_input_timeout(filter, get_audio_max_delay(av_stream, AUDIO_MAX_SIZE) / portTICK_PERIOD_MS);
+        const char *link_tag[2] = {"filter", "raw"};
+        audio_pipeline_link(av_stream->audio_enc, &link_tag[0], 2);
+    #endif
     }
 
-#if (!DEBUG_AEC_INPUT && !DEBUG_AEC_OUTPUT)
     av_stream->aenc_run = true;
     av_stream->audio_pos = 0;
+    audio_pipeline_run(av_stream->audio_enc);
     av_stream->aenc_queue = xQueueCreate(1, sizeof(av_stream_frame_t));
     av_stream->aenc_state = xEventGroupCreate();
     if (audio_thread_create(NULL, "_audio_enc", _audio_enc, av_stream, 4*1024, 21, true, 0) != ESP_OK) {
         ESP_LOGE(TAG, "Can not start _audio_enc task");
         return ESP_FAIL;
     }
-#endif
 
     ESP_LOGI(TAG, "audio_enc started");
     return ESP_OK;
@@ -385,14 +418,14 @@ int av_audio_enc_start(av_stream_handle_t av_stream)
 int av_audio_enc_stop(av_stream_handle_t av_stream)
 {
     AUDIO_NULL_CHECK(TAG, av_stream, return ESP_ERR_INVALID_ARG);
+    if (!av_stream->aenc_run) {
+        return ESP_OK;
+    }
 
     av_stream->aenc_run = false;
-
-    if (av_stream->config.algo_mask & ALGORITHM_STREAM_USE_AEC) {
-        audio_pipeline_stop(av_stream->audio_enc);
-        audio_pipeline_wait_for_stop(av_stream->audio_enc);
-        audio_pipeline_deinit(av_stream->audio_enc);
-    }
+    audio_pipeline_stop(av_stream->audio_enc);
+    audio_pipeline_wait_for_stop(av_stream->audio_enc);
+    audio_pipeline_deinit(av_stream->audio_enc);
 
 #if (!DEBUG_AEC_INPUT && !DEBUG_AEC_OUTPUT)
     xEventGroupWaitBits(av_stream->aenc_state, ENCODER_STOPPED_BIT, false, true, portMAX_DELAY);
@@ -405,10 +438,6 @@ int av_audio_enc_stop(av_stream_handle_t av_stream)
     vQueueDelete(av_stream->aenc_queue);
     av_stream->aenc_queue = NULL;
 #endif
-
-    if (!(av_stream->config.algo_mask & ALGORITHM_STREAM_USE_AEC)) {
-        audio_element_deinit(av_stream->audio_enc_read);
-    }
 
     if (!_have_hardware_ref(av_stream)) {
         if (av_stream->ringbuf_rec) {
@@ -447,8 +476,8 @@ static void _audio_dec(void* pv)
     }
 
     while (av_stream->adec_run) {
-        if (rb_bytes_filled(av_stream->ringbuf_dec) >= AUDIO_MAX_SIZE) {
-            int pcm_len = rb_read(av_stream->ringbuf_dec, pcm_buf, AUDIO_MAX_SIZE, 0);
+        if (rb_bytes_filled(av_stream->ringbuf_dec) >= av_stream->config.hal.audio_framesize) {
+            int pcm_len = rb_read(av_stream->ringbuf_dec, pcm_buf, av_stream->config.hal.audio_framesize, 0);
             char *write_ptr = pcm_buf;
             write_len = pcm_len;
             if (resample != NULL) {
@@ -463,7 +492,7 @@ static void _audio_dec(void* pv)
                 }
             }
 
-            if (I2S_CHANNELS == I2S_CHANNEL_FMT_RIGHT_LEFT) {
+            if (_have_hardware_ref(av_stream) && (I2S_CHANNELS == I2S_CHANNEL_FMT_RIGHT_LEFT)) {
                 // 1ch -> 2ch
                 write_len = 2 * write_len;
                 if (buf_2ch == NULL) {
@@ -476,7 +505,7 @@ static void _audio_dec(void* pv)
                 }
                 write_ptr = (char *)buf_2ch;
             }
-            av_stream_audio_write(write_ptr, write_len, portMAX_DELAY, av_stream->config.hal.uac_en);
+            av_stream_audio_write(write_ptr, write_len, get_audio_max_delay(av_stream, write_len) / portTICK_PERIOD_MS, av_stream->config.hal.uac_en);
         } else {
             vTaskDelay(1 / portTICK_PERIOD_MS);
         }
@@ -495,6 +524,9 @@ static void _audio_dec(void* pv)
 int av_audio_dec_start(av_stream_handle_t av_stream)
 {
     AUDIO_NULL_CHECK(TAG, av_stream, return ESP_ERR_INVALID_ARG);
+    if (av_stream->adec_run) {
+        return ESP_OK;
+    }
 
     if (av_stream->config.hal.uac_en) {
         // usb_streaming_control(STREAM_UAC_SPK, CTRL_RESUME, NULL);
@@ -511,11 +543,11 @@ int av_audio_dec_start(av_stream_handle_t av_stream)
 
     av_stream->adec_buf = audio_calloc(1, 2*AUDIO_MAX_SIZE);
     AUDIO_NULL_CHECK(TAG, av_stream->adec_buf, return ESP_ERR_NO_MEM);
-    av_stream->ringbuf_dec = rb_create(3*AUDIO_MAX_SIZE, 1);
+    av_stream->ringbuf_dec = rb_create(3*av_stream->config.hal.audio_framesize, 1);
     AUDIO_NULL_CHECK(TAG, av_stream->ringbuf_dec, return ESP_ERR_NO_MEM);
 
     if (!_have_hardware_ref(av_stream)) {
-        av_stream->ringbuf_ref = rb_create(8*AUDIO_MAX_SIZE, 1);
+        av_stream->ringbuf_ref = rb_create(8*av_stream->config.hal.audio_framesize, 1);
         AUDIO_NULL_CHECK(TAG, av_stream->ringbuf_ref, return ESP_FAIL);
         algo_stream_set_delay(av_stream->element_algo, av_stream->ringbuf_ref, 0);
     }
@@ -534,6 +566,9 @@ int av_audio_dec_start(av_stream_handle_t av_stream)
 int av_audio_dec_stop(av_stream_handle_t av_stream)
 {
     AUDIO_NULL_CHECK(TAG, av_stream, return ESP_ERR_INVALID_ARG);
+    if (!av_stream->adec_run) {
+        return ESP_OK;
+    }
 
     av_stream->adec_run = false;
     xEventGroupWaitBits(av_stream->adec_state, ENCODER_STOPPED_BIT, false, true, portMAX_DELAY);
@@ -680,11 +715,27 @@ static void init_jpeg_encoder(av_stream_handle_t av_stream)
     jpeg_enc_info_t info = DEFAULT_JPEG_ENC_CONFIG();
     info.width = av_resolution[av_stream->config.hal.video_framesize].width;
     info.height = av_resolution[av_stream->config.hal.video_framesize].height;
-    info.src_type = JPEG_RAW_TYPE_YCbY2YCrY2;
+    info.src_type = JPEG_RAW_TYPE_YCbYCr;
     info.subsampling = JPEG_SUB_SAMPLE_YUV420;
     // info.rotate = JPEG_ROTATE_0D;
     info.quality = 40;
-    av_stream->jpeg_enc = jpeg_enc_open(&info);
+    av_stream->video_enc = jpeg_enc_open(&info);
+}
+
+static int init_h264_encoder(av_stream_handle_t av_stream)
+{
+#if CONFIG_IDF_TARGET_ESP32S3
+    esp_h264_enc_cfg_t cfg = DEFAULT_H264_ENCODER_CONFIG();
+    cfg.pic_type = ESP_H264_RAW_FMT_YUV422;
+    cfg.width = av_resolution[av_stream->config.hal.video_framesize].width;
+    cfg.height = av_resolution[av_stream->config.hal.video_framesize].height;
+    cfg.fps = VIDEO_FPS;
+    cfg.gop_size = VIDEO_FPS * 3;
+    cfg.target_bitrate = 400000;
+    return esp_h264_enc_open(&cfg, &av_stream->video_enc);
+#else
+    return ESP_ERR_NOT_SUPPORTED;
+#endif
 }
 
 static void _video_enc(void* pv)
@@ -695,17 +746,36 @@ static void _video_enc(void* pv)
         camera_fb_t *pic = esp_camera_fb_get();
         if (pic) {
             av_stream_frame_t enc;
-            if (av_stream->camera_count > 1 && av_stream->camera_first_pts == 0) {
-                av_stream->camera_first_pts = pic->timestamp.tv_sec*1000 + pic->timestamp.tv_usec/1000;
-            }
-            if (av_stream->camera_first_pts != 0) {
-                enc.pts = (pic->timestamp.tv_sec*1000 + pic->timestamp.tv_usec/1000) - av_stream->camera_first_pts;
+            if (av_stream->camera_first_pts == 0) {
+                av_stream->camera_first_pts = _time_ms();
+                enc.pts = 0;
+            } else {
+                enc.pts = _time_ms() - av_stream->camera_first_pts;
             }
 
             enc.data = audio_calloc(1, VIDEO_MAX_SIZE);
             if (av_stream->config.hal.video_soft_enc) {
                 int len = 0;
-                jpeg_enc_process(av_stream->jpeg_enc, pic->buf, pic->len, enc.data, VIDEO_MAX_SIZE, &len);
+                if (av_stream->config.vcodec_type == AV_VCODEC_MJPEG) {
+                    jpeg_enc_process(av_stream->video_enc, pic->buf, pic->len, enc.data, VIDEO_MAX_SIZE, &len);
+                } else if (av_stream->config.vcodec_type == AV_VCODEC_H264) {
+                #if CONFIG_IDF_TARGET_ESP32S3
+                    esp_h264_enc_frame_t out_frame = { 0 };
+                    esp_h264_raw_frame_t in_frame = {
+                        .pts = enc.pts,
+                        .raw_data.buffer = pic->buf,
+                        .raw_data.len = pic->len,
+                    };
+                    int ret = esp_h264_enc_process(av_stream->video_enc, &in_frame, &out_frame);
+                    if ((ret == 0) && out_frame.layer_num && out_frame.layer_data) {
+                        enc.pts = out_frame.pts;
+                        for (int i = 0; i < out_frame.layer_num; i++) {
+                            memcpy(enc.data + len, out_frame.layer_data[i].buffer, out_frame.layer_data[i].len);
+                            len += out_frame.layer_data[i].len;
+                        }
+                    }
+                #endif
+                }
                 enc.len = len;
             } else {
                 memcpy(enc.data, pic->buf, pic->len);
@@ -729,6 +799,10 @@ static void _video_enc(void* pv)
 int av_video_enc_start(av_stream_handle_t av_stream)
 {
     AUDIO_NULL_CHECK(TAG, av_stream, return ESP_ERR_INVALID_ARG);
+    if (av_stream->venc_run) {
+        return ESP_OK;
+    }
+
     av_stream->camera_count = 0;
     av_stream->camera_first_pts = 0;
     av_stream->venc_run = true;
@@ -736,10 +810,15 @@ int av_video_enc_start(av_stream_handle_t av_stream)
 
     if (!av_stream->config.hal.uvc_en) {
         if (av_stream->config.hal.video_soft_enc) {
-            init_jpeg_encoder(av_stream);
+            if (av_stream->config.vcodec_type == AV_VCODEC_MJPEG) {
+                init_jpeg_encoder(av_stream);
+            } else if (av_stream->config.vcodec_type == AV_VCODEC_H264) {
+                init_h264_encoder(av_stream);
+            }
+            AUDIO_NULL_CHECK(TAG, av_stream->video_enc, return ESP_FAIL);
         }
         av_stream->venc_state = xEventGroupCreate();
-        if (audio_thread_create(NULL, "_video_enc", _video_enc, av_stream, 3*1024, 20, true, 1) != ESP_OK) {
+        if (audio_thread_create(NULL, "_video_enc", _video_enc, av_stream, 15*1024, 20, true, 1) != ESP_OK) {
             ESP_LOGE(TAG, "Can not start _video_enc task");
             return ESP_FAIL;
         }
@@ -753,6 +832,10 @@ int av_video_enc_start(av_stream_handle_t av_stream)
 int av_video_enc_stop(av_stream_handle_t av_stream)
 {
     AUDIO_NULL_CHECK(TAG, av_stream, return ESP_ERR_INVALID_ARG);
+    if (!av_stream->venc_run) {
+        return ESP_OK;
+    }
+
     av_stream->venc_run = false;
     vTaskDelay(50 / portTICK_PERIOD_MS);
 
@@ -760,7 +843,13 @@ int av_video_enc_stop(av_stream_handle_t av_stream)
         xEventGroupWaitBits(av_stream->venc_state, ENCODER_STOPPED_BIT, false, true, portMAX_DELAY);
         vEventGroupDelete(av_stream->venc_state);
         if (av_stream->config.hal.video_soft_enc) {
-            jpeg_enc_close(av_stream->jpeg_enc);
+            if (av_stream->config.vcodec_type == AV_VCODEC_MJPEG) {
+                jpeg_enc_close(av_stream->video_enc);
+            } else if (av_stream->config.vcodec_type == AV_VCODEC_H264) {
+            #if CONFIG_IDF_TARGET_ESP32S3
+                esp_h264_enc_close((esp_h264_enc_t)av_stream->video_enc);
+            #endif
+            }
         }
     } else {
         // usb_streaming_control(STREAM_UVC, CTRL_SUSPEND, NULL);
@@ -867,7 +956,7 @@ int av_video_enc_read(av_stream_frame_t *frame, void *ctx)
             av_stream->sys_time = _time_ms()/1000;
             av_stream->image_count = 0;
         }
-        ESP_LOGD(TAG, "send video %d !", (int)enc.len);
+        ESP_LOGD(TAG, "send video %d pts %lld !", (int)enc.len, enc.pts);
     }
 
     return ESP_OK;
@@ -877,7 +966,13 @@ int av_video_dec_write(av_stream_frame_t *frame, void *ctx)
 {
     av_stream_handle_t av_stream = (av_stream_handle_t) ctx;
     AUDIO_NULL_CHECK(TAG, av_stream, return ESP_ERR_INVALID_ARG);
-    return jpeg_decode_and_render(av_stream, frame->data, frame->len);
+
+    if (av_stream->config.vcodec_type == AV_VCODEC_MJPEG) {
+        return jpeg_decode_and_render(av_stream, frame->data, frame->len);
+    }
+
+    ESP_LOGD(TAG, "Not supported video decoder");
+    return ESP_OK;
 }
 
 #if CONFIG_IDF_TARGET_ESP32
@@ -968,6 +1063,11 @@ av_stream_handle_t av_stream_init(av_stream_config_t *config)
 int av_stream_deinit(av_stream_handle_t av_stream)
 {
     AUDIO_NULL_CHECK(TAG, av_stream, return ESP_ERR_INVALID_ARG);
+
+    av_audio_enc_stop(av_stream);
+    av_audio_dec_stop(av_stream);
+    av_video_enc_stop(av_stream);
+    av_video_dec_stop(av_stream);
 
     if (av_stream->config.vcodec_type != AV_VCODEC_NULL) {
         av_stream_camera_deinit(av_stream->config.hal.uvc_en);

@@ -5,11 +5,7 @@ cmake_minimum_required(VERSION 3.5)
 include($ENV{ADF_PATH}/CMakeLists.txt)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-if(IDF_TARGET STREQUAL "esp32")
-    list(APPEND EXTRA_COMPONENT_DIRS "$ENV{ADF_PATH}/examples/protocols/components/av_stream")
-    list(APPEND EXTRA_COMPONENT_DIRS "$ENV{ADF_PATH}/examples/protocols/components/audio_flash_tone")
-else()
-    list(APPEND EXTRA_COMPONENT_DIRS "$ENV{ADF_PATH}/examples/protocols/components")
-endif()
+list(APPEND EXTRA_COMPONENT_DIRS "$ENV{ADF_PATH}/examples/protocols/components/av_stream")
+list(APPEND EXTRA_COMPONENT_DIRS "$ENV{ADF_PATH}/examples/protocols/components/audio_flash_tone")
 
 project(voip_app)

@@ -1,4 +1,0 @@
-targets:
-  - esp32s3
-dependencies:
-  idf: ">=4.4.2"
