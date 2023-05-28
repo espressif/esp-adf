@@ -100,7 +100,7 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
         return ESP_FAIL;
     }
     ESP_LOGD(TAG, "_fatfs_open, uri:%s", uri);
-    char *path = strstr(uri, "/sdcard");
+    char *path = uri;
     audio_element_getinfo(self, &info);
     if (path == NULL) {
         ESP_LOGE(TAG, "Error, need file path to open");
