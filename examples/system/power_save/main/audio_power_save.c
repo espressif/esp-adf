@@ -23,8 +23,11 @@
 #include "audio_mem.h"
 #include "audio_sleep_wakeup.h"
 
-// If you just want to get the data of wifi low power, you should set to 1
-#define WIFI_POWER_SAVE_TEST      0
+// If you just want to get the data of wifi low power, you can enable it
+#define WIFI_POWER_SAVE_TEST           0
+
+// If you just want to test the wakeup source in light sleep, you can enable it
+#define LIGHT_SLEEP_WAKEUP_SOURCE      1
 
 static const char* TAG = "AUDIO_POWER_SAVE";
 
@@ -219,12 +222,13 @@ void wifi_low_power_test(void)
 void app_main(void)
 {
     get_wakeup_cause();
-    esp_log_level_set("*", ESP_LOG_ERROR);
-    esp_log_level_set("AUDIO_SLEEP_WAKEUP", ESP_LOG_INFO);
 
 #if WIFI_POWER_SAVE_TEST
     wifi_low_power_test();
 #endif
+
+    esp_log_level_set("*", ESP_LOG_ERROR);
+    esp_log_level_set("AUDIO_SLEEP_WAKEUP", ESP_LOG_INFO);
 
     ESP_ERROR_CHECK(nvs_flash_init());
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
@@ -249,6 +253,7 @@ void app_main(void)
     int count = 4;
 
     for (int i = 0; i < count; i++) {
+#if !LIGHT_SLEEP_WAKEUP_SOURCE
         audio_init();
         wifi_power_save_init(set, wifi_handle);
         audio_run();
@@ -261,6 +266,11 @@ void app_main(void)
         audio_deinit();
         // Shut down the power amplifier for the purpose of eliminating noise.
         gpio_set_level(get_pa_enable_gpio(), 0);
+#else
+        count = 40;
+        // Some task to do
+        vTaskDelay(1000 / portTICK_RATE_MS);
+#endif
         enter_power_manage();
     }
 
