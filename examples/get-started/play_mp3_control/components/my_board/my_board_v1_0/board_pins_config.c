@@ -36,8 +36,8 @@ esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
 {
     AUDIO_NULL_CHECK(TAG, i2c_config, return ESP_FAIL);
     if (port == I2C_NUM_0 || port == I2C_NUM_1) {
-        i2c_config->sda_io_num = GPIO_NUM_18;
-        i2c_config->scl_io_num = GPIO_NUM_23;
+        i2c_config->sda_io_num = 18;
+        i2c_config->scl_io_num = 23;
     } else {
         i2c_config->sda_io_num = -1;
         i2c_config->scl_io_num = -1;
@@ -97,6 +97,7 @@ esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
         return ESP_ERR_INVALID_ARG;
     }
     ESP_LOGI(TAG, "I2S%d, MCLK output by GPIO%d", i2s_num, gpio_num);
+#if CONFIG_IDF_TARGET_ESP32
     if (i2s_num == I2S_NUM_0) {
         if (gpio_num == GPIO_NUM_0) {
             PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
@@ -120,6 +121,7 @@ esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
             WRITE_PERI_REG(PIN_CTRL, 0xFF0F);
         }
     }
+#endif
     return ESP_OK;
 }
 
