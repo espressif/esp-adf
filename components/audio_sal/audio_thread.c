@@ -75,7 +75,7 @@ esp_err_t audio_thread_create(audio_thread_t *p_handle, const char *name, void(*
                 }
             }
         };
-        if (xTaskCreateRestrictedPinnedToCore(&xRegParameters, (TASK_HANDLE_T)p_handle, core_id) != pdPASS) {
+        if (xTaskCreateRestrictedPinnedToCore(&xRegParameters, (TASK_HANDLE_T*)p_handle, core_id) != pdPASS) {
             ESP_LOGE(TAG, "Error creating RestrictedPinnedToCore %s", name);
             goto audio_thread_create_error;
         }
@@ -83,7 +83,7 @@ esp_err_t audio_thread_create(audio_thread_t *p_handle, const char *name, void(*
         if (stack_in_ext) {
             ESP_LOGW(TAG, "Make sure selected the `CONFIG_SPIRAM_BOOT_INIT` and `CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY` by `make menuconfig`");
         }
-        if (xTaskCreatePinnedToCore(main_func, name, stack, arg, prio, (xTaskHandle)p_handle, core_id) != pdPASS) {
+        if (xTaskCreatePinnedToCore(main_func, name, stack, arg, prio, (TASK_HANDLE_T*)p_handle, core_id) != pdPASS) {
             ESP_LOGE(TAG, "Error creating task %s", name);
             goto audio_thread_create_error;
         } else {

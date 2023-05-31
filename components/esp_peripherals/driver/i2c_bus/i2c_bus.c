@@ -40,16 +40,15 @@
 }
 
 typedef struct {
-    i2c_config_t i2c_conf;   /*!<I2C bus parameters*/
-    i2c_port_t i2c_port;     /*!<I2C port number */
-    int        ref_count;    /*!<Reference Count for multiple client */
+    i2c_config_t     i2c_conf;   /*!<I2C bus parameters*/
+    i2c_port_t       i2c_port;   /*!<I2C port number */
+    int              ref_count;  /*!<Reference Count for multiple client */
+    xSemaphoreHandle bus_lock;   /*!<Lock for bus */
 } i2c_bus_t;
 
 static const char *TAG = "I2C_BUS";
 
 static i2c_bus_t *i2c_bus[I2C_NUM_MAX];
-
-static xSemaphoreHandle _busLock;
 
 i2c_bus_handle_t i2c_bus_create(i2c_port_t port, i2c_config_t *conf)
 {
@@ -80,14 +79,17 @@ i2c_bus_handle_t i2c_bus_create(i2c_port_t port, i2c_config_t *conf)
     if (ret != ESP_OK) {
         goto error;
     }
-    if (_busLock) {
-        mutex_destroy(_busLock);
+    i2c_bus[port]->bus_lock = mutex_create();
+    if (i2c_bus[port]->bus_lock == NULL) {
+        goto error;
     }
-    _busLock = mutex_create();
     return (i2c_bus_handle_t) i2c_bus[port];
 
 error:
     if (i2c_bus[port]) {
+        if (i2c_bus[port]->bus_lock == NULL) {
+            mutex_destroy(i2c_bus[port]->bus_lock);
+        }
         audio_free(i2c_bus[port]);
     }
     return NULL;
@@ -100,7 +102,7 @@ esp_err_t i2c_bus_write_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int 
     I2C_BUS_CHECK(p_bus->i2c_port < I2C_NUM_MAX, "I2C port error", ESP_FAIL);
     I2C_BUS_CHECK(data != NULL, "Not initialized input data pointer", ESP_FAIL);
     esp_err_t ret = ESP_OK;
-    mutex_lock(_busLock);
+    mutex_lock(p_bus->bus_lock);
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     ret |= i2c_master_start(cmd);
     ret |= i2c_master_write_byte(cmd, addr, 1);
@@ -109,7 +111,7 @@ esp_err_t i2c_bus_write_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int 
     ret |= i2c_master_stop(cmd);
     ret |= i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
-    mutex_unlock(_busLock);
+    mutex_unlock(p_bus->bus_lock);
     I2C_BUS_CHECK(ret == 0, "I2C Bus WriteReg Error", ESP_FAIL);
     return ret;
 }
@@ -121,7 +123,7 @@ esp_err_t i2c_bus_write_data(i2c_bus_handle_t bus, int addr, uint8_t *data, int 
     I2C_BUS_CHECK(p_bus->i2c_port < I2C_NUM_MAX, "I2C port error", ESP_FAIL);
     I2C_BUS_CHECK(data != NULL, "Not initialized input data pointer", ESP_FAIL);
     esp_err_t ret = ESP_OK;
-    mutex_lock(_busLock);
+    mutex_lock(p_bus->bus_lock);
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     ret |= i2c_master_start(cmd);
     ret |= i2c_master_write_byte(cmd, addr, 1);
@@ -129,7 +131,7 @@ esp_err_t i2c_bus_write_data(i2c_bus_handle_t bus, int addr, uint8_t *data, int 
     ret |= i2c_master_stop(cmd);
     ret |= i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
-    mutex_unlock(_busLock);
+    mutex_unlock(p_bus->bus_lock);
     I2C_BUS_CHECK(ret == 0, "I2C Bus WriteReg Error", ESP_FAIL);
     return ret;
 }
@@ -141,7 +143,7 @@ esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int r
     I2C_BUS_CHECK(p_bus->i2c_port < I2C_NUM_MAX, "I2C port error", ESP_FAIL);
     I2C_BUS_CHECK(outdata != NULL, "Not initialized output data buffer pointer", ESP_FAIL);
     esp_err_t ret = ESP_OK;
-    mutex_lock(_busLock);
+    mutex_lock(p_bus->bus_lock);
     i2c_cmd_handle_t cmd;
     cmd = i2c_cmd_link_create();
     ret |= i2c_master_start(cmd);
@@ -164,7 +166,7 @@ esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int r
     ret |= i2c_master_cmd_begin(p_bus->i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
 
-    mutex_unlock(_busLock);
+    mutex_unlock(p_bus->bus_lock);
     I2C_BUS_CHECK(ret == 0, "I2C Bus ReadReg Error", ESP_FAIL);
     return ret;
 }
@@ -176,9 +178,8 @@ esp_err_t i2c_bus_delete(i2c_bus_handle_t bus)
     if (--p_bus->ref_count == 0) {
         i2c_driver_delete(p_bus->i2c_port);
         i2c_bus[p_bus->i2c_port] = NULL;
+        mutex_destroy(p_bus->bus_lock);
         audio_free(p_bus);
-        mutex_destroy(_busLock);
-        _busLock = NULL;
     }
     return ESP_OK;
 }
@@ -203,12 +204,14 @@ esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr)
     }
 
     i2c_bus_t *i2c_bus = (i2c_bus_t *) bus;
+    mutex_lock(i2c_bus->bus_lock);
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, addr, I2C_ACK_CHECK_EN);
     i2c_master_stop(cmd);
     esp_err_t ret_val = i2c_master_cmd_begin(i2c_bus->i2c_port, cmd, pdMS_TO_TICKS(500));
     i2c_cmd_link_delete(cmd);
+    mutex_unlock(i2c_bus->bus_lock);
 
     /* Get probe result if ESP_OK equals to ret_val */
     return ret_val;
