@@ -88,10 +88,30 @@ static wr_stream_type_t get_type(const char *str)
     }
 }
 
+static char* get_mount_path(char* uri) 
+{
+    /* support format: /sdcard, /spiffs, /storage etc ... */
+    if (uri[0] == '/') return uri;
+
+    /* support format: scheme://basepath... */
+    char *skip_scheme = strstr(uri, "://");
+    if (skip_scheme == NULL) return NULL;
+    skip_scheme += 2;
+
+    /* support format: scheme:///basepath... */
+    if (skip_scheme[1] == '/') skip_scheme++;
+
+    return skip_scheme;
+}
 
 static esp_err_t _fatfs_open(audio_element_handle_t self)
 {
     fatfs_stream_t *fatfs = (fatfs_stream_t *)audio_element_getdata(self);
+
+    if (fatfs->is_open) {
+        ESP_LOGE(TAG, "already opened");
+        return ESP_FAIL;
+    }
 
     audio_element_info_t info;
     char *uri = audio_element_get_uri(self);
@@ -100,16 +120,14 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
         return ESP_FAIL;
     }
     ESP_LOGD(TAG, "_fatfs_open, uri:%s", uri);
-    char *path = strstr(uri, "/sdcard");
-    audio_element_getinfo(self, &info);
+    char *path = get_mount_path(uri);
     if (path == NULL) {
-        ESP_LOGE(TAG, "Error, need file path to open");
+        ESP_LOGE(TAG, "Error, Invalid file format (%s).", uri);
         return ESP_FAIL;
     }
-    if (fatfs->is_open) {
-        ESP_LOGE(TAG, "already opened");
-        return ESP_FAIL;
-    }
+
+    audio_element_getinfo(self, &info);
+
     if (fatfs->type == AUDIO_STREAM_READER) {
         fatfs->file = open(path, O_RDONLY);
         if (fatfs->file == -1) {
@@ -247,7 +265,6 @@ audio_element_handle_t fatfs_stream_init(fatfs_stream_cfg_t *config)
 {
     audio_element_handle_t el;
     fatfs_stream_t *fatfs = audio_calloc(1, sizeof(fatfs_stream_t));
-
     AUDIO_MEM_CHECK(TAG, fatfs, return NULL);
 
     audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();

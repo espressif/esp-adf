@@ -43,7 +43,7 @@
 #include "esp_idf_version.h"
 
 static const char *TAG = "SDCARD";
-int g_gpio = -1;
+static int g_gpio = -1;
 
 static void sdmmc_card_print_info(const sdmmc_card_t *card)
 {
