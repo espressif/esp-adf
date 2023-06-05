@@ -92,6 +92,17 @@ extern "C" {
 #define ES8156_CHIP_VERSION_REGFF      0xFF
 
 /*
+ * @brief Enables or disables PA
+ *
+ * @param enable     true/false
+ *
+ * @return
+ *      - ESP_ERR_INVALID_ARG
+ *      - ESP_OK
+ */
+esp_err_t es8156_pa_power(bool enable);
+
+/*
  * @brief Initialize ES8156 codec chip
  *
  * @param codec_cfg  configuration of ES8156

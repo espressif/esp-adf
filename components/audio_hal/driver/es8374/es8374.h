@@ -238,9 +238,10 @@ esp_err_t es8374_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t 
  * @param enable true for enable PA power, false for disable PA power
  *
  * @return
- *     - void
+ *     - ESP_ERR_INVALID_ARG
+ *     - ESP_OK
  */
-void es8374_pa_power(bool enable);
+esp_err_t es8374_pa_power(bool enable);
 
 #ifdef __cplusplus
 }

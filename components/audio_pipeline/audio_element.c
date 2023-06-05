@@ -1247,7 +1247,7 @@ esp_err_t audio_element_stop(audio_element_handle_t el)
     if (el->is_running == false) {
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
         audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
-        ESP_LOGE(TAG, "[%s] Element already stopped", el->tag);
+        ESP_LOGW(TAG, "[%s] Element already stopped", el->tag);
         return ESP_OK;
     }
     audio_element_abort_output_ringbuf(el);

@@ -116,6 +116,17 @@ typedef enum {
 } es8311_mic_gain_t;
 
 /*
+ * @brief Enables or disables PA
+ *
+ * @param enable     true/false
+ *
+ * @return
+ *      - ESP_ERR_INVALID_ARG
+ *      - ESP_OK
+ */
+esp_err_t es8311_pa_power(bool enable);
+
+/*
  * @brief Initialize ES8311 codec chip
  *
  * @param codec_cfg  configuration of ES8311

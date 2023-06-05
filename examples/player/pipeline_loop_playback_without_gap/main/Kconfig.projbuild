@@ -1,0 +1,20 @@
+menu "Example Configuration"
+
+choice AUDIO_DECODER_SUPPORT
+    prompt "Audio Decoder"
+    default AUDIO_SUPPORT_MP3_DECODER
+    help
+        Select an audio decoder to playback music
+
+config AUDIO_SUPPORT_MP3_DECODER
+    bool "ESP-MP3-DECODER"
+
+config AUDIO_SUPPORT_WAV_DECODER
+    bool "ESP-WAV-DECODER"
+
+config AUDIO_SUPPORT_AAC_DECODER
+    bool "ESP-AAC-DECODER"
+
+endchoice
+
+endmenu
