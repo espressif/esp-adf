@@ -82,11 +82,17 @@ static esp_err_t i2s_driver_init(i2s_port_t port, i2s_channel_fmt_t channels, i2
     };
 
     i2s_driver_install(port, &i2s_cfg, 0, NULL);
-    i2s_pin_config_t i2s_pin_cfg = {0};
-    memset(&i2s_pin_cfg, -1, sizeof(i2s_pin_cfg));
-    get_i2s_pins(port, &i2s_pin_cfg);
+    board_i2s_pin_t board_i2s_pin = {0};
+    i2s_pin_config_t i2s_pin_cfg;
+    get_i2s_pins(port, &board_i2s_pin);
+    i2s_pin_cfg.bck_io_num = board_i2s_pin.bck_io_num;
+    i2s_pin_cfg.ws_io_num = board_i2s_pin.ws_io_num;
+    i2s_pin_cfg.data_out_num = board_i2s_pin.data_out_num;
+    i2s_pin_cfg.data_in_num = board_i2s_pin.data_in_num;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
+    i2s_pin_cfg.mck_io_num = board_i2s_pin.mck_io_num;
+#endif
     i2s_set_pin(port, &i2s_pin_cfg);
-    i2s_mclk_gpio_select(port, GPIO_NUM_0);
 
     return ESP_OK;
 }

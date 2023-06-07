@@ -66,9 +66,16 @@ esp_err_t src_drv_i2s_init(src_drv_config_t *config)
 
     i2s_driver_install(I2S_NUM, &i2s_cfg, 0, NULL);
 
-    i2s_pin_config_t i2s_pin_cfg = {0};
-    memset(&i2s_pin_cfg, -1, sizeof(i2s_pin_cfg));
-    get_i2s_pins(I2S_NUM, &i2s_pin_cfg);
+    board_i2s_pin_t board_i2s_pin = {0};
+    i2s_pin_config_t i2s_pin_cfg;
+    get_i2s_pins(I2S_NUM, &board_i2s_pin);
+    i2s_pin_cfg.bck_io_num = board_i2s_pin.bck_io_num;
+    i2s_pin_cfg.ws_io_num = board_i2s_pin.ws_io_num;
+    i2s_pin_cfg.data_out_num = board_i2s_pin.data_out_num;
+    i2s_pin_cfg.data_in_num = board_i2s_pin.data_in_num;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)
+    i2s_pin_cfg.mck_io_num = board_i2s_pin.mck_io_num;
+#endif
     i2s_set_pin(I2S_NUM, &i2s_pin_cfg);
     return ret;
 

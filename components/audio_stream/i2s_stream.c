@@ -31,6 +31,7 @@
 #include "freertos/task.h"
 
 #include "driver/i2s.h"
+#include "soc/io_mux_reg.h"
 #include "esp_log.h"
 #include "esp_err.h"
 
@@ -312,6 +313,39 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
     return w_size;
 }
 
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)
+static esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
+{
+    if (i2s_num >= SOC_I2S_NUM) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (i2s_num == I2S_NUM_0) {
+        if (gpio_num == GPIO_NUM_0) {
+            PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+            WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
+        } else if (gpio_num == GPIO_NUM_1) {
+            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
+            WRITE_PERI_REG(PIN_CTRL, 0xF0F0);
+        } else {
+            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
+            WRITE_PERI_REG(PIN_CTRL, 0xFF00);
+        }
+    } else if (i2s_num == I2S_NUM_1) {
+        if (gpio_num == GPIO_NUM_0) {
+            PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+            WRITE_PERI_REG(PIN_CTRL, 0xFFFF);
+        } else if (gpio_num == GPIO_NUM_1) {
+            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
+            WRITE_PERI_REG(PIN_CTRL, 0xF0FF);
+        } else {
+            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
+            WRITE_PERI_REG(PIN_CTRL, 0xFF0F);
+        }
+    }
+    return ESP_OK;
+}
+#endif
+
 esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bits, int ch)
 {
     esp_err_t err = ESP_OK;
@@ -418,12 +452,20 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     } else
 #endif
     {
-        i2s_pin_config_t i2s_pin_cfg = {0};
-        memset(&i2s_pin_cfg, -1, sizeof(i2s_pin_cfg));
-        get_i2s_pins(i2s->config.i2s_port, &i2s_pin_cfg);
+        board_i2s_pin_t board_i2s_pin = {0};
+        i2s_pin_config_t i2s_pin_cfg;
+        get_i2s_pins(i2s->config.i2s_port, &board_i2s_pin);
+        i2s_pin_cfg.bck_io_num = board_i2s_pin.bck_io_num;
+        i2s_pin_cfg.ws_io_num = board_i2s_pin.ws_io_num;
+        i2s_pin_cfg.data_out_num = board_i2s_pin.data_out_num;
+        i2s_pin_cfg.data_in_num = board_i2s_pin.data_in_num;
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)
+        i2s_mclk_gpio_select(i2s->config.i2s_port, board_i2s_pin.mck_io_num);
+#else
+        i2s_pin_cfg.mck_io_num = board_i2s_pin.mck_io_num;
+#endif
         i2s_set_pin(i2s->config.i2s_port, &i2s_pin_cfg);
     }
-    i2s_mclk_gpio_select(i2s->config.i2s_port, GPIO_NUM_0);
 
     return el;
 }

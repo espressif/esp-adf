@@ -48,16 +48,17 @@ esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
     return ESP_OK;
 }
 
-esp_err_t get_i2s_pins(i2s_port_t port, i2s_pin_config_t *i2s_config)
+esp_err_t get_i2s_pins(i2s_port_t port, board_i2s_pin_t *i2s_config)
 {
     AUDIO_NULL_CHECK(TAG, i2s_config, return ESP_FAIL);
     if (port == I2S_NUM_0 || port == I2S_NUM_1) {
+        i2s_config->mck_io_num = GPIO_NUM_0;
         i2s_config->bck_io_num = GPIO_NUM_5;
         i2s_config->ws_io_num = GPIO_NUM_25;
         i2s_config->data_out_num = GPIO_NUM_26;
         i2s_config->data_in_num = GPIO_NUM_35;
     } else {
-        memset(i2s_config, -1, sizeof(i2s_pin_config_t));
+        memset(i2s_config, -1, sizeof(board_i2s_pin_t));
         ESP_LOGE(TAG, "i2s port %d is not supported", port);
         return ESP_FAIL;
     }
@@ -78,43 +79,6 @@ esp_err_t get_spi_pins(spi_bus_config_t *spi_config, spi_device_interface_config
     spi_device_interface_config->spics_io_num = -1;
 
     ESP_LOGW(TAG, "SPI interface is not is not supported");
-    return ESP_OK;
-}
-
-esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
-{
-    if (i2s_num >= SOC_I2S_NUM) {
-        ESP_LOGE(TAG, "Does not support i2s number(%d)", i2s_num);
-        return ESP_ERR_INVALID_ARG;
-    }
-    if (gpio_num != GPIO_NUM_0 && gpio_num != GPIO_NUM_1 && gpio_num != GPIO_NUM_3) {
-        ESP_LOGE(TAG, "Only support GPIO0/GPIO1/GPIO3, gpio_num:%d", gpio_num);
-        return ESP_ERR_INVALID_ARG;
-    }
-    ESP_LOGI(TAG, "I2S%d, MCLK output by GPIO%d", i2s_num, gpio_num);
-    if (i2s_num == I2S_NUM_0) {
-        if (gpio_num == GPIO_NUM_0) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-            WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
-        } else if (gpio_num == GPIO_NUM_1) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
-            WRITE_PERI_REG(PIN_CTRL, 0xF0F0);
-        } else {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
-            WRITE_PERI_REG(PIN_CTRL, 0xFF00);
-        }
-    } else if (i2s_num == I2S_NUM_1) {
-        if (gpio_num == GPIO_NUM_0) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
-            WRITE_PERI_REG(PIN_CTRL, 0xFFFF);
-        } else if (gpio_num == GPIO_NUM_1) {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD_CLK_OUT3);
-            WRITE_PERI_REG(PIN_CTRL, 0xF0FF);
-        } else {
-            PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD_CLK_OUT2);
-            WRITE_PERI_REG(PIN_CTRL, 0xFF0F);
-        }
-    }
     return ESP_OK;
 }
 

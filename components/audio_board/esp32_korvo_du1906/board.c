@@ -62,7 +62,6 @@ audio_hal_handle_t audio_board_dac_init(void)
     dac_hal = audio_hal_init(&audio_codec_cfg, &AUDIO_CODEC_TAS5805M_DEFAULT_HANDLE);
 #elif CONFIG_ESP32_KORVO_DU1906_DAC_ES7148
     dac_hal = audio_hal_init(&audio_codec_cfg, &AUDIO_CODEC_ES7148_DEFAULT_HANDLE);
-    i2s_mclk_gpio_select(I2S_NUM_0, GPIO_NUM_0);
 #endif
 
     AUDIO_NULL_CHECK(TAG, dac_hal, return NULL);
