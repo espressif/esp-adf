@@ -39,7 +39,7 @@
 
 #define HP_DELAY_TIME_MS       1000
 
-static char *TAG = "HEADPHONE";
+static const char *TAG = "HEADPHONE";
 static xTimerHandle timer_headphone;
 
 static void hp_timer_cb(TimerHandle_t xTimer)
@@ -77,7 +77,7 @@ void headphone_detect_deinit()
 
 int headphone_status_get()
 {
-    return gpio_get_level(0);
+    return gpio_get_level(get_headphone_detect_gpio());
 }
 
 void headphone_detect_init(int num)
