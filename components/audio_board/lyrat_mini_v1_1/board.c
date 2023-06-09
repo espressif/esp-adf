@@ -50,6 +50,7 @@ audio_board_handle_t audio_board_init(void)
 audio_hal_handle_t audio_board_adc_init(void)
 {
     audio_hal_codec_config_t audio_codec_cfg = AUDIO_CODEC_DEFAULT_CONFIG();
+    audio_codec_cfg.codec_mode = AUDIO_HAL_CODEC_MODE_ENCODE;
     audio_hal_handle_t adc_hal = audio_hal_init(&audio_codec_cfg, &AUDIO_CODEC_ES7243_DEFAULT_HANDLE);
     AUDIO_NULL_CHECK(TAG, adc_hal, return NULL);
     return adc_hal;
