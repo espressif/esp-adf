@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _AUDIO_HEADPHONE_DETEC_H_
-#define _AUDIO_HEADPHONE_DETEC_H_
+#ifndef _AUDIO_HEADPHONE_DETECT_H_
+#define _AUDIO_HEADPHONE_DETECT_H_
 
 #ifdef __cplusplus
 extern "C" {
