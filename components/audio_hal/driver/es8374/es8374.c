@@ -50,6 +50,7 @@ audio_hal_func_t AUDIO_CODEC_ES8374_DEFAULT_HANDLE = {
     .audio_codec_set_mute = es8374_set_voice_mute,
     .audio_codec_set_volume = es8374_codec_set_voice_volume,
     .audio_codec_get_volume = es8374_codec_get_voice_volume,
+    .audio_codec_enable_pa = es8374_pa_power,
     .audio_hal_lock = NULL,
     .handle = NULL,
 };
@@ -791,8 +792,9 @@ esp_err_t es8374_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t 
     return res;
 }
 
-void es8374_pa_power(bool enable)
+esp_err_t es8374_pa_power(bool enable)
 {
+    esp_err_t ret = ESP_OK;
     gpio_config_t  io_conf;
     memset(&io_conf, 0, sizeof(io_conf));
     io_conf.mode = GPIO_MODE_OUTPUT;
@@ -801,8 +803,9 @@ void es8374_pa_power(bool enable)
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
     if (enable) {
-        gpio_set_level(get_pa_enable_gpio(), 1);
+        ret = gpio_set_level(get_pa_enable_gpio(), 1);
     } else {
-        gpio_set_level(get_pa_enable_gpio(), 0);
+        ret = gpio_set_level(get_pa_enable_gpio(), 0);
     }
+    return ret;
 }

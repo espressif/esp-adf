@@ -39,6 +39,7 @@ audio_hal_func_t AUDIO_CODEC_ES7243E_DEFAULT_HANDLE = {
     .audio_codec_set_mute = NULL,
     .audio_codec_set_volume = es7243e_adc_set_voice_volume,
     .audio_codec_get_volume = es7243e_adc_get_voice_volume,
+    .audio_codec_enable_pa = NULL,
     .audio_hal_lock = NULL,
     .handle = NULL,
 };

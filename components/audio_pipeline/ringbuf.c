@@ -127,6 +127,15 @@ esp_err_t rb_reset(ringbuf_handle_t rb)
     return ESP_OK;
 }
 
+esp_err_t rb_reset_is_done_write(ringbuf_handle_t rb)
+{
+    if (rb == NULL) {
+        return ESP_FAIL;
+    }
+    rb->is_done_write = false;
+    return ESP_OK;
+}
+
 int rb_bytes_available(ringbuf_handle_t rb)
 {
     return (rb->size - rb->fill_cnt);

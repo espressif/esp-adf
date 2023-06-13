@@ -87,6 +87,17 @@ esp_err_t rb_abort(ringbuf_handle_t rb);
 esp_err_t rb_reset(ringbuf_handle_t rb);
 
 /**
+ * @brief      Reset is_done_write flag
+ *
+ * @param[in]  rb    The Ringbuffer handle
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_FAIL
+ */
+esp_err_t rb_reset_is_done_write(ringbuf_handle_t rb);
+
+/**
  * @brief      Get total bytes available of Ringbuffer
  *
  * @param[in]  rb    The Ringbuffer handle

@@ -63,6 +63,7 @@ audio_hal_func_t AUDIO_CODEC_ES7210_DEFAULT_HANDLE = {
     .audio_codec_config_iface = es7210_adc_config_i2s,
     .audio_codec_set_mute = es7210_set_mute,
     .audio_codec_set_volume = es7210_adc_set_volume,
+    .audio_codec_enable_pa = NULL,
     .audio_hal_lock = NULL,
     .handle = NULL,
 };

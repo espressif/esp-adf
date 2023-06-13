@@ -146,6 +146,7 @@ typedef struct audio_hal {
     esp_err_t (*audio_codec_set_mute) (bool mute);                                                           /*!< set codec mute */
     esp_err_t (*audio_codec_set_volume)(int volume);                                                         /*!< set codec volume */
     esp_err_t (*audio_codec_get_volume)(int *volume);                                                        /*!< get codec volume */
+    esp_err_t (*audio_codec_enable_pa) (bool enable);                                                        /*!< enable pa */
     xSemaphoreHandle audio_hal_lock;                                                                         /*!< semaphore of codec */
     void *handle;                                                                                            /*!< handle of audio codec */
 } audio_hal_func_t;
@@ -229,6 +230,15 @@ esp_err_t audio_hal_set_volume(audio_hal_handle_t audio_hal, int volume);
  */
 esp_err_t audio_hal_get_volume(audio_hal_handle_t audio_hal, int *volume);
 
+/**
+ * @brief Enables or disables PA.
+ *
+ * @param audio_hal reference function pointer for selected audio codec
+ * @param enable    true/false.
+ *
+ * @return     int, 0--success, others--fail
+ */
+esp_err_t audio_hal_enable_pa(audio_hal_handle_t audio_hal, bool enable);
 
 #ifdef __cplusplus
 }
