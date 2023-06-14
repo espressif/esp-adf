@@ -45,6 +45,12 @@ audio_board_handle_t audio_board_init(void)
     return board_handle;
 }
 
+esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set, periph_sdcard_mode_t mode)
+{
+    esp_err_t ret = ESP_FAIL;
+    return ret;
+}
+
 audio_board_handle_t audio_board_get_handle(void)
 {
     return board_handle;

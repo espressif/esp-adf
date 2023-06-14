@@ -76,6 +76,22 @@ esp_err_t get_spi_pins(spi_bus_config_t *spi_config, spi_device_interface_config
     return ESP_OK;
 }
 
+// sdcard
+int8_t get_sdcard_intr_gpio(void)
+{
+    return SDCARD_INTR_GPIO;
+}
+
+int8_t get_sdcard_open_file_num_max(void)
+{
+    return SDCARD_OPEN_FILE_NUM_MAX;
+}
+
+int8_t get_sdcard_power_ctrl_gpio(void)
+{
+    return SDCARD_PWR_CTRL;
+}
+
 // input-output pins
 int8_t get_pa_enable_gpio(void)
 {

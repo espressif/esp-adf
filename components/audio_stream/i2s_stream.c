@@ -314,6 +314,7 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
 }
 
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)
+#if CONFIG_IDF_TARGET_ESP32
 static esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
 {
     if (i2s_num >= SOC_I2S_NUM) {
@@ -344,6 +345,12 @@ static esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
     }
     return ESP_OK;
 }
+#else
+static esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
+{
+    return ESP_FAIL;
+}
+#endif
 #endif
 
 esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bits, int ch)

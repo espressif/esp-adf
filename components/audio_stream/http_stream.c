@@ -464,7 +464,7 @@ _stream_open_begin:
             .buffer_size_tx = 1024,
 #endif
             .cert_pem = http->cert_pem,
-#if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+#if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 4)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
             .crt_bundle_attach = http->crt_bundle_attach,
 #endif //  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
         };

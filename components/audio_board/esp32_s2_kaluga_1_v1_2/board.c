@@ -51,9 +51,10 @@ audio_hal_handle_t audio_board_codec_init(void)
     AUDIO_NULL_CHECK(TAG, codec_hal, return NULL);
     return codec_hal;
 }
+
 esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set, periph_sdcard_mode_t mode)
 {
-    esp_err_t ret = ESP_OK;
+    esp_err_t ret = ESP_FAIL;
     return ret;
 }
 

@@ -23,7 +23,9 @@
  */
 
 #include "esp_log.h"
+#if SOC_SDMMC_HOST_SUPPORTED
 #include "driver/sdmmc_host.h"
+#endif
 #include "driver/sdmmc_defs.h"
 #include "driver/gpio.h"
 #include "sdcard.h"
