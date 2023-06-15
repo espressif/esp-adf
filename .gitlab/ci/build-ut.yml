@@ -14,7 +14,7 @@
   when: always
 
 .build_esp_adf_unit_test_v44_template: &build_esp_adf_unit_test_v44_template
-  image: $CI_DOCKER_REGISTRY/esp-env:v4.4-1
+  image: $ADF_DOCKER_REGISTRY/env_v4.4:1
   <<: *build_ut_template
 
 .add_adf_components_to_ut_make_build: &add_adf_components_to_ut_make_build

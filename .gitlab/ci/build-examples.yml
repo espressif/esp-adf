@@ -16,7 +16,7 @@
 
 .build_template_v44: &build_template_v44
   stage: build
-  image: $CI_DOCKER_REGISTRY/esp-env:v4.4-1
+  image: $ADF_DOCKER_REGISTRY/env_v4.4:1
   tags:
     - build
   variables:
@@ -50,7 +50,6 @@
     # it's not possible to build 100% out-of-tree and have the "artifacts"
     # mechanism work, but this is the next best thing
     - cmake --version
-    - pip install --upgrade cmake
     - mkdir -p ${BUILD_PATH}
     - mkdir -p ${LOG_PATH}
     - echo "The IDF branch is "${IDF_VERSION}
@@ -109,10 +108,6 @@
     - source $IDF_PATH/tools/ci/configure_ci_environment.sh
     - *setup_tools_unless_target_test
 
-    - pip3 install junit_xml
-    - pip3 install netifaces
-    - pip install --upgrade cmake
-    - pip3 install --upgrade cmake
     - export PYTHONPATH=$IDF_PATH/tools/ci/python_packages:$IDF_PATH/tools
     - echo "Ready to scan the examples"
     - python $CI_SCAN_TESTS_PY example_test $EXAMPLE_TEST_DIR -b cmake --exclude $ADF_PATH/examples/korvo_du1906 -c $TEST_CONFIG_FILE -o $EXAMPLE_TEST_OUTPUT_DIR
@@ -130,7 +125,7 @@
     # - rm build_examples/*/*/*/build -r
 
 build_examples_v41_default_board_cmake:
-  image: $CI_DOCKER_REGISTRY/esp-env:v4.4-1
+  image: $ADF_DOCKER_REGISTRY/env_v4.4:1
   extends:
     - .rules:build:adf_idfs_example_test
     - .build_examples_cmake
@@ -142,7 +137,7 @@ build_examples_v41_default_board_cmake:
     IDF_FIND_APP_PATH_ARG: ""
 
 build_examples_v42_default_board_cmake:
-  image: $CI_DOCKER_REGISTRY/esp-env:v4.4-1
+  image: $ADF_DOCKER_REGISTRY/env_v4.4:1
   extends:
     - .rules:build:adf_idfs_example_test
     - .build_examples_cmake
