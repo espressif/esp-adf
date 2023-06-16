@@ -7,6 +7,7 @@
 #include "esp_idf_version.h"
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #include "driver/i2s_std.h"
+#include "driver/i2s_tdm.h"
 #include "soc/soc_caps.h"
 #else
 #include "driver/i2s.h"
@@ -25,8 +26,9 @@ typedef struct {
     i2s_chan_handle_t rx_handle;
 } i2s_keep_t;
 
+static i2s_comm_mode_t i2s_in_mode = I2S_COMM_MODE_STD;
+static i2s_comm_mode_t i2s_out_mode = I2S_COMM_MODE_STD;
 static i2s_keep_t *i2s_keep[I2S_MAX_KEEP];
-
 #endif
 
 static int ut_i2c_init(uint8_t port)
@@ -51,6 +53,20 @@ static int ut_i2c_deinit(uint8_t port)
     return i2c_driver_delete(port);
 }
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+static void ut_set_i2s_mode(i2s_comm_mode_t out_mode, i2s_comm_mode_t in_mode)
+{
+    i2s_in_mode = in_mode;
+    i2s_out_mode = out_mode;
+}
+
+static void ut_clr_i2s_mode(void)
+{
+    i2s_in_mode = I2S_COMM_MODE_STD;
+    i2s_out_mode = I2S_COMM_MODE_STD;
+}
+#endif
+
 static int ut_i2s_init(uint8_t port)
 {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
@@ -63,26 +79,49 @@ static int ut_i2s_init(uint8_t port)
     }
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
     i2s_std_config_t std_cfg = {
-        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(48000),
-        .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_STEREO),
-        .gpio_cfg =
-            {
-                       .mclk = TEST_BOARD_I2S_MCK_PIN,
-                       .bclk = TEST_BOARD_I2S_BCK_PIN,
-                       .ws = TEST_BOARD_I2S_DATA_WS_PIN,
-                       .dout = TEST_BOARD_I2S_DATA_OUT_PIN,
-                       .din = TEST_BOARD_I2S_DATA_IN_PIN,
-                       },
+        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000),
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_STEREO),
+        .gpio_cfg ={
+            .mclk = TEST_BOARD_I2S_MCK_PIN,
+            .bclk = TEST_BOARD_I2S_BCK_PIN,
+            .ws = TEST_BOARD_I2S_DATA_WS_PIN,
+            .dout = TEST_BOARD_I2S_DATA_OUT_PIN,
+            .din = TEST_BOARD_I2S_DATA_IN_PIN,
+        },
     };
     i2s_keep[port] = (i2s_keep_t *) calloc(1, sizeof(i2s_keep_t));
     if (i2s_keep[port] == NULL) {
         return -1;
     }
+    i2s_tdm_slot_mask_t slot_mask = I2S_TDM_SLOT0 | I2S_TDM_SLOT1 | I2S_TDM_SLOT2 | I2S_TDM_SLOT3;
+    i2s_tdm_config_t tdm_cfg = {
+        .slot_cfg = I2S_TDM_PHILIPS_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_STEREO, slot_mask),
+        .clk_cfg  = I2S_TDM_CLK_DEFAULT_CONFIG(16000),
+        .gpio_cfg = {
+            .mclk = TEST_BOARD_I2S_MCK_PIN,
+            .bclk = TEST_BOARD_I2S_BCK_PIN,
+            .ws = TEST_BOARD_I2S_DATA_WS_PIN,
+            .dout = TEST_BOARD_I2S_DATA_OUT_PIN,
+            .din = TEST_BOARD_I2S_DATA_IN_PIN,
+        },
+    };
+    tdm_cfg.slot_cfg.total_slot = 4;
     int ret = i2s_new_channel(&chan_cfg, &i2s_keep[port]->tx_handle, &i2s_keep[port]->rx_handle);
-    i2s_channel_init_std_mode(i2s_keep[port]->tx_handle, &std_cfg);
-    i2s_channel_init_std_mode(i2s_keep[port]->rx_handle, &std_cfg);
+    TEST_ESP_OK(ret);
+    if (i2s_out_mode == I2S_COMM_MODE_STD) {
+        ret = i2s_channel_init_std_mode(i2s_keep[port]->tx_handle, &std_cfg);
+    } else if (i2s_out_mode == I2S_COMM_MODE_TDM) {
+        ret = i2s_channel_init_tdm_mode(i2s_keep[port]->tx_handle, &tdm_cfg);
+    }
+    TEST_ESP_OK(ret);
+    if (i2s_in_mode == I2S_COMM_MODE_STD) {
+        ret = i2s_channel_init_std_mode(i2s_keep[port]->rx_handle, &std_cfg);
+    } else if (i2s_in_mode == I2S_COMM_MODE_TDM) {
+        ret = i2s_channel_init_tdm_mode(i2s_keep[port]->rx_handle, &tdm_cfg);
+    }
+    TEST_ESP_OK(ret);
+    // For tx master using duplex mode
     i2s_channel_enable(i2s_keep[port]->tx_handle);
-    i2s_channel_enable(i2s_keep[port]->rx_handle);
 #else
     i2s_config_t i2s_config = {
         .mode = (i2s_mode_t) (I2S_MODE_TX | I2S_MODE_RX | I2S_MODE_MASTER),
@@ -258,3 +297,122 @@ TEST_CASE("esp codec dev test using S3 board", "[esp_codec_dev]")
     ut_i2c_deinit(0);
     ut_i2s_deinit(0);
 }
+
+TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
+{
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    ut_set_i2s_mode(I2S_COMM_MODE_STD, I2S_COMM_MODE_TDM);
+    // Need install driver (i2c and i2s) firstly
+    int ret = ut_i2c_init(0);
+    TEST_ESP_OK(ret);
+    ret = ut_i2s_init(0);
+    TEST_ESP_OK(ret);
+    // Do initialize of related interface: data_if, ctrl_if and gpio_if
+    audio_codec_i2s_cfg_t i2s_cfg = {
+        .rx_handle = i2s_keep[0]->rx_handle,
+        .tx_handle = i2s_keep[0]->tx_handle,
+    };
+    const audio_codec_data_if_t *data_if = audio_codec_new_i2s_data(&i2s_cfg);
+    TEST_ASSERT_NOT_NULL(data_if);
+
+    audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR};
+    const audio_codec_ctrl_if_t *out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
+    TEST_ASSERT_NOT_NULL(out_ctrl_if);
+
+    i2c_cfg.addr = ES7210_CODEC_DEFAULT_ADDR;
+    const audio_codec_ctrl_if_t *in_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
+    TEST_ASSERT_NOT_NULL(in_ctrl_if);
+
+    const audio_codec_gpio_if_t *gpio_if = audio_codec_new_gpio();
+    TEST_ASSERT_NOT_NULL(gpio_if);
+    // New output codec interface
+    es8311_codec_cfg_t es8311_cfg = {
+        .codec_mode = ESP_CODEC_DEV_WORK_MODE_DAC,
+        .ctrl_if = out_ctrl_if,
+        .gpio_if = gpio_if,
+        .pa_pin = TEST_BOARD_PA_PIN,
+        .use_mclk = true,
+    };
+    const audio_codec_if_t *out_codec_if = es8311_codec_new(&es8311_cfg);
+    TEST_ASSERT_NOT_NULL(out_codec_if);
+    // New input codec interface
+    es7210_codec_cfg_t es7210_cfg = {
+        .ctrl_if = in_ctrl_if,
+        .mic_selected = ES7120_SEL_MIC1 | ES7120_SEL_MIC2 | ES7120_SEL_MIC3 | ES7120_SEL_MIC4,
+    };
+    const audio_codec_if_t *in_codec_if = es7210_codec_new(&es7210_cfg);
+    TEST_ASSERT_NOT_NULL(in_codec_if);
+    // New output codec device
+    esp_codec_dev_cfg_t dev_cfg = {
+        .codec_if = out_codec_if,
+        .data_if = data_if,
+        .dev_type = ESP_CODEC_DEV_TYPE_OUT,
+    };
+    esp_codec_dev_handle_t play_dev = esp_codec_dev_new(&dev_cfg);
+    TEST_ASSERT_NOT_NULL(play_dev);
+    // New input codec device
+    dev_cfg.codec_if = in_codec_if;
+    dev_cfg.dev_type = ESP_CODEC_DEV_TYPE_IN;
+    esp_codec_dev_handle_t record_dev = esp_codec_dev_new(&dev_cfg);
+    TEST_ASSERT_NOT_NULL(record_dev);
+
+    ret = esp_codec_dev_set_out_vol(play_dev, 60.0);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_set_in_gain(record_dev, 30.0);
+    TEST_ESP_OK(ret);
+    // Play 16bits 2 channel
+    esp_codec_dev_sample_info_t fs = {
+        .sample_rate = 48000,
+        .channel = 2,
+        .bits_per_sample = 16,
+    };
+    ret = esp_codec_dev_open(play_dev, &fs);
+    TEST_ESP_OK(ret);
+    // Record 16bits 4 channel select channel 0 and 3
+    fs.channel = 4;
+    fs.channel_mask = ESP_CODEC_DEV_MAKE_CHANNEL_MASK(0) | ESP_CODEC_DEV_MAKE_CHANNEL_MASK(3);
+    ret = esp_codec_dev_open(record_dev, &fs);
+    TEST_ESP_OK(ret);
+    uint8_t *data = (uint8_t *) malloc(512);
+    int limit_size = 10 * fs.sample_rate * fs.channel * (fs.bits_per_sample >> 3);
+    int got_size = 0;
+    int max_sample = 0;
+    // Playback the recording content directly
+    while (got_size < limit_size) {
+        ret = esp_codec_dev_read(record_dev, data, 512);
+        TEST_ESP_OK(ret);
+        ret = esp_codec_dev_write(play_dev, data, 512);
+        TEST_ESP_OK(ret);
+        int max_value = codec_max_sample(data, 512);
+        if (max_value > max_sample) {
+            max_sample = max_value;
+        }
+        got_size += 512;
+    }
+    // Verify recording data not zero
+    TEST_ASSERT(max_sample > 0);
+    free(data);
+
+    ret = esp_codec_dev_close(play_dev);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_close(record_dev);
+    TEST_ESP_OK(ret);
+    esp_codec_dev_delete(play_dev);
+    esp_codec_dev_delete(record_dev);
+
+    // Delete codec interface
+    audio_codec_delete_codec_if(in_codec_if);
+    audio_codec_delete_codec_if(out_codec_if);
+    // Delete codec control interface
+    audio_codec_delete_ctrl_if(in_ctrl_if);
+    audio_codec_delete_ctrl_if(out_ctrl_if);
+    audio_codec_delete_gpio_if(gpio_if);
+    // Delete codec data interface
+    audio_codec_delete_data_if(data_if);
+
+    ut_i2c_deinit(0);
+    ut_i2s_deinit(0);
+    ut_clr_i2s_mode();
+#endif
+}
+

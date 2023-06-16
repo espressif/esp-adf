@@ -74,7 +74,7 @@ typedef struct {
  * @return        NULL: Failed
  *                Others: Codec GPIO interface
  */
-const audio_codec_gpio_if_t *audio_codec_new_gpio();
+const audio_codec_gpio_if_t *audio_codec_new_gpio(void);
 
 /**
  * @brief         Get default SPI control interface

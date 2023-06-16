@@ -25,6 +25,8 @@ struct audio_codec_if_t {
     int (*mute)(const audio_codec_if_t *h, bool mute);                         /*!< Mute and un-mute DAC output */
     int (*set_vol)(const audio_codec_if_t *h, float db);                       /*!< Set DAC volume in decibel */
     int (*set_mic_gain)(const audio_codec_if_t *h, float db);                  /*!< Set microphone gain in decibel */
+    int (*set_mic_channel_gain)(const audio_codec_if_t *h, 
+               uint16_t channel_mask, float db);                               /*!< Set microphone gain in decibel by channel */
     int (*mute_mic)(const audio_codec_if_t *h, bool mute);                     /*!< Mute and un-mute microphone */
     int (*set_reg)(const audio_codec_if_t *h, int reg, int value);             /*!< Set register value to codec */
     int (*get_reg)(const audio_codec_if_t *h, int reg, int *value);            /*!< Get register value from codec */

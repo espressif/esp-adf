@@ -164,6 +164,18 @@ int esp_codec_dev_get_out_mute(esp_codec_dev_handle_t codec, bool *muted);
 int esp_codec_dev_set_in_gain(esp_codec_dev_handle_t codec, float db_value);
 
 /**
+ * @brief         Set codec input gain by channel
+ * @param         codec: Codec device handle
+ * @param         channel_mask: Mask for channel to be set
+ * @param         db_value: Input gain setting
+ * @return        ESP_CODEC_DEV_OK: Set input gain success
+ *                ESP_CODEC_DEV_INVALID_ARG: Invalid arguments
+ *                ESP_CODEC_DEV_NOT_SUPPORT: Codec not support input mode
+ *                ESP_CODEC_DEV_WRONG_STATE: Driver not open yet
+ */
+int esp_codec_dev_set_in_channel_gain(esp_codec_dev_handle_t codec, uint16_t channel_mask, float db_value);
+
+/**
  * @brief         Get codec input gain
  * @param         codec: Codec device handle
  * @param         db_value: Input gain to get

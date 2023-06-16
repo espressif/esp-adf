@@ -44,7 +44,7 @@ static bool _gpio_get(int16_t gpio)
     return (bool) gpio_get_level((gpio_num_t) gpio);
 }
 
-const audio_codec_gpio_if_t *audio_codec_new_gpio()
+const audio_codec_gpio_if_t *audio_codec_new_gpio(void)
 {
     audio_codec_gpio_if_t *gpio_if = (audio_codec_gpio_if_t *) calloc(1, sizeof(audio_codec_gpio_if_t));
     if (gpio_if == NULL) {
