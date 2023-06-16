@@ -46,7 +46,7 @@ esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
     return ESP_OK;
 }
 
-esp_err_t get_i2s_pins(i2s_port_t port, i2s_pin_config_t *i2s_config)
+esp_err_t get_i2s_pins(i2s_port_t port, board_i2s_pin_t *i2s_config)
 {
     AUDIO_NULL_CHECK(TAG, i2s_config, return ESP_FAIL);
     if (port == I2S_NUM_0 || port == I2S_NUM_1) {
@@ -55,7 +55,7 @@ esp_err_t get_i2s_pins(i2s_port_t port, i2s_pin_config_t *i2s_config)
         i2s_config->data_out_num = GPIO_NUM_26;
         i2s_config->data_in_num = GPIO_NUM_35;
     } else {
-        memset(i2s_config, -1, sizeof(i2s_pin_config_t));
+        memset(i2s_config, -1, sizeof(board_i2s_pin_t));
         ESP_LOGE(TAG, "i2s port %d is not supported", port);
         return ESP_FAIL;
     }
@@ -75,11 +75,6 @@ esp_err_t get_spi_pins(spi_bus_config_t *spi_config, spi_device_interface_config
     spi_device_interface_config->spics_io_num = GPIO_NUM_0;
 
     return ESP_OK;
-}
-
-esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
-{
-    return ESP_ERR_ADF_NOT_SUPPORT;
 }
 
 // sdcard

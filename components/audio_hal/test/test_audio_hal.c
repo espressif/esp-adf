@@ -57,9 +57,10 @@ static void i2s_init()
 
     i2s_driver_install(TEST_I2S_NUM, &i2s_cfg, 0, NULL);
     i2s_pin_config_t i2s_pin_cfg = {0};
-    get_i2s_pins(TEST_I2S_NUM, &i2s_pin_cfg);
-    i2s_set_pin(TEST_I2S_NUM, &i2s_pin_cfg);
-    i2s_mclk_gpio_select(TEST_I2S_NUM, GPIO_NUM_0);
+    if (sizeof(board_i2s_pin_t) == sizeof(i2s_pin_config_t)) {
+        get_i2s_pins(TEST_I2S_NUM, (board_i2s_pin_t*)&i2s_pin_cfg);
+        i2s_set_pin(TEST_I2S_NUM, &i2s_pin_cfg);
+    }
 }
 
 static void i2s_deinit()
