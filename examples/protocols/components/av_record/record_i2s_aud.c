@@ -27,8 +27,6 @@ typedef struct {
     ringbuf_handle_t       pcm_buffer;
 } record_src_i2s_t;
 
-static audio_board_handle_t audio_board;
-
 void close_i2s_record(record_src_handle_t handle)
 {
     if (handle == NULL) {
@@ -56,16 +54,7 @@ record_src_handle_t open_i2s_record(void *cfg, int cfg_size)
     if (i2s_src == NULL) {
         return NULL;
     }
-    if (audio_board == NULL) {
-        audio_board = audio_board_init();
-        if (audio_board == NULL) {
-            free(i2s_src);
-            ESP_LOGE(TAG, "Fail to init audio board");
-            return NULL;
-        }
-        audio_hal_ctrl_codec(audio_board->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
-        audio_hal_set_volume(audio_board->audio_hal, 0);
-    }
+ 
     record_src_audio_cfg_t *aud_cfg = (record_src_audio_cfg_t *) cfg;
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
@@ -74,6 +63,7 @@ record_src_handle_t open_i2s_record(void *cfg, int cfg_size)
     i2s_cfg.i2s_config.bits_per_sample = aud_cfg->bits_per_sample;
     i2s_cfg.i2s_config.sample_rate = aud_cfg->sample_rate;
     i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_cfg.uninstall_drv = false;
     if (aud_cfg->channel == 1) {
         i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD

@@ -23,11 +23,12 @@
 #include "esp_idf_version.h"
 #include "esp_h264_enc.h"
 
-#define AUDIO_FRAME_DURATION        (16)
+#define AUDIO_FRAME_DURATION          (16)
 // Add buffer queue so that when writing takes a long time, it does not block fetch data from camera and I2S
-#define RECORD_Q_BUFFER_SIZE        (200 * 1024)
-#define RECORD_AV_MAX_LATENCY       (1000) // unit ms
-#define VIDEO_ENCODE_MAX_FRAME_SIZE (80 * 1024)
+#define RECORD_Q_BUFFER_SIZE          (200 * 1024)
+#define RECORD_AV_MAX_LATENCY         (1000) // unit ms
+#define VIDEO_ENCODE_MAX_FRAME_SIZE   (80 * 1024)
+#define VIDEO_RESYNC_FRAME_TOLERANCE  (4)
 #define TAG                         "AV Record"
 
 #define LOG_ON_ERR(ret, fmt, ...)        \
@@ -80,6 +81,10 @@ void av_record_get_video_size(av_record_video_quality_t quality, uint16_t *width
             break;
         case AV_RECORD_VIDEO_QUALITY_VGA:
             *width = 640;
+            *height = 480;
+            break;
+        case AV_RECORD_VIDEO_QUALITY_800X480:
+            *width = 800;
             *height = 480;
             break;
         case AV_RECORD_VIDEO_QUALITY_XVGA:
@@ -566,6 +571,7 @@ static void video_record_thread(void *arg)
 {
     uint32_t video_start = get_cur_time();
     uint32_t fetch_time = get_cur_time();
+    uint32_t resync_time = VIDEO_RESYNC_FRAME_TOLERANCE*1000/av_record.record_cfg.video_fps;
     while (!av_record.stopping) {
         record_src_frame_data_t frame_data;
         memset(&frame_data, 0, sizeof(record_src_frame_data_t));
@@ -577,16 +583,20 @@ static void video_record_thread(void *arg)
         av_record.video_reached = true;
         uint32_t vid_pts = get_video_pts();
         uint32_t cur_pts;
-        // when audio running use audio pts
+        // When audio running, use audio pts
         if (av_record.audio_recording) {
             cur_pts = get_audio_pts();
         } else {
             cur_pts = get_cur_time() - video_start;
         }
-        // video drop data according real time or audio pts
+        // Video drop data according real time or audio pts
         if (start_frame_synced() == false || cur_pts < vid_pts) {
             record_src_unlock_frame(av_record.video_src_handle);
             continue;
+        }
+        // TODO need cfg to enable this feature
+        if (vid_pts + resync_time < cur_pts) {
+            vid_pts = cur_pts;
         }
         int pic_size = av_record.encode_video ? VIDEO_ENCODE_MAX_FRAME_SIZE : frame_data.size;
         uint8_t *buffer = (uint8_t *) get_q_data(pic_size);

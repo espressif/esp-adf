@@ -17,7 +17,6 @@
 
 #define TAG                           "USB_Cam"
 
-#define USB_CAM_FRAME_BUFFER_SIZE     (32 * 1024) // Double buffer
 #define USB_CAM_DATA_ARRIVE_BIT       (1)
 #define USB_CAM_DATA_CONSUMED_BIT     (1 << 1)
 
@@ -50,23 +49,6 @@ static int power_on_usb_cam(bool on)
     gpio_config(&usb_camera_pins_cfg);
     gpio_set_level(USB_CAM_PIN_PWDN, 0);
     return 0;
-}
-
-static int get_frame_index(int width, int height)
-{
-    if (width == 640 && height == 480) {
-        return DESCRIPTOR_FRAME_640_480_INDEX;
-    }
-    if (width == 480 && height == 320) {
-        return DESCRIPTOR_FRAME_480_320_INDEX;
-    }
-    if (width == 352 && height == 288) {
-        return DESCRIPTOR_FRAME_352_288_INDEX;
-    }
-    if (width == 320 && height == 240) {
-        return DESCRIPTOR_FRAME_320_240_INDEX;
-    }
-    return DESCRIPTOR_FRAME_640_480_INDEX;
 }
 
 void close_usb_cam(record_src_handle_t handle)
@@ -130,40 +112,35 @@ record_src_handle_t open_usb_cam(void *cfg, int cfg_size)
             ESP_LOGE(TAG, "No memory for resource");
             break;
         }
-        usb_cam_src->transfer_buffer[0] = media_lib_malloc(USB_CAM_FRAME_BUFFER_SIZE);
+        usb_cam_src->transfer_buffer[0] = media_lib_malloc(CONFIG_USB_CAMERA_FRAME_BUFFER_SIZE);
         if (usb_cam_src->transfer_buffer[0] == NULL) {
-            ESP_LOGE(TAG, "Fail to Allocate frame buffer size %d", USB_CAM_FRAME_BUFFER_SIZE);
+            ESP_LOGE(TAG, "Fail to Allocate frame buffer size %d", CONFIG_USB_CAMERA_FRAME_BUFFER_SIZE);
             break;
         }
-        usb_cam_src->transfer_buffer[1] = media_lib_malloc(USB_CAM_FRAME_BUFFER_SIZE);
+        usb_cam_src->transfer_buffer[1] = media_lib_malloc(CONFIG_USB_CAMERA_FRAME_BUFFER_SIZE);
         if (usb_cam_src->transfer_buffer[1] == NULL) {
-            ESP_LOGE(TAG, "Fail to Allocate frame buffer size %d", USB_CAM_FRAME_BUFFER_SIZE);
+            ESP_LOGE(TAG, "Fail to Allocate frame buffer size %d", CONFIG_USB_CAMERA_FRAME_BUFFER_SIZE);
             break;
         }
-        usb_cam_src->frame_buffer = media_lib_malloc(USB_CAM_FRAME_BUFFER_SIZE);
+        usb_cam_src->frame_buffer = media_lib_malloc(CONFIG_USB_CAMERA_FRAME_BUFFER_SIZE);
         if (usb_cam_src->frame_buffer == NULL) {
-            ESP_LOGE(TAG, "Fail to Allocate frame buffer size %d", USB_CAM_FRAME_BUFFER_SIZE);
+            ESP_LOGE(TAG, "Fail to Allocate frame buffer size %d", CONFIG_USB_CAMERA_FRAME_BUFFER_SIZE);
             break;
         }
         power_on_usb_cam(true);
         uvc_config_t uvc_config = {
-            .format_index = DESCRIPTOR_FORMAT_MJPEG_INDEX,
             .frame_width = vid_cfg->width,
             .frame_height = vid_cfg->height,
-            .frame_index = get_frame_index(vid_cfg->width, vid_cfg->height),
-            .frame_interval = 10000000 / vid_cfg->fps,
-            .interface = 1,
-            .interface_alt = DESCRIPTOR_STREAM_INTERFACE_ALT_MPS_512,
-            .ep_addr = DESCRIPTOR_STREAM_ISOC_ENDPOINT_ADDR,
-            .ep_mps = USB_CAM_ISOC_EP_MPS,
-            .xfer_buffer_size = USB_CAM_FRAME_BUFFER_SIZE,
+            .frame_interval = FPS2INTERVAL(20),
+            .xfer_buffer_size = CONFIG_USB_CAMERA_FRAME_BUFFER_SIZE,
             .xfer_buffer_a = usb_cam_src->transfer_buffer[0],
             .xfer_buffer_b = usb_cam_src->transfer_buffer[1],
-            .frame_buffer_size = USB_CAM_FRAME_BUFFER_SIZE,
-            .frame_buffer =  usb_cam_src->frame_buffer,
+            .frame_buffer_size = CONFIG_USB_CAMERA_FRAME_BUFFER_SIZE,
+            .frame_buffer = usb_cam_src->frame_buffer,
             .frame_cb = usb_cam_frame_cb,
             .frame_cb_arg = usb_cam_src,
         };
+        ESP_LOGI(TAG, "Camera width %d height %d", vid_cfg->width, vid_cfg->height);
         esp_err_t ret = uvc_streaming_config(&uvc_config);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "UVC streaming config failed");

@@ -1,3 +1,4 @@
 dependencies:
   esp32-camera:
     git: https://github.com/espressif/esp32-camera.git
+  espressif/usb_stream: "^1.0.2"

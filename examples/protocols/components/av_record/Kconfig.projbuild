@@ -8,4 +8,22 @@ config USB_CAMERA_SUPPORT
     bool "Support for USB camera"
     default n
 
+config USB_CAMERA_POWER_GPIO
+    int
+    prompt "USB Camera Power GPIO" if USB_CAMERA_SUPPORT
+    depends on USB_CAMERA_SUPPORT
+    default 48
+    range -1 64
+    help
+        Set USB Camera Power GPIO, -1 for not used.
+
+config USB_CAMERA_FRAME_BUFFER_SIZE
+    int
+    prompt "USB Camera Frame Buffer Size" if USB_CAMERA_SUPPORT
+    depends on USB_CAMERA_SUPPORT
+    default 32768
+    range 4096 128000
+    help
+        Set USB Camera frame buffer size.
+
 endmenu

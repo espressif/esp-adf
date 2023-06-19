@@ -25,6 +25,7 @@
 #define RTMP_PUSH_VIDEO_SRC         RECORD_SRC_TYPE_SPI_CAM
 #endif
 #define RTMP_PUSH_AUDIO_SRC         RECORD_SRC_TYPE_I2S_AUD
+#define RTMP_AAC_HEAD_SIZE          7
 
 static esp_rtmp_audio_codec_t map_audio_codec(av_record_audio_fmt_t codec)
 {
@@ -65,6 +66,10 @@ int rtmp_push_data_received(av_record_data_t *frame, void *ctx)
                 .data = frame->data,
                 .size = frame->size,
             };
+            if (rtmp_setting_get_audio_fmt() == AV_RECORD_AUDIO_FMT_AAC && audio_data.size >= RTMP_AAC_HEAD_SIZE) {
+                audio_data.data += RTMP_AAC_HEAD_SIZE;
+                audio_data.size -= RTMP_AAC_HEAD_SIZE;
+            }
             ret = esp_rtmp_push_audio(rtmp_push, &audio_data);
             if (ret != ESP_MEDIA_ERR_OK) {
                 ESP_LOGE(TAG, "Add audio packet return %d", ret);
@@ -133,6 +138,7 @@ int rtmp_push_app_run(char *uri, uint32_t duration)
         .fps = rtmp_setting_get_video_fps(),
         .codec = map_video_codec(rtmp_setting_get_video_fmt()),
     };
+    av_record_get_video_size(rtmp_setting_get_video_quality(), &video_info.width, &video_info.height);
     ret = esp_rtmp_push_set_video_info(rtmp_push, &video_info);
     ESP_LOGI(TAG, "Add video stream return %d", ret);
 

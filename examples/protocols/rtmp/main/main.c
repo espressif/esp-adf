@@ -333,6 +333,13 @@ void app_main(void)
         ESP_ERROR_CHECK(nvs_flash_init());
     }
     ESP_ERROR_CHECK(esp_netif_init());
+    audio_board_handle_t audio_board = audio_board_init();
+    if (audio_board == NULL) {
+        ESP_LOGE(TAG, "Fail to init audio board");
+        return;
+    }
+    audio_hal_ctrl_codec(audio_board->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+    audio_hal_set_volume(audio_board->audio_hal, 0);
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     set = esp_periph_set_init(&periph_cfg);
     init_console();
