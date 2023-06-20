@@ -30,7 +30,7 @@ ESP RTC 是一个基于标准 SIP 协议的视频通话客户端，可以用于�
 
       - 建议关闭服务器 timer，可以通过在 `conf/sip_profiles/internal.xml` 中设置 `<param name="enable-timer" value="false"/>` 来关闭。
 
-      - 建议在 `conf/vars.xml` 中打开 PCMA、PCMU、VP8。
+      - 建议在 `conf/vars.xml` 中打开 PCMA、PCMU、VP8、H264。
 
 - 我们建议搭建 Freeswitch 服务器来测试。
 
@@ -79,7 +79,7 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32s3
 
 ## 如何使用例程
 
-### 功能和用法
+### 开发板功能和用法
 
 - 例程开始运行后，在网络连接成功并且服务器也连接成功后会播放服务器已连接提示音。
 - 按下 `PLAY` 键对您默认设置的对端号码进行拨号。
@@ -87,6 +87,14 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32s3
 - 通话时，您可以按下 `MUTE` 键来进行挂断或者取消拨号。
 - 当您使用 Freeswitch 或者其它支持会议的服务器时，您可以按下 `SET` 键来进入默认会议房间进行测试。
 - `Vol+` 和 `Vol-` 键可以调节开发板的通话音量。
+
+### esp-rtc APK功能和用法
+
+- 您需要一台 Android 手机来安装 `esp-rtc.apk`。
+- 配置 Server 和 Account 信息，Buddy 为对端设备的账号。
+- 按下 `CALL` 会对 Buddy 进行呼叫和通信
+- 这里设备端到手机端图像是单向的，如需双向视频通信可使用2块开发来测试。
+- 当配置为 H264 软件编码时，支持 linphone 和 microsip 进行单向视频通信。
 
 ## 技术支持
 请按照下面的链接获取技术支持：

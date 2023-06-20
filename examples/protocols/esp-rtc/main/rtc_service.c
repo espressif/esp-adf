@@ -94,6 +94,7 @@ static int _send_audio(unsigned char *data, int len, void *ctx)
     av_stream_frame_t frame = {0};
     frame.data = data;
     frame.len = len;
+    memset(data, 0, len);
     if (av_audio_enc_read(&frame, av_stream) < 0) {
         return 0;
     }
@@ -102,11 +103,16 @@ static int _send_audio(unsigned char *data, int len, void *ctx)
 
 static int _receive_audio(unsigned char *data, int len, void *ctx)
 {
-    av_stream_handle_t av_stream = (av_stream_handle_t) ctx;
-    av_stream_frame_t frame = {0};
-    frame.data = data;
-    frame.len = len;
-    return av_audio_dec_write(&frame, av_stream);
+    if ((len == 6) && !strncasecmp((char *)data, "DTMF-", 5)) {
+        ESP_LOGI(TAG,"Receive DTMF Event ID : %d", data[5]);
+        return 0;
+    } else {
+        av_stream_handle_t av_stream = (av_stream_handle_t) ctx;
+        av_stream_frame_t frame = {0};
+        frame.data = data;
+        frame.len = len;
+        return av_audio_dec_write(&frame, av_stream);
+    }
 }
 
 static int _send_video(unsigned char *data, unsigned int *len, void *ctx)

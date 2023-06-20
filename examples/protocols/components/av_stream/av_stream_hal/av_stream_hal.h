@@ -34,27 +34,9 @@ extern "C" {
 
 #define VIDEO_FPS                   15
 #define VIDEO_DEC_SIZE              320*240*2
-#define VIDEO_MAX_SIZE              50*1024
+#define VIDEO_MAX_SIZE              100*1024
 #define AUDIO_MAX_SIZE              2*1024
 #define AUDIO_HAL_SAMPLE_RATE       8000
-
-/* USB Camera Descriptors Related MACROS,
-the quick demo skip the standred get descriptors process,
-users need to get params from camera descriptors from PC side,
-eg. run `lsusb -v` in linux,
-then hardcode the related MACROS below
-*/
-// UVC
-#define USB_CAMERA_FORMAT_MJPEG     2
-#define USB_CAMERA_FRAME_INDEX      4
-#define USB_CAMERA_ISOC_EP_ADDR     0x81
-#define USB_CAMERA_INTERFACE_ALT    3
-
-// UAC + UVC
-// #define USB_CAMERA_FORMAT_MJPEG     1
-// #define USB_CAMERA_FRAME_INDEX      4
-// #define USB_CAMERA_ISOC_EP_ADDR     0x84
-// #define USB_CAMERA_INTERFACE_ALT    1
 
 #define I2S_DEFAULT_PORT            I2S_NUM_0
 #define I2S_DEFAULT_BITS            CODEC_ADC_BITS_PER_SAMPLE
@@ -110,7 +92,7 @@ typedef struct {
     bool                        uac_en;             /*!< Use USB audio device, but user need check uac MACROS */
     bool                        lcd_en;             /*!< Have LCD to render */
     esp_periph_set_handle_t     set;                /*!< The handle of esp_periph */
-    bool                        video_soft_enc;     /*!< Use software JPEG encoder */
+    bool                        video_soft_enc;     /*!< Use software JPEG / H264 encoder */
     uint32_t                    audio_samplerate;   /*!< Audio sample rate */
     uint32_t                    audio_framesize;    /*!< Audio frame size */
     av_framesize_t              video_framesize;    /*!< Video frame size */

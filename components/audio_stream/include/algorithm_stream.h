@@ -129,7 +129,7 @@ typedef struct {
                                                      but has poor suppression of nonlinear distortion */
 } algorithm_stream_cfg_t;
 
-#define ALGORITHM_STREAM_DEFAULT_MASK    (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_AGC | ALGORITHM_STREAM_USE_NS)
+#define ALGORITHM_STREAM_DEFAULT_MASK    (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_NS)
 
 #define ALGORITHM_STREAM_CFG_DEFAULT() {                                                          \
     .input_type = ALGORITHM_STREAM_INPUT_TYPE1,                                                   \

@@ -22,6 +22,12 @@
 - 开始 [CMake](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/api-guides/build-system.html) 编译
 - 请选择 [release/v4.4](https://github.com/espressif/esp-idf/tree/release/v4.4) 及以后的 IDF 分支
 
+## ESP32-C3 用法
+
+- 开始 [CMake](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32c3/api-guides/build-system.html) 编译
+- 请选择 [release/v4.4](https://github.com/espressif/esp-idf/tree/release/v4.4) IDF 分支编译 led_pixels 例程
+- 请选择 [release/v5.1](https://github.com/espressif/esp-idf/tree/release/v5.1) 及以后的 IDF 分支编译其他例程
+
 ## 例程与乐鑫音频开发板的兼容性
 
 下表介绍了各个例程与乐鑫音频开发板的兼容性，![alt text](../docs/_static/yes-icon.png "兼容") 表示兼容，![alt text](../docs/_static/no-icon.png "兼容")  表示不兼容。

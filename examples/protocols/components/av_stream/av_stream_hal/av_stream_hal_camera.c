@@ -93,15 +93,9 @@ static esp_err_t usb_camera_init(av_stream_hal_config_t *config, void *camera_cb
     /* the quick demo skip the standred get descriptors process,
     users need to get params from camera descriptors from demo print */
     uvc_config_t uvc_config = {
-        .format_index = USB_CAMERA_FORMAT_MJPEG,
         .frame_width = av_resolution[config->video_framesize].width,
         .frame_height = av_resolution[config->video_framesize].height,
-        .frame_index = USB_CAMERA_FRAME_INDEX,
         .frame_interval = USB_CAMERA_FRAME_INTERVAL(VIDEO_FPS),
-        .interface = 1,
-        .interface_alt = USB_CAMERA_INTERFACE_ALT,
-        .ep_addr = USB_CAMERA_ISOC_EP_ADDR,
-        .ep_mps = 512,
         .xfer_buffer_size = VIDEO_MAX_SIZE,
         .xfer_buffer_a = xfer_buffer_a,
         .xfer_buffer_b = xfer_buffer_b,
@@ -164,13 +158,6 @@ int av_stream_camera_init(av_stream_hal_config_t *config, void *cb, void *arg)
         camera_config.frame_size = config->video_framesize;
         if (config->video_soft_enc) {
             camera_config.pixel_format = PIXFORMAT_YUV422;
-#ifdef CONFIG_CAMERA_CONVERTER_ENABLE
-            camera_config.conv_mode = YUV422_TO_YUV420;
-#else
-            ESP_LOGE(TAG, "Please enable CONFIG_CAMERA_CONVERTER_ENABLE");
-            return ESP_FAIL;
-#endif
-            camera_config.xclk_freq_hz = 40000000;
         }
         if (config->uac_en) {
             camera_config.pin_sccb_scl = CAM_PIN_SIOC;

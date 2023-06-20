@@ -48,23 +48,13 @@ static int uac_device_init(void *mic_cb, void *arg, uint32_t sample_rate)
 {
     esp_err_t ret = ESP_FAIL;
     uac_config_t uac_config = {
-        .mic_interface = 4,
         .mic_bit_resolution = 16,
         .mic_samples_frequence = sample_rate,
-        .mic_ep_addr = 0x82,
-        .mic_ep_mps = 32,
-        .spk_interface = 3,
         .spk_bit_resolution = 16,
         .spk_samples_frequence = sample_rate,
-        .spk_ep_addr = 0x02,
-        .spk_ep_mps = 32,
-        .spk_buf_size = 16*1024,
-        // .mic_buf_size = 2*1024,
-        .mic_min_bytes = 1024,
+        .spk_buf_size = 20*1024,
         .mic_cb = mic_cb,
         .mic_cb_arg = arg,
-        .ac_interface = 2,
-        .spk_fu_id = 2,
     };
     ret = uac_streaming_config(&uac_config);
     if (ret != ESP_OK) {
@@ -149,7 +139,6 @@ static int i2s_device_deinit(void *handle)
 #endif
     free(board_handle);
     board_handle = NULL;
-    ret |= es8311_stop(0);
 #else
     ret = audio_board_deinit(board_handle);
 #endif
