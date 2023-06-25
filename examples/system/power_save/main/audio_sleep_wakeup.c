@@ -54,7 +54,7 @@ static const char *TAG = "AUDIO_SLEEP_WAKEUP";
 
 static QueueHandle_t           uart_evt_que;
 static EventGroupHandle_t      wakeup_event_group;
-static SemaphoreHandle_t       gpio_semaphore;
+static QueueHandle_t           gpio_evt_queue;
 static esp_pm_lock_handle_t    s_pm_cpu_lock;
 
 static TaskHandle_t            gpio_task_handle;
@@ -118,7 +118,7 @@ static void uart_wakeup_task(void *arg)
     uint8_t uart_rx_len = 0;
 
     while(1) {
-        // Waiting for UART event.
+        /* Waiting for UART event */
         if (xQueueReceive(uart_evt_que, (void * )&event, (TickType_t)portMAX_DELAY)) {
 #if !SOC_UART_SUPPORT_WAKEUP_INT
             if (xEventGroupGetBits(wakeup_event_group) & ENTER_SLEEP_BIT) {
@@ -136,7 +136,7 @@ static void uart_wakeup_task(void *arg)
                     ESP_LOGI(TAG, "[UART DATA]: %s, data size: %d", dtmp, uart_rx_len);
                     uart_wait_tx_idle_polling(EXAMPLE_UART_NUM);
                     break;
-                // Event of HW FIFO overflow detected
+                /* Event of HW FIFO overflow detected */
                 case UART_FIFO_OVF:
                     ESP_LOGI(TAG, "Hw fifo overflow");
                     // If fifo overflow happened, you should consider adding flow control for your application.
@@ -145,7 +145,7 @@ static void uart_wakeup_task(void *arg)
                     uart_flush_input(EXAMPLE_UART_NUM);
                     xQueueReset(uart_evt_que);
                     break;
-                // Event of UART ring buffer full
+                /* Event of UART ring buffer full */
                 case UART_BUFFER_FULL:
                     ESP_LOGI(TAG, "Ring buffer full");
                     // If buffer full happened, you should consider encreasing your buffer size
@@ -153,21 +153,21 @@ static void uart_wakeup_task(void *arg)
                     uart_flush_input(EXAMPLE_UART_NUM);
                     xQueueReset(uart_evt_que);
                     break;
-                // Event of UART RX break detected
+                /* Event of UART RX break detected */
                 case UART_BREAK:
                     ESP_LOGI(TAG, "Uart rx break");
                     break;
-                // Event of UART parity check error
+                /* Event of UART parity check error */
                 case UART_PARITY_ERR:
                     ESP_LOGI(TAG, "Uart parity error");
                     break;
-                // Event of UART frame error
+                /* Event of UART frame error */
                 case UART_FRAME_ERR:
                     ESP_LOGI(TAG, "Uart frame error");
                     break;
-                // ESP32 can wakeup by uart but there is no wake up interrupt
+                /* ESP32 can wakeup by uart but there is no wake up interrupt */
 #if SOC_UART_SUPPORT_WAKEUP_INT
-                // Event of waking up by UART
+                /* Event of waking up by UART */
                 case UART_WAKEUP:
                     esp_pm_lock_acquire(s_pm_cpu_lock);
                     ESP_LOGI(TAG, "Uart wakeup");
@@ -198,7 +198,7 @@ static esp_err_t uart_initialization(void)
         .source_clk = UART_SCLK_XTAL,
     #endif
     };
-    //Install UART driver, and get the queue.
+    /* Install UART driver, and get the queue */
     ESP_RETURN_ON_ERROR(uart_driver_install(EXAMPLE_UART_NUM, EXAMPLE_UART_BUF_SIZE, EXAMPLE_UART_BUF_SIZE, 20, &uart_evt_que, 0),
                         TAG, "Install uart failed");
     if (EXAMPLE_UART_NUM == CONFIG_ESP_CONSOLE_UART_NUM) {
@@ -239,8 +239,10 @@ static esp_err_t example_register_uart_wakeup(void)
     return ESP_OK;
 }
 
-// The uart wake-up source cannot wake the system from the deep sleep mode. You can consider setting
-// the uart RX pin to the ext0/1 or gpio wake-up source to wake it up by sending data through uart
+/* 
+ * The uart wake-up source cannot wake the system from the deep sleep mode. You can consider setting
+ * the uart RX pin to the ext0/1 or gpio wake-up source to wake it up by sending data through uart.
+ */
 static void register_ext0_wakeup(gpio_num_t gpio_num, uint8_t gpio_wakeup_level)
 {
     // Configure pullup/downs via RTCIO to tie wakeup pins to inactive level during deepsleep.
@@ -292,13 +294,13 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
     BaseType_t xHigherPriorityTaskWoken;
     gpio_intr_disable(gpio_num);
     ESP_ERROR_CHECK(esp_pm_lock_acquire(s_pm_cpu_lock));
-    xSemaphoreGiveFromISR(gpio_semaphore, &xHigherPriorityTaskWoken);
+    xQueueSendFromISR(gpio_evt_queue, &gpio_num, &xHigherPriorityTaskWoken);
     if (pdFALSE != xHigherPriorityTaskWoken) {
         portYIELD_FROM_ISR();
     }
 }
 
-static esp_err_t light_sleep_gpio_wakeup(gpio_num_t gpio_num)
+static esp_err_t light_sleep_gpio_wakeup(gpio_num_t gpio_num, gpio_int_type_t intr_type, bool is_first)
 {
     /* Initialize GPIO */
     gpio_config_t io_conf = {
@@ -311,22 +313,24 @@ static esp_err_t light_sleep_gpio_wakeup(gpio_num_t gpio_num)
     gpio_config(&io_conf);
 
     /* Enable wake up from GPIO */
-    gpio_wakeup_enable(gpio_num, GPIO_WAKEUP_LEVEL == 0 ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
-    esp_sleep_enable_gpio_wakeup();
+    gpio_wakeup_enable(gpio_num, intr_type);
 
     /* Make sure the GPIO is inactive and it won't trigger wakeup immediately */
-    while (gpio_get_level(gpio_num) == GPIO_WAKEUP_LEVEL) {
-        ESP_LOGI(TAG, "Wait to high");
+    while (gpio_get_level(gpio_num) == (intr_type == GPIO_INTR_LOW_LEVEL ? 0 : 1)) {
+        ESP_LOGI(TAG, "Wait to %s", intr_type == GPIO_INTR_LOW_LEVEL ? "high" : "low");
         vTaskDelay(100 / portTICK_RATE_MS);
     }
-    ESP_LOGI(TAG, "Gpio wakeup source is ready");
+    ESP_LOGI(TAG, "GPIO wakeup source(GPIO[%d], wakeup_level[%s]) is ready", gpio_num, intr_type == GPIO_INTR_LOW_LEVEL ? "LOW" : "HIGH");
 
     /* Avoid gpio dropping and causing interruption when automatically switching from active mode to sleep mode */
     /* See menuconfig: Disable all GPIO when chip at sleep */
     gpio_sleep_sel_dis(gpio_num);
 
-    /* Install gpio isr service */
-    gpio_install_isr_service(0);
+    if (is_first) {
+        esp_sleep_enable_gpio_wakeup();
+        /* Install gpio isr service */
+        gpio_install_isr_service(0);
+    }
     /* Hook isr handler for specific gpio pin */
     gpio_isr_handler_add(gpio_num, gpio_isr_handler, (void*) gpio_num);
 
@@ -343,16 +347,21 @@ static void light_sleep_gpio_disable(gpio_num_t gpio_num)
 
 static void gpio_task_example(void* arg)
 {
-    // You can use `boot` button to wakeup system from light sleep
-    uint32_t gpio_wakeup_num = GPIO_WAKEUP_NUM;
+    /* You can use `boot` button to wakeup system from light sleep */
+    uint32_t gpio_wakeup_num = 0;
 
-    light_sleep_gpio_wakeup(gpio_wakeup_num);
+    light_sleep_gpio_wakeup(GPIO_WAKEUP_NUM, GPIO_INTR_LOW_LEVEL, true);
 
-    gpio_semaphore = xSemaphoreCreateBinary();
+    /* Registering multiple GPIO wakeup sources by `gpio_wakeup_enable()` */
+    // light_sleep_gpio_wakeup(2, GPIO_INTR_LOW_LEVEL, false);
+    // light_sleep_gpio_wakeup(4, GPIO_INTR_LOW_LEVEL, false);
+    // light_sleep_gpio_wakeup(5, GPIO_INTR_HIGH_LEVEL, false);
+
+    gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
 
     uart_wait_tx_idle_polling(CONFIG_ESP_CONSOLE_UART_NUM);
 
-    xSemaphoreTake(gpio_semaphore, portMAX_DELAY);
+    xQueueReceive(gpio_evt_queue, (void * )&gpio_wakeup_num, (TickType_t)portMAX_DELAY);
 
     ESP_LOGI(TAG, "GPIO[%d], val: %d", (int)gpio_wakeup_num, (int)gpio_get_level(gpio_wakeup_num));
 
@@ -429,7 +438,7 @@ esp_pm_lock_handle_t get_power_manage_lock_handle(void)
 // Set ARP_TMR_INTERVAL to 10000 can get lower power.
 void power_manage_init(void)
 {
-    // Reset the wake-up pin function to ensure the normal use of the application
+    /* Reset the wake-up pin function to ensure the normal use of the application */
     gpio_reset_pin(GPIO_WAKEUP_NUM);
 #if CONFIG_IDF_TARGET_ESP32C3
     gpio_reset_pin(GPIO_NUM_2);
@@ -439,9 +448,29 @@ void power_manage_init(void)
     ESP_ERROR_CHECK(esp_pm_lock_create(ESP_PM_CPU_FREQ_MAX, 0, "cpu_max", &s_pm_cpu_lock));
     ESP_ERROR_CHECK(esp_pm_lock_acquire(s_pm_cpu_lock));
     wakeup_event_group = xEventGroupCreate();
-    // Call esp_pm_configure() firstly to avoid gpio level rollover
+    /* Call esp_pm_configure() firstly to avoid gpio level rollover */
     power_manage_config(CONFIG_EXAMPLE_MAX_CPU_FREQ_MHZ, CONFIG_EXAMPLE_MIN_CPU_FREQ_MHZ, true);
     example_register_uart_wakeup();
+
+    /* Deinit USB_DP pin to reduce power consumption */
+#if CONFIG_IDF_TARTGET_ESP32S2 || CONFIG_IDF_TARTGET_ESP32S3
+    gpio_num_t usb_dp = 20;
+#elif CONFIG_IDF_TARTGET_ESP32C3
+    gpio_num_t usb_dp = 19;
+#elif CONFIG_IDF_TARTGET_ESP32C6
+    gpio_num_t usb_dp = 13;
+#else
+    gpio_num_t usb_dp = -1;
+#endif
+    if (usb_dp >= 0) {
+        gpio_config_t cfg = {
+            .pin_bit_mask = BIT64(usb_dp),
+            .pull_down_en = true,
+        };
+        gpio_config(&cfg);
+        gpio_sleep_sel_dis(usb_dp);
+    }
+
     ESP_LOGI(TAG, "Power manage init ok");
 #else
     ESP_LOGE(TAG, "Power management or tickless idle not enable");
@@ -450,7 +479,7 @@ void power_manage_init(void)
 
 static void light_sleep_wakeup_source_init(void)
 {
-    timer_wakeup(20 * 1000, false);
+    timer_wakeup(30 * 1000, false);
     xTaskCreate(gpio_task_example, "gpio_task_example", 4096, NULL, 10, &gpio_task_handle);
     vTaskDelay(10 / portTICK_RATE_MS);
 }
@@ -459,7 +488,7 @@ static void light_sleep_wakeup_source_deinit(void)
 {
     if (gpio_task_handle) {
         ESP_LOGD(TAG, "Gpio wakeup deinit");
-        vQueueDelete(gpio_semaphore);
+        vQueueDelete(gpio_evt_queue);
         light_sleep_gpio_disable(GPIO_WAKEUP_NUM);
         vTaskDelete(gpio_task_handle);
         gpio_task_handle = NULL;
@@ -510,8 +539,10 @@ static void register_gpio_wakeup_in_deep_sleep(gpio_num_t gpio_num, uint8_t gpio
 
 void enter_deep_sleep(esp_sleep_source_t wakeup_mode)
 {
-    // Reset the timer wake-up source to prevent the system from waking up by vTaskDelay() in auto light sleep.
-    // Can also use esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER) to disable timer and then enable it by new time.
+    /*
+     * Reset the timer wake-up source to prevent the system from waking up by vTaskDelay() in auto light sleep.
+     * Can also use esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER) to disable timer and then enable it by new time.
+     */
     esp_sleep_enable_timer_wakeup(portMAX_DELAY);
     gpio_num_t deep_sleep_gpio_num = GPIO_WAKEUP_NUM;
     gpio_reset_pin(deep_sleep_gpio_num);
@@ -537,7 +568,7 @@ void enter_deep_sleep(esp_sleep_source_t wakeup_mode)
             break;
         case ESP_SLEEP_WAKEUP_GPIO:
             ESP_LOGI(TAG, "Enable gpio wakeup in deep sleep");
-            // GPIO0~5 can be use to wakeup system from deep sleep for ESP32C3
+            /* GPIO0~5 can be use to wakeup system from deep sleep for ESP32C3 */
             deep_sleep_gpio_num = GPIO_NUM_2;
             register_gpio_wakeup_in_deep_sleep(deep_sleep_gpio_num, 0);
             break;
