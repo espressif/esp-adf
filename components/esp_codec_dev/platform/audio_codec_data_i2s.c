@@ -347,31 +347,36 @@ static int _i2s_data_enable(const audio_codec_data_if_t *h, esp_codec_dev_type_t
     if (i2s_data->is_open == false) {
         return ESP_CODEC_DEV_WRONG_STATE;
     }
-    bool playback = dev_type & ESP_CODEC_DEV_TYPE_OUT ? true : false;
     int ret = ESP_CODEC_DEV_OK;
-    // When RX is working TX disable should be blocked
-    if (enable == false && i2s_data->in_enable && playback && i2s_data->out_handle) {
-        ESP_LOGI(TAG, "Pending out channel for in channel running");
-        i2s_data->out_disable_pending = true;
-    }
-#if SOC_I2S_HW_VERSION_1
-    // For ESP32 and ESP32S3 if disable RX, TX also not work need pending until TX not used
-    else if (enable == false && i2s_data->out_enable && playback == false && i2s_data->in_handle) {
-        ESP_LOGI(TAG, "Pending in channel for out channel running");
-        i2s_data->in_disable_pending = true;
-    }
-#endif
-    else {
-        ret = _i2s_drv_enable(i2s_data, playback, enable);
-        // Disable TX when RX disable if TX disable is pending
-        if (enable == false) {
-            if (playback == false && i2s_data->out_disable_pending)  {
-                ret = _i2s_drv_enable(i2s_data, true, enable);
-                i2s_data->out_disable_pending = false;
-            }
-            if (playback == true && i2s_data->in_disable_pending)  {
-                ret = _i2s_drv_enable(i2s_data, false, enable);
-                i2s_data->in_disable_pending = false;
+    if (dev_type == ESP_CODEC_DEV_TYPE_IN_OUT) {
+        ret = _i2s_drv_enable(i2s_data, true, enable);
+        ret = _i2s_drv_enable(i2s_data, false, enable);
+    } else {
+        bool playback = dev_type & ESP_CODEC_DEV_TYPE_OUT ? true : false;
+        // When RX is working TX disable should be blocked
+        if (enable == false && i2s_data->in_enable && playback && i2s_data->out_handle) {
+            ESP_LOGI(TAG, "Pending out channel for in channel running");
+            i2s_data->out_disable_pending = true;
+        }
+    #if SOC_I2S_HW_VERSION_1
+        // For ESP32 and ESP32S3 if disable RX, TX also not work need pending until TX not used
+        else if (enable == false && i2s_data->out_enable && playback == false && i2s_data->in_handle) {
+            ESP_LOGI(TAG, "Pending in channel for out channel running");
+            i2s_data->in_disable_pending = true;
+        }
+    #endif
+        else {
+            ret = _i2s_drv_enable(i2s_data, playback, enable);
+            // Disable TX when RX disable if TX disable is pending
+            if (enable == false) {
+                if (playback == false && i2s_data->out_disable_pending)  {
+                    ret = _i2s_drv_enable(i2s_data, true, enable);
+                    i2s_data->out_disable_pending = false;
+                }
+                if (playback == true && i2s_data->in_disable_pending)  {
+                    ret = _i2s_drv_enable(i2s_data, false, enable);
+                    i2s_data->in_disable_pending = false;
+                }
             }
         }
     }
@@ -429,7 +434,8 @@ static int _i2s_data_set_fmt(const audio_codec_data_if_t *h, esp_codec_dev_type_
         memcpy(&i2s_data->fs, fs, sizeof(esp_codec_dev_sample_info_t));
         memcpy(&i2s_data->in_fs, fs, sizeof(esp_codec_dev_sample_info_t));
         memcpy(&i2s_data->out_fs, fs, sizeof(esp_codec_dev_sample_info_t));
-        ret = set_fs(i2s_data, true, false);
+        ret = set_fs(i2s_data, true, true);
+        ret = set_fs(i2s_data, false, true);
     } else {
         ret = check_fs_compatible(i2s_data, dev_type & ESP_CODEC_DEV_TYPE_OUT ? true : false, fs);
     }
