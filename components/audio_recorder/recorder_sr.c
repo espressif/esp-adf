@@ -592,7 +592,7 @@ esp_err_t recorder_sr_reset_speech_cmd(recorder_sr_handle_t handle, char *comman
 
     esp_mn_commands_clear();
 
-    uint8_t cmd_id = 0;
+    uint16_t cmd_id = 0;
     char *cmd_str = NULL;
     char *phrase = NULL;
     strcpy(buf, command_str);
