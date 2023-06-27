@@ -64,6 +64,7 @@ typedef struct {
     int          rb_size;                               /*!< Ringbuffer size of recorder sr */
     char         *partition_label;                      /*!< Partition label which stored the model data */
     char         *mn_language;                          /*!< Command language for multinet to load */
+    char         *wn_wakeword;                          /*!< Wake Word for WakeNet to load. This is useful when multiple Wake Words are selected in sdkconfig. Setting this to NULL will use the first found model. */
 } recorder_sr_cfg_t;
 
 #if CONFIG_AFE_MIC_NUM == (1)
@@ -99,6 +100,7 @@ typedef struct {
     .rb_size          = SR_OUTPUT_RB_SIZE,      \
     .partition_label  = "model",                \
     .mn_language      = ESP_MN_CHINESE,         \
+    .wn_wakeword      = NULL,                   \
 };
 
 /**
