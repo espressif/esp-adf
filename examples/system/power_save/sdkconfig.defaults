@@ -16,6 +16,8 @@ CONFIG_MAIN_TASK_STACK_SIZE=3072
 CONFIG_SPIRAM_SUPPORT=y
 CONFIG_SPIRAM_IGNORE_NOTFOUND=y
 CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
 
 # Increase default app partition size to accommodate console example
 # by providing new partition table in "power_save.csv"

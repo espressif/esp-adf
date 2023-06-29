@@ -26,6 +26,7 @@ CONFIG_SPIRAM_USE_MALLOC=y
 CONFIG_SPIRAM_SPEED_80M=y
 CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
 CONFIG_WIFI_LWIP_ALLOCATION_FROM_SPIRAM_FIRST=y
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
 
 # Increase default app partition size to accommodate console example
 # by providing new partition table in "partitions_dlna_example.csv"
