@@ -74,11 +74,11 @@ esp_err_t tt21100_tp_init(void)
 {
     esp_err_t ret_val = i2c_init();
 
-    uint8_t reg_val = 0;
+    uint16_t reg_val = 0;
     do {
-        tt21100_read(&reg_val, sizeof(reg_val));
+        tt21100_read((uint8_t *)&reg_val, sizeof(uint16_t));
         vTaskDelay(pdMS_TO_TICKS(20));
-    } while (0);
+    } while ((reg_val != 0x0002) && ((reg_val & 0xFF00) != 0xFF00)) ;
     return ret_val;
 }
 
@@ -129,6 +129,10 @@ esp_err_t tt21100_tp_read(void)
     /* Get report data length */
     ret_val |= tt21100_read(&data_len, sizeof(data_len));
     ESP_LOGD(TAG, "Data len : %u", data_len);
+    if (data_len == 0) {
+        ESP_LOGE(TAG, "tt21100 read invalid data length (%d)", data_len);
+        return ESP_FAIL;
+    }
 
     /* Read report data if length */
     if (data_len < 0xff) {
