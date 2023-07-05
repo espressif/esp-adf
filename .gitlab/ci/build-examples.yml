@@ -25,45 +25,7 @@
   interruptible: true
   when: always
 
-# same as above, but for CMake
-.build_examples_cmake: &build_examples_cmake
-  extends: .build_template
-  parallel: 8
-  artifacts:
-    when: always
-    paths:
-      - build_examples/list.json
-      - build_examples/list_job_*.json
-      - build_examples/*/*/*/sdkconfig
-      - build_examples/*/*/*/build/*.bin
-      - build_examples/*/*/*/build/*.elf
-      - build_examples/*/*/*/build/*.map
-      - build_examples/*/*/*/build/flasher_args.json
-      - build_examples/*/*/*/build/bootloader/*.bin
-      - build_examples/*/*/*/build/partition_table/*.bin
-      - $LOG_PATH
-    expire_in: 4 days
-  variables:
-    LOG_PATH: "$CI_PROJECT_DIR/log_examples"
-    BUILD_PATH: "$CI_PROJECT_DIR/build_examples"
-  script:
-    # it's not possible to build 100% out-of-tree and have the "artifacts"
-    # mechanism work, but this is the next best thing
-    - cmake --version
-    - mkdir -p ${BUILD_PATH}
-    - mkdir -p ${LOG_PATH}
-    - echo "The IDF branch is "${IDF_VERSION}
-    - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
-    - *setup_tools_unless_target_test
-    - export PEDANTIC_CFLAGS="-Werror -Wno-implicit-fallthrough"
-    - export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
-    - ${ADF_PATH}/tools/ci/build_examples_cmake.sh
-    # Check if the tests demand CMake built binaries. If not, delete them
-    - if [ "$EXAMPLE_TEST_BUILD_SYSTEM" == "cmake" ]; then exit 0; fi
-    - cd ..
-    - rm -rf build_examples
-
-# same as above, but for v4.4
+# same as above, but for v4.4 CMake
 .build_examples_cmake_v44: &build_examples_cmake_v44
   <<: *build_template_v44
   parallel: 7
@@ -123,30 +85,6 @@
     # - rm -rf build_examples
     # - cd ..
     # - rm build_examples/*/*/*/build -r
-
-build_examples_v41_default_board_cmake:
-  image: $ADF_DOCKER_REGISTRY/env_v4.4:1
-  extends:
-    - .rules:build:adf_idfs_example_test
-    - .build_examples_cmake
-  variables:
-    IDF_TARGET: esp32
-    IDF_VERSION: release/v4.1
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
-    AUDIO_HAL: ESP_LYRAT_V4_3
-    IDF_FIND_APP_PATH_ARG: ""
-
-build_examples_v42_default_board_cmake:
-  image: $ADF_DOCKER_REGISTRY/env_v4.4:1
-  extends:
-    - .rules:build:adf_idfs_example_test
-    - .build_examples_cmake
-  variables:
-    IDF_TARGET: esp32
-    IDF_VERSION: release/v4.2
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
-    AUDIO_HAL: ESP_LYRAT_V4_3
-    IDF_FIND_APP_PATH_ARG: ""
 
 build_examples_v43_esp32_lyrat_v4_3_cmake:
   extends:
