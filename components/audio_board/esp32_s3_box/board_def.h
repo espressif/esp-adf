@@ -49,6 +49,7 @@
  * @brief SDCARD Function Definition
  *        PMOD2 for one line sdcard
  */
+#define FUNC_SDCARD_EN             (1)
 #define SDCARD_OPEN_FILE_NUM_MAX    5
 #define SDCARD_INTR_GPIO            -1
 #define SDCARD_PWR_CTRL             -1

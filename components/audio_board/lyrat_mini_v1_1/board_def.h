@@ -33,6 +33,11 @@
 #define SDCARD_INTR_GPIO          GPIO_NUM_34
 #define SDCARD_PWR_CTRL           GPIO_NUM_13
 
+#define ESP_SD_PIN_CLK            GPIO_NUM_14
+#define ESP_SD_PIN_CMD            GPIO_NUM_15
+#define ESP_SD_PIN_D0             GPIO_NUM_2
+#define ESP_SD_PIN_D3             -1
+
 
 /**
  * @brief LED Function Definition

@@ -30,8 +30,11 @@
 #include "esp_log.h"
 #include "esp_err.h"
 #include "esp_vfs_fat.h"
+#include "soc/soc_caps.h"
 
+#if SOC_SDMMC_HOST_SUPPORTED
 #include "driver/sdmmc_host.h"
+#endif
 #include "driver/sdmmc_defs.h"
 #include "driver/gpio.h"
 
@@ -41,11 +44,6 @@
 
 static const char *TAG = "SDCARD";
 int g_gpio = -1;
-
-#define PIN_NUM_MISO 2
-#define PIN_NUM_MOSI 15
-#define PIN_NUM_CLK  14
-#define PIN_NUM_CS   13
 
 static void sdmmc_card_print_info(const sdmmc_card_t *card)
 {
@@ -67,13 +65,14 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
     }
 
     sdmmc_card_t *card = NULL;
-    esp_err_t ret = 0;
+    esp_err_t ret = ESP_FAIL;
 
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
         .max_files = get_sdcard_open_file_num_max(),
     };
     if (mode != SD_MODE_SPI) {
+#if SOC_SDMMC_HOST_SUPPORTED
         ESP_LOGI(TAG, "Using %d-line SD mode,  base path=%s", mode, base_path);
 
         sdmmc_host_t host = SDMMC_HOST_DEFAULT();
@@ -87,7 +86,7 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         // connected on the bus. This is for debug / example purpose only.
         slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
 
-#if CONFIG_IDF_TARGET_ESP32S3
+#if SOC_SDMMC_USE_GPIO_MATRIX
         slot_config.clk = ESP_SD_PIN_CLK;
         slot_config.cmd = ESP_SD_PIN_CMD;
         slot_config.d0 = ESP_SD_PIN_D0;
@@ -100,44 +99,41 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         slot_config.d7 = ESP_SD_PIN_D7;
         slot_config.cd = ESP_SD_PIN_CD;
         slot_config.wp = ESP_SD_PIN_WP;
-#else
-        gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);
-        gpio_set_pull_mode(GPIO_NUM_2,  GPIO_PULLUP_ONLY);
-
-        if (mode == SD_MODE_4_LINE) {
-            gpio_set_pull_mode(GPIO_NUM_4,  GPIO_PULLUP_ONLY);
-            gpio_set_pull_mode(GPIO_NUM_12, GPIO_PULLUP_ONLY);
-        }
 #endif
         ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
+#endif
     } else {
         ESP_LOGI(TAG, "Using SPI mode, base path=%s", base_path);
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0))
         sdmmc_host_t host = SDSPI_HOST_DEFAULT();
         spi_bus_config_t bus_cfg = {
-            .mosi_io_num = PIN_NUM_MOSI,
-            .miso_io_num = PIN_NUM_MISO,
-            .sclk_io_num = PIN_NUM_CLK,
+            .mosi_io_num = ESP_SD_PIN_CMD,
+            .miso_io_num = ESP_SD_PIN_D0,
+            .sclk_io_num = ESP_SD_PIN_CLK,
             .quadwp_io_num = -1,
             .quadhd_io_num = -1,
             .max_transfer_sz = 4000,
         };
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
         ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CH_AUTO);
+#else
+        ret = spi_bus_initialize(host.slot, &bus_cfg, host.slot);
+#endif
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Failed to initialize bus.");
             return ret;
         }
         sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
-        slot_config.gpio_cs = PIN_NUM_CS;
+        slot_config.gpio_cs = ESP_SD_PIN_D3;
         slot_config.host_id = host.slot;
         ret = esp_vfs_fat_sdspi_mount(base_path, &host, &slot_config, &mount_config, &card);
 #else
         sdmmc_host_t host = SDSPI_HOST_DEFAULT();
         sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
-        slot_config.gpio_miso = PIN_NUM_MISO;
-        slot_config.gpio_mosi = PIN_NUM_MOSI;
-        slot_config.gpio_sck  = PIN_NUM_CLK;
-        slot_config.gpio_cs   = PIN_NUM_CS;
+        slot_config.gpio_miso = ESP_SD_PIN_D0;
+        slot_config.gpio_mosi = ESP_SD_PIN_CMD;
+        slot_config.gpio_sck  = ESP_SD_PIN_CLK;
+        slot_config.gpio_cs   = ESP_SD_PIN_D3;
 
         ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
 #endif

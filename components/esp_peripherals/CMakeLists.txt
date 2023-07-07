@@ -35,13 +35,21 @@ IF (CONFIG_IDF_TARGET STREQUAL "esp32")
 list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lib/sdcard ./lib/touch)
 list(APPEND COMPONENT_SRCS ./lib/sdcard/sdcard.c ./periph_sdcard.c ./periph_touch.c ./lib/touch/touch.c)
 
+ELSEIF (CONFIG_IDF_TARGET STREQUAL "esp32c3")
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lib/sdcard)
+list(APPEND COMPONENT_SRCS ./lib/sdcard/sdcard.c ./periph_sdcard.c)
+
+ELSEIF (CONFIG_IDF_TARGET STREQUAL "esp32c6")
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lib/sdcard)
+list(APPEND COMPONENT_SRCS ./lib/sdcard/sdcard.c ./periph_sdcard.c)
+
 ELSEIF (CONFIG_IDF_TARGET STREQUAL "esp32s3")
 list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lib/sdcard ./lib/touch)
 list(APPEND COMPONENT_SRCS ./lib/sdcard/sdcard.c ./periph_sdcard.c ./periph_touch.c ./lib/touch/touch.c)
 
-ELSEIF((ONFIG_IDF_TARGET STREQUAL "esp32s2"))
-list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lib/touch)
-list(APPEND COMPONENT_SRCS ./periph_touch.c ./lib/touch/touch.c)
+ELSEIF (CONFIG_IDF_TARGET STREQUAL "esp32s2")
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lib/sdcard ./lib/touch)
+list(APPEND COMPONENT_SRCS ./lib/sdcard/sdcard.c ./periph_sdcard.c ./periph_touch.c ./lib/touch/touch.c)
 ENDIF ()
 
 set(COMPONENT_REQUIRES driver audio_hal audio_sal fatfs console audio_pipeline audio_board spiffs display_service esp_dispatcher bt mbedtls wpa_supplicant nvs_flash)
