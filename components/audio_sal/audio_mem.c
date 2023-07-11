@@ -36,7 +36,31 @@
 #include "esp_efuse.h"
 #endif
 
-// #define ENABLE_AUDIO_MEM_TRACE
+#ifdef CONFIG_MEDIA_LIB_MEM_AUTO_TRACE
+#define ENABLE_AUDIO_MEM_TRACE
+#define MALLOC_RAM_FLAG 1
+#endif
+/**
+ * @brief Memory trace function is replaced by mem_trace module in `media_lib_sal`
+ *        Users need follow below steps to let trace function work
+ *        1. After app start `#include "media_lib_adapter.h"` and call `media_lib_add_default_adapter();`
+ *        2. Automatically enable memory trace function from menuconfig
+ *             `ADF Library Configuration --> Support trace memory automatically`
+ *           Or call `media_lib_start_mem_trace` manually
+ *        3. Call `media_lib_stop_mem_trace` to stop trace and see trace results
+ * 
+ *        Use weak realization of trace function so that can work without `media_lib_sal`
+ */
+#ifdef ENABLE_AUDIO_MEM_TRACE
+int __attribute__((weak)) media_lib_add_trace_mem(const char *module, void *addr, int size, uint8_t flag)
+{
+    return 0;
+}
+
+void __attribute__((weak)) media_lib_remove_trace_mem(void *addr)
+{
+}
+#endif
 
 void *audio_malloc(size_t size)
 {
@@ -47,17 +71,17 @@ void *audio_malloc(size_t size)
     data = malloc(size);
 #endif
 #ifdef ENABLE_AUDIO_MEM_TRACE
-    ESP_LOGI("AUDIO_MEM", "malloc:%p, size:%d, called:0x%08x", data, size, (intptr_t)__builtin_return_address(0) - 2);
+    media_lib_add_trace_mem(NULL, data, size, 0);
 #endif
     return data;
 }
 
 void audio_free(void *ptr)
 {
-    free(ptr);
 #ifdef ENABLE_AUDIO_MEM_TRACE
-    ESP_LOGI("AUIDO_MEM", "free:%p, called:0x%08x", ptr, (intptr_t)__builtin_return_address(0) - 2);
+    media_lib_remove_trace_mem(ptr);
 #endif
+    free(ptr);
 }
 
 void *audio_calloc(size_t nmemb, size_t size)
@@ -72,7 +96,7 @@ void *audio_calloc(size_t nmemb, size_t size)
     data = calloc(nmemb, size);
 #endif
 #ifdef ENABLE_AUDIO_MEM_TRACE
-    ESP_LOGI("AUIDO_MEM", "calloc:%p, size:%d, called:0x%08x", data, size, (intptr_t)__builtin_return_address(0) - 2);
+    media_lib_add_trace_mem(NULL, data, nmemb*size, 0);
 #endif
     return data;
 }
@@ -80,30 +104,35 @@ void *audio_calloc(size_t nmemb, size_t size)
 void *audio_realloc(void *ptr, size_t size)
 {
     void *p = NULL;
+#ifdef ENABLE_AUDIO_MEM_TRACE
+    media_lib_remove_trace_mem(ptr);
+#endif
+
 #if CONFIG_SPIRAM_BOOT_INIT
     p = heap_caps_realloc(ptr, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 #else
     p = heap_caps_realloc(ptr, size, MALLOC_CAP_8BIT);
 #endif
 #ifdef ENABLE_AUDIO_MEM_TRACE
-    ESP_LOGI("AUDIO_MEM", "realloc,new:%p, ptr:%p size:%d, called:0x%08x", p, ptr, size, (intptr_t)__builtin_return_address(0) - 2);
+    media_lib_add_trace_mem(NULL, p, size, 0);
 #endif
     return p;
 }
 
 char *audio_strdup(const char *str)
 {
+    int size = strlen(str) + 1;
 #if CONFIG_SPIRAM_BOOT_INIT
-    char *copy = heap_caps_malloc(strlen(str) + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    char *copy = heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 #else
-    char *copy = malloc(strlen(str) + 1);
+    char *copy = malloc(size);
 #endif
     if (copy) {
         strcpy(copy, str);
-    }
 #ifdef ENABLE_AUDIO_MEM_TRACE
-    ESP_LOGI("AUDIO_MEM", "strdup:%p, size:%d, called:0x%08x", copy, strlen(copy), (intptr_t)__builtin_return_address(0) - 2);
+        media_lib_add_trace_mem(NULL, copy, size, 0);
 #endif
+    }
     return copy;
 }
 
@@ -115,9 +144,8 @@ void *audio_calloc_inner(size_t n, size_t size)
 #else
     data = heap_caps_calloc(n, size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
 #endif
-
 #ifdef ENABLE_AUDIO_MEM_TRACE
-    ESP_LOGI("AUIDO_MEM", "calloc_inner:%p, size:%d, called:0x%08x", data, size, (intptr_t)__builtin_return_address(0) - 2);
+    media_lib_add_trace_mem(NULL, data, n*size, MALLOC_RAM_FLAG);
 #endif
     return data;
 }
@@ -132,21 +160,19 @@ void audio_mem_print(const char *tag, int line, const char *func)
 #endif
 }
 
-#if defined (CONFIG_SPIRAM_BOOT_INIT)
-bool audio_mem_spiram_is_enabled(void)
-{
-    return true;
-}
-#else
-bool audio_mem_spiram_is_enabled(void)
-{
-    return false;
-}
-#endif
 
-#if defined(CONFIG_SPIRAM_BOOT_INIT) && (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY)
+bool audio_mem_spiram_is_enabled(void)
+{
+#if defined (CONFIG_SPIRAM_BOOT_INIT)
+    return true;
+#else
+    return false;
+#endif
+}
+
 bool audio_mem_spiram_stack_is_enabled(void)
 {
+#if defined(CONFIG_SPIRAM_BOOT_INIT) && (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY)
     bool ret = true;
 #if defined(CONFIG_IDF_TARGET_ESP32)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 4)
@@ -158,12 +184,9 @@ bool audio_mem_spiram_stack_is_enabled(void)
         ESP_LOGW("AUIDO_MEM", "Can't support stack on external memory due to ESP32 chip is %d", (int)chip_ver);
         ret = false;
     }
-#endif
+#endif // defined(CONFIG_IDF_TARGET_ESP32)
     return ret;
-}
-#else
-bool audio_mem_spiram_stack_is_enabled(void)
-{
+#else  // defined(CONFIG_SPIRAM_BOOT_INIT) ...
     return false;
-}
 #endif
+}
