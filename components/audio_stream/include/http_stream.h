@@ -86,10 +86,15 @@ typedef struct {
     bool                        enable_playlist_parser; /*!< Enable playlist parser*/
     int                         multi_out_num;          /*!< The number of multiple output */
     const char                  *cert_pem;              /*!< SSL server certification, PEM format as string, if the client requires to verify server */
-    esp_err_t (*crt_bundle_attach)(void *conf);       /*!< Function pointer to esp_crt_bundle_attach. Enables the use of certification
-                                                          bundle for server verification, must be enabled in menuconfig */
+    esp_err_t (*crt_bundle_attach)(void *conf);         /*!< Function pointer to esp_crt_bundle_attach. Enables the use of certification
+                                                             bundle for server verification, must be enabled in menuconfig */
+    int                         request_size;           /*!< Request data size each time from `http_client`
+                                                             Defaults use DEFAULT_ELEMENT_BUFFER_LENGTH if set to 0
+                                                             Need care this setting if audio frame size is small and want low latency playback */                                                         
+    int                         request_range_size;     /*!< Range size setting for header `Range: bytes=start-end`
+                                                             Request full range of resource if set to 0
+                                                             Range size bigger than request size is recommended */
 } http_stream_cfg_t;
-
 
 #define HTTP_STREAM_TASK_STACK          (6 * 1024)
 #define HTTP_STREAM_TASK_CORE           (0)

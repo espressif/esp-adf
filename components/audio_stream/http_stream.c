@@ -94,9 +94,12 @@ typedef struct http_stream {
     esp_err_t                      (*crt_bundle_attach)(void *conf); /*  Function pointer to esp_crt_bundle_attach*/
 #endif
     bool                            gzip_encoding;     /* Content is encoded */
-    gzip_miniz_handle_t             gzip;             /* GZIP instance */
+    gzip_miniz_handle_t             gzip;              /* GZIP instance */
     http_stream_hls_key_t           *hls_key;
     hls_handle_t                    *hls_media;
+    int                             request_range_size;
+    int64_t                         request_range_end;
+    bool                            is_last_range;
 } http_stream_t;
 
 static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
@@ -172,6 +175,22 @@ static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
         if (http->gzip == NULL) {
             ESP_LOGE(TAG, "Content-Encoding %s not supported", evt->header_value);
             return ESP_FAIL;
+        }
+    }
+    else if (strcasecmp(evt->header_key, "Content-Range") == 0) {
+        http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+        if (http->request_range_size) {
+            char* end_pos = strchr(evt->header_value, '-');
+            http->is_last_range = true;
+            if (end_pos) {
+                end_pos++;
+                int64_t range_end = atoll(end_pos);
+                if (range_end == http->request_range_end) {
+                    http->is_last_range = false;
+                }
+                // Update total bytes to range end
+                audio_element_set_total_bytes(el, range_end+1);
+            }
         }
     }
     return ESP_OK;
@@ -413,79 +432,39 @@ static char *_playlist_get_next_track(audio_element_handle_t self)
     return NULL;
 }
 
-static esp_err_t _http_open(audio_element_handle_t self)
+static void _prepare_range(http_stream_t *http, int64_t pos)
 {
-    http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
-    esp_err_t err;
-    char *uri = NULL;
-    audio_element_info_t info;
-    ESP_LOGD(TAG, "_http_open");
-
-    if (http->is_open) {
-        ESP_LOGE(TAG, "already opened");
-        return ESP_OK;
-    }
-    http->_errno = 0;
-    audio_element_getinfo(self, &info);
-_stream_open_begin:
-    if (http->hls_key && http->hls_key->key_loaded == false) {
-        uri = http->hls_key->key_url;
-    } else if (info.byte_pos == 0) {
-        uri = _playlist_get_next_track(self);
-    } else if (http->is_playlist_resolved) {
-        uri = http_playlist_get_last_track(http->playlist);
-    }
-    if (uri == NULL) {
-        if (http->is_playlist_resolved && http->enable_playlist_parser) {
-            if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
-                ESP_LOGE(TAG, "Failed to process user callback");
-                return ESP_FAIL;
+    if (http->request_range_size > 0 || pos != 0) {
+        char range_header[64] = {0};
+        if (http->request_range_size == 0) {
+            snprintf(range_header, sizeof(range_header), "bytes=%lld-", pos);
+        } else {
+            int64_t end_pos = pos + http->request_range_size - 1;
+            if (pos < 0 && end_pos > 0) {
+                end_pos = 0;
             }
-            goto _stream_open_begin;
+            snprintf(range_header, sizeof(range_header), "bytes=%lld-%lld", pos, end_pos);
+            http->request_range_end = end_pos;
         }
-        uri = audio_element_get_uri(self);
-    }
-
-    if (uri == NULL) {
-        ESP_LOGE(TAG, "Error open connection, uri = NULL");
-        return ESP_FAIL;
-    }
-    audio_element_getinfo(self, &info);
-    ESP_LOGD(TAG, "URI=%s", uri);
-    // if not initialize http client, initial it
-    if (http->client == NULL) {
-        esp_http_client_config_t http_cfg = {
-            .url = uri,
-            .event_handler = _http_event_handle,
-            .user_data = self,
-            .timeout_ms = 30 * 1000,
-            .buffer_size = HTTP_STREAM_BUFFER_SIZE,
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
-            .buffer_size_tx = 1024,
-#endif
-            .cert_pem = http->cert_pem,
-#if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 4)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
-            .crt_bundle_attach = http->crt_bundle_attach,
-#endif //  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
-        };
-        http->client = esp_http_client_init(&http_cfg);
-        AUDIO_MEM_CHECK(TAG, http->client, return ESP_ERR_NO_MEM);
-    } else {
-        esp_http_client_set_url(http->client, uri);
-    }
-
-    if (info.byte_pos) {
-        char rang_header[32];
-        snprintf(rang_header, 32, "bytes=%d-", (int)info.byte_pos);
-        esp_http_client_set_header(http->client, "Range", rang_header);
+        esp_http_client_set_header(http->client, "Range", range_header);
     } else {
         esp_http_client_delete_header(http->client, "Range");
     }
+}
+
+static esp_err_t _http_load_uri(audio_element_handle_t self, audio_element_info_t* info)
+{
+    esp_err_t err;
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
+
+    esp_http_client_close(http->client);
 
     if (dispatch_hook(self, HTTP_STREAM_PRE_REQUEST, NULL, 0) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to process user callback");
         return ESP_FAIL;
     }
+
+    _prepare_range(http, info->byte_pos);
 
     if (http->stream_type == AUDIO_STREAM_WRITER) {
         err = esp_http_client_open(http->client, -1);
@@ -530,19 +509,20 @@ _stream_redirect:
     * Due to the total byte of content has been changed after seek, set info.total_bytes at beginning only.
     */
     int64_t cur_pos = esp_http_client_fetch_headers(http->client);
-    audio_element_getinfo(self, &info);
-    if (info.byte_pos <= 0) {
-        info.total_bytes = cur_pos;
+    audio_element_getinfo(self, info);
+    if (info->byte_pos <= 0) {
+        info->total_bytes = cur_pos;
+        ESP_LOGI(TAG, "total_bytes=%d", (int)info->total_bytes);
+        audio_element_set_total_bytes(self, info->total_bytes);
     }
-
-    ESP_LOGI(TAG, "total_bytes=%d", (int)info.total_bytes);
     int status_code = esp_http_client_get_status_code(http->client);
     if (status_code == 301 || status_code == 302) {
         esp_http_client_set_redirection(http->client);
         goto _stream_redirect;
     }
     if (status_code != 200
-        && (esp_http_client_get_status_code(http->client) != 206)) {
+        && (esp_http_client_get_status_code(http->client) != 206)
+        && (esp_http_client_get_status_code(http->client) != 416)) {
         ESP_LOGE(TAG, "Invalid HTTP stream, status code = %d", status_code);
         if (http->enable_playlist_parser) {
             http_playlist_clear(http->playlist);
@@ -550,12 +530,74 @@ _stream_redirect:
         }
         return ESP_FAIL;
     }
-    /**
-     * `audio_element_setinfo` is risky affair.
-     * It overwrites URI pointer as well. Pay attention to that!
-     */
-    audio_element_set_total_bytes(self, info.total_bytes);
+    return err;
+}
+
+static esp_err_t _http_open(audio_element_handle_t self)
+{
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
+    char *uri = NULL;
+    audio_element_info_t info;
+    ESP_LOGD(TAG, "_http_open");
+
+    if (http->is_open) {
+        ESP_LOGE(TAG, "already opened");
+        return ESP_OK;
+    }
+    http->_errno = 0;
+    audio_element_getinfo(self, &info);
+_stream_open_begin:
+    if (http->hls_key && http->hls_key->key_loaded == false) {
+        uri = http->hls_key->key_url;
+    } else if (info.byte_pos == 0) {
+        uri = _playlist_get_next_track(self);
+    } else if (http->is_playlist_resolved) {
+        uri = http_playlist_get_last_track(http->playlist);
+    }
+    if (uri == NULL) {
+        if (http->is_playlist_resolved && http->enable_playlist_parser) {
+            if (dispatch_hook(self, HTTP_STREAM_FINISH_PLAYLIST, NULL, 0) != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to process user callback");
+                return ESP_FAIL;
+            }
+            goto _stream_open_begin;
+        }
+        uri = audio_element_get_uri(self);
+    }
+
+    if (uri == NULL) {
+        ESP_LOGE(TAG, "Error open connection, uri = NULL");
+        return ESP_FAIL;
+    }
     
+    ESP_LOGD(TAG, "URI=%s", uri);
+    // if not initialize http client, initial it
+    if (http->client == NULL) {
+        esp_http_client_config_t http_cfg = {
+            .url = uri,
+            .event_handler = _http_event_handle,
+            .user_data = self,
+            .timeout_ms = 30 * 1000,
+            .buffer_size = HTTP_STREAM_BUFFER_SIZE,
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
+            .buffer_size_tx = 1024,
+#endif
+            .cert_pem = http->cert_pem,
+#if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+            .crt_bundle_attach = http->crt_bundle_attach,
+#endif //  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+        };
+        http->client = esp_http_client_init(&http_cfg);
+        AUDIO_MEM_CHECK(TAG, http->client, return ESP_ERR_NO_MEM);
+    } else {
+        esp_http_client_set_url(http->client, uri);
+    }
+    audio_element_getinfo(self, &info);
+
+    if (_http_load_uri(self, &info) != ESP_OK) {
+        return ESP_FAIL;
+    }
+
     if (_is_playlist(&info, uri) == true) {
         /**
          * `goto _stream_open_begin` blocks on http_open until it gets valid URL.
@@ -594,20 +636,22 @@ static esp_err_t _http_close(audio_element_handle_t self)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
     ESP_LOGD(TAG, "_http_close");
-    while (http->is_open) {
+    if (http->is_open) {
         http->is_open = false;
-        if (http->stream_type != AUDIO_STREAM_WRITER) {
-            break;
-        }
-        if (dispatch_hook(self, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
-            break;
-        }
-        esp_http_client_fetch_headers(http->client);
-
-        if (dispatch_hook(self, HTTP_STREAM_FINISH_REQUEST, NULL, 0) < 0) {
-            break;
-        }
+        do {
+            if (http->stream_type != AUDIO_STREAM_WRITER) {
+                break;
+            }
+            if (dispatch_hook(self, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
+                break;
+            }
+            esp_http_client_fetch_headers(http->client);
+            if (dispatch_hook(self, HTTP_STREAM_FINISH_REQUEST, NULL, 0) < 0) {
+                break;
+            }
+        } while (0);
     }
+
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
         if (http->enable_playlist_parser) {
             http_playlist_clear(http->playlist);
@@ -645,6 +689,19 @@ static esp_err_t _http_reconnect(audio_element_handle_t self)
     return err;
 }
 
+static bool _check_range_done(audio_element_handle_t self)
+{
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
+    bool last_range = http->is_last_range;
+    audio_element_info_t info = {};
+    audio_element_getinfo(self, &info);
+    // If not last range need reload uri from last position
+    if (last_range == false && _http_load_uri(self, &info) != ESP_OK) {
+        return true;
+    }
+    return last_range;
+}
+
 static int _http_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
@@ -654,6 +711,11 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
     int rlen = wrlen;
     if (rlen == 0) {
         rlen = _http_read_data(http, buffer, len);
+    }
+    if (rlen <= 0 && http->request_range_size) {
+        if (_check_range_done(self) == false) {
+            rlen = _http_read_data(http, buffer, len);
+        }
     }
     if (rlen <= 0 && http->auto_connect_next_track) {
         if (http_stream_auto_connect_next_track(self) == ESP_OK) {
@@ -840,6 +902,10 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
         cfg.read = _http_read;
     } else if (config->type == AUDIO_STREAM_WRITER) {
         cfg.write = _http_write;
+    }
+    http->request_range_size = config->request_range_size;
+    if (config->request_size) {
+        cfg.buffer_len = config->request_size;
     }
 
     el = audio_element_init(&cfg);
