@@ -43,10 +43,8 @@ static const char *TAG = "PERIPH_SDCARD";
 
 #define tick_get periph_tick_get
 
-
 static esp_err_t periph_sdcard_mount(esp_periph_handle_t periph);
 static esp_err_t periph_sdcard_unmount(esp_periph_handle_t periph);
-
 
 typedef struct {
     char *root;
@@ -106,13 +104,15 @@ static esp_err_t _sdcard_destroy(esp_periph_handle_t self)
 {
     VALIDATE_SDCARD(self, ESP_FAIL);
     esp_err_t ret = ESP_OK;
-
-    ret |= sdcard_unmount();
+    periph_sdcard_t *sdcard = esp_periph_get_data(self);
+    if (sdcard->is_mounted) {
+        ret |= sdcard_unmount();
+        sdcard->is_mounted = false;
+    }
     ret |= sdcard_destroy();
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "stop sdcard error!");
     }
-    periph_sdcard_t *sdcard = esp_periph_get_data(self);
     esp_periph_stop_timer(self);
     audio_free(sdcard->root);
     audio_free(sdcard);
