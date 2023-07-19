@@ -12,6 +12,11 @@ CONFIG_SDK_TOOLPREFIX="xtensa-esp32s2-elf-"
 # end of SDK tool configuration
 
 #
+# SPI RAM config
+#
+CONFIG_ESP32S2_SPIRAM_SUPPORT=y
+
+#
 # Audio HAL
 #
 CONFIG_ESP32_S2_KALUGA_1_V1_2_BOARD=y

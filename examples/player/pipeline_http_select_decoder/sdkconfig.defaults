@@ -14,6 +14,7 @@ CONFIG_SPIRAM_IGNORE_NOTFOUND=y
 CONFIG_SPIRAM_SPEED_80M=y
 CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
 CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
 
 # Increase default app partition size to accommodate SPIRAM
 # by providing new partition table in "partitions_http_select_decoder_example.csv"

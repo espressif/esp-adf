@@ -12,6 +12,11 @@ CONFIG_SDK_TOOLPREFIX="xtensa-esp32-elf-"
 # end of SDK tool configuration
 
 #
+# SPI RAM config
+#
+CONFIG_ESP32_SPIRAM_SUPPORT=y
+
+#
 # Audio HAL
 #
 CONFIG_ESP_LYRAT_V4_3_BOARD=y
