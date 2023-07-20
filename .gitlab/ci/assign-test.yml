@@ -1,14 +1,9 @@
 .add_gitlab_key_before_ut:
   before_script: &add_gitlab_key_before_ut
+    - source $ADF_PATH/tools/ci/utils.sh
     - echo "Not fetching submodules"
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - echo -n $GITLAB_KEY > ~/.ssh/id_rsa_base64
-    - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    - add_gitlab_ssh_keys
     - source $IDF_PATH/tools/ci/setup_python.sh
-    - source $IDF_PATH/tools/ci/configure_ci_environment.sh
 
 .assign_test_template: &assign_test_template
   tags:
@@ -23,17 +18,17 @@
     expire_in: 1 week
   before_script: *add_gitlab_key_before_ut
   script:
-    - ls
-    - pwd
     - python $UNIT_ASSIGN_SCRIPT $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml $CI_TARGET_UT_TEST_CONFIG_FILE $IDF_PATH/components/idf_test/unit_test/CIConfigs
   interruptible: true
 
-assign_test_v44:
+assign_ut_test_v4_4:
   extends:
     - .rules:build:unit_test
   <<: *assign_test_template
-  dependencies:
-    - build_ut_v44_make
+  needs:
+    - job: build_make_ut_v4_4
+      artifacts: true
+      optional: true
   variables:
     UNIT_ASSIGN_SCRIPT: "esp-idf/tools/tiny-test-fw/CIAssignUnitTest.py"
     PYTHON_VER: 3.7.7

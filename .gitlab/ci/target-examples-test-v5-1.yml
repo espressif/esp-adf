@@ -1,0 +1,104 @@
+.pull_esp_idf: &pull_esp_idf |
+  add_gitlab_ssh_keys
+  fetch_idf_branch ${IDF_VERSION_TAG}
+
+.target_test_template:
+  image: "$CI_DOCKER_REGISTRY/target-test-env-v5.0:3"
+  stage: target_test
+  variables:
+    GIT_DEPTH: 1
+    SUBMODULES_TO_FETCH: "none"
+  cache:
+    # Usually do not need submodule-cache in target_test
+    - key: pip-cache
+      paths:
+        - .cache/pip
+      policy: pull
+
+.setup_tools_unless_target_test: &setup_tools_unless_target_test |
+  if [[ -n "$IDF_DONT_USE_MIRRORS" ]]; then
+    export IDF_MIRROR_PREFIX_MAP=
+  fi
+  if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
+    tools/idf_tools.py --non-interactive install ${SETUP_TOOLS_LIST:-} && eval "$(tools/idf_tools.py --non-interactive export)" || exit 1
+    if [[ ! -z "$OOCD_DISTRO_URL" && "$CI_JOB_STAGE" == "target_test" ]]; then
+      echo "Using custom OpenOCD from ${OOCD_DISTRO_URL}"
+      wget $OOCD_DISTRO_URL
+      ARCH_NAME=$(basename $OOCD_DISTRO_URL)
+      tar -x -f $ARCH_NAME
+      export OPENOCD_SCRIPTS=$PWD/openocd-esp32/share/openocd/scripts
+      export PATH=$PWD/openocd-esp32/bin:$PATH
+    fi
+  fi
+
+.target_test_job_template: &target_test_job_template
+  extends:
+    - .rules:build:enable_adf_example_test
+    - .target_test_template
+  artifacts:
+    when: always
+    paths:
+      - "**/*.log"
+      - $LOG_PATH
+      - "$ADF_PATH/examples/player/**/record.wav"
+    exclude:
+      - .git/**/*
+    reports:
+      junit: $LOG_PATH/*/XUNIT_RESULT.xml
+    expire_in: 1 week
+  variables:
+    IDF_TAG_FLAG: "true"
+    IDF_VERSION_TAG: v5.0.1
+    TEST_FW_PATH: "$CI_PROJECT_DIR/tools/tiny-test-fw"
+    LOG_PATH: "$CI_PROJECT_DIR/TEST_LOGS"
+    ENV_FILE: "${IDF_PATH}/ci-test-runner-configs/$CI_RUNNER_DESCRIPTION/EnvConfig.yml"
+  before_script:
+    - cp $IDF_PATH/artifact_index.json $CI_PROJECT_DIR
+    - source ${ADF_PATH}/tools/ci/utils.sh
+    - *pull_esp_idf
+    - source ${IDF_PATH}/tools/ci/utils.sh
+    - is_based_on_commits $REQUIRED_ANCESTOR_COMMITS
+    - export PYTHONPATH="$IDF_PATH/tools:$IDF_PATH/tools/ci/python_packages:$PYTHONPATH"
+    - export PYTHONPATH="$ADF_PATH/tools:$PYTHONPATH"
+    - *setup_tools_unless_target_test
+  script:
+    - define_config_file_name
+    # first test if config file exists, if not exist, exit 0
+    - |
+      { [[ -e $CONFIG_FILE ]]; } || { echo 'No config file found. Consider decreasing the parallel count of this job in ".gitlab/ci/target-test.yml"'; exit 0; }
+    # clone test env configs
+    - retry_failed git clone $TEST_ENV_CONFIG_REPO
+    - python $CHECKOUT_REF_SCRIPT ci-test-runner-configs ci-test-runner-configs
+    # git clone the known failure cases repo, run test
+    - retry_failed git clone $KNOWN_FAILURE_CASES_REPO known_failure_cases
+    # run test
+    - cd ${IDF_PATH}/tools/ci/python_packages/tiny_test_fw/bin
+    - cp $CI_PROJECT_DIR/artifact_index.json $IDF_PATH
+    - run_cmd python Runner.py $TEST_CASE_PATH -c $CONFIG_FILE -e $ENV_FILE --known_failure_cases_file $CI_PROJECT_DIR/known_failure_cases/known_failure_cases.txt
+
+.example_test_template_v5_1:
+  extends: .target_test_job_template
+  needs:
+    - assign_example_test_v5_1
+  variables:
+    TEST_CASE_PATH: "$CI_PROJECT_DIR/examples"
+    CONFIG_FILE_PATH: "${CI_PROJECT_DIR}/examples/test_configs/v5_1"
+    CHECKOUT_REF_SCRIPT: "${IDF_PATH}/tools/ci/checkout_project_ref.py"
+
+example_test_esp32_lyrat_v4_3_idfv5_1:
+  extends: .example_test_template_v5_1
+  tags:
+    - ADF_EXAMPLE_GENERIC
+    - ESP32
+
+example_test_esp32s2_kaluga_v1_2_idfv5_1:
+  extends: .example_test_template_v5_1
+  tags:
+    - ADF_EXAMPLE_GENERIC
+    - ESP32S2
+
+example_test_esp32s3_korvo_v2_idfv5_1:
+  extends: .example_test_template_v5_1
+  tags:
+    - ADF_EXAMPLE_GENERIC
+    - ESP32S3

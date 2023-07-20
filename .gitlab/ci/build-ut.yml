@@ -1,7 +1,18 @@
-.setup_tools_unless_target_test: &setup_tools_unless_target_test
-  if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
-    $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)" || exit 1;
+.setup_tools_unless_target_test_v4.4:
+  script: |
+    if [[ "$SETUP_TOOLS" == "1" || "$CI_JOB_STAGE" != "target_test" ]]; then
+      $IDF_PATH/tools/idf_tools.py --non-interactive install && eval "$($IDF_PATH/tools/idf_tools.py --non-interactive export)" || exit 1
+    fi
+
+.pull_adf_libs_ut_repo: &pull_adf_libs_ut_repo |
+  echo "current path:"$(pwd)
+  cd $ADF_PATH/..
+  if [[ ! -d "$ADF_PATH/../adf-libs-ut/" ]]; then
+    git clone ${GITLAB_SSH_SERVER}/adf/adf-libs-ut.git
+  else
+    echo "adf-libs-ut folder already exists"
   fi
+  cd -
 
 .build_ut_template: &build_ut_template
   stage: build
@@ -14,41 +25,21 @@
   when: always
 
 .build_esp_adf_unit_test_v44_template: &build_esp_adf_unit_test_v44_template
-  image: $ADF_DOCKER_REGISTRY/env_v4.4:1
+  image: $ADF_DOCKER_REGISTRY/env_v4.4:2
   <<: *build_ut_template
-
-.add_adf_components_to_ut_make_build: &add_adf_components_to_ut_make_build
-  - cd $ADF_PATH/../adf-libs-ut
-  - export ADF_UT=$(pwd)
-  - cd $ADF_PATH
-  - sed -i '/EXTRA_COMPONENT_DIRS += \$(ADF_PATH)\/components\//a\EXTRA_COMPONENT_DIRS += $(ADF_UT)/esp_audio' project.mk
-  - git log -2
-  - cd $IDF_PATH
-  - $ADF_PATH/tools/ci/set_idf.sh ${IDF_VERSION}
-  - source $IDF_PATH/tools/ci/configure_ci_environment.sh
-  - git apply $ADF_PATH/idf_patches/idf_v3.3_freertos.patch
-  - git apply $ADF_PATH/idf_patches/idf_v3.3_esp_http_client.patch
-  - cd $IDF_PATH/tools/unit-test-app
-  - cp $ADF_UT/sdkconfig.defaults ./
-  - rm -rf $IDF_PATH/tools/ci
-  - cp -rf $ADF_UT/ci $IDF_PATH/tools
-  - sed -i "s%CRITICAL_LEAK_THRESHOLD = 4096%CRITICAL_LEAK_THRESHOLD = 26240%" $IDF_PATH/tools/unit-test-app/components/test_utils/test_runner.c
-  - sed -i "s%include \$(IDF_PATH)\/make\/project.mk%include \$(ADF_PATH)\/project.mk%g" Makefile
-  - sed -i 's/ check-submodules $(/ $(/g' ${IDF_PATH}/make/project.mk
 
 .add_adf_components_to_ut_v44_make_build: &add_adf_components_to_ut_v44_make_build
   - cd $ADF_PATH/../adf-libs-ut
   - export ADF_UT=$(pwd)
   - cd $ADF_PATH
   - sed -i '/EXTRA_COMPONENT_DIRS += \$(ADF_PATH)\/components\//a\EXTRA_COMPONENT_DIRS += $(ADF_UT)/esp_audio' project.mk
-  - git log -2
   - cd $IDF_PATH
   - git clean -f
   - git checkout ${IDF_VERSION}
   - rm -rf $IDF_PATH/components/mqtt/esp-mqtt
   - git submodule update --init --recursive --depth 1
   - source $IDF_PATH/tools/ci/configure_ci_environment.sh
-  - *setup_tools_unless_target_test
+  - !reference [.setup_tools_unless_target_test_v4.4, script]
   - git apply $ADF_PATH/idf_patches/idf_v4.4_freertos.patch
   - cd $IDF_PATH/tools/unit-test-app
   - cp $ADF_UT/sdkconfig_v44.defaults ./sdkconfig.defaults
@@ -62,16 +53,18 @@
     paths:
       - $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml
       - $IDF_PATH/tools/unit-test-app/
+      - $IDF_PATH/tools/unit-test-app/sdkconfig
       - $IDF_PATH/tools/unit-test-app/output
       - $IDF_PATH/tools/unit-test-app/build/*.elf
       - $IDF_PATH/tools/unit-test-app/build/*.map
       - $IDF_PATH/tools/unit-test-app/build/*.bin
       - $IDF_PATH/tools/unit-test-app/build/download.config
       - $IDF_PATH/tools/unit-test-app/build/bootloader/*
+      - $IDF_PATH/tools/unit-test-app/partition_table_unit_test_app.csv
       - $IDF_PATH/tools/tiny-test-fw/
       - $IDF_PATH/tools/ci
-      - $IDF_PATH/components/esptool_py/esptool/
       - $IDF_PATH/components/partition_table/
+      - $IDF_PATH/components/esptool_py/esptool/
     expire_in: 4 days
   dependencies: []
   variables:
@@ -79,6 +72,7 @@
     OUTPUT_PATH: ${IDF_PATH}/tools/unit-test-app/output
   script:
     - echo $PATH
+    - *pull_adf_libs_ut_repo
     - *add_adf_components_to_ut_v44_make_build
     - MAKEFLAGS= make help # make sure kconfig tools are built in single process
     - make clean
@@ -99,8 +93,9 @@
     - cp -r build $CI_PROJECT_DIR
     - cd $IDF_PATH
     - git checkout .
-    - git checkout -- $IDF_PATH/components/freertos/include/freertos/task.h $IDF_PATH/components/freertos/tasks.c $IDF_PATH/tools/unit-test-app/Makefile $IDF_PATH/tools/unit-test-app/components/test_utils/test_runner.c $IDF_PATH/tools/unit-test-app/sdkconfig.defaults
-    - rm -rf tools/ci/apply_bot_filter.py tools/ci/build_examples.sh tools/ci/build_examples_cmake.sh tools/ci/check-executable.sh tools/ci/check-line-endings.sh tools/ci/check_examples_cmake_make.sh
+    - git clean -f tools/ci/check-executable.sh
+    - rm -rf tools/ci/apply_bot_filter.py tools/ci/build_examples.sh tools/ci/build_examples_cmake.sh \
+             tools/ci/check-executable.sh tools/ci/check-line-endings.sh tools/ci/check_examples_cmake_make.sh
     # use the 'tools/UnitTestParser.py' of release/v3.3 in order to generate 'idf_test/unit_test/TestCaseAll.yml'
     - echo "The IDF branch is v3.3(722043f734)"
     - git checkout 722043f734
@@ -116,17 +111,16 @@
     - cp $CI_PROJECT_DIR/build $IDF_PATH/tools/unit-test-app -r
     - cp -ar $ADF_UT/adf_configs $IDF_PATH/tools/unit-test-app
     - cd $ADF_UT
-    - pip install netifaces
-    - pip install pyyaml
-    - pip install junit_xml
+    - pip install netifaces pyyaml junit_xml
     - python tools/UnitTestParser.py
     - sed -i "23i\  - V44" $IDF_PATH/components/idf_test/unit_test/TestCaseAll.yml
 
-build_ut_v44_make:
+build_make_ut_v4_4:
   extends:
     - .rules:build:unit_test
     - .build_esp_adf_tests_v44_make
   variables:
-    IDF_VERSION: release/v4.4
+    IDF_TAG_FLAG: "false"
+    IDF_VERSION_TAG: v4.4
     IDF_TARGET: esp32
     DEEP_CLONE: "true"

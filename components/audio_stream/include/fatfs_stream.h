@@ -49,7 +49,7 @@ typedef struct {
 
 
 #define FATFS_STREAM_BUF_SIZE            (4096)
-#define FATFS_STREAM_TASK_STACK          (3072)
+#define FATFS_STREAM_TASK_STACK          (4096)
 #define FATFS_STREAM_TASK_CORE           (0)
 #define FATFS_STREAM_TASK_PRIO           (4)
 #define FATFS_STREAM_RINGBUFFER_SIZE     (8 * 1024)

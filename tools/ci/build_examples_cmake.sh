@@ -30,7 +30,7 @@ die() {
 [ -z ${LOG_PATH} ] && die "LOG_PATH is not set"
 [ -z ${BUILD_PATH} ] && die "BUILD_PATH is not set"
 [ -z ${IDF_TARGET} ] && die "IDF_TARGET is not set"
-[ -z ${AUDIO_HAL} ] && die "AUDIO_HAL is not set"
+[ -z ${AUDIO_BOARD} ] && die "AUDIO_BOARD is not set"
 [ -z ${SDKCFG_DEFAULTS} ] && die "SDKCFG_DEFAULTS is not set"
 [ -d ${LOG_PATH} ] || mkdir -p ${LOG_PATH}
 [ -d ${BUILD_PATH} ] || mkdir -p ${BUILD_PATH}
@@ -90,10 +90,10 @@ ${IDF_PATH}/tools/find_apps.py \
     --config 'sdkconfig.ci.*=' \
     --config '=default' \
 
-source ${ADF_PATH}/tools/ci/check_apps_json_and_sdkcfg.sh ${SDKCFG_DEFAULTS} ${AUDIO_HAL}
+source ${ADF_PATH}/tools/ci/check_apps_json_and_sdkcfg_v4_4.sh ${SDKCFG_DEFAULTS} ${AUDIO_BOARD}
 
-if [[ ! -z ${AUDIO_HAL} ]]; then
-PYTHONIOENCODING=utf-8 python $ADF_PATH/tools/ci/parse_apps_json.py -B ${AUDIO_HAL} -b ${IDF_VERSION}
+if [[ ! -z ${AUDIO_BOARD} ]]; then
+PYTHONIOENCODING=utf-8 python $ADF_PATH/tools/ci/parse_apps_json.py -B ${AUDIO_BOARD} -b ${IDF_VERSION}
 fi
 
 # --config rules above explained:

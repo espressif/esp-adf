@@ -14,8 +14,14 @@
   - "idf_patches/**/*"
   - "examples/**/*"
 
+##############
+# if anchors #
+##############
 .if-web: &if-web
   if: '$CI_PIPELINE_SOURCE == "web"'
+
+.if-ref-master: &if-ref-master
+  if: '$CI_COMMIT_REF_NAME == "master"'
 
 .if-schedule: &if-schedule
   if: '$CI_PIPELINE_SOURCE == "schedule"'
@@ -54,12 +60,21 @@
     - <<: *if-merge_request_event
     - <<: *if-open-merge-request
       when: never
-    - <<: *if-dev-push
-      changes: *patterns-example_test
-    - <<: *if-dev-push
-      changes: *patterns-build_components
 
 .rules:build:unit_test:
   rules:
     - <<: *if-protected
     - <<: *if-label-unit_test
+
+.rules:ref:master-schedule:
+  rules:
+    - <<: *if-ref-master
+    - <<: *if-schedule
+
+.rules:ref:check-label:
+  rules:
+    - <<: *if-protected
+      when: never
+    - <<: *if-merge_request_event
+    - <<: *if-open-merge-request
+      when: never

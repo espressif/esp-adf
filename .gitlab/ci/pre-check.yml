@@ -1,15 +1,17 @@
+.check_labels_script: &check_labels_script |
+  if [[ "$CI_MERGE_REQUEST_LABELS" =~ "unit_test" && "$CI_MERGE_REQUEST_LABELS" =~ "example_test" ]]; then
+    echo "unit_test and example_test labels exist"
+  else
+    echo "warning: either unit_test or example_test label is missing. Please add both labels to the MR for the pipeline to succeed"
+    exit 1
+  fi
+
 check_labels:
   image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
   stage: pre_check
-  rules:
-    - if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/) && $CI_PIPELINE_SOURCE != "schedule"'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && ($CI_PIPELINE_SOURCE == "push")'
-      when: never
-    - if: '$CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE != "master"'
+  extends:
+    - .rules:ref:check-label
   before_script:
     - echo "skip default before_script"
   script:
-    - if [[ "$CI_MERGE_REQUEST_LABELS" =~ "unit_test" ]]; then echo "unit_test label exists"; else echo "warning:unit_test label is missing.Please add the unit_test and example_test label to the MR for the pipeline to succeed"; exit 1; fi
-    - if [[ "$CI_MERGE_REQUEST_LABELS" =~ "example_test" ]]; then echo "example_test label exists"; else echo "waring:example_test label is missing.Please add the example_test and unit_test label to the MR for the pipeline to succeed"; exit 1; fi
+    - *check_labels_script
