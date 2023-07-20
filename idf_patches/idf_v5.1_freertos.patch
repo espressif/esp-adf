@@ -1,31 +1,40 @@
+From 8d936694831711b743103af16d64e1c7092cb4cb Mon Sep 17 00:00:00 2001
+From: xuTao <xutao@espressif.com>
+Date: Fri, 21 Jul 2023 11:04:30 +0800
+Subject: [PATCH] [PATCH] add task create API for allocated stack in psram
+
+---
+ .../FreeRTOS-Kernel/include/freertos/task.h   |  4 ++
+ components/freertos/FreeRTOS-Kernel/tasks.c   | 43 +++++++++++++++++++
+ 2 files changed, 47 insertions(+)
+
+diff --git a/components/freertos/FreeRTOS-Kernel/include/freertos/task.h b/components/freertos/FreeRTOS-Kernel/include/freertos/task.h
+index 2c016eb596..16eb9e2861 100644
+--- a/components/freertos/FreeRTOS-Kernel/include/freertos/task.h
++++ b/components/freertos/FreeRTOS-Kernel/include/freertos/task.h
+@@ -371,6 +371,10 @@ typedef enum
+                                         UBaseType_t uxPriority,
+                                         TaskHandle_t * const pvCreatedTask,
+                                         const BaseType_t xCoreID );
++
++	BaseType_t xTaskCreateRestrictedPinnedToCore( const TaskParameters_t * const pxTaskDefinition,
++                                                  TaskHandle_t *pxCreatedTask,
++                                                  const BaseType_t xCoreID);
+ #endif
+ 
+ /**
 diff --git a/components/freertos/FreeRTOS-Kernel/tasks.c b/components/freertos/FreeRTOS-Kernel/tasks.c
-index 32d054dda1..791a2f1074 100644
+index 33fd5ce4dc..d433aca730 100644
 --- a/components/freertos/FreeRTOS-Kernel/tasks.c
 +++ b/components/freertos/FreeRTOS-Kernel/tasks.c
-@@ -550,7 +550,7 @@ static void prvInitialiseTaskLists( void ) PRIVILEGED_FUNCTION;
-  * The idle task, which as all tasks is implemented as a never ending loop.
-  * The idle task is automatically created and added to the ready lists upon
-  * creation of the first user task.
-- *
-+ *a
-  * The portTASK_FUNCTION_PROTO() macro is used to allow port/compiler specific
-  * language extensions.  The equivalent prototype for this function is:
-  *
-@@ -739,7 +739,6 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
- /*-----------------------------------------------------------*/
- 
- #if ( configSUPPORT_STATIC_ALLOCATION == 1 )
--
-     TaskHandle_t xTaskCreateStaticPinnedToCore( TaskFunction_t pxTaskCode,
-                                                 const char * const pcName,
-                                                 const uint32_t ulStackDepth,
-@@ -893,6 +892,48 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
+@@ -986,6 +986,49 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
+         return xReturn;
      }
  
- #endif /* portUSING_MPU_WRAPPERS */
++    /*-----------------------------------------------------------*/
 +
-+	BaseType_t xTaskCreateRestrictedPinnedToCore( const TaskParameters_t * const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID)
-+	{
++    BaseType_t xTaskCreateRestrictedPinnedToCore( const TaskParameters_t * const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID)
++    {
 +	    TCB_t *pxNewTCB;
 +	    BaseType_t xReturn = errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
 +
@@ -63,8 +72,11 @@ index 32d054dda1..791a2f1074 100644
 +		}
 +
 +		return xReturn;
-+	}
++    }
 +
+ #endif /* configSUPPORT_DYNAMIC_ALLOCATION */
  /*-----------------------------------------------------------*/
  
- #if ( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
+-- 
+2.25.1
+

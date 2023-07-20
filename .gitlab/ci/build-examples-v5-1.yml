@@ -46,7 +46,7 @@
     - set_env_variable
     - check_apps_and_filter
     - cd $ADF_PATH
-    # cd $IDF_PATH; git apply $ADF_PATH/idf_patches/idf_v5.1_freertos.patch; cd -
+    - cd $IDF_PATH; git apply $ADF_PATH/idf_patches/idf_v5.1_freertos.patch; cd -
     - run_cmd python $IDF_PATH/tools/ci/ci_build_apps.py ${EXAMPLES} -v \
                   -t $IDF_TARGET --copy-sdkconfig \
                   --collect-size-info size_info.txt \
