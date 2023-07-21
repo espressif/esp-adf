@@ -105,7 +105,7 @@ function check_idf_version() {
   if [[ "$IDF_TAG_FLAG" = "true" ]]; then
     export IDF_VERSION="${idf_ver_tag}"
   else
-    if [[ -n "${IDF_PATH}" ]]; then
+    if [[ -x "${IDF_PATH}" ]]; then
       pushd ${IDF_PATH}
       local idf_ver=$(git ls-remote --heads origin release/${idf_ver_tag} | grep -o "release/.*")
       if [[ -n "$idf_ver" ]]; then
@@ -115,9 +115,11 @@ function check_idf_version() {
       fi
       popd
     else
-      echo "IDF_PATH not set"
+      echo "IDF_PATH not set or path not exist"
+      export IDF_VERSION="${idf_ver_tag}"
     fi
   fi
+  echo "IDF_TAG_FLAG: $IDF_TAG_FLAG"
   echo "Set IDF_VERSION $IDF_VERSION"
 }
 

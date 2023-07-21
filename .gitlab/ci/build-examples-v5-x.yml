@@ -1,12 +1,9 @@
 .build_cmake_template: &build_cmake_template
   stage: build
-  image: $CI_DOCKER_REGISTRY/esp-env-v5.1:1
+  image: ${IMAGE}
   tags:
     - build
     - audio_server
-  variables:
-    IDF_PATH: "$ADF_PATH/esp-idf"
-    EXAMPLE_TEST_DIR: ${CI_PROJECT_DIR}/examples
   parallel: 2
   interruptible: true
   dependencies: # set dependencies to null to avoid missing artifacts issue
@@ -17,6 +14,8 @@
     DEEP_CLONE: "false"
     IDF_FIND_APP_PATH_ARG: "-p"
     IDF_PATH: "$ADF_PATH/esp-idf"
+    IDF_PATCH_DIR: "$ADF_PATH/idf_patches"
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.$IDF_TARGET"
   artifacts:
     paths:
       - "**/build*/size.json"
@@ -40,80 +39,95 @@
     when: always
     expire_in: 4 days
   script:
+    - echo $SDKCFG_DEFAULTS
+    - echo $IDF_PATCH_DIR
     - fetch_idf_branch ${IDF_VERSION_TAG}
     - common_before_scripts
     - setup_tools_and_idf_python_venv
     - set_env_variable
     - check_apps_and_filter
     - cd $ADF_PATH
-    - cd $IDF_PATH; git apply $ADF_PATH/idf_patches/idf_v5.1_freertos.patch; cd -
-    - run_cmd python $IDF_PATH/tools/ci/ci_build_apps.py ${EXAMPLES} -v \
-                  -t $IDF_TARGET --copy-sdkconfig \
-                  --collect-size-info size_info.txt \
-                  --collect-app-info list_job_${CI_NODE_INDEX:-1}.json \
-                  --parallel-count ${CI_NODE_TOTAL:-1} \
-                  --parallel-index ${CI_NODE_INDEX:-1}
+    - cd $IDF_PATH; git apply $IDF_PATCH_DIR/$IDF_PATCH; cd -
+    # - pip install --upgrade idf-component-manager
+    - echo ${CI_NODE_INDEX}
+    - echo ${parallel}
+    - pip install idf_build_apps
+    - run_cmd python $ADF_PATH/tools/ci/build_apps.py ${EXAMPLES} \
+                   -t $IDF_TARGET -vv \
+                   --parallel-count ${parallel##*/} \
+                   --parallel-index ${parallel%%/*}
 
-build_examples_cmake_esp32_lyrat_v4_3_idfv5_1:
-  when: always
+.matrix_template_esp32_esp32s3_esp32s2: &matrix_template_esp32_esp32s3_esp32s2
+  parallel:
+    matrix:
+      - IDF_VERSION_TAG: ['v5.0', 'v5.1']
+        parallel: [1/2, 2/2]
+
+.matrix_template_esp32c3_esp32c6: &matrix_template_esp32c3_esp32c6
+  parallel:
+    matrix:
+      - IDF_VERSION_TAG: ['v5.1']
+        parallel: [1/2, 2/2]
+
+build_examples_cmake_esp32_lyrat_v4_3:
   extends:
-    - .rules:build:adf_idfs_example_test
+    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
+    - .matrix_template_esp32_esp32s3_esp32s2
   variables:
     IDF_TARGET: esp32
     AUDIO_BOARD: ESP_LYRAT_V4_3
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
 
-build_examples_cmake_esp32_lyratd_msc_v2_2_idfv5_1:
+build_examples_cmake_esp32_lyratd_msc_v2_2:
   extends:
-    - .rules:ref:master-schedule
+    - .rules:build:non-regular-board-idf-ver-tag
     - .build_cmake_template
+    - .matrix_template_esp32_esp32s3_esp32s2
   variables:
     IDF_TARGET: esp32
     AUDIO_BOARD: ESP_LYRATD_MSC_V2_2
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
 
-build_examples_cmake_esp32_lyrat_mini_v1_1_idfv5_1:
+build_examples_cmake_esp32_lyrat_mini_v1_1:
   extends:
-    - .rules:ref:master-schedule
+    - .rules:build:non-regular-board-idf-ver-tag
     - .build_cmake_template
+    - .matrix_template_esp32_esp32s3_esp32s2
   variables:
     IDF_TARGET: esp32
     AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
 
-build_examples_cmake_esp32s2_kaluga_v1_2_idfv5_1:
+build_examples_cmake_esp32s2_kaluga_v1_2:
   extends:
-    - .rules:build:enable_adf_example_test
+    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
+    - .matrix_template_esp32_esp32s3_esp32s2
   variables:
     IDF_TARGET: esp32s2
     AUDIO_BOARD: ESP32_S2_KALUGA_1_V1_2
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32s2"
 
-build_examples_cmake_esp32s3_korvo_v2_idfv5_1:
+build_examples_cmake_esp32s3_korvo_v2:
   extends:
-    - .rules:build:enable_adf_example_test
+    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
+    - .matrix_template_esp32_esp32s3_esp32s2
   variables:
     IDF_TARGET: esp32s3
     AUDIO_BOARD: ESP32_S3_KORVO2_V3
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32s3"
 
-build_examples_cmake_esp32c3_lyra_v2_idfv5_1:
+build_examples_cmake_esp32c3_lyra_v2:
   extends:
-    - .rules:build:enable_adf_example_test
+    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
+    - .matrix_template_esp32c3_esp32c6
   variables:
     IDF_TARGET: esp32c3
     AUDIO_BOARD: ESP32_C3_LYRA_V2
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32c3"
 
-build_examples_cmake_esp32c6_devkit_idfv5_1:
+build_examples_cmake_esp32c6_devkit:
   extends:
-    - .rules:build:enable_adf_example_test
+    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
+    - .matrix_template_esp32c3_esp32c6
   variables:
     IDF_TARGET: esp32c6
     AUDIO_BOARD: ESP32_C6_DEVKIT
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32c6"

@@ -117,7 +117,7 @@
 
 build_make_ut_v4_4:
   extends:
-    - .rules:build:unit_test
+    - .rules:build:unit-test
     - .build_esp_adf_tests_v44_make
   variables:
     IDF_TAG_FLAG: "false"
