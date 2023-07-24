@@ -100,6 +100,7 @@ typedef struct __recorder_sr {
     char                  *mn_language;
 #endif /* CONFIG_USE_MULTINET */
     int8_t                input_order[DAT_CH_MAX];
+    char                  *wn_wakeword;
 } recorder_sr_t;
 
 static esp_err_t recorder_sr_output(recorder_sr_t *recorder_sr, void *buffer, int len);
@@ -524,6 +525,7 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
     recorder_sr->rb_size          = cfg->rb_size;
     recorder_sr->partition_label  = cfg->partition_label;
     recorder_sr->aec_enable       = cfg->afe_cfg.aec_init;
+    recorder_sr->wn_wakeword      = cfg->wn_wakeword;
 #ifdef CONFIG_USE_MULTINET
     recorder_sr->mn_language      = cfg->mn_language;
 #endif
@@ -531,7 +533,7 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
     memcpy(recorder_sr->input_order, cfg->input_order, DAT_CH_MAX);
 
     recorder_sr->models = esp_srmodel_init(recorder_sr->partition_label);
-    char *wn_name = esp_srmodel_filter(recorder_sr->models, ESP_WN_PREFIX, NULL);
+    char *wn_name = esp_srmodel_filter(recorder_sr->models, ESP_WN_PREFIX, recorder_sr->wn_wakeword);
     AUDIO_NULL_CHECK(TAG, wn_name, goto _failed);
     cfg->afe_cfg.wakenet_model_name = wn_name;
     recorder_sr->afe_handle = esp_afe->create_from_config(&cfg->afe_cfg);
