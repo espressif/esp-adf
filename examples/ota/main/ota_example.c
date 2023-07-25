@@ -118,6 +118,7 @@ write_flash:
         ESP_LOGE(TAG, "Erase [%s] failed and return %d", node->label, err);
         return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
     }
+    ota_data_partition_erase_mark(handle);
     ota_data_partition_write(handle, (char *)&incoming_header, sizeof(flash_tone_header_t));
     if (need_write_desc) {
         ota_data_partition_write(handle, (char *)&incoming_desc, sizeof(esp_app_desc_t));

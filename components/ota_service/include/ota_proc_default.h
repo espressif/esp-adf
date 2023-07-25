@@ -82,6 +82,18 @@ ota_service_err_reason_t ota_data_image_stream_read(void *handle, char *buf, int
 ota_service_err_reason_t ota_data_partition_write(void *handle, char *buf, int size);
 
 /**
+  * @brief     Indicates that the ota partition has been erased
+  *            By default, this part of flash will be erased during ota. If the behavior of erasing is called in applition, this API needs to be called
+  *
+  * @param[in]  handle          pointer to upgrade handle
+
+  *
+  * @return
+  *    - void
+  */
+void ota_data_partition_erase_mark(void *handle);
+
+/**
   * @brief     Convert string of version to integer
   *            The version should be (V0.0.0 - V255.255.255)
   *
