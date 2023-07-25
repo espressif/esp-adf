@@ -40,6 +40,7 @@ typedef struct {
 
     int write_offset;
     char read_buf[READER_BUF_LEN];
+    bool partition_erased;
 } ota_data_upgrade_ctx_t;
 
 typedef struct {
@@ -199,7 +200,7 @@ static ota_service_err_reason_t ota_data_partition_prepare(void **handle, ota_no
     ota_data_upgrade_ctx_t *context = audio_calloc(1, sizeof(ota_data_upgrade_ctx_t));
     AUDIO_NULL_CHECK(TAG, context, return OTA_SERV_ERR_REASON_NULL_POINTER);
     *handle = NULL;
-
+    context->partition_erased  = false;
     AUDIO_NULL_CHECK(TAG, node->label, {
                     audio_free(context);
                     return OTA_SERV_ERR_REASON_NULL_POINTER;
@@ -252,11 +253,13 @@ static ota_service_err_reason_t ota_data_partition_exec_upgrade(void *handle, ot
     AUDIO_NULL_CHECK(TAG, context->partition, return OTA_SERV_ERR_REASON_NULL_POINTER);
     esp_err_t ret = ESP_OK;
 
-    if ((ret = esp_partition_erase_range(context->partition, 0, context->partition->size)) != ESP_OK) {
-        ESP_LOGE(TAG, "Erase [%s] partition failed, return value: %d", node->label, ret);
-        return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
+    if (context->partition_erased  == false) {
+        if ((ret = esp_partition_erase_range(context->partition, 0, context->partition->size)) != ESP_OK) {
+            ESP_LOGE(TAG, "Erase [%s] partition failed, return value: %d", node->label, ret);
+            return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
+        }
+        context->partition_erased  = true;
     }
-
     while ((r_size = audio_element_input(context->r_stream, context->read_buf, READER_BUF_LEN)) > 0) {
         ESP_LOGI(TAG, "write_offset %d, r_size %d", context->write_offset, r_size);
         if (esp_partition_write(context->partition, context->write_offset, context->read_buf, r_size) == ESP_OK) {
@@ -335,6 +338,13 @@ ota_service_err_reason_t ota_data_partition_write(void *handle, char *buf, int s
     } else {
         return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
     }
+}
+
+void ota_data_partition_erase_mark(void *handle)
+{
+    AUDIO_CHECK(TAG, handle, return, "Invalid parameter: handle");
+    ota_data_upgrade_ctx_t *context = (ota_data_upgrade_ctx_t *)handle;
+    context->partition_erased  = true;
 }
 
 int ota_get_version_number(char *version)
