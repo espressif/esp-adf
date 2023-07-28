@@ -23,6 +23,7 @@
  */
 
 #include <string.h>
+#include "sdkconfig.h"
 #include "esp_wpa2.h"
 #include "esp_event.h"
 #include "esp_log.h"
@@ -427,6 +428,12 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
             strcpy((char *)wifi_config.sta.password, periph_wifi->password);
             ESP_LOGD(TAG, "WIFI_PASS=%s", wifi_config.sta.password);
         }
+
+#if defined(CONFIG_WPA_11KV_SUPPORT)
+        wifi_config.sta.btm_enabled = 1;
+        wifi_config.sta.rm_enabled = 1;
+#endif
+
         ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
