@@ -433,6 +433,9 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         wifi_config.sta.btm_enabled = 1;
         wifi_config.sta.rm_enabled = 1;
 #endif
+#if defined(CONFIG_WPA_MBO_SUPPORT)
+    wifi_config.sta.mbo_enabled = 1;
+#endif
 
         ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
