@@ -313,6 +313,11 @@ static void _wifi_event_callback(void *arg, esp_event_base_t event_base,
         esp_wifi_get_config(WIFI_IF_STA, &w_config);
         strcpy(periph_wifi->ssid, (char *)w_config.sta.ssid);
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        wifi_event_sta_disconnected_t *event = (wifi_event_sta_disconnected_t *) event_data;
+        if (event->reason == WIFI_REASON_ROAMING) {
+            ESP_LOGI(TAG, "Wi-Fi Station Roaming");
+            return;
+        }
         periph_wifi->wifi_state = PERIPH_WIFI_DISCONNECTED;
         xEventGroupClearBits(periph_wifi->state_event, CONNECTED_BIT);
         xEventGroupSetBits(periph_wifi->state_event, DISCONNECTED_BIT);
