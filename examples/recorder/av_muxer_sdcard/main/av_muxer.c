@@ -89,9 +89,9 @@ static av_record_audio_fmt_t get_audio_codec(esp_muxer_audio_codec_t audio_codec
     }
 }
 
-static esp_media_err_t muxer_register()
+static esp_muxer_err_t muxer_register()
 {
-    esp_media_err_t ret = 0;
+    esp_muxer_err_t ret = 0;
     ret = ts_muxer_register();
     LOG_ON_ERR(ret, "Register ts muxer fail %d", ret);
     ret |= mp4_muxer_register();
@@ -103,7 +103,7 @@ static esp_media_err_t muxer_register()
     return ret;
 }
 
-static esp_media_err_t muxer_video(av_record_data_t *data)
+static esp_muxer_err_t muxer_video(av_record_data_t *data)
 {
     if (video_stream_idx < 0) {
         return 0;
@@ -117,7 +117,7 @@ static esp_media_err_t muxer_video(av_record_data_t *data)
     return esp_muxer_add_video_packet(muxer, video_stream_idx, &video_packet);
 }
 
-static esp_media_err_t muxer_audio(av_record_data_t *data)
+static esp_muxer_err_t muxer_audio(av_record_data_t *data)
 {
     if (audio_stream_idx < 0) {
         return 0;
@@ -203,9 +203,9 @@ int av_muxer_start(av_muxer_cfg_t* cfg)
     av_muxer_cfg = *cfg;
     cfg = &av_muxer_cfg;
     do {
-        esp_media_err_t ret = muxer_register();
+        esp_muxer_err_t ret = muxer_register();
         LOG_ON_ERR(ret, "Register muxer fail ret %d\n", ret);
-        if (ret != ESP_MEDIA_ERR_OK) {
+        if (ret != ESP_MUXER_ERR_OK) {
             break;
         }
         ESP_LOGI(TAG, "Start to open muxer");
@@ -224,7 +224,7 @@ int av_muxer_start(av_muxer_cfg_t* cfg)
             av_record_get_video_size(get_video_quality(cfg->quality), &video_info.width, &video_info.height);
             video_stream_idx = -1;
             ret = esp_muxer_add_video_stream(muxer, &video_info, &video_stream_idx);
-            if (ret != ESP_MEDIA_ERR_OK) {
+            if (ret != ESP_MUXER_ERR_OK) {
                 ESP_LOGE(TAG, "Fail to add video stream %d", ret);
                 cfg->muxer_flag &= ~AV_MUXER_VIDEO_FLAG;
             }
@@ -239,7 +239,7 @@ int av_muxer_start(av_muxer_cfg_t* cfg)
             };
             audio_stream_idx = -1;
             ret = esp_muxer_add_audio_stream(muxer, &audio_info, &audio_stream_idx);
-            if (ret != ESP_MEDIA_ERR_OK) {
+            if (ret != ESP_MUXER_ERR_OK) {
                 ESP_LOGE(TAG, "Fail to add audio stream %d", ret);
                 cfg->muxer_flag &= ~AV_MUXER_AUDIO_FLAG;
             }
