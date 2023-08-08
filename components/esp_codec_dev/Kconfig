@@ -48,6 +48,12 @@ menu "Audio Codec Device Configuration"
         help
             Enable this option to support codec TAS5805M.
 
+    config CODEC_TVL320_SUPPORT
+        bool "Support TVL320AIC3120 Codec Chip"
+        default y
+        help
+            Enable this option to support codev TVL320AIC3120.
+
     config CODEC_ZL38063_SUPPORT
         bool "Support ZL38063 Codec Chip"
         default n
