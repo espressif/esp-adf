@@ -6,9 +6,9 @@
 # CONDITIONS OF ANY KIND, either express or implied.
 #
 
-import upip
+import mip
 
 def install():
-    upip.install('micropython-json', '/sdcard/lib')
-    upip.install('micropython-urequests', '/sdcard/lib')
-    upip.install('micropython-hmac', '/sdcard/lib')
+    mip.install('json', target='/sdcard/lib')
+    mip.install('urequests', target='/sdcard/lib')
+    mip.install('hmac', target='/sdcard/lib')

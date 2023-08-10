@@ -34,7 +34,7 @@
 
 #include "audio_mem.h"
 
-const char *verno = "0.5-beta1";
+const char *verno = "0.5-beta2";
 
 STATIC mp_obj_t audio_mem_info(void)
 {
@@ -99,3 +99,5 @@ const mp_obj_module_t audio_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&audio_module_globals,
 };
+
+MP_REGISTER_MODULE(MP_QSTR_audio, audio_module);

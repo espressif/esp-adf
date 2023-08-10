@@ -29,7 +29,7 @@ def run(access, secret):
     result = ujson.loads(resp.text)
 
     # Get tts result and write to file
-    post_dat = bytearray('lan=zh&cuid=ESP32&ctp=1&tok=%s&tex=%s' % (result['access_token'], '欢迎使用乐鑫音频平台，想了解更多方案信息请联系我们'))
+    post_dat = bytearray('lan=zh&cuid=ESP32&ctp=1&tok=%s&tex=%s' % (result['access_token'], '欢迎使用乐鑫音频平台，想了解更多方案信息请联系我们'), 'utf8')
     resp = urequests.post('http://tsn.baidu.com/text2audio', data = post_dat)
     mp3 = resp.content
     print('Get content and save to /sdcard/tts.mp3')

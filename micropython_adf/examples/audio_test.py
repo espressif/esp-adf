@@ -21,6 +21,7 @@ def run():
     print('======================== Player ========================')
 
     def callback(stat):
+        print(stat)
         pass
 
     mPlayer=player(callback)

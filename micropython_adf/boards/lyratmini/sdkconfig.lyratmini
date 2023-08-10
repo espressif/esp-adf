@@ -1,0 +1,4 @@
+#
+# Audio HAL
+#
+CONFIG_ESP_LYRAT_MINI_V1_1_BOARD=y

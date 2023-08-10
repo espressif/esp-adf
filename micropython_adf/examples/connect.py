@@ -10,22 +10,13 @@
 import network
 
 # network setting
-def do_connect():
+def do_connect(ssid, pwd):
     import network
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     if not wlan.isconnected():
         print('connecting to network...')
-        wlan.connect('ESP-Audio', 'esp123456')
+        wlan.connect(ssid, pwd)
         while not wlan.isconnected():
             pass
     print('network config:', wlan.ifconfig())
-
-do_connect()
-
-# Add libs in sdcard to sys.path
-import sys
-
-sys.path.append('/sdcard/lib')
-sys.path.append('/sdcard')
-print(sys.path)
