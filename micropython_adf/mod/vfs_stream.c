@@ -23,7 +23,6 @@
  */
 
 #include "errno.h"
-#include <stdio.h>
 #include <string.h>
 
 #include "audio_element.h"
@@ -35,13 +34,15 @@
 #include "wav_head.h"
 
 #include "extmod/vfs_fat.h"
+#include "lib/oofatfs/ff.h"
 #include "py/builtin.h"
+#include "py/objstr.h"
 #include "py/runtime.h"
 #include "py/stream.h"
 
-#define FILE_WAV_SUFFIX_TYPE "wav"
-#define FILE_OPUS_SUFFIX_TYPE "opus"
-#define FILE_AMR_SUFFIX_TYPE "amr"
+#define FILE_WAV_SUFFIX_TYPE   "wav"
+#define FILE_OPUS_SUFFIX_TYPE  "opus"
+#define FILE_AMR_SUFFIX_TYPE   "amr"
 #define FILE_AMRWB_SUFFIX_TYPE "Wamr"
 
 static const char *TAG = "VFS_STREAM";
@@ -58,8 +59,9 @@ typedef struct vfs_stream {
     audio_stream_type_t type;
     int block_size;
     bool is_open;
-    mp_obj_t file;
+    FIL file;
     wr_stream_type_t w_type;
+    FATFS *fatfs;
 } vfs_stream_t;
 
 static wr_stream_type_t get_type(const char *str)
@@ -84,16 +86,6 @@ static wr_stream_type_t get_type(const char *str)
     }
 }
 
-static int get_len(mp_obj_t stream)
-{
-    mp_obj_t tell;
-    mp_load_method(stream, MP_QSTR_tell, &tell);
-    mp_stream_posix_lseek(stream, 0, SEEK_END);
-    mp_obj_t len = mp_call_function_1(tell, stream);
-    mp_stream_posix_lseek(stream, 0, SEEK_SET);
-    return (int)mp_obj_get_int(len);
-}
-
 static esp_err_t _vfs_open(audio_element_handle_t self)
 {
     vfs_stream_t *vfs = (vfs_stream_t *)audio_element_getdata(self);
@@ -115,51 +107,50 @@ static esp_err_t _vfs_open(audio_element_handle_t self)
         ESP_LOGE(TAG, "already opened");
         return ESP_FAIL;
     }
+    path += strlen("/sdcard");
     if (vfs->type == AUDIO_STREAM_READER) {
-        mp_obj_t args[2];
-        args[0] = mp_obj_new_str(path, strlen(path));
-        args[1] = mp_obj_new_str("rb", strlen("rb"));
-        vfs->file = mp_vfs_open(2, args, (mp_map_t *)&mp_const_empty_map);
-        info.total_bytes = get_len(vfs->file);
-        ESP_LOGI(TAG, "File size is %d byte,pos:%d", (int)info.total_bytes, (int)info.byte_pos);
-        if (vfs->file != mp_const_none && (info.byte_pos > 0)) {
-            if (mp_stream_posix_lseek(vfs->file, info.byte_pos, SEEK_SET) != 0) {
-                ESP_LOGE(TAG, "Error seek file");
-                return ESP_FAIL;
+        if (f_open(vfs->fatfs, &vfs->file, path, FA_READ) == FR_OK) {
+            FILINFO fno = { 0 };
+            f_stat(vfs->fatfs, path, &fno);
+            info.total_bytes = fno.fsize;
+            ESP_LOGI(TAG, "File size: %d byte, file position: %d", (int)fno.fsize, (int)info.byte_pos);
+            if (info.byte_pos > 0) {
+                if (f_lseek(&vfs->file, info.byte_pos) < 0) {
+                    ESP_LOGE(TAG, "Error seek file. Error message: %s, line: %d", strerror(errno), __LINE__);
+                    return ESP_FAIL;
+                }
             }
+        } else {
+            ESP_LOGE(TAG, "failed to open %s", path);
+            return ESP_FAIL;
         }
     } else if (vfs->type == AUDIO_STREAM_WRITER) {
-        mp_obj_t args[2];
-        args[0] = mp_obj_new_str(path, strlen(path));
-        args[1] = mp_obj_new_str("wb", strlen("wb"));
-        vfs->file = mp_vfs_open(2, args, (mp_map_t *)&mp_const_empty_map);
-        vfs->w_type = get_type(path);
-        if (vfs->file != mp_const_none && STREAM_TYPE_WAV == vfs->w_type) {
-            wav_header_t info = { 0 };
-            mp_stream_posix_write(vfs->file, &info, sizeof(wav_header_t));
-            mp_stream_posix_fsync(vfs->file);
-        } else if (vfs->file != mp_const_none && (STREAM_TYPE_AMR == vfs->w_type)) {
-            mp_stream_posix_write(vfs->file, "#!AMR\n", 6);
-            mp_stream_posix_fsync(vfs->file);
-        } else if (vfs->file != mp_const_none && (STREAM_TYPE_AMRWB == vfs->w_type)) {
-            mp_stream_posix_write(vfs->file, "#!AMR-WB\n", 9);
-            mp_stream_posix_fsync(vfs->file);
+        if (f_open(vfs->fatfs, &vfs->file, path, FA_WRITE | FA_CREATE_ALWAYS) == FR_OK) {
+            vfs->w_type = get_type(path);
+            UINT bw = 0;
+            if ((STREAM_TYPE_WAV == vfs->w_type)) {
+                wav_header_t info = {0};
+                f_write(&vfs->file, &info, sizeof(wav_header_t), &bw);
+                f_sync(&vfs->file);
+            } else if ((STREAM_TYPE_AMR == vfs->w_type)) {
+                f_write(&vfs->file, "#!AMR\n", 6, &bw);
+                f_sync(&vfs->file);
+            } else if ((STREAM_TYPE_AMRWB == vfs->w_type)) {
+                f_write(&vfs->file, "#!AMR-WB\n", 9, &bw);
+                f_sync(&vfs->file);
+            }
+        } else {
+            ESP_LOGE(TAG, "failed to open %s", path);
+            return ESP_FAIL;
         }
     } else {
         ESP_LOGE(TAG, "vfs must be Reader or Writer");
         return ESP_FAIL;
     }
-    if (vfs->file == mp_const_none) {
-        ESP_LOGE(TAG, "Failed to open file %s", path);
-        return ESP_FAIL;
-    }
-    vfs->is_open = true;
-    if (info.byte_pos && mp_stream_posix_lseek(vfs->file, info.byte_pos, SEEK_SET) != 0) {
-        ESP_LOGE(TAG, "Failed to seek to %d/%d", (int)info.byte_pos, (int)info.total_bytes);
-        return ESP_FAIL;
-    }
 
-    return audio_element_setinfo(self, &info);
+    vfs->is_open = true;
+    int ret = audio_element_set_total_bytes(self, info.total_bytes);
+    return ret;
 }
 
 static int _vfs_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
@@ -169,7 +160,8 @@ static int _vfs_read(audio_element_handle_t self, char *buffer, int len, TickTyp
     audio_element_getinfo(self, &info);
 
     ESP_LOGD(TAG, "read len=%d, pos=%d/%d", len, (int)info.byte_pos, (int)info.total_bytes);
-    int rlen = mp_stream_posix_read(vfs->file, buffer, len);
+    UINT rlen = 0;
+    f_read(&vfs->file, buffer, len, &rlen);
     if (rlen <= 0) {
         ESP_LOGW(TAG, "No more data,ret:%d", rlen);
         rlen = 0;
@@ -185,8 +177,9 @@ static int _vfs_write(audio_element_handle_t self, char *buffer, int len, TickTy
     vfs_stream_t *vfs = (vfs_stream_t *)audio_element_getdata(self);
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
-    int wlen = mp_stream_posix_write(vfs->file, buffer, len);
-    mp_stream_posix_fsync(vfs->file);
+    UINT wlen = 0;
+    f_write(&vfs->file, buffer, len, &wlen);
+    f_sync(&vfs->file);
     ESP_LOGD(TAG, "mp_stream_posix_write,%d, errno:%d,pos:%d", wlen, errno, (int)info.byte_pos);
     if (wlen > 0) {
         info.byte_pos += wlen;
@@ -212,29 +205,25 @@ static esp_err_t _vfs_close(audio_element_handle_t self)
     vfs_stream_t *vfs = (vfs_stream_t *)audio_element_getdata(self);
 
     if (AUDIO_STREAM_WRITER == vfs->type
-        && vfs->file
         && STREAM_TYPE_WAV == vfs->w_type) {
         wav_header_t *wav_info = (wav_header_t *)audio_malloc(sizeof(wav_header_t));
 
         AUDIO_MEM_CHECK(TAG, wav_info, return ESP_ERR_NO_MEM);
 
-        if (mp_stream_posix_lseek(vfs->file, 0, SEEK_SET) != 0) {
-            ESP_LOGE(TAG, "Error seek file ,line=%d", __LINE__);
-        }
+        f_lseek(&vfs->file, 0);
         audio_element_info_t info;
+        UINT bw = 0;
         audio_element_getinfo(self, &info);
         wav_head_init(wav_info, info.sample_rates, info.bits, info.channels);
         wav_head_size(wav_info, (uint32_t)info.byte_pos);
-        mp_stream_posix_write(vfs->file, wav_info, sizeof(wav_header_t));
-        mp_stream_posix_fsync(vfs->file);
-        mp_stream_close(vfs->file);
+        f_write(&vfs->file, wav_info, sizeof(wav_header_t), &bw);
+        f_sync(&vfs->file);
+        f_close(&vfs->file);
         audio_free(wav_info);
     }
 
     if (vfs->is_open) {
-        mp_obj_t close;
-        mp_load_method(vfs->file, MP_QSTR_close, &close);
-        mp_call_function_1(close, vfs->file);
+        f_close(&vfs->file);
         vfs->is_open = false;
     }
     if (AEL_STATE_PAUSED != audio_element_get_state(self)) {
@@ -260,6 +249,19 @@ audio_element_handle_t vfs_stream_init(vfs_stream_cfg_t *config)
     vfs_stream_t *vfs = audio_calloc(1, sizeof(vfs_stream_t));
 
     AUDIO_MEM_CHECK(TAG, vfs, return NULL);
+
+    const char *path_out;
+    mp_vfs_mount_t *existing_mount = mp_vfs_lookup_path("/sdcard", &path_out);
+    if (existing_mount == MP_VFS_NONE || existing_mount == MP_VFS_ROOT) {
+        ESP_LOGE(TAG, "No vfs mount");
+        goto _vfs_init_exit;
+    }
+    fs_user_mount_t *user_mount = MP_OBJ_TO_PTR(existing_mount->obj);
+    if (user_mount == NULL) {
+        ESP_LOGE(TAG, "No user mount");
+        goto _vfs_init_exit;
+    }
+    vfs->fatfs = &user_mount->fatfs;
 
     audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
     cfg.open = _vfs_open;

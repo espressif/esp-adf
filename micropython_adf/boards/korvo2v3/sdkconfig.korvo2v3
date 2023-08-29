@@ -1,0 +1,4 @@
+#
+# Audio HAL
+#
+CONFIG_ESP32_S3_KORVO2_V3_BOARD=y

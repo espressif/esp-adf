@@ -28,17 +28,21 @@
 #include "py/objstr.h"
 #include "py/runtime.h"
 
-#include "audio_hal.h"
+#include "esp_timer.h"
+
 #include "audio_pipeline.h"
-#include "board.h"
 #include "filter_resample.h"
 
-#include "i2s_stream.h"
 #include "raw_stream.h"
 #include "vfs_stream.h"
+#include "i2s_stream.h"
 
 #include "amrnb_encoder.h"
 #include "wav_encoder.h"
+
+#include "board_init.h"
+
+#include "mpconfigboard.h"
 
 enum {
     PCM,
@@ -60,13 +64,15 @@ typedef struct _audio_recorder_obj_t {
     mp_obj_t end_cb;
 } audio_recorder_obj_t;
 
+extern const mp_obj_type_t audio_recorder_type;
+
 STATIC mp_obj_t audio_recorder_stop(mp_obj_t self_in);
 
 STATIC mp_obj_t audio_recorder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args)
 {
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
     audio_recorder_obj_t *self = m_new_obj_with_finaliser(audio_recorder_obj_t);
-    self->base.type = type;
+    self->base.type = &audio_recorder_type;
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -75,8 +81,7 @@ STATIC audio_element_handle_t audio_recorder_create_filter(int encoder_type)
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg.src_rate = 48000;
     rsp_cfg.src_ch = 2;
-    rsp_cfg.dest_ch = 1;
-    rsp_cfg.task_core = 1;
+    rsp_cfg.task_core = 0;
 
     switch (encoder_type) {
         case PCM: {
@@ -84,6 +89,11 @@ STATIC audio_element_handle_t audio_recorder_create_filter(int encoder_type)
             break;
         }
         case AMR: {
+            rsp_cfg.dest_ch = 1;
+#if defined(AUDIO_RECORDER_DOWN_CH)
+            rsp_cfg.complexity = 0;
+            rsp_cfg.down_ch_idx = AUDIO_RECORDER_DOWN_CH;
+#endif
             rsp_cfg.dest_rate = 8000;
             break;
         }
@@ -144,14 +154,14 @@ STATIC audio_element_handle_t audio_recorder_create_outstream(const char *uri)
 STATIC void audio_recorder_create(audio_recorder_obj_t *self, const char *uri, int format)
 {
     // init audio board
-    audio_board_handle_t board_handle = audio_board_init();
-    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+    board_codec_init();
 
     // pipeline
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     self->pipeline = audio_pipeline_init(&pipeline_cfg);
     // I2S
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
     i2s_cfg.type = AUDIO_STREAM_READER;
     i2s_cfg.uninstall_drv = false;
     i2s_cfg.i2s_config.sample_rate = 48000;
@@ -204,7 +214,7 @@ static void audio_recorder_maxtime_cb(void *arg)
     }
 }
 
-STATIC mp_obj_t audio_recorder_start(mp_uint_t n_args, const mp_obj_t *args_in, mp_map_t *kw_args)
+STATIC mp_obj_t audio_recorder_start(size_t n_args, const mp_obj_t *args_in, mp_map_t *kw_args)
 {
     enum {
         ARG_uri,
@@ -291,9 +301,10 @@ STATIC const mp_rom_map_elem_t recorder_locals_dict_table[] = {
 
 STATIC MP_DEFINE_CONST_DICT(recorder_locals_dict, recorder_locals_dict_table);
 
-const mp_obj_type_t audio_recorder_type = {
-    { &mp_type_type },
-    .name = MP_QSTR_recorder,
-    .make_new = audio_recorder_make_new,
-    .locals_dict = (mp_obj_dict_t *)&recorder_locals_dict,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    audio_recorder_type,
+    MP_QSTR_audio_recorder,
+    MP_TYPE_FLAG_NONE,
+    make_new, audio_recorder_make_new,
+    locals_dict, &recorder_locals_dict
+    );

@@ -641,7 +641,7 @@ static int es8374_set_d2se_pga(es_d2se_pga_t gain)
 static int es8374_init_reg(audio_hal_codec_mode_t ms_mode, es_i2s_fmt_t fmt, es_i2s_clock_t cfg, es_dac_output_t out_channel, es_adc_input_t in_channel)
 {
     int res = 0;
-    uint8_t reg;
+    uint8_t reg = 0;
 
     res |= es8374_write_reg(0x00, 0x3F); //IC Rst start
     res |= es8374_write_reg(0x00, 0x03); //IC Rst stop

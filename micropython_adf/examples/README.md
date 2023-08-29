@@ -4,7 +4,7 @@
 
 The goal of these examples is to demonstrates how to use the audio module to play audio source. Contains the following scripts:
 
-1. `boot.py`: Network configuration and `sys.path` update.
+1. `connect.py`: Network connect interface.
 2. `install_libs.py`: Install libs needed by the examples.
 3. `audio_test.py`: Test the audio.player and audio.recorder.
 4. `baidu_tts.py`: Connect to baidu tts service, get result with a given string, save it to file and play it.
@@ -14,20 +14,18 @@ The goal of these examples is to demonstrates how to use the audio module to pla
 
 ### Hardware Required
 
-These examples is based on audio boards:
+Supported audio boards:
 
-| ESP32-LyraT | ESP32-LyraTD-MSC | ESP32-LyraT-Mini |
-|:-----------:|:---------------:|:----------------:|
-| [![alt text](../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../docs/_static/esp32-lyratd-msc-v2.2-small.jpg "ESP32-LyraTD-MSC")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html) | [![alt text](../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) |
-| ![alt text](../../docs/_static/yes-button.png "Compatible") | ![alt text](../../docs/_static/yes-button.png "Compatible") |![alt text](../../docs/_static/yes-button.png "Compatible") |
+| ESP32-LyraT | ESP32-LyraT-Mini | ESP32-S3-Korvo2-V3 |
+|:-----------:|:---------------:|:---------------:|
+| [![alt text](../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | [![alt text](../../docs/_static/esp32-s3-korvo-2-v3.0-small.png "ESP32-S3-Korvo2-v3")](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html) |
+| ![alt text](../../docs/_static/yes-button.png "Compatible") | ![alt text](../../docs/_static/yes-button.png "Compatible") | ![alt text](../../docs/_static/yes-button.png "Compatible") |
 
 SDCard is needed to store the scripts and libs.
 
 ### Configure the project
 
 Refer to `README.md` file in the upper level directory for more information about configuration.
-
-Make sure the right audio board is selected in `sdkconfig.adf`.
 
 ### Build and Flash
 
@@ -37,10 +35,16 @@ Refer to `README.md` file in the upper level directory for more information abou
 
 Please try this examples with the following steps:
 
-1. Modify the network setting in 'boot.py' to yours.
-2. Copy all the python files under this directory to the root of SDCard.
-3. Power on the board, 'boot.py' will be run automatic to set the network and system path.
-4. Connect the board with a USB cable and open the UART port with a serial tool such as `minicom` on Ubuntu.
+1. Copy all the python files under this directory to the root of SDCard.
+2. Power on the board.
+3. Connect the board with a USB cable and open the UART port with a serial tool such as `minicom` on Ubuntu.
+4. Connect to the network:
+
+    ```python
+    >>> import connect
+    >>> connect.do_connect('ssid', 'password')
+    ```
+
 5. Install the libs with the following steps:
 
     ```python
@@ -67,14 +71,33 @@ Please try this examples with the following steps:
 
 ## Example Output
 
-Power on with correct network setting:
+Power on with SDCard inserted:
 
 ```python
-connecting to network...
-network config: ('192.168.50.97', '255.255.255.0', '192.168.50.1', '192.168.50.1')
-['', '/lib', '/sdcard/lib', '/sdcard']
-MicroPython v1.11-497-gf301170c7-dirty on 2019-12-17; ESP32 module (spiram) with ESP32
+rst:0x1 (POWERON_RESET),boot:0x1f (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:4672
+load:0x40078000,len:14548
+ho 0 tail 12 room 4
+load:0x40080400,len:3364
+0x40080400: _init at ??:?
+
+entry 0x400805cc
+['', '.frozen', '/lib', '/sdcard', '/sdcard/lib']
+MicroPython v1.20.0-344-g62d35fa35 on 2023-08-10; ESP32 module with ESP32
 Type "help()" for more information.
+>>>
+```
+
+Connect to network:
+
+```python
+>>> import connect
+>>> connect.do_connect('ssid', 'password')
+connecting to network...
+network config: ('192.168.1.219', '255.255.255.0', '192.168.1.1', '192.168.1.1')
 >>>
 ```
 
@@ -83,17 +106,20 @@ Install libs as follows:
 ```python
 >>> import install_libs
 >>> install_libs.install()
-Installing to: /sdcard/lib/
-Warning: micropython.org SSL certificate is not validated
-Installing micropython-json 0.1 from https://micropython.org/pi/json/json-0.1.tar.gz
-Installing micropython-re-pcre 0.2.5 from https://micropython.org/pi/re-pcre/re-pcre-0.2.5.tar.gz
-Installing micropython-ffilib 0.1.3 from https://micropython.org/pi/ffilib/ffilib-0.1.3.tar.gz
-Installing to: /sdcard/lib/
-Installing micropython-urequests 0.6 from https://micropython.org/pi/urequests/urequests-0.6.tar.gz
-Installing to: /sdcard/lib/
-Installing micropython-hmac 3.4.2.post3 from https://micropython.org/pi/hmac/hmac-3.4.2.post3.tar.gz
-Installing micropython-hashlib 2.4.0.post4 from https://micropython.org/pi/hashlib/hashlib-2.4.0.post4.tar.gz
-Installing micropython-warnings 0.1.1 from https://micropython.org/pi/warnings/warnings-0.1.1.tar.gz
+Installing json (latest) from https://micropython.org/pi/v2 to /sdcard/lib
+Copying: /sdcard/lib/json/__init__.mpy
+Copying: /sdcard/lib/json/encoder.mpy
+Copying: /sdcard/lib/json/scanner.mpy
+Copying: /sdcard/lib/json/tool.mpy
+Copying: /sdcard/lib/json/decoder.mpy
+Done
+Installing urequests (latest) from https://micropython.org/pi/v2 to /sdcard/lib
+Copying: /sdcard/lib/requests/__init__.mpy
+Copying: /sdcard/lib/urequests.mpy
+Done
+Installing hmac (latest) from https://micropython.org/pi/v2 to /sdcard/lib
+Copying: /sdcard/lib/hmac.mpy
+Done
 >>>
 ```
 
@@ -109,8 +135,9 @@ Run `audio_test.py`:
 |                                ESP_AUDIO-v*.*                              |
 |                     Compile date: MM DD YYYY-HH:mm:SS                     |
 ------------------------------------------------------------------------------
-Set volume to:  35
+Set volume to:  40
 Play source:  https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3
+{'media_src': 0, 'status': 1, 'err_msg': 0}
 Playing: *******************************************************
 
 ===================== Record AMR ====================

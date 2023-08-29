@@ -1,0 +1,4 @@
+#
+# Audio HAL
+#
+CONFIG_ESP_LYRAT_V4_3_BOARD=y
