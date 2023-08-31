@@ -39,7 +39,7 @@ extern "C" {
 #define FETCH_TASK_STACK_SZ      (5 * 1024)
 #define FEED_TASK_PRIO           (5)
 #define FETCH_TASK_PRIO          (5)
-#define FEED_TASK_PINNED_CORE    (1)
+#define FEED_TASK_PINNED_CORE    (0)
 #define FETCH_TASK_PINNED_CORE   (1)
 #define SR_OUTPUT_RB_SIZE        (6 * 1024)
 
