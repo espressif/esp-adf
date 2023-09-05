@@ -100,6 +100,7 @@ typedef struct http_stream {
     int                             request_range_size;
     int64_t                         request_range_end;
     bool                            is_last_range;
+    const char                      *user_agent;
 } http_stream_t;
 
 static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
@@ -586,6 +587,7 @@ _stream_open_begin:
 #if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
             .crt_bundle_attach = http->crt_bundle_attach,
 #endif //  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+            .user_agent = http->user_agent,
         };
         http->client = esp_http_client_init(&http_cfg);
         AUDIO_MEM_CHECK(TAG, http->client, return ESP_ERR_NO_MEM);
@@ -870,6 +872,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     http->stream_type = config->type;
     http->user_data = config->user_data;
     http->cert_pem = config->cert_pem;
+    http->user_agent = config->user_agent;
 
     if (config->crt_bundle_attach) {
 #if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
