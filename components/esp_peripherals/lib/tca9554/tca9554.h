@@ -29,6 +29,8 @@
 extern "C" {
 #endif
 
+#include "driver/gpio.h"
+
 typedef enum {
     TCA9554_GPIO_NUM_0 = BIT(0),
     TCA9554_GPIO_NUM_1 = BIT(1),
