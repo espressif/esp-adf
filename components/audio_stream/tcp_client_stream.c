@@ -44,6 +44,7 @@ typedef struct tcp_stream {
     bool                          is_open;
     int                           timeout_ms;
     tcp_stream_event_handle_cb    hook;
+    esp_transport_list_handle_t   transport_list;
     void                          *ctx;
 } tcp_stream_t;
 
@@ -55,7 +56,7 @@ static int _get_socket_error_code_reason(const char *str, int sockfd)
 
     err = getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &result, &optlen);
     if (err == -1) {
-        ESP_LOGE(TAG, "%s, getsockopt failed", str);
+        ESP_LOGE(TAG, "%s, getsockopt failed (%d)", str, err);
         return -1;
     }
     if (result != 0) {
@@ -88,18 +89,29 @@ static esp_err_t _tcp_open(audio_element_handle_t self)
     }
     ESP_LOGI(TAG, "Host is %s, port is %d\n", tcp->host, tcp->port);
     esp_transport_handle_t t = esp_transport_tcp_init();
-    AUDIO_NULL_CHECK(TAG, t, return ESP_FAIL);
+    AUDIO_MEM_CHECK(TAG, t, return ESP_FAIL);
+    tcp->transport_list = esp_transport_list_init();
+    AUDIO_MEM_CHECK(TAG, tcp->transport_list, goto _exit);
+    esp_transport_list_add(tcp->transport_list, t, "tcp");
     tcp->sock = esp_transport_connect(t, tcp->host, tcp->port, CONNECT_TIMEOUT_MS);
     if (tcp->sock < 0) {
         _get_socket_error_code_reason(__func__,  tcp->sock);
-        esp_transport_destroy(t);
-        return ESP_FAIL;
+        goto _exit;
     }
     tcp->is_open = true;
     tcp->t = t;
     _dispatch_event(self, tcp, NULL, 0, TCP_STREAM_STATE_CONNECTED);
-
     return ESP_OK;
+
+_exit:
+    if (tcp->transport_list) {
+        esp_transport_list_destroy(tcp->transport_list);
+        tcp->transport_list = NULL;
+    } else {
+        esp_transport_destroy(t);
+    }
+
+    return ESP_FAIL;
 }
 
 static esp_err_t _tcp_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
@@ -107,17 +119,17 @@ static esp_err_t _tcp_read(audio_element_handle_t self, char *buffer, int len, T
     tcp_stream_t *tcp = (tcp_stream_t *)audio_element_getdata(self);
     int rlen = esp_transport_read(tcp->t, buffer, len, tcp->timeout_ms);
     if (rlen < 0) {
-        int result = _get_socket_error_code_reason(__func__, tcp->sock);
-        if (result == 0) {
+        // note: refer transport_ssl.c, the server actively disconnects and returns -1
+        if (rlen == -1) {
             ESP_LOGW(TAG, "TCP server actively closes the connection");
             return ESP_OK;
+        } else {
+            ESP_LOGE(TAG, "read data failed");
+            _get_socket_error_code_reason(__func__, tcp->sock);
+            return ESP_FAIL;
         }
-        return ESP_FAIL;
-    } else if (rlen == 0) {
-        ESP_LOGI(TAG, "Get end of the file");
-    } else {
-        audio_element_update_byte_pos(self, rlen);
     }
+    audio_element_update_byte_pos(self, rlen);
     ESP_LOGD(TAG, "read len=%d, rlen=%d", len, rlen);
     return rlen;
 }
@@ -176,10 +188,9 @@ static esp_err_t _tcp_destroy(audio_element_handle_t self)
 
     tcp_stream_t *tcp = (tcp_stream_t *)audio_element_getdata(self);
     AUDIO_NULL_CHECK(TAG, tcp, return ESP_FAIL);
-    if (tcp->t) {
-        esp_transport_destroy(tcp->t);
-        tcp->t = NULL;
-    }
+    if (tcp->transport_list) {
+        esp_transport_list_destroy(tcp->transport_list);
+    } 
     audio_free(tcp);
     return ESP_OK;
 }
