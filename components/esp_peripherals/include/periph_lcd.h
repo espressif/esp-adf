@@ -43,6 +43,13 @@ typedef esp_err_t (*get_lcd_panel)(const esp_lcd_panel_io_handle_t panel_io, con
                                    esp_lcd_panel_handle_t *ret_panel);
 
 /**
+ * @brief   LCD vendor initialize callback
+ * @note    Same LCD driver can drive multiple LCD devices
+ *          Each device use specified vendor driver code (consisted by a group of setting commands)
+ *          Users can setup it through `esp_lcd_panel_io_tx_param` using `esp_lcd_panel_io_handle_t`
+ */
+typedef esp_err_t (*lcd_vender_init_func)(const esp_lcd_panel_io_handle_t panel_io);
+/**
  * @brief   The LCD peripheral configurations
  */
 typedef struct {
@@ -51,6 +58,7 @@ typedef struct {
     esp_lcd_panel_io_spi_config_t       *lcd_io_cfg;
 
     get_lcd_panel                       new_lcd_panel;
+    lcd_vender_init_func                vendor_init;
     esp_lcd_panel_dev_config_t          *lcd_dev_cfg;
     perph_lcd_rest                      rest_cb;
     void                                *rest_cb_ctx;
