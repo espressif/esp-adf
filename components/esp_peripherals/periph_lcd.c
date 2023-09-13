@@ -46,13 +46,13 @@ typedef struct periph_lcd {
     esp_lcd_panel_handle_t              lcd_panel_handle;
 
     perph_lcd_rest                      rest_cb;
+    lcd_vender_init_func                vendor_init;
     void                                *rest_cb_ctx;
     bool                                lcd_swap_xy;
     bool                                lcd_mirror_x;
     bool                                lcd_mirror_y;
     bool                                lcd_color_invert;
 } periph_lcd_t;
-
 
 esp_err_t _lcd_rest_default(esp_periph_handle_t self, void *ctx);
 
@@ -69,12 +69,14 @@ static esp_err_t _lcd_init(esp_periph_handle_t self)
     }
     // Initialize LCD panel
     ESP_ERROR_CHECK(esp_lcd_panel_init(periph_lcd->lcd_panel_handle));
-
-
+    if (periph_lcd->vendor_init) {
+        ESP_ERROR_CHECK(periph_lcd->vendor_init(periph_lcd->lcd_io_handle));
+    }
     ESP_ERROR_CHECK(esp_lcd_panel_invert_color(periph_lcd->lcd_panel_handle, periph_lcd->lcd_color_invert));
     ESP_ERROR_CHECK(esp_lcd_panel_set_gap(periph_lcd->lcd_panel_handle, 0, 0));
     ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(periph_lcd->lcd_panel_handle, periph_lcd->lcd_swap_xy));
     ESP_ERROR_CHECK(esp_lcd_panel_mirror(periph_lcd->lcd_panel_handle, periph_lcd->lcd_mirror_x, periph_lcd->lcd_mirror_y));
+    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(periph_lcd->lcd_panel_handle, true));
     return ESP_OK;
 }
 
@@ -119,6 +121,7 @@ esp_periph_handle_t periph_lcd_init(periph_lcd_cfg_t *config)
     periph_lcd->lcd_mirror_y = config->lcd_mirror_y;
     periph_lcd->lcd_color_invert = config->lcd_color_invert;
     periph_lcd->rest_cb = config->rest_cb;
+    periph_lcd->vendor_init = config->vendor_init;
 
     esp_periph_handle_t periph = esp_periph_create(PERIPH_ID_LCD, "periph_lcd");
     AUDIO_MEM_CHECK(TAG, periph, {audio_free(periph_lcd);
