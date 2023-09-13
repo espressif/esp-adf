@@ -33,15 +33,12 @@
     - <<: *if-open-merge-request
       when: never
     - <<: *if-label-build_docs
-    - <<: *if-dev-push
-      changes: *patterns-docs
 
 build_docs:
   stage: build
   extends:
     - .doc-rules:build:docs
   image: $CI_DOCKER_REGISTRY/esp-idf-doc-env:v7
-  when: always
   tags:
     - build_docs
   artifacts:

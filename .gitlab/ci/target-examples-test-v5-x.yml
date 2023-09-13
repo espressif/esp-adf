@@ -1,0 +1,117 @@
+.target_test_template:
+  image: "$CI_DOCKER_REGISTRY/target-test-env-v5.0:3"
+  stage: target_test
+  timeout: 1 hour
+  variables:
+    GIT_DEPTH: 1
+    SUBMODULES_TO_FETCH: "none"
+    IDF_TAG_FLAG: "false"
+    IDF_VERSION_TAG: v5.0
+    TEST_FW_PATH: "$CI_PROJECT_DIR/tools/tiny-test-fw"
+    LOG_PATH: "$CI_PROJECT_DIR/TEST_LOGS"
+    ENV_FILE: "${IDF_PATH}/ci-test-runner-configs/$CI_RUNNER_DESCRIPTION/EnvConfig.yml"
+  before_script:
+    - source ${ADF_PATH}/tools/ci/utils.sh
+    - check_idf_version $IDF_VERSION_TAG
+    - export PYTHONPATH="$IDF_PATH/tools:$IDF_PATH/tools/ci/python_packages:$PYTHONPATH"
+    - export PYTHONPATH="$ADF_PATH/tools:$PYTHONPATH"
+  cache:
+    # Usually do not need submodule-cache in target_test
+    - key: pip-cache
+      paths:
+        - .cache/pip
+      policy: pull
+
+.pytest_template:
+  extends:
+    - .target_test_template
+  artifacts:
+    when: always
+    paths:
+      - XUNIT_RESULT.xml
+      - "**/*.log"
+      - $LOG_PATH
+      - "$ADF_PATH/examples/player/**/record.wav"
+    reports:
+      junit: XUNIT_RESULT.xml
+    expire_in: 1 week
+  script:
+    - pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
+    - job_tags=$(python $ADF_PATH/tools/ci/gitlab_api.py get_job_tags $CI_PROJECT_ID --job_id $CI_JOB_ID)
+    - markers=$(echo $job_tags | sed -e "s/,/ and /g")
+    - pytest $TEST_DIR --target ${IDF_TARGET} -m "${markers}" --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1
+
+.pytest_examples_dir_template:
+  extends:
+    - .rules:build:enable-adf-example-test
+    - .pytest_template
+  variables:
+    TEST_DIR: "$ADF_PATH/examples"
+
+example_test_pytest_esp32_v5.0:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION_TAG: release/v5.0
+  needs:
+    - 'build_examples_cmake_esp32_lyrat_v4_3: [v5.0, 1/2]'
+    - 'build_examples_cmake_esp32_lyrat_v4_3: [v5.0, 2/2]'
+  tags: [ esp32, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32_v5.1:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION_TAG: release/v5.1
+  needs:
+    - 'build_examples_cmake_esp32_lyrat_v4_3: [v5.1, 1/2]'
+    - 'build_examples_cmake_esp32_lyrat_v4_3: [v5.1, 2/2]'
+  tags: [ esp32, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32s2_v5.0:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32s2
+    IDF_VERSION_TAG: release/v5.0
+    AUDIO_BOARD: ESP32_S2_KALUGA_1_V1_2
+  needs:
+    - 'build_examples_cmake_esp32s2_kaluga_v1_2: [v5.0, 1/2]'
+    - 'build_examples_cmake_esp32s2_kaluga_v1_2: [v5.0, 2/2]'
+  tags: [ esp32s2, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32s2_v5.1:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32s2
+    IDF_VERSION_TAG: release/v5.1
+    AUDIO_BOARD: ESP32_S2_KALUGA_1_V1_2
+  needs:
+    - 'build_examples_cmake_esp32s2_kaluga_v1_2: [v5.1, 1/2]'
+    - 'build_examples_cmake_esp32s2_kaluga_v1_2: [v5.1, 2/2]'
+  tags: [ esp32s2, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32s3_v5.0:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32s3
+    IDF_VERSION_TAG: release/v5.0
+  needs:
+    - 'build_examples_cmake_esp32s3_korvo_v2: [v5.0, 1/2]'
+    - 'build_examples_cmake_esp32s3_korvo_v2: [v5.0, 2/2]'
+  tags: [ esp32s3, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32s3_v5.1:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32s3
+    IDF_VERSION_TAG: release/v5.1
+  needs:
+    - 'build_examples_cmake_esp32s3_korvo_v2: [v5.1, 1/2]'
+    - 'build_examples_cmake_esp32s3_korvo_v2: [v5.1, 2/2]'
+  tags: [ esp32s3, ADF_EXAMPLE_GENERIC ]

@@ -33,7 +33,7 @@
   if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && ($CI_PIPELINE_SOURCE == "push")'
 
 .if-dev-push: &if-dev-push
-  if: '$CI_COMMIT_REF_NAME != "master" && $CI_COMMIT_BRANCH !~ /^release\/v/ && $CI_COMMIT_TAG !~ /^v\d+\.\d+(\.\d+)?($|-)/ && ($CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event")'
+  if: '$CI_COMMIT_REF_NAME != "master" && $CI_COMMIT_BRANCH !~ /^release\/v/ && $CI_COMMIT_TAG !~ /^v\d+\.\d+(\.\d+)?($|-)/ && ($CI_PIPELINE_SOURCE == "push")'
 
 .if-protected: &if-protected
   if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/)'
@@ -47,21 +47,33 @@
 .if-label-example: &if-label-example
   if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example(?:,[^,\n\r]+)*$/i'
 
-.rules:build:enable_adf_example_test:
+.if-idf-version-tag-v5-0: &if-idf-version-tag-v5-0
+  if: '$IDF_VERSION_TAG == "v5.0"'
+  variables:
+    IMAGE: "$ADF_DOCKER_REGISTRY/env_v5.0:4"
+    IDF_PATCH: idf_v5.0_freertos.patch
+
+.if-idf-version-tag-v5-1: &if-idf-version-tag-v5-1
+  if: '$IDF_VERSION_TAG == "v5.1"'
+  variables:
+      IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.1:1"
+      IDF_PATCH: idf_v5.1_freertos.patch
+
+.rules:build:enable-adf-example-test:
   rules:
     - <<: *if-open-merge-request
       when: never
     - <<: *if-label-example
     - <<: *if-label-example_test
 
-.rules:build:adf_idfs_example_test:
+.rules:build:adf-idfs-example-test:
   rules:
     - <<: *if-protected
     - <<: *if-merge_request_event
     - <<: *if-open-merge-request
       when: never
 
-.rules:build:unit_test:
+.rules:build:unit-test:
   rules:
     - <<: *if-protected
     - <<: *if-label-unit_test
@@ -78,3 +90,21 @@
     - <<: *if-merge_request_event
     - <<: *if-open-merge-request
       when: never
+
+.rules:build:regular-board-idf-ver-tag:
+  rules:
+    - <<: *if-dev-push
+      when: never
+    - <<: *if-schedule
+      when: never
+    - <<: *if-idf-version-tag-v5-0
+    - <<: *if-idf-version-tag-v5-1
+
+.rules:build:non-regular-board-idf-ver-tag:
+  rules:
+    - <<: *if-dev-push
+      when: never
+    - <<: *if-merge_request_event
+      when: never
+    - <<: *if-idf-version-tag-v5-0
+    - <<: *if-idf-version-tag-v5-1

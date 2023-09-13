@@ -23,7 +23,7 @@
 
 assign_ut_test_v4_4:
   extends:
-    - .rules:build:unit_test
+    - .rules:build:unit-test
   <<: *assign_test_template
   needs:
     - job: build_make_ut_v4_4
