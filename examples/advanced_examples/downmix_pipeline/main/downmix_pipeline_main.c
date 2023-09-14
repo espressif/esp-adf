@@ -182,6 +182,16 @@ void app_main(void)
     audio_pipeline_run(base_stream_pipeline);
     audio_pipeline_run(pipeline_mix);
     downmix_set_work_mode(downmixer, ESP_DOWNMIX_WORK_MODE_BYPASS);
+    /* A mixer is used to mix multiple channels of data. It reads data through polling.
+       Each channel has a timeout. If the mixer fails to read data within the timeout period,
+       the data on this path will be set to mute and mixing processing will continue.
+       
+       It is not recommended to set the timeout of each channel too large,
+       as excessive timeout can affect the reading of data from other channels.
+       Similarly, it is not recommended to set the timeout time too small,
+       as it can make it difficult to read data in a timely manner,
+       and may result in intermittent situations */
+    downmix_set_input_rb_timeout(downmixer, 50, INDEX_BASE_STREAM);
     ESP_LOGI(TAG, "[6.0] Base stream pipeline running");
     while (1) {
         audio_event_iface_msg_t msg;
@@ -195,7 +205,6 @@ void app_main(void)
         if (((int)msg.data == get_input_mode_id()) && (msg.cmd == PERIPH_BUTTON_PRESSED)) {
             audio_pipeline_run(newcome_stream_pipeline);
             downmix_set_work_mode(downmixer, ESP_DOWNMIX_WORK_MODE_SWITCH_ON);
-            downmix_set_input_rb_timeout(downmixer, 50, INDEX_BASE_STREAM);
             downmix_set_input_rb_timeout(downmixer, 50, INDEX_NEWCOME_STREAM);
             ESP_LOGI(TAG, "New come music running...");
         }
@@ -213,7 +222,6 @@ void app_main(void)
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (((int)msg.data == AEL_STATUS_STATE_STOPPED)
                     || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
             downmix_set_work_mode(downmixer, ESP_DOWNMIX_WORK_MODE_SWITCH_OFF);
-            downmix_set_input_rb_timeout(downmixer, 0, INDEX_BASE_STREAM);
             downmix_set_input_rb_timeout(downmixer, 0, INDEX_NEWCOME_STREAM);
             audio_pipeline_stop(newcome_stream_pipeline);
             audio_pipeline_wait_for_stop(newcome_stream_pipeline);
@@ -226,6 +234,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[7.0] Stop all pipelines");
     /* Stop base stream pipeline, Release resources */
+    downmix_set_input_rb_timeout(downmixer, 0, INDEX_BASE_STREAM);
     audio_pipeline_stop(base_stream_pipeline);
     audio_pipeline_wait_for_stop(base_stream_pipeline);
     audio_pipeline_terminate(base_stream_pipeline);
