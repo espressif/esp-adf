@@ -99,6 +99,14 @@ int8_t get_sdcard_intr_gpio(void);
 int8_t get_sdcard_open_file_num_max(void);
 
 /**
+ * @brief  Get the gpio number for sdcard power control
+ *
+ * @return  -1      error
+ *          Others  SDCard power GPIO
+ */
+int8_t get_sdcard_power_ctrl_gpio(void);
+
+/**
  * @brief  Get the gpio number for auxin detection
  *
  * @return  -1      non-existent

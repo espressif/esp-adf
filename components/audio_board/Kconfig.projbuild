@@ -29,6 +29,8 @@ config ESP32_S3_BOX_LITE_BOARD
     bool "ESP32-S3-BOX-Lite"
 config ESP32_S3_BOX_BOARD
     bool "ESP32-S3-BOX"
+config ESP32_S3_BOX_3_BOARD
+    bool "ESP32-S3-BOX-3"
 config ESP32_C3_LYRA_V2_BOARD
     bool "ESP32-C3-Lyra-v2.0"
 config ESP32_C6_DEVKIT_BOARD
