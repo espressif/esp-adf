@@ -32,16 +32,41 @@
 extern "C" {
 #endif
 
+#define RECORDER_SR_MN_STRING_MAX_LEN (256)
+
+/**
+ * @brief Wake up result
+ */
+typedef struct {
+    float data_volume;                /*!< Volume of input audio, the unit is decibel(dB) */
+    int wake_word_index;              /*!< Wake word index which start from 1 */
+} recorder_sr_wakeup_result_t;        /*!< Information when wakeup word detected */
+
+/**
+ * @brief Voice command result
+ */
+typedef struct {
+    int phrase_id;                    /*!< Phrase ID */
+    float prob;                       /*!< probability */
+    char str[RECORDER_SR_MN_STRING_MAX_LEN]; /*!< Command string */
+} recorder_sr_mn_result_t;            /*!< Information when voice command detected */
+
 /**
  * @brief Speech recognition result
  */
-typedef enum {
-    SR_RESULT_UNKNOW   = -100, /*!< Unknow speech recognition result */
-    SR_RESULT_VERIFIED = -10,  /*!< Channel verified */
-    SR_RESULT_NOISE    = -9,   /*!< Noise detected */
-    SR_RESULT_SPEECH   = -8,   /*!< Speech detected */
-    SR_RESULT_WAKEUP   = -7,   /*!< Wake word detected */
-    SR_RESULT_COMMAND  = 0     /*!< From 0 is used as command id detected by multinet */
+typedef struct {
+    enum {
+        SR_RESULT_UNKNOW    = -100,  /*!< Unknow speech recognition result */
+        SR_RESULT_VERIFIED  = -10,   /*!< Channel verified */
+        SR_RESULT_NOISE     = -9,    /*!< Noise detected */
+        SR_RESULT_SPEECH    = -8,    /*!< Speech detected */
+        SR_RESULT_WAKEUP    = -7,    /*!< Wake word detected */
+        SR_RESULT_COMMAND   = 0      /*!< From 0 is used as command id detected by multinet */
+    } type;
+    union {
+        recorder_sr_wakeup_result_t wakeup_info;    /*!< Information when wakeup word detected */
+        recorder_sr_mn_result_t mn_info;            /*!< Information when voice command detected */
+    } info;
 } recorder_sr_result_t;
 
 /**
@@ -61,7 +86,7 @@ typedef struct {
 /**
  * @brief Monitor of the recorder speech recognition
  */
-typedef esp_err_t (*recorder_sr_monitor_t)(recorder_sr_result_t result, void *user_ctx);
+typedef esp_err_t (*recorder_sr_monitor_t)(recorder_sr_result_t *result, void *user_ctx);
 
 typedef struct {
     /**
