@@ -102,27 +102,27 @@ static void esp_audio_callback_func(esp_audio_state_t *audio, void *ctx)
     }
 }
 
-static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
+static esp_err_t rec_engine_cb(audio_rec_evt_t *event, void *user_data)
 {
     esp_dispatcher_dueros_speaker_t *d = (esp_dispatcher_dueros_speaker_t *)user_data;
-    if (AUDIO_REC_WAKEUP_START == type) {
+    if (AUDIO_REC_WAKEUP_START == event->type) {
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_WAKEUP_START");
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             dueros_voice_cancel(d->audio_serv);
         }
         esp_dispatcher_execute(d->dispatcher, ACTION_EXE_TYPE_AUDIO_PAUSE, NULL, NULL);
         esp_dispatcher_execute(d->dispatcher, ACTION_EXE_TYPE_DISPLAY_TURN_ON, NULL, NULL);
-    } else if (AUDIO_REC_VAD_START == type) {
+    } else if (AUDIO_REC_VAD_START == event->type) {
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_START");
         audio_service_start(d->audio_serv);
         xEventGroupSetBits(duer_evt, DUER_REC_READING);
-    } else if (AUDIO_REC_VAD_END == type) {
+    } else if (AUDIO_REC_VAD_END == event->type) {
         xEventGroupClearBits(duer_evt, DUER_REC_READING);
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(d->audio_serv);
         }
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_STOP, state:%d", dueros_service_state_get());
-    } else if (AUDIO_REC_WAKEUP_END == type) {
+    } else if (AUDIO_REC_WAKEUP_END == event->type) {
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(d->audio_serv);
         }

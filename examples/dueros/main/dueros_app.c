@@ -101,9 +101,9 @@ static void voice_read_task(void *args)
     vTaskDelete(NULL);
 }
 
-static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
+static esp_err_t rec_engine_cb(audio_rec_evt_t *event, void *user_data)
 {
-    if (AUDIO_REC_WAKEUP_START == type) {
+    if (AUDIO_REC_WAKEUP_START == event->type) {
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_WAKEUP_START");
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             dueros_voice_cancel(duer_serv_handle);
@@ -114,17 +114,17 @@ static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_ON, 0);
         ESP_LOGI(TAG, "rec_engine_cb - Play tone");
         duer_dcs_audio_sync_play_tone("file://sdcard/dingding.wav");
-    } else if (AUDIO_REC_VAD_START == type) {
+    } else if (AUDIO_REC_VAD_START == event->type) {
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_START");
         audio_service_start(duer_serv_handle);
         xEventGroupSetBits(duer_evt, DUER_REC_READING);
-    } else if (AUDIO_REC_VAD_END == type) {
+    } else if (AUDIO_REC_VAD_END == event->type) {
         xEventGroupClearBits(duer_evt, DUER_REC_READING);
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(duer_serv_handle);
         }
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_STOP, state:%d", dueros_service_state_get());
-    } else if (AUDIO_REC_WAKEUP_END == type) {
+    } else if (AUDIO_REC_WAKEUP_END == event->type) {
         if (dueros_service_state_get() == SERVICE_STATE_RUNNING) {
             audio_service_stop(duer_serv_handle);
         }

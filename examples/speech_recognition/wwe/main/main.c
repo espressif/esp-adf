@@ -232,10 +232,13 @@ static void voice_read_task(void *args)
     vTaskDelete(NULL);
 }
 
-static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
+static esp_err_t rec_engine_cb(audio_rec_evt_t *event, void *user_data)
 {
-    if (AUDIO_REC_WAKEUP_START == type) {
+    if (AUDIO_REC_WAKEUP_START == event->type) {
+        recorder_sr_wakeup_result_t *wakeup_result = event->event_data;
+
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_START");
+        ESP_LOGI(TAG, "wakeup: vol %f, idx %d", wakeup_result->data_volume, wakeup_result->wake_word_index);
         esp_audio_sync_play(player, tone_uri[TONE_TYPE_DINGDONG], 0);
         if (voice_reading) {
             int msg = REC_CANCEL;
@@ -243,7 +246,7 @@ static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
                 ESP_LOGE(TAG, "rec cancel send failed");
             }
         }
-    } else if (AUDIO_REC_VAD_START == type) {
+    } else if (AUDIO_REC_VAD_START == event->type) {
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_START");
         if (!voice_reading) {
             int msg = REC_START;
@@ -251,7 +254,7 @@ static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
                 ESP_LOGE(TAG, "rec start send failed");
             }
         }
-    } else if (AUDIO_REC_VAD_END == type) {
+    } else if (AUDIO_REC_VAD_END == event->type) {
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_VAD_STOP");
         if (voice_reading) {
             int msg = REC_STOP;
@@ -260,11 +263,15 @@ static esp_err_t rec_engine_cb(audio_rec_evt_t type, void *user_data)
             }
         }
 
-    } else if (AUDIO_REC_WAKEUP_END == type) {
+    } else if (AUDIO_REC_WAKEUP_END == event->type) {
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_END");
-    } else if (AUDIO_REC_COMMAND_DECT <= type) {
+        AUDIO_MEM_SHOW(TAG);
+    } else if (AUDIO_REC_COMMAND_DECT <= event->type) {
+        recorder_sr_mn_result_t *mn_result = event->event_data;
+
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_COMMAND_DECT");
-        ESP_LOGW(TAG, "command %d", type);
+        ESP_LOGW(TAG, "command %d, phrase_id %d, prob %f, str: %s"
+            , event->type, mn_result->phrase_id, mn_result->prob, mn_result->str);
         esp_audio_sync_play(player, tone_uri[TONE_TYPE_HAODE], 0);
     } else {
         ESP_LOGE(TAG, "Unkown event");

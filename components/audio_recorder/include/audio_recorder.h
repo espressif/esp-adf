@@ -44,19 +44,27 @@ extern "C" {
 /**
  * @brief Recorder event
  */
-typedef enum {
-    AUDIO_REC_WAKEUP_START = -100, /*!< Wakeup start */
-    AUDIO_REC_WAKEUP_END,          /*!< Wakeup stop */
-    AUDIO_REC_VAD_START,           /*!< Vad start */
-    AUDIO_REC_VAD_END,             /*!< Vad stop */
-    AUDIO_REC_COMMAND_DECT = 0     /*!< Form 0 is the id of the voice commands detected by Multinet*/
-    /* DO NOT add items below this line */
+typedef struct {
+    enum {
+        AUDIO_REC_WAKEUP_START = -100, /*!< Wakeup start */
+        AUDIO_REC_WAKEUP_END,          /*!< Wakeup stop */
+        AUDIO_REC_VAD_START,           /*!< Vad start */
+        AUDIO_REC_VAD_END,             /*!< Vad stop */
+        AUDIO_REC_COMMAND_DECT = 0     /*!< Form 0 is the id of the voice commands detected by Multinet*/
+        /* DO NOT add items below this line */
+    } type;                            /*!< Event type */
+    void *event_data;                  /*!< Event data:
+                                            For `AUDIO_REC_WAKEUP_START`, event data is `recorder_sr_wakeup_result_t`
+                                            For `AUDIO_REC_COMMAND_DECT` or higher, event data is `recorder_sr_mn_result_t`
+                                            For other events, event data is NULL
+                                            */
+    size_t data_len;                   /*!< Length of event data */
 } audio_rec_evt_t;
 
 /**
  * @brief Event Notification
  */
-typedef esp_err_t (*rec_event_cb_t)(audio_rec_evt_t event, void *user_data);
+typedef esp_err_t (*rec_event_cb_t)(audio_rec_evt_t *event, void *user_data);
 
 /**
  * @brief Audio recorder configuration
