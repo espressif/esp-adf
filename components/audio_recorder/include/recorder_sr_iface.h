@@ -40,6 +40,7 @@ extern "C" {
 typedef struct {
     float data_volume;                /*!< Volume of input audio, the unit is decibel(dB) */
     int wake_word_index;              /*!< Wake word index which start from 1 */
+    int wakenet_model_index;          /*!< Wakenets index which start from 1 */
 } recorder_sr_wakeup_result_t;        /*!< Information when wakeup word detected */
 
 /**
