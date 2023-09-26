@@ -139,16 +139,29 @@ static inline esp_err_t i2s_stream_check_data_bits(i2s_stream_t *i2s, int bits)
 static int i2s_stream_clear_dma_buffer(audio_element_handle_t self)
 {
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+    int index = i2s->config.i2s_config.dma_desc_num;
+    uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_frame_num * 4);
+#else
     int index = i2s->config.i2s_config.dma_buf_count;
     uint8_t *buf = audio_calloc(1, i2s->config.i2s_config.dma_buf_len * 4);
+#endif
     AUDIO_MEM_CHECK(TAG, buf, return ESP_ERR_NO_MEM);
 #if SOC_I2S_SUPPORTS_ADC_DAC
     if ((i2s->config.i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+        memset(buf, 0x80, i2s->config.i2s_config.dma_frame_num * 4);
+#else
         memset(buf, 0x80, i2s->config.i2s_config.dma_buf_len * 4);
+#endif
     }
 #endif
     while (index--) {
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+        audio_element_output(self, (char *)buf, i2s->config.i2s_config.dma_frame_num * 4);
+#else
         audio_element_output(self, (char *)buf, i2s->config.i2s_config.dma_buf_len * 4);
+#endif
     }
     if (buf) {
         audio_free(buf);
