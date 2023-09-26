@@ -106,7 +106,7 @@ static esp_err_t _sdcard_destroy(esp_periph_handle_t self)
     esp_err_t ret = ESP_OK;
     periph_sdcard_t *sdcard = esp_periph_get_data(self);
     if (sdcard->is_mounted) {
-        ret |= sdcard_unmount();
+        ret |= sdcard_unmount(sdcard->root);
         sdcard->is_mounted = false;
     }
     ret |= sdcard_destroy();
@@ -145,7 +145,7 @@ esp_err_t periph_sdcard_unmount(esp_periph_handle_t periph)
 {
     VALIDATE_SDCARD(periph, ESP_FAIL);
     periph_sdcard_t *sdcard = esp_periph_get_data(periph);
-    int ret = sdcard_unmount();
+    int ret = sdcard_unmount(sdcard->root);
     if (ret == ESP_OK) {
         ESP_LOGD(TAG, "UnMount SDCARD success");
         sdcard->is_mounted = false;

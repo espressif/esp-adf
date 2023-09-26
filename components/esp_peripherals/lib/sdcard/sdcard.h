@@ -60,11 +60,13 @@ esp_err_t sdcard_mount(const char* base_path, periph_sdcard_mode_t mode);
 /**
  * @brief Unmount FAT filesystem and release resources acquired using esp_vfs_fat_sdmmc_mount
  *
+ * @param  base_path path where partition is mounted (e.g. "/sdcard")
+ *
  * @return
  *      - ESP_OK on success
  *      - ESP_ERR_INVALID_STATE if sd_card_mount hasn't been called
  */
-esp_err_t sdcard_unmount(void);
+esp_err_t sdcard_unmount(const char *base_path);
 
 /**
  * @brief remove the sdcard device GPIO interruption in Audio board
