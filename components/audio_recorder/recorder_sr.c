@@ -133,6 +133,7 @@ static recorder_sr_result_t *recorder_sr_afe_result_convert(
             sr_result->type = SR_RESULT_WAKEUP;
             sr_result->info.wakeup_info.data_volume = afe_result->data_volume;
             sr_result->info.wakeup_info.wake_word_index = afe_result->wake_word_index;
+            sr_result->info.wakeup_info.wakenet_model_index = afe_result->wakenet_model_index;
             break;
         default:
             break;

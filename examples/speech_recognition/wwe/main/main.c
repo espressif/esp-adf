@@ -238,7 +238,7 @@ static esp_err_t rec_engine_cb(audio_rec_evt_t *event, void *user_data)
         recorder_sr_wakeup_result_t *wakeup_result = event->event_data;
 
         ESP_LOGI(TAG, "rec_engine_cb - REC_EVENT_WAKEUP_START");
-        ESP_LOGI(TAG, "wakeup: vol %f, idx %d", wakeup_result->data_volume, wakeup_result->wake_word_index);
+        ESP_LOGI(TAG, "wakeup: vol %f, mod idx %d, word idx %d", wakeup_result->data_volume, wakeup_result->wakenet_model_index, wakeup_result->wake_word_index);
         esp_audio_sync_play(player, tone_uri[TONE_TYPE_DINGDONG], 0);
         if (voice_reading) {
             int msg = REC_CANCEL;
