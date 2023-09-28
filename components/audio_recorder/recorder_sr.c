@@ -551,21 +551,25 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
     char *wn_name = NULL;
     char *wn_name_2 = NULL;
 
-    if (recorder_sr->models!=NULL) {
-        for (int i = 0; i< recorder_sr->models->num; i++) {
-            if (strstr(recorder_sr->models->model_name[i], ESP_WN_PREFIX) != NULL) {
-                if (wn_name == NULL) {
-                    wn_name = recorder_sr->models->model_name[i];
-                    ESP_LOGI(TAG, "The first wakenet model: %s\n", wn_name);
-                } else if (wn_name_2 == NULL) {
-                    wn_name_2 = recorder_sr->models->model_name[i];
-                    ESP_LOGI(TAG, "The second wakenet model: %s\n", wn_name_2);
+    if (recorder_sr->wn_wakeword == NULL) {
+        if (recorder_sr->models!=NULL) {
+            for (int i = 0; i< recorder_sr->models->num; i++) {
+                if (strstr(recorder_sr->models->model_name[i], ESP_WN_PREFIX) != NULL) {
+                    if (wn_name == NULL) {
+                        wn_name = recorder_sr->models->model_name[i];
+                        ESP_LOGI(TAG, "The first wakenet model: %s\n", wn_name);
+                    } else if (wn_name_2 == NULL) {
+                        wn_name_2 = recorder_sr->models->model_name[i];
+                        ESP_LOGI(TAG, "The second wakenet model: %s\n", wn_name_2);
+                    }
                 }
             }
+        } else {
+            ESP_LOGE(TAG, "Please enable wakenet model and select wake word by menuconfig!\n");
+            goto _failed;
         }
     } else {
-        ESP_LOGE(TAG, "Please enable wakenet model and select wake word by menuconfig!\n");
-        goto _failed;
+        wn_name = esp_srmodel_filter(recorder_sr->models, ESP_WN_PREFIX, recorder_sr->wn_wakeword);
     }
 
     cfg->afe_cfg.wakenet_model_name = wn_name;
