@@ -28,6 +28,7 @@
 #include "audio_error.h"
 #include "audio_element.h"
 #include "audio_common.h"
+#include "esp_http_client.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -167,6 +168,39 @@ esp_err_t http_stream_fetch_again(audio_element_handle_t el);
  *     - ESP_OK on success
  */
 esp_err_t http_stream_set_server_cert(audio_element_handle_t el, const char *cert);
+
+/**
+ * @brief       Set HTTP authentication type
+ *
+ * @param       el          The http_stream element handle
+ * @param       auth_type   HTTP autentication type, see `esp_http_client_auth_type_t`
+ *
+ * @return
+ *      - ESP_OK on success
+ */
+esp_err_t http_stream_set_auth_type(audio_element_handle_t el, esp_http_client_auth_type_t auth_type);
+
+/**
+ * @brief       Set HTTP authentication username
+ *
+ * @param       el The http_stream element handle
+ * @param       username    The HTTP authentication username
+ *
+ * @return
+ *      - ESP_OK on success
+ */
+esp_err_t http_stream_set_username(audio_element_handle_t el, const char *username);
+
+/**
+ * @brief       Set HTTP authentication password
+ *
+ * @param       el The http_stream element handle
+ * @param       username    The HTTP authentication password
+ *
+ * @return
+ *      - ESP_OK on success
+ */
+esp_err_t http_stream_set_password(audio_element_handle_t el, const char *password);
 
 #ifdef __cplusplus
 }

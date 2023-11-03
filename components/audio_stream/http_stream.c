@@ -100,6 +100,9 @@ typedef struct http_stream {
     int                             request_range_size;
     int64_t                         request_range_end;
     bool                            is_last_range;
+    esp_http_client_auth_type_t     auth_type;         /* HTTP authentication type */
+    char                            *username;         /* HTTP authentication username */
+    char                            *password;         /* HTTP authentication password */
 } http_stream_t;
 
 static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
@@ -586,6 +589,9 @@ _stream_open_begin:
 #if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
             .crt_bundle_attach = http->crt_bundle_attach,
 #endif //  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+            .auth_type = http->auth_type,
+            .username = http->username,
+            .password = http->password,
         };
         http->client = esp_http_client_init(&http_cfg);
         AUDIO_MEM_CHECK(TAG, http->client, return ESP_ERR_NO_MEM);
@@ -993,5 +999,34 @@ esp_err_t http_stream_set_server_cert(audio_element_handle_t el, const char *cer
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
     http->cert_pem = cert;
+    return ESP_OK;
+}
+
+esp_err_t http_stream_set_auth_type(audio_element_handle_t el, esp_http_client_auth_type_t auth_type)
+{
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+    http->auth_type = auth_type;
+    return ESP_OK;
+}
+
+esp_err_t http_stream_set_username(audio_element_handle_t el, const char *username)
+{
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+    if (http->username != NULL) {
+        memset(http->username, 0, strlen(http->username));
+        free(http->username);
+    }
+    http->username = username ? strndup(username, strlen(username)) : NULL;
+    return ESP_OK;
+}
+
+esp_err_t http_stream_set_password(audio_element_handle_t el, const char *password)
+{
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+    if (http->password != NULL) {
+        memset(http->password, 0, strlen(http->password));
+        free(http->password);
+    }
+    http->password = password ? strndup(password, strlen(password)) : NULL;
     return ESP_OK;
 }
