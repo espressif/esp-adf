@@ -183,6 +183,7 @@ static esp_err_t wifi_event_cb(void *ctx, system_event_t *event)
             ESP_LOGI(TAG, "SoftAP stopped");
             break;
         case SYSTEM_EVENT_STA_START:
+            ESP_LOGI(TAG, "Wifi connecting");
             esp_wifi_connect();
             break;
         case SYSTEM_EVENT_STA_GOT_IP:
@@ -418,9 +419,11 @@ static void wifi_task(void *pvParameters)
                             memcpy(&wifi_cfg, &serv->info, sizeof(wifi_config_t));
                         }
                     }
-                    ESP_LOGI(TAG, "Connect to wifi ssid: %s, pwd: %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
                     configure_wifi_sta_mode(&wifi_cfg);
-                    ESP_ERROR_CHECK(esp_wifi_connect());
+                    esp_wifi_disconnect();
+                    esp_err_t ret = esp_wifi_connect();
+                    AUDIO_CHECK(TAG, (ret == ESP_OK) || (ret == ESP_ERR_WIFI_CONN), abort(), "esp_wifi_connect failed.");
+                    ESP_LOGI(TAG, "Connect to wifi ssid: %s, pwd: %s", wifi_cfg.sta.ssid, wifi_cfg.sta.password);
                 } else if (wifi_msg.type == WIFI_SERV_CMD_DISCONNECT) {
                     serv->reason = WIFI_SERV_STA_BY_USER;
                     ESP_LOGI(TAG, "WIFI_SERV_CMD_DISCONNECT");
@@ -686,4 +689,3 @@ periph_service_handle_t wifi_service_create(wifi_service_config_t *config)
 
     return wifi;
 }
-
