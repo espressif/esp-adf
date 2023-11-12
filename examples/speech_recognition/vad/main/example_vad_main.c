@@ -49,7 +49,7 @@ void app_main()
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.i2s_config.sample_rate = 48000;
     i2s_cfg.type = AUDIO_STREAM_READER;
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
+#if defined(CONFIG_ESP_LYRAT_MINI_V1_1_BOARD) || defined(CONFIG_ESP32_S3_KORVO1_BOARD)
     i2s_cfg.i2s_port = 1;
 #if (ESP_IDF_VERSION <= ESP_IDF_VERSION_VAL(4, 0, 0))
     i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;

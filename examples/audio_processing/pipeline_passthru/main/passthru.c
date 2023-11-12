@@ -28,7 +28,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[ 1 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
 
-#ifdef CONFIG_ESP32_S2_KALUGA_1_V1_2_BOARD
+#if defined CONFIG_ESP32_S2_KALUGA_1_V1_2_BOARD || defined CONFIG_ESP32_S3_KORVO1_BOARD
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 #else
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_LINE_IN, AUDIO_HAL_CTRL_START);
@@ -47,6 +47,9 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.2] Create i2s stream to read data from codec chip");
     i2s_stream_cfg_t i2s_cfg_read = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg_read.type = AUDIO_STREAM_READER;
+#if defined CONFIG_ESP32_S3_KORVO1_BOARD
+    i2s_cfg_read.i2s_port = I2S_NUM_1;
+#endif
     i2s_stream_reader = i2s_stream_init(&i2s_cfg_read);
 
     ESP_LOGI(TAG, "[3.3] Register all elements to audio pipeline");

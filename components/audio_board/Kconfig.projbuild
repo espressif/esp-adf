@@ -17,6 +17,8 @@ config ESP_LYRATD_MSC_V2_2_BOARD
     bool "ESP32-LyraTD-MSC V2.2"
 config ESP_LYRAT_MINI_V1_1_BOARD
     bool "ESP32-Lyrat-Mini V1.1"
+config ESP32_S3_KORVO1_BOARD
+    bool "ESP32-S3-Korvo-1"
 config ESP32_KORVO_DU1906_BOARD
     bool "ESP32_KORVO_DU1906"
 config ESP32_S2_KALUGA_1_V1_2_BOARD
