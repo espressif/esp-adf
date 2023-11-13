@@ -187,6 +187,7 @@ _periph_init_failed:
 esp_err_t esp_periph_remove_from_set(esp_periph_set_handle_t periph_set_handle, esp_periph_handle_t periph)
 {
     STAILQ_REMOVE(&periph_set_handle->periph_list, periph, esp_periph, entries);
+    esp_periph_register_on_events(periph, NULL);
     return ESP_OK;
 }
 
