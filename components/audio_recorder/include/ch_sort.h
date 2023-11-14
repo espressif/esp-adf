@@ -64,7 +64,7 @@ enum _data_chan_type {
  * @return >=0: index of the given channel
  *          -1: channel not found
  */
-__attribute__((always_inline)) inline int8_t ch_get_idx(int8_t *order, size_t chan_num, uint8_t target_ch)
+static __attribute__((always_inline)) inline int8_t ch_get_idx(int8_t *order, size_t chan_num, uint8_t target_ch)
 {
     for (int8_t idx = 0; idx < chan_num; idx++) {
         if (order[idx] == target_ch) {
@@ -83,7 +83,7 @@ __attribute__((always_inline)) inline int8_t ch_get_idx(int8_t *order, size_t ch
  * @param src_order     order of the channels
  * @return ESP_OK
  */
-__attribute__((always_inline)) inline esp_err_t ch_sort_16bit_2ch(int16_t *i_buf, int16_t *o_buf, size_t len, int8_t *src_order)
+static __attribute__((always_inline)) inline esp_err_t ch_sort_16bit_2ch(int16_t *i_buf, int16_t *o_buf, size_t len, int8_t *src_order)
 {
     if (src_order[0] == DAT_CH_0 && src_order[1] == DAT_CH_1) {
         memcpy(o_buf, i_buf, len);
@@ -109,7 +109,7 @@ __attribute__((always_inline)) inline esp_err_t ch_sort_16bit_2ch(int16_t *i_buf
  * @return ESP_OK
  *         ESP_ERR_INVALID_ARG
  */
-__attribute__((always_inline)) inline esp_err_t ch_sort_16bit_4ch(int16_t *i_buf, int16_t *o_buf, size_t len, int8_t *src_order)
+static __attribute__((always_inline)) inline esp_err_t ch_sort_16bit_4ch(int16_t *i_buf, int16_t *o_buf, size_t len, int8_t *src_order)
 {
     int8_t ch0_idx = ch_get_idx(src_order, 4, DAT_CH_0);
     int8_t ch1_idx = ch_get_idx(src_order, 4, DAT_CH_1);

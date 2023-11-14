@@ -31,6 +31,7 @@
 #include "esp_peripherals.h"
 #include "audio_thread.h"
 #include "audio_mem.h"
+#include "audio_idf_version.h"
 
 static const char *TAG = "ESP_PERIPH";
 
@@ -131,6 +132,7 @@ static void esp_periph_task(void *pv)
 
 esp_periph_set_handle_t esp_periph_set_init(esp_periph_config_t *config)
 {
+    esp_err_t ret = ESP_OK;
     esp_periph_set_t *periph_sets = NULL;
     int _err_step = 1;
     bool _success =
@@ -148,8 +150,14 @@ esp_periph_set_handle_t esp_periph_set_init(esp_periph_config_t *config)
 
     //TODO: Should we uninstall gpio isr service??
     //TODO: Because gpio need for sdcard and gpio, then install isr here
-
-    gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);
+    ret = gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);
+    if (ret == ESP_ERR_NOT_FOUND) {
+        ESP_LOGE(TAG, "No free interrupt found with ESP_INTR_FLAG_LEVEL1");
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0))
+        ESP_LOGE(TAG,"Select an available interrupt level based on the interrupt table below");
+        esp_intr_dump(stdout);
+#endif // ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)
+    }
 
     periph_sets->run = false;
     xEventGroupClearBits(periph_sets->state_event_bits, STARTED_BIT);

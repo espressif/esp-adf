@@ -1,0 +1,225 @@
+From 998ab163ae9e93fcace1b19169bd8bc9b3531c0d Mon Sep 17 00:00:00 2001
+From: xutao <xutao@espressif.com>
+Date: Wed, 21 Feb 2024 15:07:11 +0800
+Subject: [PATCH] memory: Move some system task stack to psram
+
+---
+ components/bt/common/btc/core/btc_task.c      |  2 +-
+ components/bt/common/osi/include/osi/thread.h |  3 +-
+ components/bt/common/osi/thread.c             | 27 ++++++++++++++++--
+ components/bt/host/bluedroid/hci/hci_layer.c  |  2 +-
+ .../bt/host/bluedroid/stack/btu/btu_init.c    |  2 +-
+ components/esp_event/esp_event.c              | 20 ++++++++++++-
+ .../freertos_tasks_c_additions.h              | 28 +++++++++++++++++++
+ .../include/freertos/idf_additions.h          |  8 ++++++
+ 8 files changed, 84 insertions(+), 8 deletions(-)
+
+diff --git a/components/bt/common/btc/core/btc_task.c b/components/bt/common/btc/core/btc_task.c
+index 179d501e72..3062cd9e90 100644
+--- a/components/bt/common/btc/core/btc_task.c
++++ b/components/bt/common/btc/core/btc_task.c
+@@ -489,7 +489,7 @@ error_exit:;
+ bt_status_t btc_init(void)
+ {
+     const size_t workqueue_len[] = {BTC_TASK_WORKQUEUE0_LEN, BTC_TASK_WORKQUEUE1_LEN};
+-    btc_thread = osi_thread_create(BTC_TASK_NAME, BTC_TASK_STACK_SIZE, BTC_TASK_PRIO, BTC_TASK_PINNED_TO_CORE,
++    btc_thread = osi_thread_create(BTC_TASK_NAME, BTC_TASK_STACK_SIZE, false, BTC_TASK_PRIO, BTC_TASK_PINNED_TO_CORE,
+                                    BTC_TASK_WORKQUEUE_NUM, workqueue_len);
+     if (btc_thread == NULL) {
+         return BT_STATUS_NOMEM;
+diff --git a/components/bt/common/osi/include/osi/thread.h b/components/bt/common/osi/include/osi/thread.h
+index 85ba611f3a..64bd918003 100644
+--- a/components/bt/common/osi/include/osi/thread.h
++++ b/components/bt/common/osi/include/osi/thread.h
+@@ -34,12 +34,13 @@ typedef enum {
+  * brief: Create a thread or task
+  * param name: thread name
+  * param stack_size: thread stack size
++ * param ext: allacted task stack in external memory
+  * param priority: thread priority
+  * param core: the CPU core which this thread run, OSI_THREAD_CORE_AFFINITY means unspecific CPU core
+  * param work_queue_num: speicify queue number, the queue[0] has highest priority, and the priority is decrease by index
+  * return : if create successfully, return thread handler; otherwise return NULL.
+  */
+-osi_thread_t *osi_thread_create(const char *name, size_t stack_size, int priority, osi_thread_core_t core, uint8_t work_queue_num, const size_t work_queue_len[]);
++osi_thread_t *osi_thread_create(const char *name, size_t stack_size, bool ext, int priority, osi_thread_core_t core, uint8_t work_queue_num, const size_t work_queue_len[]);
+ 
+ /*
+  * brief: Destroy a thread or task
+diff --git a/components/bt/common/osi/thread.c b/components/bt/common/osi/thread.c
+index f53eadb665..e2821bcf9e 100644
+--- a/components/bt/common/osi/thread.c
++++ b/components/bt/common/osi/thread.c
+@@ -61,6 +61,17 @@ struct osi_event {
+ 
+ static const size_t DEFAULT_WORK_QUEUE_CAPACITY = 100;
+ 
++
++static inline bool ext_psram_is_enable(void)
++{
++#if defined(CONFIG_SPIRAM_BOOT_INIT) &&     \
++    (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY)
++    return true;
++#else
++    return false;
++#endif
++}
++
+ static struct work_queue *osi_work_queue_create(size_t capacity)
+ {
+     if (capacity == 0) {
+@@ -203,7 +214,7 @@ static void osi_thread_stop(osi_thread_t *thread)
+ }
+ 
+ //in linux, the stack_size, priority and core may not be set here, the code will be ignore the arguments
+-osi_thread_t *osi_thread_create(const char *name, size_t stack_size, int priority, osi_thread_core_t core, uint8_t work_queue_num, const size_t work_queue_len[])
++osi_thread_t *osi_thread_create(const char *name, size_t stack_size, bool ext, int priority, osi_thread_core_t core, uint8_t work_queue_num, const size_t work_queue_len[])
+ {
+     int ret;
+     struct osi_thread_start_arg start_arg = {0};
+@@ -250,8 +261,18 @@ osi_thread_t *osi_thread_create(const char *name, size_t stack_size, int priorit
+         goto _err;
+     }
+ 
+-    if (xTaskCreatePinnedToCore(osi_thread_run, name, stack_size, &start_arg, priority, &thread->thread_handle, core) != pdPASS) {
+-        goto _err;
++    if (ext_psram_is_enable() && (ext == true)) {
++        StackType_t *stack = (StackType_t *)heap_caps_calloc(1, stack_size, MALLOC_CAP_SPIRAM);
++        assert(stack);
++        if (xTaskCreateRestrictedStaticPinnedToCore(osi_thread_run, name, stack_size, stack,
++                    &start_arg,  priority,  &thread->thread_handle, core) != pdPASS) {
++            goto _err;
++        }
++    }
++    else {
++        if (xTaskCreatePinnedToCore(osi_thread_run, name, stack_size, &start_arg, priority, &thread->thread_handle, core) != pdPASS) {
++            goto _err;
++        }
+     }
+ 
+     osi_sem_take(&start_arg.start_sem, OSI_SEM_MAX_TIMEOUT);
+diff --git a/components/bt/host/bluedroid/hci/hci_layer.c b/components/bt/host/bluedroid/hci/hci_layer.c
+index 56ab8877dc..bd4e52205a 100644
+--- a/components/bt/host/bluedroid/hci/hci_layer.c
++++ b/components/bt/host/bluedroid/hci/hci_layer.c
+@@ -110,7 +110,7 @@ int hci_start_up(void)
+     }
+ 
+     const size_t workqueue_len[] = {HCI_HOST_TASK_WORKQUEUE0_LEN, HCI_HOST_TASK_WORKQUEUE1_LEN};
+-    hci_host_thread = osi_thread_create(HCI_HOST_TASK_NAME, HCI_HOST_TASK_STACK_SIZE, HCI_HOST_TASK_PRIO, HCI_HOST_TASK_PINNED_TO_CORE,
++    hci_host_thread = osi_thread_create(HCI_HOST_TASK_NAME, HCI_HOST_TASK_STACK_SIZE, true, HCI_HOST_TASK_PRIO, HCI_HOST_TASK_PINNED_TO_CORE,
+                                         HCI_HOST_TASK_WORKQUEUE_NUM, workqueue_len);
+     if (hci_host_thread == NULL) {
+         return -2;
+diff --git a/components/bt/host/bluedroid/stack/btu/btu_init.c b/components/bt/host/bluedroid/stack/btu/btu_init.c
+index 615fbf8019..8ace0cd8be 100644
+--- a/components/bt/host/bluedroid/stack/btu/btu_init.c
++++ b/components/bt/host/bluedroid/stack/btu/btu_init.c
+@@ -184,7 +184,7 @@ void BTU_StartUp(void)
+     osi_mutex_new(&btu_l2cap_alarm_lock);
+ 
+     const size_t workqueue_len[] = {BTU_TASK_WORKQUEUE0_LEN};
+-    btu_thread = osi_thread_create(BTU_TASK_NAME, BTU_TASK_STACK_SIZE, BTU_TASK_PRIO, BTU_TASK_PINNED_TO_CORE,
++    btu_thread = osi_thread_create(BTU_TASK_NAME, BTU_TASK_STACK_SIZE, true, BTU_TASK_PRIO, BTU_TASK_PINNED_TO_CORE,
+                                    BTU_TASK_WORKQUEUE_NUM, workqueue_len);
+     if (btu_thread == NULL) {
+         goto error_exit;
+diff --git a/components/esp_event/esp_event.c b/components/esp_event/esp_event.c
+index d1b0e7bb4e..18a9f5e987 100644
+--- a/components/esp_event/esp_event.c
++++ b/components/esp_event/esp_event.c
+@@ -493,6 +493,24 @@ esp_err_t esp_event_loop_create(const esp_event_loop_args_t* event_loop_args, es
+ 
+     // Create the loop task if requested
+     if (event_loop_args->task_name != NULL) {
++#if ((defined CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY) && (defined CONFIG_IDF_TARGET_ESP32)) || \
++    ((defined CONFIG_IDF_TARGET_ESP32S3) && (defined CONFIG_SPIRAM_BOOT_INIT))
++    StackType_t *stack = (StackType_t *)heap_caps_calloc(1,  event_loop_args->task_stack_size, MALLOC_CAP_SPIRAM);
++    assert(stack);
++    BaseType_t task_created = xTaskCreateRestrictedStaticPinnedToCore(esp_event_loop_run_task,
++                                                                     event_loop_args->task_name, 
++                                                                     event_loop_args->task_stack_size,
++                                                                    stack,
++                                                                    (void*) loop,
++                                                                    event_loop_args->task_priority,
++                                                                    &(loop->task),
++                                                                    event_loop_args->task_core_id);
++    if (task_created != pdPASS) {
++        ESP_LOGE(TAG, "create task for loop failed");
++        err = ESP_FAIL;
++        goto on_err;
++    }
++#else
+         BaseType_t task_created = xTaskCreatePinnedToCore(esp_event_loop_run_task, event_loop_args->task_name,
+                     event_loop_args->task_stack_size, (void*) loop,
+                     event_loop_args->task_priority, &(loop->task), event_loop_args->task_core_id);
+@@ -502,7 +520,7 @@ esp_err_t esp_event_loop_create(const esp_event_loop_args_t* event_loop_args, es
+             err = ESP_FAIL;
+             goto on_err;
+         }
+-
++#endif
+         loop->name = event_loop_args->task_name;
+ 
+         ESP_LOGD(TAG, "created task for loop %p", loop);
+diff --git a/components/freertos/esp_additions/freertos_tasks_c_additions.h b/components/freertos/esp_additions/freertos_tasks_c_additions.h
+index 9147622c67..b82d6faa48 100644
+--- a/components/freertos/esp_additions/freertos_tasks_c_additions.h
++++ b/components/freertos/esp_additions/freertos_tasks_c_additions.h
+@@ -340,6 +340,34 @@ _Static_assert( tskNO_AFFINITY == ( BaseType_t ) CONFIG_FREERTOS_NO_AFFINITY, "C
+         return xReturn;
+     }
+ 
++BaseType_t xTaskCreateRestrictedStaticPinnedToCore(TaskFunction_t pxTaskCode,
++                                                const char * const pcName,
++                                                uint32_t usStackDepth,
++                                                StackType_t * stack,
++                                                void * const pvParameters,
++                                                UBaseType_t uxPriorit,
++                                                TaskHandle_t *pxCreatedTask,
++                                                const BaseType_t xCoreID)
++
++{
++        printf("Task: Create stack of \033[0;32;31m %s \033[m Task From External(%d)\n", pcName, (int)usStackDepth);
++        TaskParameters_t xRegParameters = {
++            .pvTaskCode = pxTaskCode,
++            .pcName = pcName,
++            .usStackDepth = usStackDepth,
++            .pvParameters = pvParameters,
++            .uxPriority = uxPriorit | portPRIVILEGE_BIT,
++            .puxStackBuffer = stack,
++            .xRegions = {{
++                    .pvBaseAddress = 0x00,
++                    .ulLengthInBytes = 0x00,
++                    .ulParameters = 0x00,
++                }
++            }
++        };
++        return xTaskCreateRestrictedPinnedToCore(&xRegParameters, pxCreatedTask, xCoreID);
++}
++
+ #endif /* ( configSUPPORT_DYNAMIC_ALLOCATION == 1 ) */
+ /*----------------------------------------------------------*/
+ 
+diff --git a/components/freertos/esp_additions/include/freertos/idf_additions.h b/components/freertos/esp_additions/include/freertos/idf_additions.h
+index 70cf1a5be6..d56561fddf 100644
+--- a/components/freertos/esp_additions/include/freertos/idf_additions.h
++++ b/components/freertos/esp_additions/include/freertos/idf_additions.h
+@@ -72,6 +72,14 @@
+                                                 TaskHandle_t *pxCreatedTask,
+                                                 const BaseType_t xCoreID);
+ 
++    BaseType_t xTaskCreateRestrictedStaticPinnedToCore(TaskFunction_t pxTaskCode,
++                                                    const char * const pcName,
++                                                    uint32_t usStackDepth,
++                                                    StackType_t * stack,
++                                                    void * const pvParameters,
++                                                    UBaseType_t uxPriorit,
++                                                    TaskHandle_t *pxCreatedTask,
++                                                    const BaseType_t xCoreID);
+ 
+ #endif /* configSUPPORT_DYNAMIC_ALLOCATION */
+ 
+-- 
+2.34.1
+
