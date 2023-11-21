@@ -47,7 +47,7 @@
 #define CONFIG_TCP_URL   "192.168.199.118"
 #define CONFIG_TCP_PORT  8080
 
-static const char *TAG =  "TCP_CLIENT_STREAM_TEST"
+static const char *TAG =  "TCP_CLIENT_STREAM_TEST";
 
 TEST_CASE("tcp client stream init memory", "[esp-adf-stream]")
 {
@@ -58,8 +58,8 @@ TEST_CASE("tcp client stream init memory", "[esp-adf-stream]")
     int cnt = 2000;
     AUDIO_MEM_SHOW("BEFORE TCP_CLIENT_STREAM_INIT MEMORY TEST");
     while (cnt--) {
-    	tcp_stream_writer = tcp_stream_init(&tcp_cfg);
-    	TEST_ASSERT_NOT_NULL(tcp_stream_writer);
+        tcp_stream_writer = tcp_stream_init(&tcp_cfg);
+        TEST_ASSERT_NOT_NULL(tcp_stream_writer);
         TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(tcp_stream_writer));
     }
     AUDIO_MEM_SHOW("AFTER TCP_CLIENT_STREAM_INIT MEMORY TEST");
@@ -67,7 +67,7 @@ TEST_CASE("tcp client stream init memory", "[esp-adf-stream]")
 
 TEST_CASE("tcp client stream write", "[esp-adf-stream]")
 {
-	 esp_err_t err = nvs_flash_init();
+    esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
@@ -108,8 +108,8 @@ TEST_CASE("tcp client stream write", "[esp-adf-stream]")
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.mp3"));
 
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = CONFIG_WIFI_SSID,
-        .password = CONFIG_WIFI_PASSWORD,
+        .wifi_config.sta.ssid = CONFIG_WIFI_SSID,
+        .wifi_config.sta.password = CONFIG_WIFI_PASSWORD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     TEST_ASSERT_EQUAL(ESP_OK, esp_periph_start(set, wifi_handle));
@@ -155,7 +155,7 @@ TEST_CASE("tcp client stream write", "[esp-adf-stream]")
 
 TEST_CASE("tcp client stream read", "[esp-adf-stream]")
 {
-	 esp_err_t err = nvs_flash_init();
+    esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
@@ -196,8 +196,8 @@ TEST_CASE("tcp client stream read", "[esp-adf-stream]")
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_set_uri(fatfs_stream_reader, "/sdcard/test.mp3"));
 
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = CONFIG_WIFI_SSID,
-        .password = CONFIG_WIFI_PASSWORD,
+        .wifi_config.sta.ssid = CONFIG_WIFI_SSID,
+        .wifi_config.sta.password = CONFIG_WIFI_PASSWORD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     TEST_ASSERT_EQUAL(ESP_OK, esp_periph_start(set, wifi_handle));

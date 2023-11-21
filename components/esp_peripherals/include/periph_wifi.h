@@ -25,6 +25,7 @@
 #ifndef _DEV_WIFI_H_
 #define _DEV_WIFI_H_
 
+#include "esp_wifi_types.h"
 #include "esp_peripherals.h"
 
 #ifdef __cplusplus
@@ -80,8 +81,7 @@ typedef struct {
 typedef struct {
     bool                              disable_auto_reconnect;   /*!< Disable Wi-Fi auto reconnect */
     int                               reconnect_timeout_ms;     /*!< The reconnect timeout after disconnected from Wi-Fi network */
-    const char                        *ssid;                    /*!< SSID of target AP */
-    const char                        *password;                /*!< password of target AP */
+    wifi_config_t                     wifi_config;              /*!< Wifi configure */
     periph_wpa2_enterprise_cfg_t      wpa2_e_cfg;               /*!< wpa2 enterprise config */
 } periph_wifi_cfg_t;
 

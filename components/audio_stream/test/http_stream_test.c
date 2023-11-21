@@ -52,8 +52,8 @@ static const char URL_RANDOM[] = "0123456789abcdefghijklmnopqrstuvwxyuzABCDEFGHI
 #define AAC_STREAM_URI "http://open.ls.qingting.fm/live/274/64k.m3u8?format=aac"
 #define UNITEST_HTTP_SERVRE_URI  "http://192.168.199.168:8000/upload"
 
-#define UNITETS_HTTP_STREAM_WIFI_SSID    "ESPRESSIF"   
-#define UNITETS_HTTP_STREAM_WIFI_PASSWD    "espressif"   
+#define UNITETS_HTTP_STREAM_WIFI_SSID    "ESPRESSIF"
+#define UNITETS_HTTP_STREAM_WIFI_PASSWD    "espressif"
 
 TEST_CASE("http stream init memory", "[esp-adf-stream]")
 {
@@ -88,7 +88,7 @@ TEST_CASE("http stream url test", "[esp-adf-stream]")
     http_cfg.enable_playlist_parser = true;
     http_stream_reader = http_stream_init(&http_cfg);
 
-    srand((unsigned int)time((time_t*)NULL));
+    srand((unsigned int)time((time_t *)NULL));
     for (int cnt = 0; cnt < 100; cnt++) {
         memset(url, 0x00, sizeof("http://"));
         strcpy(url, "http://");
@@ -190,8 +190,8 @@ TEST_CASE("http stream read", "[esp-adf-stream]")
     TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set, SD_MODE_1_LINE));
 
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
-        .password = UNITETS_HTTP_STREAM_WIFI_SSID,
+        .wifi_config.sta.ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
+        .wifi_config.sta.password = UNITETS_HTTP_STREAM_WIFI_PASSWD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     TEST_ASSERT_NOT_NULL(wifi_handle);
@@ -240,9 +240,9 @@ TEST_CASE("http stream read", "[esp-adf-stream]")
             continue;
         }
 
-      if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) http_stream_reader
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) http_stream_reader
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_ERROR_OPEN) {
-                break;
+            break;
             continue;
         }
     }
@@ -259,7 +259,7 @@ TEST_CASE("http stream read", "[esp-adf-stream]")
     TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_destroy(set));
 }
 
-/* 
+/*
  * Note : Before run this unitest, please run the http_server_read.py, and Confirm server ip in UNITEST_HTTP_SERVRE_URI
  */
 TEST_CASE("http stream write", "[esp-adf-stream]")
@@ -283,8 +283,8 @@ TEST_CASE("http stream write", "[esp-adf-stream]")
     TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set, SD_MODE_1_LINE));
 
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
-        .password = UNITETS_HTTP_STREAM_WIFI_PASSWD,
+        .wifi_config.sta.ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
+        .wifi_config.sta.password = UNITETS_HTTP_STREAM_WIFI_PASSWD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     TEST_ASSERT_NOT_NULL(wifi_handle);
@@ -334,9 +334,9 @@ TEST_CASE("http stream write", "[esp-adf-stream]")
             continue;
         }
 
-      if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) http_stream_writer
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) http_stream_writer
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_ERROR_OPEN) {
-                break;
+            break;
             continue;
         }
     }
@@ -351,7 +351,7 @@ TEST_CASE("http stream write", "[esp-adf-stream]")
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(http_stream_writer));
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(fatfs_stream_reader));
 
-    TEST_ASSERT_EQUAL(ESP_OK,esp_periph_set_destroy(set));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_destroy(set));
 }
 
 TEST_CASE("http stream living test", "[esp-adf-stream]")
@@ -370,7 +370,7 @@ TEST_CASE("http stream living test", "[esp-adf-stream]")
 
     audio_board_handle_t board_handle = audio_board_init();
     TEST_ASSERT_NOT_NULL(board_handle);
-    TEST_ASSERT_EQUAL(ESP_OK,audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START));
+    TEST_ASSERT_EQUAL(ESP_OK, audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START));
 
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     pipeline = audio_pipeline_init(&pipeline_cfg);
@@ -403,8 +403,8 @@ TEST_CASE("http stream living test", "[esp-adf-stream]")
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     TEST_ASSERT_NOT_NULL(set);
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
-        .password = UNITETS_HTTP_STREAM_WIFI_PASSWD,
+        .wifi_config.sta.ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
+        .wifi_config.sta.password = UNITETS_HTTP_STREAM_WIFI_PASSWD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     TEST_ASSERT_NOT_NULL(wifi_handle);
@@ -476,8 +476,8 @@ TEST_CASE("http stream living test", "[esp-adf-stream]")
 TEST_CASE("https stream test", "[esp-adf-stream]")
 {
 
-extern const char howsmyssl_com_root_cert_pem_start[] asm("_binary_howsmyssl_com_root_cert_pem_start");
-extern const char howsmyssl_com_root_cert_pem_end[]   asm("_binary_howsmyssl_com_root_cert_pem_end");
+    extern const char howsmyssl_com_root_cert_pem_start[] asm("_binary_howsmyssl_com_root_cert_pem_start");
+    extern const char howsmyssl_com_root_cert_pem_end[]   asm("_binary_howsmyssl_com_root_cert_pem_end");
 
     audio_pipeline_handle_t pipeline;
     audio_element_handle_t http_stream_reader, fatfs_stream_writer;
@@ -498,8 +498,8 @@ extern const char howsmyssl_com_root_cert_pem_end[]   asm("_binary_howsmyssl_com
     TEST_ASSERT_EQUAL(ESP_OK, audio_board_sdcard_init(set, SD_MODE_1_LINE));
 
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
-        .password = UNITETS_HTTP_STREAM_WIFI_SSID,
+        .wifi_config.sta.ssid = UNITETS_HTTP_STREAM_WIFI_SSID,
+        .wifi_config.sta.password = UNITETS_HTTP_STREAM_WIFI_PASSWD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     TEST_ASSERT_NOT_NULL(wifi_handle);
@@ -549,9 +549,9 @@ extern const char howsmyssl_com_root_cert_pem_end[]   asm("_binary_howsmyssl_com
             continue;
         }
 
-      if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) http_stream_reader
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) http_stream_reader
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (int) msg.data == AEL_STATUS_ERROR_OPEN) {
-                break;
+            break;
             continue;
         }
     }

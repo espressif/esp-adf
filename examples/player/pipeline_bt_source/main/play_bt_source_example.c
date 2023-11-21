@@ -94,8 +94,8 @@ void app_main(void)
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = CONFIG_WIFI_SSID,
-        .password = CONFIG_WIFI_PASSWORD,
+        .wifi_config.sta.ssid = CONFIG_WIFI_SSID,
+        .wifi_config.sta.password = CONFIG_WIFI_PASSWORD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);
@@ -142,7 +142,7 @@ void app_main(void)
 
         /* Stop when the Bluetooth is disconnected or suspended */
         if (msg.source_type == PERIPH_ID_BLUETOOTH
-                && msg.source == (void *)bt_periph) {
+            && msg.source == (void *)bt_periph) {
             if ((msg.cmd == PERIPH_BLUETOOTH_DISCONNECTED) || (msg.cmd == PERIPH_BLUETOOTH_AUDIO_SUSPENDED)) {
                 ESP_LOGW(TAG, "[ * ] Bluetooth disconnected or suspended");
                 periph_bluetooth_stop(bt_periph);

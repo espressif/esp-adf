@@ -533,8 +533,8 @@ static void cli_setup_wifi()
     ESP_LOGI(TAG, "Start Wi-Fi");
     periph_wifi_cfg_t wifi_cfg = {
         .disable_auto_reconnect = true,
-        .ssid = "",
-        .password = "",
+        .wifi_config.sta.ssid = "YOUR_SSID",
+        .wifi_config.sta.password = "YOUR_PASSWORD",
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);
@@ -556,7 +556,7 @@ static void cli_setup_player(void)
 {
     if (player ) {
         return ;
-    } 
+    }
     esp_audio_cfg_t cfg = DEFAULT_ESP_AUDIO_CONFIG();
     audio_board_handle_t board_handle = audio_board_init();
     cfg.vol_handle = board_handle->audio_hal;
