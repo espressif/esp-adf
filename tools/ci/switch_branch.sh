@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
+set -o errexit
 
 [ -z ${IDF_PATH} ] && die "IDF_PATH is not set"
 [ -z ${ADF_PATH} ] && die "ADF_PATH is not set"
-
-set -o errexit
 
 if ! type jq >/dev/null 2>&1;then
     apt-get update

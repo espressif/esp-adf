@@ -41,15 +41,11 @@ variables:
 before_script:
   - source $ADF_PATH/tools/ci/utils.sh
   - add_gitlab_ssh_keys
-
   # replace submodule to internal repository to speedup cloning
   - update_submodule_remote
   - *execute_submodules
-
   # To disable set -e for automatic error detection, due to the switch_branch.sh use $? check return value
-  - set +e +o pipefail
   - source $ADF_PATH/tools/ci/switch_branch.sh
-  - set -e -o pipefail
   # - source esp-idf/tools/ci/configure_ci_environment.sh
 
 push_to_github:
