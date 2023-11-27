@@ -7,11 +7,10 @@
 .pull_adf_libs_ut_repo: &pull_adf_libs_ut_repo |
   echo "current path:"$(pwd)
   cd $ADF_PATH/..
-  if [[ ! -d "$ADF_PATH/../adf-libs-ut/" ]]; then
-    git clone ${GITLAB_SSH_SERVER}/adf/adf-libs-ut.git
-  else
-    echo "adf-libs-ut folder already exists"
+  if [[ -d "$ADF_PATH/../adf-libs-ut/" ]]; then
+    rm -rf $ADF_PATH/../adf-libs-ut/
   fi
+  git clone ${GITLAB_SSH_SERVER}/adf/adf-libs-ut.git
   cd -
 
 .build_ut_template: &build_ut_template
@@ -70,9 +69,15 @@
   variables:
     LOG_PATH: "$CI_PROJECT_DIR/log_ut_make"
     OUTPUT_PATH: ${IDF_PATH}/tools/unit-test-app/output
+  before_script:
+    - source $ADF_PATH/tools/ci/utils.sh
+    - add_gitlab_ssh_keys
+    - update_submodule_remote
+    - git submodule update --init;
+    - *pull_adf_libs_ut_repo
+    - source $ADF_PATH/tools/ci/switch_branch.sh
   script:
     - echo $PATH
-    - *pull_adf_libs_ut_repo
     - *add_adf_components_to_ut_v44_make_build
     - MAKEFLAGS= make help # make sure kconfig tools are built in single process
     - make clean
