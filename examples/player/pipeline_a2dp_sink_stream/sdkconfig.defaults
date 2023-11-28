@@ -10,6 +10,8 @@ CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY=y
 
 CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
 
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
 # Increase default app partition size to accommodate BT
 # by providing new partition table in "partitions_bt_sink_example.csv"
 CONFIG_PARTITION_TABLE_CUSTOM=y
