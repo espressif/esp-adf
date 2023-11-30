@@ -801,10 +801,10 @@ esp_err_t audio_element_set_output_ringbuf_size(audio_element_handle_t el, int r
  * @param      ticks_to_wait Timeout of ringbuffer
  *
  * @return
- *     - ESP_OK
- *     - ESP_ERR_INVALID_ARG
+ *     - ESP_ERR_INVALID_SIZE
+ *     - Others are same as the `rb_read`
  */
-esp_err_t audio_element_multi_input(audio_element_handle_t el, char *buffer, int wanted_size, int index, TickType_t ticks_to_wait);
+int audio_element_multi_input(audio_element_handle_t el, char *buffer, int wanted_size, int index, TickType_t ticks_to_wait);
 
 /**
  * @brief      Call this function write data by multi output ringbuffer.
@@ -815,10 +815,9 @@ esp_err_t audio_element_multi_input(audio_element_handle_t el, char *buffer, int
  * @param      ticks_to_wait Timeout of ringbuffer
  *
  * @return
- *     - ESP_OK
- *     - ESP_FAIL
+ *     - The return value is same as the `rb_write`
  */
-esp_err_t audio_element_multi_output(audio_element_handle_t el, char *buffer, int wanted_size, TickType_t ticks_to_wait);
+int audio_element_multi_output(audio_element_handle_t el, char *buffer, int wanted_size, TickType_t ticks_to_wait);
 
 /**
  * @brief      Set multi input ringbuffer Element.
