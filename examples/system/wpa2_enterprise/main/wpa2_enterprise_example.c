@@ -54,8 +54,7 @@ void app_main()
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
     ESP_LOGI(TAG, "[ 1 ] Set Wi-Fi config");
-    periph_wifi_cfg_t wifi_cfg = {0};
-    wifi_cfg.ssid = CONFIG_WIFI_SSID;
+    periph_wifi_cfg_t wifi_cfg = {.wifi_config.sta.ssid = CONFIG_WIFI_SSID};
     wifi_cfg.wpa2_e_cfg.diasble_wpa2_e = true;
     wifi_cfg.wpa2_e_cfg.eap_method = CONFIG_EAP_METHOD;
     wifi_cfg.wpa2_e_cfg.ca_pem_start = (char *)ca_pem_start;

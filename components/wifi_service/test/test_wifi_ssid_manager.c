@@ -70,8 +70,8 @@ static esp_periph_set_handle_t wifi_setup(void)
     tcpip_adapter_init();
 
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = "myssid",
-        .password = "mypassword",
+        .wifi_config.sta.ssid = "YOUR_SSID",
+        .wifi_config.sta.password = "YOUR_PASSWORD",
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     TEST_ASSERT_FALSE(esp_periph_start(set, wifi_handle));

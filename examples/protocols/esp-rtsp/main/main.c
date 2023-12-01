@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include "string.h"
 #include "nvs_flash.h"
 #include "esp_netif.h"
 #include "esp_log.h"
@@ -17,7 +18,7 @@
 #include "algorithm_stream.h"
 #include "rtsp_service.h"
 
-#define TAG	        "ESP_RTSP_Demo"
+#define TAG         "ESP_RTSP_Demo"
 
 #define WIFI_SSID  "myssid"
 #define WIFI_PWD   "mypassword"
@@ -35,8 +36,8 @@ static void setup_wifi(esp_periph_set_handle_t set)
 {
     ESP_ERROR_CHECK(esp_netif_init());
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = WIFI_SSID,
-        .password = WIFI_PWD,
+        .wifi_config.sta.ssid = WIFI_SSID,
+        .wifi_config.sta.password = WIFI_PWD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);

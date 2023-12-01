@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include "string.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_wifi.h"
@@ -194,10 +195,10 @@ void wifi_low_power_test(void)
     set = esp_periph_set_init(&periph_cfg);
     ESP_LOGI(TAG, "Start and wait for Wi-Fi network");
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = CONFIG_EXAMPLE_WIFI_SSID,
-        .password = CONFIG_EXAMPLE_WIFI_PASSWORD,
         .disable_auto_reconnect = false,
-        .reconnect_timeout_ms = 100
+        .reconnect_timeout_ms = 100,
+        .wifi_config.sta.ssid = CONFIG_EXAMPLE_WIFI_SSID,
+        .wifi_config.sta.password = CONFIG_EXAMPLE_WIFI_PASSWORD,
     };
     wifi_handle = periph_wifi_init(&wifi_cfg);
     // Please place it between periph_wifi_init() and esp_periph_start()
@@ -241,10 +242,10 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Init Wi-Fi network");
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = CONFIG_EXAMPLE_WIFI_SSID,
-        .password = CONFIG_EXAMPLE_WIFI_PASSWORD,
         .disable_auto_reconnect = false,
-        .reconnect_timeout_ms = 100
+        .reconnect_timeout_ms = 100,
+        .wifi_config.sta.ssid = CONFIG_EXAMPLE_WIFI_SSID,
+        .wifi_config.sta.password = CONFIG_EXAMPLE_WIFI_PASSWORD,
     };
     wifi_handle = periph_wifi_init(&wifi_cfg);
     // Please place it between periph_wifi_init() and esp_periph_start()

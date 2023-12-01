@@ -46,7 +46,7 @@ typedef enum {
 } rtmp_app_type_t;
 
 static int app_running = 0;
-static char* rtmp_server_url = NULL;
+static char *rtmp_server_url = NULL;
 static esp_periph_set_handle_t set;
 static esp_periph_handle_t wifi_handle;
 static bool wifi_connected = false;
@@ -56,25 +56,21 @@ static rtmp_app_type_t rtmp_app_type = RTMP_APP_TYPE_PUSHER;
 
 static int connect_sta(const char *ssid, const char *psw)
 {
-    periph_wifi_cfg_t wifi_cfg = {
-        .ssid = ssid ? ssid : CONFIG_WIFI_SSID,
-        .password = psw ? psw : CONFIG_WIFI_PASSWORD,
-    };
+    periph_wifi_cfg_t wifi_cfg = {0};
+    memset(&wifi_cfg, 0, sizeof(wifi_cfg));
+    strncpy((char *)wifi_cfg.wifi_config.sta.ssid, ssid ? ssid : CONFIG_WIFI_SSID, sizeof(wifi_cfg.wifi_config.sta.ssid) - 1);
+    strncpy((char *)wifi_cfg.wifi_config.sta.password, psw ? psw : CONFIG_WIFI_PASSWORD, sizeof(wifi_cfg.wifi_config.sta.password) - 1);
     if (wifi_handle) {
         esp_wifi_disconnect();
         esp_wifi_stop();
-        wifi_config_t wifi_config;
-        memset(&wifi_config, 0x00, sizeof(wifi_config_t));
-        strcpy((char *)wifi_config.sta.ssid, wifi_cfg.ssid);
-        strcpy((char *)wifi_config.sta.password,  wifi_cfg.password);
-        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg.wifi_config));
         ESP_ERROR_CHECK(esp_wifi_start());
     } else {
         wifi_handle = periph_wifi_init(&wifi_cfg);
         esp_periph_init(wifi_handle);
         ESP_LOGI(TAG, "Waiting for wifi connected");
     }
-    periph_wifi_wait_for_connected(wifi_handle, 6000/portTICK_PERIOD_MS);
+    periph_wifi_wait_for_connected(wifi_handle, 6000 / portTICK_PERIOD_MS);
     if (periph_wifi_is_connected(wifi_handle) == PERIPH_WIFI_CONNECTED) {
         ESP_LOGI(TAG, "Wifi connected OK");
         wifi_connected = true;
@@ -107,8 +103,9 @@ static void app_thread(void *arg)
     media_lib_thread_destroy(NULL);
 }
 
-static void start_app() {
-     rtmp_app_type_t app_type = RTMP_APP_TYPE_PUSHER;
+static void start_app()
+{
+    rtmp_app_type_t app_type = RTMP_APP_TYPE_PUSHER;
 #ifdef CONFIG_RTMP_APP_MODE_PUSHER
     app_type = RTMP_APP_TYPE_PUSHER;
 #endif
@@ -177,11 +174,11 @@ static int setting_cli(int argc, char **argv)
     av_record_get_video_size(rtmp_setting_get_video_quality(), &width, &height);
     ESP_LOGI(TAG, "RTMP server url: %s", SERVER_URL);
     ESP_LOGI(TAG, "Video setting | format:%s sw_jpeg:%d quality:%dx%d fps:%d",
-        av_record_get_vfmt_str(rtmp_setting_get_video_fmt()),
-        rtmp_setting_get_sw_jpeg(), width, height, rtmp_setting_get_video_fps());
-    ESP_LOGI(TAG, "Audio setting | format:%s channel:%d sample_rate:%d", 
-        av_record_get_afmt_str(rtmp_setting_get_audio_fmt()), 
-        rtmp_setting_get_audio_channel(), rtmp_setting_get_audio_sample_rate());
+             av_record_get_vfmt_str(rtmp_setting_get_video_fmt()),
+             rtmp_setting_get_sw_jpeg(), width, height, rtmp_setting_get_video_fps());
+    ESP_LOGI(TAG, "Audio setting | format:%s channel:%d sample_rate:%d",
+             av_record_get_afmt_str(rtmp_setting_get_audio_fmt()),
+             rtmp_setting_get_audio_channel(), rtmp_setting_get_audio_sample_rate());
     return 0;
 }
 
@@ -217,29 +214,29 @@ static int stop_cli(int argc, char **argv)
 
 static int assert_cli(int argc, char **argv)
 {
-    *(int*) 0 = 0;
+    *(int *) 0 = 0;
     return 0;
 }
 
-static const char* get_mode_str(rtmp_app_type_t app_type)
+static const char *get_mode_str(rtmp_app_type_t app_type)
 {
     switch ((int)app_type) {
         case RTMP_APP_TYPE_PUSHER:
-        return "Pusher";
+            return "Pusher";
         case RTMP_APP_TYPE_SRC:
-        return "Src";
+            return "Src";
         case RTMP_APP_TYPE_SERVER:
-        return "Server";
-         case (RTMP_APP_TYPE_SRC | RTMP_APP_TYPE_PUSHER):
-        return "Src + Pusher";
+            return "Server";
+        case (RTMP_APP_TYPE_SRC | RTMP_APP_TYPE_PUSHER):
+            return "Src + Pusher";
         case (RTMP_APP_TYPE_SRC | RTMP_APP_TYPE_SERVER):
-        return "Src + Server";
+            return "Src + Server";
         case (RTMP_APP_TYPE_PUSHER | RTMP_APP_TYPE_SERVER):
-        return "Pusher + Server";
+            return "Pusher + Server";
         case (RTMP_APP_TYPE_SRC | RTMP_APP_TYPE_PUSHER | RTMP_APP_TYPE_SERVER):
-        return "Pusher + Server + Src";
+            return "Pusher + Server + Src";
         default:
-        return "Undef";
+            return "Undef";
     }
 }
 
@@ -247,7 +244,7 @@ static int mode_cli(int argc, char **argv)
 {
     if (argc > 1) {
         rtmp_app_type = (rtmp_app_type_t) atoi(argv[1]);
-    } 
+    }
     ESP_LOGI(TAG, "Working in mode: %s", get_mode_str(rtmp_app_type));
     return 0;
 }
@@ -292,7 +289,7 @@ static int init_console()
             .func = start_cli,
             .help = "Start to run RTMP applications",
             .command = "start",
-        },       
+        },
         {
             .func = stop_cli,
             .help = "Stop RTMP applications",
@@ -314,7 +311,7 @@ static int init_console()
             .command = "assert",
         },
     };
-    for (int i = 0; i < sizeof(console_cmd)/ sizeof(esp_console_cmd_t); i++) {
+    for (int i = 0; i < sizeof(console_cmd) / sizeof(esp_console_cmd_t); i++) {
         ESP_ERROR_CHECK(esp_console_cmd_register(&console_cmd[i]));
     }
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))

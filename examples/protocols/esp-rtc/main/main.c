@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include "string.h"
 #include "nvs_flash.h"
 #include "esp_netif.h"
 #include "esp_log.h"
@@ -21,7 +22,7 @@
 #include "audio_tone_uri.h"
 #include "audio_player_int_tone.h"
 
-#define TAG	        "ESP_RTC_Demo"
+#define TAG         "ESP_RTC_Demo"
 
 #define WIFI_SSID   CONFIG_WIFI_SSID
 #define WIFI_PWD    CONFIG_WIFI_PASSWORD
@@ -34,8 +35,8 @@ static void setup_wifi(esp_periph_set_handle_t set)
 {
     ESP_ERROR_CHECK(esp_netif_init());
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = WIFI_SSID,
-        .password = WIFI_PWD,
+        .wifi_config.sta.ssid = WIFI_SSID,
+        .wifi_config.sta.password = WIFI_PWD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);
@@ -99,8 +100,8 @@ void app_main()
     esp_log_level_set("AFE_VC", ESP_LOG_ERROR);
     AUDIO_MEM_SHOW(TAG);
 
-	/* nvs init */
-	esp_err_t err = nvs_flash_init();
+    /* nvs init */
+    esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         // NVS partition was truncated and needs to be erased
         // Retry nvs_flash_init
@@ -124,9 +125,9 @@ void app_main()
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
     periph_service_set_callback(input_ser, input_key_service_cb, NULL);
 
-    #if (DEBUG_AEC_INPUT || DEBUG_AEC_OUTPUT)
+#if (DEBUG_AEC_INPUT || DEBUG_AEC_OUTPUT)
     audio_board_sdcard_init(set, SD_MODE_1_LINE);
-    #endif
+#endif
 
     ESP_LOGI(TAG, "[ 2 ] Initialize av stream");
     av_stream_config_t av_stream_config = {

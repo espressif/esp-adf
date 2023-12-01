@@ -594,10 +594,10 @@ static void periph_wifi_test(void)
     ESP_ERROR_CHECK( ret );
     tcpip_adapter_init();
 
-    periph_wifi_cfg_t wifi_cfg = {0};
-    wifi_cfg.ssid = "ESP-Audio";
-    wifi_cfg.password = "esp123456";
-
+    periph_wifi_cfg_t wifi_cfg = {
+        .wifi_config.sta.ssid = "YOUR_SSID",
+        .wifi_config.sta.password = "YOUR_PASSWORD",
+    }
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);

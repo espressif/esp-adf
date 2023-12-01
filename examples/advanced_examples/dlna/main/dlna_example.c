@@ -133,7 +133,7 @@ int renderer_request(esp_dlna_handle_t dlna, const upnp_attr_t *attr, int attr_n
             return 0;
         case AVT_SEEK:
             sscanf(buffer, "%d:%d:%d", &hour, &min, &sec);
-            tmp_data = hour*3600 + min*60 + sec;
+            tmp_data = hour * 3600 + min * 60 + sec;
             ESP_LOGI(TAG, "Seekto %d s", tmp_data);
             esp_audio_seek(player, tmp_data);
             return 0;
@@ -326,8 +326,8 @@ void app_main()
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     periph_wifi_cfg_t wifi_cfg = {
-        .ssid = "ESP-Audio",
-        .password = "esp123456",
+        .wifi_config.sta.ssid = "YOUR_SSID",
+        .wifi_config.sta.password = "YOUR_PASSWORD",
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);

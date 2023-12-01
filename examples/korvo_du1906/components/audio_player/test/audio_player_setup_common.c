@@ -99,8 +99,8 @@ void setup_wifi()
         }
         periph_wifi_cfg_t wifi_cfg = {
             .disable_auto_reconnect = false,
-            .ssid = "ESP-Audio39",
-            .password = "esp123456",
+            .wifi_config.sta.ssid = "YOUR_SSID",
+            .wifi_config.sta.password = "YOUR_PASSWORD",
         };
         wifi_handle = periph_wifi_init(&wifi_cfg);
         esp_periph_start(set, wifi_handle);
