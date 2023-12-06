@@ -67,14 +67,14 @@ typedef struct {
     char         *wn_wakeword;                          /*!< Wake Word for WakeNet to load. This is useful when multiple Wake Words are selected in sdkconfig. Setting this to NULL will use the first found model. */
 } recorder_sr_cfg_t;
 
-#if CONFIG_AFE_MIC_NUM == (1)
+#if CONFIG_IDF_TARGET_ESP32
 #define INPUT_ORDER_DEFAULT() { \
         DAT_CH_1,               \
         DAT_CH_0,               \
         DAT_CH_IDLE,            \
         DAT_CH_IDLE,            \
     }
-#elif CONFIG_AFE_MIC_NUM == (2)
+#elif CONFIG_IDF_TARGET_ESP32S3
 #define INPUT_ORDER_DEFAULT() { \
         DAT_CH_2,               \
         DAT_CH_0,               \

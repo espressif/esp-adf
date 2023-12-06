@@ -1,4 +1,4 @@
-menu "Audio Recorder"
+menu "Example Configuration"
     config AFE_MIC_NUM
         int "Number of micphones used for AFE"
         range 1 2

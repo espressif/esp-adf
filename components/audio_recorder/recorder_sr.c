@@ -60,11 +60,6 @@
 static const char *TAG = "RECORDER_SR";
 
 static const esp_afe_sr_iface_t *esp_afe = &ESP_AFE_SR_HANDLE;
-#if CONFIG_AFE_MIC_NUM == (1)
-#define RECORDER_CHANNEL_NUM (2)
-#else
-#define RECORDER_CHANNEL_NUM (4)
-#endif
 
 #ifdef CONFIG_USE_MULTINET
 static const esp_mn_iface_t *multinet = NULL;
@@ -101,6 +96,7 @@ typedef struct __recorder_sr {
 #endif /* CONFIG_USE_MULTINET */
     int8_t                input_order[DAT_CH_MAX];
     char                  *wn_wakeword;
+    uint8_t               src_ch_num;
 } recorder_sr_t;
 
 static esp_err_t recorder_sr_output(recorder_sr_t *recorder_sr, void *buffer, int len);
@@ -222,7 +218,7 @@ static void feed_task(void *parameters)
 {
     recorder_sr_t *recorder_sr = (recorder_sr_t *)parameters;
     int chunksize = esp_afe->get_feed_chunksize(recorder_sr->afe_handle);
-    int buf_size = chunksize * sizeof(int16_t) * RECORDER_CHANNEL_NUM;
+    int buf_size = chunksize * sizeof(int16_t) * recorder_sr->src_ch_num;
     int16_t *i_buf = audio_calloc(1, buf_size);
     assert(i_buf);
     int16_t *o_buf = audio_calloc(1, buf_size);;
@@ -238,11 +234,17 @@ static void feed_task(void *parameters)
         int ret = recorder_sr->read((char *)i_buf + fill_cnt, buf_size - fill_cnt, recorder_sr->read_ctx, portMAX_DELAY);
         fill_cnt += ret;
         if (fill_cnt == buf_size) {
-#if RECORDER_CHANNEL_NUM == 2
-            ch_sort_16bit_2ch(i_buf, o_buf, fill_cnt, recorder_sr->input_order);
-#else /* RECORDER_CHANNEL_NUM == 2 */
-            ch_sort_16bit_4ch(i_buf, o_buf, fill_cnt, recorder_sr->input_order);
-#endif /* RECORDER_CHANNEL_NUM == 2 */
+            if (recorder_sr->src_ch_num == 1) {
+                memcpy(o_buf, i_buf, fill_cnt);
+            } else if (recorder_sr->src_ch_num == 2) {
+                ch_sort_16bit_2ch(i_buf, o_buf, fill_cnt, recorder_sr->input_order);
+            } else if (recorder_sr->src_ch_num == 4) {
+                ch_sort_16bit_4ch(i_buf, o_buf, fill_cnt, recorder_sr->input_order);
+            } else {
+                ESP_LOGE(TAG, "Not supported source channel number [%d], please check the configuration",
+                        recorder_sr->src_ch_num);
+                goto exit;
+            }
             esp_afe->feed(recorder_sr->afe_handle, o_buf);
             fill_cnt -= buf_size;
         } else if (fill_cnt > buf_size) {
@@ -250,6 +252,7 @@ static void feed_task(void *parameters)
             recorder_sr->feed_running = false;
         }
     }
+exit:
     audio_free(i_buf);
     audio_free(o_buf);
     xEventGroupClearBits(recorder_sr->events, FEED_TASK_RUNNING);
@@ -543,6 +546,13 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
 #ifdef CONFIG_USE_MULTINET
     recorder_sr->mn_language      = cfg->mn_language;
 #endif
+    if (cfg->afe_cfg.pcm_config.total_ch_num <= 2) {
+        recorder_sr->src_ch_num = cfg->afe_cfg.pcm_config.total_ch_num;
+    } else if (cfg->afe_cfg.pcm_config.total_ch_num <= 4) {
+        recorder_sr->src_ch_num = 4;
+    } else {
+        ESP_LOGE(TAG, "Channel number [%d] is not supported by esp-sr. Please check your configuration.", cfg->afe_cfg.pcm_config.total_ch_num);
+    }
 
     memcpy(recorder_sr->input_order, cfg->input_order, DAT_CH_MAX);
 
