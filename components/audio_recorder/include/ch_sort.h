@@ -64,7 +64,7 @@ enum _data_chan_type {
  * @return >=0: index of the given channel
  *          -1: channel not found
  */
-inline int8_t ch_get_idx(int8_t *order, size_t chan_num, uint8_t target_ch)
+__attribute__((always_inline)) inline int8_t ch_get_idx(int8_t *order, size_t chan_num, uint8_t target_ch)
 {
     for (int8_t idx = 0; idx < chan_num; idx++) {
         if (order[idx] == target_ch) {
