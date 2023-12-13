@@ -20,6 +20,7 @@
 #include "esp_peripherals.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
+#include "esp_wifi.h"
 #include "periph_sdcard.h"
 #include "periph_wifi.h"
 
@@ -168,6 +169,7 @@ void app_main()
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     esp_periph_start(set, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
+    esp_wifi_set_ps(WIFI_PS_NONE);
 
     ESP_LOGI(TAG, "[1.2] Mount SDCard");
     audio_board_sdcard_init(set, SD_MODE_1_LINE);
