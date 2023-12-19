@@ -54,6 +54,12 @@
 #define RECORDER_READ_FIN (BIT6)
 #define RECORDER_TASK_FIN (BIT7)
 
+#if CONFIG_IDF_TARGET_ESP32S3
+#define CONFIG_AFE_MIC_NUM (2)
+#else
+#define CONFIG_AFE_MIC_NUM (1)
+#endif
+
 enum _rec_msg_id {
     REC_START = 1,
     REC_STOP,
