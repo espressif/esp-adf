@@ -30,7 +30,7 @@ The ESP-IDF master branch is marked as not supported because the major feature c
 End of Life IDF branches are removed. See [IDF Supported Periods](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/versions.html#support-periods) for details.
 
 
-|                       | ESP-IDF <br> Release/v4.3| ESP-IDF <br> Release/v4.4 | ESP-IDF <br> Release/v5.0 | ESP-IDF <br> Release/v5.1 |ESP-IDF <br> Master |
+|                       | ESP-IDF <br> [Release/v4.3](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.3/esp32/versions.html)| ESP-IDF <br> [Release/v4.4](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.4/esp32/versions.html) | ESP-IDF <br> [Release/v5.0](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v5.0/esp32/versions.html) | ESP-IDF <br> [Release/v5.1](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v5.1/esp32/versions.html) |ESP-IDF <br> [Master](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/versions.html) |
 |:----------- |:---------------------: | :---------------------:| :---------------------:|:---------------------: | :---------------------:|
 | ESP-ADF <br> Master  | ![alt text](docs/_static/yes-checkm.png "supported") | ![alt text](docs/_static/yes-checkm.png "supported") | ![alt text](docs/_static/yes-checkm.png "supported") | ![alt text](docs/_static/yes-checkm.png "supported") |![alt text](docs/_static/no-icon.png "not supported") |
 | ESP-ADF <br> Release/v2.6  | ![alt text](docs/_static/yes-checkm.png "supported") | ![alt text](docs/_static/yes-checkm.png "supported") <sup> **1** </sup>| ![alt text](docs/_static/yes-checkm.png "supported")| ![alt text](docs/_static/yes-checkm.png "supported") |![alt text](docs/_static/no-icon.png "not supported") |

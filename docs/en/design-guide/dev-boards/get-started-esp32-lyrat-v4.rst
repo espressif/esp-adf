@@ -410,7 +410,7 @@ Once the board is initially set up and checked, you can start preparing the deve
 
 * **Set up ESP-IDF** to get a common development framework for the ESP32 (and ESP32-S2) chips in C language;
 * **Get ESP-ADF**  to install the API specific to audio applications;
-* **Setup Path to ESP-ADF** to make the framework aware of the audio specific API;
+* **Set up env** to make the framework aware of the audio specific API;
 * **Start a Project** that will provide a sample audio application for the board;
 * **Connect Your Device** to prepare the application for loading;
 *  **Build the Project** to finally run the application and play some music.

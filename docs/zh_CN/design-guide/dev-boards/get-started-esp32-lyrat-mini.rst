@@ -114,7 +114,7 @@ ESP32-LyraT-Mini 上电之前，请首先确认开发板完好无损。
 
 * :ref:`get-started-setup-esp-idf` 提供了一套 ESP32 的 C 语言 PC 开发编译环境；
 * :ref:`get-started-get-esp-adf` 获取开发音频应用程序的 API；
-* :ref:`get-started-setup-path` 使编译器找到音频应用 API；
+* :ref:`get-started-set-up-env` 使编译器找到音频应用 API；
 * :ref:`get-started-start-project` 提供 ESP32-LyraT-Mini 开发板的音频应用程序示例；
 * :ref:`get-started-connect` 准备加载应用程序；
 * :ref:`get-started-build` 最后运行应用程序并播放音乐。
