@@ -50,6 +50,7 @@ typedef struct {
     int                     task_prio;          /*!< Task priority (based on freeRTOS priority) */
     bool                    stack_in_ext;       /*!< Try to allocate stack in external memory */
     int                     multi_out_num;      /*!< The number of multiple output */
+    bool                    install_drv;        /*!< whether to install the i2s driver when initializing stream*/
     bool                    uninstall_drv;      /*!< whether uninstall the i2s driver when stream destroyed*/
     bool                    need_expand;        /*!< whether to expand i2s data */
     i2s_bits_per_sample_t   expand_src_bits;    /*!< The source bits per sample when data expand */
@@ -87,6 +88,7 @@ typedef struct {
     .task_prio = I2S_STREAM_TASK_PRIO,                                          \
     .stack_in_ext = false,                                                      \
     .multi_out_num = 0,                                                         \
+    .install_drv = true,                                                        \
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
     .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
@@ -117,6 +119,7 @@ typedef struct {
     .task_prio = I2S_STREAM_TASK_PRIO,                                          \
     .stack_in_ext = false,                                                      \
     .multi_out_num = 0,                                                         \
+    .install_drv = true,                                                        \
     .uninstall_drv = false,                                                     \
     .need_expand = false,                                                       \
     .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
@@ -145,6 +148,7 @@ typedef struct {
     .task_prio = I2S_STREAM_TASK_PRIO,                                          \
     .stack_in_ext = false,                                                      \
     .multi_out_num = 0,                                                         \
+    .install_drv = true,                                                        \
     .uninstall_drv = false,                                                     \
     .need_expand = false,                                                       \
     .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
@@ -174,6 +178,7 @@ typedef struct {
     .task_prio = I2S_STREAM_TASK_PRIO,                                          \
     .stack_in_ext = false,                                                      \
     .multi_out_num = 0,                                                         \
+    .install_drv = true,                                                        \
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
     .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
@@ -204,6 +209,7 @@ typedef struct {
     .task_prio = I2S_STREAM_TASK_PRIO,                                          \
     .stack_in_ext = false,                                                      \
     .multi_out_num = 0,                                                         \
+    .install_drv = true,                                                        \
     .uninstall_drv = false,                                                     \
     .need_expand = false,                                                       \
     .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
@@ -232,6 +238,7 @@ typedef struct {
     .task_prio = I2S_STREAM_TASK_PRIO,                                          \
     .stack_in_ext = false,                                                      \
     .multi_out_num = 0,                                                         \
+    .install_drv = true,                                                        \
     .uninstall_drv = false,                                                     \
     .need_expand = false,                                                       \
     .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \

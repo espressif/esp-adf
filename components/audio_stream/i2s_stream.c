@@ -436,10 +436,12 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         cfg.write = _i2s_write;
     }
 
-    esp_err_t ret = i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
-    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
-        audio_free(i2s);
-        return NULL;
+    if (config->install_drv) {
+        esp_err_t ret = i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
+        if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
+            audio_free(i2s);
+            return NULL;
+        }
     }
     i2s_stream_check_data_bits(i2s, i2s->config.i2s_config.bits_per_sample);
 
