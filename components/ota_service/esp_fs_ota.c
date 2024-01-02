@@ -111,7 +111,7 @@ esp_err_t esp_fs_ota_begin(esp_fs_ota_config_t *ota_config, esp_fs_ota_handle_t 
         fs_ota_handle->update_partition->subtype, fs_ota_handle->update_partition->address);
 
     const int alloc_size = (ota_config->buffer_size > DEFAULT_OTA_BUF_SIZE) ? ota_config->buffer_size : DEFAULT_OTA_BUF_SIZE;
-    fs_ota_handle->ota_upgrade_buf = (char *)audio_calloc(1, alloc_size);
+    fs_ota_handle->ota_upgrade_buf = (char *)audio_calloc_inner(1, alloc_size);
     if (!fs_ota_handle->ota_upgrade_buf) {
         ESP_LOGE(TAG, "Couldn't allocate memory to upgrade data buffer");
         err = ESP_ERR_NO_MEM;

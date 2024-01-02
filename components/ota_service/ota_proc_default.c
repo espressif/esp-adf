@@ -26,7 +26,9 @@
 #include "audio_mem.h"
 #include "esp_https_ota.h"
 #include "esp_fs_ota.h"
+#include "esp_crt_bundle.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "fatfs_stream.h"
 #include "http_stream.h"
 
@@ -53,6 +55,17 @@ typedef struct {
 } ota_app_upgrade_ctx_t;
 
 static const char *TAG = "OTA_DEFAULT";
+
+static void esp_audio_show_process(int64_t start_time, int64_t *last_time, int process_size, char *tag, int r_size)
+{
+    int64_t cur_time = esp_timer_get_time();
+    if (cur_time - *last_time > 1000000) {
+        int duration_ms = (int)(cur_time - start_time) / 1000;
+        ESP_LOGI(TAG, "%s process_size: %d KB, cur_size: %d bytes, total_speed: %d KB/s",
+            tag, process_size / 1024, r_size, process_size * 1000 / (1024 * duration_ms));
+        *last_time = cur_time;
+    }
+}
 
 static ota_service_err_reason_t validate_image_header(esp_app_desc_t *new_app_info)
 {
@@ -119,9 +132,14 @@ static ota_service_err_reason_t ota_app_partition_prepare(void **handle, ota_nod
             .url = node->uri,
             .cert_pem = node->cert_pem,
             .timeout_ms = 5000,
+            .buffer_size = 1024,
+#if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+            .crt_bundle_attach = esp_crt_bundle_attach,
+#endif //  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
         };
         esp_https_ota_config_t ota_config = {
             .http_config = &config,
+            .bulk_flash_erase = true,
         };
         esp_err_t err = esp_https_ota_begin(&ota_config, &context->ota_handle);
         if (err != ESP_OK) {
@@ -157,13 +175,20 @@ static esp_err_t ota_app_partition_exec_upgrade(void *handle, ota_node_attr_t *n
     AUDIO_NULL_CHECK(TAG, context, return OTA_SERV_ERR_REASON_NULL_POINTER);
     AUDIO_NULL_CHECK(TAG, context->ota_handle, return OTA_SERV_ERR_REASON_NULL_POINTER);
     esp_err_t err = ESP_FAIL;
+    int last_size = 0;
+    int cur_size = 0;
+    int64_t last_time = esp_timer_get_time();
+    int64_t start_time = last_time;
 
     while (1) {
         err = context->perform(context->ota_handle);
         if (err != ESP_ERR_HTTPS_OTA_IN_PROGRESS && err != ESP_ERR_FS_OTA_IN_PROGRESS ) {
             break;
         }
-        ESP_LOGI(TAG, "Image bytes read: %d", context->get_image_len_read(context->ota_handle));
+
+        cur_size = context->get_image_len_read(context->ota_handle) - last_size;
+        last_size = context->get_image_len_read(context->ota_handle);
+        esp_audio_show_process(start_time, &last_time, context->get_image_len_read(context->ota_handle), "app", cur_size);
     }
 
     return err;
@@ -252,6 +277,8 @@ static ota_service_err_reason_t ota_data_partition_exec_upgrade(void *handle, ot
     AUDIO_NULL_CHECK(TAG, context->r_stream, return OTA_SERV_ERR_REASON_NULL_POINTER);
     AUDIO_NULL_CHECK(TAG, context->partition, return OTA_SERV_ERR_REASON_NULL_POINTER);
     esp_err_t ret = ESP_OK;
+    int64_t last_time = esp_timer_get_time();
+    int64_t start_time = last_time;
 
     if (context->partition_erased  == false) {
         if ((ret = esp_partition_erase_range(context->partition, 0, context->partition->size)) != ESP_OK) {
@@ -260,14 +287,16 @@ static ota_service_err_reason_t ota_data_partition_exec_upgrade(void *handle, ot
         }
         context->partition_erased  = true;
     }
+
     while ((r_size = audio_element_input(context->r_stream, context->read_buf, READER_BUF_LEN)) > 0) {
-        ESP_LOGI(TAG, "write_offset %d, r_size %d", context->write_offset, r_size);
+        esp_audio_show_process(start_time, &last_time, context->write_offset, "data", r_size);
         if (esp_partition_write(context->partition, context->write_offset, context->read_buf, r_size) == ESP_OK) {
             context->write_offset += r_size;
         } else {
             return OTA_SERV_ERR_REASON_PARTITION_WT_FAIL;
         }
     }
+
     if (r_size == AEL_IO_OK || r_size == AEL_IO_DONE) {
         ESP_LOGI(TAG, "partition %s upgrade successes", node->label);
         return OTA_SERV_ERR_REASON_SUCCESS;
