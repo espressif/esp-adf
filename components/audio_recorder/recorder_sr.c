@@ -580,6 +580,10 @@ recorder_sr_handle_t recorder_sr_create(recorder_sr_cfg_t *cfg, recorder_sr_ifac
         }
     } else {
         wn_name = esp_srmodel_filter(recorder_sr->models, ESP_WN_PREFIX, recorder_sr->wn_wakeword);
+        if (wn_name == NULL) {
+            ESP_LOGE(TAG, "Please enable wakenet model and select wake word (%s) by menuconfig!", recorder_sr->wn_wakeword);
+            goto _failed;
+        }
     }
 
     cfg->afe_cfg.wakenet_model_name = wn_name;
