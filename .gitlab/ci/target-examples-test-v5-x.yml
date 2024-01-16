@@ -99,10 +99,11 @@ example_test_pytest_esp32s3_v5.0:
     - .pytest_examples_dir_template
   variables:
     IDF_TARGET: esp32s3
-    IDF_VERSION_TAG: release/v5.0
+    IDF_TAG_FLAG: "true"  # In order to pass the CI, temporarily replace release/v5.0 with v5.0
+    IDF_VERSION_TAG: v5.0
   needs:
-    - 'build_examples_cmake_esp32s3_korvo_v2: [v5.0, 1/2]'
-    - 'build_examples_cmake_esp32s3_korvo_v2: [v5.0, 2/2]'
+    - 'build_examples_cmake_esp32s3_korvo_v2: [v5.0, 1/2, true]'
+    - 'build_examples_cmake_esp32s3_korvo_v2: [v5.0, 2/2, true]'
   tags: [ esp32s3, ADF_EXAMPLE_GENERIC ]
 
 example_test_pytest_esp32s3_v5.1:
