@@ -46,6 +46,7 @@
 #include "audio_sys.h"
 
 #include "audio_idf_version.h"
+#include "esp_id3_parse.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
 #include "esp_netif.h"
@@ -61,6 +62,7 @@ static esp_periph_set_handle_t          set;
 static playlist_operator_handle_t       playlist;
 static xTimerHandle                     tone_stop_tm_handle;
 static int                              auto_play_type;
+static audio_element_handle_t           mp3_el;
 
 static int _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
@@ -429,6 +431,27 @@ static esp_err_t show_free_mem(esp_periph_handle_t periph, int argc, char *argv[
     return ESP_OK;
 }
 
+static esp_err_t cli_get_mp3_id3_info(esp_periph_handle_t periph, int argc, char *argv[])
+{
+    if(mp3_el) {
+        const esp_id3_info_t* id3_info = NULL;
+#ifdef ESP_AUDIO_AUTO_PLAY
+        id3_info = esp_decoder_get_id3_info(mp3_el);
+#else
+        id3_info = mp3_decoder_get_id3_info(mp3_el);
+#endif        
+        if(id3_info) {
+            ESP_LOGI(TAG, "ID3 information obtained successfully.");
+            esp_id3_free((esp_id3_info_t**)&id3_info);
+            return ESP_OK;
+        }
+        ESP_LOGI(TAG, "Get ID3 infomation isn't exist. line %d", __LINE__);
+        return ESP_OK;
+    }
+    ESP_LOGW(TAG, "MP3 handle is NULL. line %d", __LINE__);
+    return ESP_OK;
+}
+
 #ifdef CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS
 static esp_err_t run_time_stats(esp_periph_handle_t periph, int argc, char *argv[])
 {
@@ -474,6 +497,7 @@ const periph_console_cmd_t cli_cmd[] = {
     { .cmd = "stone",       .id = 9,  .help = "Stop tone by a timer",     .func = cli_stop_tone },
     { .cmd = "setspeed",    .id = 10, .help = "Set speed",                .func = cli_set_speed },
     { .cmd = "getspeed",    .id = 11, .help = "Get speed",                .func = cli_get_speed },
+    { .cmd = "getmp3id3",   .id = 12, .help = "Get MP3 ID3 info",         .func = cli_get_mp3_id3_info },
 
     /* ======================== Wi-Fi ======================== */
     { .cmd = "join",        .id = 20, .help = "Join Wi-Fi AP as a station",     .func = wifi_set },
@@ -546,6 +570,7 @@ static void cli_setup_console()
         .command_num = sizeof(cli_cmd) / sizeof(periph_console_cmd_t),
         .commands = cli_cmd,
         .buffer_size = 384,
+        .task_stack = 6 * 1024,
     };
     esp_periph_handle_t console_handle = periph_console_init(&console_cfg);
     esp_periph_start(set, console_handle);
@@ -604,7 +629,8 @@ static void cli_setup_player(void)
         DEFAULT_ESP_TS_DECODER_CONFIG(),
     };
     esp_decoder_cfg_t auto_dec_cfg = DEFAULT_ESP_DECODER_CONFIG();
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, esp_decoder_init(&auto_dec_cfg, auto_decode, 10));
+    mp3_el =  esp_decoder_init(&auto_dec_cfg, auto_decode, 10);
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_el);
 #else
     amr_decoder_cfg_t  amr_dec_cfg  = DEFAULT_AMR_DECODER_CONFIG();
     flac_decoder_cfg_t flac_dec_cfg = DEFAULT_FLAC_DECODER_CONFIG();
@@ -618,9 +644,10 @@ static void cli_setup_player(void)
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, flac_decoder_init(&flac_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, ogg_decoder_init(&ogg_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, decoder_opus_init(&opus_dec_cfg));
-    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, aac_decoder_init(&aac_dec_cfg));
+    mp3_el = mp3_decoder_init(&mp3_dec_cfg);
+    esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_el);
     audio_element_handle_t m4a_dec_cfg = aac_decoder_init(&aac_dec_cfg);
     audio_element_set_tag(m4a_dec_cfg, "m4a");
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, m4a_dec_cfg);
