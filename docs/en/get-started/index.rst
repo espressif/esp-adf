@@ -30,7 +30,7 @@ To use ESP-ADF you need set up the ESP-IDF first, and this is described in the n
 
 .. note::
 
-    ESP-ADF provides support for specific `ESP-IDF versions (v3.3, v4.0, v4.1, v4.2, v4.3 and v4.4) <https://docs.espressif.com/projects/esp-idf/en/release-v3.3/versions.html>`_. If your have already set up another version, please switch to a supported ESP-IDF version, or you may not be able to compile ESP-ADF applications.
+    ESP-ADF provides support for specific `ESP-IDF versions <https://github.com/espressif/esp-adf/blob/master/README.md#idf-version>`_. If your have already set up another version, please switch to a supported ESP-IDF version, or you may not be able to compile ESP-ADF applications. In addition, the python version needs to be between 3.7 and 3.11.
 
 .. _get-started-quick-start:
 
@@ -56,18 +56,13 @@ The operating environment below is on Linux Ubuntu 18.04 and above.
 
     git clone --recursive https://gitee.com/EspressifSystems/esp-adf.git
 
-2. Set the ``$ESP-ADF`` path by running::
+2. Configure the ``$ESP-IDF`` and ``$ESP-ADF`` compilation environment by running::
 
     cd esp-adf
-    export ADF_PATH=$PWD
-
-3. Configure the ``$ESP-IDF`` compilation environment by running::
-
-    cd $ADF_PATH/esp-idf
     ./install.sh
     . ./export.sh
 
-4. After completing the above environment variable configuration, you can compile the ADF sample project ``$ADF_PATH/examples/get-started/play_mp3_control``. Switch to the project's directory, compile, and flash it onto your ESP device by running the following command. Then, you will see the serial port of the routine is printed.
+3. After completing the above environment variable configuration, you can compile the ADF sample project ``$ADF_PATH/examples/get-started/play_mp3_control``. Switch to the project's directory, compile, and flash it onto your ESP device by running the following command. Then, you will see the serial port of the routine is printed.
 
   ::
 
@@ -87,19 +82,21 @@ Windows
     git clone --recursive https://gitee.com/EspressifSystems/esp-adf.git
 
 
-2. Download the full ESP-IDF Windows Installer from `ESP-IDF Windows Installer <https://dl.espressif.com/dl/esp-idf/?idf=4.4>`_.
+2. Install the ``$ESP-IDF`` compilation environment in the command prompt window::
+
+    cd esp-adf
+    .\install.bat
+
+   Or first download the full ESP-IDF Windows Installer from `ESP-IDF Windows Installer <https://dl.espressif.com/dl/esp-idf>`_ (Please download the `ESP-IDF versions <https://github.com/espressif/esp-adf/blob/master/README.md#idf-version>`_ supported by ESP-ADF). And then turn off the antivirus software (Because it may prevent the installation as the software writes the Windows system regedit) and install the downloaded file. After the installation is complete, open the ESP-IDF CMD shortcut icon on the desktop, the script will automatically help you download submodules, and set environment variables such as ``IDF_PATH``.
 
 
-3. Turn off the antivirus software (because it may prevent the installation as the software writes the Windows system regedit) and install the downloaded file. After the installation is complete, open the ESP-IDF-V4.4 CMD shortcut icon on the desktop, the script will automatically help you download submodules, and set environment variables such as ``IDF_PATH``.
+3. Set the ``ADF_PATH`` by running the following commands::
 
-
-4. Set the ``$ESP-ADF`` path by running the following commands. Note that ``%userprofile%\esp`` is used as an installation folder for ESP-ADF. You can use any directory, but you will need to adjust paths for the commands accordingly.
-
-    set ADF_PATH=%userprofile%\esp\esp-adf
+    .\export.bat
     echo %ADF_PATH%
 
 
-5. If your ``ADF_PATH`` variable prints correctly, it's time to compile the ADF routines::
+4. If your ``ADF_PATH`` variable prints correctly, it's time to compile the ADF routines::
 
     cd %ADF_PATH%\examples\get-started\play_mp3_control
     idf.py build flash monitor
@@ -117,7 +114,6 @@ Setting up Development Environment
 
 * :ref:`get-started-setup-esp-idf` for Windows, Linux or Mac OS
 * :ref:`get-started-get-esp-adf`
-* :ref:`get-started-setup-path`
 * :ref:`get-started-set-up-env`
 
 Creating Your First Project
@@ -177,48 +173,12 @@ Open Terminal, and run the following commands::
     git clone --recursive https://github.com/espressif/esp-adf.git
 
 
-.. _get-started-setup-path:
-
-Step 3. Set up Path to ESP-ADF
-==============================
-
-The toolchain programs access ESP-ADF using ``ADF_PATH`` environment variable. This variable should be set up on your PC, otherwise the projects will not build.
-
-Windows
-~~~~~~~
-
-Open Command Prompt and run the following command::
-
-    set ADF_PATH=%userprofile%\esp\esp-adf
-
-You need to enter this command each time you start your PC. To avoid retyping you can add it to "ESP-IDF Command Prompt", batch or Power Shell scripts described in Step 4 below.
-
-To make sure that ADF_PATH has been set up properly, run::
-
-    echo %ADF_PATH%
-
-It should return the path to your ESP-ADF directory.
-
-Linux and macOS
-~~~~~~~~~~~~~~~
-
-Open Terminal, and run the following commands::
-
-    export ADF_PATH=~/esp/esp-adf
-
-You need to enter this command each time you open a Terminal. To make this setting permanent follow similar `instructions <https://docs.espressif.com/projects/esp-idf/en/v3.3.1/get-started/add-idf_path-to-profile.html#linux-and-macos>`__ for configuration of ``IDF_PATH`` in ESP-IDF Programming Guide.
-
-Check if ``ADF_PATH`` has been set up to point to directory with ESP-ADF::
-
-    printenv ADF_PATH
-
-
 .. _get-started-set-up-env:
 
-Step 4. Set up the environment variables
+Step 3. Set up the environment
 ========================================
 
-Before being able to compile ESP-ADF projects, on each new session, ESP-IDF tools should be added to the PATH environment variable. To make the tools usable from the command line, some environment variables must be set. ESP-IDF provides a script which does that.
+Before being able to compile ESP-ADF projects, on each new session, ESP-IDF tools should be added to the PATH environment variable. To make the tools usable from the command line, some environment variables must be set. ESP-ADF provides a script which does that.
 
 Windows
 ~~~~~~~
@@ -229,13 +189,7 @@ Alternatively, if you want to use ESP-IDF in an existing Command Prompt window, 
 
 .. code-block:: batch
 
-    %userprofile%\esp\esp-idf\export.bat
-
-or with Windows PowerShell
-
-.. code-block:: powershell
-
-    .$HOME/esp/esp-idf/export.ps1
+    %userprofile%\esp\esp-adf\export.bat
 
 Linux and macOS
 ~~~~~~~~~~~~~~~
@@ -244,7 +198,7 @@ In the terminal where you have installed ESP-IDF, run:
 
 .. code-block:: bash
 
-    . $HOME/esp/esp-idf/export.sh
+    . $HOME/esp/esp-adf/export.sh
 
 Note the space between the leading dot and the path!
 
@@ -252,14 +206,14 @@ You can also create an alias for the export script to your ``.profile`` or ``.ba
 
 .. code-block:: bash
 
-    alias get_idf='. $HOME/esp/esp-idf/export.sh'
+    alias get_idf='. $HOME/esp/esp-adf/export.sh'
 
 Note that it is not recommended to source ``export.sh`` from the profile script directly. Doing so activates IDF virtual environment in every terminal session (even in those where IDF is not needed), defeating the purpose of the virtual environment and likely affecting other software.
 
 
 .. _get-started-start-project:
 
-Step 5. Start a Project
+Step 4. Start a Project
 =======================
 
 After initial preparation you are ready to build the first audio application. The process has already been described in ESP-IDF documentation. Now we would like to discuss remaining key steps and show how the toolchain is able to access the ESP-ADF :adf:`components` by using the ``ADF_PATH`` variable.
@@ -294,7 +248,7 @@ It is also possible to build examples in-place, without copying them first.
 
 .. _get-started-connect:
 
-Step 6. Connect Your Device
+Step 5. Connect Your Device
 ===========================
 
 Connect the audio board to the PC, check under what serial port the board is visible and verify, if serial communication works as described in `ESP-IDF documentation <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/establish-serial-connection.html>`_.
@@ -306,36 +260,13 @@ Connect the audio board to the PC, check under what serial port the board is vis
 
 .. _get-started-configure:
 
-Step 7. Configure
+Step 6. Configure
 =================
 
 Navigate to your ``play_mp3_control`` directory from :ref:`get-started-start-project` and configure the project:
 
-ESP-IDF v3.3.2 and v4.0 releases
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Windows
-^^^^^^^
-
-.. code-block:: batch
-
-    cd %userprofile%\esp\play_mp3_control
-    idf.py menuconfig
-
-Linux and macOS
-^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-
-    cd ~/esp/play_mp3_control
-    idf.py menuconfig
-
-
-ESP-IDF v4.1 and master releases
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Windows
-^^^^^^^
+~~~~~~~
 
 .. code-block:: batch
 
@@ -344,7 +275,7 @@ Windows
     idf.py menuconfig
 
 Linux and macOS
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
@@ -354,7 +285,7 @@ Linux and macOS
 
 .. note::
 
-    If you are using an ESP32-S2 based board, then the second command above should be ``idf.py set-target esp32s2`` for ESP-IDF master release or ``idf.py set-target esp32s2beta`` for ESP-IDF v4.1 release.
+    If you are using an ESP32-S2 based board, then the second command above should be ``idf.py set-target esp32s2``.
 
 Setting the target with ``idf.py set-target <target>`` should be done once, after opening a new project. If the project contains some existing builds and configuration, they will be cleared and initialized. The target may be saved in environment variable to skip this step at all. See `Selecting the Target <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html#step-7-configure>`__ in ESP-IDF Programming Guide for additional information.
 
@@ -385,7 +316,7 @@ Select your board from the menu, press ``S`` to save configuration and then ``Q`
 
 .. _get-started-build:
 
-Step 8. Build the Project
+Step 7. Build the Project
 =========================
 
 Build the project by running:
@@ -419,7 +350,7 @@ If there are no errors, the build will finish by generating the firmware binary 
 
 .. _get-started-flash:
 
-Step 9. Flash onto the Device
+Step 8. Flash onto the Device
 =============================
 
 Flash the binaries that you just built onto your board by running:
@@ -467,7 +398,7 @@ If there are no issues by the end of the flash process, the board will reboot an
 
 .. _get-started-build-monitor:
 
-Step 10. Monitor
+Step 9. Monitor
 ================
 
 At this point press the **Reset** button to start the application. Following several lines of start up log, the ``play_mp3_control`` application specific messages should be displayed::
@@ -538,7 +469,7 @@ Install and Set up Environment Variables
 
 2. To install ESP-ADF, follow section :ref:`get-started-get-esp-adf`.
 
-3. 3. To set ``ADF_PATH`` environment variable, open ``Window`` > ``Preferences`` > ``C/C++`` > ``Build`` > ``Environment`` panel, click **Add** button and fill in ``ADF_PATH``. After you complete the above steps, select ``ADF_PATH`` in ``Environment variables`` table and click **Edit** and **OK** button without changing any value (There is a bug in Eclipse CDT that is appending a null value before the path hence we need to click on edit and save it.).
+3. To set ``ADF_PATH`` environment variable, open ``Window`` > ``Preferences`` > ``C/C++`` > ``Build`` > ``Environment`` panel, click **Add** button and fill in ``ADF_PATH``. After you complete the above steps, select ``ADF_PATH`` in ``Environment variables`` table and click **Edit** and **OK** button without changing any value (There is a bug in Eclipse CDT that is appending a null value before the path hence we need to click on edit and save it.).
 
   If this step does not work, you can delete ``ADF_PATH`` set in Eclipse and set ``ADF_PATH`` as system environment variable. For Windows, set environment variable in ``Advanced System Setting`` panel. For Linux and macOS, add ``export ADF_PATH=your adf path`` in file ``/etc/profile``. However, it is not recommended. Doing so activates ADF virtual environment in every terminal session (including those where ADF is not needed), defeating the purpose of the virtual environment and likely affecting other software.
 
