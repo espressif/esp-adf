@@ -101,9 +101,13 @@ esp_err_t src_drv_adc_slide_filter_deinit(src_drv_slide_filter_t *filter)
 
 float src_drv_adc_slide_filter(src_drv_slide_filter_t *filter, int16_t value)
 {
-    filter->cache[filter->index] = value;
-    filter->index = (filter->index + 1) % filter->w_size;
+    // update the sum by adding in the newest value and subtracting the oldest value (sum of sliding window)
     filter->sum = filter->sum + value - filter->cache[filter->index];
+    // save the new value in the circular buffer (cache), overwriting the oldest value
+    filter->cache[filter->index] = value;
+    // advance the index to circular buffer (loops around to beginning)
+    filter->index = (filter->index + 1) % filter->w_size;
+    // return the average
     return (filter->sum / (int16_t)filter->w_size);
 }
 
