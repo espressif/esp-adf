@@ -789,9 +789,11 @@ esp_err_t audio_element_set_input_ringbuf(audio_element_handle_t el, ringbuf_han
 {
     if (rb) {
         el->in.input_rb = rb;
+        rb_set_reader_holder(rb, (void*)el);
         el->read_type = IO_TYPE_RB;
     } else if (el->read_type == IO_TYPE_RB) {
         el->in.input_rb = rb;
+        rb_set_reader_holder(rb, (void*)el);
     }
     return ESP_OK;
 }
@@ -810,8 +812,10 @@ esp_err_t audio_element_set_output_ringbuf(audio_element_handle_t el, ringbuf_ha
     if (rb) {
         el->out.output_rb = rb;
         el->write_type = IO_TYPE_RB;
+        rb_set_writer_holder(rb, (void*)el);
     } else if (el->write_type == IO_TYPE_RB) {
         el->out.output_rb = rb;
+        rb_set_writer_holder(rb, (void*)el);
     }
     return ESP_OK;
 }

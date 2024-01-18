@@ -47,6 +47,8 @@ struct ringbuf {
     bool abort_write;
     bool is_done_write;         /**< To signal that we are done writing */
     bool unblock_reader_flag;   /**< To unblock instantly from rb_read */
+    void *reader_holder;
+    void *writer_holder;
 };
 
 static esp_err_t rb_abort_read(ringbuf_handle_t rb);
@@ -402,4 +404,40 @@ int rb_get_size(ringbuf_handle_t rb)
         return ESP_ERR_INVALID_ARG;
     }
     return rb->size;
+}
+
+esp_err_t rb_set_reader_holder(ringbuf_handle_t rb, void *holder)
+{
+    if (rb == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    rb->reader_holder = holder;
+    return ESP_OK;
+}
+
+esp_err_t rb_get_reader_holder(ringbuf_handle_t rb, void **holder)
+{
+    if ((rb==NULL) || (holder == NULL)) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    *holder = rb->reader_holder;
+    return ESP_OK;
+}
+
+esp_err_t rb_set_writer_holder(ringbuf_handle_t rb, void *holder)
+{
+    if (rb == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    rb->writer_holder = holder;
+    return ESP_OK;
+}
+
+esp_err_t rb_get_writer_holder(ringbuf_handle_t rb, void **holder)
+{
+    if ((rb==NULL) || (holder == NULL)) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    *holder = rb->writer_holder;
+    return ESP_OK;
 }
