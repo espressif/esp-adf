@@ -224,7 +224,7 @@ static void wifi_server_init(void)
 
     int reg_idx = 0;
     wifi_setting_handle = blufi_config_create(NULL);
-    esp_wifi_setting_regitster_notify_handle(wifi_setting_handle, (void *)wifi_serv);
+    esp_wifi_setting_register_notify_handle(wifi_setting_handle, (void *)wifi_serv);
     wifi_service_register_setting_handle(wifi_serv, wifi_setting_handle, &reg_idx);
     wifi_service_set_sta_info(wifi_serv, &sta_cfg);
     wifi_service_connect(wifi_serv);

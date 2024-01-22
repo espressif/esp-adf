@@ -73,7 +73,7 @@ esp_err_t esp_wifi_setting_register_function(esp_wifi_setting_handle_t handle,
     return ESP_OK;
 }
 
-esp_err_t esp_wifi_setting_regitster_notify_handle(esp_wifi_setting_handle_t handle, void *on_handle)
+esp_err_t esp_wifi_setting_register_notify_handle(esp_wifi_setting_handle_t handle, void *on_handle)
 {
     AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
     handle->notify_handle = on_handle;

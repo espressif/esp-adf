@@ -86,7 +86,7 @@ esp_err_t esp_wifi_setting_register_function(esp_wifi_setting_handle_t handle,
  *     - ESP_OK
  *     - ESP_FAIL
  */
-esp_err_t esp_wifi_setting_regitster_notify_handle(esp_wifi_setting_handle_t handle, void *on_handle);
+esp_err_t esp_wifi_setting_register_notify_handle(esp_wifi_setting_handle_t handle, void *on_handle);
 
 /**
  * @brief      Call this to notify the `wifi_config_t` to `on_handle`

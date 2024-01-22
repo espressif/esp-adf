@@ -361,7 +361,7 @@ void duer_app_init(void)
     smart_config_info_t info = SMART_CONFIG_INFO_DEFAULT();
     h = smart_config_create(&info);
 #endif
-    esp_wifi_setting_regitster_notify_handle(h, (void *)wifi_serv);
+    esp_wifi_setting_register_notify_handle(h, (void *)wifi_serv);
     wifi_service_register_setting_handle(wifi_serv, h, &reg_idx);
     wifi_service_set_sta_info(wifi_serv, &sta_cfg);
     wifi_service_connect(wifi_serv);
