@@ -275,7 +275,7 @@ void app_init(void)
     h = blufi_config_create(NULL);
     //blufi_set_customized_data(h, "hello world\n", strlen("hello world\n"));
 #endif
-    esp_wifi_setting_regitster_notify_handle(h, (void *)wifi_serv);
+    esp_wifi_setting_register_notify_handle(h, (void *)wifi_serv);
     wifi_service_register_setting_handle(wifi_serv, h, &reg_idx);
     wifi_service_set_sta_info(wifi_serv, &sta_cfg);
     wifi_service_connect(wifi_serv);

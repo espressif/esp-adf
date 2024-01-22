@@ -130,7 +130,7 @@ periph_service_handle_t setup_wifi()
 
     smart_config_info_t info = SMART_CONFIG_INFO_DEFAULT();
     esp_wifi_setting_handle_t h = smart_config_create(&info);
-    esp_wifi_setting_regitster_notify_handle(h, (void *)wifi_serv);
+    esp_wifi_setting_register_notify_handle(h, (void *)wifi_serv);
     wifi_service_register_setting_handle(wifi_serv, h, &reg_idx);
 
     wifi_config_t sta_cfg = {0};

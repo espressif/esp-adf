@@ -408,7 +408,7 @@ void duer_app_init(void)
     initialize_ble_stack();
     h = blufi_config_create(NULL);
 #endif
-    esp_wifi_setting_regitster_notify_handle(h, (void *)dueros_speaker->wifi_serv);
+    esp_wifi_setting_register_notify_handle(h, (void *)dueros_speaker->wifi_serv);
     wifi_service_register_setting_handle(dueros_speaker->wifi_serv, h, &reg_idx);
     wifi_service_set_sta_info(dueros_speaker->wifi_serv, &sta_cfg);
     wifi_service_connect(dueros_speaker->wifi_serv);
