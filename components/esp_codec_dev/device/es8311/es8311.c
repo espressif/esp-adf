@@ -323,7 +323,7 @@ static int es8311_start(audio_codec_es8311_t *codec)
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG14, regv);
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG0D, 0x01);
     ret |= es8311_write_reg(codec, ES8311_ADC_REG15, 0x40);
-    ret |= es8311_write_reg(codec, ES8311_DAC_REG37, 0x48);
+    ret |= es8311_write_reg(codec, ES8311_DAC_REG37, 0x08);
     ret |= es8311_write_reg(codec, ES8311_GP_REG45, 0x00);
     return ret;
 }
