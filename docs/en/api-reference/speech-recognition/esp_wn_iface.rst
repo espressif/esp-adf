@@ -1,4 +1,4 @@
-Speech Recognition Interface
+WakeNet Interface
 ============================
 
 Setting up the speech recognition application to detect a wakeup word may be done using series of Audio Elements linked into a pipeline shown below.
@@ -31,16 +31,10 @@ Setting up the speech recognition application to detect a wakeup word may be don
 
 Configuration and use of particular elements is demonstrated in several :adf:`examples <examples>` linked to elsewhere in this documentation. What may need clarification is use of the **Filter** and the **RAW stream**. The filter is used to adjust the sample rate of the I2S stream to match the sample rate of the speech recognition model. The RAW stream is the way to feed the audio input to the model.
 
-
-Application Example
--------------------
-
-The :example_file:`speech_recognition/wwe/main/main.c` example demonstrates how to initialize the model, determine the number of samples and the sample rate of voice data to feed to the model, and detect the wakeup word.
-
-Implementation of the speech recognition API is demonstrated in that example.
+The above introduction is the primary guidance. ESP-ADF offers users a more flexible and convenient module, namely the :doc:`audio recorder <audio_recorder>`, which is strongly recommended for use.
 
 
 API Reference
 -------------
 
-For the latest API reference please refer to `Espressif Speech recognition repository <https://github.com/espressif/esp-sr>`_.
+For the latest speech recognition API reference, please refer to `ESP-SR Speech Recognition Framework <https://github.com/espressif/esp-sr>`_.

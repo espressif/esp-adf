@@ -73,11 +73,13 @@ INPUT = \
     ../../components/esp-adf-libs/esp_codec/include/codec/equalizer.h \
     ../../components/esp-adf-libs/esp_codec/include/codec/filter_resample.h \
     ../../components/esp-adf-libs/esp_codec/include/codec/audio_sonic.h \
-    ## Speech Recognition
-    ../../components/esp-adf-libs/recorder_engine/include/recorder_engine.h \
     ## ESP Audio
     ../../components/esp-adf-libs/esp_audio/include/audio_def.h \
     ../../components/esp-adf-libs/esp_audio/include/esp_audio.h \
+    ## Speech Recognition
+    ../../components/audio_recorder/include/audio_recorder.h \
+    ../../components/audio_recorder/include/recorder_encoder.h \
+    ../../components/audio_recorder/include/recorder_sr.h \
     ## Common Peripherals
     ../../components/esp_peripherals/include/esp_peripherals.h \
     ../../components/esp_peripherals/include/periph_sdcard.h \

@@ -2,16 +2,12 @@
 Speech Recognition
 ******************
 
-The ESP-ADF comes complete with :doc:`speech recognition interface <esp_wn_iface>` to recognize voice wakeup commands. Most of currently implemented wakeup commands are in Chinese with one command "Hi Jeson" in English. 
-
-Provided in this section functions also include automatic speech detection, also known as :doc:`voice activity detection (VAD) <esp_vad>`, and :doc:`speech recording engine <recorder_engine>`.
-
-The Speech Recognition API is designed to easy integrate with existing :doc:`../framework/index` to retrieve the audio stream from a microphone connected to the audio chip. 
+ESP-ADF offers a comprehensive range of speech recognition processing functions, such as front-end speech processing, TTS, voice wake-up, and command word recognition. ESP-ADF's Element-based :doc:`audio recorder <audio_recorder>` integrates speech recognition and audio signal processing into an event-driven High-level API. This approach enables users to maintain flexibility in their configurations while making it easier to use.
 
 .. toctree::
     :caption: In This Section
     :maxdepth: 1
 
-    esp_wn_iface
     esp_vad
-    recorder_engine
+    esp_wn_iface
+    audio_recorder
