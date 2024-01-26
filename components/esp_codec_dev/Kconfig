@@ -30,6 +30,12 @@ menu "Audio Codec Device Configuration"
         help
             Enable this option to support codec ES8156.
 
+    config CODEC_AW88298_SUPPORT
+        bool "Support AW88298 Codec Chip"
+        default y
+        help
+            Enable this option to support codec AW88298.
+
     config CODEC_ES8374_SUPPORT
         bool "Support ES8374 Codec Chip"
         default y

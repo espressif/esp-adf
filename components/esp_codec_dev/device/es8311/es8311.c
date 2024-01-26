@@ -247,7 +247,6 @@ static int es8311_suspend(audio_codec_es8311_t *codec)
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG14, 0x00);
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG0D, 0xFA);
     ret |= es8311_write_reg(codec, ES8311_ADC_REG15, 0x00);
-    ret |= es8311_write_reg(codec, ES8311_DAC_REG37, 0x08);
     ret |= es8311_write_reg(codec, ES8311_CLK_MANAGER_REG02, 0x10);
     ret |= es8311_write_reg(codec, ES8311_RESET_REG00, 0x00);
     ret |= es8311_write_reg(codec, ES8311_RESET_REG00, 0x1F);
@@ -323,7 +322,7 @@ static int es8311_start(audio_codec_es8311_t *codec)
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG14, regv);
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG0D, 0x01);
     ret |= es8311_write_reg(codec, ES8311_ADC_REG15, 0x40);
-    ret |= es8311_write_reg(codec, ES8311_DAC_REG37, 0x48);
+    ret |= es8311_write_reg(codec, ES8311_DAC_REG37, 0x08);
     ret |= es8311_write_reg(codec, ES8311_GP_REG45, 0x00);
     return ret;
 }
@@ -338,13 +337,9 @@ static int es8311_set_mute(const audio_codec_if_t *h, bool mute)
     int ret = es8311_read_reg(codec, ES8311_DAC_REG31, &regv);
     regv &= 0x9f;
     if (mute) {
-        es8311_write_reg(codec, ES8311_SYSTEM_REG12, 0x02);
         es8311_write_reg(codec, ES8311_DAC_REG31, regv | 0x60);
-        es8311_write_reg(codec, ES8311_DAC_REG32, 0x00);
-        es8311_write_reg(codec, ES8311_DAC_REG37, 0x08);
     } else {
         es8311_write_reg(codec, ES8311_DAC_REG31, regv);
-        es8311_write_reg(codec, ES8311_SYSTEM_REG12, 0x00);
     }
     return ret;
 }

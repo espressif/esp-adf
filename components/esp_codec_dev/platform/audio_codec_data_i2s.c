@@ -129,7 +129,10 @@ static int set_drv_fs(i2s_chan_handle_t channel, bool playback, uint8_t slot_bit
                 slot_cfg.slot_bit_width = slot_bits;
             }
             i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(fs->sample_rate);
-            if (slot_bits == 24) {
+            if (fs->mclk_multiple) {
+                clk_cfg.mclk_multiple = fs->mclk_multiple;
+            }
+            if (slot_bits == 24 && (clk_cfg.mclk_multiple % 3) != 0) {
                 clk_cfg.mclk_multiple = I2S_MCLK_MULTIPLE_384;
             }
             ret = i2s_channel_reconfig_std_slot(channel, &slot_cfg);

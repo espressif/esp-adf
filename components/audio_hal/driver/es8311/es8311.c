@@ -262,13 +262,9 @@ static void es8311_mute(int mute)
     ESP_LOGI(TAG, "Enter into es8311_mute(), mute = %d\n", mute);
     regv = es8311_read_reg(ES8311_DAC_REG31) & 0x9f;
     if (mute) {
-        es8311_write_reg(ES8311_SYSTEM_REG12, 0x02);
         es8311_write_reg(ES8311_DAC_REG31, regv | 0x60);
-        es8311_write_reg(ES8311_DAC_REG32, 0x00);
-        es8311_write_reg(ES8311_DAC_REG37, 0x08);
     } else {
         es8311_write_reg(ES8311_DAC_REG31, regv);
-        es8311_write_reg(ES8311_SYSTEM_REG12, 0x00);
     }
 }
 
@@ -285,7 +281,6 @@ static void es8311_suspend(void)
     es8311_write_reg(ES8311_SYSTEM_REG14, 0x00);
     es8311_write_reg(ES8311_SYSTEM_REG0D, 0xFA);
     es8311_write_reg(ES8311_ADC_REG15, 0x00);
-    es8311_write_reg(ES8311_DAC_REG37, 0x08);
     es8311_write_reg(ES8311_GP_REG45, 0x01);
 }
 
@@ -668,7 +663,7 @@ esp_err_t es8311_start(es_module_t mode)
 
     ret |= es8311_write_reg(ES8311_SYSTEM_REG0D, 0x01);
     ret |= es8311_write_reg(ES8311_ADC_REG15, 0x40);
-    ret |= es8311_write_reg(ES8311_DAC_REG37, 0x48);
+    ret |= es8311_write_reg(ES8311_DAC_REG37, 0x08);
     ret |= es8311_write_reg(ES8311_GP_REG45, 0x00);
 
     /* set internal reference signal (ADCL + DACR) */
