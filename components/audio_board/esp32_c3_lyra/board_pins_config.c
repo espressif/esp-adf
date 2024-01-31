@@ -35,7 +35,7 @@ static const char *TAG = "ESP32_C3_Lyra";
 esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
 {
     AUDIO_NULL_CHECK(TAG, i2c_config, return ESP_FAIL);
-    if (port == I2C_NUM_0) {
+    if (port == 0) {
         i2c_config->sda_io_num = GPIO_NUM_9;
         i2c_config->scl_io_num = GPIO_NUM_8;
     } else {
@@ -47,7 +47,7 @@ esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
     return ESP_OK;
 }
 
-esp_err_t get_i2s_pins(i2s_port_t port, board_i2s_pin_t *i2s_config)
+esp_err_t get_i2s_pins(int port, board_i2s_pin_t *i2s_config)
 {
     AUDIO_NULL_CHECK(TAG, i2s_config, return ESP_FAIL);
 

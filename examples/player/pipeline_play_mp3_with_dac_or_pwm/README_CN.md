@@ -6,7 +6,7 @@
 
 ## 例程简介
 
-本例使用 MP3 解码器的回调函数 `mp3_music_read_cb` 读取嵌入在 flash 中的 MP3 文件，数据经过解码器解码处理后，最终通过 PWM 或 I2S-DAC 方式输出音乐。
+本例使用 MP3 解码器的回调函数 `mp3_music_read_cb` 读取嵌入在 flash 中的 MP3 文件，数据经过解码器解码处理后，最终通过 PWM 方式输出音乐。
 
 需要说明，对于 ESP32 的 I2S-DAC 输出，只有 GPIO25，GPIO26 两个管脚可使用； 对于 PWM 方式输出，只需要 GPIO 是具有输出功能的管脚即可。
 
@@ -19,7 +19,6 @@
 
 **注意：**
 - 如果选择 PWM 输出音乐，您需要一个 ESP32 开发板，其有合适的 GPIO 外露输出 PWM 波形。
-- 如果选择 I2S-DAC 输出音乐，您需要一个 ESP32 开发板，该开发板的 I2S-DAC 管脚 GPIO25 和 GPIO26 需要外露。
 
 
 ## 编译和下载
@@ -30,13 +29,9 @@
 
 ### 配置
 
-本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，默认的音乐输出的方式是 I2S-DAC 输出，也可以在 `menuconfig` 中设置为 PWM 方式输出。
+本例程默认选择的开发板是 `ESP32-Lyrat V4.3`。
 
-```c
-menuconfig > Example Configuration > Select play mp3 output > Enable PWM output
-```
-
-只有开启 PWM 输出使能后，才可以配置 PWM 的输出管脚。本例程选择 `ESP32-Lyrat V4.3` 开发板上外漏的 I2C_SCK 和 I2C_SDA 两个管脚输出 PWM 波形。
+本例程选择 `ESP32-Lyrat V4.3` 开发板上外漏的 I2C_SCK 和 I2C_SDA 两个管脚输出 PWM 波形。
 
 ```c
 menuconfig > Example Configuration > PWM Stream Right Output GPIO NUM > 18
@@ -85,34 +80,7 @@ GND +-------/\/\/\----+
                       | \__/
                       |
 GPIO23 +--------------+
-```                      
-
-**2. DAC 输出方式**
-
-根据下图把 ESP32 的 GPIO25、GPIO26 和 GND 管脚连接到耳机，注意 I2S-DAC 输出暂不支持其他 GPIO 管脚。
-
-DAC 输出方式连接:
-
-```
-GPIO25 +--------------+
-                      |  __  
-                      | /  \ _
-                     +-+    | |
-                     | |    | |  Earphone
-                     +-+    |_|
-                      | \__/
-             330R     |
-GND +-------/\/\/\----+
-                      |  __  
-                      | /  \ _
-                     +-+    | |
-                     | |    | |  Earphone
-                     +-+    |_|
-                      | \__/
-                      |
-GPIO26 +--------------+
-```     
-
+``` 
 
 ### 日志输出
 本例选取完整的从启动到初始化完成的 log，示例如下：
@@ -189,19 +157,6 @@ W (7046) AUDIO_ELEMENT: [output] Element has not create when AUDIO_ELEMENT_TERMI
 ```
 
 ## Troubleshooting
-当你使用 ESP32-S2 芯片并且打算使用 I2S-DAC 方式输出音频时，会遇到如下编译错误：
-```c
-../main/play_mp3_pwm_dac_example.c: In function 'app_main':
-/hengyongchao/esp-adf-internal/components/audio_stream/include/i2s_stream.h:91:35: error: 'I2S_MODE_DAC_BUILT_IN' undeclared (first use in this function); did you mean 'I2S_OUT_DATA_BURST_EN'?
-         .mode = I2S_MODE_MASTER | I2S_MODE_DAC_BUILT_IN | I2S_MODE_TX,          \
-                                   ^~~~~~~~~~~~~~~~~~~~~
-../main/play_mp3_pwm_dac_example.c:71:32: note: in expansion of macro 'I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT'
-     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT();
-                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-```
-
-这是因为 ESP32-S2 的 I2S 是不支持 DAC 方式输出的，所以本例 ESP32-S2 只有 PWM 方式输出。
-
 
 ## 技术支持
 请按照下面的链接获取技术支持：

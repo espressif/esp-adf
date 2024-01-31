@@ -1,5 +1,4 @@
 set(COMPONENT_SRCS "fatfs_stream.c"
-                    "i2s_stream.c"
                     "http_stream.c"
                     "http_playlist.c"
                     "raw_stream.c"
@@ -15,6 +14,13 @@ list(APPEND COMPONENT_SRCS  "lib/hls/hls_parse.c"
                             "lib/hls/hls_playlist.c"
                             "lib/hls/line_reader.c"
                             "lib/hls/join_path.c")
+
+if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_LESS "5.0")
+    list(APPEND COMPONENT_SRCS  "i2s_stream.c")
+else()
+    list(APPEND COMPONENT_SRCS  "i2s_stream_idf5.c")
+endif()
+
 
 list(APPEND COMPONENT_SRCS  "lib/gzip/gzip_miniz.c")
 

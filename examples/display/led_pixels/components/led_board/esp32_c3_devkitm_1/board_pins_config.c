@@ -31,10 +31,10 @@
 
 static const char *TAG = "ESP32C3 DEVKIT";
 
-esp_err_t get_i2s_pins(i2s_port_t port, board_i2s_pin_t *i2s_config)
+esp_err_t get_i2s_pins(int port, board_i2s_pin_t *i2s_config)
 {
     AUDIO_NULL_CHECK(TAG, i2s_config, return ESP_FAIL);
-    if (port == I2S_NUM_0) {
+    if (port == 0) {
         i2s_config->bck_io_num = GPIO_NUM_6;
         i2s_config->ws_io_num = GPIO_NUM_7;
         i2s_config->data_out_num = -1;

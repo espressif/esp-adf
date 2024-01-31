@@ -94,7 +94,11 @@ void app_main(void)
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_cfg.task_stack = 0;
     i2s_cfg.out_rb_size = 0;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    i2s_cfg.chan_cfg.auto_clear = true;
+#else
     i2s_cfg.i2s_config.tx_desc_auto_clear = true;
+#endif
     audio_element_handle_t i2s_writer = i2s_stream_init(&i2s_cfg);
     i2s_stream_set_clk(i2s_writer, DEST_SAMPLERATE, 16, DEST_CHANNEL);
 

@@ -16,6 +16,7 @@
 #include "audio_pipeline.h"
 #include "audio_event_iface.h"
 #include "audio_common.h"
+#include "audio_sys.h"
 #include "board.h"
 #include "esp_peripherals.h"
 #include "periph_sdcard.h"
@@ -54,10 +55,52 @@ static const char *TAG = "RECORD_TO_SDCARD";
 #define BIT_RATE            80000
 #endif
 
+typedef enum {
+    AUDIO_DATA_FORMNAT_ONLY_RIGHT,
+    AUDIO_DATA_FORMNAT_ONLY_LEFT,
+    AUDIO_DATA_FORMNAT_RIGHT_LEFT,
+} audio_channel_format_t;
+
+static esp_err_t audio_data_format_set(i2s_stream_cfg_t *i2s_cfg, audio_channel_format_t fmt)
+{
+    AUDIO_UNUSED(i2s_cfg);   // remove unused warning
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    switch (fmt) {
+        case AUDIO_DATA_FORMNAT_ONLY_RIGHT:
+            i2s_cfg->std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+            i2s_cfg->std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_RIGHT;
+            break;
+        case AUDIO_DATA_FORMNAT_ONLY_LEFT:
+            i2s_cfg->std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+            i2s_cfg->std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
+            break;
+        case AUDIO_DATA_FORMNAT_RIGHT_LEFT:
+            i2s_cfg->std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_STEREO;
+            i2s_cfg->std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_BOTH;
+            break;
+    }
+#else
+    switch (fmt) {
+        case AUDIO_DATA_FORMNAT_ONLY_RIGHT:
+            i2s_cfg->i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+            break;
+        case AUDIO_DATA_FORMNAT_ONLY_LEFT:
+            i2s_cfg->i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+            break;
+        case AUDIO_DATA_FORMNAT_RIGHT_LEFT:
+            i2s_cfg->i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+            break;
+    }
+#endif
+    return ESP_OK;
+}
+
 void app_main(void)
 {
     audio_pipeline_handle_t pipeline;
     audio_element_handle_t fatfs_stream_writer, i2s_stream_reader, audio_encoder;
+    int channel_format = AUDIO_DATA_FORMNAT_RIGHT_LEFT;
+    int sample_rate = 16000;
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -88,49 +131,56 @@ void app_main(void)
     i2s_cfg.type = AUDIO_STREAM_READER;
 #if defined (CONFIG_CHOICE_WAV_ENCODER)
 #elif defined (CONFIG_CHOICE_OPUS_ENCODER)
-    i2s_cfg.i2s_config.sample_rate = SAMPLE_RATE;
+    sample_rate = SAMPLE_RATE;
     if (CHANNEL == 1) {
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+        channel_format = AUDIO_DATA_FORMNAT_ONLY_RIGHT;
 #else
-        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+        channel_format = AUDIO_DATA_FORMNAT_ONLY_LEFT;
 #endif
     } else {
-        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+        channel_format = AUDIO_DATA_FORMNAT_RIGHT_LEFT;
     }
 #elif defined (CONFIG_CHOICE_AAC_ENCODER)
-    i2s_cfg.i2s_config.sample_rate = SAMPLE_RATE;
+    sample_rate = SAMPLE_RATE;
     if (CHANNEL == 1) {
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+        channel_format = AUDIO_DATA_FORMNAT_ONLY_RIGHT;
 #else
-        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+        channel_format = AUDIO_DATA_FORMNAT_ONLY_LEFT;
 #endif
     } else {
-        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+        channel_format = AUDIO_DATA_FORMNAT_RIGHT_LEFT;
     }
 #elif defined (CONFIG_CHOICE_AMR_NB_ENCODER)
-    i2s_cfg.i2s_config.sample_rate = 8000;
+    sample_rate = 8000;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+    channel_format = AUDIO_DATA_FORMNAT_ONLY_RIGHT;
 #else
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    channel_format = AUDIO_DATA_FORMNAT_ONLY_LEFT;
 #endif
 #elif defined (CONFIG_CHOICE_AMR_WB_ENCODER)
-    i2s_cfg.i2s_config.sample_rate = 16000;
+    sample_rate = 16000;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+    channel_format = AUDIO_DATA_FORMNAT_ONLY_RIGHT;
 #else
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    channel_format = AUDIO_DATA_FORMNAT_ONLY_LEFT;
 #endif
 #endif
 
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     i2s_cfg.i2s_port = 1;
 #if (ESP_IDF_VERSION <= ESP_IDF_VERSION_VAL(4, 0, 0))
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+    channel_format = AUDIO_DATA_FORMNAT_ONLY_RIGHT;
 #endif
 
+#endif
+
+    audio_data_format_set(&i2s_cfg, channel_format);
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    i2s_cfg.std_cfg.clk_cfg.sample_rate_hz = sample_rate;
+#else
+    i2s_cfg.i2s_config.sample_rate = sample_rate;
 #endif
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 

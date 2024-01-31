@@ -60,7 +60,7 @@ static char *TAG = "AUDIO_SETUP";
 
 #ifndef CODEC_ADC_BITS_PER_SAMPLE
 #warning "Please define CODEC_ADC_BITS_PER_SAMPLE first, default value 16 bits may not correctly"
-#define CODEC_ADC_BITS_PER_SAMPLE  I2S_BITS_PER_SAMPLE_16BIT
+#define CODEC_ADC_BITS_PER_SAMPLE  16
 #endif
 
 #ifndef CODEC_ADC_I2S_PORT
@@ -135,10 +135,10 @@ void *setup_player(void *cb, void *ctx)
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
-    i2s_writer.i2s_config.sample_rate = 48000;
-    i2s_writer.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
-    i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != I2S_BITS_PER_SAMPLE_16BIT);
-    esp_audio_output_stream_add(handle, i2s_stream_init(&i2s_writer));
+    i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != 16);
+    audio_element_handle_t i2s_write_h = i2s_stream_init(&i2s_writer);
+    i2s_stream_set_clk(i2s_write_h, 48000, CODEC_ADC_BITS_PER_SAMPLE, 2);
+    esp_audio_output_stream_add(handle, i2s_write_h);
 
     // Set default volume
     esp_audio_vol_set(handle, 60);
@@ -161,17 +161,13 @@ void *setup_recorder(rec_event_cb_t cb, void *ctx)
     if (NULL == pipeline) {
         return NULL;
     }
-
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
-#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
-    i2s_cfg.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
-#endif
-    i2s_cfg.i2s_config.use_apll = 0;
-    i2s_cfg.i2s_config.sample_rate = CODEC_ADC_SAMPLE_RATE;
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
-    i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, 44100, 16, AUDIO_STREAM_READER);
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    i2s_stream_set_clk(i2s_stream_reader, CODEC_ADC_SAMPLE_RATE, 32, 2);
+#else 
+    i2s_stream_set_clk(i2s_stream_reader, CODEC_ADC_SAMPLE_RATE, CODEC_ADC_BITS_PER_SAMPLE, 2);
+#endif
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_READER;

@@ -152,8 +152,6 @@ esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_p
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
     i2s_writer.stack_in_ext = true;
-    i2s_writer.i2s_config.sample_rate = 48000;
-    i2s_writer.i2s_config.mode = I2S_MODE_MASTER | I2S_MODE_TX;
 
     //init the audio board and codec
     audio_board_handle_t board_handle = audio_board_init();
@@ -182,6 +180,7 @@ esp_err_t app_player_init(QueueHandle_t que, audio_player_evt_callback cb, esp_p
     cfg.handle = setup_app_esp_audio_instance(&default_cfg, a2dp_cb);
 
     g_player_i2s_write_handle = i2s_stream_init(&i2s_writer);
+    i2s_stream_set_clk(g_player_i2s_write_handle, 48000, 16, 2
     esp_audio_output_stream_add(cfg.handle, g_player_i2s_write_handle);
 
     audio_err_t ret = audio_player_init(&cfg);

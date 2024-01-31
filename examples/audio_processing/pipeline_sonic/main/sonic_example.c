@@ -67,10 +67,17 @@ static audio_element_handle_t create_i2s_stream(int sample_rates, int bits, int 
     i2s_cfg.type = type;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
     if (i2s_cfg.type == AUDIO_STREAM_READER) {
-        i2s_cfg.i2s_port = 1;
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+        i2s_cfg.chan_cfg.id = CODEC_ADC_I2S_PORT;
+        i2s_cfg.std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+        i2s_cfg.std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
+#else
+        i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
         i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+#endif
     }
 #endif
+
     audio_element_handle_t i2s_stream = i2s_stream_init(&i2s_cfg);
     mem_assert(i2s_stream);
     audio_element_set_music_info(i2s_stream, sample_rates, channels, bits);
