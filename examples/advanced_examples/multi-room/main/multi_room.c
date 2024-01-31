@@ -208,10 +208,9 @@ static void setup_player(esp_periph_set_handle_t set)
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, esp_decoder_init(&auto_dec_cfg, auto_decode, 10));
 
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
-    i2s_writer.i2s_config.sample_rate = 48000;
-    i2s_writer.i2s_config.mode = I2S_MODE_MASTER | I2S_MODE_TX;
     i2s_writer.type = AUDIO_STREAM_WRITER;
     i2s_h = i2s_stream_init(&i2s_writer);
+    i2s_stream_set_clk(i2s_h, 48000, 16, 2);
     esp_audio_output_stream_add(player, i2s_h);
 
     // Set default volume

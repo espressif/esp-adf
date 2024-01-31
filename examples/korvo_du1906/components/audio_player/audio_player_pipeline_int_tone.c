@@ -75,9 +75,9 @@ audio_err_t audio_player_int_tone_init(void)
 
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
-    i2s_cfg.i2s_config.sample_rate = 48000;
     i2s_cfg.uninstall_drv = false;
     g_int_tone_handle->element[3] = i2s_stream_init(&i2s_cfg);
+    i2s_stream_set_clk(g_int_tone_handle->element[3], 48000, 16, 2);
 
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     g_int_tone_handle->evt = audio_event_iface_init(&evt_cfg);

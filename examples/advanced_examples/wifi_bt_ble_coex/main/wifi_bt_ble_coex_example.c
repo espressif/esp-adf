@@ -287,7 +287,6 @@ static esp_audio_handle_t setup_player()
 
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
-    i2s_writer.i2s_config.sample_rate = 44100;
     i2s_writer.type = AUDIO_STREAM_WRITER;
     raw_stream_cfg_t raw_writer = RAW_STREAM_CFG_DEFAULT();
     raw_writer.type = AUDIO_STREAM_WRITER;
@@ -386,12 +385,7 @@ void app_main(void)
     audio_pipeline_handle_t pipeline_out = audio_pipeline_init(&pipeline_cfg);
     
     ESP_LOGI(TAG, "[5.1] Create i2s stream to read data from codec chip");
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.type = AUDIO_STREAM_READER;
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    i2s_cfg.i2s_config.use_apll = false;
-    i2s_cfg.i2s_port = 1;
-#endif
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, 44100, 16, AUDIO_STREAM_READER);
     audio_element_handle_t i2s_stream_reader = i2s_stream_init(&i2s_cfg);
     
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();

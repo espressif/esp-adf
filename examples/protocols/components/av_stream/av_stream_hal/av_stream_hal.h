@@ -25,6 +25,7 @@
 #define _AV_STREAM_HAL_H
 
 #include "esp_log.h"
+#include "driver/i2s.h"
 #include "board.h"
 #include "esp_lcd_panel_ops.h"
 

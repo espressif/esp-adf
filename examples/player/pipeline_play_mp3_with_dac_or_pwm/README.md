@@ -4,9 +4,7 @@
 
 ## Example Brief
 
-This example uses the MP3 decoder callback function `mp3_music_read_cb` to read the MP3 file from the flash. After the data decoding process, the data is output through PWM or DAC.
-
-It should be noted that for ESP32 I2S-DAC output, only GPIO25 and GPIO26 can be used; for PWM output, the GPIOs with output function can be used.
+This example uses the MP3 decoder callback function `mp3_music_read_cb` to read the MP3 file from the flash. After the data decoding process, the data is output through PWM.
 
 ## Environment Setup
 
@@ -16,8 +14,7 @@ This example runs on the boards that are marked with a green checkbox in the [ta
 
 
 **NOTE:**
- - If PWM output is selected, you need an ESP32 board which has suitable GPIOs exposed to output PWM.
- - If I2S-DAC output is selected, you need an ESP32 board that has I2S-DAC pins GPIO25 and GPIO26 exposed.
+ - You need an ESP32 board which has suitable GPIOs exposed to output PWM.
 
 ## Example Set Up
 
@@ -26,13 +23,12 @@ This example supports IDF release/v3.3 and later branches. By default, it runs o
 
 ### Configuration
 
-The default development board selected for this example is `ESP32-Lyrat V4.3`, and the default music output mode is I2S-DAC, it can be set to PWM mode output in `menuconfig`.
+The default development board selected for this example is `ESP32-Lyrat V4.3`.
 
 ```c
 menuconfig > Example Configuration > Select play mp3 output > Enable PWM output
 ```
 
-Only after the PWM output is enabled can the PWM output pins be configured.
 This example selects the two exposed pins `I2C_SCK` and `I2C_SDA` on the `ESP32-Lyrat V4.3` development board to output the PWM waveform.
 
 ```c
@@ -87,33 +83,6 @@ GND +-------/\/\/\----+
                       |
 GPIO23 +--------------+
 ```                      
-
-**2. DAC output method**
-
-Connect the GPIO25, GPIO26 and GND pins of ESP32 to the earphone according to the figure below. Note that the I2S-DAC output does not support other GPIO pins temporarily.
-
- I2S-DAC output method connections:
-
-```
-GPIO25 +--------------+
-                      |  __  
-                      | /  \ _
-                     +-+    | |
-                     | |    | |  Earphone
-                     +-+    |_|
-                      | \__/
-             330R     |
-GND +-------/\/\/\----+
-                      |  __  
-                      | /  \ _
-                     +-+    | |
-                     | |    | |  Earphone
-                     +-+    |_|
-                      | \__/
-                      |
-GPIO26 +--------------+
-```     
-
 
 
 ### Example Logs
@@ -191,17 +160,7 @@ W (7046) AUDIO_ELEMENT: [output] Element has not create when AUDIO_ELEMENT_TERMI
 ```
 
 ## Troubleshooting
-When you use the ESP32-S2 chip and plan to use I2S-DAC to output audio, you will encounter the following compilation errors:
-```c
-../main/play_mp3_pwm_dac_example.c: In function 'app_main':
-/hengyongchao/esp-adf-internal/components/audio_stream/include/i2s_stream.h:91:35: error: 'I2S_MODE_DAC_BUILT_IN' undeclared (first use in this function); did you mean 'I2S_OUT_DATA_BURST_EN'?
-         .mode = I2S_MODE_MASTER | I2S_MODE_DAC_BUILT_IN | I2S_MODE_TX,          \
-                                   ^~~~~~~~~~~~~~~~~~~~~
-../main/play_mp3_pwm_dac_example.c:71:32: note: in expansion of macro 'I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT'
-     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT();
-                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-```
-This is because ESP32-S2's I2S does not support DAC output, so in this example ESP32-S2 only has PWM output.
+
 
 ## Technical support and feedback
 

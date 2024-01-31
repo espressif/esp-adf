@@ -61,7 +61,7 @@
 
 #ifndef CODEC_ADC_BITS_PER_SAMPLE
 #warning "Please define CODEC_ADC_BITS_PER_SAMPLE first, default value 16 bits may not correctly"
-#define CODEC_ADC_BITS_PER_SAMPLE  I2S_BITS_PER_SAMPLE_16BIT
+#define CODEC_ADC_BITS_PER_SAMPLE  16
 #endif
 
 #ifndef CODEC_ADC_I2S_PORT
@@ -155,10 +155,10 @@ void *duer_audio_setup_player(void)
 
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
-    i2s_writer.i2s_config.sample_rate = 48000;
-    i2s_writer.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
-    i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != I2S_BITS_PER_SAMPLE_16BIT);
+    i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != 16);
     i2s_writer.type = AUDIO_STREAM_WRITER;
+    audio_element_handle_t i2s_writer_h = i2s_stream_init(&i2s_writer);
+    i2s_stream_set_clk(i2s_writer_h, 48000, CODEC_ADC_BITS_PER_SAMPLE, 16);
 
     // Add decoders and encoders to esp_audio
     wav_decoder_cfg_t wav_dec_cfg = DEFAULT_WAV_DECODER_CONFIG();
@@ -207,13 +207,9 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
         return NULL;
     }
 
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
-    i2s_cfg.i2s_config.use_apll = 0;
-    i2s_cfg.i2s_config.sample_rate = CODEC_ADC_SAMPLE_RATE;
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
-    i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, CODEC_ADC_SAMPLE_RATE, 16, AUDIO_STREAM_READER);
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+    i2s_stream_set_clk(i2s_stream_reader, CODEC_ADC_SAMPLE_RATE, 16, 2);
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_READER;

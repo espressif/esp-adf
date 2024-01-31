@@ -27,16 +27,19 @@
 #include "esp_log.h"
 #include "audio_mem.h"
 #include "audio_error.h"
+#include "audio_element.h"
+#include "i2s_stream.h"
+#include "audio_error.h"
 #include "src_drv_i2s.h"
 #include "board_pins_config.h"
 
-#define I2S_NUM          (0)
 
 #if (ESP_IDF_VERSION > ESP_IDF_VERSION_VAL(4, 4, 0))
 
 static const char *TAG = "SRC_DRV_I2S";
 
 static char *i2s_buffer = NULL;
+static audio_element_handle_t i2s_stream_reader;
 
 /**
  * @brief      The ADC initialization
@@ -48,35 +51,25 @@ esp_err_t src_drv_i2s_init(src_drv_config_t *config)
     esp_err_t ret = ESP_OK;
     i2s_buffer = audio_calloc(CONFIG_EXAMPLE_N_SAMPLE, sizeof(int));
     AUDIO_NULL_CHECK(TAG, i2s_buffer, goto _src_drv_i2s_failed);
-
-    i2s_config_t i2s_cfg = {
-        .mode = I2S_MODE_MASTER | I2S_MODE_RX,
-        .sample_rate = config->audio_samplerate,
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
-        .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
-        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .tx_desc_auto_clear = true,
-
-        .dma_buf_count = 2,
-        .dma_buf_len = 256,
-        .use_apll = false,
-        .mclk_multiple = false,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-    };
-
-    i2s_driver_install(I2S_NUM, &i2s_cfg, 0, NULL);
-
-    board_i2s_pin_t board_i2s_pin = {0};
-    i2s_pin_config_t i2s_pin_cfg;
-    get_i2s_pins(I2S_NUM, &board_i2s_pin);
-    i2s_pin_cfg.bck_io_num = board_i2s_pin.bck_io_num;
-    i2s_pin_cfg.ws_io_num = board_i2s_pin.ws_io_num;
-    i2s_pin_cfg.data_out_num = board_i2s_pin.data_out_num;
-    i2s_pin_cfg.data_in_num = board_i2s_pin.data_in_num;
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)
-    i2s_pin_cfg.mck_io_num = board_i2s_pin.mck_io_num;
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.type = AUDIO_STREAM_READER;
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+        i2s_cfg.std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+        i2s_cfg.std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
+        i2s_cfg.std_cfg.clk_cfg.sample_rate_hz = config->audio_samplerate;
+        i2s_cfg.std_cfg.slot_cfg.data_bit_width = 32;
+        i2s_cfg.std_cfg.slot_cfg.ws_width = 32;
+#else
+        i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+        i2s_cfg.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
+        i2s_cfg.i2s_config.sample_rate = config->audio_samplerate;
 #endif
-    i2s_set_pin(I2S_NUM, &i2s_pin_cfg);
+
+    i2s_stream_reader = i2s_stream_init(&i2s_cfg);
+    if (i2s_stream_reader == NULL) {
+        ESP_LOGE(TAG, "i2s stream init failed");
+        goto _src_drv_i2s_failed;
+    }
     return ret;
 
 _src_drv_i2s_failed:
@@ -89,7 +82,7 @@ _src_drv_i2s_failed:
 esp_err_t src_drv_i2s_deinit(void)
 {
     esp_err_t ret = ESP_OK;
-    ret |= i2s_driver_uninstall(I2S_NUM);
+    ret |= audio_element_deinit(i2s_stream_reader);
     if (i2s_buffer) {
         audio_free(i2s_buffer);
     }
@@ -101,8 +94,8 @@ void src_drv_get_i2s_data(void *source_data, int size, void *ctx)
     size_t bytes_read = 0;
     int16_t *source = (int16_t *)source_data;
 
-    esp_err_t ret = i2s_read(I2S_NUM, i2s_buffer, size, &bytes_read, 100);
-    if (ret == ESP_OK) {
+    bytes_read = audio_element_input(i2s_stream_reader, i2s_buffer, size);
+    if (bytes_read >  0) {
         for (int i = 0; i < bytes_read / 4; i ++) {
             uint8_t mid = i2s_buffer[i * 4 + 2];
             uint8_t msb = i2s_buffer[i * 4 + 3];
@@ -113,4 +106,5 @@ void src_drv_get_i2s_data(void *source_data, int size, void *ctx)
         ESP_LOGE(TAG, "I2S read timeout");
     }
 }
+
 #endif

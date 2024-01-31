@@ -248,9 +248,10 @@ static void audio_player_init(void)
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
     i2s_writer.stack_in_ext = true;
-    i2s_writer.i2s_config.sample_rate = 48000;
     i2s_writer.task_core = 1;
-    esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
+    audio_element_handle_t i2s_stream_writer = i2s_stream_init(&i2s_writer);
+    i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
+    esp_audio_output_stream_add(player, i2s_stream_writer);
 
     // Set default volume
     esp_audio_vol_set(player, 35);

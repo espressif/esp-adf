@@ -298,16 +298,18 @@ audio_element_handle_t create_i2s_read_stream()
 {
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_cfg.i2s_config.sample_rate = 48000;
-    return i2s_stream_init(&i2s_cfg);
+    audio_element_handle_t i2s_read_h = i2s_stream_init(&i2s_cfg);
+    i2s_stream_set_clk(i2s_read_h, 48000, 16, 2);
+    return i2s_read_h;
 }
 
 audio_element_handle_t create_i2s_write_stream()
 {
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.i2s_config.sample_rate = 48000;
     i2s_cfg.type = AUDIO_STREAM_WRITER;
-    return i2s_stream_init(&i2s_cfg);
+    audio_element_handle_t i2s_write_h = i2s_stream_init(&i2s_cfg);
+    i2s_stream_set_clk(i2s_write_h, 48000, 16, 2);
+    return i2s_write_h;
 }
 
 audio_element_handle_t create_http_read_stream()
@@ -474,11 +476,10 @@ audio_element_handle_t create_audio_forge(void)
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_cfg.task_stack = 0;
     i2s_cfg.out_rb_size = 0;
-    i2s_cfg.i2s_config.sample_rate = 48000;
-    i2s_cfg.i2s_config.tx_desc_auto_clear = true;
     audio_element_handle_t i2s_writer_el = i2s_stream_init(&i2s_cfg);
+    i2s_stream_set_clk(i2s_writer_el, 48000, 16, 2);
     audio_element_set_write_cb(audio_forge, audio_forge_wr_cb, i2s_writer_el);
-    audio_forge_downmix_set_input_rb_timeout(audio_forge, 1);
+    audio_forge_downmix_set_input_rb_timeout(audio_forge, 0, 1);
     audio_element_set_input_timeout(audio_forge, 1);
 
     return audio_forge;

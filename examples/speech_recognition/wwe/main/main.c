@@ -74,7 +74,7 @@
 
 #ifndef CODEC_ADC_BITS_PER_SAMPLE
 #warning "Please define CODEC_ADC_BITS_PER_SAMPLE first, default value 16 bits may not correctly"
-#define CODEC_ADC_BITS_PER_SAMPLE  I2S_BITS_PER_SAMPLE_16BIT
+#define CODEC_ADC_BITS_PER_SAMPLE  16
 #endif
 
 #ifndef RECORD_HARDWARE_AEC
@@ -126,15 +126,16 @@ static esp_audio_handle_t setup_player()
 
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
-    i2s_writer.i2s_config.sample_rate = 48000;
-#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
-    i2s_writer.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
-#else
-    i2s_writer.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
-    i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != I2S_BITS_PER_SAMPLE_16BIT);
+#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD != 1) && (CONFIG_AFE_MIC_NUM != 1)
+    i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != 16);
 #endif
     i2s_writer.type = AUDIO_STREAM_WRITER;
-
+    audio_element_handle_t i2s_stream_writer = i2s_stream_init(&i2s_writer);
+#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
+    i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
+#else
+    i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
+#endif
     esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
 
     // Set default volume
@@ -289,21 +290,18 @@ static void start_recorder()
     audio_element_handle_t i2s_stream_reader;
     audio_pipeline_handle_t pipeline;
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    int bits_per_sample = 0;
     pipeline = audio_pipeline_init(&pipeline_cfg);
     if (NULL == pipeline) {
         return;
     }
 
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
-    i2s_cfg.i2s_config.use_apll = 0;
-    i2s_cfg.i2s_config.sample_rate = CODEC_ADC_SAMPLE_RATE;
 #if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
-    i2s_cfg.i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
+    bits_per_sample = 16;
 #else
-    i2s_cfg.i2s_config.bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
+    bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
 #endif
-    i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, CODEC_ADC_SAMPLE_RATE, bits_per_sample, AUDIO_STREAM_READER);
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
     audio_element_handle_t filter = NULL;

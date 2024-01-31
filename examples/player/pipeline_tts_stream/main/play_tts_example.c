@@ -52,11 +52,14 @@ void app_main(void)
     tts_stream_reader = tts_stream_init(&tts_cfg);
 
     ESP_LOGI(TAG, "[3.2] Create i2s stream to write data to codec chip");
+#if CONFIG_ESP32_C3_LYRA_V2_BOARD
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_PDM_TX_CFG_DEFAULT();
+#else
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+#endif
     i2s_cfg.type = AUDIO_STREAM_WRITER;
-    i2s_cfg.i2s_config.sample_rate = 16000;
-    i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
+    i2s_stream_set_clk(i2s_stream_writer, 16000, 16, 1);
 
     ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, tts_stream_reader, "tts");

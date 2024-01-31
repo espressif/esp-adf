@@ -25,6 +25,7 @@
 
 #include "esp_log.h"
 #include "audio_error.h"
+#include "audio_sys.h"
 #include "esp_audio.h"
 #include "tone_stream.h"
 #include "mp3_decoder.h"
@@ -35,11 +36,12 @@
 static const char *TAG = "PLAYER_INT_TONE";
 
 static esp_audio_handle_t player;
+static audio_element_handle_t i2s_writer;
 
 static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
     size_t bytes_write = 0, size = len;
-
+    AUDIO_UNUSED(size);
 #ifndef CONFIG_ESP32_S3_KORVO2L_V1_BOARD
     /* Drop right channel */
     int16_t *tmp = (int16_t *)buf;
@@ -52,10 +54,7 @@ static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_
 #if CONFIG_IDF_TARGET_ESP32
     algorithm_mono_fix((uint8_t *)buf, size);
 #endif
-
-    audio_element_info_t info;
-    audio_element_getinfo(el, &info);
-    int ret = i2s_write_expand(I2S_NUM_0, buf, size, 16, info.bits, &bytes_write, wait_time);
+    int ret = audio_element_output(el, buf, len);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "i2s write failed");
     }
@@ -86,11 +85,11 @@ audio_err_t audio_player_int_tone_init(int sample_rate, int channel_format, int 
     i2s_stream_cfg_t i2s_writer_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_writer_cfg.type = AUDIO_STREAM_WRITER;
     i2s_writer_cfg.stack_in_ext = true;
-    i2s_writer_cfg.i2s_config.sample_rate = sample_rate;
-    i2s_writer_cfg.i2s_config.channel_format = channel_format;
-    i2s_writer_cfg.i2s_config.bits_per_sample = bits_per_sample;
     i2s_writer_cfg.task_core = 1;
-    audio_element_handle_t i2s_writer = i2s_stream_init(&i2s_writer_cfg);
+    i2s_writer_cfg.need_expand = true;
+    i2s_writer_cfg.expand_src_bits = 16;
+    i2s_writer = i2s_stream_init(&i2s_writer_cfg);
+    i2s_stream_set_clk(i2s_writer, sample_rate, bits_per_sample, channel_format);
     esp_audio_output_stream_add(player, i2s_writer);
     audio_element_set_write_cb(i2s_writer, i2s_write_cb, NULL);
     audio_element_set_output_timeout(i2s_writer, portMAX_DELAY);

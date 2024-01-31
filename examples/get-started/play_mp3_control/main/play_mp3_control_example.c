@@ -112,7 +112,11 @@ void app_main(void)
     audio_element_set_read_cb(mp3_decoder, mp3_music_read_cb, NULL);
 
     ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");
+#if defined CONFIG_ESP32_C3_LYRA_V2_BOARD
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_PDM_TX_CFG_DEFAULT();
+#else
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+#endif
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 

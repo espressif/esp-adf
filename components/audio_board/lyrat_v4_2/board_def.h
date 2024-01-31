@@ -55,7 +55,7 @@
 #define AUXIN_DETECT_GPIO         GPIO_NUM_12
 #define PA_ENABLE_GPIO            GPIO_NUM_21
 #define CODEC_ADC_I2S_PORT        (0)
-#define CODEC_ADC_BITS_PER_SAMPLE I2S_BITS_PER_SAMPLE_16BIT
+#define CODEC_ADC_BITS_PER_SAMPLE (16) /* 16bit */
 #define CODEC_ADC_SAMPLE_RATE     (48000)
 #define RECORD_HARDWARE_AEC       (false)
 #define BOARD_PA_GAIN             (10) /* Power amplifier gain defined by board (dB) */

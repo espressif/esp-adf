@@ -53,7 +53,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[2.2] Create i2s stream to write data to codec chip");
 #if defined CONFIG_ESP32_C3_LYRA_V2_BOARD
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_TX_PDM_CFG_DEFAULT();
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_PDM_TX_CFG_DEFAULT();
 #else
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
 #endif

@@ -29,4 +29,14 @@
 
 #define BOARD_PA_GAIN    (10) /* Power amplifier gain defined by board (dB) */
 
+#define FUNC_SDCARD_EN              (0)
+#define SDCARD_OPEN_FILE_NUM_MAX    -1
+#define SDCARD_INTR_GPIO            -1
+#define SDCARD_PWR_CTRL             -1
+
+#define ESP_SD_PIN_CLK              -1
+#define ESP_SD_PIN_CMD              -1
+#define ESP_SD_PIN_D0               -1
+#define ESP_SD_PIN_D3               -1
+
 #endif

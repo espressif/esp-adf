@@ -133,8 +133,9 @@ esp_audio_handle_t setup_esp_audio_instance(esp_audio_cfg_t *cfg)
     // Create writers and add to esp_audio
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
     i2s_writer.type = AUDIO_STREAM_WRITER;
-    i2s_writer.i2s_config.sample_rate = 48000;
-    esp_audio_output_stream_add(handle, i2s_stream_init(&i2s_writer));
+    audio_element_handle_t i2s_write_h = i2s_stream_init(&i2s_writer);
+    i2s_stream_set_clk(i2s_write_h, 48000, 16, 2);
+    esp_audio_output_stream_add(handle, i2s_write_h);
 
     // Set default volume
     esp_audio_vol_set(handle, 60);

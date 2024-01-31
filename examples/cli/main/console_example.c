@@ -573,14 +573,15 @@ static void cli_setup_player(void)
     fatfs_stream_cfg_t fs_reader = FATFS_STREAM_CFG_DEFAULT();
     fs_reader.type = AUDIO_STREAM_READER;
     i2s_stream_cfg_t i2s_reader = I2S_STREAM_CFG_DEFAULT();
-    i2s_reader.i2s_config.sample_rate = 48000;
     i2s_reader.type = AUDIO_STREAM_READER;
     raw_stream_cfg_t raw_reader = RAW_STREAM_CFG_DEFAULT();
     raw_reader.type = AUDIO_STREAM_READER;
 
+    audio_element_handle_t i2s_read_h = i2s_stream_init(&i2s_reader);
+    i2s_stream_set_clk(i2s_read_h, 48000, 16, 2);
     esp_audio_input_stream_add(player, raw_stream_init(&raw_reader));
     esp_audio_input_stream_add(player, fatfs_stream_init(&fs_reader));
-    esp_audio_input_stream_add(player, i2s_stream_init(&i2s_reader));
+    esp_audio_input_stream_add(player, i2s_read_h);
     http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
     http_cfg.event_handle = _http_stream_event_handle;
     http_cfg.type = AUDIO_STREAM_READER;
@@ -635,16 +636,14 @@ static void cli_setup_player(void)
     // Create writers and add to esp_audio
     fatfs_stream_cfg_t fs_writer = FATFS_STREAM_CFG_DEFAULT();
     fs_writer.type = AUDIO_STREAM_WRITER;
-
     i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
-    i2s_writer.i2s_config.sample_rate = 48000;
-    i2s_writer.i2s_config.mode = I2S_MODE_MASTER | I2S_MODE_TX;
     i2s_writer.type = AUDIO_STREAM_WRITER;
 
     raw_stream_cfg_t raw_writer = RAW_STREAM_CFG_DEFAULT();
     raw_writer.type = AUDIO_STREAM_WRITER;
     audio_element_handle_t i2s_h =  i2s_stream_init(&i2s_writer);
 
+    i2s_stream_set_clk(i2s_h, 48000, 16, 2);
     esp_audio_output_stream_add(player, i2s_h);
     esp_audio_output_stream_add(player, fatfs_stream_init(&fs_writer));
     esp_audio_output_stream_add(player, raw_stream_init(&raw_writer));

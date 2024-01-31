@@ -53,6 +53,7 @@ void app_main(void)
 
     audio_element_handle_t i2s_stream_reader, amr_encoder, fatfs_stream_writer;
     ringbuf_handle_t ringbuf1, ringbuf2;
+    int sample_rate = 0;
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -77,15 +78,23 @@ void app_main(void)
     ESP_LOGI(TAG, "[3.1] Create i2s stream to read audio data from codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
 #ifdef CONFIG_CHOICE_AMR_WB
-    i2s_cfg.i2s_config.sample_rate = 16000;
+    sample_rate = 16000;
 #elif defined CONFIG_CHOICE_AMR_NB
-    i2s_cfg.i2s_config.sample_rate = 8000;
+    sample_rate = 8000;
 #endif
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+    i2s_cfg.chan_cfg.id = CODEC_ADC_I2S_PORT;
+    i2s_cfg.std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+    i2s_cfg.std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
+    i2s_cfg.std_cfg.clk_cfg.sample_rate_hz = sample_rate;
+#else
+    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
     i2s_cfg.i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+    i2s_cfg.i2s_config.sample_rate = sample_rate;
+#endif // (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
+
     i2s_cfg.type = AUDIO_STREAM_READER;
-#if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    i2s_cfg.i2s_port = 1;
-#endif
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
     ESP_LOGI(TAG, "[3.2] Create amr encoder to encode amr format");

@@ -14,11 +14,7 @@
 #include "audio_element.h"
 #include "audio_pipeline.h"
 #include "audio_event_iface.h"
-#ifdef CONFIG_PLAY_OUTPUT_PWM
 #include "pwm_stream.h"
-#elif (defined(CONFIG_PLAY_OUTPUT_DAC))
-#include "i2s_stream.h"
-#endif
 #include "mp3_decoder.h"
 #include "board.h"
 
@@ -62,16 +58,10 @@ void app_main(void)
     mem_assert(pipeline);
 
     ESP_LOGI(TAG, "[2.1] Create output stream to write data to codec chip");
-#ifdef CONFIG_PLAY_OUTPUT_PWM
     pwm_stream_cfg_t pwm_cfg = PWM_STREAM_CFG_DEFAULT();
     pwm_cfg.pwm_config.gpio_num_left = CONFIG_PWM_LEFT_OUTPUT_GPIO_NUM;
     pwm_cfg.pwm_config.gpio_num_right = CONFIG_PWM_RIGHT_OUTPUT_GPIO_NUM;
     output_stream_writer = pwm_stream_init(&pwm_cfg);
-#elif (defined(CONFIG_PLAY_OUTPUT_DAC))
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT();
-    i2s_cfg.type = AUDIO_STREAM_WRITER;
-    output_stream_writer = i2s_stream_init(&i2s_cfg);
-#endif
 
     ESP_LOGI(TAG, "[2.2] Create wav decoder to decode wav file");
     mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();

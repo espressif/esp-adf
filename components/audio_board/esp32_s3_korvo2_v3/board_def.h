@@ -115,7 +115,7 @@
 #define HEADPHONE_DETECT            (-1)
 #define PA_ENABLE_GPIO              GPIO_NUM_48
 #define CODEC_ADC_I2S_PORT          (0)
-#define CODEC_ADC_BITS_PER_SAMPLE   I2S_BITS_PER_SAMPLE_32BIT
+#define CODEC_ADC_BITS_PER_SAMPLE   (32)   /* 32bit */
 #define CODEC_ADC_SAMPLE_RATE       (48000)
 #define RECORD_HARDWARE_AEC         (true)
 #define BOARD_PA_GAIN               (6) /* Power amplifier gain defined by board (dB) */
