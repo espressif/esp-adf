@@ -45,6 +45,10 @@ extern "C" {
  * @brief Recorder event
  */
 typedef struct {
+
+    /**
+    * @brief Audio recorder event type
+    */
     enum {
         AUDIO_REC_WAKEUP_START = -100, /*!< Wakeup start */
         AUDIO_REC_WAKEUP_END,          /*!< Wakeup stop */

@@ -480,7 +480,7 @@ esp_err_t es8388_get_voice_mute(void)
  *     - (-1) Parameter error
  *     - (0)   Success
  */
-esp_err_t es8388_config_dac_output(int output)
+esp_err_t es8388_config_dac_output(es_dac_output_t output)
 {
     esp_err_t res;
     uint8_t reg = 0;
