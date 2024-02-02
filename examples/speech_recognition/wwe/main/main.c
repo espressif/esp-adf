@@ -125,18 +125,15 @@ static esp_audio_handle_t setup_player()
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
 
     // Create writers and add to esp_audio
-    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
-#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD != 1) && (CONFIG_AFE_MIC_NUM != 1)
+#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
+    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, 48000, I2S_DATA_BIT_WIDTH_16BIT, AUDIO_STREAM_WRITER);
+#else
+    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, 48000, CODEC_ADC_BITS_PER_SAMPLE, AUDIO_STREAM_WRITER);
     i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != 16);
 #endif
-    i2s_writer.type = AUDIO_STREAM_WRITER;
+
     audio_element_handle_t i2s_stream_writer = i2s_stream_init(&i2s_writer);
-#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
-    i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
-#else
-    i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
-#endif
-    esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
+    esp_audio_output_stream_add(player, i2s_stream_writer);
 
     // Set default volume
     esp_audio_vol_set(player, 60);

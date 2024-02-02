@@ -90,7 +90,7 @@ static int i2s_driver_startup(audio_element_handle_t self, i2s_stream_cfg_t *i2s
     board_i2s_pin_t board_i2s_pin = { 0 };
     get_i2s_pins(i2s_port, &board_i2s_pin);
 
-    i2s_cfg->chan_cfg.auto_clear = true;
+    i2s_key_slot[i2s->port].chan_cfg.auto_clear = true;
     ret = i2s_new_channel(&i2s_key_slot[i2s->port].chan_cfg, i2s_key_slot[i2s->port].dir & I2S_DIR_TX ?  &i2s_key_slot[i2s->port].tx_handle : NULL,
                           i2s_key_slot[i2s->port].dir & I2S_DIR_RX ?  &i2s_key_slot[i2s->port].rx_handle : NULL);
     switch (i2s_mode) {
@@ -248,14 +248,18 @@ static esp_err_t i2s_stream_setup_music_info(audio_element_handle_t el, i2s_stre
 #if SOC_I2S_SUPPORTS_PDM
         case I2S_COMM_MODE_PDM:
 #if SOC_I2S_SUPPORTS_PDM_TX
-            sample_rate_hz = i2s->config.pdm_tx_cfg.clk_cfg.sample_rate_hz;
-            slot_mode = i2s->config.pdm_tx_cfg.slot_cfg.slot_mode;
-            data_bit_width = i2s->config.pdm_tx_cfg.slot_cfg.data_bit_width;
+            if (i2s->type == AUDIO_STREAM_WRITER) {
+                sample_rate_hz = i2s->config.pdm_tx_cfg.clk_cfg.sample_rate_hz;
+                slot_mode = i2s->config.pdm_tx_cfg.slot_cfg.slot_mode;
+                data_bit_width = i2s->config.pdm_tx_cfg.slot_cfg.data_bit_width;
+            }
 #endif // SOC_I2S_SUPPORTS_PDM_TX
 #if SOC_I2S_SUPPORTS_PDM_RX
-            sample_rate_hz = i2s->config.pdm_rx_cfg.clk_cfg.sample_rate_hz;
-            slot_mode = i2s->config.pdm_rx_cfg.slot_cfg.slot_mode;
-            data_bit_width = i2s->config.pdm_rx_cfg.slot_cfg.data_bit_width;
+            if (i2s->type == AUDIO_STREAM_READER) {
+                sample_rate_hz = i2s->config.pdm_rx_cfg.clk_cfg.sample_rate_hz;
+                slot_mode = i2s->config.pdm_rx_cfg.slot_cfg.slot_mode;
+                data_bit_width = i2s->config.pdm_rx_cfg.slot_cfg.data_bit_width;
+            }
 #endif // SOC_I2S_SUPPORTS_PDM_RX
             break;
 #endif
@@ -295,42 +299,54 @@ static esp_err_t _i2s_set_clk(i2s_stream_t *i2s, int rate, int bits, int ch)
         i2s_std_slot_config_t slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bits, slot_mode);
         i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(rate);
         clk_cfg.mclk_multiple = i2s->config.std_cfg.clk_cfg.mclk_multiple;
-        if (i2s_key_slot[port].tx_handle != NULL) {
+        if (i2s_key_slot[port].tx_handle != NULL && i2s->type == AUDIO_STREAM_WRITER) {
             i2s_channel_disable(i2s_key_slot[port].tx_handle);
             slot_cfg.slot_mask = i2s_key_slot[port].tx_std_cfg.slot_cfg.slot_mask;
             clk_cfg.clk_src = i2s_key_slot[port].tx_std_cfg.clk_cfg.clk_src;
             err |= i2s_channel_reconfig_std_slot(i2s_key_slot[port].tx_handle, &slot_cfg);
             err |= i2s_channel_reconfig_std_clock(i2s_key_slot[port].tx_handle, &clk_cfg);
             err |= i2s_channel_enable(i2s_key_slot[port].tx_handle);
+            i2s_key_slot[i2s->port].tx_std_cfg.clk_cfg.sample_rate_hz = rate;
+            i2s_key_slot[i2s->port].tx_std_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[i2s->port].tx_std_cfg.slot_cfg.slot_mode = slot_mode;
         }
-        if (i2s_key_slot[port].rx_handle != NULL) {
+        if (i2s_key_slot[port].rx_handle != NULL && i2s->type == AUDIO_STREAM_READER) {
             i2s_channel_disable(i2s_key_slot[port].rx_handle);
             slot_cfg.slot_mask = i2s_key_slot[port].rx_std_cfg.slot_cfg.slot_mask;
             clk_cfg.clk_src = i2s_key_slot[port].rx_std_cfg.clk_cfg.clk_src;
             err |= i2s_channel_reconfig_std_slot(i2s_key_slot[port].rx_handle, &slot_cfg);
             err |= i2s_channel_reconfig_std_clock(i2s_key_slot[port].rx_handle, &clk_cfg);
             err |= i2s_channel_enable(i2s_key_slot[port].rx_handle);
+            i2s_key_slot[i2s->port].rx_std_cfg.clk_cfg.sample_rate_hz = rate;
+            i2s_key_slot[i2s->port].rx_std_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[i2s->port].rx_std_cfg.slot_cfg.slot_mode = slot_mode;
         }
 #if SOC_I2S_SUPPORTS_PDM
     } else if (i2s->config.transmit_mode == I2S_COMM_MODE_PDM) {
 #if SOC_I2S_SUPPORTS_PDM_TX
-        if (i2s_key_slot[port].tx_handle != NULL) {
+        if (i2s_key_slot[port].tx_handle != NULL && i2s->type == AUDIO_STREAM_WRITER) {
             i2s_pdm_tx_slot_config_t slot_cfg = I2S_PDM_TX_SLOT_DEFAULT_CONFIG(bits, slot_mode);
             i2s_pdm_tx_clk_config_t clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(rate);
             i2s_channel_disable(i2s_key_slot[port].tx_handle);
             err |= i2s_channel_reconfig_pdm_tx_slot(i2s_key_slot[port].tx_handle, &slot_cfg);
             err |= i2s_channel_reconfig_pdm_tx_clock(i2s_key_slot[port].tx_handle, &clk_cfg);
             err |= i2s_channel_enable(i2s_key_slot[port].tx_handle);
+            i2s_key_slot[i2s->port].tx_pdm_cfg.clk_cfg.sample_rate_hz = rate;
+            i2s_key_slot[i2s->port].tx_pdm_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[i2s->port].tx_pdm_cfg.slot_cfg.slot_mode = slot_mode;
         }
 #endif // SOC_I2S_SUPPORTS_PDM_TX
 #if SOC_I2S_SUPPORTS_PDM_RX
-        if (i2s_key_slot[port].rx_handle != NULL) {
+        if (i2s_key_slot[port].rx_handle != NULL && i2s->type == AUDIO_STREAM_READER) {
             i2s_pdm_rx_slot_config_t slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(bits, slot_mode);
             i2s_pdm_rx_clk_config_t clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(rate);
             i2s_channel_disable(i2s_key_slot[port].rx_handle);
             err |= i2s_channel_reconfig_pdm_rx_slot(i2s_key_slot[port].rx_handle, &slot_cfg);
             err |= i2s_channel_reconfig_pdm_rx_clock(i2s_key_slot[port].rx_handle, &clk_cfg);
             err |= i2s_channel_enable(i2s_key_slot[port].rx_handle);
+            i2s_key_slot[i2s->port].rx_pdm_cfg.clk_cfg.sample_rate_hz = rate;
+            i2s_key_slot[i2s->port].rx_pdm_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[i2s->port].rx_pdm_cfg.slot_cfg.slot_mode = slot_mode;
         }
 #endif // SOC_I2S_SUPPORTS_PDM_RX
 
@@ -339,17 +355,23 @@ static esp_err_t _i2s_set_clk(i2s_stream_t *i2s, int rate, int bits, int ch)
     } else if (i2s->config.transmit_mode == I2S_COMM_MODE_TDM) {
         i2s_tdm_clk_config_t clk_cfg = I2S_TDM_CLK_DEFAULT_CONFIG(rate);
         i2s_tdm_slot_config_t slot_cfg = I2S_TDM_PHILIPS_SLOT_DEFAULT_CONFIG(bits, slot_mode, ch);
-        if (i2s_key_slot[port].tx_handle != NULL) {
+        if (i2s_key_slot[port].tx_handle != NULL && i2s->type == AUDIO_STREAM_WRITER) {
             i2s_channel_disable(i2s_key_slot[port].tx_handle);
             err |= i2s_channel_reconfig_tdm_slot(i2s_key_slot[port].tx_handle, &slot_cfg);
             err |= i2s_channel_reconfig_tdm_clock(i2s_key_slot[port].tx_handle, &clk_cfg);
             err |= i2s_channel_enable(i2s_key_slot[port].tx_handle);
+            i2s_key_slot[i2s->port].tx_tdm_cfg.clk_cfg.sample_rate_hz = rate;
+            i2s_key_slot[i2s->port].tx_tdm_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[i2s->port].tx_tdm_cfg.slot_cfg.slot_mode = slot_mode;
         }
-        if (i2s_key_slot[port].rx_handle != NULL) {
+        if (i2s_key_slot[port].rx_handle != NULL && i2s->type == AUDIO_STREAM_READER) {
             i2s_channel_disable(i2s_key_slot[port].rx_handle);
             err |= i2s_channel_reconfig_tdm_slot(i2s_key_slot[port].rx_handle, &slot_cfg);
             err |= i2s_channel_reconfig_tdm_clock(i2s_key_slot[port].rx_handle, &clk_cfg);
             err |= i2s_channel_enable(i2s_key_slot[port].rx_handle);
+            i2s_key_slot[i2s->port].rx_tdm_cfg.clk_cfg.sample_rate_hz = rate;
+            i2s_key_slot[i2s->port].rx_tdm_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[i2s->port].rx_tdm_cfg.slot_cfg.slot_mode = slot_mode;
         }
 #endif // SOC_I2S_SUPPORTS_TDM
     } else {
@@ -377,7 +399,6 @@ static esp_err_t _i2s_open(audio_element_handle_t self)
         return ESP_OK;
     }
     if (i2s->type == AUDIO_STREAM_WRITER) {
-        ESP_LOGI(TAG, "AUDIO_STREAM_WRITER");
         audio_element_set_input_timeout(self, pdMS_TO_TICKS(cal_i2s_buffer_timeout(self)));
     }
     i2s->is_open = true;
@@ -421,7 +442,6 @@ static esp_err_t _i2s_close(audio_element_handle_t self)
     return ESP_OK;
 }
 
-#if (defined (CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2))
 static esp_err_t i2s_channel_write_expand(i2s_stream_t *i2s, const char *src, size_t src_len, int src_bit, int dst_bit, size_t *bytes_written, uint32_t timeout_ms)
 {
     int src_bytes = src_bit / 8;
@@ -447,7 +467,6 @@ static esp_err_t i2s_channel_write_expand(i2s_stream_t *i2s, const char *src, si
     i2s_channel_write(i2s_key_slot[i2s->port].tx_handle, i2s->expand.buf, target_len, bytes_written, timeout_ms);
     return ESP_OK;
 }
-#endif // (defined (CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2))
 
 static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
@@ -464,16 +483,15 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
     size_t bytes_written = 0;
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
-
+    int target_bits = info.bits;
     if (len) {
-        /* Except esp32 and esp32s2, other chips support hardware bit convert */
-#if (defined (CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2))
-        int target_bits = I2S_DATA_BIT_WIDTH_32BIT;
+#ifdef CONFIG_IDF_TARGET_ESP32
+        target_bits = I2S_DATA_BIT_WIDTH_32BIT;
+#endif
         if (i2s->config.need_expand && (target_bits != i2s->config.expand_src_bits)) {
             i2s_channel_write_expand(i2s, buffer, len, i2s->config.expand_src_bits, target_bits,
                                      &bytes_written, ticks_to_wait);
         } else
-#endif // (defined (CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2))
         {
             i2s_channel_write(i2s_key_slot[i2s->port].tx_handle, buffer, len, &bytes_written, ticks_to_wait);
         }
@@ -596,7 +614,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         i2s_dir = I2S_DIR_TX;
     }
 
-#if (!defined (CONFIG_IDF_TARGET_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S2))
+#if (!defined (CONFIG_IDF_TARGET_ESP32) && !defined (CONFIG_IDF_TARGET_ESP32S2))
     if (config->need_expand && config->transmit_mode == I2S_COMM_MODE_STD) {
         config->std_cfg.slot_cfg.slot_bit_width = config->std_cfg.slot_cfg.data_bit_width;
         config->std_cfg.slot_cfg.data_bit_width = config->expand_src_bits;
