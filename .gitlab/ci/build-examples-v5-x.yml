@@ -57,16 +57,6 @@
                    --parallel-count ${parallel##*/} \
                    --parallel-index ${parallel%%/*}
 
-# In order to pass the CI, temporarily replace release/v5.0 with v5.0
-.matrix_template_esp32s3_tag_v5_0: &matrix_template_esp32s3_tag_v5_0
-  parallel:
-    matrix:
-      - IDF_VERSION_TAG: ['v5.0']
-        parallel: [1/2, 2/2]
-        IDF_TAG_FLAG: "true"
-      - IDF_VERSION_TAG: ['v5.1']
-        parallel: [1/2, 2/2]
-
 .matrix_template_esp32_esp32s3_esp32s2: &matrix_template_esp32_esp32s3_esp32s2
   parallel:
     matrix:
@@ -119,7 +109,7 @@ build_examples_cmake_esp32s3_korvo_v2:
   extends:
     - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
-    - .matrix_template_esp32s3_tag_v5_0
+    - .matrix_template_esp32_esp32s3_esp32s2
   variables:
     IDF_TARGET: esp32s3
     AUDIO_BOARD: ESP32_S3_KORVO2_V3
