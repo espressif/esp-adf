@@ -60,18 +60,6 @@ include:
 
     - $ADF_PATH/tools/ci/build_examples_cmake.sh
 
-build_examples_cmake_esp32_lyrat_v4_3_idfv4_3:
-  extends:
-    - .rules:build:adf-idfs-example-test
-    - .build_examples_cmake_v4_4
-  variables:
-    IDF_TARGET: esp32
-    IDF_TAG_FLAG: "true"
-    IDF_VERSION_TAG: v4.3.4
-    AUDIO_BOARD: ESP_LYRAT_V4_3
-    SDKCFG_DEFAULTS: "sdkconfig.defaults.esp32"
-    TEST_CONFIG_FILE: ${CI_PROJECT_DIR}/esp-idf/tools/ci/config/target-test.yml
-
 build_examples_cmake_esp32_lyrat_v4_3_idfv4_4:
   when: always
   extends:
