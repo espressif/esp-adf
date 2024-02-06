@@ -201,7 +201,7 @@ static esp_err_t i2s_config_backup(i2s_stream_cfg_t *i2s_cfg)
 #endif // SOC_I2S_SUPPORTS_PDM_TX
 #if SOC_I2S_SUPPORTS_TDM
         else if (i2s_cfg->transmit_mode == I2S_COMM_MODE_TDM) {
-           memcpy(&i2s_key_slot[i2s_port].tx_tdm_cfg, &i2s_cfg->tdm_cfg, sizeof(i2s_cfg->tdm_cfg));
+            memcpy(&i2s_key_slot[i2s_port].tx_tdm_cfg, &i2s_cfg->tdm_cfg, sizeof(i2s_cfg->tdm_cfg));
         }
 #endif // SOC_I2S_SUPPORTS_TDM
     } else {
@@ -455,7 +455,7 @@ static esp_err_t i2s_channel_write_expand(i2s_stream_t *i2s, const char *src, si
         i2s->expand.buf = audio_calloc(1, target_len);
         AUDIO_MEM_CHECK(TAG, i2s->expand.buf, return ESP_ERR_NO_MEM);
         i2s->expand.buffer_size = target_len;
-     }
+    }
     memset(i2s->expand.buf, 0, target_len);
 
     size_t k = 0;
@@ -473,7 +473,6 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
     size_t bytes_read = 0;
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
     i2s_channel_read(i2s_key_slot[i2s->port].rx_handle, buffer, len, &bytes_read, ticks_to_wait);
-    audio_element_update_total_bytes(self, bytes_read);
     return bytes_read;
 }
 
@@ -491,12 +490,10 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
         if (i2s->config.need_expand && (target_bits != i2s->config.expand_src_bits)) {
             i2s_channel_write_expand(i2s, buffer, len, i2s->config.expand_src_bits, target_bits,
                                      &bytes_written, ticks_to_wait);
-        } else
-        {
+        } else {
             i2s_channel_write(i2s_key_slot[i2s->port].tx_handle, buffer, len, &bytes_written, ticks_to_wait);
         }
     }
-    audio_element_update_total_bytes(self, bytes_written);
     return bytes_written;
 }
 
@@ -518,6 +515,7 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
         }
         audio_element_multi_output(self, in_buffer, r_size, 0);
         w_size = audio_element_output(self, in_buffer, r_size);
+        audio_element_update_byte_pos(self, w_size);
     } else {
         w_size = r_size;
     }
@@ -638,7 +636,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
             ESP_LOGW(TAG, "I2S(%d) already startup", i2s_dir);
             goto i2s_end;
         } else {
-                i2s_driver_cleanup(i2s, false);
+            i2s_driver_cleanup(i2s, false);
         }
     }
     i2s_key_slot[i2s_port].dir |= i2s_dir;
