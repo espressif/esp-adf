@@ -208,6 +208,15 @@ static esp_err_t pwm_data_list_wait_semaphore(pwm_data_handle_t data, TickType_t
     return ESP_FAIL;
 }
 
+static esp_err_t pwm_data_list_wait_flushed(pwm_data_handle_t data, TickType_t ticks_to_wait)
+{
+    data->is_give = 2;
+    if (xSemaphoreTake(data->semaphore, ticks_to_wait) == pdTRUE) {
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
 static inline void ledc_set_left_duty_fast(uint32_t duty_val)
 {
     *g_ledc_left_duty_val = (duty_val) << 4;
@@ -307,9 +316,10 @@ static void IRAM_ATTR timer_group_isr(void *para)
         }
     }
 
-    if (0 == handle->data->is_give && pwm_data_list_get_free(handle->data) > BUFFER_MIN_SIZE) {
+    if ((0 == handle->data->is_give && pwm_data_list_get_free(handle->data) > BUFFER_MIN_SIZE) ||
+        (2 == handle->data->is_give && pwm_data_list_get_count(handle->data) == 0)) {
         handle->data->is_give = 1;
-        BaseType_t xHigherPriorityTaskWoken;
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         xSemaphoreGiveFromISR(handle->data->semaphore, &xHigherPriorityTaskWoken);
         if (pdFALSE != xHigherPriorityTaskWoken) {
             portYIELD_FROM_ISR();
@@ -529,6 +539,26 @@ static esp_err_t pwm_data_convert(pwm_data_handle_t data, uint8_t *inbuf, int32_
     return ESP_OK;
 }
 
+static uint32_t pwm_get_data_duration(uint32_t data_size)
+{
+    audio_pwm_handle_t handle = g_audio_pwm_handle;
+    uint32_t sample_bytes = (handle->config.duty_resolution) > 8 ? 2: 1;
+    uint32_t byte_rate = sample_bytes * handle->channel_set_num * handle->framerate;
+    if (byte_rate == 0) {
+        return 0;
+    }
+    // Add extra 20ms
+    return (data_size * 1000 / byte_rate) + 20;
+}
+
+static void pwm_wait_flush(void)
+{
+    audio_pwm_handle_t handle = g_audio_pwm_handle;
+    uint32_t data_size = pwm_data_list_get_count(handle->data);
+    if (handle->status == AUDIO_PWM_STATUS_BUSY && data_size > 0) {
+        pwm_data_list_wait_flushed(handle->data, pwm_get_data_duration(data_size) / portTICK_RATE_MS);
+    }
+}
 
 esp_err_t audio_pwm_write(uint8_t *inbuf, size_t inbuf_len, size_t *bytes_written, TickType_t ticks_to_wait)
 {
@@ -665,6 +695,9 @@ static int _pwm_process(audio_element_handle_t self, char *in_buffer, int in_len
         audio_element_update_byte_pos(self, w_size);
     } else {
         w_size = r_size;
+    }
+    if (w_size == 0 || w_size == AEL_IO_DONE) {
+        pwm_wait_flush();
     }
     return w_size;
 }
