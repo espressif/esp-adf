@@ -59,6 +59,12 @@
       IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.1:1"
       IDF_PATCH: idf_v5.1_freertos.patch
 
+.if-idf-version-tag-v5-2: &if-idf-version-tag-v5-2
+  if: '$IDF_VERSION_TAG == "v5.2"'
+  variables:
+      IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.2:2"
+      IDF_PATCH: idf_v5.2_freertos.patch
+
 .rules:build:enable-adf-example-test:
   rules:
     - <<: *if-open-merge-request
@@ -99,6 +105,7 @@
       when: never
     - <<: *if-idf-version-tag-v5-0
     - <<: *if-idf-version-tag-v5-1
+    - <<: *if-idf-version-tag-v5-2
 
 .rules:build:non-regular-board-idf-ver-tag:
   rules:
@@ -108,3 +115,4 @@
       when: never
     - <<: *if-idf-version-tag-v5-0
     - <<: *if-idf-version-tag-v5-1
+    - <<: *if-idf-version-tag-v5-2

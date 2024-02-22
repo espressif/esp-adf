@@ -26,8 +26,7 @@ IDF_SUPPORT_CHIP = {'722043f734':['v33'],
                     'release/v4.2':['v42'],
                     'release/v4.3':['v43'],
                     'v4.3.4':['v43'],
-                    'release/v4.4':['v44'],
-                    'release/v5.0':['v50']}
+                    'release/v4.4':['v44']}
 
 ADF_PATH = os.getenv('ADF_PATH')
 if not ADF_PATH:

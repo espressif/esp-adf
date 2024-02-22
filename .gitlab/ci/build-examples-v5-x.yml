@@ -60,13 +60,13 @@
 .matrix_template_esp32_esp32s3_esp32s2: &matrix_template_esp32_esp32s3_esp32s2
   parallel:
     matrix:
-      - IDF_VERSION_TAG: ['v5.0', 'v5.1']
+      - IDF_VERSION_TAG: ['v5.0', 'v5.1', 'v5.2']
         parallel: [1/2, 2/2]
 
 .matrix_template_esp32c3_esp32c6: &matrix_template_esp32c3_esp32c6
   parallel:
     matrix:
-      - IDF_VERSION_TAG: ['v5.1']
+      - IDF_VERSION_TAG: ['v5.1', 'v5.2']
         parallel: [1/2, 2/2]
 
 build_examples_cmake_esp32_lyrat_v4_3:

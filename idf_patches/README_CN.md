@@ -19,6 +19,9 @@
 - `idf_v4.2_freertos.patch` # 支持 ESP-IDF release/v4.2
 - `idf_v4.3_freertos.patch` # 支持 ESP-IDF release/v4.3
 - `idf_v4.4_freertos.patch` # 支持 ESP-IDF release/v4.4
+- `idf_v5.0_freertos.patch` # 支持 ESP-IDF release/v5.0
+- `idf_v5.1_freertos.patch` # 支持 ESP-IDF release/v5.1
+- `idf_v5.2_freertos.patch` # 支持 ESP-IDF release/v5.2
 
 ```
 如果您的 ESP-IDF 版本不在上述范围内，请根据 `idf_v4.4_freertos.patch` 补丁内容，手动修改对应文件。

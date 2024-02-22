@@ -1,0 +1,85 @@
+From 258cb6d7c4b0b2595279f62b0ee4684cbdd87b9b Mon Sep 17 00:00:00 2001
+From: xutao <xutao@espressif.com>
+Date: Sun, 4 Feb 2024 11:51:17 +0800
+Subject: [PATCH] [PATCH] add task create API for allocated stack in psram
+
+---
+ .../freertos_tasks_c_additions.h              | 45 +++++++++++++++++++
+ .../include/freertos/idf_additions.h          |  5 +++
+ 2 files changed, 50 insertions(+)
+
+diff --git a/components/freertos/esp_additions/freertos_tasks_c_additions.h b/components/freertos/esp_additions/freertos_tasks_c_additions.h
+index 9c5340dfb7..9147622c67 100644
+--- a/components/freertos/esp_additions/freertos_tasks_c_additions.h
++++ b/components/freertos/esp_additions/freertos_tasks_c_additions.h
+@@ -295,6 +295,51 @@ _Static_assert( tskNO_AFFINITY == ( BaseType_t ) CONFIG_FREERTOS_NO_AFFINITY, "C
+         return xReturn;
+     }
+ 
++
++    /*-----------------------------------------------------------*/
++
++    BaseType_t xTaskCreateRestrictedPinnedToCore( const TaskParameters_t * const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID)
++    {
++        TCB_t *pxNewTCB;
++        BaseType_t xReturn = errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
++
++        configASSERT( pxTaskDefinition->puxStackBuffer );
++
++        if( pxTaskDefinition->puxStackBuffer != NULL )
++        {
++            /* Allocate space for the TCB.  Where the memory comes from depends
++            on the implementation of the port malloc function and whether or
++            not static allocation is being used. */
++            pxNewTCB = ( TCB_t * ) pvPortMalloc( sizeof( TCB_t ) );
++
++            if( pxNewTCB != NULL )
++            {
++                memset(pxNewTCB, 0, sizeof(TCB_t));
++                /* Store the stack location in the TCB. */
++                pxNewTCB->pxStack = pxTaskDefinition->puxStackBuffer;
++
++                /* Tasks can be created statically or dynamically, so note
++                this task had a statically allocated stack in case it is
++                later deleted.  The TCB was allocated dynamically. */
++                pxNewTCB->ucStaticallyAllocated = tskDYNAMICALLY_ALLOCATED_STACK_AND_TCB;
++
++                prvInitialiseNewTask(   pxTaskDefinition->pvTaskCode,
++                                        pxTaskDefinition->pcName,
++                                        pxTaskDefinition->usStackDepth,
++                                        pxTaskDefinition->pvParameters,
++                                        pxTaskDefinition->uxPriority,
++                                        pxCreatedTask, pxNewTCB,
++                                        pxTaskDefinition->xRegions,
++                                        xCoreID );
++
++                prvAddNewTaskToReadyList( pxNewTCB );
++                xReturn = pdPASS;
++            }
++        }
++
++        return xReturn;
++    }
++
+ #endif /* ( configSUPPORT_DYNAMIC_ALLOCATION == 1 ) */
+ /*----------------------------------------------------------*/
+ 
+diff --git a/components/freertos/esp_additions/include/freertos/idf_additions.h b/components/freertos/esp_additions/include/freertos/idf_additions.h
+index 9582dc7b42..70cf1a5be6 100644
+--- a/components/freertos/esp_additions/include/freertos/idf_additions.h
++++ b/components/freertos/esp_additions/include/freertos/idf_additions.h
+@@ -68,6 +68,11 @@
+                                         TaskHandle_t * const pxCreatedTask,
+                                         const BaseType_t xCoreID );
+ 
++    BaseType_t xTaskCreateRestrictedPinnedToCore( const TaskParameters_t * const pxTaskDefinition,
++                                                TaskHandle_t *pxCreatedTask,
++                                                const BaseType_t xCoreID);
++
++
+ #endif /* configSUPPORT_DYNAMIC_ALLOCATION */
+ 
+ #if ( configSUPPORT_STATIC_ALLOCATION == 1 )
+-- 
+2.34.1
+

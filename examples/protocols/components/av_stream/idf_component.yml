@@ -3,6 +3,6 @@ description: Audio Video stream, support DVP I2S UVC(video) UAC(audio) LCD
 dependencies:
   espressif/esp32-camera: "*"
   espressif/usb_stream:
-    version: "1.0.0"
+    version: "1.3.2"
     rules:
       - if: "target != esp32"

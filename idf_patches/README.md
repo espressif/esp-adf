@@ -9,6 +9,7 @@ Files stored in the `idf_ patches` folder mainly relate to the features that are
 
 ### 1. FreeRTOS
 
+#### 1. idf_v*.*_freertos.patch
 >  The function of FreeRTOS patch is to put the stack of some tasks on PSRAM.
 
  **Application Scenario:** When using PSRAM, some default task stacks will be put into PSRAM to save memory. To avoid errors during compilation, please apply this patch in the `ESP-IDF` path.
@@ -19,10 +20,15 @@ Files stored in the `idf_ patches` folder mainly relate to the features that are
 - `idf_v4.2_freertos.patch` # for ESP-IDF release/v4.2
 - `idf_v4.3_freertos.patch` # for ESP-IDF release/v4.3
 - `idf_v4.4_freertos.patch` # for ESP-IDF release/v4.4
+- `idf_v5.0_freertos.patch` # for ESP-IDF release/v5.0
+- `idf_v5.1_freertos.patch` # for ESP-IDF release/v5.1
+- `idf_v5.2_freertos.patch` # for ESP-IDF release/v5.2
 
 ```
 If your current ESP-IDF version is not included in the list above, please update the files according to the content in `idf_v4.4_freertos.patch`.
 ```
+#### 2. move_system_task_to_psram_idf5.2.patch
+> The function of move_system_task_to_psram_idf5.2.patch is to put the stack of some tasks on PSRAM, include `hciT`, `BTU_TASK` and `sys_evt` task, Can save 9k of internal memory. If your internal memory is still not enough, you can try using the same method for `esp_timer` and `tiT`'s task stack on psram
 
 ### 2. esp-http-client
 
