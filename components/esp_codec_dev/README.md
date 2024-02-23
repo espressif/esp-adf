@@ -23,6 +23,7 @@ The currently supported codec devices are listed as below:
 |ES8374  |Y|Y|
 |ZL38063  |Y|Y|
 |TAS6805M  |Y|N|
+|AW88298 |Y|N|
 |ES7210 |N|Y|
 |ES7243 |N|Y|
 |ES7243E |N|Y|

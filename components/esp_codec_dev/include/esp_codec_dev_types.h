@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#define ESP_CODEC_DEV_VERSION  "1.0.1"
+#define ESP_CODEC_DEV_VERSION  "1.1.0"
 
 /**
  * @brief Define error number of codec device module
@@ -54,6 +54,10 @@ typedef struct {
     uint8_t  channel;           /*!< Channels of sample */
     uint16_t channel_mask;      /*!< Channel mask indicate which channel to be selected */
     uint32_t sample_rate;       /*!< Sample rate of sample */
+    int mclk_multiple;          /*!< The multiple of MCLK to the sample rate
+                                     If value is 0, mclk = sample_rate * 256
+                                     If bits_per_sample is 24bit, mclk_multiple should be the multiple of 3
+                                */
 } esp_codec_dev_sample_info_t;
 
 /**

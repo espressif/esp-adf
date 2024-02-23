@@ -26,6 +26,9 @@
 #ifdef CONFIG_CODEC_ES8156_SUPPORT
 #include "es8156_dac.h"
 #endif
+#ifdef CONFIG_CODEC_AW88298_SUPPORT
+#include "aw88298_dac.h"
+#endif
 #ifdef CONFIG_CODEC_ES8374_SUPPORT
 #include "es8374_codec.h"
 #endif
