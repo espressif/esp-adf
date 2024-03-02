@@ -63,7 +63,7 @@ esp_err_t get_i2s_pins(int port, board_i2s_pin_t *i2s_config)
         i2s_config->data_in_num = -1;
         i2s_config->mck_io_num = -1;
     } else {
-        memset(i2s_config, -1, sizeof(i2s_pin_config_t));
+        memset(i2s_config, -1, sizeof(board_i2s_pin_t));
         ESP_LOGE(TAG, "i2s port %d is not supported", port);
         return ESP_FAIL;
     }
