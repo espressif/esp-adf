@@ -6,6 +6,31 @@
     exit 1
   fi
 
+.check_branch_script: &check_branch_script |
+  if [[ "$BOT_LABEL_SKIP_BRANCH_CHECK" = "true"  || "$CI_MERGE_REQUEST_LABELS" =~ skip_branch_check ]]; then
+    echo "Skip branch name check."
+  else
+    ${CHECK_TOOLS_PATH}/check_commit_format branch-name
+  fi
+
+.check_commit_script: &check_commit_script |
+  if [[ "$BOT_LABEL_SKIP_COMMIT_CHECK" = "true"  || "$CI_MERGE_REQUEST_LABELS" =~ skip_commit_check ]]; then
+    echo "Skip commit message check."
+  else
+    ${CHECK_TOOLS_PATH}/check_commit_format commit-message
+  fi
+
+.check_code_script: &check_code_script |
+  if [[ "$BOT_LABEL_SKIP_CODE_CHECK" = "true" || "$CI_MERGE_REQUEST_LABELS" =~ skip_code_check ]]; then
+    echo "Skip code style check."
+  else
+    ${CHECK_TOOLS_PATH}/check_commit_format --verbose --format code-style;
+    if [ "$(ls -A ${CHECK_REPO_PATH}/formatted)" ]; then
+      git diff -- . ':(exclude).gitmodules' > ${CHECK_REPO_PATH}/patch/code_format.patch
+      exit 1
+    fi
+  fi
+
 check_labels:
   image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
   stage: pre_check
@@ -15,3 +40,27 @@ check_labels:
     - echo "skip default before_script"
   script:
     - *check_labels_script
+
+check_commit_format:
+  image: "$ADF_DOCKER_REGISTRY/pre_commit:1"
+  stage: pre_check
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_LABELS !~ /^(?:[^,\n\r]+,)*skip_check(?:,[^,\n\r]+)*$/i'
+  script:
+    - git clone --depth 1 $CHECK_FORMAT_TOOL_REPO
+    - cd check-format-tool/bin
+    - export CHECK_REPO_PATH=${ADF_PATH}
+    - export CHECK_TOOLS_PATH=${HOME}/.esp_adf_check_tools
+    - ./install.sh
+    - . ./export.sh
+    - cd ${CHECK_REPO_PATH};
+    - *check_branch_script
+    - *check_commit_script
+    - *check_code_script
+  allow_failure: true
+  artifacts:
+    paths:
+      - ${ADF_PATH}/patch
+      - ${ADF_PATH}/formatted
+    when: always
+    expire_in: 4 days

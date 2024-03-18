@@ -1,6 +1,6 @@
 #!/bin/bash
-# cat ~/esp/esp-adf-internal/tools/ci/apps.json | jq length
-# cat ~/esp/esp-adf-internal/tools/ci/apps.json | jq ".[0].board_idf.esp32.ESP_LYRAT_V4_3"
+# cat $ADF_PATH/tools/ci/apps.json | jq length
+# cat $ADF_PATH/tools/ci/apps.json | jq ".[0].board_idf.esp32.ESP_LYRAT_V4_3"
 # echo "v24.6.2222" | grep -o "[0-9].*"
 #
 # Note:
