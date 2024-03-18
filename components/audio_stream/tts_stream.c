@@ -179,7 +179,7 @@ audio_element_handle_t tts_stream_init(tts_stream_cfg_t *config)
     });
 
     uint16_t* voicedata = NULL;
-    esp_err_t err = esp_partition_mmap(part, 0, 3 * 1024 * 1024, SPI_FLASH_MMAP_DATA, (const void**)&voicedata, &tts_stream->mmap);
+    esp_err_t err = esp_partition_mmap(part, 0, part->size, SPI_FLASH_MMAP_DATA, (const void**)&voicedata, &tts_stream->mmap);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Couldn't map voice data partition!");
         goto _tts_stream_init_exit;
