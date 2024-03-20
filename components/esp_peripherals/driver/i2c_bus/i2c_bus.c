@@ -207,7 +207,7 @@ esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr)
     mutex_lock(i2c_bus->bus_lock);
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, addr, I2C_ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, (addr << 1) | I2C_MASTER_READ, I2C_ACK_CHECK_EN);
     i2c_master_stop(cmd);
     esp_err_t ret_val = i2c_master_cmd_begin(i2c_bus->i2c_port, cmd, pdMS_TO_TICKS(500));
     i2c_cmd_link_delete(cmd);
