@@ -85,7 +85,7 @@ esp_err_t periph_wifi_wait_for_connected(esp_periph_handle_t periph, TickType_t 
     if (connected_bit & CONNECTED_BIT) {
         return ESP_OK;
     }
-#if defined(CONFIG_BTDM_CTRL_MODE_BLE_ONLY) || defined(CONFIG_BTDM_CTRL_MODE_BTDM)
+#if defined(CONFIG_BT_BLE_BLUFI_ENABLE)
     if (periph_wifi->config_mode == WIFI_CONFIG_BLUEFI) {
         ble_config_stop();
     }
@@ -253,7 +253,7 @@ esp_err_t periph_wifi_config_start(esp_periph_handle_t periph, periph_wifi_confi
         //todo : add wps
         return ESP_OK;
     } else if (mode == WIFI_CONFIG_BLUEFI) {
-#if defined(CONFIG_BTDM_CTRL_MODE_BLE_ONLY) || defined(CONFIG_BTDM_CTRL_MODE_BTDM)
+#if defined(CONFIG_BT_BLE_BLUFI_ENABLE)
         ble_config_start(periph);
 #endif
         return ESP_OK;
