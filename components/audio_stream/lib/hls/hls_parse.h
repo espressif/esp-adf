@@ -37,7 +37,7 @@ extern "C" {
 #include "line_reader.h"
 
 #define HLS_MAX_ATTR_NUM             (16)
-#define HLS_MAX_LINE_CHAR            (512)
+#define HLS_MAX_LINE_CHAR            (1024)
 
 #define HLS_STR_AES_128              "AES-128"
 #define HLS_STR_AUDIO                "AUDIO"
