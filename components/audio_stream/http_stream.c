@@ -58,7 +58,7 @@
 
 static const char *TAG = "HTTP_STREAM";
 #define MAX_PLAYLIST_LINE_SIZE (512)
-#define HTTP_STREAM_BUFFER_SIZE (2048)
+#define HTTP_STREAM_BUFFER_SIZE (3072)
 #define HTTP_MAX_CONNECT_TIMES  (5)
 
 #define HLS_PREFER_BITRATE      (200*1024)
@@ -461,7 +461,7 @@ _stream_open_begin:
             .timeout_ms = 30 * 1000,
             .buffer_size = HTTP_STREAM_BUFFER_SIZE,
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
-            .buffer_size_tx = 1024,
+            .buffer_size_tx = 2024,
 #endif
             .cert_pem = http->cert_pem,
 #if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
