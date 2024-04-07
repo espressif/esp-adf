@@ -147,6 +147,8 @@ INPUT = \
     ../../components/esp_codec_dev/interface/audio_codec_gpio_if.h \
     ../../components/esp_codec_dev/interface/audio_codec_data_if.h \
     ../../components/esp_codec_dev/interface/audio_codec_ctrl_if.h \
+    ## Audio Mixer
+    ../../components/audio_mixer/include/audio_mixer.h \
     ##
     ## Audio Player
     ##

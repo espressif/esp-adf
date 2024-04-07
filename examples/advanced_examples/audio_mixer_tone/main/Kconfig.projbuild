@@ -1,0 +1,21 @@
+menu "Example Configuration"
+
+    config AUDIO_SAMPLE_RATE
+        int "audio sample"
+        default 44100
+        help
+            This need 
+
+    config AUDIO_CHANNELS
+        int "audio channel"
+        default 2
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    config AUDIO_BITS
+        int "audio bits"
+        default 16
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+endmenu
