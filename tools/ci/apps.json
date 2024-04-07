@@ -119,6 +119,23 @@
         }
     },
     {
+        "app_dir": "examples/advanced_examples/audio_mixer_tone",
+        "board_idf":{
+            "esp32":{
+                "ESP_LYRAT_V4_3":"v3.3-v5.1",
+                "ESP_LYRATD_MSC_V2_2":"v3.3-v5.1",
+                "ESP_LYRAT_MINI_V1_1":"v3.3-v5.1",
+                "ESP32_KORVO_DU1906":"v3.3-v4.2"
+            },
+            "esp32s2":{
+                "ESP32_S2_KALUGA_1_V1_2":"v4.2-v5.1"
+            },
+            "esp32s3":{
+                "ESP32_S3_KORVO2_V3":"v4.4-v5.1"
+            }
+        }
+    },
+    {
         "app_dir": "examples/advanced_examples/wifi_bt_ble_coex",
         "board_idf":{
             "esp32":{
