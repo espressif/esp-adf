@@ -262,7 +262,7 @@ typedef struct {
 
 #if SOC_I2S_SUPPORTS_PDM_RX
 #define I2S_STREAM_PDM_RX_CFG_DEFAULT() {                                       \
-    .type = AUDIO_STREAM_WRITER,                                                \
+    .type = AUDIO_STREAM_READER,                                                \
     .transmit_mode = I2S_COMM_MODE_PDM,                                         \
     .chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER),         \
     .pdm_rx_cfg = {                                                             \
