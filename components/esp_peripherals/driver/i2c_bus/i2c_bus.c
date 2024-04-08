@@ -62,8 +62,8 @@ i2c_bus_handle_t i2c_bus_create(i2c_port_t port, i2c_config_t *conf)
             ESP_LOGW(TAG, "I2C bus has been already created, [port:%d]", port);
             return i2c_bus[port];
         } else {
-           ESP_LOGE(TAG, "Have not enough slot(%d) to create I2C bus", port);
-           return NULL;
+            ESP_LOGE(TAG, "Have not enough slot(%d) to create I2C bus", port);
+            return NULL;
         }
     }
 
@@ -215,4 +215,17 @@ esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr)
 
     /* Get probe result if ESP_OK equals to ret_val */
     return ret_val;
+}
+
+esp_err_t i2c_bus_run_cb(i2c_bus_handle_t bus, i2c_run_cb_t cb, void *arg)
+{
+    I2C_BUS_CHECK(bus != NULL, "Handle error", ESP_FAIL);
+    I2C_BUS_CHECK(cb != NULL, "Invalid callback", ESP_FAIL);
+
+    i2c_bus_t *i2c_bus = (i2c_bus_t *) bus;
+    mutex_lock(i2c_bus->bus_lock);
+    (*cb)(i2c_bus->i2c_port, arg);
+    mutex_unlock(i2c_bus->bus_lock);
+
+    return ESP_OK;
 }

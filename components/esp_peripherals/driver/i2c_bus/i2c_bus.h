@@ -31,6 +31,7 @@ extern "C" {
 #endif
 
 typedef void *i2c_bus_handle_t;
+typedef void (*i2c_run_cb_t)(i2c_port_t port, void *arg);
 
 /**
  * @brief Create and init I2C bus and return a I2C bus handle
@@ -124,6 +125,19 @@ esp_err_t i2c_bus_cmd_begin(i2c_bus_handle_t bus, i2c_cmd_handle_t cmd, portBASE
  *     - ESP_FAIL Fail
  */
 esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr);
+
+/**
+ * @brief Lock the I2C bus while executing the given callback
+ *
+ * @param bus            I2C bus handle
+ * @param cb             The callback to execute
+ * @param arg            The argument for the callback
+ *
+ * @return
+ *     - ESP_OK  Done calling callback function
+ *     - ESP_FAIL  Fail
+ */
+esp_err_t i2c_bus_run_cb(i2c_bus_handle_t bus, i2c_run_cb_t cb, void *arg);
 
 #ifdef __cplusplus
 }
