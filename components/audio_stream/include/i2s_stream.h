@@ -74,7 +74,9 @@ typedef struct {
 #define I2S_STREAM_CFG_DEFAULT() I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, 44100, I2S_BITS_PER_SAMPLE_16BIT, AUDIO_STREAM_WRITER)
 
 #define I2S_STREAM_CFG_DEFAULT_WITH_PARA(port, rate, bits, stream_type)  {      \
-    .type = stream_type,                                                        \
+    .type = stream_type,                                                        \                                                                          \
+    .i2s_port = port,                                                           \                                                                        \
+    .expand_src_bits = bits,
     .i2s_config = {                                                             \
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX),      \
         .sample_rate = rate,                                                    \
@@ -88,7 +90,6 @@ typedef struct {
         .tx_desc_auto_clear = true,                                             \
         .fixed_mclk = 0                                                         \
     },                                                                          \
-    .i2s_port = port,                                                           \
     .use_alc = false,                                                           \
     .volume = 0,                                                                \
     .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
@@ -99,12 +100,13 @@ typedef struct {
     .multi_out_num = 0,                                                         \
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
-    .expand_src_bits = bits,                                                    \
     .buffer_len = I2S_STREAM_BUF_SIZE,                                          \
-}
+  }
 
 #define I2S_STREAM_INTERNAL_DAC_CFG_DEFAULT() {                                 \
     .type = AUDIO_STREAM_WRITER,                                                \
+    .i2s_port = I2S_NUM_0,                                                      \
+    .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
     .i2s_config = {                                                             \
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_DAC_BUILT_IN | I2S_MODE_TX),\
         .sample_rate = 44100,                                                   \
@@ -118,7 +120,6 @@ typedef struct {
         .tx_desc_auto_clear = true,                                             \
         .fixed_mclk = 0                                                         \
     },                                                                          \
-    .i2s_port = I2S_NUM_0,                                                      \
     .use_alc = false,                                                           \
     .volume = 0,                                                                \
     .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
@@ -129,11 +130,12 @@ typedef struct {
     .multi_out_num = 0,                                                         \
     .uninstall_drv = false,                                                     \
     .need_expand = false,                                                       \
-    .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
 }
 
 #define I2S_STREAM_PDM_TX_CFG_DEFAULT() {                                       \
     .type = AUDIO_STREAM_WRITER,                                                \
+    .i2s_port = I2S_NUM_0,                                                      \
+    .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
     .i2s_config = {                                                             \
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_PDM | I2S_MODE_TX),     \
         .sample_rate = 44100,                                                   \
@@ -146,7 +148,6 @@ typedef struct {
         .tx_desc_auto_clear = true,                                             \
         .fixed_mclk = 0                                                         \
     },                                                                          \
-    .i2s_port = I2S_NUM_0,                                                      \
     .use_alc = false,                                                           \
     .volume = 0,                                                                \
     .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
@@ -157,7 +158,6 @@ typedef struct {
     .multi_out_num = 0,                                                         \
     .uninstall_drv = false,                                                     \
     .need_expand = false,                                                       \
-    .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
 }
 
 #else
@@ -197,8 +197,16 @@ typedef struct {
 
 #define I2S_STREAM_CFG_DEFAULT() I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, 44100, I2S_DATA_BIT_WIDTH_16BIT, AUDIO_STREAM_WRITER)
 
-#define I2S_STREAM_CFG_DEFAULT_WITH_PARA(port, rate, bits, stream_type)  {      \
+#define I2S_STREAM_CFG_DEFAULT_WITH_PARA(port, rate, bits, stream_type)  {  \
     .type = stream_type,                                                        \
+    .transmit_mode = I2S_COMM_MODE_STD,                                         \
+    .chan_cfg = {                                                               \
+        .id = port,                                                             \
+        .role = I2S_ROLE_MASTER,                                                \
+        .dma_desc_num = 3,                                                      \
+        .dma_frame_num = 312,                                                   \
+        .auto_clear = true,                                                     \
+    },                                                                          \
     .std_cfg = {                                                                \
         .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(rate),                           \
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bits, I2S_SLOT_MODE_STEREO),  \
@@ -209,14 +217,7 @@ typedef struct {
             },                                                                  \
         },                                                                      \
     },                                                                          \
-    .transmit_mode = I2S_COMM_MODE_STD,                                         \
-    .chan_cfg = {                                                               \
-        .id = port,                                                             \
-        .role = I2S_ROLE_MASTER,                                                \
-        .dma_desc_num = 3,                                                      \
-        .dma_frame_num = 312,                                                   \
-        .auto_clear = true,                                                     \
-    },                                                                          \
+    .expand_src_bits = I2S_DATA_BIT_WIDTH_16BIT,                                \
     .use_alc = false,                                                           \
     .volume = 0,                                                                \
     .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
@@ -227,10 +228,8 @@ typedef struct {
     .multi_out_num = 0,                                                         \
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
-    .expand_src_bits = I2S_DATA_BIT_WIDTH_16BIT,                                \
     .buffer_len = I2S_STREAM_BUF_SIZE,                                          \
-}
-
+  }
 #if SOC_I2S_SUPPORTS_PDM_TX
 #define I2S_STREAM_PDM_TX_CFG_DEFAULT() {                                       \
     .type = AUDIO_STREAM_WRITER,                                                \
@@ -245,6 +244,7 @@ typedef struct {
             },                                                                  \
         },                                                                      \
     },                                                                          \
+    .expand_src_bits = I2S_DATA_BIT_WIDTH_16BIT,                                \
     .use_alc = false,                                                           \
     .volume = 0,                                                                \
     .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
@@ -255,7 +255,6 @@ typedef struct {
     .multi_out_num = 0,                                                         \
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
-    .expand_src_bits = I2S_DATA_BIT_WIDTH_16BIT,                                \
     .buffer_len = I2S_STREAM_BUF_SIZE,                                          \
 }
 #endif // SOC_I2S_SUPPORTS_PDM_TX
@@ -274,6 +273,7 @@ typedef struct {
             },                                                                  \
         },                                                                      \
     },                                                                          \
+    .expand_src_bits = I2S_DATA_BIT_WIDTH_16BIT,                                \
     .use_alc = false,                                                           \
     .volume = 0,                                                                \
     .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
@@ -284,7 +284,6 @@ typedef struct {
     .multi_out_num = 0,                                                         \
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
-    .expand_src_bits = I2S_DATA_BIT_WIDTH_16BIT,                                \
     .buffer_len = I2S_STREAM_BUF_SIZE,                                          \
 }
 #endif // SOC_I2S_SUPPORTS_PDM_RX
@@ -316,7 +315,6 @@ typedef struct {
     .multi_out_num = 0,                                                         \
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
-    .expand_src_bits = I2S_DATA_BIT_WIDTH_16BIT,                                \
     .buffer_len = I2S_STREAM_BUF_SIZE,                                          \
 }
 #endif // SOC_I2S_SUPPORTS_TDM
