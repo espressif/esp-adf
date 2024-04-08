@@ -44,6 +44,7 @@
 
 static const char *TAG = "SDCARD";
 static int g_gpio = -1;
+static sdmmc_card_t *card = NULL;
 
 static void sdmmc_card_print_info(const sdmmc_card_t *card)
 {
@@ -64,9 +65,7 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         return ESP_FAIL;
     }
 
-    sdmmc_card_t *card = NULL;
     esp_err_t ret = ESP_FAIL;
-
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
         .max_files = get_sdcard_open_file_num_max(),
@@ -164,9 +163,13 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 
 }
 
-esp_err_t sdcard_unmount(void)
+esp_err_t sdcard_unmount(const char *base_path)
 {
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0))
+    esp_err_t ret = esp_vfs_fat_sdcard_unmount(base_path, card);
+#else
     esp_err_t ret = esp_vfs_fat_sdmmc_unmount();
+#endif
 
     if (ret == ESP_ERR_INVALID_STATE) {
         ESP_LOGE(TAG, "File system not mounted");
