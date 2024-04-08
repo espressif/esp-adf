@@ -137,7 +137,7 @@ esp_err_t tts_stream_set_speed(audio_element_handle_t el, tts_voice_speed_t spee
 
 esp_err_t tts_stream_get_speed(audio_element_handle_t el, tts_voice_speed_t *speed)
 {
-    if(speed == NULL){
+    if (speed == NULL) {
         ESP_LOGE(TAG, "The speed parameter is NULL");
         return ESP_FAIL;
     }
@@ -172,14 +172,19 @@ audio_element_handle_t tts_stream_init(tts_stream_cfg_t *config)
     cfg.tag = "tts";
     tts_stream->type = config->type;
 
-    const esp_partition_t* part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "voice_data");
+    const esp_partition_t *part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "voice_data");
     AUDIO_MEM_CHECK(TAG, part, {
         ESP_LOGE(TAG, "Couldn't find voice data partition!");
         goto _tts_stream_init_exit;
     });
 
-    uint16_t* voicedata = NULL;
-    esp_err_t err = esp_partition_mmap(part, 0, 3 * 1024 * 1024, SPI_FLASH_MMAP_DATA, (const void**)&voicedata, &tts_stream->mmap);
+    void *voicedata = NULL;
+    esp_err_t err = ESP_OK;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    ESP_ERROR_CHECK(esp_partition_mmap(part, 0, part->size, ESP_PARTITION_MMAP_DATA, (const void **)&voicedata, &tts_stream->mmap));
+#else
+    ESP_ERROR_CHECK(esp_partition_mmap(part, 0, part->size, SPI_FLASH_MMAP_DATA, (const void **)&voicedata, &tts_stream->mmap));
+#endif
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Couldn't map voice data partition!");
         goto _tts_stream_init_exit;
