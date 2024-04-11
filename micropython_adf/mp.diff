@@ -1,17 +1,17 @@
 diff --git a/ports/esp32/esp32_common.cmake b/ports/esp32/esp32_common.cmake
-index 37a19316b..46c264123 100644
+index 89e46f9cf..c83384b10 100644
 --- a/ports/esp32/esp32_common.cmake
 +++ b/ports/esp32/esp32_common.cmake
-@@ -136,6 +136,7 @@ list(APPEND IDF_COMPONENTS
+@@ -133,6 +133,7 @@ list(APPEND IDF_COMPONENTS
+     spi_flash
      ulp
      vfs
-     xtensa
 +    boards
  )
  
  # Register the main IDF component.
 diff --git a/ports/esp32/machine_sdcard.c b/ports/esp32/machine_sdcard.c
-index bc4aaf30c..41b9fede1 100644
+index 92c6e6469..ea86ddb77 100644
 --- a/ports/esp32/machine_sdcard.c
 +++ b/ports/esp32/machine_sdcard.c
 @@ -37,6 +37,7 @@
@@ -22,7 +22,7 @@ index bc4aaf30c..41b9fede1 100644
  
  #define DEBUG 0
  #if DEBUG
-@@ -173,6 +174,18 @@ STATIC mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
+@@ -173,6 +174,18 @@ static mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
          ARG_width,
          ARG_cd,
          ARG_wp,
@@ -41,7 +41,7 @@ index bc4aaf30c..41b9fede1 100644
          ARG_miso,
          ARG_mosi,
          ARG_sck,
-@@ -184,6 +197,18 @@ STATIC mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
+@@ -184,6 +197,18 @@ static mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
          { MP_QSTR_width,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 1} },
          { MP_QSTR_cd,       MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
          { MP_QSTR_wp,       MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
@@ -60,11 +60,10 @@ index bc4aaf30c..41b9fede1 100644
          // These are only needed if using SPI mode
          { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
          { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
-@@ -293,7 +318,18 @@ STATIC mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
-         // SD/MMC interface
+@@ -293,6 +318,19 @@ static mp_obj_t machine_sdcard_make_new(const mp_obj_type_t *type, size_t n_args
          DEBUG_printf("  Setting up SDMMC slot configuration");
          sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
--
+ 
 +#ifdef SOC_SDMMC_USE_GPIO_MATRIX
 +        SET_CONFIG_PIN(slot_config, clk, ARG_clk);
 +        SET_CONFIG_PIN(slot_config, cmd, ARG_cmd);
@@ -77,26 +76,28 @@ index bc4aaf30c..41b9fede1 100644
 +        SET_CONFIG_PIN(slot_config, d6,  ARG_d6);
 +        SET_CONFIG_PIN(slot_config, d7,  ARG_d7);
 +#endif /*SOC_SDMMC_USE_GPIO_MATRIX*/
++
          // Stronger external pull-ups are still needed but apparently
          // it is a good idea to set the internal pull-ups anyway.
          // slot_config.flags = SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
 diff --git a/ports/esp32/modules/_boot.py b/ports/esp32/modules/_boot.py
-index 651fc7b10..5b01f5c60 100644
+index 96af581f3..a9976970a 100644
 --- a/ports/esp32/modules/_boot.py
 +++ b/ports/esp32/modules/_boot.py
-@@ -1,6 +1,9 @@
+@@ -1,6 +1,10 @@
  import gc
- import os
+ import vfs
  from flashbdev import bdev
 +import machine
 +import sys
++import os
 +from machine import Pin
  
  try:
      if bdev:
-@@ -10,4 +13,26 @@ except OSError:
+@@ -10,4 +14,26 @@ except OSError:
  
-     vfs = inisetup.setup()
+     inisetup.setup()
  
 +try:
 +    board_info = os.uname()[4]

@@ -13,7 +13,7 @@ To build the project, please follow the steps below:
 * `export IDF_PATH={ your ESP-IDF's path }`.
 * `ESP-IDF`:
 
-  > 1. Checkout v5.0.2: `git checkout tags/v5.0.2`.
+  > 1. Checkout v5.0.4: `git checkout tags/v5.0.4`.
   > 2. Install espressif tools: `./install.sh`.
   > 3. Apply the patch: `git apply ${ADF_PATH}/idf_patches/idf_v5.0_freertos.patch`
   > 4. Remove the `fatfs` component due to the complie issue: `rm ${IDF_PATH}/components/fatfs/CMakeLists.txt`.
@@ -21,7 +21,7 @@ To build the project, please follow the steps below:
 
 * `MicroPython`:
 
-  > 1. Checkout the supported commit: `git checkout d529c2067 -b { branch name you wanted }`.
+  > 1. Checkout the supported commit: `git checkout 5114f2c1e -b { branch name you wanted }`.
   > 2. Apply the patch: `git apply ${ADF_PATH}/micropyton_adf/mp.diff`.
   > 3. `cd ${YOUR_MP_PATH}/ports/esp32`
   > 4. Select the borad with `-D MICROPY_BOARD_DIR=`, build and flash: `idf.py build -D MICROPY_BOARD_DIR=${ADF_PATH}/micropython_adf/boards/lyrat43 -D USER_C_MODULES=${ADF_PATH}/micropython_adf/mod/micropython.cmake flash monitor`.
