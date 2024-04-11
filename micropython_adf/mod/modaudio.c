@@ -36,7 +36,7 @@
 
 const char *verno = "0.5-beta2";
 
-STATIC mp_obj_t audio_mem_info(void)
+static mp_obj_t audio_mem_info(void)
 {
 #ifdef CONFIG_SPIRAM_BOOT_INIT
     mp_obj_dict_t *dict = mp_obj_new_dict(3);
@@ -50,18 +50,18 @@ STATIC mp_obj_t audio_mem_info(void)
 #endif
     return dict;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(audio_mem_info_obj, audio_mem_info);
+static MP_DEFINE_CONST_FUN_OBJ_0(audio_mem_info_obj, audio_mem_info);
 
-STATIC mp_obj_t audio_mod_verno(void)
+static mp_obj_t audio_mod_verno(void)
 {
     return mp_obj_new_str(verno, strlen(verno));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(audio_mod_verno_obj, audio_mod_verno);
+static MP_DEFINE_CONST_FUN_OBJ_0(audio_mod_verno_obj, audio_mod_verno);
 
 extern const mp_obj_type_t audio_player_type;
 extern const mp_obj_type_t audio_recorder_type;
 
-STATIC const mp_rom_map_elem_t audio_module_globals_table[] = {
+static const mp_rom_map_elem_t audio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audio) },
     { MP_ROM_QSTR(MP_QSTR_mem_info), MP_ROM_PTR(&audio_mem_info_obj) },
     { MP_ROM_QSTR(MP_QSTR_verno), MP_ROM_PTR(&audio_mod_verno_obj) },
@@ -93,7 +93,7 @@ STATIC const mp_rom_map_elem_t audio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_AUDIO_CLOSE), MP_ROM_INT(ESP_ERR_AUDIO_CLOSE) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(audio_module_globals, audio_module_globals_table);
+static MP_DEFINE_CONST_DICT(audio_module_globals, audio_module_globals_table);
 
 const mp_obj_module_t audio_module = {
     .base = { &mp_type_module },

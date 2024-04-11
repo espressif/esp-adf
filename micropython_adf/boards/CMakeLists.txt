@@ -5,7 +5,7 @@ set(srcs
     ${ADF_COMPS}/audio_hal/audio_hal.c
     ${ADF_COMPS}/audio_hal/audio_volume.c
     ${ADF_COMPS}/audio_stream/http_stream.c
-    ${ADF_COMPS}/audio_stream/i2s_stream.c
+    ${ADF_COMPS}/audio_stream/i2s_stream_idf5.c
     ${ADF_COMPS}/audio_stream/raw_stream.c
     ${ADF_COMPS}/audio_stream/http_playlist.c
     ${ADF_COMPS}/audio_stream/lib/gzip/gzip_miniz.c

@@ -66,22 +66,21 @@ typedef struct _audio_recorder_obj_t {
 
 extern const mp_obj_type_t audio_recorder_type;
 
-STATIC mp_obj_t audio_recorder_stop(mp_obj_t self_in);
+static mp_obj_t audio_recorder_stop(mp_obj_t self_in);
 
-STATIC mp_obj_t audio_recorder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args)
+static mp_obj_t audio_recorder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args)
 {
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
-    audio_recorder_obj_t *self = m_new_obj_with_finaliser(audio_recorder_obj_t);
-    self->base.type = &audio_recorder_type;
+    audio_recorder_obj_t *self = mp_obj_malloc_with_finaliser(audio_recorder_obj_t, &audio_recorder_type);
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC audio_element_handle_t audio_recorder_create_filter(int encoder_type)
+static audio_element_handle_t audio_recorder_create_filter(int encoder_type)
 {
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg.src_rate = 48000;
     rsp_cfg.src_ch = 2;
-    rsp_cfg.task_core = 0;
+    rsp_cfg.task_core = 1;
 
     switch (encoder_type) {
         case PCM: {
@@ -107,7 +106,7 @@ STATIC audio_element_handle_t audio_recorder_create_filter(int encoder_type)
     return rsp_filter_init(&rsp_cfg);
 }
 
-STATIC audio_element_handle_t audio_recorder_create_encoder(int encoder_type)
+static audio_element_handle_t audio_recorder_create_encoder(int encoder_type)
 {
     audio_element_handle_t encoder = NULL;
 
@@ -131,7 +130,7 @@ STATIC audio_element_handle_t audio_recorder_create_encoder(int encoder_type)
     return encoder;
 }
 
-STATIC audio_element_handle_t audio_recorder_create_outstream(const char *uri)
+static audio_element_handle_t audio_recorder_create_outstream(const char *uri)
 {
     audio_element_handle_t out_stream = NULL;
     if (strstr(uri, "/sdcard/") != NULL) {
@@ -151,7 +150,7 @@ STATIC audio_element_handle_t audio_recorder_create_outstream(const char *uri)
     return out_stream;
 }
 
-STATIC void audio_recorder_create(audio_recorder_obj_t *self, const char *uri, int format)
+static void audio_recorder_create(audio_recorder_obj_t *self, const char *uri, int format)
 {
     // init audio board
     board_codec_init();
@@ -160,12 +159,9 @@ STATIC void audio_recorder_create(audio_recorder_obj_t *self, const char *uri, i
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     self->pipeline = audio_pipeline_init(&pipeline_cfg);
     // I2S
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
-    i2s_cfg.i2s_port = CODEC_ADC_I2S_PORT;
-    i2s_cfg.type = AUDIO_STREAM_READER;
-    i2s_cfg.uninstall_drv = false;
-    i2s_cfg.i2s_config.sample_rate = 48000;
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, 48000, I2S_DATA_BIT_WIDTH_16BIT, AUDIO_STREAM_READER);
     i2s_cfg.task_core = 1;
+    i2s_cfg.uninstall_drv = false;
     self->i2s_stream = i2s_stream_init(&i2s_cfg);
     // filter
     self->filter = audio_recorder_create_filter(format);
@@ -186,7 +182,7 @@ STATIC void audio_recorder_create(audio_recorder_obj_t *self, const char *uri, i
         audio_element_info_t out_stream_info;
         audio_element_getinfo(self->out_stream, &out_stream_info);
         out_stream_info.sample_rates = 16000;
-        out_stream_info.channels = 1;
+        out_stream_info.channels = 2;
         audio_element_setinfo(self->out_stream, &out_stream_info);
     }
     // link
@@ -214,7 +210,7 @@ static void audio_recorder_maxtime_cb(void *arg)
     }
 }
 
-STATIC mp_obj_t audio_recorder_start(size_t n_args, const mp_obj_t *args_in, mp_map_t *kw_args)
+static mp_obj_t audio_recorder_start(size_t n_args, const mp_obj_t *args_in, mp_map_t *kw_args)
 {
     enum {
         ARG_uri,
@@ -253,9 +249,9 @@ STATIC mp_obj_t audio_recorder_start(size_t n_args, const mp_obj_t *args_in, mp_
         return mp_obj_new_bool(false);
     }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(audio_recorder_start_obj, 1, audio_recorder_start);
+static MP_DEFINE_CONST_FUN_OBJ_KW(audio_recorder_start_obj, 1, audio_recorder_start);
 
-STATIC mp_obj_t audio_recorder_stop(mp_obj_t self_in)
+static mp_obj_t audio_recorder_stop(mp_obj_t self_in)
 {
     audio_recorder_obj_t *self = self_in;
 
@@ -280,16 +276,16 @@ STATIC mp_obj_t audio_recorder_stop(mp_obj_t self_in)
 
     return mp_obj_new_bool(true);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(audio_recorder_stop_obj, audio_recorder_stop);
+static MP_DEFINE_CONST_FUN_OBJ_1(audio_recorder_stop_obj, audio_recorder_stop);
 
-STATIC mp_obj_t audio_recorder_is_running(mp_obj_t self_in)
+static mp_obj_t audio_recorder_is_running(mp_obj_t self_in)
 {
     audio_recorder_obj_t *self = self_in;
     return mp_obj_new_bool(self->pipeline != NULL);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(audio_recorder_is_running_obj, audio_recorder_is_running);
+static MP_DEFINE_CONST_FUN_OBJ_1(audio_recorder_is_running_obj, audio_recorder_is_running);
 
-STATIC const mp_rom_map_elem_t recorder_locals_dict_table[] = {
+static const mp_rom_map_elem_t recorder_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_start), MP_ROM_PTR(&audio_recorder_start_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&audio_recorder_stop_obj) },
     { MP_ROM_QSTR(MP_QSTR_is_running), MP_ROM_PTR(&audio_recorder_is_running_obj) },
@@ -299,7 +295,7 @@ STATIC const mp_rom_map_elem_t recorder_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_MP3), MP_ROM_INT(MP3) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(recorder_locals_dict, recorder_locals_dict_table);
+static MP_DEFINE_CONST_DICT(recorder_locals_dict, recorder_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
     audio_recorder_type,

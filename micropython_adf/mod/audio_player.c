@@ -48,14 +48,14 @@ typedef struct _audio_player_obj_t {
     mp_obj_dict_t *state;
 } audio_player_obj_t;
 
-STATIC const qstr player_info_fields[] = {
+static const qstr player_info_fields[] = {
     MP_QSTR_input, MP_QSTR_codec
 };
 
-STATIC const MP_DEFINE_STR_OBJ(player_info_input_obj, "http|file stream");
-STATIC const MP_DEFINE_STR_OBJ(player_info_codec_obj, "mp3|amr");
+static const MP_DEFINE_STR_OBJ(player_info_input_obj, "http|file stream");
+static const MP_DEFINE_STR_OBJ(player_info_codec_obj, "mp3|amr");
 
-STATIC MP_DEFINE_ATTRTUPLE(
+static MP_DEFINE_ATTRTUPLE(
     player_info_obj,
     player_info_fields,
     2,
@@ -64,13 +64,13 @@ STATIC MP_DEFINE_ATTRTUPLE(
 
 extern const mp_obj_type_t audio_player_type;
 
-STATIC mp_obj_t player_info(void)
+static mp_obj_t player_info(void)
 {
     return (mp_obj_t)&player_info_obj;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(audio_player_info_obj, player_info);
+static MP_DEFINE_CONST_FUN_OBJ_0(audio_player_info_obj, player_info);
 
-STATIC void audio_state_cb(esp_audio_state_t *state, void *ctx)
+static void audio_state_cb(esp_audio_state_t *state, void *ctx)
 {
     audio_player_obj_t *self = (audio_player_obj_t *)ctx;
 
@@ -85,7 +85,7 @@ STATIC void audio_state_cb(esp_audio_state_t *state, void *ctx)
     }
 }
 
-STATIC int _http_stream_event_handle(http_stream_event_msg_t *msg)
+static int _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
     if (msg->event_id == HTTP_STREAM_RESOLVE_ALL_TRACKS) {
         return ESP_OK;
@@ -100,7 +100,7 @@ STATIC int _http_stream_event_handle(http_stream_event_msg_t *msg)
     return ESP_OK;
 }
 
-STATIC esp_audio_handle_t audio_player_create(void)
+static esp_audio_handle_t audio_player_create(void)
 {
     // init player
     esp_audio_cfg_t cfg = DEFAULT_ESP_AUDIO_CONFIG();
@@ -129,35 +129,33 @@ STATIC esp_audio_handle_t audio_player_create(void)
     // add decoder
     // mp3
     mp3_decoder_cfg_t mp3_dec_cfg = DEFAULT_MP3_DECODER_CONFIG();
-    mp3_dec_cfg.task_core = 0;
+    mp3_dec_cfg.task_core = 1;
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
     // amr
     amr_decoder_cfg_t amr_dec_cfg = DEFAULT_AMR_DECODER_CONFIG();
-    amr_dec_cfg.task_core = 0;
+    amr_dec_cfg.task_core = 1;
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, amr_decoder_init(&amr_dec_cfg));
     // wav
     wav_decoder_cfg_t wav_dec_cfg = DEFAULT_WAV_DECODER_CONFIG();
-    wav_dec_cfg.task_core = 0;
+    wav_dec_cfg.task_core = 1;
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, wav_decoder_init(&wav_dec_cfg));
 
     // Create writers and add to esp_audio
-    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
-    i2s_writer.type = AUDIO_STREAM_WRITER;
-    i2s_writer.i2s_config.sample_rate = 48000;
+    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, 48000, I2S_DATA_BIT_WIDTH_16BIT, AUDIO_STREAM_WRITER);
     i2s_writer.task_core = 1;
+    i2s_writer.uninstall_drv = false;
     esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
 
     return player;
 }
 
-STATIC mp_obj_t audio_player_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args)
+static mp_obj_t audio_player_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args)
 {
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
     static esp_audio_handle_t basic_player = NULL;
 
-    audio_player_obj_t *self = m_new_obj_with_finaliser(audio_player_obj_t);
-    self->base.type = &audio_player_type;
+    audio_player_obj_t *self = mp_obj_malloc_with_finaliser(audio_player_obj_t, &audio_player_type);
     self->callback = args[0];
     if (basic_player == NULL) {
         basic_player = audio_player_create();
@@ -168,7 +166,7 @@ STATIC mp_obj_t audio_player_make_new(const mp_obj_type_t *type, size_t n_args, 
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC mp_obj_t audio_player_play_helper(audio_player_obj_t *self, mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
+static mp_obj_t audio_player_play_helper(audio_player_obj_t *self, mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
 {
     enum {
         ARG_uri,
@@ -204,7 +202,7 @@ STATIC mp_obj_t audio_player_play_helper(audio_player_obj_t *self, mp_uint_t n_a
             mp_load_method(self->state, MP_QSTR_clear, dest);
             mp_call_method_n_kw(0, 0, dest);
 
-            mp_obj_dict_store(self->state, MP_ROM_QSTR(MP_QSTR_status),     MP_OBJ_TO_PTR(mp_obj_new_int(AUDIO_STATUS_RUNNING)));
+            mp_obj_dict_store(self->state, MP_ROM_QSTR(MP_QSTR_status),     MP_OBJ_TO_PTR(mp_obj_new_int(AUDIO_STATUS_UNKNOWN)));
             mp_obj_dict_store(self->state, MP_ROM_QSTR(MP_QSTR_err_msg),    MP_OBJ_TO_PTR(mp_obj_new_int(ESP_ERR_AUDIO_NO_ERROR)));
             mp_obj_dict_store(self->state, MP_ROM_QSTR(MP_QSTR_media_src),  MP_OBJ_TO_PTR(mp_obj_new_int(0)));
 
@@ -217,13 +215,13 @@ STATIC mp_obj_t audio_player_play_helper(audio_player_obj_t *self, mp_uint_t n_a
     }
 }
 
-STATIC mp_obj_t audio_player_play(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args)
+static mp_obj_t audio_player_play(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args)
 {
     return audio_player_play_helper(args[0], n_args - 1, args + 1, kw_args);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(audio_player_play_obj, 1, audio_player_play);
+static MP_DEFINE_CONST_FUN_OBJ_KW(audio_player_play_obj, 1, audio_player_play);
 
-STATIC mp_obj_t audio_player_stop_helper(audio_player_obj_t *self, mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
+static mp_obj_t audio_player_stop_helper(audio_player_obj_t *self, mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
 {
     enum {
         ARG_termination,
@@ -237,27 +235,27 @@ STATIC mp_obj_t audio_player_stop_helper(audio_player_obj_t *self, mp_uint_t n_a
     return mp_obj_new_int(esp_audio_stop(self->player, args[ARG_termination].u_int));
 }
 
-STATIC mp_obj_t audio_player_stop(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args)
+static mp_obj_t audio_player_stop(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args)
 {
     return audio_player_stop_helper(args[0], n_args - 1, args + 1, kw_args);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(audio_player_stop_obj, 1, audio_player_stop);
+static MP_DEFINE_CONST_FUN_OBJ_KW(audio_player_stop_obj, 1, audio_player_stop);
 
-STATIC mp_obj_t audio_player_pause(mp_obj_t self_in)
+static mp_obj_t audio_player_pause(mp_obj_t self_in)
 {
     audio_player_obj_t *self = self_in;
     return mp_obj_new_int(esp_audio_pause(self->player));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(audio_player_pause_obj, audio_player_pause);
+static MP_DEFINE_CONST_FUN_OBJ_1(audio_player_pause_obj, audio_player_pause);
 
-STATIC mp_obj_t audio_player_resume(mp_obj_t self_in)
+static mp_obj_t audio_player_resume(mp_obj_t self_in)
 {
     audio_player_obj_t *self = self_in;
     return mp_obj_new_int(esp_audio_resume(self->player));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(audio_player_resume_obj, audio_player_resume);
+static MP_DEFINE_CONST_FUN_OBJ_1(audio_player_resume_obj, audio_player_resume);
 
-STATIC mp_obj_t audio_player_vol_helper(audio_player_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
+static mp_obj_t audio_player_vol_helper(audio_player_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
 {
     enum {
         ARG_vol,
@@ -281,30 +279,30 @@ STATIC mp_obj_t audio_player_vol_helper(audio_player_obj_t *self, size_t n_args,
     }
 }
 
-STATIC mp_obj_t audio_player_vol(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args)
+static mp_obj_t audio_player_vol(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args)
 {
     return audio_player_vol_helper(args[0], n_args - 1, args + 1, kw_args);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(audio_player_vol_obj, 1, audio_player_vol);
+static MP_DEFINE_CONST_FUN_OBJ_KW(audio_player_vol_obj, 1, audio_player_vol);
 
-STATIC mp_obj_t audio_player_get_vol(mp_obj_t self_in)
+static mp_obj_t audio_player_get_vol(mp_obj_t self_in)
 {
     audio_player_obj_t *self = self_in;
     int vol = 0;
     esp_audio_vol_get(self->player, &vol);
     return mp_obj_new_int(vol);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(audio_player_get_vol_obj, audio_player_get_vol);
+static MP_DEFINE_CONST_FUN_OBJ_1(audio_player_get_vol_obj, audio_player_get_vol);
 
-STATIC mp_obj_t audio_player_set_vol(mp_obj_t self_in, mp_obj_t vol)
+static mp_obj_t audio_player_set_vol(mp_obj_t self_in, mp_obj_t vol)
 {
     audio_player_obj_t *self = self_in;
     int volume = mp_obj_get_int(vol);
     return mp_obj_new_int(esp_audio_vol_set(self->player, volume));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(audio_player_set_vol_obj, audio_player_set_vol);
+static MP_DEFINE_CONST_FUN_OBJ_2(audio_player_set_vol_obj, audio_player_set_vol);
 
-STATIC mp_obj_t audio_player_state(mp_obj_t self_in)
+static mp_obj_t audio_player_state(mp_obj_t self_in)
 {
     audio_player_obj_t *self = self_in;
     esp_audio_state_t state = { 0 };
@@ -317,9 +315,9 @@ STATIC mp_obj_t audio_player_state(mp_obj_t self_in)
 
     return self->state;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(audio_player_state_obj, audio_player_state);
+static MP_DEFINE_CONST_FUN_OBJ_1(audio_player_state_obj, audio_player_state);
 
-STATIC mp_obj_t audio_player_pos(mp_obj_t self_in)
+static mp_obj_t audio_player_pos(mp_obj_t self_in)
 {
     audio_player_obj_t *self = self_in;
     int pos = -1;
@@ -330,9 +328,9 @@ STATIC mp_obj_t audio_player_pos(mp_obj_t self_in)
         return mp_const_none;
     }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(audio_player_pos_obj, audio_player_pos);
+static MP_DEFINE_CONST_FUN_OBJ_1(audio_player_pos_obj, audio_player_pos);
 
-STATIC mp_obj_t audio_player_time(mp_obj_t self_in)
+static mp_obj_t audio_player_time(mp_obj_t self_in)
 {
     audio_player_obj_t *self = self_in;
     int time = 0;
@@ -343,9 +341,9 @@ STATIC mp_obj_t audio_player_time(mp_obj_t self_in)
         return mp_const_none;
     }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(audio_player_time_obj, audio_player_time);
+static MP_DEFINE_CONST_FUN_OBJ_1(audio_player_time_obj, audio_player_time);
 
-STATIC const mp_rom_map_elem_t player_locals_dict_table[] = {
+static const mp_rom_map_elem_t player_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_info), MP_ROM_PTR(&audio_player_info_obj) },
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audio_player_play_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&audio_player_stop_obj) },
@@ -371,7 +369,7 @@ STATIC const mp_rom_map_elem_t player_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_TERMINATION_DONE), MP_ROM_INT(TERMINATION_TYPE_DONE) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(player_locals_dict, player_locals_dict_table);
+static MP_DEFINE_CONST_DICT(player_locals_dict, player_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
     audio_player_type,
