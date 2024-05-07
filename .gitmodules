@@ -1,6 +1,3 @@
-[submodule "esp-idf"]
-	path = esp-idf
-	url = https://github.com/espressif/esp-idf
 [submodule "components/esp-adf-libs"]
 	path = components/esp-adf-libs
 	url = https://github.com/espressif/esp-adf-libs
