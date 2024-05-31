@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2024 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -37,12 +37,14 @@
 #include "periph_wifi.h"
 #include "periph_button.h"
 #include "board.h"
+#include "board_pins_config.h"
 
 #include "sdkconfig.h"
 #include "audio_mem.h"
 #include "dueros_app.h"
 #include "esp_audio.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
 
 #include "duer_audio_wrapper.h"
 #include "dueros_service.h"
@@ -59,6 +61,20 @@
 #include "smart_config.h"
 #include "periph_adc_button.h"
 #include "algorithm_stream.h"
+#include "duer_wifi_cfg.h"
+#include "duer_profile.h"
+#include "lightduer_dipb_data_handler.h"
+#include "esp_delegate.h"
+#include "esp_dispatcher.h"
+
+#ifdef CONFIG_DUER_WIFI_CONFIG
+#include "esp_bt.h"
+#include "esp_gap_ble_api.h"
+#include "esp_gatts_api.h"
+#include "esp_bt_defs.h"
+#include "esp_bt_main.h"
+#include "esp_gatt_common_api.h"
+#endif // CONFIG_DUER_WIFI_CONFIG
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
 #include "driver/touch_pad.h"
@@ -74,6 +90,11 @@ static display_service_handle_t disp_serv           = NULL;
 static periph_service_handle_t  wifi_serv           = NULL;
 static bool                     wifi_setting_flag   = false;
 static EventGroupHandle_t       duer_evt            = NULL;
+
+#ifdef CONFIG_DUER_WIFI_CONFIG
+static esp_err_t wifi_cfg_start();
+static void wifi_cfg_stop();
+#endif /* CONFIG_DUER_WIFI_CONFIG */
 
 extern int duer_dcs_audio_sync_play_tone(const char *uri);
 
@@ -145,23 +166,147 @@ static esp_err_t wifi_service_cb(periph_service_handle_t handle, periph_service_
         ESP_LOGI(TAG, "PERIPH_WIFI_CONNECTED [%d]", __LINE__);
         audio_service_connect(duer_serv_handle);
         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_CONNECTED, 0);
+#ifndef CONFIG_DUER_WIFI_CONFIG
         wifi_setting_flag = false;
+#endif
     } else if (evt->type == WIFI_SERV_EVENT_DISCONNECTED) {
         ESP_LOGI(TAG, "PERIPH_WIFI_DISCONNECTED [%d]", __LINE__);
         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_DISCONNECTED, 0);
-
     } else if (evt->type == WIFI_SERV_EVENT_SETTING_TIMEOUT) {
+#ifndef CONFIG_DUER_WIFI_CONFIG
         wifi_setting_flag = false;
+#endif
     }
-
+    dueros_wifi_st_t st = {
+        .status = evt->type == WIFI_SERV_EVENT_CONNECTED ? DUER_DIPB_ST_CONNECT_ROUTER_SUC : DUER_DIPB_ST_CONNECT_ROUTER_FAILED,
+        .err = wifi_service_disconnect_reason_get(handle) == WIFI_SERV_STA_AUTH_ERROR ? DUER_WIFI_ERR_PASSWORD_ERR : DUER_WIFI_ERR_UNKOWN,
+    };
+    dueros_wifi_status_report(duer_serv_handle, &st);
     return ESP_OK;
 }
+
 static void retry_login_timer_cb(xTimerHandle tmr)
 {
     ESP_LOGE(TAG, "Func:%s", __func__);
     audio_service_connect(duer_serv_handle);
     xTimerStop(tmr, 0);
 }
+
+#ifdef CONFIG_DUER_WIFI_CONFIG
+static void start_ble()
+{
+    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    esp_err_t ret = esp_bt_controller_init(&bt_cfg);
+    if (ret) {
+        ESP_LOGE(TAG, "%s initialize controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    if (ret) {
+        ESP_LOGE(TAG, "%s enable controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+    ret = esp_bluedroid_init();
+    if (ret) {
+        ESP_LOGE(TAG, "%s init bluetooth failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+    ret = esp_bluedroid_enable();
+    if (ret) {
+        ESP_LOGE(TAG, "%s enable bluetooth failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+}
+
+static void stop_ble()
+{
+    esp_err_t ret = esp_bluedroid_disable();
+    if (ret) {
+        ESP_LOGE(TAG, "%s disable bluetooth failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+    ret = esp_bluedroid_deinit();
+    if (ret) {
+        ESP_LOGE(TAG, "%s deinit bluetooth failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+    ret = esp_bt_controller_disable();
+    if (ret) {
+        ESP_LOGE(TAG, "%s disable controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+    ret = esp_bt_controller_deinit();
+    if (ret) {
+        ESP_LOGE(TAG, "%s deinitialize controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+}
+
+static void duer_wifi_cfg_user_cb(duer_wifi_cfg_event_t event, void *data)
+{
+    switch (event) {
+        case DUER_WIFI_CFG_SSID_GET: {
+            duer_wifi_ssid_get_t *wifi_info = data;
+            ESP_LOGI(TAG, "wifi info get %s, %s, %s, %s",
+                    wifi_info->ssid, wifi_info->pwd, wifi_info->bduss, wifi_info->device_bduss);
+
+            duer_profile_update(wifi_info->bduss, CONFIG_DUER_CLIENT_ID);
+
+            wifi_config_t sta_cfg = { 0 };
+            memcpy((char *)&sta_cfg.sta.ssid, wifi_info->ssid, sizeof(sta_cfg.sta.ssid));
+            memcpy((char *)&sta_cfg.sta.password, wifi_info->pwd, sizeof(sta_cfg.sta.password));
+            wifi_service_set_sta_info(wifi_serv, &sta_cfg);
+            wifi_service_connect(wifi_serv);
+            break;
+        }
+        case DUER_WIFI_CFG_BLE_DISC:
+            ESP_LOGI(TAG, "DUER_WIFI_CFG_BLE_DISC");
+            if (wifi_setting_flag) {
+                wifi_cfg_stop();
+                wifi_setting_flag = false;
+            }
+            break;
+        case DUER_WIFI_CFG_BLE_CONN:
+            ESP_LOGI(TAG, "DUER_WIFI_CFG_BLE_CONN");
+            break;
+        default:
+            break;
+    }
+}
+
+static bool wifi_has_cfg_saved()
+{
+    wifi_config_t wifi_cfg = {0};
+    if (wifi_service_get_last_ssid_cfg(wifi_serv, &wifi_cfg) == ESP_OK) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static esp_err_t wifi_cfg_start()
+{
+    start_ble();
+
+    duer_wifi_cfg_t duer_wifi = {
+        .user_cb = duer_wifi_cfg_user_cb,
+        .client_id = CONFIG_DUER_CLIENT_ID,
+        .device_id = CONFIG_DUER_DEVICE_ID,
+        .pub_key = CONFIG_DUER_ECC_PUB_KEY,
+    };
+    return dueros_start_wifi_cfg(duer_serv_handle, &duer_wifi);
+}
+
+static void wifi_cfg_stop()
+{
+    dueros_stop_wifi_cfg(duer_serv_handle);
+    stop_ble();
+}
+
+#endif //CONFIG_DUER_WIFI_CONFIG
 
 static esp_err_t duer_callback(audio_service_handle_t handle, service_event_t *evt, void *ctx)
 {
@@ -252,13 +397,21 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
 
                 } else if ((int)event->data == TOUCH_PAD_NUM9 && event->cmd == PERIPH_BUTTON_PRESSED) {
                     if (wifi_setting_flag == false) {
+#ifdef CONFIG_DUER_WIFI_CONFIG
+                        wifi_cfg_start();
+#else
                         wifi_service_setting_start(wifi_serv, 0);
+#endif // CONFIG_DUER_WIFI_CONFIG
                         wifi_setting_flag = true;
                         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_SETTING, 0);
                         ESP_LOGI(TAG, "AUDIO_USER_KEY_WIFI_SET, WiFi setting started.");
                     } else {
                         ESP_LOGW(TAG, "AUDIO_USER_KEY_WIFI_SET, WiFi setting will be stopped.");
+#ifdef CONFIG_DUER_WIFI_CONFIG
+                        wifi_cfg_stop();
+#else
                         wifi_service_setting_stop(wifi_serv, 0);
+#endif // CONFIG_DUER_WIFI_CONFIG
                         wifi_setting_flag = false;
                         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_OFF, 0);
                     }
@@ -288,9 +441,30 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
                 ESP_LOGI(TAG, "AUDIO_USER_KEY_VOL_DOWN [%d]", player_volume);
             } else if (((int)event->data == get_input_play_id()) && (event->cmd == PERIPH_ADC_BUTTON_RELEASE)) {
 
-            } else if (((int)event->data == get_input_set_id()) && (event->cmd == PERIPH_ADC_BUTTON_RELEASE)) {
+            } else if (((int)event->data == get_input_mode_id()) && (event->cmd == PERIPH_ADC_BUTTON_RELEASE)) {
                 esp_audio_vol_set(player, 0);
                 ESP_LOGI(TAG, "AUDIO_USER_KEY_VOL_MUTE [0]");
+            } else if (((int)event->data == get_input_set_id()) && (event->cmd == PERIPH_ADC_BUTTON_RELEASE)) {
+                if (wifi_setting_flag == false) {
+#ifdef CONFIG_DUER_WIFI_CONFIG
+                    wifi_cfg_start();
+#else
+                    wifi_service_setting_start(wifi_serv, 0);
+#endif // CONFIG_DUER_WIFI_CONFIG
+                    wifi_setting_flag = true;
+                    display_service_set_pattern(disp_serv, DISPLAY_PATTERN_WIFI_SETTING, 0);
+                    ESP_LOGI(TAG, "AUDIO_USER_KEY_WIFI_SET, WiFi setting started.");
+                } else {
+                    ESP_LOGW(TAG, "AUDIO_USER_KEY_WIFI_SET, WiFi setting will be stopped.");
+#ifdef CONFIG_DUER_WIFI_CONFIG
+                    wifi_cfg_stop();
+#else
+                    wifi_service_setting_stop(wifi_serv, 0);
+#endif // CONFIG_DUER_WIFI_CONFIG
+                    wifi_setting_flag = false;
+                    display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_OFF, 0);
+                }
+                ESP_LOGI(TAG, "AUDIO_USER_KEY_WIFI_SET [0]");
             }
             break;
         default:
@@ -313,17 +487,13 @@ void sys_monitor_task(void *para)
 
 void start_sys_monitor(void)
 {
-    xTaskCreatePinnedToCore(sys_monitor_task, "sys_monitor_task", (2 * 1024), NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(sys_monitor_task, "sys_monitor_task", (4 * 1024), NULL, 1, NULL, 1);
 }
 
-
-void duer_app_init(void)
+esp_err_t duer_init_hal(void *instance, action_arg_t *arg, action_result_t *result)
 {
-    esp_log_level_set("*", ESP_LOG_INFO);
-
-    ESP_LOGI(TAG, "ADF version is %s", ADF_VER);
-
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
+    periph_cfg.extern_stack = true;
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     if (set != NULL) {
         esp_periph_set_register_callback(set, periph_callback, NULL);
@@ -334,24 +504,41 @@ void duer_app_init(void)
 #ifdef FUNC_SYS_LEN_EN
     disp_serv = audio_board_led_init();
 #endif
+    result->err = ESP_OK;
+    return result->err;
+}
+
+void duer_app_init(void)
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+
+    ESP_LOGI(TAG, "ADF version is %s", ADF_VER);
+
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK( ret );
+    esp_dispatcher_handle_t dispatcher = esp_dispatcher_get_delegate_handle();
+    action_result_t result = { 0 };
+    esp_dispatcher_execute_with_func(dispatcher, duer_init_hal, NULL, NULL, &result);
 
     xTimerHandle retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
                                      pdFALSE, NULL, retry_login_timer_cb);
     duer_serv_handle = dueros_service_create();
     audio_service_set_callback(duer_serv_handle, duer_callback, retry_login_timer);
 
-    wifi_config_t sta_cfg = {0};
-    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, sizeof(sta_cfg.sta.ssid));
-    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, sizeof(sta_cfg.sta.password));
     wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
     cfg.evt_cb = wifi_service_cb;
     cfg.cb_ctx = NULL;
     cfg.setting_timeout_s = 60;
     wifi_serv = wifi_service_create(&cfg);
     vTaskDelay(1000);
+#if defined(CONFIG_AIRKISS_ENCRYPT) || defined(CONFIG_ESP_SMARTCONFIG)
     int reg_idx = 0;
     esp_wifi_setting_handle_t h = NULL;
-#ifdef CONFIG_AIRKISS_ENCRYPT
+#if defined(CONFIG_AIRKISS_ENCRYPT)
     airkiss_config_info_t air_info = AIRKISS_CONFIG_INFO_DEFAULT();
     air_info.lan_pack.appid = CONFIG_AIRKISS_APPID;
     air_info.lan_pack.deviceid = CONFIG_AIRKISS_DEVICEID;
@@ -363,8 +550,25 @@ void duer_app_init(void)
 #endif
     esp_wifi_setting_register_notify_handle(h, (void *)wifi_serv);
     wifi_service_register_setting_handle(wifi_serv, h, &reg_idx);
+#elif (defined CONFIG_DUER_WIFI_CONFIG)
+    int32_t profile_state   = duer_profile_certified();
+    bool    wifi_configured = wifi_has_cfg_saved();
+    ESP_LOGI(TAG, "profile state %d, wifi_configured %d", (int)profile_state, (int)wifi_configured);
+    if (profile_state == 1 || profile_state == 2) {
+        ESP_LOGW(TAG, "\nPlease fill ${ADF_PATH}/components/dueros_service/duer_profile and enable CONFIG_DUEROS_GEN_PROFILE & CONFIG_DUEROS_FLASH_PROFILE in sdkconfig\n");
+    }
+    if (!wifi_configured || profile_state == 3) {
+        wifi_setting_flag = wifi_cfg_start() == ESP_OK ? true : false;
+    } else if (wifi_configured && profile_state == 0) {
+        wifi_service_connect(wifi_serv);
+    }
+#elif (defined CONFIG_WIFI_STATIC_CONFIG)
+    wifi_config_t sta_cfg = {0};
+    strncpy((char *)&sta_cfg.sta.ssid, CONFIG_WIFI_SSID, sizeof(sta_cfg.sta.ssid));
+    strncpy((char *)&sta_cfg.sta.password, CONFIG_WIFI_PASSWORD, sizeof(sta_cfg.sta.password));
     wifi_service_set_sta_info(wifi_serv, &sta_cfg);
     wifi_service_connect(wifi_serv);
+#endif
 
     duer_audio_wrapper_init();
     duer_evt = xEventGroupCreate();

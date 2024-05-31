@@ -26,10 +26,19 @@
 #define _DUEROS_SERVICE_H_
 
 #include "audio_service.h"
+#include "duer_wifi_cfg.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @brief Status of WiFi connection
+ */
+typedef struct {
+    int status;     /*!< Please refer to: `enum duer_dipb_client_status_e` */
+    int err;        /*!< Please refer to: `enum duer_wifi_connect_error_code_e` */
+} dueros_wifi_st_t;
 
 /**
  * @brief Create the dueros service
@@ -71,6 +80,41 @@ esp_err_t dueros_voice_upload(audio_service_handle_t handle, void *buf, int len)
  *         ESP_FAIL
  */
 esp_err_t dueros_voice_cancel(audio_service_handle_t handle);
+
+/**
+ * @brief Start the wifi configure process
+ *
+ * @param handle  Dueros service handle
+ * @param cfg     Configuration
+ *
+ * @return
+ *         ESP_OK
+ *         ESP_FAIL
+ */
+esp_err_t dueros_start_wifi_cfg(audio_service_handle_t handle, duer_wifi_cfg_t *cfg);
+
+/**
+ * @brief Stop the wifi configure process
+ *
+ * @param handle  Dueros service handle
+ *
+ * @return
+ *         ESP_OK
+ *         ESP_FAIL
+ */
+esp_err_t dueros_stop_wifi_cfg(audio_service_handle_t handle);
+
+/**
+ * @brief Report the wifi status to dipb
+ *
+ * @param handle  Dueros service handle
+ * @param st      WiFi status and error code
+ *
+ * @return
+ *         ESP_OK
+ *         ESP_FAIL
+ */
+esp_err_t dueros_wifi_status_report(audio_service_handle_t handle, dueros_wifi_st_t *st);
 
 #ifdef __cplusplus
 }

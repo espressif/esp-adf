@@ -99,7 +99,7 @@ typedef struct {
     .multi_out_num = 0,                                                         \
     .uninstall_drv = true,                                                      \
     .need_expand = false,                                                       \
-    .expand_src_bits = bits,                                                    \
+    .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,                               \
     .buffer_len = I2S_STREAM_BUF_SIZE,                                          \
 }
 

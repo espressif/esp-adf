@@ -75,6 +75,18 @@ DUER_INT duer_status_t duer_trans_connect(duer_trans_handler hdlr,
                                           const duer_addr_t* addr);
 
 /*
+ * Connect to the host.
+ *
+ * @Param hdlr, in, the context for the transport
+ * @Param addr, in, the target address infomations
+ * @Param timeout, in, timeout in milliseconds
+ * @Return duer_status_t, the operation result
+ */
+DUER_INT duer_status_t duer_trans_connect_timeout(duer_trans_handler hdlr,
+                                                  const duer_addr_t* addr,
+                                                  duer_u32_t timeout);
+
+/*
  * Send data.
  *
  * @Param hdlr, in, the context for the transport

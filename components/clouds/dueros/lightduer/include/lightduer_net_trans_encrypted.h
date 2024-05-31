@@ -34,7 +34,19 @@ extern "C" {
  * @Return duer_status_t, the operation result
  */
 DUER_INT duer_status_t duer_trans_encrypted_connect(duer_trans_ptr trans,
-                                                    const duer_addr_t* addr);
+                                                    const duer_addr_t *addr);
+
+/*
+ * Connect to the host.
+ *
+ * @Param trans, in, the context for the transport
+ * @Param addr, in, the target address infomations
+ * @Param timeout, in, timeout in milliseconds
+ * @Return duer_status_t, the operation result
+ */
+DUER_INT duer_status_t duer_trans_encrypted_connect_timeout(duer_trans_ptr trans,
+                                                            const duer_addr_t *addr,
+                                                            duer_u32_t timeout);
 
 /*
  * Send data.

@@ -6,9 +6,9 @@
 
 ## 例程简介
 
-本例程主要功能是连接百度 DuerOS 3.0 云端并进行语音交互，可以适用于智能音箱产品、智能玩具、语音控制设备等。此示例是一个综合性较强的例程，使用了 ADF 提供的高封装简易实用接口。建议用户构建项目时，优先使用 ADF 提供的高封装接口，可快速简便地构建项目。
+本例程主要功能是连接百度 DuerOS 3.2 云端并进行语音交互，可以适用于智能音箱产品、智能玩具、语音控制设备等。此示例是一个综合性较强的例程，使用了 ADF 提供的高封装简易实用接口。建议用户构建项目时，优先使用 ADF 提供的高封装接口，可快速简便地构建项目。
 
-其中，[esp audio](../../components/esp-adf-libs/esp_audio/include/esp_audio.h) 处理音频播放，[wifi service](../../components/wifi_service) 接口管理配网和连接 Wi-Fi，[recorder engine](../../components/esp-adf-libs/recorder_engine/include/recorder_engine.h) 负责唤醒和语音数据管理，[display service](../../components/display_service/display_service.c) 管理系统指示灯，[Dueros service](../../components/dueros_service) 连接 DuerOS，[esp_periph_set_register_callback](../../components/esp_peripherals/include/esp_peripherals.h) 管理按键事件，也可以使用 [Key service](../../components/input_key_service/input_key_service.c) 按键服务来管理按键。
+其中，[esp audio](../../components/esp-adf-libs/esp_audio/include/esp_audio.h) 处理音频播放，[wifi service](../../components/wifi_service) 接口管理配网和连接 Wi-Fi，[audio recorder](../../components/audio_recorder/include/audio_recorder.h) 负责唤醒和语音数据管理，[display service](../../components/display_service/display_service.c) 管理系统指示灯，[Dueros service](../../components/dueros_service) 连接 DuerOS，[esp_periph_set_register_callback](../../components/esp_peripherals/include/esp_peripherals.h) 管理按键事件，也可以使用 [Key service](../../components/input_key_service/input_key_service.c) 按键服务来管理按键。
 
 此外，本例程需要预先在 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 申请 DuerOS 的 profile，并替换 `ADF_PATH/components/dueros_service/duer_profile` 中的空文件。
 
@@ -23,8 +23,26 @@
 
 ### IDF 默认分支
 
-本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v4.4 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
+### `profile.bin` 的生成与烧录
+
+由于使用 `小度app` 配网过程会产生需要存入 `profile` 的信息，所以本例程采用 `nvs` 来保存 `profile`。`dueros_service` 提供了配置项用于 `nvs` 分区的生成与烧录。
+
+- `nvs` 分区自动生成，生成的 `profile.bin` 位于 `build` 目录之下：
+
+```
+menuconfig > Component config > DuerOS Service > Generate the nvs partition which include the profile of dueros
+```
+
+- `nvs` 分区自动烧录：
+
+```
+menuconfig > Component config > DuerOS Service > Generate the nvs partition which include the profile of dueros
+menuconfig > Component config > DuerOS Service > Flash the generated nvs partition
+```
+
+烧录成功后可取消此配置项。
 
 ### 配置
 
@@ -42,10 +60,10 @@ menuconfig > Audio HAL > ESP32-Lyrat-Mini V1.1
 menuconfig > Component config > FAT Filesystem support > Long filename support
 ```
 
-本例需要连接 Wi-Fi 网络，通过运行 `menuconfig` 来配置 Wi-Fi 信息。
+本例需要连接 Wi-Fi 网络，默认使用 `小度app` 配置，也可以通过运行 `menuconfig` 来配置 `Wi-Fi` 信息。注意，使用 `menuconfig` 配置 Wi-Fi 信息，无法在小度app上显示设备。
 
 ```
-menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
+menuconfig > Example Configuration > WiFi Setting type > WiFi static configuration
 ```
 
 关于如何添加 DuerOS 数据点，请参考 [issue #145](https://github.com/espressif/esp-adf/issues/145#issuecomment-483531246)。
@@ -54,6 +72,7 @@ menuconfig > Example Configuration > `WiFi SSID` and `WiFi Password`
 
 
 ### 编译和下载
+
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
 ```

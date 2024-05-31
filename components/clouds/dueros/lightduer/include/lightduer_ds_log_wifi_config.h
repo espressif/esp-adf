@@ -41,12 +41,15 @@ typedef enum _duer_ds_log_wifi_cfg_code {
 } duer_ds_log_wifi_cfg_code_t;
 
 typedef enum _duer_wifi_cfg_err_code {
-    DUER_WIFI_CFG_SUCCESS           = 0,
-    DUER_WIFI_CFG_STOP              = 1,
-    DUER_WIFI_CFG_ERR_NORMAL        = 2,
-    DUER_WIFI_CFG_ERR_NO_MEMORY     = 3,
-    DUER_WIFI_CFG_ERR_SSID_INVALID  = 4,
-    DUER_WIFI_CFG_ERR_HANDSHARK     = 5,
+    DUER_WIFI_CFG_SUCCESS               = 0,
+    DUER_WIFI_CFG_STOP                  = 1,
+    DUER_WIFI_CFG_ERR_NORMAL            = 2,
+    DUER_WIFI_CFG_ERR_NO_MEMORY         = 3,
+    DUER_WIFI_CFG_ERR_SSID_INVALID      = 4,
+    DUER_WIFI_CFG_ERR_HANDSHARK         = 5,
+    DUER_WIFI_CFG_ERR_DHCP_FAILED       = 6,
+    DUER_WIFI_CFG_ERR_NOT_CONN_AP       = 7,
+    DUER_WIFI_CFG_ERR_NOT_CONN_CLOUD    = 8,
 } duer_wifi_cfg_err_code_t;
 
 typedef enum _duer_wifi_cfg_method {

@@ -48,8 +48,10 @@ typedef enum _duer_transport_event_enum {
 typedef struct _duer_address_s {
     duer_u8_t    type;       // the socket type
     duer_u16_t   port;       // the host port
-    void*       host;       // the host address
+    void*        host;       // the host address
     duer_size_t  host_size;  // the host address length
+    duer_u32_t   ip;         // resolved ip for this host
+                             // set to 0 if the ip is unresolved yet.
 } duer_addr_t;
 
 typedef void (*duer_transevt_func)(duer_transevt_e event);

@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2024 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -30,6 +30,7 @@
 
 #include "duer_audio_wrapper.h"
 #include "lightduer_voice.h"
+#include "lightduer_dlp.h"
 
 #include "esp_audio.h"
 #include "esp_log.h"
@@ -41,6 +42,7 @@
 #include "audio_recorder.h"
 #include "audio_pipeline.h"
 #include "recorder_sr.h"
+#include "audio_thread.h"
 
 #include "fatfs_stream.h"
 #include "raw_stream.h"
@@ -139,7 +141,11 @@ void *duer_audio_setup_player(void)
     cfg.evt_que = xQueueCreate(3, sizeof(esp_audio_state_t));
     player = esp_audio_create(&cfg);
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
-    xTaskCreate(esp_audio_state_task, "player_task", 3 * 1024, cfg.evt_que, 1, NULL);
+    bool ext_stack = false;
+    if (audio_mem_spiram_stack_is_enabled()) {
+        ext_stack = true;
+    }
+    audio_thread_create(NULL, "player_task", esp_audio_state_task, cfg.evt_que, 3 * 1024, 1, ext_stack, 1);
 
     // Create readers and add to esp_audio
     fatfs_stream_cfg_t fs_reader = FATFS_STREAM_CFG_DEFAULT();
@@ -154,11 +160,10 @@ void *duer_audio_setup_player(void)
     esp_audio_input_stream_add(player, http_stream_reader);
 
     // Create writers and add to esp_audio
-    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT();
+    i2s_stream_cfg_t i2s_writer = I2S_STREAM_CFG_DEFAULT_WITH_PARA(0, 48000, CODEC_ADC_BITS_PER_SAMPLE, AUDIO_STREAM_WRITER);
     i2s_writer.need_expand = (CODEC_ADC_BITS_PER_SAMPLE != 16);
     i2s_writer.type = AUDIO_STREAM_WRITER;
     audio_element_handle_t i2s_writer_h = i2s_stream_init(&i2s_writer);
-    i2s_stream_set_clk(i2s_writer_h, 48000, CODEC_ADC_BITS_PER_SAMPLE, 16);
 
     // Add decoders and encoders to esp_audio
     wav_decoder_cfg_t wav_dec_cfg = DEFAULT_WAV_DECODER_CONFIG();
@@ -178,7 +183,7 @@ void *duer_audio_setup_player(void)
     audio_element_set_tag(ts_dec_cfg, "ts");
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, ts_dec_cfg);
 
-    esp_audio_output_stream_add(player, i2s_stream_init(&i2s_writer));
+    esp_audio_output_stream_add(player, i2s_writer_h);
 
     // Set default volume
     esp_audio_vol_set(player, 60);
@@ -207,9 +212,9 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
         return NULL;
     }
 
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, CODEC_ADC_SAMPLE_RATE, 16, AUDIO_STREAM_READER);
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, 48000, CODEC_ADC_BITS_PER_SAMPLE, AUDIO_STREAM_READER);
+    i2s_cfg.task_core = 1;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
-    i2s_stream_set_clk(i2s_stream_reader, CODEC_ADC_SAMPLE_RATE, 16, 2);
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_READER;
@@ -220,10 +225,10 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
     const char *link_tag[3] = {"i2s", "raw"};
     uint8_t linked_num = 2;
 
-#if (CODEC_ADC_SAMPLE_RATE != (16000))
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    rsp_cfg.src_rate = CODEC_ADC_SAMPLE_RATE;
+    rsp_cfg.src_rate = 48000;
     rsp_cfg.dest_rate = 16000;
+    rsp_cfg.task_core = 1;
 #ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
     rsp_cfg.mode = RESAMPLE_UNCROSS_MODE;
     rsp_cfg.src_ch = 4;
@@ -235,13 +240,14 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
     link_tag[1] = "filter";
     link_tag[2] = "raw";
     linked_num = 3;
-#endif
+
     audio_pipeline_link(pipeline, &link_tag[0], linked_num);
     audio_pipeline_run(pipeline);
     ESP_LOGI(TAG, "Recorder has been created");
 
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
     recorder_sr_cfg.afe_cfg.aec_init = false;
+    recorder_sr_cfg.multinet_init = false;
     recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
 
@@ -458,4 +464,12 @@ void duer_dcs_audio_active_next()
         ESP_LOGE(TAG, "Send DCS_NEXT_CMD to DCS failed");
     }
     ESP_LOGD(TAG, "duer_dcs_audio_active_next");
+}
+
+uint32_t duer_dlp_get_audio_duration(void)
+{
+    int time = 0;
+    esp_audio_time_get(player, &time);
+    ESP_LOGI(TAG, "dlp get time %d", time);
+    return time;
 }

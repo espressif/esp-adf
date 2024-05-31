@@ -68,6 +68,9 @@ typedef struct _duer_trans_s {
 typedef duer_socket_t (*duer_soc_create_f)(duer_transevt_func func);
 typedef duer_status_t (*duer_soc_connect_f)(duer_socket_t sock,
                                             const duer_addr_t* addr);
+typedef duer_status_t (*duer_soc_connect_timeout_f)(duer_socket_t sock,
+                                                    const duer_addr_t* addr,
+                                                    duer_u32_t timeout);
 typedef duer_status_t (*duer_soc_send_f)(duer_socket_t sock,
                                          const void* data,
                                          duer_size_t size,
@@ -97,6 +100,7 @@ typedef duer_status_t (*duer_soc_destroy_f)(duer_socket_t sock);
  */
 DUER_EXT void baidu_ca_transport_init(duer_soc_create_f f_create,
                                       duer_soc_connect_f f_conn,
+                                      duer_soc_connect_timeout_f f_conn_timeout,
                                       duer_soc_send_f f_send,
                                       duer_soc_recv_f f_recv,
                                       duer_soc_recv_timeout_f f_recv_timeout,
@@ -121,6 +125,17 @@ DUER_INT duer_status_t duer_trans_wrapper_create(duer_trans_ptr trans);
 DUER_INT duer_status_t duer_trans_wrapper_connect(duer_trans_ptr trans,
                                                   const duer_addr_t* addr);
 
+/*
+ * Connect to the host.
+ *
+ * @Param hdlr, in, the context for the transport
+ * @Param addr, in, the target address infomations
+ * @Param timeout, in, timeout in milliseconds
+ * @Return duer_status_t, the operation result
+ */
+DUER_INT duer_status_t duer_trans_wrapper_connect_timeout(duer_trans_ptr trans,
+                                                          const duer_addr_t* addr,
+                                                          duer_u32_t timeout);
 /*
  * Send data.
  *

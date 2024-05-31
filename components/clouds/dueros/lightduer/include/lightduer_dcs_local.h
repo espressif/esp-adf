@@ -45,6 +45,16 @@ typedef enum {
     DCS_ALERT_FINISHED,
 } duer_dcs_channel_switch_event_t;
 
+typedef enum {
+    DCS_DIALOG_NONE,
+    DCS_DIALOG_LISTEN_STARTED,
+    DCS_DIALOG_PLAY_COMMAND_ISSUE,
+    DCS_DIALOG_USER_INTERACT,
+    DCS_DIALOG_MESH_EVENT,
+    DCS_DIALOG_TEXT_INPUT,
+    DCS_DIALOG_DLP,
+} duer_dcs_dialog_request_t;
+
 #ifdef DCS_CRITICAL_LOCK_DEBUG
 #define DUER_DCS_CRITICAL_ENTER() \
     do {\
@@ -69,6 +79,7 @@ extern const char *DCS_DUER_DIRECTIVE_PATH;
 extern const char *DCS_DUER_PRIVATE_PATH;
 extern const char *DCS_IOTCLOUD_DIRECTIVE_PATH;
 extern const char *DCS_IOTCLOUD_EVENT_PATH;
+extern const char *DCS_DUER_DLP_PATH;
 
 // namespace
 extern const char *DCS_AUDIO_PLAYER_NAMESPACE;
@@ -79,6 +90,7 @@ extern const char *DCS_SCREEN_EXTENDED_CARD_NAMESPACE;
 extern const char *DCS_IOT_CLOUD_SYSTEM_NAMESPACE;
 extern const char *DCS_PLAYBACK_CONTROL_NAMESPACE;
 extern const char *DCS_RECOMMEND_NAMESPACE;
+extern const char *DCS_PUSH_SERVICE_NAMESPACE;
 
 // message keys
 extern const char *DCS_DIRECTIVE_KEY;
@@ -152,6 +164,7 @@ extern const char *DCS_RENDER_PLAYER_INFO;
 extern const char *DCS_RENDER_AUDIO_LIST;
 extern const char *DCS_RENDER_ALBUM_LIST;
 extern const char *DCS_SET_ACTIVE_DIALOG;
+extern const char *DCS_REQUIRE_PUSH_ACK;
 
 // internal directive.
 extern const char *DCS_DIALOGUE_FINISHED_NAME;
@@ -176,11 +189,14 @@ extern const char *DCS_MUTE_CHANGED_NAME;
 extern const char *DCS_SPEECH_STATE_NAME;
 extern const char *DCS_LINK_CLICKED_NAME;
 extern const char *DCS_RECOMMEND_NAME;
+extern const char *DCS_PUSH_ACK_NAME;
 
 // internal exception type
 extern const char *DCS_UNEXPECTED_INFORMATION_RECEIVED_TYPE;
 extern const char *DCS_INTERNAL_ERROR_TYPE;
 extern const char *DCS_UNSUPPORTED_OPERATION_TYPE;
+
+typedef void (*dcs_event_hook)(baidu_json *event);
 
 /**
  * DESC:
@@ -196,11 +212,11 @@ const char *duer_get_request_id_internal(void);
  * DESC:
  * Create a new dialog request id for each conversation.
  *
- * PARAM: none
+ * @PARAM[in] type: which kind of request to create dialog id
  *
  * @RETURN: the new dialog request id
  */
-const char *duer_create_request_id_internal(void);
+const char *duer_create_request_id_internal(duer_dcs_dialog_request_t type);
 
 /**
  * DESC:
@@ -211,6 +227,16 @@ const char *duer_create_request_id_internal(void);
  * @RETURN: NULL if failed, pointer point to the client context if success.
  */
 baidu_json *duer_get_client_context_internal(void);
+
+/**
+ * DESC:
+ * Get the dialogue request type which create current dialog request id.
+ *
+ * PARAM: none
+ *
+ * @RETURN: the dialogue request type.
+ */
+duer_dcs_dialog_request_t duer_get_dialog_request_type(void);
 
 /**
  * DESC:
@@ -677,6 +703,15 @@ void duer_stop_local_player_internal(void);
  */
 duer_status_t duer_set_dialog_id_internal(const char *dialog_id);
 
+/**
+ * DESC:
+ * reg callback to handle hook event of dcs
+ *
+ * @PARAM: callback.
+ *
+ * @RETURN: none.
+ */
+void duer_reg_dcs_event_hook_hdl_internal(dcs_event_hook cb);
 #ifdef __cplusplus
 }
 #endif

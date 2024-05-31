@@ -71,6 +71,12 @@ void duer_engine_clear_data(int what, void *object);
 
 const char *duer_engine_get_uuid(void);
 
+const char *duer_engine_get_client_id(void);
+
+const char *duer_engine_get_bduss(void);
+
+const char *duer_engine_get_user_agent(void);
+
 const char *duer_engine_get_bind_token(void);
 
 const char *duer_engine_get_rsa_cacrt(void);

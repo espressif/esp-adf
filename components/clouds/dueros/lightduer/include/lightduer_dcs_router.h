@@ -46,8 +46,10 @@ extern "C" {
  *      // directive parameter value invalid.
  *      DUER_ERR_INVALID_PARAMETER      = -0x0010,
  *      // memory overflow.
- *      DUER_ERR_MEMORY_OVERLOW         = -0x0011,
+ *      DUER_ERR_MEMORY_OVERFLOW         = -0x0011,
  */
+typedef void (*dcs_event_hook_handler)(baidu_json *event);
+typedef void (*dcs_directive_hook_handler)(baidu_json *directive);
 typedef duer_status_t (*dcs_directive_handler)(const baidu_json *directive);
 typedef baidu_json* (*dcs_client_context_handler)();
 
@@ -67,6 +69,29 @@ typedef struct {
 duer_status_t duer_add_dcs_directive(const duer_directive_list *directive,
                                      size_t count,
                                      const char *name_space);
+/**
+ * Execute dcs directive.
+ *
+ * @PARAM[in] dcs directive.
+ * @RETURN:0 if success, negative if failed.
+ */
+duer_status_t duer_execute_directive(baidu_json *directive);
+
+/**
+ * Register callback to handle dlp directive context..
+ *
+ * @PARAM[in] cb:handle function.
+ * @RETURN:   none.
+ */
+void duer_reg_dcs_hook_directive_hdl(dcs_directive_hook_handler cb);
+
+/**
+ * Register callback to handle dlp directive context..
+ *
+ * @PARAM[in] cb:handle function.
+ * @RETURN:   none.
+ */
+void duer_reg_dcs_hook_event_hdl(dcs_event_hook_handler cb);
 
 /**
  * Register callback to get client context.
@@ -91,6 +116,26 @@ baidu_json *duer_create_dcs_event(const char *name_space, const char *name, duer
 
 /**
  * DESC:
+ * Used to report data.
+ *
+ * @PARAM[in] data: the report data.
+ *
+ * @RETURN: success return DUER_OK, failed return DUER_ERR_FAILED.
+ */
+int duer_dcs_data_report(baidu_json *data);
+
+/**
+ * DESC:
+ * Used to report dlp data.
+ *
+ * @PARAM[in] data: the report data.
+ *
+ * @RETURN: success return DUER_OK, failed return DUER_ERR_FAILED.
+ */
+int duer_dcs_data_send(baidu_json *data);
+
+/**
+ * DESC:
  * Used to cancel a dcs dialog: the response of a dialogue will be ignored
  * if user calling this API before receiving the response.
  *
@@ -98,6 +143,14 @@ baidu_json *duer_create_dcs_event(const char *name_space, const char *name, duer
  * @RETURN:   none.
  */
 void duer_dcs_dialog_cancel(void);
+
+/**
+ * DESC:
+ * Used to report dcs hook event
+ * @PARAM[in] dcs hook event.
+ * @RETURN:   none.
+ */
+void duer_dcs_hook_event_status_report(baidu_json *status);
 
 #ifdef __cplusplus
 }

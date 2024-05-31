@@ -12,7 +12,6 @@ Application Example
 Implementation of this API is demonstrated in the following example:
 
 * :example:`dueros`
-* :example:`advanced_examples/esp_dispatcher_dueros`
 
 .. include:: /_build/inc/wifi_service.inc
 .. include:: /_build/inc/esp_wifi_setting.inc

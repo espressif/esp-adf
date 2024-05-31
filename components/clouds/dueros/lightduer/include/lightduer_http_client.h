@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "lightduer_timers.h"
+#include "lightduer_mutex.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,7 +63,8 @@ typedef struct {
     duer_handler n_handle;
     duer_handler (*init)(void *socket_args);
     int  (*open)(duer_handler socket_handle);
-    int  (*connect)(duer_handler socket_handle, const char *host, const int port);
+    int  (*connect)(duer_handler socket_handle, const char *host, duer_u32_t ip, const int port,
+            duer_u32_t timeout);
     void (*set_blocking)(duer_handler socket_handle, int blocking);
     void (*set_timeout)(duer_handler socket_handle, int timeout);
     int  (*recv)(duer_handler socket_handle, void *data, unsigned size);
@@ -77,6 +79,17 @@ typedef enum {
     DUER_HTTP_DATA_MID    = 0x2,
     DUER_HTTP_DATA_LAST   = 0x4
 } duer_http_data_pos_t;
+
+/**
+ * DESC:
+ * the callback for retrieving http response headers (invoked once for each key/value pair)
+ *
+ * PARAM:
+ * @param[in] p_user_ctx: usr ctx registered by user
+ * @param[in] key: key of the header entry
+ * @param[in] value: value of the header entry
+ */
+typedef void (*duer_http_header_cb)(void *p_user_ctx, const char *key, const char *value);
 
 /**
  *
@@ -108,6 +121,33 @@ typedef int (*duer_http_data_handler)(void *p_user_ctx, duer_http_data_pos_t pos
  */
 typedef void (*duer_http_get_url_cb_t)(void *p_user_ctx, const char *url);
 
+/**
+ * DESC:
+ * Sometimes we want to keep retrying until we notify http to stop
+ * this callback is used to get the keep retry flag
+ *
+ * PARAM:
+ * @param[in] p_user_ctx: usr ctx registed by user
+ *
+ * RETURN: 0 stop retry, nonzero keep retry
+ */
+typedef int (*duer_http_keep_retry_cb)(void *p_user_ctx);
+
+/**
+ * DESC:
+ * Inform user the connection ip
+ *
+ * PARAM:
+ * @param[in] p_user_ctx: usr ctx registed by user
+ * @param[in] ip: the connection ip
+ * @param[in] dns_type: defined as duer_auto_dns_resolve_type_t
+ * @param[in] result: connect result, 0: success nonzero: failed
+ *
+ * RETURN: none
+ */
+typedef void (*duer_http_inform_ip_cb)(
+        void *p_user_ctx, const char *host, const char *ip, int dns_type, int result);
+
 typedef struct {
     const char               **pps_custom_headers;
     size_t                     sz_headers_count;
@@ -135,6 +175,19 @@ typedef struct {
     unsigned short             last_port;            // the lastest connected port
     duer_timer_handler         connect_keep_timer;   // used to close persistent connect
     size_t                     upload_size;          // size of the data have been upload
+    size_t                     timeout_count;        // current timeout count
+
+    // max reconnect retry count
+    size_t                     max_resume_retry_count;
+    // max retry count when timeout becore reconnecct
+    size_t                     max_timeout_retry_count;
+    size_t                     max_connect_retry_count;
+    size_t                     timeout_ms;           // recv timeout in milliseconds
+    size_t                     connect_timeout_ms;   // connect timeout in milliseconds
+    duer_http_keep_retry_cb    keep_retry_cb;
+    duer_http_header_cb        rsp_header_cb;        // callback for response header
+    duer_http_inform_ip_cb     inform_ip_cb;         // callback for inform the connection ip
+    duer_mutex_t               lock;
 } duer_http_client_t;
 
 /**
@@ -200,6 +253,97 @@ void duer_http_reg_data_hdlr(duer_http_client_t *p_client,
  * @RETURN    none
  */
 void duer_http_reg_url_get_cb(duer_http_client_t *p_client, duer_http_get_url_cb_t cb);
+
+/**
+ *
+ * DESC:
+ * register callback to get the keep retry flag
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ * @param[in] cb:       the callback to be registered
+ *
+ * @RETURN    none
+ */
+void duer_http_reg_keep_retry_cb(duer_http_client_t *p_client, duer_http_keep_retry_cb cb);
+
+/**
+ *
+ * DESC:
+ * register callback to get the response headers
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ * @param[in] cb:       the callback to be registered
+ *
+ * @RETURN    none
+ */
+void duer_http_reg_rsp_header_cb(duer_http_client_t *p_client, duer_http_header_cb cb);
+
+/**
+ *
+ * DESC:
+ * register callback to get the ip
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ * @param[in] cb:       the callback to be registered
+ *
+ * @RETURN    none
+ */
+void duer_http_reg_inform_ip_cb(duer_http_client_t *p_client, duer_http_inform_ip_cb cb);
+
+/**
+ *
+ * DESC:
+ * set max resume retry count
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ * @param[in] count: max resume retry count
+ *
+ * @RETURN    none
+ */
+void duer_http_set_max_resume_retry_count(duer_http_client_t *p_client, size_t count);
+
+/**
+ *
+ * DESC:
+ * set max retry count when read timeout
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ * @param[in] count: retry count
+ *
+ * @RETURN    none
+ */
+void duer_http_set_max_timeout_retry_count(duer_http_client_t *p_client, size_t count);
+
+/**
+ *
+ * DESC:
+ * set connect timeout in milliseconds
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ * @param[in] timeout_ms: timeout in milliseconds
+ *
+ * @RETURN    none
+ */
+void duer_http_set_connect_timeout_ms(duer_http_client_t *p_client, size_t timeout_ms);
+
+/**
+ *
+ * DESC:
+ * set recv timeout in milliseconds
+ *
+ * PARAM:
+ * @param[in] p_client: pointer point to the duer_http_client_t
+ * @param[in] timeout_ms: timeout in milliseconds
+ *
+ * @RETURN    none
+ */
+void duer_http_set_recv_timeout_ms(duer_http_client_t *p_client, size_t timeout_ms);
 
 /**
  * DESC:
@@ -280,6 +424,50 @@ void duer_http_stop_notify(duer_http_client_t *p_client);
 void duer_http_get_download_progress(duer_http_client_t *p_client,
                                      size_t *total_size,
                                      size_t *recv_size);
+
+/**
+ * DESC:
+ * post data to http server
+ *
+ * PARAM:
+ * @param[in] p_client:       pointer point to the duer_http_client_t
+ * @param[in] url:            url resource
+ * @param[in] connect_keep_time: how long time the connection should be kept after download finish
+ * @param[in] data:           the data post to server
+ * @param[in] len:            the length of data
+ * @param[in] content_type:   the data type
+ *
+ * RETURN                     DUER_HTTP_OK if success, other duer_http_result_t type code if failed
+ */
+duer_http_result_t duer_http_post(duer_http_client_t *p_client,
+                                 const char *url,
+                                 const int connect_keep_time,
+                                 const char *data,
+                                 size_t len,
+                                 const char *content_type);
+
+/**
+ * DESC:
+ * do http request with method specified
+ *
+ * PARAM:
+ * @param[in] p_client:       pointer point to the duer_http_client_t
+ * @param[in] url:            url resource
+ * @param[in] method:         http method
+ * @param[in] connect_keep_time: how long time the connection should be kept after download finish
+ * @param[in] data:           the data post to server
+ * @param[in] len:            the length of data
+ * @param[in] content_type:   the data type
+ *
+ * RETURN                     DUER_HTTP_OK if success, other duer_http_result_t type code if failed
+ */
+duer_http_result_t duer_http_perform(duer_http_client_t *p_client,
+                                     const char *url,
+                                     duer_http_method_t method,
+                                     const int connect_keep_time,
+                                     const char *data,
+                                     size_t len,
+                                     const char *content_type);
 
 #ifdef __cplusplus
 }

@@ -78,7 +78,7 @@ typedef enum _duer_errcode_enum {
 
     /* Generic Errors */
     DUER_ERR_INVALID_PARAMETER       = -0x0010,
-    DUER_ERR_MEMORY_OVERLOW          = -0x0011,
+    DUER_ERR_MEMORY_OVERFLOW          = -0x0011,
     DUER_ERR_PROFILE_INVALID         = -0x0012,
     DUER_ERR_HAS_STARTED             = -0x0013,
     DUER_ERR_CA_NOT_CONNECTED        = -0x0014,
