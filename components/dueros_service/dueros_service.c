@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2024 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -36,6 +36,8 @@
 #include "lightduer_voice.h"
 #include "lightduer_connagent.h"
 #include "lightduer_dcs.h"
+#include "lightduer_dipb_data_handler.h"
+#include "lightduer_dlp.h"
 
 #include "board.h"
 #include "sdkconfig.h"
@@ -44,19 +46,22 @@
 #include "audio_recorder.h"
 #include "esp_audio.h"
 #include "esp_log.h"
+#include "duer_wifi_cfg.h"
+#include "duer_profile.h"
+#include "wifi_service.h"
 
 #define DUEROS_TASK_PRIORITY        5
 #define DUEROS_TASK_STACK_SIZE      6*1024
 #define RECORD_SAMPLE_RATE          (16000)
 #define RECORD_READ_BLOCK_SIZE      (2048)
 #define DUER_EVT_UPLOADED           (BIT0)
+#define DUER_EVT_WIFI_CFG_START     (BIT1)
+#define DUER_EVT_WIFI_CFG_STOP      (BIT2)
+#define DUER_EVT_WIFI_ST_REPORT     (BIT3)
 
 #define RECORD_DEBUG                0
 
 static const char *TAG = "DUEROS";
-
-extern const uint8_t _duer_profile_start[] asm("_binary_duer_profile_start");
-extern const uint8_t _duer_profile_end[]   asm("_binary_duer_profile_end");
 
 typedef enum {
     DUER_CMD_UNKNOWN,
@@ -68,6 +73,9 @@ typedef enum {
     DUER_CMD_UPLOAD,
     DUER_CMD_CANCEL,
     DUER_CMD_DESTROY,
+    DUER_CMD_WIFI_CFG_START,
+    DUER_CMD_WIFI_CFG_STOP,
+    DUER_CMD_WIFI_ST_REPORT,
 } duer_task_cmd_t;
 
 typedef struct {
@@ -118,6 +126,9 @@ static void duer_dcs_init(void)
     duer_dcs_voice_output_init();
     duer_dcs_speaker_control_init();
     duer_dcs_audio_player_init();
+    duer_dlp_init();
+    duer_dcs_sync_state();
+    duer_dcs_push_service_init();
 
     if (is_first_time) {
         is_first_time = false;
@@ -155,16 +166,10 @@ static void duer_event_hook(duer_event_t *event)
 
 static void duer_login(void)
 {
-    int sz = _duer_profile_end - _duer_profile_start;
-    char *data = audio_calloc_inner(1, sz);
-    if (NULL == data) {
-        ESP_LOGE(TAG, "Dueros profile missing, duer profile audio_malloc failed");
-        return;
-    }
-    memcpy(data, _duer_profile_start, sz);
-    ESP_LOGI(TAG, "duer_start, len:%d\n%s", sz, data);
-    duer_start(data, sz);
-    audio_free((void *)data);
+    const char *profile = duer_profile_load();
+    AUDIO_NULL_CHECK(TAG, profile, return);
+    duer_start(profile, strlen(profile));
+    duer_profile_release(profile);
 }
 
 static void dueros_task(void *pvParameters)
@@ -203,6 +208,7 @@ static void dueros_task(void *pvParameters)
                 ESP_LOGI(TAG, "Dueros DUER_CMD_CONNECTED, duer_state:%d", serv->duer_state);
                 serv->duer_state = SERVICE_STATE_CONNECTED;
                 audio_service_callback(serv_handle, &serv_evt);
+                duer_dipb_data_handler_report_status(DUER_DIPB_ST_CONNECT_SERVER_SUC, DUER_WIFI_ERR_NONE);
             } else if (duer_msg.type == DUER_CMD_START) {
                 if (serv->duer_state < SERVICE_STATE_CONNECTED) {
                     ESP_LOGW(TAG, "Dueros has not connected, state:%d", serv->duer_state);
@@ -241,6 +247,24 @@ static void dueros_task(void *pvParameters)
                 duer_voice_stop();
                 serv->duer_state = SERVICE_STATE_IDLE;
                 task_run = false;
+            } else if (duer_msg.type == DUER_CMD_WIFI_CFG_START) {
+                ESP_LOGI(TAG, "Dueros DUER_CMD_WIFI_CFG");
+                if (serv->duer_state == SERVICE_STATE_RUNNING) {
+                    duer_voice_terminate();
+                    serv->duer_state = SERVICE_STATE_STOPPED;
+                    audio_service_callback(serv_handle, &serv_evt);
+                }
+                serv->duer_state = SERVICE_STATE_IDLE;
+                duer_wifi_cfg_init((duer_wifi_cfg_t *)duer_msg.pdata);
+                xEventGroupSetBits(serv->duer_evt, DUER_EVT_WIFI_CFG_START);
+            } else if (duer_msg.type == DUER_CMD_WIFI_CFG_STOP) {
+                duer_wifi_cfg_deinit();
+                xEventGroupSetBits(serv->duer_evt, DUER_EVT_WIFI_CFG_STOP);
+            } else if (duer_msg.type == DUER_CMD_WIFI_ST_REPORT) {
+                dueros_wifi_st_t *st = (dueros_wifi_st_t *)duer_msg.pdata;
+                ESP_LOGW(TAG, "wifi status %d, %d",st->status, st->err);
+                duer_dipb_data_handler_report_status(st->status, st->err);
+                xEventGroupSetBits(serv->duer_evt, DUER_EVT_WIFI_ST_REPORT);
             }
         }
     }
@@ -311,6 +335,46 @@ esp_err_t dueros_voice_cancel(audio_service_handle_t handle)
     dueros_service_t *serv = audio_service_get_data(handle);
     duer_que_send(serv->duer_que, DUER_CMD_CANCEL, NULL, 0, 0, 0);
     return ESP_OK;
+}
+
+esp_err_t dueros_start_wifi_cfg(audio_service_handle_t handle, duer_wifi_cfg_t *cfg)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
+    dueros_service_t *serv = audio_service_get_data(handle);
+    duer_que_send(serv->duer_que, DUER_CMD_WIFI_CFG_START, cfg, 0, sizeof(duer_wifi_cfg_t), 0);
+    EventBits_t bits = xEventGroupWaitBits(serv->duer_evt, DUER_EVT_WIFI_CFG_START, true, true, pdMS_TO_TICKS(2000));
+    if (bits & DUER_EVT_WIFI_CFG_START) {
+        return ESP_OK;
+    } else {
+        return ESP_FAIL;
+    }
+}
+
+esp_err_t dueros_stop_wifi_cfg(audio_service_handle_t handle)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
+    dueros_service_t *serv = audio_service_get_data(handle);
+    duer_que_send(serv->duer_que, DUER_CMD_WIFI_CFG_STOP, NULL, 0, 0, 0);
+    EventBits_t bits = xEventGroupWaitBits(serv->duer_evt, DUER_EVT_WIFI_CFG_STOP, true, true, pdMS_TO_TICKS(2000));
+    if (bits & DUER_EVT_WIFI_CFG_STOP) {
+        return ESP_OK;
+    } else {
+        return ESP_FAIL;
+    }
+}
+
+esp_err_t dueros_wifi_status_report(audio_service_handle_t handle, dueros_wifi_st_t *st)
+{
+    AUDIO_NULL_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
+    dueros_service_t *serv = audio_service_get_data(handle);
+    ESP_LOGW(TAG, "dueros_wifi_status_report");
+    duer_que_send(serv->duer_que, DUER_CMD_WIFI_ST_REPORT, st, 0, sizeof(dueros_wifi_st_t), 0);
+    EventBits_t bits = xEventGroupWaitBits(serv->duer_evt, DUER_EVT_WIFI_ST_REPORT, true, true, pdMS_TO_TICKS(2000));
+    if (bits & DUER_EVT_WIFI_ST_REPORT) {
+        return ESP_OK;
+    } else {
+        return ESP_FAIL;
+    }
 }
 
 audio_service_handle_t dueros_service_create()

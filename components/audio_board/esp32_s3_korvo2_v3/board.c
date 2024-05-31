@@ -161,6 +161,9 @@ esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
     adc_btn_tag.adc_level_step = btn_array;
     adc_btn_cfg.arr = &adc_btn_tag;
     adc_btn_cfg.arr_size = 1;
+    if (audio_mem_spiram_stack_is_enabled()) {
+        adc_btn_cfg.task_cfg.ext_stack = true;
+    }
     esp_periph_handle_t adc_btn_handle = periph_adc_button_init(&adc_btn_cfg);
     AUDIO_NULL_CHECK(TAG, adc_btn_handle, return ESP_ERR_ADF_MEMORY_LACK);
     return esp_periph_start(set, adc_btn_handle);

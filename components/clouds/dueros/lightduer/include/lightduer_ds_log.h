@@ -88,6 +88,7 @@ typedef enum _duer_ds_log_module_enum {
     DUER_DS_LOG_MODULE_SMARTCFG = 0x0C,
     DUER_DS_LOG_MODULE_AIRKISS  = 0x0D,
     DUER_DS_LOG_MODULE_PM       = 0x0E,
+    DUER_DS_LOG_MODULE_BLE_CFG  = 0x0F,
     DUER_DS_LOG_MODULE_MAX      = 0x20
 } duer_ds_log_module_enum_t;
 

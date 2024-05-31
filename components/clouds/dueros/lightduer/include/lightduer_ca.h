@@ -224,6 +224,30 @@ DUER_EXT duer_status_t baidu_ca_release(duer_handler hdlr);
 DUER_EXT const char *baidu_ca_get_uuid(duer_handler hdlr);
 
 /*
+ * Obtain the client_id
+ *
+ * @Param hdlr, in, the handler will be operated
+ * @Return const char *, The client id string
+ */
+DUER_EXT const char *baidu_ca_get_client_id(duer_handler hdlr);
+
+/*
+ * Obtain the bduss
+ *
+ * @Param hdlr, in, the handler will be operated
+ * @Return const char *, The bduss string
+ */
+DUER_EXT const char *baidu_ca_get_bduss(duer_handler hdlr);
+
+/*
+ * Obtain the user_agent
+ *
+ * @Param hdlr, in, the handler will be operated
+ * @Return const char *, The urser agent string
+ */
+DUER_EXT const char *baidu_ca_get_user_agent(duer_handler hdlr);
+
+/*
  * Obtain the rsa cacrt
  *
  * @Param hdlr, in, the handler will be operated

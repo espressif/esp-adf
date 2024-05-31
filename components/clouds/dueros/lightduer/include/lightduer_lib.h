@@ -21,6 +21,7 @@
 #define BAIDU_IOT_TINYDU_IOT_OS_SRC_IOT_BAIDU_CA_SOURCE_BAIDU_CA_INTERNAL_H
 
 #include <string.h>
+#include "lightduer_memory.h"
 
 #define DUER_MEMCPY(...)         memcpy(__VA_ARGS__)
 #define DUER_MEMCMP(...)         memcmp(__VA_ARGS__)
@@ -36,8 +37,19 @@
 #define DUER_STRSTR(...)         strstr(__VA_ARGS__)
 #define DUER_STRCHR(...)         strchr(__VA_ARGS__)
 #define DUER_STRNCAT(...)        strncat(__VA_ARGS__)
+#define DUER_STRDUP(...)         duer_strdup(__VA_ARGS__)
 
 // Suppress Compiler warning Function&Variable declared never referenced
 #define ALLOW_UNUSED_LOCAL(VAR_FUNC) (void)(VAR_FUNC)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern char* duer_strdup(const char* str);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // BAIDU_IOT_TINYDU_IOT_OS_SRC_IOT_BAIDU_CA_SOURCE_BAIDU_CA_INTERNAL_H

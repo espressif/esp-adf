@@ -1,0 +1,4 @@
+# Sample csv file
+key,type,encoding,value
+duer,namespace,,
+profile,file,string,duer_profile

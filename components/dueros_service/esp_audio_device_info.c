@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2018 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ * Copyright (c) 2024 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -59,4 +59,9 @@ int duer_init_device_info(void)
         ESP_LOGE(TAG, "Dev Info: Register dev ops failed");
     }
     return ret;
+}
+
+char *duer_get_device_name()
+{
+    return CONFIG_DUEROS_DEVICE_NAME;
 }

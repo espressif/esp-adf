@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2022 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ * Copyright (c) 2024 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -298,13 +298,12 @@ static void start_recorder()
 #else
     bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
 #endif
-    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, CODEC_ADC_SAMPLE_RATE, bits_per_sample, AUDIO_STREAM_READER);
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, 48000, bits_per_sample, AUDIO_STREAM_READER);
     i2s_stream_reader = i2s_stream_init(&i2s_cfg);
 
     audio_element_handle_t filter = NULL;
-#if CODEC_ADC_SAMPLE_RATE != (16000)
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    rsp_cfg.src_rate = CODEC_ADC_SAMPLE_RATE;
+    rsp_cfg.src_rate = 48000;
     rsp_cfg.dest_rate = 16000;
 #if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 2)
     rsp_cfg.mode = RESAMPLE_UNCROSS_MODE;
@@ -313,7 +312,6 @@ static void start_recorder()
     rsp_cfg.max_indata_bytes = 1024;
 #endif
     filter = rsp_filter_init(&rsp_cfg);
-#endif
 
     raw_stream_cfg_t raw_cfg = RAW_STREAM_CFG_DEFAULT();
     raw_cfg.type = AUDIO_STREAM_READER;

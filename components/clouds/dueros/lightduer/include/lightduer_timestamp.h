@@ -41,6 +41,10 @@ extern "C" {
 #define DUER_TIME_BEFORE(a, b)             DUER_TIME_AFTER(b, a)
 #define DUER_TIME_AFTER_EQUAL(a, b)        ((duer_s32_t)(a) - (duer_s32_t)(b) >= 0)
 #define DUER_TIME_BEFORE_EQUAL(a, b)       DUER_TIME_AFTER_EQUAL(b, a)
+#define DUER_TIME_DIFF(old, new) \
+                ((duer_u32_t)(new) >= (duer_u32_t)(old) ? \
+                 (duer_u32_t)(new) - (duer_u32_t)(old) \
+                 : (duer_u32_t)-1 - (duer_u32_t)(old) + (duer_u32_t)(new) + 1)
 
 /*
  * Obtain the system timestamp by milliseconds

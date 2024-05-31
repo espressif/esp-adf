@@ -1,0 +1,16 @@
+menu "DuerOS Service"
+
+    config DUEROS_GEN_PROFILE
+        bool "Generate the nvs partition which include the profile of dueros"
+        default n
+
+    config DUEROS_FLASH_PROFILE
+        depends on DUEROS_GEN_PROFILE
+        bool "Flash the generated nvs partition"
+        default n
+
+    config DUEROS_DEVICE_NAME
+        string "Duer device name"
+        default "Duer Name"
+
+endmenu

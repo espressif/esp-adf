@@ -36,6 +36,7 @@ typedef enum {
     DUER_DS_LOG_HTTP_PERSISTENT_CONN_TIMEOUT       =  0x104,
     DUER_DS_LOG_HTTP_DOWNLOAD_STARTED              =  0x105,
     // Attention: 0x106, 0x107, 0x201 must be reserved, as they had been used in old version SDK
+    DUER_DS_LOG_HTTP_POST_STARTED                  =  0x108,
 
     DUER_DS_LOG_HTTP_ZERO_BYTE_DOWNLOAD            =  0x202,
     DUER_DS_LOG_HTTP_DOWNLOAD_STOPPED              =  0x203,

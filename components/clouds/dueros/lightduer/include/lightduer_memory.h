@@ -21,7 +21,10 @@
 #define BAIDU_IOT_TINYDU_IOT_OS_SRC_IOT_BAIDU_CA_SOURCE_BAIDU_CA_MEMORY_H
 
 #include "lightduer_types.h"
-#include "lightduer_lib.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef DUER_HEAP_MONITOR
 #ifndef DUER_MEMORY_USAGE
@@ -48,27 +51,46 @@ typedef enum _duer_memory_hm_module_e {
 #endif // DUER_HEAP_MONITOR
 
 #ifdef DUER_MEMORY_USAGE
-#ifndef DUER_HEAP_MONITOR
 DUER_INT void duer_memdbg_usage();
 #define DUER_MEMDBG_USAGE(...)       duer_memdbg_usage()
-#else
-#ifdef DUER_HEAP_MONITOR_DEBUG
-DUER_INT void duer_memdbg_usage();
-#define DUER_MEMDBG_USAGE(...)       duer_memdbg_usage()
-#else // DUER_HEAP_MONITOR_DEBUG
-#define DUER_MEMDBG_USAGE(...)
-#endif // DUER_HEAP_MONITOR_DEBUG
-#endif
 #else
 #define DUER_MEMDBG_USAGE(...)
 #endif
 
-#if defined(DUER_HEAP_MONITOR)
+
+#if ((defined DUER_HEAP_MONITOR) && (defined DUER_MEMORY_DEBUG))
+
+DUER_INT_IMPL void* duer_malloc_hmdbg(duer_size_t size,
+                                      duer_memory_hm_module_e module,
+                                      const char* file,
+                                      duer_u32_t line);
+
+DUER_INT_IMPL void* duer_calloc_hmdbg(duer_size_t size,
+                                      duer_memory_hm_module_e module,
+                                      const char* file,
+                                      duer_u32_t line);
+
+DUER_INT_IMPL void* duer_realloc_hmdbg(void* ptr,
+                                       duer_size_t size,
+                                       duer_memory_hm_module_e module,
+                                       const char* file,
+                                       duer_u32_t line);
+
+DUER_INT_IMPL void duer_free_hmdbg(void* ptr, const char* file, duer_u32_t line);
+
+#define DUER_MALLOC(_s)          \
+        duer_malloc_hmdbg(_s, DUER_HM_MODULE_NAME, __FILE__, __LINE__)
+#define DUER_CALLOC(_s, _n)      \
+        duer_calloc_hmdbg((_s) * (_n), DUER_HM_MODULE_NAME, __FILE__, __LINE__)
+#define DUER_REALLOC(_p, _s)     \
+        duer_realloc_hmdbg(_p, _s, DUER_HM_MODULE_NAME, __FILE__, __LINE__)
+#define DUER_FREE(_p)            duer_free_hmdbg(_p, __FILE__, __LINE__)
+#elif defined(DUER_HEAP_MONITOR)
 #define DUER_MALLOC(_s)          duer_malloc_hm(_s, DUER_HM_MODULE_NAME)
 #define DUER_CALLOC(_s, _n)      duer_calloc_hm((_s) * (_n), DUER_HM_MODULE_NAME)
 #define DUER_REALLOC(_p, _s)     duer_realloc_hm(_p, _s, DUER_HM_MODULE_NAME)
 #define DUER_FREE(_p)            duer_free_hm(_p)
-#elif DUER_MEMORY_DEBUG
+#elif defined(DUER_MEMORY_DEBUG)
 #define DUER_MALLOC(_s)          duer_malloc_ext(_s, __FILE__, __LINE__)
 #define DUER_CALLOC(_s, _n)      duer_calloc_ext((_s) * (_n), __FILE__, __LINE__)
 #define DUER_REALLOC(_p, _s)     duer_realloc_ext(_p, _s, __FILE__, __LINE__)
@@ -80,11 +102,6 @@ DUER_INT void duer_memdbg_usage();
 #define DUER_FREE(_p)            duer_free(_p)
 #endif/*DUER_HEAP_MONITOR*/
 
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*
  * Adapt the memory management functions.

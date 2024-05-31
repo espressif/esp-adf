@@ -38,6 +38,15 @@ extern "C" {
  */
 extern int duer_init_device_info(void);
 
+/*
+ * Get device name
+ *
+ * @param void:
+ *
+ * @return string: device name defined by user
+ */
+extern char *duer_get_device_name();
+
 #ifdef __cplusplus
 }
 #endif

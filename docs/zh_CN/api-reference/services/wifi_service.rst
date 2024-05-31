@@ -12,7 +12,6 @@ Wi-Fi 服务 (Wi-Fi service) 提供了网络配置和网络管理的功能。配
 以下示例展示了该 API 的实现方式。
 
 * :example:`dueros`
-* :example:`advanced_examples/esp_dispatcher_dueros`
 
 .. include:: /_build/inc/wifi_service.inc
 .. include:: /_build/inc/esp_wifi_setting.inc

@@ -1,30 +1,41 @@
 menu "Example Configuration"
 
+choice WIFI_SETTING_TYPE
+    prompt "WiFi Setting type"
+    default WIFI_STATIC_CONFIG
+    help
+        Select WiFi setting method
+
+    config WIFI_STATIC_CONFIG
+        bool "WiFi static configuration"
+
+    config ESP_SMARTCONFIG
+        bool "ESP smartconfig"
+
+    config AIRKISS_ENCRYPT
+        bool "Airkiss encrypt"
+
+    config DUER_WIFI_CONFIG
+        bool "Lightduer DIPB WiFi config"
+        select BT_ENABLED
+        select BT_BLE_42_FEATURES_SUPPORTED
+endchoice
+
 config WIFI_SSID
     string "WiFi SSID"
+    depends on WIFI_STATIC_CONFIG
     default "myssid"
     help
         SSID (network name) for the example to connect to.
 
 config WIFI_PASSWORD
     string "WiFi Password"
+    depends on WIFI_STATIC_CONFIG
     default "myssid"
     help
         WiFi password (WPA or WPA2) for the example to use.
 
         Can be left blank if the network has no security set.
-
-choice WIFI_SETTING_TYPE
-    prompt "WiFi Setting type"
-    default ESP_SMARTCONFIG
-    help
-        Select wifi setting method
-
-config ESP_SMARTCONFIG
-    bool "Enable esp smartconfig"
-
-config AIRKISS_ENCRYPT
-    bool "Enable airkiss encrypt"
 
 config AIRKISS_APPID
     string "Airkiss APP ID"
@@ -47,5 +58,25 @@ config DUER_AIRKISS_KEY
     help
         The key used to encrypt ssid and password with AES method.
 
-endchoice
+config DUER_CLIENT_ID
+    string "Duer client id"
+    depends on DUER_WIFI_CONFIG
+    default "client id"
+    help
+        The duer client id.
+
+config DUER_DEVICE_ID
+    string "Duer device ID"
+    depends on DUER_WIFI_CONFIG
+    default "device id"
+    help
+        The duer device id.
+
+config DUER_ECC_PUB_KEY
+    string "Duer ECC public key"
+    depends on DUER_WIFI_CONFIG
+    default "ecc public key"
+    help
+        The key used to encrypt.
+
 endmenu

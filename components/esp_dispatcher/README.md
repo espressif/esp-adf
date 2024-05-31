@@ -22,5 +22,3 @@ Each module and sub-functional unit in ESP_Dispatcher runs as a separate task, p
 A standard ESP_Dispatcher audio application block diagram as shown below.
 <div align="center"><img src="../../docs/_static/esp_dispatcher_audio_app_diagram.png" alt ="ESP Dispatcher Audio Application Diagram" align="center" /></div>
 
-There is an example in the folder of [esp_dispatcher_dueros](https://github.com/espressif/esp-adf/tree/master/examples/advanced_examples/esp_dispatcher_dueros).
-

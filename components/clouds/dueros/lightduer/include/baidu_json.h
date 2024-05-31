@@ -41,6 +41,13 @@ extern "C"
 
 #define baidu_json_IsReference 256
 #define baidu_json_StringIsConst 512
+#define baidu_json_IsRoot 1024
+
+#define JSON_PREBUFF_SIZE_128   128
+#define JSON_PREBUFF_SIZE_256   256
+#define JSON_PREBUFF_SIZE_512   512
+#define JSON_PREBUFF_SIZE_1024  1024
+#define JSON_PREBUFF_SIZE_2048  2048
 
 /* The baidu_json structure: */
 typedef struct baidu_json
@@ -145,6 +152,9 @@ extern baidu_json *baidu_json_ParseWithOpts(const char *value, const char **retu
 extern void baidu_json_Minify(char *json);
 
 extern void baidu_json_release(void *ptr);
+
+/* dump all json objects alloc from prealloc memory, detail = 0 just print count, = 1 print all items */
+extern int baidu_json_dump_prealloc_items(int detail);
 
 /* Macros for creating things quickly. */
 #define baidu_json_AddNullToObject(object,name) baidu_json_AddItemToObject(object, name, baidu_json_CreateNull())
