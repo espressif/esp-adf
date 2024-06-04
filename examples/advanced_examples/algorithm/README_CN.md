@@ -45,6 +45,7 @@
 - 开发板上电后后自动运行例程。
 - 例程完成后，你可以打开 microSD 卡目录 `/sdcard/aec_out.wav` 收听录音文件。
 
+NSNET 具备更好噪声抑制。若使用 NSNET，请在 menuconfig 中使能 `ESP Speech Recognition -> USE_NSNET`。
 
 ### 编译和下载
 

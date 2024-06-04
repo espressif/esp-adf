@@ -46,6 +46,7 @@ Load and run the example:
 - The board will start playing automatically.
 - After finish, you can open `/sdcard/aec_out.wav` to hear the recorded file.
 
+NSNET has better noise suppression. If using NSNET, please enable 'ESP Speech Recognition ->USE_SNET' in menuconfig.
 
 ### Build and Flash
 Build the project and flash it to the board, then run monitor tool to view serial output (replace `PORT` with your board's serial port name):

@@ -36,6 +36,11 @@
 #include "esp_afe_sr_iface.h"
 #include "esp_afe_sr_models.h"
 
+#ifdef CONFIG_USE_NSNET
+#include "esp_nsn_models.h"
+#include "model_path.h"
+#endif  /* CONFIG_USE_NSNET */
+
 #define ALGORITHM_CHUNK_MAX_SIZE            (1024)
 #define ALGORITHM_FETCH_TASK_STACK_SIZE     (3 * 1024)
 #define ALGORITHM_GET_REFERENCE_TIMEOUT     (32 / portTICK_PERIOD_MS)
@@ -45,23 +50,26 @@ static const char *TAG = "ALGORITHM_STREAM";
 const int FETCH_STOPPED_BIT = BIT0;
 
 typedef struct {
-    int16_t *record;
-    int16_t *reference;
-    int16_t *aec_buff;
-    int8_t algo_mask;
-    int8_t mic_ch;
-    bool afe_fetch_run;
-    int sample_rate;
-    int rec_linear_factor;
-    int ref_linear_factor;
+    int16_t                      *record;
+    int16_t                      *reference;
+    int16_t                      *aec_buff;
+    int8_t                        algo_mask;
+    int8_t                        mic_ch;
+    bool                          afe_fetch_run;
+    int                           sample_rate;
+    int                           rec_linear_factor;
+    int                           ref_linear_factor;
     algorithm_stream_input_type_t input_type;
-    const esp_afe_sr_iface_t *afe_handle;
-    esp_afe_sr_data_t *afe_data;
-    EventGroupHandle_t state;
-    bool debug_input;
-    bool swap_ch;
-    bool aec_low_cost;
-    int agc_gain;
+    const esp_afe_sr_iface_t     *afe_handle;
+    esp_afe_sr_data_t            *afe_data;
+    EventGroupHandle_t            state;
+    bool                          debug_input;
+    bool                          swap_ch;
+    bool                          aec_low_cost;
+    int                           agc_gain;
+#ifdef CONFIG_USE_NSNET
+    srmodel_list_t               *models;
+#endif  /* CONFIG_USE_NSNET */
 } algo_stream_t;
 
 esp_err_t algorithm_mono_fix(uint8_t *sbuff, uint32_t len)
@@ -87,7 +95,12 @@ static esp_err_t _algo_close(audio_element_handle_t self)
     while (xEventGroupWaitBits(algo->state, FETCH_STOPPED_BIT, false, true, 10 / portTICK_PERIOD_MS) != FETCH_STOPPED_BIT) {
         algo->afe_handle->feed(algo->afe_data, algo->aec_buff);
     }
+    return ESP_OK;
+}
 
+static esp_err_t _algo_destroy(audio_element_handle_t self)
+{
+    algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
     if (algo->afe_data) {
         algo->afe_handle->destroy(algo->afe_data);
         algo->afe_data = NULL;
@@ -113,6 +126,12 @@ static esp_err_t _algo_close(audio_element_handle_t self)
     if (algo->state) {
         vEventGroupDelete(algo->state);
     }
+
+#ifdef CONFIG_USE_NSNET
+    if (algo->models) {
+        esp_srmodel_deinit(algo->models);
+    }
+#endif  /* CONFIG_USE_NSNET */
 
     if (algo) {
         audio_free(algo);
@@ -163,6 +182,11 @@ static esp_err_t _algo_open(audio_element_handle_t self)
     afe_config.pcm_config.mic_num = algo->mic_ch;
     afe_config.pcm_config.ref_num = 1;
     afe_config.pcm_config.total_ch_num = algo->mic_ch + 1;
+#ifdef CONFIG_USE_NSNET
+    char *model_name = esp_srmodel_filter(algo->models, ESP_NSNET_PREFIX, NULL);
+    afe_config.afe_ns_mode = NS_MODE_NET;
+    afe_config.afe_ns_model_name = model_name;
+#endif  /* CONFIG_USE_NSNET */
 
     if (!algo->aec_low_cost) {
         afe_config.pcm_config.sample_rate = algo->sample_rate;
@@ -198,7 +222,7 @@ static esp_err_t _algo_open(audio_element_handle_t self)
         xEventGroupSetBits(algo->state, FETCH_STOPPED_BIT);
     } else {
         audio_thread_create(NULL, "algo_fetch", _algo_fetch_task, (void *)self, ALGORITHM_FETCH_TASK_STACK_SIZE,
-            ALGORITHM_STREAM_TASK_PERIOD, true, ALGORITHM_STREAM_PINNED_TO_CORE);
+                            ALGORITHM_STREAM_TASK_PERIOD, true, ALGORITHM_STREAM_PINNED_TO_CORE);
     }
 
     AUDIO_NULL_CHECK(TAG, algo->afe_data, {
@@ -316,6 +340,7 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
     cfg.open = _algo_open;
     cfg.close = _algo_close;
     cfg.process = _algo_process;
+    cfg.destroy = _algo_destroy;
     cfg.task_stack = config->task_stack;
     cfg.task_prio = config->task_prio;
     cfg.task_core = config->task_core;
@@ -347,6 +372,18 @@ audio_element_handle_t algo_stream_init(algorithm_stream_cfg_t *config)
         _success &= ((algo->record = audio_calloc(1, ALGORITHM_CHUNK_MAX_SIZE)) != NULL);
         _success &= ((algo->reference = audio_calloc(1, ALGORITHM_CHUNK_MAX_SIZE)) != NULL);
     }
+
+#ifdef CONFIG_USE_NSNET
+    algo->models = esp_srmodel_init(config->partition_label);
+    if (algo->models != NULL) {
+        for (int i = 0; i < algo->models->num; i++) {
+            ESP_LOGI(TAG, "Load: %s", algo->models->model_name[i]);
+        }
+    } else {
+        ESP_LOGE(TAG, "Failed to load models");
+        _success = false;
+    }
+#endif  /* CONFIG_USE_NSNET */
 
     AUDIO_NULL_CHECK(TAG, _success, {
         ESP_LOGE(TAG, "Error occured");

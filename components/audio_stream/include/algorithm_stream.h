@@ -125,8 +125,8 @@ typedef struct {
     int sample_rate;                            /*!< The sampling rate of the input PCM (in Hz) */
     int mic_ch;                                 /*!< MIC channel num */
     int agc_gain;                               /*!< AGC gain(dB) for voice communication */
-    bool aec_low_cost;                          /*!< AEC uses less cpu and ram resources,
-                                                     but has poor suppression of nonlinear distortion */
+    bool aec_low_cost;                          /*!< AEC uses less cpu and ram resources, but has poor suppression of nonlinear distortion */
+    char *partition_label;                      /*!< Partition label which stored the model data */
 } algorithm_stream_cfg_t;
 
 #define ALGORITHM_STREAM_DEFAULT_MASK    (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_NS)
@@ -147,6 +147,7 @@ typedef struct {
     .mic_ch = ALGORITHM_STREAM_DEFAULT_MIC_CHANNELS,                                              \
     .agc_gain = ALGORITHM_STREAM_DEFAULT_AGC_GAIN_DB,                                             \
     .aec_low_cost = false,                                                                        \
+    .partition_label = "model",                                                                   \
 }
 
 /**
