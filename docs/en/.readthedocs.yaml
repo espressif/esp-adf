@@ -1,0 +1,31 @@
+# .readthedocs.yml
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+# Required
+version: 2
+
+# Optionally build your docs in additional formats such as PDF and ePub
+formats:
+  - htmlzip
+  - pdf
+
+# Set the version of Python and other tools you might need
+build:
+  os: "ubuntu-20.04"
+  tools:
+    python: "3.6"
+
+# Optionally set the version of Python and requirements required to build your docs
+python:
+  install:
+    - requirements: docs/setuptools.requirements.txt
+    - requirements: docs/requirements.txt
+
+# We need to list all the submodules included in documentation build by Doxygen
+submodules:
+  include:
+    - components/esp-adf-libs
+
+sphinx:
+  configuration: docs/en/conf.py
