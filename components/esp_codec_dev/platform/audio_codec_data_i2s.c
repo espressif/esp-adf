@@ -154,6 +154,10 @@ static int set_drv_fs(i2s_chan_handle_t channel, bool playback, uint8_t slot_bit
                 i2s_pdm_rx_slot_config_t slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(slot_bits, I2S_SLOT_MODE_STEREO);
                 i2s_pdm_slot_mask_t slot_mask = fs->channel_mask ? 
                         (i2s_pdm_slot_mask_t) fs->channel_mask : I2S_PDM_SLOT_BOTH;
+                // Stereo channel mask is ignored in driver, need use mono instead
+                if (fs->channel_mask && fs->channel_mask < 3) {
+                    slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+                }
                 slot_cfg.slot_mask = slot_mask;
                 if (slot_bits > fs->bits_per_sample) {
                     slot_cfg.data_bit_width = fs->bits_per_sample;
@@ -175,6 +179,10 @@ static int set_drv_fs(i2s_chan_handle_t channel, bool playback, uint8_t slot_bit
 #if SOC_I2S_SUPPORTS_PDM_TX
                 i2s_pdm_tx_clk_config_t clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(fs->sample_rate);
                 i2s_pdm_tx_slot_config_t slot_cfg = I2S_PDM_TX_SLOT_DEFAULT_CONFIG(slot_bits, I2S_SLOT_MODE_STEREO);
+                // Stereo channel mask is ignored, need use mono instead
+                if (fs->channel_mask && fs->channel_mask < 3) {
+                    slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+                }
 #if SOC_I2S_HW_VERSION_1
                 i2s_pdm_slot_mask_t slot_mask = fs->channel_mask ? 
                         (i2s_pdm_slot_mask_t) fs->channel_mask : I2S_PDM_SLOT_BOTH;

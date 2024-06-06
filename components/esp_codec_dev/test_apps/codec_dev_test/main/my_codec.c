@@ -57,7 +57,8 @@ static bool my_codec_data_is_open(const audio_codec_data_if_t *h)
     return data_if->is_open;
 }
 
-static int my_codec_data_set_fmt(const audio_codec_data_if_t *h, esp_codec_dev_sample_info_t *fs)
+static int my_codec_data_set_fmt(const audio_codec_data_if_t *h, esp_codec_dev_type_t dev_caps,
+                                 esp_codec_dev_sample_info_t *fs)
 {
     my_codec_data_t *data_if = (my_codec_data_t *) h;
     memcpy(&data_if->fmt, fs, sizeof(esp_codec_dev_sample_info_t));

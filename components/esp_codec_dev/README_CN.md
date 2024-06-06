@@ -158,7 +158,7 @@ audio_codec_data_if_t ..> esp_codec_dev
 ## 使用方法
 
 以 ES8311 为例，下面将演示播放和录音的具体步骤
-1. 为编解码器设备的控制和数据总线安装驱动，可参考[test_board.c](test/test_board.c)   
+1. 为编解码器设备的控制和数据总线安装驱动，可参考[test_board.c](test_apps/codec_dev_test/main/test_board.c)   
    	```c
 	ut_i2c_init(0);
 	ut_i2s_init(0);
@@ -234,4 +234,4 @@ audio_codec_data_if_t ..> esp_codec_dev
 	const audio_codec_if_t *my_codec_new(my_codec_cfg_t *codec_cfg);
 	```
 
-更细节的实现可以参考测试代码 [my_codec.c](test/my_codec.c)。
+更细节的实现可以参考测试代码 [my_codec.c](test_apps/codec_dev_test/main/my_codec.c)。
