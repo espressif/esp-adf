@@ -150,9 +150,9 @@ esp_periph_set_handle_t esp_periph_set_init(esp_periph_config_t *config)
 
     //TODO: Should we uninstall gpio isr service??
     //TODO: Because gpio need for sdcard and gpio, then install isr here
-    ret = gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);
+    ret = gpio_install_isr_service(ESP_INTR_FLAG_LEVEL2);
     if (ret == ESP_ERR_NOT_FOUND) {
-        ESP_LOGE(TAG, "No free interrupt found with ESP_INTR_FLAG_LEVEL1");
+        ESP_LOGE(TAG, "No free interrupt found with ESP_INTR_FLAG_LEVEL2");
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0))
         ESP_LOGE(TAG,"Select an available interrupt level based on the interrupt table below");
         esp_intr_dump(stdout);
