@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "driver/i2c.h"
+
 #include "esp_idf_version.h"
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #include "driver/i2s_std.h"
@@ -16,6 +16,13 @@
 #include "esp_codec_dev_defaults.h"
 #include "test_board.h"
 #include "unity.h"
+
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+#include "driver/i2c_master.h"
+#define USE_IDF_I2C_MASTER
+#else
+#include "driver/i2c.h"
+#endif
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 
@@ -31,8 +38,22 @@ static i2s_comm_mode_t i2s_out_mode = I2S_COMM_MODE_STD;
 static i2s_keep_t *i2s_keep[I2S_MAX_KEEP];
 #endif
 
+#ifdef USE_IDF_I2C_MASTER
+static i2c_master_bus_handle_t i2c_bus_handle;
+#endif
+
 static int ut_i2c_init(uint8_t port)
 {
+#ifdef USE_IDF_I2C_MASTER
+    i2c_master_bus_config_t i2c_bus_config = {0};
+    i2c_bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
+    i2c_bus_config.i2c_port = port;
+    i2c_bus_config.scl_io_num = TEST_BOARD_I2C_SCL_PIN;
+    i2c_bus_config.sda_io_num = TEST_BOARD_I2C_SDA_PIN;
+    i2c_bus_config.glitch_ignore_cnt = 7;
+    i2c_bus_config.flags.enable_internal_pullup = true;
+    return i2c_new_master_bus(&i2c_bus_config, &i2c_bus_handle);
+#else
     i2c_config_t i2c_cfg = {
         .mode = I2C_MODE_MASTER,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
@@ -46,11 +67,20 @@ static int ut_i2c_init(uint8_t port)
         return -1;
     }
     return i2c_driver_install(port, i2c_cfg.mode, 0, 0, 0);
+#endif
 }
 
 static int ut_i2c_deinit(uint8_t port)
 {
+#ifdef USE_IDF_I2C_MASTER
+   if (i2c_bus_handle) {
+       i2c_del_master_bus(i2c_bus_handle);
+   }
+   i2c_bus_handle = NULL;
+   return 0;
+#else
     return i2c_driver_delete(port);
+#endif
 }
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
@@ -93,6 +123,7 @@ static int ut_i2s_init(uint8_t port)
     if (i2s_keep[port] == NULL) {
         return -1;
     }
+#if SOC_I2S_SUPPORTS_TDM 
     i2s_tdm_slot_mask_t slot_mask = I2S_TDM_SLOT0 | I2S_TDM_SLOT1 | I2S_TDM_SLOT2 | I2S_TDM_SLOT3;
     i2s_tdm_config_t tdm_cfg = {
         .slot_cfg = I2S_TDM_PHILIPS_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_STEREO, slot_mask),
@@ -106,19 +137,26 @@ static int ut_i2s_init(uint8_t port)
         },
     };
     tdm_cfg.slot_cfg.total_slot = 4;
+#endif
     int ret = i2s_new_channel(&chan_cfg, &i2s_keep[port]->tx_handle, &i2s_keep[port]->rx_handle);
     TEST_ESP_OK(ret);
     if (i2s_out_mode == I2S_COMM_MODE_STD) {
         ret = i2s_channel_init_std_mode(i2s_keep[port]->tx_handle, &std_cfg);
-    } else if (i2s_out_mode == I2S_COMM_MODE_TDM) {
+    }
+#if SOC_I2S_SUPPORTS_TDM 
+    else if (i2s_out_mode == I2S_COMM_MODE_TDM) {
         ret = i2s_channel_init_tdm_mode(i2s_keep[port]->tx_handle, &tdm_cfg);
     }
+#endif
     TEST_ESP_OK(ret);
     if (i2s_in_mode == I2S_COMM_MODE_STD) {
         ret = i2s_channel_init_std_mode(i2s_keep[port]->rx_handle, &std_cfg);
-    } else if (i2s_in_mode == I2S_COMM_MODE_TDM) {
+    } 
+#if SOC_I2S_SUPPORTS_TDM 
+    else if (i2s_in_mode == I2S_COMM_MODE_TDM) {
         ret = i2s_channel_init_tdm_mode(i2s_keep[port]->rx_handle, &tdm_cfg);
     }
+#endif
     TEST_ESP_OK(ret);
     // For tx master using duplex mode
     i2s_channel_enable(i2s_keep[port]->tx_handle);
@@ -170,18 +208,22 @@ static int ut_i2s_deinit(uint8_t port)
     return 0;
 }
 
-static int codec_max_sample(uint8_t *data, int size)
+static void codec_max_sample(uint8_t *data, int size, int *max_value, int *min_value)
 {
     int16_t *s = (int16_t *) data;
     size >>= 1;
-    int i = 0, max = 0;
+    int i = 1, max, min;
+    max = min = s[0];
     while (i < size) {
         if (s[i] > max) {
             max = s[i];
+        } else if (s[i] < min) {
+            min = s[i];
         }
         i++;
     }
-    return max;
+    *max_value = max;
+    *min_value = min;
 }
 
 TEST_CASE("esp codec dev test using S3 board", "[esp_codec_dev]")
@@ -202,6 +244,9 @@ TEST_CASE("esp codec dev test using S3 board", "[esp_codec_dev]")
     TEST_ASSERT_NOT_NULL(data_if);
 
     audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR};
+#ifdef USE_IDF_I2C_MASTER
+    i2c_cfg.bus_handle = i2c_bus_handle;
+#endif
     const audio_codec_ctrl_if_t *out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
     TEST_ASSERT_NOT_NULL(out_ctrl_if);
 
@@ -260,21 +305,18 @@ TEST_CASE("esp codec dev test using S3 board", "[esp_codec_dev]")
     uint8_t *data = (uint8_t *) malloc(512);
     int limit_size = 10 * fs.sample_rate * fs.channel * (fs.bits_per_sample >> 3);
     int got_size = 0;
-    int max_sample = 0;
     // Playback the recording content directly
     while (got_size < limit_size) {
         ret = esp_codec_dev_read(record_dev, data, 512);
         TEST_ESP_OK(ret);
         ret = esp_codec_dev_write(play_dev, data, 512);
         TEST_ESP_OK(ret);
-        int max_value = codec_max_sample(data, 512);
-        if (max_value > max_sample) {
-            max_sample = max_value;
-        }
+        int max_sample, min_sample;
+        codec_max_sample(data, 512, &max_sample, &min_sample);
+         // Verify recording data not constant
+        TEST_ASSERT(max_sample > min_sample);
         got_size += 512;
     }
-    // Verify recording data not zero
-    TEST_ASSERT(max_sample > 0);
     free(data);
 
     ret = esp_codec_dev_close(play_dev);
@@ -301,7 +343,11 @@ TEST_CASE("esp codec dev test using S3 board", "[esp_codec_dev]")
 TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
 {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#if SOC_I2S_SUPPORTS_TDM 
     ut_set_i2s_mode(I2S_COMM_MODE_STD, I2S_COMM_MODE_TDM);
+#else
+    TEST_ESP_OK(-1);
+#endif
     // Need install driver (i2c and i2s) firstly
     int ret = ut_i2c_init(0);
     TEST_ESP_OK(ret);
@@ -316,6 +362,9 @@ TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
     TEST_ASSERT_NOT_NULL(data_if);
 
     audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR};
+#ifdef USE_IDF_I2C_MASTER
+    i2c_cfg.bus_handle = i2c_bus_handle;
+#endif
     const audio_codec_ctrl_if_t *out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
     TEST_ASSERT_NOT_NULL(out_ctrl_if);
 
@@ -376,21 +425,18 @@ TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
     uint8_t *data = (uint8_t *) malloc(512);
     int limit_size = 10 * fs.sample_rate * fs.channel * (fs.bits_per_sample >> 3);
     int got_size = 0;
-    int max_sample = 0;
     // Playback the recording content directly
     while (got_size < limit_size) {
         ret = esp_codec_dev_read(record_dev, data, 512);
         TEST_ESP_OK(ret);
         ret = esp_codec_dev_write(play_dev, data, 512);
         TEST_ESP_OK(ret);
-        int max_value = codec_max_sample(data, 512);
-        if (max_value > max_sample) {
-            max_sample = max_value;
-        }
+        int max_sample, min_sample;
+        codec_max_sample(data, 512, &max_sample, &min_sample);
+        // Verify recording data not constant
+        TEST_ASSERT(max_sample > min_sample);
         got_size += 512;
     }
-    // Verify recording data not zero
-    TEST_ASSERT(max_sample > 0);
     free(data);
 
     ret = esp_codec_dev_close(play_dev);

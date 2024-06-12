@@ -1,4 +1,4 @@
-version: 1.1.0
+version: 1.2.0
 description: Audio codec device support for Espressif SOC
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_codec_dev
 
