@@ -157,7 +157,7 @@ static void recorder_sr_disable_wakenet_aec(recorder_sr_t *recorder_sr)
 }
 #endif
 
-static esp_err_t recorder_mn_detect(recorder_sr_t *recorder_sr, int16_t *buffer, int afe_res)
+static esp_err_t recorder_mn_detect(recorder_sr_t *recorder_sr, afe_fetch_result_t *afe_result)
 {
     static int detect_flag = 0;
 
@@ -170,18 +170,24 @@ static esp_err_t recorder_mn_detect(recorder_sr_t *recorder_sr, int16_t *buffer,
         }
         return ESP_OK;
     }
+    if (recorder_sr->wwe_enable) {
 #if CONFIG_IDF_TARGET_ESP32
-    if (afe_res == WAKENET_DETECTED) {
-        detect_flag = 1;
-        recorder_sr_disable_wakenet_aec(recorder_sr);
-    }
+        if (afe_result->wakeup_state == WAKENET_DETECTED) {
+            detect_flag = 1;
+            recorder_sr_disable_wakenet_aec(recorder_sr);
+        }
 #elif CONFIG_IDF_TARGET_ESP32S3
-    if (afe_res == WAKENET_CHANNEL_VERIFIED) {
-        detect_flag = 1;
-    }
+        if (afe_result->wakeup_state == WAKENET_CHANNEL_VERIFIED) {
+            detect_flag = 1;
+        }
 #endif
+    } else {
+        if (afe_result->vad_state == AFE_VAD_SPEECH) {
+            detect_flag = 1;
+        }
+    }
     if (detect_flag == 1) {
-        esp_mn_state_t mn_state = multinet->detect(recorder_sr->mn_handle, buffer);
+        esp_mn_state_t mn_state = multinet->detect(recorder_sr->mn_handle, afe_result->data);
 
         if (mn_state == ESP_MN_STATE_DETECTING) {
             return ESP_OK;
@@ -270,7 +276,7 @@ static void fetch_task(void *parameters)
 
         afe_fetch_result_t *afe_result = esp_afe->fetch(recorder_sr->afe_handle);
 #ifdef CONFIG_USE_MULTINET
-        recorder_mn_detect(recorder_sr, afe_result->data, afe_result->wakeup_state);
+        recorder_mn_detect(recorder_sr, afe_result);
 #endif
         if (recorder_sr->afe_monitor) {
             recorder_sr_result_t sr_result = {0};
@@ -313,6 +319,9 @@ static esp_err_t recorder_sr_suspend(void *handle, bool suspend)
             rb_done_write(recorder_sr->out_rb);
         }
     } else {
+        if (recorder_sr->out_rb) {
+            rb_reset(recorder_sr->out_rb);
+        }
         xEventGroupSetBits(recorder_sr->events, FEED_TASK_RUNNING);
         xEventGroupSetBits(recorder_sr->events, FETCH_TASK_RUNNING);
     }
@@ -345,7 +354,11 @@ static esp_err_t recorder_sr_enable(void *handle, bool enable)
                 true,
                 recorder_sr->fetch_task_core);
         }
-        recorder_sr_suspend(handle, !recorder_sr->wwe_enable);
+        bool enable = (recorder_sr->wwe_enable || recorder_sr->vad_enable);
+#ifdef CONFIG_USE_MULTINET
+        enable |= recorder_sr->mn_enable;
+#endif
+        recorder_sr_suspend(handle, !enable);
 
         if (recorder_sr->out_rb) {
             rb_reset(recorder_sr->out_rb);

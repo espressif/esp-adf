@@ -335,7 +335,15 @@ static void start_recorder()
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
     recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     recorder_sr_cfg.afe_cfg.wakenet_init = WAKENET_ENABLE;
+    recorder_sr_cfg.afe_cfg.vad_mode = VAD_MODE_4;
     recorder_sr_cfg.multinet_init = MULTINET_ENABLE;
+#if !defined(CONFIG_SR_MN_CN_NONE)
+    recorder_sr_cfg.mn_language = ESP_MN_CHINESE;
+#elif !defined(CONFIG_SR_MN_EN_NONE)
+    recorder_sr_cfg.mn_language = ESP_MN_ENGLISH;
+#else
+    recorder_sr_cfg.mn_language = "";
+#endif
     recorder_sr_cfg.afe_cfg.aec_init = RECORD_HARDWARE_AEC;
     recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
 #if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)

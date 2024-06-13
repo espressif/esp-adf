@@ -50,6 +50,12 @@ typedef void *recorder_sr_handle_t;
 
 /**
  * @brief SR processor configuration
+ * @note  Since the detection of command words requires a clear starting point,
+ *        the moment the wake word is detected is taken as the default start of detection.
+ *        Therefore, if the wake word detection is disabled,
+ *        the detection will use the `vad_state` detected by `esp-sr` as the start of detection.
+ *        However, due to the fluctuation of this `vad_state`,
+ *        the effectiveness of command word detection will be limited.
  */
 typedef struct {
     afe_config_t afe_cfg;                               /*!< Configuration of AFE */
