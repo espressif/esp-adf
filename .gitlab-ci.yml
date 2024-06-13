@@ -77,6 +77,7 @@ include:
   - '.gitlab/ci/build-ut.yml'
   - '.gitlab/ci/build-examples-v5-x.yml'
   - '.gitlab/ci/build-examples.yml'
+  - '.gitlab/ci/build-micropython-adf.yml'
   - '.gitlab/ci/assign-test.yml'
   - '.gitlab/ci/target-ut-test.yml'
   - '.gitlab/ci/target-examples-test-v5-x.yml'

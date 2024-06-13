@@ -1,0 +1,65 @@
+.get_micropython: &get_micropython |
+  mkdir ${MICROPYTHON_PATH}
+  cd ${MICROPYTHON_PATH}
+  git init
+  git remote add origin https://github.com/micropython/micropython.git
+  git fetch origin ${MICROPYTHON_COMMIT_ID}:feature/support_adf --depth 1
+  git checkout feature/support_adf
+  git submodule update --init --recursive --depth 1
+  git apply ${ADF_PATH}/micropython_adf/mp.diff
+  rm ${IDF_PATH}/components/fatfs/CMakeLists.txt
+
+.build_micropython_board: &build_micropython_board |
+  mkdir ${ARTIFACTS_PATH}
+  cd ${MICROPYTHON_PATH}/ports/esp32
+  idf.py build -D MICROPY_BOARD_DIR=${ADF_PATH}/micropython_adf/boards/lyrat43 -D USER_C_MODULES=${ADF_PATH}/micropython_adf/mod/micropython.cmake
+  mv build ${ARTIFACTS_PATH}/lyrat43
+  idf.py build -D MICROPY_BOARD_DIR=${ADF_PATH}/micropython_adf/boards/korvo2v3 -D USER_C_MODULES=${ADF_PATH}/micropython_adf/mod/micropython.cmake
+  mv build ${ARTIFACTS_PATH}/korvo2v3
+  idf.py build -D MICROPY_BOARD_DIR=${ADF_PATH}/micropython_adf/boards/lyratmini -D USER_C_MODULES=${ADF_PATH}/micropython_adf/mod/micropython.cmake
+  mv build ${ARTIFACTS_PATH}/lyratmini
+
+.build_micropython_cmake_template: &build_micropython_cmake_template
+  stage: build
+  image: "$ADF_DOCKER_REGISTRY/env_v5.0:4"
+  tags:
+    - build
+    - audio_server
+  parallel: 1
+  interruptible: true
+  dependencies: null
+  variables:
+    # Obtain release/${IDF_VERSION_TAG} first based on this variable. View details in the 'check_idf_version()' of utils.sh
+    DEEP_CLONE: "false"
+    IDF_FIND_APP_PATH_ARG: "-p"
+    IDF_PATH: "$ADF_PATH/esp-idf"
+    IDF_PATCH_DIR: "$ADF_PATH/idf_patches"
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.$IDF_TARGET"
+    IDF_PATCH: idf_v5.0_freertos.patch
+    IDF_VERSION_TAG: v5.0.4
+    IDF_TAG_FLAG: "true"
+  script:
+    - fetch_idf_branch ${IDF_VERSION_TAG}
+    - common_before_scripts
+    - setup_tools_and_idf_python_venv
+    - set_env_variable
+    - cd $ADF_PATH
+    - cd $IDF_PATH; git apply $IDF_PATCH_DIR/$IDF_PATCH; cd -
+    - *get_micropython
+    - *build_micropython_board
+
+.matrix_template: &matrix_template
+  parallel:
+    matrix:
+      - IDF_VERSION_TAG: ['v5.0.4']
+        parallel: [ 1 ]
+
+build_micropython_adf:
+  extends:
+    - .rules:build:non-regular-board-idf-ver-tag
+    - .build_micropython_cmake_template
+    - .matrix_template
+  variables:
+    ARTIFACTS_PATH: "${ADF_PATH}/build"
+    MICROPYTHON_PATH: "${ADF_PATH}/micropython"
+    MICROPYTHON_COMMIT_ID: "5114f2c1ea7c05fc7ab920299967595cfc5307de"

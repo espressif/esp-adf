@@ -48,7 +48,7 @@
   if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example(?:,[^,\n\r]+)*$/i'
 
 .if-idf-version-tag-v5-0: &if-idf-version-tag-v5-0
-  if: '$IDF_VERSION_TAG == "v5.0"'
+  if: '($IDF_VERSION_TAG == "v5.0.4" || $IDF_VERSION_TAG == "v5.0")'
   variables:
     IMAGE: "$ADF_DOCKER_REGISTRY/env_v5.0:4"
     IDF_PATCH: idf_v5.0_freertos.patch
