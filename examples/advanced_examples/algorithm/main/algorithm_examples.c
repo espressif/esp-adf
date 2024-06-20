@@ -17,11 +17,13 @@
 #include "board.h"
 #include "es8311.h"
 #include "fatfs_stream.h"
+#include "i2s_stream.h"
+#include "algorithm_stream.h"
 #include "wav_encoder.h"
 #include "mp3_decoder.h"
 #include "filter_resample.h"
-#include "algorithm_stream.h"
 #include "audio_mem.h"
+#include "audio_sys.h"
 #include "audio_idf_version.h"
 
 static const char *TAG = "ALGORITHM_EXAMPLES";
@@ -48,6 +50,8 @@ extern const uint8_t adf_music_mp3_end[]   asm("_binary_test_mp3_end");
 #if !RECORD_HARDWARE_AEC
 static ringbuf_handle_t ringbuf_ref;
 #endif
+static audio_element_handle_t i2s_stream_reader;
+static audio_element_handle_t i2s_stream_writter;
 
 int mp3_music_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
@@ -63,46 +67,11 @@ int mp3_music_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t 
     return read_size;
 }
 
-static esp_err_t i2s_driver_init(i2s_port_t port, i2s_channel_fmt_t channels, i2s_bits_per_sample_t bits)
-{
-    i2s_config_t i2s_cfg = {
-        .mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX,
-        .sample_rate = I2S_SAMPLE_RATE,
-        .bits_per_sample = bits,
-        .channel_format = channels,
-#if (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 3, 0))
-        .communication_format = I2S_COMM_FORMAT_I2S,
-#else
-        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-#endif
-        .tx_desc_auto_clear = true,
-        .dma_buf_count = 8,
-        .dma_buf_len = 64,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-    };
-
-    i2s_driver_install(port, &i2s_cfg, 0, NULL);
-    board_i2s_pin_t board_i2s_pin = {0};
-    i2s_pin_config_t i2s_pin_cfg;
-    get_i2s_pins(port, &board_i2s_pin);
-    i2s_pin_cfg.bck_io_num = board_i2s_pin.bck_io_num;
-    i2s_pin_cfg.ws_io_num = board_i2s_pin.ws_io_num;
-    i2s_pin_cfg.data_out_num = board_i2s_pin.data_out_num;
-    i2s_pin_cfg.data_in_num = board_i2s_pin.data_in_num;
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
-    i2s_pin_cfg.mck_io_num = board_i2s_pin.mck_io_num;
-#endif
-    i2s_set_pin(port, &i2s_pin_cfg);
-
-    return ESP_OK;
-}
-
 static int i2s_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
-    size_t bytes_read = 0;
 
-    int ret = i2s_read(CODEC_ADC_I2S_PORT, buf, len, &bytes_read, wait_time);
-    if (ret == ESP_OK) {
+    size_t bytes_read = audio_element_input(i2s_stream_reader, buf, len);
+    if (bytes_read > 0) {
 #if (CONFIG_IDF_TARGET_ESP32 && !RECORD_HARDWARE_AEC)
         algorithm_mono_fix((uint8_t *)buf, bytes_read);
 #endif
@@ -115,7 +84,7 @@ static int i2s_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t
 
 static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
-    size_t bytes_write = 0;
+    int bytes_write = 0;
 
 #if !RECORD_HARDWARE_AEC
     if (rb_write(ringbuf_ref, buf, len, wait_time) <= 0) {
@@ -126,11 +95,10 @@ static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_
 #if (CONFIG_IDF_TARGET_ESP32 && !RECORD_HARDWARE_AEC)
     algorithm_mono_fix((uint8_t *)buf, len);
 #endif
-    int ret = i2s_write_expand(I2S_NUM_0, buf, len, 16, I2S_BITS, &bytes_write, wait_time);
-    if (ret != ESP_OK) {
+    bytes_write = audio_element_output(i2s_stream_writter, buf, len);
+    if (bytes_write < 0) {
         ESP_LOGE(TAG, "i2s write failed");
     }
-
     return bytes_write;
 }
 
@@ -147,23 +115,20 @@ void app_main()
     audio_board_sdcard_init(set, SD_MODE_1_LINE);
 
     ESP_LOGI(TAG, "[2.0] Start codec chip");
-    i2s_driver_init(I2S_NUM_0, I2S_CHANNELS, I2S_BITS);
+    i2s_stream_cfg_t i2s_w_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, I2S_SAMPLE_RATE, I2S_BITS, AUDIO_STREAM_WRITER);
+    i2s_w_cfg.task_stack = -1;
+    i2s_w_cfg.need_expand = (16 != I2S_BITS);
+    i2s_stream_set_channel_type(&i2s_w_cfg, I2S_CHANNELS);
+    i2s_stream_writter = i2s_stream_init(&i2s_w_cfg);
 
-#if (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD || CONFIG_ESP32_S3_KORVO2_V3_BOARD)
-    audio_board_handle_t board_handle = (audio_board_handle_t) audio_calloc(1, sizeof(struct audio_board_handle));
-    audio_hal_codec_config_t audio_codec_cfg = AUDIO_CODEC_DEFAULT_CONFIG();
-    audio_codec_cfg.i2s_iface.samples = AUDIO_HAL_08K_SAMPLES;
-    board_handle->audio_hal = audio_hal_init(&audio_codec_cfg, &AUDIO_CODEC_ES8311_DEFAULT_HANDLE);
-    board_handle->adc_hal = audio_board_adc_init();
-#else
     audio_board_handle_t board_handle = audio_board_init();
-#endif
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
     audio_hal_set_volume(board_handle->audio_hal, 60);
 
-#if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    i2s_driver_init(I2S_NUM_1, I2S_CHANNELS, I2S_BITS);
-#endif
+    i2s_stream_cfg_t i2s_r_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, I2S_SAMPLE_RATE, I2S_BITS, AUDIO_STREAM_READER);
+    i2s_r_cfg.task_stack = -1;
+    i2s_stream_set_channel_type(&i2s_r_cfg, I2S_CHANNELS);
+    i2s_stream_reader = i2s_stream_init(&i2s_r_cfg);
 
     ESP_LOGI(TAG, "[3.0] Create audio pipeline_rec for recording");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -248,7 +213,7 @@ void app_main()
     audio_pipeline_link(pipeline_play, &link_tag[0], 2);
 
 #if !RECORD_HARDWARE_AEC
-    //Please reference the way of ALGORITHM_STREAM_INPUT_TYPE2 in "algorithm_stream.h"
+    // Please reference the way of ALGORITHM_STREAM_INPUT_TYPE2 in "algorithm_stream.h"
     ringbuf_ref = rb_create(ALGORITHM_STREAM_RINGBUFFER_SIZE, 1);
     audio_element_set_multi_input_ringbuf(element_algo, ringbuf_ref, 0);
 
@@ -321,6 +286,8 @@ void app_main()
     audio_pipeline_stop(pipeline_play);
     audio_pipeline_wait_for_stop(pipeline_play);
     audio_pipeline_deinit(pipeline_play);
+    audio_element_deinit(i2s_stream_reader);
+    audio_element_deinit(i2s_stream_writter);
 
     /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline_play);

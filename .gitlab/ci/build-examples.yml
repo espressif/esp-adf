@@ -52,6 +52,7 @@ include:
 
     - export PYTHONPATH=$IDF_PATH/tools/ci/python_packages:$IDF_PATH/tools
     - echo "Ready to scan the examples"
+    - python -m pip install --upgrade idf-component-manager
     - python $CI_SCAN_TESTS_PY example_test $EXAMPLE_TEST_DIR -b cmake --exclude $ADF_PATH/examples/korvo_du1906 -c $TEST_CONFIG_FILE -o $EXAMPLE_TEST_OUTPUT_DIR
 
     # - export PEDANTIC_CFLAGS="-Werror -Wno-implicit-fallthrough"

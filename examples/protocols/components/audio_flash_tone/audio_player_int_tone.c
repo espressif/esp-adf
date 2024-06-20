@@ -40,6 +40,7 @@ static audio_element_handle_t i2s_writer;
 
 static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
+    stream_func i2s_write_func = (stream_func)ctx;
     size_t bytes_write = 0, size = len;
     AUDIO_UNUSED(size);
 #ifndef CONFIG_ESP32_S3_KORVO2L_V1_BOARD
@@ -54,11 +55,10 @@ static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_
 #if CONFIG_IDF_TARGET_ESP32
     algorithm_mono_fix((uint8_t *)buf, size);
 #endif
-    int ret = audio_element_output(el, buf, len);
-    if (ret != ESP_OK) {
+    int ret = i2s_write_func(el, buf, len, wait_time, ctx);
+    if (ret < 0) {
         ESP_LOGE(TAG, "i2s write failed");
     }
-
     return bytes_write;
 }
 
@@ -82,16 +82,16 @@ audio_err_t audio_player_int_tone_init(int sample_rate, int channel_format, int 
     mp3_dec_cfg.task_prio = 20;
     esp_audio_codec_lib_add(player, AUDIO_CODEC_TYPE_DECODER, mp3_decoder_init(&mp3_dec_cfg));
 
-    i2s_stream_cfg_t i2s_writer_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_stream_cfg_t i2s_writer_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, sample_rate, bits_per_sample, AUDIO_STREAM_WRITER);
     i2s_writer_cfg.type = AUDIO_STREAM_WRITER;
     i2s_writer_cfg.stack_in_ext = true;
     i2s_writer_cfg.task_core = 1;
     i2s_writer_cfg.need_expand = true;
     i2s_writer_cfg.expand_src_bits = 16;
+    i2s_stream_set_channel_type(&i2s_writer_cfg, channel_format);
     i2s_writer = i2s_stream_init(&i2s_writer_cfg);
-    i2s_stream_set_clk(i2s_writer, sample_rate, bits_per_sample, channel_format);
     esp_audio_output_stream_add(player, i2s_writer);
-    audio_element_set_write_cb(i2s_writer, i2s_write_cb, NULL);
+    audio_element_set_write_cb(i2s_writer, i2s_write_cb, audio_element_get_write_cb(i2s_writer));
     audio_element_set_output_timeout(i2s_writer, portMAX_DELAY);
 
     return ESP_OK;

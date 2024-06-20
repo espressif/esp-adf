@@ -477,6 +477,29 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     return el;
 }
 
+esp_err_t i2s_stream_set_channel_type(i2s_stream_cfg_t *config, i2s_channel_type_t type)
+{
+    AUDIO_NULL_CHECK(TAG, config != NULL, {return ESP_ERR_INVALID_ARG;});
+    switch (type) {
+        case I2S_CHANNEL_TYPE_RIGHT_LEFT:
+            config->i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+            break;
+        case I2S_CHANNEL_TYPE_ONLY_RIGHT:
+            config->i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT;
+            break;
+        case I2S_CHANNEL_TYPE_ONLY_LEFT:
+            config->i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+            break;
+        case I2S_CHANNEL_TYPE_ALL_RIGHT:
+            config->i2s_config.channel_format = I2S_CHANNEL_FMT_ALL_RIGHT;
+            break;
+        case I2S_CHANNEL_TYPE_ALL_LEFT:
+            config->i2s_config.channel_format = I2S_CHANNEL_FMT_ALL_LEFT;
+            break;
+    }
+    return ESP_OK;
+}
+
 esp_err_t i2s_stream_sync_delay(audio_element_handle_t i2s_stream, int delay_ms)
 {
     char *in_buffer = NULL;

@@ -29,6 +29,7 @@
 #include "raw_stream.h"
 #include "algorithm_stream.h"
 #include "fatfs_stream.h"
+#include "i2s_stream.h"
 #include "wav_encoder.h"
 #include "esp_g711.h"
 #include "esp_aac_enc.h"
@@ -200,7 +201,7 @@ static void _audio_enc(void* pv)
     int16_t *g711_buffer_16 = NULL;
 
     if (av_stream->config.acodec_type == AV_ACODEC_AAC_LC) {
-        frame_buf = jpeg_malloc_align(AUDIO_MAX_SIZE, 16);
+        frame_buf = audio_malloc_align(16, AUDIO_MAX_SIZE);
     } else {
         frame_buf = audio_calloc(1, AUDIO_MAX_SIZE);
         g711_buffer_16 = (int16_t *)(frame_buf);
@@ -223,6 +224,7 @@ static void _audio_enc(void* pv)
         enc.pts = (av_stream->audio_pos * 1000) / (av_stream->config.hal.audio_samplerate * 1 * 16 / 8);
         switch ((int)av_stream->config.acodec_type) {
             case AV_ACODEC_PCM:
+                memcpy(enc.data, frame_buf, enc.len);
                 break;
             case AV_ACODEC_AAC_LC:
                 esp_aac_enc_process(av_stream->aac_enc, (uint8_t *)frame_buf, enc.len, enc.data, &len);
@@ -492,7 +494,7 @@ static void _audio_dec(void* pv)
                 }
             }
 
-            if (_have_hardware_ref(av_stream) && (I2S_CHANNELS == I2S_CHANNEL_FMT_RIGHT_LEFT)) {
+            if (_have_hardware_ref(av_stream) && (I2S_CHANNELS == I2S_CHANNEL_TYPE_RIGHT_LEFT)) {
                 // 1ch -> 2ch
                 write_len = 2 * write_len;
                 if (buf_2ch == NULL) {

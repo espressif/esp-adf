@@ -76,6 +76,20 @@ void *audio_malloc(size_t size)
     return data;
 }
 
+void *audio_malloc_align(size_t alignment, size_t size)
+{
+    void *data = NULL;
+#if CONFIG_SPIRAM_BOOT_INIT
+    data = heap_caps_aligned_alloc(alignment, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+#else
+    data = heap_caps_aligned_alloc(alignment, size, MALLOC_CAP_DEFAULT);
+#endif
+#ifdef ENABLE_AUDIO_MEM_TRACE
+    media_lib_add_trace_mem(NULL, data, size, 0);
+#endif
+    return data;
+}
+
 void audio_free(void *ptr)
 {
 #ifdef ENABLE_AUDIO_MEM_TRACE
@@ -153,13 +167,12 @@ void *audio_calloc_inner(size_t n, size_t size)
 void audio_mem_print(const char *tag, int line, const char *func)
 {
 #ifdef CONFIG_SPIRAM_BOOT_INIT
-    ESP_LOGI(tag, "Func:%s, Line:%d, MEM Total:%d Bytes, Inter:%d Bytes, Dram:%d Bytes\r\n", func, line, (int)esp_get_free_heap_size(),
-            (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    ESP_LOGI(tag, "Func:%s, Line:%d, MEM Total:%d Bytes, Inter:%d Bytes, Dram:%d Bytes, Dram largest free:%zuBytes\r\n", func, line, (int)esp_get_free_heap_size(),
+            (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
 #else
     ESP_LOGI(tag, "Func:%s, Line:%d, MEM Total:%d Bytes\r\n", func, line, (int)esp_get_free_heap_size());
 #endif
 }
-
 
 bool audio_mem_spiram_is_enabled(void)
 {

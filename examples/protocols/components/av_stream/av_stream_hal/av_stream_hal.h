@@ -26,6 +26,7 @@
 
 #include "esp_log.h"
 #include "driver/i2s.h"
+#include "i2s_stream.h"
 #include "board.h"
 #include "esp_lcd_panel_ops.h"
 
@@ -43,9 +44,9 @@ extern "C" {
 #define I2S_DEFAULT_BITS            CODEC_ADC_BITS_PER_SAMPLE
 
 #if CONFIG_ESP32_S3_KORVO2L_V1_BOARD // ES8311 need ADCL + DACR for AEC feature
-#define I2S_CHANNELS                I2S_CHANNEL_FMT_RIGHT_LEFT
+#define I2S_CHANNELS                I2S_CHANNEL_TYPE_RIGHT_LEFT
 #else
-#define I2S_CHANNELS                I2S_CHANNEL_FMT_ONLY_LEFT
+#define I2S_CHANNELS                I2S_CHANNEL_TYPE_ONLY_LEFT
 #endif
 
 #define USB_CAMERA_FRAME_INTERVAL(fps) ((10000000) / fps)

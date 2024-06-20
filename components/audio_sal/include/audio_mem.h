@@ -43,6 +43,19 @@ extern "C" {
 void *audio_malloc(size_t size);
 
 /**
+ * @brief  Malloc an aligned chunk of memory in ADF
+ *
+ * @param[in]  alignment  How the pointer received needs to be aligned
+ *                        must be a power of two
+ * @param[in]  size       memory size
+ *
+ * @return
+ *     - valid pointer on success
+ *     - NULL when any errors
+ */
+void *audio_malloc_align(size_t alignment, size_t size);
+
+/**
  * @brief   Free memory in ADF
  *
  * @param[in]  ptr  memory pointer
