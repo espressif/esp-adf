@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 from typing import List
 
-from idf_build_apps import LOGGER, App, build_apps, find_apps, setup_logging
+from idf_build_apps import App, build_apps, find_apps, setup_logging, utils
 
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 APPS_BUILD_PER_JOB = 30
@@ -24,6 +24,22 @@ IGNORE_WARNINGS = [
     r'DeprecationWarning: pkg_resources is deprecated as an API',
     r'The smallest .+ partition is nearly full \(\d+% free space left\)!',
 ]
+
+def compare_versions(v1, v2):
+    v1_parts = v1[1:].split('.')
+    v2_parts = v2[1:].split('.')
+
+    if int(v1_parts[0]) > int(v2_parts[0]):
+        return True
+    elif int(v1_parts[0]) < int(v2_parts[0]):
+        return False
+    else:
+        if int(v1_parts[1]) > int(v2_parts[1]):
+            return True
+        elif int(v1_parts[1]) < int(v2_parts[1]):
+            return False
+        else:
+            return False
 
 def _get_idf_version():
     if os.environ.get('IDF_VERSION'):
@@ -45,20 +61,42 @@ def get_cmake_apps(
     default_build_targets,
 ):  # type: (List[str], str, List[str]) -> List[App]
     idf_ver = _get_idf_version()
-    apps = find_apps(
-        paths,
-        recursive=True,
-        target=target,
-        build_dir=f'{idf_ver}/build_@t_@w',
-        config_rules_str=config_rules_str,
-        build_log_path='build_log.txt',
-        size_json_path='size.json',
-        check_warnings=True,
-        preserve=True,
-        default_build_targets=default_build_targets,
-        manifest_files=[str(p) for p in Path(os.environ['ADF_PATH']).glob('**/.build-test-rules.yml')],
-    )
-    return apps
+
+    if '/' in idf_ver:
+        idf_ver_str = idf_ver.split('/')[1]
+    else:
+        idf_ver_str = idf_ver
+
+    if compare_versions("v5.3", idf_ver_str):
+        apps = find_apps(
+            paths,
+            recursive=True,
+            target=target,
+            build_dir=f'{idf_ver}/build_@t_@w',
+            config_rules_str=config_rules_str,
+            build_log_path='build_log.txt',
+            size_json_path='size.json',
+            check_warnings=True,
+            preserve=True,
+            default_build_targets=default_build_targets,
+            manifest_files=[str(p) for p in Path(os.environ['ADF_PATH']).glob('**/.build-test-rules.yml')],
+        )
+        return apps
+    else:
+        apps = find_apps(
+            paths,
+            recursive=True,
+            target=target,
+            build_dir=f'{idf_ver}/build_@t_@w',
+            config_rules_str=config_rules_str,
+            build_log_filename='build_log.txt',
+            size_json_filename='size.json',
+            check_warnings=True,
+            preserve=True,
+            default_build_targets=default_build_targets,
+            manifest_files=[str(p) for p in Path(os.environ['ADF_PATH']).glob('**/.build-test-rules.yml')],
+        )
+        return apps
 
 def main(args):  # type: (argparse.Namespace) -> None
     default_build_targets = args.default_build_targets.split(',') if args.default_build_targets else None
@@ -68,8 +106,8 @@ def main(args):  # type: (argparse.Namespace) -> None
     else:
         apps_to_build = apps[:]
 
-    LOGGER.info('Found %d apps after filtering', len(apps_to_build))
-    LOGGER.info(
+    print('Found %d apps after filtering', len(apps_to_build))
+    print(
         'Suggest setting the parallel count to %d for this build job',
         len(apps_to_build) // APPS_BUILD_PER_JOB + 1,
     )

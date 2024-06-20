@@ -199,7 +199,9 @@ function set_env_variable() {
 
 function check_apps_and_filter() {
   if [[ -n "${ADF_PATH}" && -n "${IDF_TARGET}" && -n "${AUDIO_BOARD}" && -n "${IDF_VERSION_TAG}" && -n "${SDKCFG_DEFAULTS}" ]]; then
-    source ${ADF_PATH}/tools/ci/apps_filter.sh ${IDF_TARGET} ${AUDIO_BOARD} ${IDF_VERSION_TAG} ${ADF_PATH}/tools/ci/apps.json
+    echo -e "\e[32m$ source ${ADF_PATH}/tools/ci/apps_filter.sh ${IDF_TARGET} ${AUDIO_BOARD} ${IDF_VERSION_TAG} ${ADF_PATH}/tools/ci/apps.json ${ADF_PATH}/tools/ci/audio_board_idf.json\e[0m"
+    source ${ADF_PATH}/tools/ci/apps_filter.sh ${IDF_TARGET} ${AUDIO_BOARD} ${IDF_VERSION_TAG} ${ADF_PATH}/tools/ci/apps.json ${ADF_PATH}/tools/ci/audio_board_idf.json
+    echo -e "\e[32m$ source ${ADF_PATH}/tools/ci/check_apps_json_and_sdkcfg.sh ${SDKCFG_DEFAULTS} ${AUDIO_BOARD}\e[0m"
     source ${ADF_PATH}/tools/ci/check_apps_json_and_sdkcfg.sh ${SDKCFG_DEFAULTS} ${AUDIO_BOARD}
   else
     echo "Environment variables are empty"
