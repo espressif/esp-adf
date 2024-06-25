@@ -1,9 +1,10 @@
 [submodule "esp-idf"]
-	path = esp-idf
-	url = https://github.com/espressif/esp-idf
+path = esp-idf
+url = https://github.com/espressif/esp-idf
+branch = release/v5.1
 [submodule "components/esp-adf-libs"]
-	path = components/esp-adf-libs
-	url = https://github.com/espressif/esp-adf-libs
+path = components/esp-adf-libs
+url = https://github.com/espressif/esp-adf-libs
 [submodule "components/esp-sr"]
-	path = components/esp-sr
-	url = https://github.com/espressif/esp-sr.git
+path = components/esp-sr
+url = https://github.com/espressif/esp-sr.git
