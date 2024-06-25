@@ -28,6 +28,8 @@ Additional third party copyrighted code is included under the following licenses
 
 * `jpeg-dec`_ library is Copyright (C) 2019, ChaN. 
 
+* `alac`_ library is Copyright (C) 2004, developed by Apple, and is licensed under the Apache License Version 2.0.
+
 Please refer to the `COPYRIGHT <http://esp-idf.readthedocs.io/en/latest/COPYRIGHT.html>`_ in ESP-IDF Programming Guide
 
 Where source code headers specify Copyright & License information, this information takes precedence over the summaries made here.
@@ -42,3 +44,4 @@ Where source code headers specify Copyright & License information, this informat
 .. _aac-enc: https://github.com/mstorsjo/vo-aacenc
 .. _adpcm: https://github.com/aikiriao/IMA-ADPCM
 .. _jpeg-dec: http://www.elm-chan.org/fsw/tjpgd/00index.html
+.. _alac: https://github.com/macosforge/alac
