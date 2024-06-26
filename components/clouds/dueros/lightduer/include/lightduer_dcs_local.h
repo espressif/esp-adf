@@ -150,6 +150,7 @@ extern const char *DCS_GET_STATUS_NAME;
 extern const char *DCS_STOP_SPEAK_NAME;
 extern const char *DCS_SET_BLUETOOTH_NAME;
 extern const char *DCS_RENDER_CARD_NAME;
+extern const char *DCS_RENDER_STREAM_CARD_NAME;
 extern const char *DCS_SET_ALERT_NAME;
 extern const char *DCS_STOP_LISTEN_NAME;
 extern const char *DCS_SET_BLUETOOTH_CONNECTION_NAME;
@@ -523,6 +524,16 @@ void duer_dcs_voice_input_uninitialize_internal(void);
  * @RETURN: none.
  */
 void duer_sys_interface_uninitialize_internal(void);
+
+/**
+ * DESC:
+ * Uninitialize the DCS push service interface.
+ *
+ * @PARAM: none.
+ *
+ * @RETURN: none.
+ */
+void duer_dcs_push_service_uninitialize_internal(void);
 
 /**
  * DESC:
