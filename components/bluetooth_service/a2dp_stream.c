@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <sys/lock.h>
 #include <inttypes.h>
 #include "nvs.h"
 #include "nvs_flash.h"
