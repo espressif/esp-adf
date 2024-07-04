@@ -6,24 +6,24 @@
 
 ## 例程简介
 
-本例程主要功能是连接百度 DuerOS 3.2 云端并进行语音交互，可以适用于智能音箱产品、智能玩具、语音控制设备等。此示例是一个综合性较强的例程，使用了 ADF 提供的高封装简易实用接口。建议用户构建项目时，优先使用 ADF 提供的高封装接口，可快速简便地构建项目。
+本例程主要功能是连接百度 DuerOS 3.2 云端并进行语音交互，可以适用于智能音箱产品、智能玩具、语音控制设备等。此示例是一个综合性较强的例程，使用了 IDF 提供的高封装简易实用接口。建议用户构建项目时，优先使用 IDF 提供的高封装接口，可快速简便地构建项目。
 
-其中，[esp audio](../../components/esp-adf-libs/esp_audio/include/esp_audio.h) 处理音频播放，[wifi service](../../components/wifi_service) 接口管理配网和连接 Wi-Fi，[audio recorder](../../components/audio_recorder/include/audio_recorder.h) 负责唤醒和语音数据管理，[display service](../../components/display_service/display_service.c) 管理系统指示灯，[Dueros service](../../components/dueros_service) 连接 DuerOS，[esp_periph_set_register_callback](../../components/esp_peripherals/include/esp_peripherals.h) 管理按键事件，也可以使用 [Key service](../../components/input_key_service/input_key_service.c) 按键服务来管理按键。
+其中，[esp audio](../../components/esp-IDF-libs/esp_audio/include/esp_audio.h) 处理音频播放，[wifi service](../../components/wifi_service) 接口管理配网和连接 Wi-Fi，[audio recorder](../../components/audio_recorder/include/audio_recorder.h) 负责唤醒和语音数据管理，[display service](../../components/display_service/display_service.c) 管理系统指示灯，[Dueros service](../../components/dueros_service) 连接 DuerOS，[esp_periph_set_register_callback](../../components/esp_peripherals/include/esp_peripherals.h) 管理按键事件，也可以使用 [Key service](../../components/input_key_service/input_key_service.c) 按键服务来管理按键。
 
-此外，本例程需要预先在 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 申请 DuerOS 的 profile，并替换 `ADF_PATH/components/dueros_service/duer_profile` 中的空文件。
+此外，本例程需要预先在 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 申请 DuerOS 的 profile，并替换 `IDF_PATH/components/dueros_service/duer_profile` 中的空文件。
 
 ## 环境配置
 
 ### 硬件要求
 
-本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中[例程与乐鑫音频开发板的兼容性表格](../README_CN.md#例程与乐鑫音频开发板的兼容性)中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
+本例程支持的开发板在 `$IDF_PATH/examples/README_CN.md` 文档中[例程与乐鑫音频开发板的兼容性表格](../README_CN.md#例程与乐鑫音频开发板的兼容性)中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
 
 
 ## 编译和下载
 
 ### IDF 默认分支
 
-本例程支持 IDF release/v4.4 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v4.4 及以后的分支，例程默认使用 IDF 的內建分支 `$IDF_PATH/esp-idf`。
 
 ### `profile.bin` 的生成与烧录
 
@@ -66,9 +66,9 @@ menuconfig > Component config > FAT Filesystem support > Long filename support
 menuconfig > Example Configuration > WiFi Setting type > WiFi static configuration
 ```
 
-关于如何添加 DuerOS 数据点，请参考 [issue #145](https://github.com/espressif/esp-adf/issues/145#issuecomment-483531246)。
+关于如何添加 DuerOS 数据点，请参考 [issue #145](https://github.com/espressif/esp-IDF/issues/145#issuecomment-483531246)。
 
-此外，本例程还需 DuerOS 的 profile，用户可自行前往 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 页面进行申请，并且将申请到的 profile 替换 `ADF_PATH/components/dueros_service/duer_profile` 文件夹下的原始空文件。
+此外，本例程还需 DuerOS 的 profile，用户可自行前往 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 页面进行申请，并且将申请到的 profile 替换 `IDF_PATH/components/dueros_service/duer_profile` 文件夹下的原始空文件。
 
 
 ### 编译和下载
@@ -160,7 +160,7 @@ W (1446) spi_flash: Detected size(8192k) larger than the size in the binary imag
 I (1456) cpu_start: Starting scheduler on PRO CPU.
 I (0) cpu_start: Starting scheduler on APP CPU.
 I (1470) spiram: Reserving pool of 32K of internal memory for DMA/internal allocations
-I (1500) DUEROS: ADF version is v2.2-217-g6b75ed40-dirty
+I (1500) DUEROS: IDF version is v2.2-217-g6b75ed40-dirty
 I (1501) gpio: GPIO[36]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:3
 I (1505) gpio: GPIO[39]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:3
 W (1539) PERIPH_TOUCH: _touch_init
@@ -771,7 +771,7 @@ W (1446) spi_flash: Detected size(8192k) larger than the size in the binary imag
 I (1456) cpu_start: Starting scheduler on PRO CPU.
 I (0) cpu_start: Starting scheduler on APP CPU.
 I (1470) spiram: Reserving pool of 32K of internal memory for DMA/internal allocations
-I (1500) DUEROS: ADF version is v2.2-217-g6b75ed40-dirty
+I (1500) DUEROS: IDF version is v2.2-217-g6b75ed40-dirty
 I (1501) gpio: GPIO[36]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:3
 I (1505) gpio: GPIO[39]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:3
 W (1539) PERIPH_TOUCH: _touch_init
@@ -1301,6 +1301,6 @@ I (68275) DUEROS: Func:sys_monitor_task, Line:379, MEM Total:4080364 Bytes, Inte
 请按照下面的链接获取技术支持：
 
 - 技术支持参见 [esp32.com](https://esp32.com/viewforum.php?f=20) 论坛
-- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-adf/issues)
+- 故障和新功能需求，请创建 [GitHub issue](https://github.com/espressif/esp-IDF/issues)
 
 我们会尽快回复。
