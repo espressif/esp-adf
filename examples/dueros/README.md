@@ -12,6 +12,14 @@ Among them, [esp audio](../../components/esp-adf-libs/esp_audio/include/esp_audi
 
 In addition, you need to apply for the DuerOS profile on the [DuerOS Open Platform](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) in advance, and replace the empty file in `ADF_PATH/components/dueros_service/duer_profile`.
 
+## `WenXinYiYan` support
+
+This example can access to `WenXinYiYan` which provided by baidu. Interacting with the cloud through this example, responses from the AI can be obtained, providing richer and more intelligent answers.
+
+To integrate "WenXinYiYan", a profile with feature enabled is needed. So, please enable this requirement when applying for the DuerOS profile.
+
+With the correct profile and after compiling and flashing the profile and program as described below, we can interact with the AI after wake up the device.
+
 ## Environment Setup
 
 ### Hardware Required
