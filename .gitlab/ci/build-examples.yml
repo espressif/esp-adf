@@ -57,6 +57,7 @@ include:
     # - export PEDANTIC_CFLAGS="-Werror -Wno-implicit-fallthrough"
     - export PEDANTIC_CFLAGS="-Wno-error=deprecated-declarations -Wno-deprecated-declarations"
     - export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
+    - python -m pip install --upgrade idf-component-manager
 
     - $ADF_PATH/tools/ci/build_examples_cmake.sh
 

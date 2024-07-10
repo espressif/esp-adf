@@ -128,6 +128,7 @@ static void duer_dcs_init(void)
     duer_dcs_audio_player_init();
     duer_dlp_init();
     duer_dcs_sync_state();
+    duer_dcs_screen_init();
     duer_dcs_push_service_init();
 
     if (is_first_time) {

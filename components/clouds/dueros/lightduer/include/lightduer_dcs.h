@@ -62,6 +62,15 @@ enum duer_dcs_device_capability {
     DCS_WECHAT_SUPPORTED             = 0x02, // the device support wechat
 };
 
+typedef struct
+{
+    int index;
+    int is_end;
+    char *part;
+    char *answer;
+    char *tts;
+} duer_dcs_render_stream_card_t;
+
 /**
  * Internal used private namespace.
  */
@@ -459,6 +468,19 @@ duer_status_t duer_dcs_input_text_handler(const char *text, const char *type);
  *          DUER_ERR_FAILED if other error happened.
  */
 duer_status_t duer_dcs_render_card_handler(baidu_json *payload);
+
+/**
+ * DESC:
+ * Developer needs to implement this interface to get render stream card.
+ *
+ * PARAM[in] payload: the information of the render stream card, please reference the DCS document.
+ *
+ * @RETURN: DUER_OK if success,
+ *          DUER_MSG_RSP_BAD_REQUEST if the payload is invalid,
+ *          DUER_ERR_FAILED if other error happened.
+
+*/
+duer_status_t duer_dcs_render_stream_card_handler(const duer_dcs_render_stream_card_t *stream_card_payload);
 
 /**
  * DESC:
