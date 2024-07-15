@@ -12,6 +12,14 @@
 
 此外，本例程需要预先在 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 申请 DuerOS 的 profile，并替换 `ADF_PATH/components/dueros_service/duer_profile` 中的空文件。
 
+## 文心一言
+
+本例程已经支持接入百度`文心一言`，使用本例程与云端交互，可以得到来自大模型更加丰富与智能的结果。
+
+接入`文心一言`需要使用开通此功能的 profile，在申请 DuerOS profile 时请明注意勾选该需求。
+
+在有正确的 profile 并按照下文介绍的步骤编译并烧录 profile 与程序之后，唤醒设备就可以与`文心一言`进行交互。
+
 ## 环境配置
 
 ### 硬件要求

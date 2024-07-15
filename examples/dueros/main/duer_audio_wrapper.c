@@ -66,6 +66,11 @@
 #define CODEC_ADC_BITS_PER_SAMPLE  16
 #endif
 
+#ifndef RECORD_HARDWARE_AEC
+#warning "The hardware AEC is disabled!"
+#define RECORD_HARDWARE_AEC (false)
+#endif  /* RECORD_HARDWARE_AEC */
+
 #ifndef CODEC_ADC_I2S_PORT
 #define CODEC_ADC_I2S_PORT  (0)
 #endif
@@ -246,7 +251,7 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
     ESP_LOGI(TAG, "Recorder has been created");
 
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.aec_init = false;
+    recorder_sr_cfg.afe_cfg.aec_init = RECORD_HARDWARE_AEC;
     recorder_sr_cfg.multinet_init = false;
     recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
