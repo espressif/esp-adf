@@ -59,12 +59,10 @@ static void IRAM_ATTR sdcard_gpio_intr_handler(void *param)
 {
     esp_periph_handle_t periph = (esp_periph_handle_t)param;
     periph_sdcard_t *sdcard = esp_periph_get_data(periph);
-    // esp_rom_printf("sd\n");
+
     if (sdcard_is_exist() && !sdcard->is_mounted) {
-        // esp_rom_printf("mounted\n");
         esp_periph_send_cmd_from_isr(periph, SDCARD_STATUS_CARD_DETECT_CHANGE, NULL, 0);
     } else if (!sdcard_is_exist() && sdcard->is_mounted) {
-        // esp_rom_printf("unmounted\n");
         esp_periph_send_cmd_from_isr(periph, SDCARD_STATUS_CARD_DETECT_CHANGE, NULL, 0);
     }
 }
@@ -132,7 +130,7 @@ esp_err_t periph_sdcard_mount(esp_periph_handle_t periph)
         sdcard->is_mounted = true;
         return esp_periph_send_event(periph, SDCARD_STATUS_MOUNTED, NULL, 0);
     } else if (ret == ESP_ERR_INVALID_STATE) {
-        ESP_LOGE(TAG, "periph sdcard handle already mounted!");
+        ESP_LOGD(TAG, "periph sdcard handle already mounted!");
         return ESP_OK;
     } else {
         esp_periph_send_event(periph, SDCARD_STATUS_MOUNT_ERROR, NULL, 0);
@@ -186,7 +184,6 @@ esp_periph_handle_t periph_sdcard_init(periph_sdcard_cfg_t *sdcard_cfg)
     sdcard->sd_mode = sdcard_cfg->mode;
     esp_periph_set_data(periph, sdcard);
     esp_periph_set_function(periph, _sdcard_init, _sdcard_run, _sdcard_destroy);
-
     return periph;
 }
 

@@ -60,7 +60,7 @@ static void sdmmc_card_print_info(const sdmmc_card_t *card)
 
 esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 {
-    // ESP_LOGE(TAG, "mounted");
+
     if (mode >= SD_MODE_MAX) {
         ESP_LOGE(TAG, "PLease select the correct sd mode: 1-line SD mode, 4-line SD mode or 0-SPI mode!, current mode is %d", mode);
         return ESP_FAIL;
@@ -115,7 +115,6 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
             .quadhd_io_num = -1,
             .max_transfer_sz = 4000,
         };
-
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
         ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CH_AUTO);
 #else
@@ -127,7 +126,6 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         }
         sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
         slot_config.gpio_cs = ESP_SD_PIN_D3;
-        // slot_config.gpio_cs = GPIO_NUM_34;
         slot_config.host_id = host.slot;
         ret = esp_vfs_fat_sdspi_mount(base_path, &host, &slot_config, &mount_config, &card);
 #else
