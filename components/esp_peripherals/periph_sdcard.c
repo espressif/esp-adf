@@ -127,6 +127,7 @@ esp_err_t periph_sdcard_mount(esp_periph_handle_t periph)
 
     int ret = sdcard_mount(sdcard->root, sdcard->sd_mode);
     if (ret == ESP_OK) {
+    	ESP_LOGD(TAG, "Mount SDCARD success");
         sdcard->is_mounted = true;
         return esp_periph_send_event(periph, SDCARD_STATUS_MOUNTED, NULL, 0);
     } else if (ret == ESP_ERR_INVALID_STATE) {

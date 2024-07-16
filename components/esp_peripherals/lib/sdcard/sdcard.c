@@ -60,7 +60,6 @@ static void sdmmc_card_print_info(const sdmmc_card_t *card)
 
 esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 {
-
     if (mode >= SD_MODE_MAX) {
         ESP_LOGE(TAG, "PLease select the correct sd mode: 1-line SD mode, 4-line SD mode or 0-SPI mode!, current mode is %d", mode);
         return ESP_FAIL;
