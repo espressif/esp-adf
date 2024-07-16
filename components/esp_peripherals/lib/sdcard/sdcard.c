@@ -163,14 +163,17 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 
 }
 
-esp_err_t sdcard_unmount(const char *base_path)
+esp_err_t sdcard_unmount(const char *base_path, periph_sdcard_mode_t mode)
 {
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0))
     esp_err_t ret = esp_vfs_fat_sdcard_unmount(base_path, card);
 #else
     esp_err_t ret = esp_vfs_fat_sdmmc_unmount();
 #endif
-
+    if(mode == SD_MODE_SPI) {
+        sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+        spi_bus_free(host.slot);
+    }
     if (ret == ESP_ERR_INVALID_STATE) {
         ESP_LOGE(TAG, "File system not mounted");
     }

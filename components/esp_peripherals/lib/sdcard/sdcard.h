@@ -66,7 +66,7 @@ esp_err_t sdcard_mount(const char* base_path, periph_sdcard_mode_t mode);
  *      - ESP_OK on success
  *      - ESP_ERR_INVALID_STATE if sd_card_mount hasn't been called
  */
-esp_err_t sdcard_unmount(const char *base_path);
+esp_err_t sdcard_unmount(const char *base_path, periph_sdcard_mode_t mode);
 
 /**
  * @brief remove the sdcard device GPIO interruption in Audio board
