@@ -83,6 +83,8 @@ void app_main(void)
     media_lib_add_default_adapter();
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_ENCODE, AUDIO_HAL_CTRL_START);
     mount_sdcard(set);
     media_lib_thread_handle_t muxer_thread;
     media_lib_thread_create(&muxer_thread, "muxer test", muxer_simple_test, NULL, 4 * 1024, 20, 0);

@@ -47,6 +47,14 @@ extern "C" {
 #define I2S_STREAM_TASK_CORE            (0)
 #define I2S_STREAM_RINGBUFFER_SIZE      (8 * 1024)
 
+typedef enum {
+    I2S_CHANNEL_TYPE_RIGHT_LEFT,  /*!< Separated left and right channel */
+    I2S_CHANNEL_TYPE_ALL_RIGHT,   /*!< Load right channel data in both two channels */
+    I2S_CHANNEL_TYPE_ALL_LEFT,    /*!< Load left channel data in both two channels */
+    I2S_CHANNEL_TYPE_ONLY_RIGHT,  /*!< Only load data in right channel (mono mode) */
+    I2S_CHANNEL_TYPE_ONLY_LEFT,   /*!< Only load data in left channel (mono mode) */
+} i2s_channel_type_t;
+
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0) && ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0))
 
 /**
@@ -334,6 +342,20 @@ typedef struct {
  * @return     The Audio Element handle
  */
 audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config);
+
+/**
+ * @brief      Set I2S stream channel format type
+ *
+ * @note:  This function only updates i2s_stream_cfg_t, so it needs to be called before i2s_stream_init.
+ *
+ * @param[in]  config   The I2S stream configuration
+ * @param[in]  type     I2S channel format type
+ *
+ * @return
+ *     - ESP_OK
+ *     - ESP_ERR_INVALID_ARG
+ */
+esp_err_t i2s_stream_set_channel_type(i2s_stream_cfg_t *config, i2s_channel_type_t type);
 
 /**
  * @brief      Setup clock for I2S Stream, this function is only used with handle created by `i2s_stream_init`

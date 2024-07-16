@@ -10,13 +10,14 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "esp_log.h"
 #include "record_src.h"
 #include "media_lib_err.h"
 #include "audio_element.h"
 #include "audio_common.h"
-#include "board.h"
+#include "audio_mem.h"
 #include "i2s_stream.h"
-#include "esp_log.h"
+#include "board.h"
 
 #define TAG "Record_I2S"
 
@@ -50,7 +51,7 @@ record_src_handle_t open_i2s_record(void *cfg, int cfg_size)
     if (cfg == NULL || cfg_size != sizeof(record_src_audio_cfg_t)) {
         return NULL;
     }
-    record_src_i2s_t *i2s_src = (record_src_i2s_t *) calloc(sizeof(record_src_i2s_t), 1);
+    record_src_i2s_t *i2s_src = (record_src_i2s_t *)audio_calloc(sizeof(record_src_i2s_t), 1);
     if (i2s_src == NULL) {
         return NULL;
     }
@@ -77,7 +78,6 @@ record_src_handle_t open_i2s_record(void *cfg, int cfg_size)
     i2s_stream_set_clk(i2s_src->i2s_reader, aud_cfg->sample_rate, aud_cfg->bits_per_sample, aud_cfg->channel);
     i2s_src->i2s_port = CODEC_ADC_I2S_PORT;
     i2s_src->channel = aud_cfg->channel;
-    i2s_zero_dma_buffer(i2s_src->i2s_port);
     uint32_t size = audio_element_get_output_ringbuf_size(i2s_src->i2s_reader);
     i2s_src->pcm_buffer = rb_create(size, 1);
     if (i2s_src->pcm_buffer == NULL) {

@@ -25,6 +25,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/queue.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"

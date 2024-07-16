@@ -182,11 +182,12 @@ void app_main()
     ESP_ERROR_CHECK(err);
 
     esp_dispatcher_config_t d_cfg = ESP_DISPATCHER_CONFIG_DEFAULT();
-    d_cfg.stack_in_ext = false; // Need flash operation.
+    d_cfg.stack_in_ext = false;  // Need flash operation.
     esp_dispatcher_handle_t dispatcher = esp_dispatcher_create(&d_cfg);
 
-    StackType_t *stack = audio_calloc(1, 2048);
+    const size_t stack_size = 3096;
+    StackType_t *stack = audio_calloc(1, stack_size);
     static StaticTask_t tcb = { 0 };
-    xTaskCreateStaticPinnedToCore((TaskFunction_t)&task, "test_task", 2048, dispatcher, 5, stack, &tcb, 1);
+    xTaskCreateStaticPinnedToCore((TaskFunction_t)&task, "test_task", stack_size, dispatcher, 5, stack, &tcb, 1);
     ESP_LOGI(TAG, "Task create\n");
 }

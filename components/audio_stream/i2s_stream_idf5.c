@@ -79,7 +79,28 @@ struct i2s_key_slot_s {
     int                     i2s_refcount;
 };
 
+static void *s_i2s_tx_mutex[SOC_I2S_NUM];
+static void *s_i2s_rx_mutex[SOC_I2S_NUM];
+
 static struct i2s_key_slot_s i2s_key_slot[SOC_I2S_NUM];
+
+#define i2s_safe_lock_create(lock) do {           \
+    if (lock == NULL) {                           \
+        lock = xSemaphoreCreateRecursiveMutex();  \
+    }                                             \
+} while (0)
+
+#define i2s_safe_lock(lock) do {                       \
+    if (lock) {                                        \
+        xSemaphoreTakeRecursive(lock, portMAX_DELAY);  \
+    }                                                  \
+} while (0)
+
+#define i2s_safe_unlock(lock) do {      \
+    if (lock) {                         \
+        xSemaphoreGiveRecursive(lock);  \
+    }                                   \
+} while (0)
 
 static int i2s_driver_startup(audio_element_handle_t self, i2s_stream_cfg_t *i2s_cfg)
 {
@@ -472,7 +493,9 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
 {
     size_t bytes_read = 0;
     i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(self);
+    i2s_safe_lock(s_i2s_tx_mutex[i2s->port]);
     i2s_channel_read(i2s_key_slot[i2s->port].rx_handle, buffer, len, &bytes_read, ticks_to_wait);
+    i2s_safe_unlock(s_i2s_tx_mutex[i2s->port]);
     return bytes_read;
 }
 
@@ -487,12 +510,14 @@ static int _i2s_write(audio_element_handle_t self, char *buffer, int len, TickTy
 #ifdef CONFIG_IDF_TARGET_ESP32
         target_bits = I2S_DATA_BIT_WIDTH_32BIT;
 #endif
+        i2s_safe_lock(s_i2s_rx_mutex[i2s->port]);
         if (i2s->config.need_expand && (target_bits != i2s->config.expand_src_bits)) {
             i2s_channel_write_expand(i2s, buffer, len, i2s->config.expand_src_bits, target_bits,
                                      &bytes_written, ticks_to_wait);
         } else {
             i2s_channel_write(i2s_key_slot[i2s->port].tx_handle, buffer, len, &bytes_written, ticks_to_wait);
         }
+        i2s_safe_unlock(s_i2s_rx_mutex[i2s->port]);
     }
     return bytes_written;
 }
@@ -631,6 +656,15 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     /* backup i2s configure */
     i2s_config_backup(&i2s->config);
 
+    // In order to be compatible with esp32 and esp32s2, the Tx and TRx of i2s channel use the same controller.
+    // However, there is a problem that if RX channel is enabled and then TX channel is enabled, RX channel needs to be turned off first,
+    // which will cause it to be turned off during rx operation. Therefore, mutex is used for protection and will never be released
+    if (i2s_key_slot[i2s_port].i2s_refcount > 0) {
+        i2s_safe_lock_create(s_i2s_tx_mutex[i2s_port]);
+        i2s_safe_lock_create(s_i2s_rx_mutex[i2s_port]);
+    }
+    i2s_safe_lock(s_i2s_tx_mutex[i2s_port]);
+    i2s_safe_lock(s_i2s_rx_mutex[i2s_port]);
     if (i2s_key_slot[i2s_port].dir) {
         if (i2s_key_slot[i2s_port].dir & i2s_dir) {
             ESP_LOGW(TAG, "I2S(%d) already startup", i2s_dir);
@@ -643,6 +677,8 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
 
     if (i2s_driver_startup(el, &i2s->config) != ESP_OK) {
         ESP_LOGE(TAG, "I2S stream init failed");
+        i2s_safe_unlock(s_i2s_tx_mutex[i2s_port]);
+        i2s_safe_unlock(s_i2s_rx_mutex[i2s_port]);
         return NULL;
     }
     if (i2s_key_slot[i2s_port].dir & I2S_DIR_TX) {
@@ -653,8 +689,38 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     }
 
 i2s_end:
+    i2s_safe_unlock(s_i2s_tx_mutex[i2s_port]);
+    i2s_safe_unlock(s_i2s_rx_mutex[i2s_port]);
     i2s_key_slot[i2s_port].i2s_refcount++;
     return el;
+}
+
+esp_err_t i2s_stream_set_channel_type(i2s_stream_cfg_t *config, i2s_channel_type_t type)
+{
+    AUDIO_NULL_CHECK(TAG, config != NULL, {return ESP_ERR_INVALID_ARG;});
+    switch (type) {
+        case I2S_CHANNEL_TYPE_RIGHT_LEFT:
+            config->std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_STEREO;
+            config->std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_BOTH;
+            break;
+        case I2S_CHANNEL_TYPE_ONLY_RIGHT:
+            config->std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+            config->std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_RIGHT;
+            break;
+        case I2S_CHANNEL_TYPE_ONLY_LEFT:
+            config->std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+            config->std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
+            break;
+        case I2S_CHANNEL_TYPE_ALL_RIGHT:
+            config->std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_STEREO;
+            config->std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_RIGHT;
+            break;
+        case I2S_CHANNEL_TYPE_ALL_LEFT:
+            config->std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_STEREO;
+            config->std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
+            break;
+    }
+    return ESP_OK;
 }
 
 esp_err_t i2s_stream_sync_delay(audio_element_handle_t i2s_stream, int delay_ms)

@@ -25,10 +25,15 @@
 #include "string.h"
 #include "es8311.h"
 #include "audio_mem.h"
+#include "audio_sys.h"
+#include "i2s_stream.h"
 #include "algorithm_stream.h"
 #include "av_stream_hal.h"
 
 static const char *TAG = "AV_STREAM_HAL";
+
+static audio_element_handle_t i2s_io_writer;
+static audio_element_handle_t i2s_io_reader;
 
 #if CONFIG_IDF_TARGET_ESP32
 static int uac_device_init(void *mic_cb, void *arg, uint32_t sample_rate)
@@ -60,64 +65,48 @@ static int uac_device_init(void *mic_cb, void *arg, uint32_t sample_rate)
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "uac streaming config failed");
     }
-
     return ret;
 }
 #endif
 
-static esp_err_t i2s_driver_init(i2s_port_t port, uint32_t sample_rate, i2s_channel_fmt_t channels)
+static esp_err_t i2s_read_drv_init(int port, uint32_t sample_rate, i2s_channel_type_t channels)
 {
-    i2s_config_t i2s_cfg = {
-        .mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX,
-        .sample_rate = sample_rate,
-        .bits_per_sample = I2S_DEFAULT_BITS,
-        .channel_format = channels,
-        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .tx_desc_auto_clear = true,
-        .dma_buf_count = 8,
-        .dma_buf_len = 64,
-    };
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(port, sample_rate, I2S_DEFAULT_BITS, AUDIO_STREAM_READER);
+    i2s_cfg.task_stack = -1;
+    i2s_stream_set_channel_type(&i2s_cfg, channels);
+    i2s_io_reader = i2s_stream_init(&i2s_cfg);
+    if (i2s_io_reader == NULL) {
+        ESP_LOGE(TAG, "i2s_read_drv_init failed");
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
 
-    i2s_driver_install(port, &i2s_cfg, 0, NULL);
-    board_i2s_pin_t board_i2s_pin = {0};
-    i2s_pin_config_t i2s_pin_cfg;
-    get_i2s_pins(port, &board_i2s_pin);
-    i2s_pin_cfg.bck_io_num = board_i2s_pin.bck_io_num;
-    i2s_pin_cfg.ws_io_num = board_i2s_pin.ws_io_num;
-    i2s_pin_cfg.data_out_num = board_i2s_pin.data_out_num;
-    i2s_pin_cfg.data_in_num = board_i2s_pin.data_in_num;
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
-    i2s_pin_cfg.mck_io_num = board_i2s_pin.mck_io_num;
-#endif
-    i2s_set_pin(port, &i2s_pin_cfg);
-
+static esp_err_t i2s_write_drv_init(int port, uint32_t sample_rate, i2s_channel_type_t channels)
+{
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(port, sample_rate, I2S_DEFAULT_BITS, AUDIO_STREAM_WRITER);
+    i2s_cfg.task_stack = -1;
+    i2s_cfg.need_expand = (16 != I2S_DEFAULT_BITS);
+    i2s_stream_set_channel_type(&i2s_cfg, channels);
+    i2s_io_writer = i2s_stream_init(&i2s_cfg);
+    if (i2s_io_writer == NULL) {
+        ESP_LOGE(TAG, "i2s_write_drv_init failed");
+        return ESP_FAIL;
+    }
     return ESP_OK;
 }
 
 static audio_board_handle_t i2s_device_init(uint32_t sample_rate)
 {
-    i2s_driver_init(I2S_DEFAULT_PORT, sample_rate, I2S_CHANNELS);
-#if RECORD_HARDWARE_AEC
-    // Initialize ES8311 to use internal reference signal (ADC output: ADCL + DACR)
-    audio_board_handle_t board_handle = (audio_board_handle_t) audio_calloc(1, sizeof(struct audio_board_handle));
-    AUDIO_NULL_CHECK(TAG, board_handle, return NULL);
-    audio_hal_codec_config_t audio_codec_cfg = AUDIO_CODEC_DEFAULT_CONFIG();
-    audio_codec_cfg.i2s_iface.samples = AUDIO_HAL_08K_SAMPLES;
-    board_handle->audio_hal = audio_hal_init(&audio_codec_cfg, &AUDIO_CODEC_ES8311_DEFAULT_HANDLE);
-    AUDIO_NULL_CHECK(TAG, board_handle->audio_hal, return NULL);
+    i2s_write_drv_init(I2S_DEFAULT_PORT, sample_rate, I2S_CHANNELS);
 
-#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD || CONFIG_ESP_LYRAT_MINI_V1_1_BOARD)
-    // Initialize a separate adc ES7210 with TDM mode
-    board_handle->adc_hal = audio_board_adc_init();
-    AUDIO_NULL_CHECK(TAG, board_handle->adc_hal, return NULL);
 #if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    i2s_driver_init(CODEC_ADC_I2S_PORT, sample_rate, I2S_CHANNEL_FMT_RIGHT_LEFT);
-#endif
-#endif
+    i2s_read_drv_init(CODEC_ADC_I2S_PORT, sample_rate, I2S_CHANNEL_TYPE_RIGHT_LEFT);
 #else
-    audio_board_handle_t board_handle = audio_board_init();
+    i2s_read_drv_init(CODEC_ADC_I2S_PORT, sample_rate, I2S_CHANNELS);
 #endif
 
+    audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
     audio_hal_set_volume(board_handle->audio_hal, 75);
     return board_handle;
@@ -135,14 +124,15 @@ static int i2s_device_deinit(void *handle)
     ret |= audio_hal_deinit(board_handle->adc_hal);
 #endif
 #if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    ret |= i2s_driver_uninstall(CODEC_ADC_I2S_PORT);
+    ret |= audio_element_deinit(i2s_io_reader);
 #endif
     free(board_handle);
     board_handle = NULL;
 #else
     ret = audio_board_deinit(board_handle);
 #endif
-    ret |= i2s_driver_uninstall(I2S_DEFAULT_PORT);
+    ret |= audio_element_deinit(i2s_io_writer);
+    ret |= audio_element_deinit(i2s_io_reader);
 
     return ret;
 }
@@ -160,8 +150,8 @@ int av_stream_audio_read(char *buf, int len, TickType_t wait_time, bool uac_en)
         // }
         return ret;
     } else {
-        ret = i2s_read(CODEC_ADC_I2S_PORT, buf, len, &bytes_read, wait_time);
-        if (ret != ESP_OK) {
+        ret = audio_element_input(i2s_io_reader, buf, len);
+        if (ret < 0) {
             ESP_LOGE(TAG, "i2s read failed");
         }
         #if (CONFIG_IDF_TARGET_ESP32 && !RECORD_HARDWARE_AEC)
@@ -185,8 +175,8 @@ int av_stream_audio_write(char *buf, int len, TickType_t wait_time, bool uac_en)
         algorithm_mono_fix((uint8_t *)buf, len);
         #endif
 
-        int ret = i2s_write_expand(I2S_DEFAULT_PORT, buf, len, 16, I2S_DEFAULT_BITS, &bytes_writen, wait_time);
-        if (ret != ESP_OK) {
+        int ret = audio_element_output(i2s_io_writer, buf, len);
+        if (ret < 0) {
             ESP_LOGE(TAG, "i2s write failed");
         }
     }
