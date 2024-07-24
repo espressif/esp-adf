@@ -80,7 +80,7 @@ static esp_err_t _http_stream_reader_event_handle(http_stream_event_msg_t *msg)
 
     if (msg->event_id == HTTP_STREAM_PRE_REQUEST) {
         // Post text data
-        ESP_LOGI(TAG, "[ + ] HTTP client HTTP_STREAM_PRE_REQUEST, lenght=%d", msg->buffer_len);
+        ESP_LOGI(TAG, "[ + ] HTTP client HTTP_STREAM_PRE_REQUEST, length=%d", msg->buffer_len);
         tts->tts_total_read = 0;
         tts->is_begin = true;
         int payload_len = snprintf(tts->buffer, tts->buffer_size, GOOGLE_TTS_TEMPLATE, tts->sample_rate, tts->lang_code, tts->text);
@@ -92,7 +92,7 @@ static esp_err_t _http_stream_reader_event_handle(http_stream_event_msg_t *msg)
     }
 
     if (msg->event_id == HTTP_STREAM_ON_RESPONSE) {
-        ESP_LOGD(TAG, "[ + ] HTTP client HTTP_STREAM_ON_RESPONSE, lenght=%d", msg->buffer_len);
+        ESP_LOGD(TAG, "[ + ] HTTP client HTTP_STREAM_ON_RESPONSE, length=%d", msg->buffer_len);
         /* Read first chunk */
         int process_data_len = 0;
         char *data_ptr = tts->buffer;
