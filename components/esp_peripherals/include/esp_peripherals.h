@@ -38,23 +38,24 @@ extern "C" {
  * @brief Peripheral Identify, this must be unique for each peripheral added to the peripherals list
  */
 typedef enum {
-    PERIPH_ID_BUTTON     = AUDIO_ELEMENT_TYPE_PERIPH + 1,
-    PERIPH_ID_TOUCH      = AUDIO_ELEMENT_TYPE_PERIPH + 2,
-    PERIPH_ID_SDCARD     = AUDIO_ELEMENT_TYPE_PERIPH + 3,
-    PERIPH_ID_WIFI       = AUDIO_ELEMENT_TYPE_PERIPH + 4,
-    PERIPH_ID_FLASH      = AUDIO_ELEMENT_TYPE_PERIPH + 5,
-    PERIPH_ID_AUXIN      = AUDIO_ELEMENT_TYPE_PERIPH + 6,
-    PERIPH_ID_ADC        = AUDIO_ELEMENT_TYPE_PERIPH + 7,
-    PERIPH_ID_CONSOLE    = AUDIO_ELEMENT_TYPE_PERIPH + 8,
-    PERIPH_ID_BLUETOOTH  = AUDIO_ELEMENT_TYPE_PERIPH + 9,
-    PERIPH_ID_LED        = AUDIO_ELEMENT_TYPE_PERIPH + 10,
-    PERIPH_ID_SPIFFS     = AUDIO_ELEMENT_TYPE_PERIPH + 11,
-    PERIPH_ID_ADC_BTN    = AUDIO_ELEMENT_TYPE_PERIPH + 12,
-    PERIPH_ID_IS31FL3216 = AUDIO_ELEMENT_TYPE_PERIPH + 13,
-    PERIPH_ID_GPIO_ISR   = AUDIO_ELEMENT_TYPE_PERIPH + 14,
-    PERIPH_ID_WS2812     = AUDIO_ELEMENT_TYPE_PERIPH + 15,
-    PERIPH_ID_AW2013     = AUDIO_ELEMENT_TYPE_PERIPH + 16,
-    PERIPH_ID_LCD        = AUDIO_ELEMENT_TYPE_PERIPH + 17
+    PERIPH_ID_BUTTON      = AUDIO_ELEMENT_TYPE_PERIPH + 1,
+    PERIPH_ID_TOUCH       = AUDIO_ELEMENT_TYPE_PERIPH + 2,
+    PERIPH_ID_SDCARD      = AUDIO_ELEMENT_TYPE_PERIPH + 3,
+    PERIPH_ID_WIFI        = AUDIO_ELEMENT_TYPE_PERIPH + 4,
+    PERIPH_ID_FLASH       = AUDIO_ELEMENT_TYPE_PERIPH + 5,
+    PERIPH_ID_AUXIN       = AUDIO_ELEMENT_TYPE_PERIPH + 6,
+    PERIPH_ID_ADC         = AUDIO_ELEMENT_TYPE_PERIPH + 7,
+    PERIPH_ID_CONSOLE     = AUDIO_ELEMENT_TYPE_PERIPH + 8,
+    PERIPH_ID_BLUETOOTH   = AUDIO_ELEMENT_TYPE_PERIPH + 9,
+    PERIPH_ID_LED         = AUDIO_ELEMENT_TYPE_PERIPH + 10,
+    PERIPH_ID_SPIFFS      = AUDIO_ELEMENT_TYPE_PERIPH + 11,
+    PERIPH_ID_ADC_BTN     = AUDIO_ELEMENT_TYPE_PERIPH + 12,
+    PERIPH_ID_IS31FL3216  = AUDIO_ELEMENT_TYPE_PERIPH + 13,
+    PERIPH_ID_GPIO_ISR    = AUDIO_ELEMENT_TYPE_PERIPH + 14,
+    PERIPH_ID_WS2812      = AUDIO_ELEMENT_TYPE_PERIPH + 15,
+    PERIPH_ID_AW2013      = AUDIO_ELEMENT_TYPE_PERIPH + 16,
+    PERIPH_ID_LCD         = AUDIO_ELEMENT_TYPE_PERIPH + 17,
+    PERIPH_ID_CUSTOM_BASE = AUDIO_ELEMENT_TYPE_PERIPH + 18
 } esp_periph_id_t;
 
 /**
@@ -238,6 +239,21 @@ esp_err_t esp_periph_set_list_destroy(esp_periph_set_handle_t periph_set_handle)
  *     - ESP_FAIL
  */
 esp_err_t esp_periph_remove_from_set(esp_periph_set_handle_t periph_set_handle, esp_periph_handle_t periph);
+
+/**
+ * @brief  Allocated a peripheral ID from the periph_set.
+ *
+ * @note  This function can apply for a peripheral ID to realize a customized peripheral module.
+ *        The requested peripheral ID will not be included in `esp_periph_id_t`
+ *
+ * @param[in]   periph_set_handle  The esp_periph_set_handle_t instance
+ * @param[out]  periph_id          The peripheral identifier
+ *
+ * @return
+ *       - ESP_OK
+ *       - ESP_FAIL
+ */
+esp_err_t esp_periph_alloc_periph_id(esp_periph_set_handle_t periph_set_handle, int *periph_id);
 
 /**
  * @brief      Call this function to change periph_set waiting time.

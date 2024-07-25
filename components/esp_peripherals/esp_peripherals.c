@@ -62,6 +62,7 @@ typedef struct esp_periph_sets {
     bool                                            ext_stack;
     bool                                            run;
     esp_periph_event_t                              event_handle;
+    int                                             periph_dynamic_id;
     STAILQ_HEAD(esp_periph_list_item, esp_periph)   periph_list;
 } esp_periph_set_t;
 
@@ -172,6 +173,7 @@ esp_periph_set_handle_t esp_periph_set_init(esp_periph_config_t *config)
     event_cfg.context = periph_sets;
     event_cfg.on_cmd = process_peripheral_event;
     periph_sets->event_handle.iface = audio_event_iface_init(&event_cfg);
+    periph_sets->periph_dynamic_id = PERIPH_ID_CUSTOM_BASE;
 
     AUDIO_MEM_CHECK(TAG, periph_sets->event_handle.iface, goto _periph_init_failed);
     audio_event_iface_set_cmd_waiting_timeout(periph_sets->event_handle.iface, DEFAULT_ESP_PERIPH_WAIT_TICK);
@@ -196,6 +198,16 @@ esp_err_t esp_periph_remove_from_set(esp_periph_set_handle_t periph_set_handle, 
 {
     STAILQ_REMOVE(&periph_set_handle->periph_list, periph, esp_periph, entries);
     esp_periph_register_on_events(periph, NULL);
+    return ESP_OK;
+}
+
+esp_err_t esp_periph_alloc_periph_id(esp_periph_set_handle_t periph_set_handle, int *periph_id)
+{
+    if ((periph_set_handle == NULL) || (periph_id == NULL)) {
+        AUDIO_ERROR(TAG, "Invalid parameters: periph_set_handle or periph_id is NULL");
+        return ESP_FAIL;
+    }
+    *periph_id = periph_set_handle->periph_dynamic_id++;
     return ESP_OK;
 }
 
