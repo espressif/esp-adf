@@ -5,13 +5,6 @@ CONFIG_IDF_TARGET_ESP32S2=y
 CONFIG_IDF_FIRMWARE_CHIP_ID=0x0002
 
 #
-# SDK tool configuration
-#
-CONFIG_SDK_TOOLPREFIX="xtensa-esp32s2-elf-"
-# CONFIG_SDK_TOOLCHAIN_SUPPORTS_TIME_WIDE_64_BITS is not set
-# end of SDK tool configuration
-
-#
 # SPI RAM config
 #
 CONFIG_ESP32S2_SPIRAM_SUPPORT=y

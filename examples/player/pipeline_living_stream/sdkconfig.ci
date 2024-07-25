@@ -1,0 +1,27 @@
+# Override some defaults
+
+#
+# Serial flasher config
+#
+CONFIG_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+
+CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
+
+# Increase default app partition size to accommodate living example
+# by providing new partition table in "partitions_living_example.csv"
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_living_example.csv"
+
+CONFIG_ESP_TLS_INSECURE=y
+CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY=y
+
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=3072
+
+#
+# Example Configuration
+#
+CONFIG_WIFI_SSID="Audio_CI"
+CONFIG_WIFI_PASSWORD="esp123456"
+# end of Example Configuration

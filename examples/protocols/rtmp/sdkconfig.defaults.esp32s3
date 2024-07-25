@@ -11,13 +11,6 @@ CONFIG_ESP32S3_SPIRAM_SUPPORT=y
 CONFIG_SPIRAM_MODE_OCT=y
 
 #
-# SDK tool configuration
-#
-CONFIG_SDK_TOOLPREFIX="xtensa-esp32s3-elf-"
-# CONFIG_SDK_TOOLCHAIN_SUPPORTS_TIME_WIDE_64_BITS is not set
-# end of SDK tool configuration
-
-#
 # Audio HAL
 #
 CONFIG_ESP32_S3_KORVO2_V3_BOARD=y
