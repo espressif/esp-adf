@@ -47,6 +47,7 @@ esp_err_t sdcard_init(int gpio, void (*detect_intr_handler)(void *), void *isr_c
   * @brief  mount sdcard to FAT filesystem
   *
   * @param  base_path path where partition should be registered (e.g. "/sdcard")
+  * @param  mode      the specificd sdcard mode type
   *
   * @return
   *      - ESP_OK on success
@@ -61,12 +62,13 @@ esp_err_t sdcard_mount(const char* base_path, periph_sdcard_mode_t mode);
  * @brief Unmount FAT filesystem and release resources acquired using esp_vfs_fat_sdmmc_mount
  *
  * @param  base_path path where partition is mounted (e.g. "/sdcard")
+ * @param  mode      the specificd sdcard mode type
  *
  * @return
  *      - ESP_OK on success
  *      - ESP_ERR_INVALID_STATE if sd_card_mount hasn't been called
  */
-esp_err_t sdcard_unmount(const char *base_path);
+esp_err_t sdcard_unmount(const char *base_path, periph_sdcard_mode_t mode);
 
 /**
  * @brief remove the sdcard device GPIO interruption in Audio board

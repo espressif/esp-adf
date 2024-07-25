@@ -213,8 +213,8 @@ esp_err_t nvs_action_get_stats(void *instance, action_arg_t *arg, action_result_
     AUDIO_MEM_CHECK(TAG, arg, return ESP_FAIL);
     AUDIO_MEM_CHECK(TAG, result, return ESP_FAIL);
 
-    result->data = audio_calloc(1, sizeof(action_result_t));
-    result->len = sizeof(action_result_t);
+    result->data = audio_calloc(1, sizeof(nvs_stats_t));
+    result->len = sizeof(nvs_stats_t);
 
     return nvs_get_stats(arg->data, result->data);
 }
