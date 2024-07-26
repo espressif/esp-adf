@@ -101,15 +101,6 @@ build_examples_cmake_esp32_lyrat_v4_3:
     IDF_TARGET: esp32
     AUDIO_BOARD: ESP_LYRAT_V4_3
 
-build_examples_cmake_esp32_lyratd_msc_v2_2:
-  extends:
-    - .rules:build:non-regular-board-idf-ver-tag
-    - .build_cmake_template
-    - .matrix_template_esp32_esp32s3_esp32s2
-  variables:
-    IDF_TARGET: esp32
-    AUDIO_BOARD: ESP_LYRATD_MSC_V2_2
-
 build_examples_cmake_esp32_lyrat_mini_v1_1:
   extends:
     - .rules:build:non-regular-board-idf-ver-tag
