@@ -88,7 +88,7 @@ idf.py -p PORT flash monitor
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project.
+See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v5.3/esp32/index.html) for full steps to configure and build an ESP-IDF project.
 
 ## How to Use the Example
 

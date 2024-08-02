@@ -395,10 +395,15 @@ static esp_err_t audio_pwm_init(const audio_pwm_config_t *cfg)
     res = ledc_timer_config(&handle->ledc_timer);
     AUDIO_CHECK(TAG, ESP_OK == res, goto init_error, "AUDIO PWM TIMER ERROR");
 
+#if defined(CONFIG_IDF_TARGET_ESP32P4)
+    g_ledc_left_duty_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_LEFT_INDEX].channel].duty_r.val;
+    g_ledc_right_duty_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_RIGHT_INDEX].channel].duty_r.val;
+#else
     g_ledc_left_duty_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_LEFT_INDEX].channel].duty.val;
+    g_ledc_right_duty_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_RIGHT_INDEX].channel].duty.val;
+#endif // CONFIG_IDF_TARGET_ESP32P4
     g_ledc_left_conf0_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_LEFT_INDEX].channel].conf0.val;
     g_ledc_left_conf1_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_LEFT_INDEX].channel].conf1.val;
-    g_ledc_right_duty_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_RIGHT_INDEX].channel].duty.val;
     g_ledc_right_conf0_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_RIGHT_INDEX].channel].conf0.val;
     g_ledc_right_conf1_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_RIGHT_INDEX].channel].conf1.val;
 

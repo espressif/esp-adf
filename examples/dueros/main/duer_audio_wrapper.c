@@ -47,6 +47,7 @@
 #include "fatfs_stream.h"
 #include "raw_stream.h"
 #include "i2s_stream.h"
+#include "spiffs_stream.h"
 #include "wav_decoder.h"
 #include "wav_encoder.h"
 #include "mp3_decoder.h"
@@ -155,8 +156,12 @@ void *duer_audio_setup_player(void)
     // Create readers and add to esp_audio
     fatfs_stream_cfg_t fs_reader = FATFS_STREAM_CFG_DEFAULT();
     fs_reader.type = AUDIO_STREAM_READER;
-
     esp_audio_input_stream_add(player, fatfs_stream_init(&fs_reader));
+
+    spiffs_stream_cfg_t spiffs_cfg = SPIFFS_STREAM_CFG_DEFAULT();
+    spiffs_cfg.type = AUDIO_STREAM_READER;
+    esp_audio_input_stream_add(player, spiffs_stream_init(&spiffs_cfg));
+
     http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
     http_cfg.event_handle = _http_stream_event_handle;
     http_cfg.type = AUDIO_STREAM_READER;
@@ -234,7 +239,7 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
     rsp_cfg.src_rate = 48000;
     rsp_cfg.dest_rate = 16000;
     rsp_cfg.task_core = 1;
-#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+#if defined CONFIG_ESP32_S3_KORVO2_V3_BOARD || defined CONFIG_ESP32_S3_BOX_3_BOARD
     rsp_cfg.mode = RESAMPLE_UNCROSS_MODE;
     rsp_cfg.src_ch = 4;
     rsp_cfg.dest_ch = 4;
@@ -255,6 +260,14 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
     recorder_sr_cfg.multinet_init = false;
     recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
+#ifdef CONFIG_ESP32_P4_FUNCTION_EV_BOARD
+    recorder_sr_cfg.afe_cfg.pcm_config.mic_num = 1;
+    recorder_sr_cfg.afe_cfg.pcm_config.ref_num = 1;
+    recorder_sr_cfg.afe_cfg.pcm_config.total_ch_num = 2;
+    recorder_sr_cfg.afe_cfg.wakenet_mode = DET_MODE_90;
+    recorder_sr_cfg.input_order[0] = DAT_CH_0;
+    recorder_sr_cfg.input_order[1] = DAT_CH_1;
+#endif // CONFIG_ESP32_P4_FUNCTION_EV_BOARD
 
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();
     cfg.read = (recorder_data_read_t)&input_cb_for_afe;

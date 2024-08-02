@@ -94,7 +94,7 @@ void app_main(void)
     audio_pipeline_link(pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[3.6] Set up  uri (file as spiffs, mp3 as mp3 decoder, and default output is i2s)");
-    audio_element_set_uri(spiffs_stream_reader, "/spiffs/adf_music.mp3");
+    audio_element_set_uri(spiffs_stream_reader, "/spiffs/Apple.mp3");
 
     ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();

@@ -33,7 +33,7 @@
 #include "periph_ws2812.h"
 #include "esp_peripherals.h"
 #include "soc/dport_access.h"
-#if !defined CONFIG_IDF_TARGET_ESP32C3 && !defined CONFIG_IDF_TARGET_ESP32C6
+#if !defined CONFIG_IDF_TARGET_ESP32C3 && !defined CONFIG_IDF_TARGET_ESP32C6 && !defined CONFIG_IDF_TARGET_ESP32P4
 #include "soc/dport_reg.h"
 #endif
 #include "driver/rmt.h"

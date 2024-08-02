@@ -39,17 +39,17 @@ If you choose to store the data in microSD card or choose ESP32 based developmen
 
 ### Default IDF Branch
 
-This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
+This example supports IDF release/v5.0 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
 ### IDF Branch
 
-- The command to switch to IDF release/v4.4 branch is as follows:
+- The command to switch to IDF release/v5.0 branch is as follows:
 
 ```
 cd $IDF_PATH
 git checkout master
 git pull
-git checkout release/v4.4
+git checkout release/v5.0
 git submodule update --init --recursive
 ```
 

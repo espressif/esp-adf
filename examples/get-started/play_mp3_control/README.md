@@ -27,7 +27,7 @@ This example runs on the boards that are marked with a green checkbox in the [ta
 ## Example Set Up
 
 ### Default IDF Branch
-This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
+This example supports IDF release/v5.0 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
 ### Configuration
 The default board for this example is `ESP32-Lyrat V4.3`, if you need to run this example on other development boards, you need to select the configuration of the development board in menuconfig, for example, select `ESP32-Lyrat-Mini V1.1`.
@@ -46,7 +46,7 @@ idf.py -p PORT flash monitor
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See the Getting Started Guide for full steps to configure and use  [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) to build projects.
+See the Getting Started Guide for full steps to configure and use  [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v5.3/esp32/index.html) to build projects.
 
 ## How to use the Example
 

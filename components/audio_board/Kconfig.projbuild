@@ -35,6 +35,8 @@ config ESP32_C3_LYRA_V2_BOARD
     bool "ESP32-C3-Lyra-v2.0"
 config ESP32_C6_DEVKIT_BOARD
     bool "ESP32-C6-DEVKIT"
+config ESP32_P4_FUNCTION_EV_BOARD
+    bool "ESP32-P4-FUNCTION-EV-BOARD"
 
 endchoice
 

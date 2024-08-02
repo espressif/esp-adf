@@ -60,6 +60,7 @@
 #include "airkiss_config.h"
 #include "smart_config.h"
 #include "periph_adc_button.h"
+#include "periph_spiffs.h"
 #include "algorithm_stream.h"
 #include "duer_wifi_cfg.h"
 #include "duer_profile.h"
@@ -90,6 +91,7 @@ static display_service_handle_t disp_serv           = NULL;
 static periph_service_handle_t  wifi_serv           = NULL;
 static bool                     wifi_setting_flag   = false;
 static EventGroupHandle_t       duer_evt            = NULL;
+static esp_dispatcher_handle_t  esp_dispatcher      = NULL;
 
 #ifdef CONFIG_DUER_WIFI_CONFIG
 static esp_err_t wifi_cfg_start();
@@ -97,6 +99,12 @@ static void wifi_cfg_stop();
 #endif /* CONFIG_DUER_WIFI_CONFIG */
 
 extern int duer_dcs_audio_sync_play_tone(const char *uri);
+
+static esp_err_t dispatcher_audio_play(void *instance, action_arg_t *arg, action_result_t *result)
+{
+    duer_dcs_audio_sync_play_tone((char *)arg->data);
+    return ESP_OK;
+};
 
 static void voice_read_task(void *args)
 {
@@ -134,7 +142,11 @@ static esp_err_t rec_engine_cb(audio_rec_evt_t *event, void *user_data)
         }
         display_service_set_pattern(disp_serv, DISPLAY_PATTERN_TURN_ON, 0);
         ESP_LOGI(TAG, "rec_engine_cb - Play tone");
-        duer_dcs_audio_sync_play_tone("file://sdcard/dingding.wav");
+        action_arg_t action_arg = {0};
+        action_arg.data = (void *)"spiffs://spiffs/dingding.wav";
+
+        action_result_t result = { 0 };
+        esp_dispatcher_execute_with_func(esp_dispatcher, dispatcher_audio_play, NULL, &action_arg, &result);
     } else if (AUDIO_REC_VAD_START == event->type) {
         ESP_LOGI(TAG, "rec_engine_cb - AUDIO_REC_VAD_START");
         audio_service_start(duer_serv_handle);
@@ -350,6 +362,7 @@ static esp_err_t duer_callback(audio_service_handle_t handle, service_event_t *e
 
 esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
 {
+#if FUNC_BUTTON_EN
     ESP_LOGD(TAG, "Periph Event received: src_type:%x, source:%p cmd:%d, data:%p, data_len:%d",
              event->source_type, event->source, event->cmd, event->data, event->data_len);
     switch (event->source_type) {
@@ -470,6 +483,7 @@ esp_err_t periph_callback(audio_event_iface_msg_t *event, void *context)
         default:
             break;
     }
+#endif // FUNC_BUTTON_EN
     return ESP_OK;
 }
 
@@ -493,14 +507,26 @@ void start_sys_monitor(void)
 esp_err_t duer_init_hal(void *instance, action_arg_t *arg, action_result_t *result)
 {
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
-    periph_cfg.extern_stack = true;
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     if (set != NULL) {
         esp_periph_set_register_callback(set, periph_callback, NULL);
     }
     audio_board_init();
     audio_board_key_init(set);
-    audio_board_sdcard_init(set, SD_MODE_1_LINE);
+    // Initialize Spiffs peripheral
+    periph_spiffs_cfg_t spiffs_cfg = {
+        .root = "/spiffs",
+        .partition_label = "spiffs_data",
+        .max_files = 5,
+        .format_if_mount_failed = true
+    };
+    esp_periph_handle_t spiffs_handle = periph_spiffs_init(&spiffs_cfg);
+    esp_periph_start(set, spiffs_handle);
+
+    // Wait until spiffs is mounted
+    while (!periph_spiffs_is_mounted(spiffs_handle)) {
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
 #ifdef FUNC_SYS_LEN_EN
     disp_serv = audio_board_led_init();
 #endif
@@ -520,9 +546,9 @@ void duer_app_init(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK( ret );
-    esp_dispatcher_handle_t dispatcher = esp_dispatcher_get_delegate_handle();
+    esp_dispatcher = esp_dispatcher_get_delegate_handle();
     action_result_t result = { 0 };
-    esp_dispatcher_execute_with_func(dispatcher, duer_init_hal, NULL, NULL, &result);
+    esp_dispatcher_execute_with_func(esp_dispatcher, duer_init_hal, NULL, NULL, &result);
 
     xTimerHandle retry_login_timer = xTimerCreate("tm_duer_login", 1000 / portTICK_PERIOD_MS,
                                      pdFALSE, NULL, retry_login_timer_cb);

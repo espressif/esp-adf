@@ -134,4 +134,13 @@ set(COMPONENT_SRCS
 )
 endif()
 
+if (CONFIG_ESP32_P4_FUNCTION_EV_BOARD)
+message(STATUS "Current board name is " CONFIG_ESP32_P4_FUNCTION_EV_BOARD)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_p4_function_ev_board)
+set(COMPONENT_SRCS
+./esp32_p4_function_ev_board/board.c
+./esp32_p4_function_ev_board/board_pins_config.c
+)
+endif()
+
 register_component()

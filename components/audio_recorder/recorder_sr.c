@@ -176,7 +176,7 @@ static esp_err_t recorder_mn_detect(recorder_sr_t *recorder_sr, afe_fetch_result
             detect_flag = 1;
             recorder_sr_disable_wakenet_aec(recorder_sr);
         }
-#elif CONFIG_IDF_TARGET_ESP32S3
+#else
         if (afe_result->wakeup_state == WAKENET_CHANNEL_VERIFIED) {
             detect_flag = 1;
         }

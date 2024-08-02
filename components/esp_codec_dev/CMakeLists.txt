@@ -73,7 +73,7 @@ idf_component_register(SRCS "${COMPONENT_SRCS}"
                        PRIV_REQUIRES freertos)
 # Library only support xtensa
 if (CONFIG_CODEC_ZL38063_SUPPORT)
-  if (NOT ((CONFIG_IDF_TARGET STREQUAL "esp32c6") OR (CONFIG_IDF_TARGET STREQUAL "esp32c3")))
+  if (NOT ((CONFIG_IDF_TARGET STREQUAL "esp32c6") OR (CONFIG_IDF_TARGET STREQUAL "esp32c3") OR (CONFIG_IDF_TARGET STREQUAL "esp32p4")))
     target_link_libraries(${COMPONENT_TARGET} INTERFACE "-L${CMAKE_CURRENT_LIST_DIR}/device/zl38063/firmware")
     target_link_libraries(${COMPONENT_TARGET} INTERFACE firmware)
   endif()

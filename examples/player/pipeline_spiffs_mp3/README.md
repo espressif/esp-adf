@@ -18,30 +18,6 @@ The pipeline is as follows:
 
 ### Prerequisites
 
-Create the SPIFFS file.
-
-- Clone SPIFFS repository from [Github/spiffs](https://github.com/igrr/mkspiffs.git).
-
-```
-    git clone https://github.com/igrr/mkspiffs.git
-```
-
-- Build SPIFFS.
-
-```
-    cd mkspiffs
-    make clean
-    make dist CPPFLAGS="-DSPIFFS_OBJ_META_LEN=4"
-```
-
-- Copy the user audio file to the `tools` folder under the example (the `adf_music.mp3` file is already prepared for this example).
-
-- Run the following command to zip the `adf_music.mp3` file into the `adf_music.bin` binary file, and then flash the file to the assigned partition in `partition`. The created file is already prepared under the `tools` folder for this example.
-
-```
-    ./mkspiffs -c ./tools -b 4096 -p 256 -s 0x100000 ./tools/adf_music.bin
-```
-
 - Create the partition table as follows:
 
   ```
@@ -50,8 +26,6 @@ Create the SPIFFS file.
     factory,  app,  factory, ,        1M,
     storage,  data, spiffs,  0x110000,1M,
   ```
-
-- Download the SPIFFS bin. Now the `./tools/adf_music.bin` includes `adf_music.mp3` only (all MP3 files will eventually generate a bin file).
 
 For more `spiffs` descriptions, please refer to [SPIFFS Filesystem](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/storage/spiffs.html).
 
@@ -67,7 +41,7 @@ This example runs on the boards that are marked with a green checkbox in the [ta
 
 ### Default IDF Branch
 
-This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
+This example supports IDF release/v5.0 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
 ### Configuration
 
@@ -97,7 +71,7 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 -
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project.
+See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v5.3/esp32/index.html) for full steps to configure and build an ESP-IDF project.
 
 ## How to Use the Example
 
