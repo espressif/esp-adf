@@ -167,13 +167,13 @@ esp_rtc_handle_t rtc_service_start(av_stream_handle_t av_stream, const char *uri
         .event_handler = _esp_rtc_event_handler,
     };
 
-    return esp_rtc_init(&rtc_service_config);
+    return esp_rtc_service_init(&rtc_service_config);
 }
 
 int rtc_service_stop(esp_rtc_handle_t esp_rtc)
 {
     if (esp_rtc) {
-        return esp_rtc_deinit(esp_rtc);
+        return esp_rtc_service_deinit(esp_rtc);
     }
     return ESP_FAIL;
 }

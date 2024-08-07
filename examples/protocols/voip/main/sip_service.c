@@ -123,14 +123,14 @@ esp_rtc_handle_t sip_service_start(av_stream_handle_t av_stream, const char *uri
         .event_handler = _esp_sip_event_handler,
     };
 
-    return esp_rtc_init(&sip_service_config);
+    return esp_rtc_service_init(&sip_service_config);
 }
 
 int sip_service_stop(esp_rtc_handle_t esp_sip)
 {
     int ret = ESP_FAIL;
     if (esp_sip) {
-        return esp_rtc_deinit(esp_sip);
+        return esp_rtc_service_deinit(esp_sip);
     }
     return ret;
 }
