@@ -41,13 +41,15 @@
 static const char *TAG = "A2DP_STREAM";
 
 typedef struct {
-    audio_element_handle_t sink_stream;
-    audio_element_handle_t source_stream;
+    audio_element_handle_t      sink_stream;
+    audio_element_handle_t      source_stream;
     a2dp_stream_user_callback_t user_callback;
-    esp_periph_handle_t bt_avrc_periph;
-    bool avrcp_conn_state;
-    audio_stream_type_t stream_type;
-    uint8_t trans_label;
+    esp_periph_handle_t         bt_avrc_periph;
+    bool                        avrcp_conn_state;
+    audio_stream_type_t         stream_type;
+    uint8_t                     trans_label;
+    esp_bd_addr_t               connected_bd_addr;
+    uint8_t                     connected_flag;
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     audio_hal_handle_t audio_hal;
@@ -122,6 +124,8 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
                      bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
             if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
                 ESP_LOGI(TAG, "A2DP connection state =  DISCONNECTED");
+                s_aadp_handler.connected_flag = 0;
+                memset(s_aadp_handler.connected_bd_addr, 0x00, ESP_BD_ADDR_LEN);
                 if (s_aadp_handler.sink_stream) {
                     audio_element_report_status(s_aadp_handler.sink_stream, AEL_STATUS_INPUT_DONE);
                 }
@@ -130,6 +134,8 @@ static void bt_a2d_sink_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
                 }
             } else if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
                 ESP_LOGI(TAG, "A2DP connection state =  CONNECTED");
+                memcpy(s_aadp_handler.connected_bd_addr, bda, ESP_BD_ADDR_LEN);
+                s_aadp_handler.connected_flag = 1;
                 if (s_aadp_handler.bt_avrc_periph) {
                     esp_periph_send_event(s_aadp_handler.bt_avrc_periph, PERIPH_BLUETOOTH_CONNECTED, NULL, 0);
                 }
@@ -186,7 +192,7 @@ static void bt_a2d_sink_data_cb(const uint8_t *data, uint32_t len)
     if (s_aadp_handler.sink_stream) {
         if (audio_element_get_state(s_aadp_handler.sink_stream) == AEL_STATE_RUNNING) {
             a2dp_data_t send_msg = {0};
-            send_msg.data = (uint8_t *) audio_calloc(1, len);
+            send_msg.data = (uint8_t *)audio_calloc(1, len);
             if (!send_msg.data) {
                 ESP_LOGE(TAG, "No ineffecitive memory to allocate(%d)", __LINE__);
                 return;
@@ -194,11 +200,11 @@ static void bt_a2d_sink_data_cb(const uint8_t *data, uint32_t len)
             memcpy(send_msg.data, data, len);
             send_msg.size = len;
             send_msg.type = A2DP_TYPE_SINK;
-            if ((!s_aadp_handler.a2dp_queue) || xQueueSend( s_aadp_handler.a2dp_queue, &send_msg, 0)  != pdPASS ) {
+            if ((!s_aadp_handler.a2dp_queue) || xQueueSend(s_aadp_handler.a2dp_queue, &send_msg, 0) != pdPASS) {
                 ESP_LOGW(TAG, "discard a2dp(%p) sink pkt, A2DP_STREAM_QUEUE_SIZE value needs to be expanded", s_aadp_handler.a2dp_queue);
                 audio_free(send_msg.data);
                 send_msg.data = NULL;
-            } 
+            }
         }
     }
 }
@@ -209,25 +215,30 @@ static void bt_a2d_source_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param
         s_aadp_handler.user_callback.user_a2d_cb(event, param);
     }
     switch (event) {
-        case ESP_A2D_CONNECTION_STATE_EVT:
+        case ESP_A2D_CONNECTION_STATE_EVT: {
+            uint8_t *bda = param->conn_stat.remote_bda;
             if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
                 ESP_LOGI(TAG, "a2dp source connected");
                 ESP_LOGI(TAG, "a2dp media ready checking ...");
+                memcpy(s_aadp_handler.connected_bd_addr, bda, ESP_BD_ADDR_LEN);
+                s_aadp_handler.connected_flag = 1;
                 esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_CHECK_SRC_RDY);
                 if (s_aadp_handler.bt_avrc_periph) {
                     esp_periph_send_event(s_aadp_handler.bt_avrc_periph, PERIPH_BLUETOOTH_CONNECTED, NULL, 0);
                 }
             } else if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
                 ESP_LOGI(TAG, "a2dp source disconnected");
+                s_aadp_handler.connected_flag = 0;
+                memset(s_aadp_handler.connected_bd_addr, 0x00, ESP_BD_ADDR_LEN);
                 esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
                 if (s_aadp_handler.bt_avrc_periph) {
                     esp_periph_send_event(s_aadp_handler.bt_avrc_periph, PERIPH_BLUETOOTH_DISCONNECTED, NULL, 0);
                 }
             }
             break;
+        }
         case ESP_A2D_MEDIA_CTRL_ACK_EVT:
-            if (param->media_ctrl_stat.cmd == ESP_A2D_MEDIA_CTRL_CHECK_SRC_RDY &&
-                param->media_ctrl_stat.status == ESP_A2D_MEDIA_CTRL_ACK_SUCCESS) {
+            if (param->media_ctrl_stat.cmd == ESP_A2D_MEDIA_CTRL_CHECK_SRC_RDY && param->media_ctrl_stat.status == ESP_A2D_MEDIA_CTRL_ACK_SUCCESS) {
                 esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
             }
             break;
@@ -289,8 +300,8 @@ audio_element_handle_t a2dp_stream_init(a2dp_stream_config_t *config)
         return NULL;
     }
 
-    cfg.task_stack = -1; // No need task
-    cfg.tag = "aadp";    
+    cfg.task_stack = -1;  // No need task
+    cfg.tag = "aadp";
 
     esp_avrc_ct_init();
     esp_avrc_ct_register_callback(bt_avrc_ct_cb);
@@ -305,6 +316,8 @@ audio_element_handle_t a2dp_stream_init(a2dp_stream_config_t *config)
     esp_avrc_rn_evt_bit_mask_operation(ESP_AVRC_BIT_MASK_OP_SET, &evt_set, ESP_AVRC_RN_VOLUME_CHANGE);
     esp_avrc_tg_set_rn_evt_cap(&evt_set);
 #endif
+
+    s_aadp_handler.connected_flag = 0;
 
     if (config->type == AUDIO_STREAM_READER) {
         // A2DP sink
@@ -327,17 +340,17 @@ audio_element_handle_t a2dp_stream_init(a2dp_stream_config_t *config)
     }
 
     AUDIO_MEM_CHECK(TAG, el, return NULL);
-    
+
     memcpy(&s_aadp_handler.user_callback, &config->user_callback, sizeof(a2dp_stream_user_callback_t));
 
-    if ( config->type == AUDIO_STREAM_READER ) {
+    if (config->type == AUDIO_STREAM_READER) {
         s_aadp_handler.a2dp_queue = xQueueCreate(A2DP_STREAM_QUEUE_SIZE, sizeof(a2dp_data_t));
         if (s_aadp_handler.a2dp_queue == 0) {
             ESP_LOGE(TAG, "Create a2dp queue failed(%d)", __LINE__);
             return NULL;
         }
         esp_err_t err = audio_thread_create(&s_aadp_handler.a2dp_thread, "audio_a2dp_stream_thread", audio_a2dp_stream_thread, NULL,
-                                A2DP_STREAM_TASK_STACK, A2DP_STREAM_TASK_PRIO, A2DP_STREAM_TASK_IN_EXT, A2DP_STREAM_TASK_CORE);
+                                            A2DP_STREAM_TASK_STACK, A2DP_STREAM_TASK_PRIO, A2DP_STREAM_TASK_IN_EXT, A2DP_STREAM_TASK_CORE);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Create audio_a2dp_stream_thread failed(%d)", __LINE__);
             return NULL;
@@ -353,6 +366,8 @@ esp_err_t a2dp_destroy()
     } else if (s_aadp_handler.stream_type == AUDIO_STREAM_WRITER) {
         esp_a2d_source_deinit();
     }
+    s_aadp_handler.connected_flag = 0;
+
     return ESP_OK;
 }
 
@@ -614,5 +629,17 @@ esp_err_t periph_bt_volume_down(esp_periph_handle_t periph)
     return periph_bt_avrc_passthrough_cmd(periph, ESP_AVRC_PT_CMD_VOL_DOWN);
 }
 #endif
+
+esp_err_t periph_bt_get_connected_bd_addr(esp_periph_handle_t periph, uint8_t *dest)
+{
+    if (!dest) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (!s_aadp_handler.connected_flag) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    memcpy(dest, s_aadp_handler.connected_bd_addr, ESP_BD_ADDR_LEN);
+    return ESP_OK;
+}
 
 #endif
