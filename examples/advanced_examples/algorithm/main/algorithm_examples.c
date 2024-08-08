@@ -16,6 +16,9 @@
 #include "audio_pipeline.h"
 #include "board.h"
 #include "es8311.h"
+#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
+#include "es7210.h"
+#endif  /* CONFIG_ESP32_S3_KORVO2_V3_BOARD */
 #include "fatfs_stream.h"
 #include "i2s_stream.h"
 #include "algorithm_stream.h"
@@ -124,6 +127,9 @@ void app_main()
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
     audio_hal_set_volume(board_handle->audio_hal, 60);
+#if CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    es7210_adc_set_gain(ES7210_INPUT_MIC3, GAIN_0DB);
+#endif  /* CONFIG_ESP32_S3_KORVO2_V3_BOARD */
 
     i2s_stream_cfg_t i2s_r_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, I2S_SAMPLE_RATE, I2S_BITS, AUDIO_STREAM_READER);
     i2s_r_cfg.task_stack = -1;
@@ -258,7 +264,7 @@ void app_main()
             continue;
         }
 
-        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) mp3_decoder
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *)mp3_decoder
             && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
             audio_element_info_t music_info = {0};
             audio_element_getinfo(mp3_decoder, &music_info);
@@ -269,7 +275,7 @@ void app_main()
         }
 
         /* Stop when the last pipeline element receives stop event */
-        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) filter_w
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *)filter_w
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
             && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
             ESP_LOGW(TAG, "[ * ] Stop event received");
