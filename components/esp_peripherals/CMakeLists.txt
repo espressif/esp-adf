@@ -28,8 +28,13 @@ list(APPEND COMPONENT_SRCS ./esp_peripherals.c
                 ./lib/adc_button/adc_button.c
                 ./lib/IS31FL3216/IS31FL3216.c
                 ./lib/tca9554/tca9554.c
-                ./driver/i2c_bus/i2c_bus.c
                 ./lib/gpio_isr/gpio_isr.c)
+
+if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_LESS "5.3")
+    list(APPEND COMPONENT_SRCS  ./driver/i2c_bus/i2c_bus.c)
+else()
+    list(APPEND COMPONENT_SRCS  ./driver/i2c_bus/i2c_bus_v2.c)
+endif()
 
 IF (CONFIG_IDF_TARGET STREQUAL "esp32")
 list(APPEND COMPONENT_ADD_INCLUDEDIRS ./lib/sdcard ./lib/touch)

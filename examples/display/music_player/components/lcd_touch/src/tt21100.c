@@ -22,7 +22,6 @@
  *
  */
 
-
 #include "driver/i2c.h"
 #include "i2c_bus.h"
 #include "esp_err.h"
@@ -39,10 +38,14 @@ static const char *TAG = "TT21100";
 
 static uint8_t tp_num, btn_val;
 static uint16_t x, y, btn_signal;
-i2c_bus_handle_t i2c_handle;
+static i2c_bus_handle_t i2c_handle;
 
 static esp_err_t tt21100_read(uint8_t *data, size_t data_len)
 {
+    esp_err_t ret_val = ESP_OK;
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0))
+    ret_val = i2c_bus_read_bytes_directly(i2c_handle, TT21100_CHIP_ADDR_DEFAULT << 1, data, data_len);
+#else
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
 
     i2c_master_start(cmd);
@@ -50,24 +53,35 @@ static esp_err_t tt21100_read(uint8_t *data, size_t data_len)
     i2c_master_read(cmd, data, data_len, I2C_MASTER_LAST_NACK);
     i2c_master_stop(cmd);
 
-    esp_err_t ret_val = ESP_OK;
     ret_val = i2c_bus_cmd_begin(i2c_handle, cmd, 10);
     i2c_cmd_link_delete(cmd);
+#endif
     return ret_val;
 }
 
 static int i2c_init()
 {
     int res = 0;
+    i2c_config_t i2c_pin = { 0 };
+    res = get_i2c_pins(I2C_NUM_0, &i2c_pin);
+    if (res != 0) {
+        ESP_LOGE(TAG, "get i2c pins error");
+        return res;
+    }
     i2c_config_t es_i2c_cfg = {
         .mode = I2C_MODE_MASTER,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = 100000,
+        .sda_io_num = i2c_pin.sda_io_num,
+        .scl_io_num = i2c_pin.scl_io_num,
     };
-    res = get_i2c_pins(I2C_NUM_0, &es_i2c_cfg);
     i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
-    return res;
+    if (i2c_handle == NULL) {
+        ESP_LOGE(TAG, "i2c_bus_create error");
+        return -1;
+    }
+    return 0;
 }
 
 esp_err_t tt21100_tp_init(void)

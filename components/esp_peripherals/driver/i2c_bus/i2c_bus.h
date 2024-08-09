@@ -24,11 +24,17 @@
 #ifndef _IOT_I2C_BUS_H_
 #define _IOT_I2C_BUS_H_
 
-#include "driver/i2c.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "audio_idf_version.h"
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0))
+#include "driver/i2c_master.h"
+#endif
+
+#include "driver/i2c.h"
 
 typedef void *i2c_bus_handle_t;
 typedef void (*i2c_run_cb_t)(i2c_port_t port, void *arg);
@@ -43,6 +49,79 @@ typedef void (*i2c_run_cb_t)(i2c_port_t port, void *arg);
  *     - I2C bus handle
  */
 i2c_bus_handle_t i2c_bus_create(i2c_port_t port, i2c_config_t *conf);
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0))
+/**
+ * @brief  Set I2S master bus handle
+ *
+ * @param port           I2C port number
+ * @param master_handle  I2C master bus handle.
+ *
+ * @return
+ *     - ESP_OK on success
+ */
+esp_err_t i2c_bus_set_master_handle(i2c_port_t port, i2c_master_bus_handle_t master_handle);
+
+/**
+ * @brief  Get I2S master bus handle
+ *
+ * @param port           I2C port number
+ *
+ * @return
+ *     - I2C master bus handle.
+ */
+i2c_master_bus_handle_t i2c_bus_get_master_handle(i2c_port_t port);
+
+/**
+ * @brief  Read certain bytes of data from I2C bus by address
+ *
+ *  ___________________________________________________
+ * | start | slave_addr + rd_bit + ack | .....  | stop |
+ * --------|---------------------------|-- -----|------|
+ *
+ * @note  Directly reads the data in the registers address without a write action
+ *
+ * @param bus      I2C bus handle
+ * @param addr     The address of the device
+ * @param outdata  The outdata pointer
+ * @param datalen  The length of outdata
+ *
+ * @return
+ *       - ESP_OK    Success
+ *       - ESP_FAIL  Fail
+ */
+esp_err_t i2c_bus_read_bytes_directly(i2c_bus_handle_t bus,  int addr, uint8_t *outdata, int datalen);
+
+/**
+ * @brief  Set I2C bus clock frequency
+ *
+ * @note  This function need called before any i2c bus read or write operation
+ *
+ * @param bus        I2C bus handle
+ * @param clk_speed  I2C clk frequency
+ *
+ * @return
+ *       - ESP_OK   Success
+ *       - ESP_FAIL Fail
+ */
+esp_err_t i2c_bus_set_clk(i2c_bus_handle_t bus, uint32_t clk_speed);
+
+#else
+
+/**
+ * @brief I2C start sending buffered commands
+ *
+ * @param bus            I2C bus handle
+ * @param cmd            I2C cmd handle
+ * @param ticks_to_wait  Maximum blocking time
+ *
+ * @return
+ *     - ESP_OK Success
+ *     - ESP_FAIL Fail
+ */
+esp_err_t i2c_bus_cmd_begin(i2c_bus_handle_t bus, i2c_cmd_handle_t cmd, portBASE_TYPE ticks_to_wait);
+
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0) */
 
 /**
  * @brief Write bytes to I2C bus
@@ -100,19 +179,6 @@ esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int r
  *     - ESP_FAIL Fail
  */
 esp_err_t i2c_bus_delete(i2c_bus_handle_t bus);
-
-/**
- * @brief I2C start sending buffered commands
- *
- * @param bus            I2C bus handle
- * @param cmd            I2C cmd handle
- * @param ticks_to_wait  Maximum blocking time
- *
- * @return
- *     - ESP_OK Success
- *     - ESP_FAIL Fail
- */
-esp_err_t i2c_bus_cmd_begin(i2c_bus_handle_t bus, i2c_cmd_handle_t cmd, portBASE_TYPE ticks_to_wait);
 
 /**
  * @brief Auto probe the I2C device
