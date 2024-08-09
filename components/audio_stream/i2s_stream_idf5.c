@@ -317,82 +317,73 @@ static esp_err_t _i2s_set_clk(i2s_stream_t *i2s, int rate, int bits, int ch)
         return ESP_FAIL;
     }
     if (i2s->config.transmit_mode == I2S_COMM_MODE_STD) {
-        i2s_std_slot_config_t slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bits, slot_mode);
-        i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(rate);
-        clk_cfg.mclk_multiple = i2s->config.std_cfg.clk_cfg.mclk_multiple;
         if (i2s_key_slot[port].tx_handle != NULL && i2s->type == AUDIO_STREAM_WRITER) {
+            i2s_key_slot[port].tx_std_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[port].tx_std_cfg.slot_cfg.ws_width = bits;
+            i2s_key_slot[port].tx_std_cfg.slot_cfg.slot_mode = slot_mode;
+            i2s_key_slot[port].tx_std_cfg.clk_cfg.sample_rate_hz = rate;
             i2s_channel_disable(i2s_key_slot[port].tx_handle);
-            slot_cfg.slot_mask = i2s_key_slot[port].tx_std_cfg.slot_cfg.slot_mask;
-            clk_cfg.clk_src = i2s_key_slot[port].tx_std_cfg.clk_cfg.clk_src;
-            err |= i2s_channel_reconfig_std_slot(i2s_key_slot[port].tx_handle, &slot_cfg);
-            err |= i2s_channel_reconfig_std_clock(i2s_key_slot[port].tx_handle, &clk_cfg);
+            err |= i2s_channel_reconfig_std_slot(i2s_key_slot[port].tx_handle, &i2s_key_slot[port].tx_std_cfg.slot_cfg);
+            err |= i2s_channel_reconfig_std_clock(i2s_key_slot[port].tx_handle, &i2s_key_slot[port].tx_std_cfg.clk_cfg);
             err |= i2s_channel_enable(i2s_key_slot[port].tx_handle);
-            i2s_key_slot[i2s->port].tx_std_cfg.clk_cfg.sample_rate_hz = rate;
-            i2s_key_slot[i2s->port].tx_std_cfg.slot_cfg.data_bit_width = bits;
-            i2s_key_slot[i2s->port].tx_std_cfg.slot_cfg.slot_mode = slot_mode;
         }
         if (i2s_key_slot[port].rx_handle != NULL && i2s->type == AUDIO_STREAM_READER) {
-            i2s_channel_disable(i2s_key_slot[port].rx_handle);
-            slot_cfg.slot_mask = i2s_key_slot[port].rx_std_cfg.slot_cfg.slot_mask;
-            clk_cfg.clk_src = i2s_key_slot[port].rx_std_cfg.clk_cfg.clk_src;
-            err |= i2s_channel_reconfig_std_slot(i2s_key_slot[port].rx_handle, &slot_cfg);
-            err |= i2s_channel_reconfig_std_clock(i2s_key_slot[port].rx_handle, &clk_cfg);
-            err |= i2s_channel_enable(i2s_key_slot[port].rx_handle);
-            i2s_key_slot[i2s->port].rx_std_cfg.clk_cfg.sample_rate_hz = rate;
             i2s_key_slot[i2s->port].rx_std_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[i2s->port].rx_std_cfg.slot_cfg.ws_width = bits;
             i2s_key_slot[i2s->port].rx_std_cfg.slot_cfg.slot_mode = slot_mode;
+            i2s_key_slot[i2s->port].rx_std_cfg.clk_cfg.sample_rate_hz = rate;
+            i2s_channel_disable(i2s_key_slot[port].rx_handle);
+            err |= i2s_channel_reconfig_std_slot(i2s_key_slot[port].rx_handle, &i2s_key_slot[i2s->port].rx_std_cfg.slot_cfg);
+            err |= i2s_channel_reconfig_std_clock(i2s_key_slot[port].rx_handle, &i2s_key_slot[i2s->port].rx_std_cfg.clk_cfg);
+            err |= i2s_channel_enable(i2s_key_slot[port].rx_handle);
         }
 #if SOC_I2S_SUPPORTS_PDM
     } else if (i2s->config.transmit_mode == I2S_COMM_MODE_PDM) {
 #if SOC_I2S_SUPPORTS_PDM_TX
         if (i2s_key_slot[port].tx_handle != NULL && i2s->type == AUDIO_STREAM_WRITER) {
-            i2s_pdm_tx_slot_config_t slot_cfg = I2S_PDM_TX_SLOT_DEFAULT_CONFIG(bits, slot_mode);
-            i2s_pdm_tx_clk_config_t clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(rate);
-            i2s_channel_disable(i2s_key_slot[port].tx_handle);
-            err |= i2s_channel_reconfig_pdm_tx_slot(i2s_key_slot[port].tx_handle, &slot_cfg);
-            err |= i2s_channel_reconfig_pdm_tx_clock(i2s_key_slot[port].tx_handle, &clk_cfg);
-            err |= i2s_channel_enable(i2s_key_slot[port].tx_handle);
             i2s_key_slot[i2s->port].tx_pdm_cfg.clk_cfg.sample_rate_hz = rate;
             i2s_key_slot[i2s->port].tx_pdm_cfg.slot_cfg.data_bit_width = bits;
             i2s_key_slot[i2s->port].tx_pdm_cfg.slot_cfg.slot_mode = slot_mode;
+            i2s_channel_disable(i2s_key_slot[port].tx_handle);
+            err |= i2s_channel_reconfig_pdm_tx_slot(i2s_key_slot[port].tx_handle, &i2s_key_slot[i2s->port].tx_pdm_cfg.slot_cfg);
+            err |= i2s_channel_reconfig_pdm_tx_clock(i2s_key_slot[port].tx_handle, &i2s_key_slot[i2s->port].tx_pdm_cfg.clk_cfg);
+            err |= i2s_channel_enable(i2s_key_slot[port].tx_handle);
         }
 #endif // SOC_I2S_SUPPORTS_PDM_TX
 #if SOC_I2S_SUPPORTS_PDM_RX
         if (i2s_key_slot[port].rx_handle != NULL && i2s->type == AUDIO_STREAM_READER) {
-            i2s_pdm_rx_slot_config_t slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(bits, slot_mode);
-            i2s_pdm_rx_clk_config_t clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(rate);
-            i2s_channel_disable(i2s_key_slot[port].rx_handle);
-            err |= i2s_channel_reconfig_pdm_rx_slot(i2s_key_slot[port].rx_handle, &slot_cfg);
-            err |= i2s_channel_reconfig_pdm_rx_clock(i2s_key_slot[port].rx_handle, &clk_cfg);
-            err |= i2s_channel_enable(i2s_key_slot[port].rx_handle);
             i2s_key_slot[i2s->port].rx_pdm_cfg.clk_cfg.sample_rate_hz = rate;
             i2s_key_slot[i2s->port].rx_pdm_cfg.slot_cfg.data_bit_width = bits;
             i2s_key_slot[i2s->port].rx_pdm_cfg.slot_cfg.slot_mode = slot_mode;
+            i2s_channel_disable(i2s_key_slot[port].rx_handle);
+            err |= i2s_channel_reconfig_pdm_rx_slot(i2s_key_slot[port].rx_handle, &i2s_key_slot[i2s->port].rx_pdm_cfg.slot_cfg);
+            err |= i2s_channel_reconfig_pdm_rx_clock(i2s_key_slot[port].rx_handle, &i2s_key_slot[i2s->port].rx_pdm_cfg.clk_cfg);
+            err |= i2s_channel_enable(i2s_key_slot[port].rx_handle);
         }
 #endif // SOC_I2S_SUPPORTS_PDM_RX
 
 #endif // SOC_I2S_SUPPORTS_PDM
 #if SOC_I2S_SUPPORTS_TDM
     } else if (i2s->config.transmit_mode == I2S_COMM_MODE_TDM) {
-        i2s_tdm_clk_config_t clk_cfg = I2S_TDM_CLK_DEFAULT_CONFIG(rate);
-        i2s_tdm_slot_config_t slot_cfg = I2S_TDM_PHILIPS_SLOT_DEFAULT_CONFIG(bits, slot_mode, ch);
         if (i2s_key_slot[port].tx_handle != NULL && i2s->type == AUDIO_STREAM_WRITER) {
-            i2s_channel_disable(i2s_key_slot[port].tx_handle);
-            err |= i2s_channel_reconfig_tdm_slot(i2s_key_slot[port].tx_handle, &slot_cfg);
-            err |= i2s_channel_reconfig_tdm_clock(i2s_key_slot[port].tx_handle, &clk_cfg);
-            err |= i2s_channel_enable(i2s_key_slot[port].tx_handle);
             i2s_key_slot[i2s->port].tx_tdm_cfg.clk_cfg.sample_rate_hz = rate;
             i2s_key_slot[i2s->port].tx_tdm_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[i2s->port].tx_tdm_cfg.slot_cfg.ws_width = bits;
             i2s_key_slot[i2s->port].tx_tdm_cfg.slot_cfg.slot_mode = slot_mode;
+            i2s_channel_disable(i2s_key_slot[port].tx_handle);
+            err |= i2s_channel_reconfig_tdm_slot(i2s_key_slot[port].tx_handle, &i2s_key_slot[i2s->port].tx_tdm_cfg.slot_cfg);
+            err |= i2s_channel_reconfig_tdm_clock(i2s_key_slot[port].tx_handle, &i2s_key_slot[i2s->port].tx_tdm_cfg.clk_cfg);
+            err |= i2s_channel_enable(i2s_key_slot[port].tx_handle);
         }
         if (i2s_key_slot[port].rx_handle != NULL && i2s->type == AUDIO_STREAM_READER) {
-            i2s_channel_disable(i2s_key_slot[port].rx_handle);
-            err |= i2s_channel_reconfig_tdm_slot(i2s_key_slot[port].rx_handle, &slot_cfg);
-            err |= i2s_channel_reconfig_tdm_clock(i2s_key_slot[port].rx_handle, &clk_cfg);
-            err |= i2s_channel_enable(i2s_key_slot[port].rx_handle);
             i2s_key_slot[i2s->port].rx_tdm_cfg.clk_cfg.sample_rate_hz = rate;
             i2s_key_slot[i2s->port].rx_tdm_cfg.slot_cfg.data_bit_width = bits;
+            i2s_key_slot[i2s->port].rx_tdm_cfg.slot_cfg.ws_width = bits;
             i2s_key_slot[i2s->port].rx_tdm_cfg.slot_cfg.slot_mode = slot_mode;
+            i2s_channel_disable(i2s_key_slot[port].rx_handle);
+            err |= i2s_channel_reconfig_tdm_slot(i2s_key_slot[port].rx_handle, &i2s_key_slot[i2s->port].rx_tdm_cfg.slot_cfg);
+            err |= i2s_channel_reconfig_tdm_clock(i2s_key_slot[port].rx_handle, &i2s_key_slot[i2s->port].rx_tdm_cfg.clk_cfg);
+            err |= i2s_channel_enable(i2s_key_slot[port].rx_handle);
         }
 #endif // SOC_I2S_SUPPORTS_TDM
     } else {
