@@ -22,7 +22,7 @@ Overview
 
 The ESP32-LyraT V4.2 is an audio development board produced by `Espressif <https://espressif.com>`_ built around ESP32. It is intended for audio applications, by providing hardware for audio processing and additional RAM on top of what is already onboard of the ESP32 chip. The specific hardware includes:
 
-* **ESP32-WROVER Module**
+* **ESP32-WROVER Module**\ :sup:`*`
 * **Audio Codec Chip**
 * Dual **Microphones** on board
 * **Headphone** input
@@ -33,6 +33,8 @@ The ESP32-LyraT V4.2 is an audio development board produced by `Espressif <https
 * **JTAG** header
 * Integrated **USB-UART Bridge Chip**
 * Li-ion **Battery-Charge Management**
+
+The superscript \ :sup:`*` indicates that the product is in EOL status. The same applies below.
 
 The block diagram below presents main components of the ESP32-LyraT and interconnections between components.
 
@@ -48,22 +50,22 @@ Functional Description
 
 The following list and figure describe key components, interfaces and controls of the ESP32-LyraT board.
 
-ESP32-WROVER Module
-    The ESP32-WROVER module contains ESP32 chip to provide Wi-Fi / BT connectivity and data processing power as well as integrates 32 Mbit SPI flash and 32 Mbit PSRAM for flexible data storage.
+ESP32-WROVER Module\ :sup:`*`
+    The ESP32-WROVER module\ :sup:`*` contains ESP32 chip to provide Wi-Fi / BT connectivity and data processing power as well as integrates 32 Mbit SPI flash and 32 Mbit PSRAM for flexible data storage.
 Green and Red LEDs
-    Two general purpose LEDs controlled by **ESP32-WROVER Module** to indicate certain operation states of the audio application using dedicated API.
+    Two general purpose LEDs controlled by **ESP32-WROVER Module**\ :sup:`*` to indicate certain operation states of the audio application using dedicated API.
 Function DIP Switch
     Used to configure function of GPIO12 to GPIO15 pins that are shared between devices, primarily between **JTAG Header** and **MicroSD Card**. By default, the **MicroSD Card** is enabled with all switches in *OFF* position. To enable the **JTAG Header** instead, switches in positions 3, 4, 5 and 6 should be put *ON*. If **JTAG** is not used and **MicroSD Card** is operated in the one-line mode, then GPIO12 and GPIO13 may be assigned to other functions. Please refer to `ESP32 LyraT V4.2 schematic`_ for more details.
 JTAG Header
-    Provides access to the **JTAG** interface of **ESP32-WROVER Module**. It may be used for debugging, application upload, as well as implementing several other functions, e.g., `Application Level Tracing <http://esp-idf.readthedocs.io/en/latest/api-reference/system/app_trace.html>`_. See :ref:`get-started-esp32-lyrat-v4.2-jtag-header` for pinout details. Before using **JTAG** signals to the header, **Function DIP Switch** should be enabled. Please note that when **JTAG** is in operation, **MicroSD Card** cannot be used and should be disconnected because some of JTAG signals are shared by both devices.
+    Provides access to the **JTAG** interface of **ESP32-WROVER Module**\ :sup:`*`. It may be used for debugging, application upload, as well as implementing several other functions, e.g., `Application Level Tracing <http://esp-idf.readthedocs.io/en/latest/api-reference/system/app_trace.html>`_. See :ref:`get-started-esp32-lyrat-v4.2-jtag-header` for pinout details. Before using **JTAG** signals to the header, **Function DIP Switch** should be enabled. Please note that when **JTAG** is in operation, **MicroSD Card** cannot be used and should be disconnected because some of JTAG signals are shared by both devices.
 UART Header
-    Serial port: provides access to the serial TX/RX signals between **ESP32-WROVER Module** and **USB-UART Bridge Chip**.
+    Serial port: provides access to the serial TX/RX signals between **ESP32-WROVER Module**\ :sup:`*` and **USB-UART Bridge Chip**.
 I2C Header
-    Provides access to the I2C interface. Both **ESP32-WROVER Module** and **Audio Codec Chip** are connected to this interface. See :ref:`get-started-esp32-lyrat-v4.2-i2c-header` for pinout details.
+    Provides access to the I2C interface. Both **ESP32-WROVER Module**\ :sup:`*` and **Audio Codec Chip** are connected to this interface. See :ref:`get-started-esp32-lyrat-v4.2-i2c-header` for pinout details.
 MicroSD Card
     The development board supports a MicroSD card in SPI/1-bit/4-bit modes, and can store or play audio files in the MicroSD card. See :ref:`get-started-esp32-lyrat-v4.2-microsd-card-slot` for pinout details. Note that **JTAG** cannot be used and should be disconnected by setting **Function DIP Switch** when **MicroSD Card** is in operation, because some of signals are shared by both devices.
 I2S Header
-    Provides access to the I2S interface. Both **ESP32-WROVER Module** and **Audio Codec Chip** are connected to this interface. See :ref:`get-started-esp32-lyrat-v4.2-i2s-header` for pinout details.
+    Provides access to the I2S interface. Both **ESP32-WROVER Module**\ :sup:`*` and **Audio Codec Chip** are connected to this interface. See :ref:`get-started-esp32-lyrat-v4.2-i2s-header` for pinout details.
 Left Microphone
     Onboard microphone connected to IN1 of the **Audio Codec Chip**.
 AUX Input
@@ -91,15 +93,15 @@ PA Chip
 Boot/Reset Press Keys
     Boot: holding down the **Boot** button and momentarily pressing the **Reset** button initiates the firmware upload mode. Then user can upload firmware through the serial port. Reset: pressing this button alone resets the system.
 Touch Pad Buttons
-    Four touch pads labeled *Play*, *Sel*,  *Vol+* and *Vol-*. They are routed to **ESP32-WROVER Module** and intended for development and testing of a UI for audio applications using dedicated API.
+    Four touch pads labeled *Play*, *Sel*,  *Vol+* and *Vol-*. They are routed to **ESP32-WROVER Module**\ :sup:`*` and intended for development and testing of a UI for audio applications using dedicated API.
 Audio Codec Chip
-    The Audio Codec Chip, `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_, is a low power stereo audio codec with a headphone amplifier. It consists of 2-channel ADC, 2-channel DAC, microphone amplifier, headphone amplifier, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER Module** over I2S and I2S buses to provide audio processing in hardware independently from the audio application.
+    The Audio Codec Chip, `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_, is a low power stereo audio codec with a headphone amplifier. It consists of 2-channel ADC, 2-channel DAC, microphone amplifier, headphone amplifier, digital sound effects, analog mixing and gain functions. It is interfaced with **ESP32-WROVER Module**\ :sup:`*` over I2S and I2S buses to provide audio processing in hardware independently from the audio application.
 EN Header
     Install a jumper on this header to enable automatic loading of application to the ESP32. Install or remove jumpers together on both IO0 and EN headers.
 IO0 Header
     Install a jumper on this header to enable automatic loading of application to the ESP32. Install or remove jumpers together on both IO0 and EN headers.
 Function Press Keys
-    Two key labeled *Rec* and *Mode*. They are routed to **ESP32-WROVER Module** and intended for developing and testing a UI for audio applications using dedicated API.
+    Two key labeled *Rec* and *Mode*. They are routed to **ESP32-WROVER Module**\ :sup:`*` and intended for developing and testing a UI for audio applications using dedicated API.
 USB-UART Bridge Chip
     A single chip USB-UART bridge provides up to 1 Mbps transfers rate.
 USB-UART Port
@@ -447,7 +449,6 @@ Related Documents
 
 * `ESP32 LyraT V4.2 schematic`_ (PDF)
 * `ESP32 Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf>`_ (PDF)
-* `ESP32-WROVER Datasheet <https://espressif.com/sites/default/files/documentation/esp32-wrover_datasheet_en.pdf>`_ (PDF)
 * `JTAG Debugging <https://esp-idf.readthedocs.io/en/latest/api-guides/jtag-debugging/index.html>`_
 * :doc:`get-started-esp32-lyrat-v4`
 
