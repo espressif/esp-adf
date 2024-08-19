@@ -15,7 +15,7 @@
 #define DEFAULT_I2C_CLOCK         (100000)
 #define DEFAULT_I2C_TRANS_TIMEOUT (100)
 
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0) && CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE
 #include "driver/i2c_master.h"
 #define USE_IDF_I2C_MASTER
 #else
@@ -71,8 +71,12 @@ static bool _i2c_ctrl_is_open(const audio_codec_ctrl_if_t *ctrl)
 static int _i2c_master_read_reg(i2c_ctrl_t *i2c_ctrl, int addr, int addr_len, void *data, int data_len)
 {
     uint8_t addr_data[2] = {0};
-    addr_data[0] = addr & 0xff;
-    addr_data[1] = addr >> 8;
+     if (addr_len > 1) {
+        addr_data[0] = addr >> 8;
+        addr_data[1] = addr & 0xff;
+    } else {
+        addr_data[0] = addr & 0xff;
+    }
     int ret = i2c_master_transmit_receive(i2c_ctrl->dev_handle, addr_data, addr_len, data, data_len, DEFAULT_I2C_TRANS_TIMEOUT);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Fail to read from dev %x", i2c_ctrl->addr);
@@ -88,9 +92,11 @@ static int _i2c_master_write_reg(i2c_ctrl_t *i2c_ctrl, int addr, int addr_len, v
         // Not support write huge data
         uint8_t write_data[4] = {0};
         int i = 0;
-        write_data[i++] = addr & 0xff;
         if (addr_len > 1) {
             write_data[i++] = addr >> 8;
+            write_data[i++] = addr & 0xff;
+        } else {
+            write_data[i++] = addr & 0xff;
         }
         uint8_t *w = (uint8_t*)data;
         while (i < len) {
