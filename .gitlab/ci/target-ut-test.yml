@@ -1,136 +1,104 @@
-.unit_test_template: &unit_test_template
-  image: $CI_DOCKER_REGISTRY/rpi-test-env:old1
+.target_ut_test_template:
+  image: ciregistry.espressif.cn:8443/target-test-env-v5.3:1
   stage: target_test
-  when: on_success
+  timeout: 24 hour
+  cache:
+    # Usually do not need submodule-cache in target_test
+    - key: pip-cache
+      paths:
+        - .cache/pip
+      policy: pull
+
+.pytest_ut_template:
+  extends:
+    - .target_ut_test_template
+  artifacts:
+    when: always
+    paths:
+      - XUNIT_RESULT.xml
+      - pytest-embedded/
+    reports:
+      junit: XUNIT_RESULT.xml
+    expire_in: 1 week
+  variables:
+    IDF_VERSION_TAG: release/v5.3
+    IDF_TAG_FLAG: false
+  before_script:
+    - source ${ADF_PATH}/tools/ci/utils.sh
+    - check_idf_version $IDF_VERSION_TAG
+    - export PYTHONPATH="$IDF_PATH/tools:$IDF_PATH/tools/ci/python_packages:$PYTHONPATH"
+    - export PYTHONPATH="$ADF_PATH/tools:$PYTHONPATH"
+  script:
+    - cd $CI_PROJECT_DIR
+    - pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
+    - pytest $TEST_DIR
+      --target ${IDF_TARGET}
+      -m ${TEST_ENV}
+      --junitxml=XUNIT_RESULT.xml
+      --parallel-count ${CI_NODE_TOTAL:-1}
+      --parallel-index ${CI_NODE_INDEX:-1}
+      ${PYTEST_EXTRA_FLAGS}
+
+.pytest_components_dir_template:
   rules:
     - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
     - if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/) && $CI_PIPELINE_SOURCE != "schedule"'
     - if: $CI_PIPELINE_SOURCE == "triggers"
     - if: $CI_PIPELINE_SOURCE == "schedules"
-  artifacts:
-    when: always
-    paths:
-      - $LOG_PATH
-    expire_in: 1 week
-    reports:
-        junit: $LOG_PATH/*/XUNIT_RESULT.xml
-  before_script:
-    - source ${ADF_PATH}/tools/ci/utils.sh
-    - echo "Not fetching submodules"
-    - add_gitlab_ssh_keys
-    - source $IDF_PATH/tools/ci/setup_python.sh
-    - source $IDF_PATH/tools/ci/configure_ci_environment.sh
-  script:
-    - define_config_file_name
-    - find / -name UT_001_.yml
-    - find / -name UT_002_.yml
-    - test -e $CONFIG_FILE || exit 0
-    - echo "JOB_FULL_NAME $CONFIG_FILE"
-    - echo $JOB_FULL_NAME $CONFIG_FILE
-    - ls -al $CONFIG_FILE
-    - ls -al $TEST_SCRIPT
-    - ls -al $TEST_CASE_PATH
-    - ls -al $IDF_PATH
-    # clone test env configs
-    - ./esp-idf/tools/ci/retry_failed.sh git clone $TEST_ENV_CONFIG_REPOSITORY
-    - python $CHECKOUT_REF_SCRIPT ci-test-runner-configs ci-test-runner-configs
-    # run test
-    - echo "TEST_SCRIPT TEST_CASE_PATH CONFIG_FILE ENV_FILE"
-    - echo $TEST_SCRIPT $TEST_CASE_PATH $CONFIG_FILE $ENV_FILE
-    - python $TEST_SCRIPT $TEST_CASE_PATH -c $CONFIG_FILE -e $ENV_FILE
-  interruptible: true
-
-.job_v44_template: &job_v44_template
-  <<: *unit_test_template
+  extends: .pytest_ut_template
   needs:
-    - build_make_ut_v4_4
-    - assign_ut_test_v4_4
+    - 'esp_adf_libs_components_test'
   variables:
-    TEST_SCRIPT: "esp-idf/tools/tiny-test-fw/Runner.py"
-    TEST_CASE_PATH: "esp-idf/tools/unit-test-app"
-    CONFIG_FILE_PATH: "esp-idf/components/idf_test/unit_test/CIConfigs"
-    LOG_PATH: "esp-idf/TEST_LOGS"
-    ENV_FILE: "ci-test-runner-configs/$CI_RUNNER_DESCRIPTION/EnvConfig.yml"
-    CHECKOUT_REF_SCRIPT: "esp-idf/tools/ci/checkout_project_ref.py"
-    PYTHON_VER: 3.7.7
-
-UT_001_V44:
-  <<: *job_v44_template
-  tags:
-    - UT_T1_AUDIO
-    - ESP32_IDF
-    - 8Mpsram
-    - V44
+    TEST_DIR: /builds/adf/esp-adf-internal/components/esp-adf-libs
+    BUILD_JOB_PREFIX: build_pytest_components_
+    IDF_TARGET: esp32s3
   retry: 2
 
-UT_002_V44:
-  <<: *job_v44_template
-  tags:
-    - UT_T1_AUDIO
-    - ESP32_IDF
-    - 8Mpsram
-    - V44
-  retry: 2
+pytest_components_esp32s3_ut_01:
+  extends:
+    - .pytest_components_dir_template
+  tags: [ ESP32S3, UT_T1_AUDIO ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO"
 
-UT_003_V44:
-  <<: *job_v44_template
-  tags:
-    - UT_T1_AUDIO_L1
-    - ESP32_IDF
-    - 8Mpsram
-    - V44
-  retry: 2
+pytest_components_esp32s3_ut_02:
+  extends:
+    - .pytest_components_dir_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L1 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L1"
 
-UT_004_V44:
-  <<: *job_v44_template
-  tags:
-    - UT_T1_AUDIO_L2
-    - ESP32_IDF
-    - 8Mpsram
-    - V44
-  retry: 2
+pytest_components_esp32s3_ut_03:
+  extends:
+    - .pytest_components_dir_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L2 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L2"
 
-UT_005_V44:
-  <<: *job_v44_template
-  tags:
-    - UT_T1_AUDIO_L3
-    - ESP32_IDF
-    - 8Mpsram
-    - V44
-  retry: 2
+pytest_components_esp32s3_ut_04:
+  extends:
+    - .pytest_components_dir_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L3 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L3"
 
-UT_006_V44:
-  <<: *job_v44_template
-  tags:
-    - UT_T1_AUDIO_L4
-    - ESP32_IDF
-    - 8Mpsram
-    - V44
-  retry: 2
+pytest_components_esp32s3_ut_05:
+  extends:
+    - .pytest_components_dir_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L4 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L4"
 
-UT_007_V44:
-  <<: *job_v44_template
-  tags:
-    - UT_T1_AUDIO_L5
-    - ESP32_IDF
-    - 8Mpsram
-    - V44
-  retry: 2
+pytest_components_esp32s3_ut_06:
+  extends:
+    - .pytest_components_dir_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L5 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L5"
 
-UT_008_V44:
-  <<: *job_v44_template
-  tags:
-    - UT_T1_1
-    - ESP32_IDF
-    - 8Mpsram
-    - V44
-  retry: 2
-
-UT_009_V44:
-  <<: *job_v44_template
-  tags:
-    - UT_T1_AUDIO_E6
-    - ESP32_IDF
-    - 8Mpsram
-    - V44
-  retry: 2
+pytest_components_esp32s3_ut_07:
+  extends:
+    - .pytest_components_dir_template
+  tags: [ ESP32S3, UT_T1_AUDIO_E6 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_E6"

@@ -221,6 +221,10 @@ static esp_err_t audio_element_on_cmd_error(audio_element_handle_t el)
 
 static esp_err_t audio_element_on_cmd_stop(audio_element_handle_t el)
 {
+    if (el->state == AEL_STATE_INIT) {
+        ESP_LOGW(TAG, "[%p-%s] is already in the AEL_STATE_INIT state", el, el->tag);
+        return ESP_OK;
+    }
     if ((el->state != AEL_STATE_FINISHED) && (el->state != AEL_STATE_STOPPED)) {
         audio_element_process_deinit(el);
         el->state = AEL_STATE_STOPPED;
@@ -228,12 +232,12 @@ static esp_err_t audio_element_on_cmd_stop(audio_element_handle_t el)
         audio_element_report_status(el, AEL_STATUS_STATE_STOPPED);
         el->is_running = false;
         el->stopping = false;
-        ESP_LOGD(TAG, "[%s] audio_element_on_cmd_stop", el->tag);
+        ESP_LOGD(TAG, "[%p-%s] audio_element_on_cmd_stop, line: %d, state: %d", el, el->tag, __LINE__, el->state);
         xEventGroupSetBits(el->state_event, STOPPED_BIT);
     } else {
         // Change element state to AEL_STATE_STOPPED, even if AEL_STATE_ERROR or AEL_STATE_FINISHED
         // Except AEL_STATE_STOPPED and is not running
-        ESP_LOGD(TAG, "[%s] audio_element_on_cmd_stop, state:%d", el->tag, el->state);
+        ESP_LOGD(TAG, "[%p-%s] audio_element_on_cmd_stop, line: %d, state: %d", el, el->tag, __LINE__, el->state);
         if ((el->is_running == false) && (el->state == AEL_STATE_STOPPED)) {
             el->stopping = false;
             return ESP_OK;

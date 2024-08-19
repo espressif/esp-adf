@@ -48,6 +48,13 @@ SPECIAL_MARKERS = {
 
 ENV_MARKERS = {
     'ADF_EXAMPLE_GENERIC': 'Tests should be run on ADF_EXAMPLE_GENERIC runners.',
+    'UT_T1_AUDIO': 'Tests should be run on UT_T1_AUDIO runners.',
+    'UT_T1_AUDIO_L1': 'Tests should be run on UT_T1_AUDIO_L1 runners.',
+    'UT_T1_AUDIO_L2': 'Tests should be run on UT_T1_AUDIO_L2 runners.',
+    'UT_T1_AUDIO_L3': 'Tests should be run on UT_T1_AUDIO_L3 runners.',
+    'UT_T1_AUDIO_L4': 'Tests should be run on UT_T1_AUDIO_L4 runners.',
+    'UT_T1_AUDIO_L5': 'Tests should be run on UT_T1_AUDIO_L5 runners.',
+    'UT_T1_AUDIO_E6': 'Tests should be run on UT_T1_AUDIO_E6 runners.',
 }
 
 ##################
@@ -180,6 +187,7 @@ def build_dir(
         check_dirs.append(os.path.join(idf_version, f'build_{target}_{config}'))
         check_dirs.append(os.path.join(idf_version, f'build_{target}'))
     check_dirs.append(f'build_{target}_{config}')
+    check_dirs.append(f'build_{target}_{config}s')
     check_dirs.append('build')
     check_dirs.append('.')
     for check_dir in check_dirs:
