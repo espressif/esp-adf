@@ -373,14 +373,18 @@ esp_err_t i2s_stream_set_channel_type(i2s_stream_cfg_t *config, i2s_channel_type
 esp_err_t i2s_stream_set_clk(audio_element_handle_t i2s_stream, int rate, int bits, int ch);
 
 /**
- * @brief      Setup volume of stream by using ALC
+ * @brief  Set the volume of input audio stream with ALC.
+ *         Positive value indicates an increase in volume,
+ *         negative value indicates a decrease in volume,
+ *         0 indicates the volume level remains unchanged.
  *
- * @param[in]  i2s_stream   The i2s element handle
- * @param[in]  volume       The volume of stream will be set.
+ * @param[in]  i2s_stream  The i2s element handle
+ * @param[in]  volume      The gain of input audio stream:
+ *                         - Supported range [-64, 63], unit: dB
  *
  * @return
- *     - ESP_OK
- *     - ESP_FAIL
+ *       - ESP_OK
+ *       - ESP_FAIL
  */
 esp_err_t i2s_alc_volume_set(audio_element_handle_t i2s_stream, int volume);
 
