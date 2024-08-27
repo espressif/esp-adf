@@ -15,7 +15,7 @@
 #define DEFAULT_I2C_CLOCK         (100000)
 #define DEFAULT_I2C_TRANS_TIMEOUT (100)
 
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0) && CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0) && !CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE
 #include "driver/i2c_master.h"
 #define USE_IDF_I2C_MASTER
 #else
@@ -71,7 +71,7 @@ static bool _i2c_ctrl_is_open(const audio_codec_ctrl_if_t *ctrl)
 static int _i2c_master_read_reg(i2c_ctrl_t *i2c_ctrl, int addr, int addr_len, void *data, int data_len)
 {
     uint8_t addr_data[2] = {0};
-     if (addr_len > 1) {
+    if (addr_len > 1) {
         addr_data[0] = addr >> 8;
         addr_data[1] = addr & 0xff;
     } else {
@@ -188,7 +188,7 @@ static int _i2c_ctrl_close(const audio_codec_ctrl_if_t *ctrl)
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     i2c_ctrl_t *i2c_ctrl = (i2c_ctrl_t *) ctrl;
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+#ifdef USE_IDF_I2C_MASTER
     if (i2c_ctrl->dev_handle) {
         i2c_master_bus_rm_device(i2c_ctrl->dev_handle);
     }

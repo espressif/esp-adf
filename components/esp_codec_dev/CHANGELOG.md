@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.1
+
+### Features
+
+- Fix condition `CODEC_I2C_BACKWARD_COMPATIBLE` reversed
+- Fix `CODEC_I2C_BACKWARD_COMPATIBLE` set to false build error
+
+
 ## v1.3.0
 
 ### Features
@@ -7,6 +15,7 @@
 - Add configuration `CODEC_I2C_BACKWARD_COMPATIBLE` in Kconfig to allow use of the old I2C driver.
   Default is set to `y` for backward compatibility. To use the new I2C driver, set it to `n` instead.
 - Fix send I2C address low byte firstly
+
 
 ## v1.2.0
 
