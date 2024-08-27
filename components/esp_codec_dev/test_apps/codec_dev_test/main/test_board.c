@@ -17,7 +17,7 @@
 #include "test_board.h"
 #include "unity.h"
 
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0) && CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0) && !CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE
 #include "driver/i2c_master.h"
 #define USE_IDF_I2C_MASTER
 #else
