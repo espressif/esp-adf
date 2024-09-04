@@ -153,6 +153,8 @@ int av_stream_audio_read(char *buf, int len, TickType_t wait_time, bool uac_en)
         ret = audio_element_input(i2s_io_reader, buf, len);
         if (ret < 0) {
             ESP_LOGE(TAG, "i2s read failed");
+        } else {
+            bytes_read = ret;
         }
         #if (CONFIG_IDF_TARGET_ESP32 && !RECORD_HARDWARE_AEC)
         algorithm_mono_fix((uint8_t *)buf, bytes_read);
@@ -178,6 +180,8 @@ int av_stream_audio_write(char *buf, int len, TickType_t wait_time, bool uac_en)
         int ret = audio_element_output(i2s_io_writer, buf, len);
         if (ret < 0) {
             ESP_LOGE(TAG, "i2s write failed");
+        } else {
+            bytes_writen = ret;
         }
     }
     return bytes_writen;
