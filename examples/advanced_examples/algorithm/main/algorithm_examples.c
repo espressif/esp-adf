@@ -126,7 +126,7 @@ void app_main()
 
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
-    audio_hal_set_volume(board_handle->audio_hal, 60);
+    audio_hal_set_volume(board_handle->audio_hal, 80);
 #if CONFIG_ESP32_S3_KORVO2_V3_BOARD
     es7210_adc_set_gain(ES7210_INPUT_MIC3, GAIN_0DB);
 #endif  /* CONFIG_ESP32_S3_KORVO2_V3_BOARD */
