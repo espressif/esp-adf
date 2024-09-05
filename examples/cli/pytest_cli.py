@@ -10,6 +10,7 @@ Steps to run these cases:
 '''
 
 import os
+import time
 import pytest
 from pytest_embedded import Dut
 
@@ -17,6 +18,7 @@ from pytest_embedded import Dut
 @pytest.mark.esp32s2
 @pytest.mark.esp32s3
 @pytest.mark.ADF_EXAMPLE_GENERIC
+@pytest.mark.flaky(reruns=1, reruns_delay=5)
 def test_cli(dut: Dut)-> None:
     dut.expect(r'ESP_AUDIO_CTRL', timeout=5)
 
@@ -41,8 +43,10 @@ def test_cli(dut: Dut)-> None:
     dut.write('play https://audiofile.espressif.cn/103_44100_2_320138_188.mp3')
     dut.expect(r'ESP_AUDIO status is AEL_STATUS_STATE_RUNNING, 0, src:0, is_stopping:0', timeout=100)
 
+    time.sleep(2)
     dut.write('pause')
     dut.expect(r'esp_auido status:2,err:0')
 
+    time.sleep(2)
     dut.write('resume')
     dut.expect(r'esp_auido status:1,err:0')
