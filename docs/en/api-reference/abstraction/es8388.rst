@@ -7,4 +7,4 @@ Driver for `ES8388 <http://www.everest-semi.com/pdf/ES8388%20DS.pdf>`_ codec chi
 API Reference
 -------------
 
-.. include:: /_build/inc/es8388.inc
+.. include-build-file:: inc/es8388.inc

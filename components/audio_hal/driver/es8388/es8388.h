@@ -264,12 +264,9 @@ esp_err_t es8388_config_dac_output(es_dac_output_t output);
 esp_err_t es8388_write_reg(uint8_t reg_add, uint8_t data);
 
 /**
- * @brief Print all ES8388 registers
- *
- * @return
- *     - void
+ * @brief  Print all ES8388 registers
  */
-void es8388_read_all();
+void es8388_read_all(void);
 
 /**
  * @brief Configure ES8388 codec mode and I2S interface

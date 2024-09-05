@@ -33,4 +33,4 @@ In most of ESP-ADF :adf:`examples` connecting of Elements with Ringbuffers is do
 API Reference
 -------------
 
-.. include:: /_build/inc/ringbuf.inc
+.. include-build-file:: inc/ringbuf.inc

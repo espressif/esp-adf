@@ -7,4 +7,4 @@ Enumerations that define type of :doc:`Audio Elements <audio_element>`, type and
 API Reference
 -------------
 
-.. include:: /_build/inc/audio_common.inc
+.. include-build-file:: inc/audio_common.inc

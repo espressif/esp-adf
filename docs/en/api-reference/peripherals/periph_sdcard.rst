@@ -18,5 +18,5 @@ Implementation of this API is demonstrated in couple of examples:
 API Reference
 -------------
 
-.. include:: /_build/inc/periph_sdcard.inc
+.. include-build-file:: inc/periph_sdcard.inc
 

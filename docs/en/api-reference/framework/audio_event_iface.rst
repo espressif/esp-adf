@@ -13,4 +13,4 @@ Implementation of this API is demonstrated in couple of examples including :exam
 API Reference
 -------------
 
-.. include:: /_build/inc/audio_event_iface.inc
+.. include-build-file:: inc/audio_event_iface.inc

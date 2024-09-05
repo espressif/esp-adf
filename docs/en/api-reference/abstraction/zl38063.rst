@@ -7,4 +7,4 @@ Driver for `ZL38063 <https://www.microsemi.com/document-portal/doc_download/1367
 API Reference
 -------------
 
-.. include:: /_build/inc/zl38063.inc
+.. include-build-file:: inc/zl38063.inc

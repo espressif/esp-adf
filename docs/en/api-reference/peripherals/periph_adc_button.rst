@@ -15,4 +15,4 @@ Implementation of this API is demonstrated in the following example:
 API Reference
 -------------
 
-.. include:: /_build/inc/periph_adc_button.inc
+.. include-build-file:: inc/periph_adc_button.inc

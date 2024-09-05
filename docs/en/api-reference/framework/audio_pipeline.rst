@@ -36,4 +36,4 @@ A diagram below presents organization of three elements, HTTP reader stream, MP3
 API Reference
 -------------
 
-.. include:: /_build/inc/audio_pipeline.inc
+.. include-build-file:: inc/audio_pipeline.inc

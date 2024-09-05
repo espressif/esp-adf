@@ -13,5 +13,5 @@ Implementation of this API is demonstrated in :example:`audio_processing/pipelin
 API Reference
 -------------
 
-.. include:: /_build/inc/periph_spiffs.inc
+.. include-build-file:: inc/periph_spiffs.inc
 

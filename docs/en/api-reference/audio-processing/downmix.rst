@@ -68,4 +68,4 @@ Implementation of this API is demonstrated in :example:`advanced_examples/downmi
 API Reference
 -------------
 
-.. include:: /_build/inc/downmix.inc
+.. include-build-file:: inc/downmix.inc

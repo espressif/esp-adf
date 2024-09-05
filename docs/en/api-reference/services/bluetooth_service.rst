@@ -18,7 +18,7 @@ Implementation of this API is demonstrated in the following example:
 * :example:`player/pipeline_bt_sink`
 
 
-.. include:: /_build/inc/bluetooth_service.inc
-.. include:: /_build/inc/bt_keycontrol.inc
-.. include:: /_build/inc/hfp_stream.inc
-.. include:: /_build/inc/a2dp_stream.inc
+.. include-build-file:: inc/bluetooth_service.inc
+.. include-build-file:: inc/bt_keycontrol.inc
+.. include-build-file:: inc/hfp_stream.inc
+.. include-build-file:: inc/a2dp_stream.inc

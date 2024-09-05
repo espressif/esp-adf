@@ -47,7 +47,7 @@ The :example:`speech_recognition/wwe/` example demonstrates how to initialize th
 API Reference
 -------------
 
-.. include:: /_build/inc/audio_recorder.inc
-.. include:: /_build/inc/recorder_sr.inc
-.. include:: /_build/inc/recorder_encoder.inc
+.. include-build-file:: inc/audio_recorder.inc
+.. include-build-file:: inc/recorder_sr.inc
+.. include-build-file:: inc/recorder_encoder.inc
 

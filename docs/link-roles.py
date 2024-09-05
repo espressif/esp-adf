@@ -57,12 +57,6 @@ def setup(app):
     app.add_role('adf', github_link('tree', rev, submods, '/', app.config))
     app.add_role('adf_file', github_link('blob', rev, submods, '/', app.config))
     app.add_role('adf_raw', github_link('raw', rev, submods, '/', app.config))
-    app.add_role('component', github_link('tree', rev, submods, '/components/', app.config))
-    app.add_role('component_file', github_link('blob', rev, submods, '/components/', app.config))
-    app.add_role('component_raw', github_link('raw', rev, submods, '/components/', app.config))
-    app.add_role('example', github_link('tree', rev, submods, '/examples/', app.config))
-    app.add_role('example_file', github_link('blob', rev, submods, '/examples/', app.config))
-    app.add_role('example_raw', github_link('raw', rev, submods, '/examples/', app.config))
 
     # link to the current documentation file in specific language version
     on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -74,8 +68,6 @@ def setup(app):
     else:
         # if not on the RTD then provide generic identification
         tag_rev = run_cmd_get_output('git describe --always')
-
-    app.add_role('link_to_translation', crosslink('%s../../%s/{}/%s.html'.format(tag_rev)))
 
 
 def url_join(*url_parts):
@@ -142,7 +134,7 @@ def crosslink(pattern):
     def role(name, rawtext, text, lineno, inliner, options={}, content=[]):
         (language, link_text) = text.split(':')
         docname = inliner.document.settings.env.docname
-        doc_path = inliner.document.settings.env.doc2path(docname, None, None)
+        doc_path = inliner.document.settings.env.doc2path(docname)
         return_path = '../' * doc_path.count('/')
         url = pattern % (return_path, language, docname)
         node = nodes.reference(rawtext, link_text, refuri=url, **options)

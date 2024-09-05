@@ -24,6 +24,14 @@ function add_github_ssh_keys() {
   echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >>~/.ssh/config
 }
 
+function add_doc_server_ssh_keys() {
+  local key_string="${1}"
+  local server_url="${2}"
+  local server_user="${3}"
+  add_ssh_keys "${key_string}"
+  echo -e "Host ${server_url}\n\tStrictHostKeyChecking no\n\tUser ${server_user}\n" >>~/.ssh/config
+}
+
 function common_before_scripts() {
   source $IDF_PATH/tools/ci/utils.sh
   is_based_on_commits $REQUIRED_ANCESTOR_COMMITS

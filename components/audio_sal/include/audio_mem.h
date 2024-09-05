@@ -56,12 +56,9 @@ void *audio_malloc(size_t size);
 void *audio_malloc_align(size_t alignment, size_t size);
 
 /**
- * @brief   Free memory in ADF
+ * @brief  Free memory in ADF
  *
  * @param[in]  ptr  memory pointer
- *
- * @return
- *     - void
  */
 void audio_free(void *ptr);
 
@@ -90,14 +87,11 @@ void *audio_calloc(size_t nmemb, size_t size);
 void *audio_calloc_inner(size_t nmemb, size_t size);
 
 /**
- * @brief   Print heap memory status
+ * @brief  Print heap memory status
  *
- * @param[in]  tag    tag of log
- * @param[in]  line   line of log
- * @param[in]  func   function name of log
- *
- * @return
- *     - void
+ * @param[in]  tag   tag of log
+ * @param[in]  line  line of log
+ * @param[in]  func  function name of log
  */
 void audio_mem_print(const char *tag, int line, const char *func);
 

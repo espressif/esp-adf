@@ -15,5 +15,5 @@ Implementation of this API is demonstrated in the following example:
 * :example:`player/pipeline_sdcard_mp3_control`
 * :example:`protocols/voip`
 
-.. include:: /_build/inc/input_key_service.inc
-.. include:: /_build/inc/input_key_com_user_id.inc
+.. include-build-file:: inc/input_key_service.inc
+.. include-build-file:: inc/input_key_com_user_id.inc

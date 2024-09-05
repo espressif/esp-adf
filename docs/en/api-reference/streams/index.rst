@@ -30,7 +30,7 @@ Application Example
 - :example_file:`advanced_examples/algorithm/main/algorithm_examples.c`
 - :example_file:`protocols/voip/main/voip_app.c`
 
-.. include:: /_build/inc/algorithm_stream.inc
+.. include-build-file:: inc/algorithm_stream.inc
 
 
 .. _api-reference-stream_fatfs:
@@ -47,7 +47,7 @@ Application Example
 - Reader example: :example:`player/pipeline_play_sdcard_music`
 - Writer example: :example:`recorder/pipeline_recording_to_sdcard`
 
-.. include:: /_build/inc/fatfs_stream.inc
+.. include-build-file:: inc/fatfs_stream.inc
 
 
 .. _api-reference-stream_http:
@@ -70,7 +70,7 @@ Application Example
 
   - :example:`recorder/pipeline_raw_http`
 
-.. include:: /_build/inc/http_stream.inc
+.. include-build-file:: inc/http_stream.inc
 
 .. _api-reference-stream_i2s:
 
@@ -86,7 +86,7 @@ Application Example
 - Reader example: :example:`recorder/pipeline_wav_amr_sdcard`
 - Writer example: :example:`get-started/play_mp3_control`
 
-.. include:: /_build/inc/i2s_stream.inc
+.. include-build-file:: inc/i2s_stream.inc
 
 
 .. _api-reference-stream_pwm:
@@ -103,7 +103,7 @@ Application Example
 - Writer example: :example:`player/pipeline_play_mp3_with_dac_or_pwm`
 
 
-.. include:: /_build/inc/pwm_stream.inc
+.. include-build-file:: inc/pwm_stream.inc
 
 
 .. _api-reference-stream_raw:
@@ -121,7 +121,7 @@ Application Example
 - Writer example: :example:`advanced_examples/downmix_pipeline`
 
 
-.. include:: /_build/inc/raw_stream.inc
+.. include-build-file:: inc/raw_stream.inc
 
 
 .. _api-reference-stream_spiffs:
@@ -137,7 +137,7 @@ Application Example
 - :example:`player/pipeline_spiffs_mp3`
 
 
-.. include:: /_build/inc/spiffs_stream.inc
+.. include-build-file:: inc/spiffs_stream.inc
 
 
 .. _api-reference-stream_tcp_client:
@@ -154,7 +154,7 @@ Application Example
 - :example:`get-started/pipeline_tcp_client`
 
 
-.. include:: /_build/inc/tcp_client_stream.inc
+.. include-build-file:: inc/tcp_client_stream.inc
 
 
 .. _api-reference-stream_tone:
@@ -171,7 +171,7 @@ Application Example
 - :example:`player/pipeline_flash_tone`
 
 
-.. include:: /_build/inc/tone_stream.inc
+.. include-build-file:: inc/tone_stream.inc
 
 
 .. _api-reference-embed_flash:
@@ -188,7 +188,7 @@ Application Example
 - :example:`player/pipeline_embed_flash_tone`
 
 
-.. include:: /_build/inc/embed_flash_stream.inc
+.. include-build-file:: inc/embed_flash_stream.inc
 
 
 .. _api-reference-stream_tts:
@@ -204,4 +204,4 @@ Application Example
 
 - Reader example: :example:`player/pipeline_tts_stream`
 
-.. include:: /_build/inc/tts_stream.inc
+.. include-build-file:: inc/tts_stream.inc

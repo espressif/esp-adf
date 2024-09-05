@@ -13,5 +13,5 @@ Implementation of this API is demonstrated in :example:`player/pipeline_http_mp3
 API Reference
 -------------
 
-.. include:: /_build/inc/periph_wifi.inc
+.. include-build-file:: inc/periph_wifi.inc
 

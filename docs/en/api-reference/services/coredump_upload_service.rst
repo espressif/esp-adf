@@ -14,4 +14,4 @@ Implementation of this API is demonstrated in the following example:
 * :example:`system/coredump`
 
 
-.. include:: /_build/inc/coredump_upload_service.inc
+.. include-build-file:: inc/coredump_upload_service.inc

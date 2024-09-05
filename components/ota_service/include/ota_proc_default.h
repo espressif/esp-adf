@@ -36,23 +36,17 @@ extern "C" {
 #endif
 
 /**
-  * @brief     get the default process of `app partition` upgrade
-  *
-  * @param[in]  ops          pointer to `ota_upgrade_ops_t` structure
-  *
-  * @return
-  *    - void
-  */
+ * @brief  get the default process of `app partition` upgrade
+ *
+ * @param[in]  ops  pointer to `ota_upgrade_ops_t` structure
+ */
 void ota_app_get_default_proc(ota_upgrade_ops_t *ops);
 
 /**
-  * @brief     get the default process of `data partition` upgrade
-  *
-  * @param[in]  ops          pointer to `ota_upgrade_ops_t` structure
-  *
-  * @return
-  *    - void
-  */
+ * @brief  get the default process of `data partition` upgrade
+ *
+ * @param[in]  ops  pointer to `ota_upgrade_ops_t` structure
+ */
 void ota_data_get_default_proc(ota_upgrade_ops_t *ops);
 
 /**
@@ -82,15 +76,11 @@ ota_service_err_reason_t ota_data_image_stream_read(void *handle, char *buf, int
 ota_service_err_reason_t ota_data_partition_write(void *handle, char *buf, int size);
 
 /**
-  * @brief     Indicates that the ota partition has been erased
-  *            By default, this part of flash will be erased during ota. If the behavior of erasing is called in applition, this API needs to be called
-  *
-  * @param[in]  handle          pointer to upgrade handle
-
-  *
-  * @return
-  *    - void
-  */
+ * @brief  Indicates that the ota partition has been erased
+ *         By default, this part of flash will be erased during ota. If the behavior of erasing is called in applition, this API needs to be called
+ *
+ * @param[in]  handle  pointer to upgrade handle
+ */
 void ota_data_partition_erase_mark(void *handle);
 
 /**
@@ -109,4 +99,4 @@ int ota_get_version_number(char *version);
 }
 #endif
 
-#endif /*__OTA_PROC_DEFAULT__*/
+#endif  /*__OTA_PROC_DEFAULT__*/

@@ -1,9 +1,9 @@
 stages:
   - pre_check
   - build
-  - assign_test
   - target_test
   - deploy
+  - post_deploy
 
 variables:
   # System environment

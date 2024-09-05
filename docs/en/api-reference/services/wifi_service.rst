@@ -13,9 +13,9 @@ Implementation of this API is demonstrated in the following example:
 
 * :example:`dueros`
 
-.. include:: /_build/inc/wifi_service.inc
-.. include:: /_build/inc/esp_wifi_setting.inc
-.. include:: /_build/inc/smart_config.inc
-.. include:: /_build/inc/blufi_config.inc
-.. include:: /_build/inc/airkiss_config.inc
-.. include:: /_build/inc/wifi_ssid_manager.inc
+.. include-build-file:: inc/wifi_service.inc
+.. include-build-file:: inc/esp_wifi_setting.inc
+.. include-build-file:: inc/smart_config.inc
+.. include-build-file:: inc/blufi_config.inc
+.. include-build-file:: inc/airkiss_config.inc
+.. include-build-file:: inc/wifi_ssid_manager.inc

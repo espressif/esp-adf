@@ -9,4 +9,4 @@ The API provides data structures to configure sampling rates of ADC and DAC sign
 API Reference
 -------------
 
-.. include:: /_build/inc/audio_hal.inc
+.. include-build-file:: inc/audio_hal.inc

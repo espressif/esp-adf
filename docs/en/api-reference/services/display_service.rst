@@ -16,8 +16,8 @@ Implementation of this API is demonstrated in the following example:
 * :example:`checks/check_display_led`
 
 
-.. include:: /_build/inc/display_service.inc
-.. include:: /_build/inc/led_bar_aw2013.inc
-.. include:: /_build/inc/led_bar_is31x.inc
-.. include:: /_build/inc/led_bar_ws2812.inc
-.. include:: /_build/inc/led_indicator.inc
+.. include-build-file:: inc/display_service.inc
+.. include-build-file:: inc/led_bar_aw2013.inc
+.. include-build-file:: inc/led_bar_is31x.inc
+.. include-build-file:: inc/led_bar_ws2812.inc
+.. include-build-file:: inc/led_indicator.inc

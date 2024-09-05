@@ -16,9 +16,9 @@ Implementation of this API is demonstrated in the following examples:
 API Reference - Decoder
 -----------------------
 
-.. include:: /_build/inc/wav_decoder.inc
+.. include-build-file:: inc/wav_decoder.inc
 
 API Reference - Encoder
 -----------------------
 
-.. include:: /_build/inc/wav_encoder.inc
+.. include-build-file:: inc/wav_encoder.inc

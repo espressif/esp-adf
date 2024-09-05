@@ -14,4 +14,4 @@ Implementation of this API is demonstrated in the following example:
 * :example:`dueros`
 
 
-.. include:: /_build/inc/dueros_service.inc
+.. include-build-file:: inc/dueros_service.inc

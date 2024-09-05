@@ -29,7 +29,7 @@
 - :example:`cli`
 
 
-.. include:: /_build/inc/sdcard_scan.inc
+.. include-build-file:: inc/sdcard_scan.inc
 
 
 存储播放列表
@@ -47,7 +47,7 @@
 - :example:`player/pipeline_sdcard_mp3_control`
 - :example:`cli`
 
-.. include:: /_build/inc/sdcard_list.inc
+.. include-build-file:: inc/sdcard_list.inc
 
 
 存储至 DRAM
@@ -55,7 +55,7 @@
 
 播放列表可存储至 DRAM 中，并通过 ``playlist_operator_handle_t`` 句柄调用相应函数来实现保存、显示播放列表等功能。
 
-.. include:: /_build/inc/dram_list.inc
+.. include-build-file:: inc/dram_list.inc
 
 
 存储至 flash 的 NVS 分区
@@ -63,7 +63,7 @@
 
 播放列表可存储至 flash 的 `NVS 分区 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/api-reference/storage/nvs_flash.html>`_ 中，并通过 ``playlist_operator_handle_t`` 句柄调用相应函数来实现保存、显示播放列表等功能。
 
-.. include:: /_build/inc/flash_list.inc
+.. include-build-file:: inc/flash_list.inc
 
 
 存储至 flash 的 ``DATA_UNDEFINED`` 分区
@@ -71,7 +71,7 @@
 
 播放列表可存储至 flash 的 ``DATA_UNDEFINED`` 分区中（详情请参考 `分区表 <https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/api-guides/partition-tables.html>`_），并通过 ``playlist_operator_handle_t`` 句柄调用相应函数来实现保存、显示播放列表等功能。需要先将子类型为 0x06 和 0x07 的 2 个分区添加到 flash 的分区表中。
 
-.. include:: /_build/inc/partition_list.inc
+.. include-build-file:: inc/partition_list.inc
 
 
 播放列表管理器
@@ -79,4 +79,4 @@
 
 播放列表管理器用于管理上述播放列表，可将多个播放列表实例添加到 ``playlist_handle_t`` 句柄。
 
-.. include:: /_build/inc/playlist.inc
+.. include-build-file:: inc/playlist.inc

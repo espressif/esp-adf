@@ -13,6 +13,6 @@ OTA 服务 (OTA service) 提供对固件进行 OTA 的功能，支持从本地�
 
 * :example:`ota`
 
-.. include:: /_build/inc/ota_service.inc
-.. include:: /_build/inc/ota_proc_default.inc
-.. include:: /_build/inc/esp_fs_ota.inc
+.. include-build-file:: inc/ota_service.inc
+.. include-build-file:: inc/ota_proc_default.inc
+.. include-build-file:: inc/esp_fs_ota.inc

@@ -23,4 +23,4 @@ Implementation of this API is demonstrated in :example:`audio_processing/pipelin
 API Reference
 -------------
 
-.. include:: /_build/inc/audio_sonic.inc
+.. include-build-file:: inc/audio_sonic.inc

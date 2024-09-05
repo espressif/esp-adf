@@ -29,7 +29,7 @@ Application Example
 - :example:`cli`
 
 
-.. include:: /_build/inc/sdcard_scan.inc
+.. include-build-file:: inc/sdcard_scan.inc
 
 
 Saving Playlist
@@ -47,7 +47,7 @@ Application Example
 - :example:`player/pipeline_sdcard_mp3_control`
 - :example:`cli`
 
-.. include:: /_build/inc/sdcard_list.inc
+.. include-build-file:: inc/sdcard_list.inc
 
 
 Saving to DRAM
@@ -55,7 +55,7 @@ Saving to DRAM
 
 The playlist can be stored in DRAM. Functions, such as those to save and display the playlist, can be called through the ``playlist_operator_handle_t`` handle.
 
-.. include:: /_build/inc/dram_list.inc
+.. include-build-file:: inc/dram_list.inc
 
 
 Saving to NVS Partition in Flash
@@ -63,7 +63,7 @@ Saving to NVS Partition in Flash
 
 The playlist can be stored in the `NVS partition <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/storage/nvs_flash.html>`_ in flash. Functions, such as those to save and display the playlist, can be called through the ``playlist_operator_handle_t`` handle.
 
-.. include:: /_build/inc/flash_list.inc
+.. include-build-file:: inc/flash_list.inc
 
 
 Saving to ``DATA_UNDEFINED`` Partition in Flash
@@ -71,7 +71,7 @@ Saving to ``DATA_UNDEFINED`` Partition in Flash
 
 The playlist can be stored in the ``DATA_UNDEFINED`` partition (see `Partition Tables <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/partition-tables.html>`_ for details) in flash. Functions, such as those to save and display the playlist, can be called through the ``playlist_operator_handle_t`` handle. Please add the two partitions whose subtypes are 0x06 and 0x07 to the flash partition table first.
 
-.. include:: /_build/inc/partition_list.inc
+.. include-build-file:: inc/partition_list.inc
 
 
 Playlist Manager
@@ -79,4 +79,4 @@ Playlist Manager
 
 Playlist Manager manages the above playlists and can add multiple playlist instances to the ``playlist_handle_t`` handle.
 
-.. include:: /_build/inc/playlist.inc
+.. include-build-file:: inc/playlist.inc

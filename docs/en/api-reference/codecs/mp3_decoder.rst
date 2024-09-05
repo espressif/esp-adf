@@ -17,5 +17,5 @@ Implementation of this API is demonstrated in the following examples:
 API Reference
 -------------
 
-.. include:: /_build/inc/mp3_decoder.inc
+.. include-build-file:: inc/mp3_decoder.inc
 
