@@ -14,4 +14,4 @@ sphinxcontrib-wavedrom==2.0.0
 nwdiag==2.0.0
 recommonmark==0.7.0
 # for ../tools/gen_esp_err_to_name.py
-future==0.16.0
+future==0.18.3
