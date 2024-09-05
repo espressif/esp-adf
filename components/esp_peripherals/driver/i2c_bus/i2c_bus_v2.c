@@ -162,7 +162,7 @@ esp_err_t i2c_bus_write_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int 
     memcpy(write_buffer, reg, regLen);
     memcpy(write_buffer + regLen, data, datalen);
     mutex_lock(master[bus_info->port].bus_lock);
-    int ret = i2c_master_transmit(dev_handle, write_buffer, write_len, pdMS_TO_TICKS(DEFAULT_I2C_TRANS_TIMEOUT));
+    int ret = i2c_master_transmit(dev_handle, write_buffer, write_len, DEFAULT_I2C_TRANS_TIMEOUT);
     mutex_unlock(master[bus_info->port].bus_lock);
     AUDIO_RET_ON_FALSE(TAG, ret, {audio_free(write_buffer); return ESP_FAIL;}, "I2C bus write bytes failed");
     audio_free(write_buffer);
@@ -190,7 +190,7 @@ esp_err_t i2c_bus_write_data(i2c_bus_handle_t bus, int addr, uint8_t *data, int 
     I2C_BUS_CHECK(dev_handle != NULL, "I2C device handle is NULL", ESP_FAIL);
 
     mutex_lock(master[bus_info->port].bus_lock);
-    esp_err_t ret = i2c_master_transmit(dev_handle, data, datalen, pdMS_TO_TICKS(DEFAULT_I2C_TRANS_TIMEOUT));
+    esp_err_t ret = i2c_master_transmit(dev_handle, data, datalen, DEFAULT_I2C_TRANS_TIMEOUT);
     mutex_unlock(master[bus_info->port].bus_lock);
     AUDIO_RET_ON_FALSE(TAG, ret, {return ESP_FAIL;}, "I2C bus write bytes failed");
     return ESP_OK;
@@ -203,7 +203,7 @@ esp_err_t i2c_bus_read_bytes(i2c_bus_handle_t bus, int addr, uint8_t *reg, int r
     I2C_BUS_CHECK(dev_handle != NULL, "I2C device handle is NULL", ESP_FAIL);
 
     mutex_lock(master[bus_info->port].bus_lock);
-    esp_err_t ret = i2c_master_transmit_receive(dev_handle, reg, reglen, outdata, datalen, pdMS_TO_TICKS(DEFAULT_I2C_TRANS_TIMEOUT));
+    esp_err_t ret = i2c_master_transmit_receive(dev_handle, reg, reglen, outdata, datalen, DEFAULT_I2C_TRANS_TIMEOUT);
     mutex_unlock(master[bus_info->port].bus_lock);
     AUDIO_RET_ON_FALSE(TAG, ret, {return ESP_FAIL;}, "I2C bus read bytes failed");
     return ESP_OK;
@@ -216,7 +216,7 @@ esp_err_t i2c_bus_read_bytes_directly(i2c_bus_handle_t bus, int addr, uint8_t *o
     I2C_BUS_CHECK(dev_handle != NULL, "I2C device handle is NULL", ESP_FAIL);
 
     mutex_lock(master[bus_info->port].bus_lock);
-    esp_err_t ret = i2c_master_receive(dev_handle, outdata, datalen, pdMS_TO_TICKS(DEFAULT_I2C_TRANS_TIMEOUT));
+    esp_err_t ret = i2c_master_receive(dev_handle, outdata, datalen, DEFAULT_I2C_TRANS_TIMEOUT);
     mutex_unlock(master[bus_info->port].bus_lock);
     AUDIO_RET_ON_FALSE(TAG, ret, {return ESP_FAIL;}, "I2C bus read bytes failed");
     return ESP_OK;
@@ -225,13 +225,12 @@ esp_err_t i2c_bus_read_bytes_directly(i2c_bus_handle_t bus, int addr, uint8_t *o
 esp_err_t i2c_bus_delete(i2c_bus_handle_t bus)
 {
     i2c_bus_info_t *bus_info = (i2c_bus_info_t *)bus;
-    audio_free(bus_info);
     __sync_fetch_and_sub(&master[bus_info->port].ref_count, 1);
     if (master[bus_info->port].ref_count == 0) {
         mutex_destroy(master[bus_info->port].bus_lock);
         master[bus_info->port].bus_lock = NULL;
-        audio_free(bus);
     }
+    audio_free(bus);
     return ESP_OK;
 }
 
@@ -240,7 +239,7 @@ esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr)
     i2c_bus_info_t *bus_info = (i2c_bus_info_t *)bus;
     esp_err_t ret = ESP_OK;
     mutex_lock(master[bus_info->port].bus_lock);
-    ret = i2c_master_probe(master[bus_info->port].master_handle, addr, pdMS_TO_TICKS(DEFAULT_I2C_TRANS_TIMEOUT));
+    ret = i2c_master_probe(master[bus_info->port].master_handle, addr, DEFAULT_I2C_TRANS_TIMEOUT);
     mutex_unlock(master[bus_info->port].bus_lock);
     return ret;
 }

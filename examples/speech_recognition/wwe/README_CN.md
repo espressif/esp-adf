@@ -39,18 +39,18 @@ Recommended model partition size:  4152KB
 
 ### IDF 默认分支
 
-本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v5.0 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 
 ### IDF 分支
 
-- IDF release/v4.4 分支切换命令如下：
+- IDF release/v5.0 分支切换命令如下：
 
 ```
 cd $IDF_PATH
 git checkout master
 git pull
-git checkout release/v4.4
+git checkout release/v5.0
 git submodule update --init --recursive
 ```
 

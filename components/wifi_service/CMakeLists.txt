@@ -18,7 +18,7 @@ list(APPEND COMPONENT_SRCS src/esp_wifi_setting.c
                     blufi_config/blufi_config.c
                     blufi_config/blufi_security.c)
 
-IF (CONFIG_IDF_TARGET STREQUAL "esp32c3" OR CONFIG_IDF_TARGET STREQUAL "esp32c6")
+IF (CONFIG_IDF_TARGET STREQUAL "esp32c3" OR CONFIG_IDF_TARGET STREQUAL "esp32c6" OR CONFIG_IDF_TARGET STREQUAL "esp32p4")
     register_component()
 ELSE()
     list(APPEND COMPONENT_SRCS airkiss_config/airkiss_config.c)

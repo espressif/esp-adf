@@ -25,12 +25,12 @@ This example runs on the boards that are marked with a green checkbox in the [ta
 
 ### Use Special IDF Branch
 
-- This example needs to select a branch above IDF `release/v4.2` to compile:
+- This example needs to select a branch above IDF `relase/v5.0` to compile:
 ```c
 cd $IDF_PATH
 git checkout master
 git pull
-git checkout release/v4.2
+git checkout release/v5.0
 git submodule update --init --recursive
 ```
 
@@ -51,7 +51,7 @@ idf.py -p PORT flash monitor
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project.
+See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v5.3/esp32/index.html) for full steps to configure and build an ESP-IDF project.
 
 ## How to Use the Example
 

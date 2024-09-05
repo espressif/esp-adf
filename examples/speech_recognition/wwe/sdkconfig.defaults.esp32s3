@@ -8,7 +8,6 @@ CONFIG_IDF_FIRMWARE_CHIP_ID=0x0009
 # Serial flasher config
 #
 CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
-
 # end of Serial flasher config
 
 #

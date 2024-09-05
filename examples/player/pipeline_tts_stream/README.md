@@ -8,7 +8,6 @@
 
 This example demonstrates how to convert Chinese text into Chinese speech. If the input text is a mixture of Chinese and English, the English words will be read letter by letter. If you need the English text-to-speech (TTS) service, you can send an email to our Business Support team for individual customization.
 
-
 ## Environment Setup
 
 ### Hardware Required
@@ -19,7 +18,7 @@ This example runs on the boards that are marked with a green checkbox in the [ta
 
 ### Default IDF Branch
 
-This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
+This example supports IDF release/v5.0 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
 ### Configuration
 
@@ -66,12 +65,12 @@ Refer to the following table for the firmware flash address.
 |0x1000 | build/bootloader/bootloader.bin|
 |0x8000 | build/partitions.bin|
 |0x10000 | build/play_tts_example.bin|
-|0x100000 | components/esp-sr/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat|
+|0x100000 | components/esp-sr/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaoxin_small.dat|
 
 
 Select compatible audio board in ``menuconfig > Audio HAL``, build the project and flash it to the board, then run monitor tool to view serial output.
 
-- Flash `components/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat` to the partition table address.
+- Flash `components/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaoxin_small.dat` to the partition table address.
 - Then flash the app bin, the board will start playing automatically.
 
 To exit the serial monitor, type ``Ctrl-]``.

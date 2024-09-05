@@ -346,14 +346,16 @@ static void start_recorder()
 #endif
     recorder_sr_cfg.afe_cfg.aec_init = RECORD_HARDWARE_AEC;
     recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
-#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
+#if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1 || CONFIG_ESP32_P4_FUNCTION_EV_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
     recorder_sr_cfg.afe_cfg.pcm_config.mic_num = 1;
     recorder_sr_cfg.afe_cfg.pcm_config.ref_num = 1;
     recorder_sr_cfg.afe_cfg.pcm_config.total_ch_num = 2;
+    recorder_sr_cfg.afe_cfg.wakenet_mode = DET_MODE_90;
     recorder_sr_cfg.input_order[0] = DAT_CH_0;
     recorder_sr_cfg.input_order[1] = DAT_CH_1;
-
+#if defined(CONFIG_ESP32_S3_KORVO2_V3_BOARD)
     es7210_mic_select(ES7210_INPUT_MIC1 | ES7210_INPUT_MIC3);
+#endif
 #endif
 
 #if RECORDER_ENC_ENABLE

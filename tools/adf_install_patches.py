@@ -37,11 +37,19 @@ def apply_patch(patches_dir_path, patch_prefix, version):
     patch_version = ''
     match = re.match(r'(.[0-9]+\.[0-9]+)\.(\d+)', version)
 
+    # Note: About the path of p4_wifi_sdcard_coex_path,
+    # it is to be compatible with the current issue of esp32P4 not being able to coexist with wifi and sdcard in IDF v5.3 
+    if (version[3] >= '3'):
+        p4_wifi_sdcard_coex_path = "esp32p4_hosted_and_sdcard_coexistent.patch"
+        absolute_p4_wifi_sdcard_coex_path = os.path.join(patches_dir_path, p4_wifi_sdcard_coex_path)
+        print(f"Applying patch {absolute_p4_wifi_sdcard_coex_path}")
+        subprocess.run(["git", "apply", f"{absolute_p4_wifi_sdcard_coex_path}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     if match:
         # If the IDF version is in vx.x.x format, the patch file named with vx.x.x and closest to the current version will be searched first.
         major_minor = match.group(1)
-        patch_num = int(match.group(2))
-        for patch in range(patch_num, -1, -1):
+        minor_num = int(match.group(2))
+        for patch in range(minor_num, -1, -1):
             patch_files = [f for f in os.listdir(patches_dir_path) if f.startswith(f"{patch_prefix}{major_minor}.{patch}_")]
             if patch_files:
                 patch_version = f"{major_minor}.{patch}"
@@ -60,7 +68,6 @@ def apply_patch(patches_dir_path, patch_prefix, version):
             patch_version = f"{version}.0"
         else:
             patch_version = str(version)
-
     patch_files = [f for f in os.listdir(patches_dir_path) if f.startswith(f"{patch_prefix}{patch_version}_")]
     if patch_files:
         for patch_file in patch_files:

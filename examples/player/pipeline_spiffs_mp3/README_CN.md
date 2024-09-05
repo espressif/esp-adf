@@ -18,30 +18,6 @@
 
 ### 预备知识
 
-制作 SPIFFS 文件
-
-- 从 [Github/spiffs](https://github.com/igrr/mkspiffs.git) 上克隆 SPIFFS 仓库
-
-```
-    git clone https://github.com/igrr/mkspiffs.git
-```
-
-- 编译 SPIFFS
-
-```
-    cd mkspiffs
-    make clean
-    make dist CPPFLAGS="-DSPIFFS_OBJ_META_LEN=4"
-```
-
-- 拷贝用户音频文件到例程下面的 `tools` 文件夹（本例程已经准备了 `adf_music.mp3` 文件）。
-
-- 运行下面命令，把 `adf_music.mp3` 文件压进 `adf_music.bin` 二进制文件中，然后烧录此文件到 `partition` 中指定分区即可，本例程已经把制作好的文件也放置在 `tools` 文件夹中。
-
-```
-    ./mkspiffs -c ./tools -b 4096 -p 256 -s 0x100000 ./tools/adf_music.bin
-```
-
 - 创建分区表，如下所示：
 
   ```
@@ -50,8 +26,6 @@
     factory,  app,  factory, ,        1M,
     storage,  data, spiffs,  0x110000,1M,
   ```
-
-- 下载 SPIFFS bin 文件。当前 `./tools/adf_music.bin` 中只包含 `adf_music.mp3` 文件（所有 MP3 文件最终都会生成一个 bin 文件）。
 
 有关 `spiffs` 的更多信息，请参阅 [SPIFFS 文件系统](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32/api-reference/storage/spiffs.html)。
 
@@ -67,7 +41,7 @@
 
 ### IDF 默认分支
 
-本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v5.0 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 ### 配置
 
@@ -96,7 +70,7 @@ python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 -
 
 退出调试界面使用 ``Ctrl-]``。
 
-有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v5.3/esp32/index.html)。
 
 ## 如何使用例程
 

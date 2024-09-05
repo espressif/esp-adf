@@ -25,13 +25,13 @@ ESP Multi-Room Music 是一种基于 Wi-Fi 的多扬声器互联共享音乐通�
 
 ### 使用 IDF 其他分支
 
-本例程支持 IDF release/v4.2 及以后的分支，例程默认使用 IDF release/v4.4 分支。
+本例程支持 IDF release/v5.0 及以后的分支，例程默认使用 IDF v5.3 分支。
 
 ```c
 cd $IDF_PATH
 git checkout master
 git pull
-git checkout release/v4.2
+git checkout release/v5.0
 git submodule update --init --recursive
 ```
 
@@ -52,7 +52,7 @@ idf.py -p PORT flash monitor
 
 退出调试界面使用 ``Ctrl-]``。
 
-有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v5.3/esp32/index.html)。
 
 ## 如何使用例程
 

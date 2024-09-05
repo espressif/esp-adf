@@ -25,7 +25,7 @@
 
 ### IDF 默认分支
 
-本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v5.0 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 ### 配置
 
@@ -58,17 +58,17 @@ idf.py -p PORT flash monitor
 
 退出调试界面使用 ``Ctrl-]``。
 
-有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v4.2/esp32/index.html)。
+有关配置和使用 ESP-IDF 生成项目的完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/release-v5.3/esp32/index.html)。
 
 
 ## 如何使用例程
 
 ### 功能和用法
 
-- 例程需要先运行 TCP 服务器的 Python 脚本，需要 python 2.7，并且开发板和 TCP 服务器连接在同一个 Wi-Fi 网络中，还需要准备一首 MP3 音乐命名为 `esp32.mp3` 拷贝到 TCP 服务器脚本同一文件夹下面，Python 脚本运行日志如下：
+- 例程需要先运行 TCP 服务器的 Python 脚本，需要 python 3.x，并且开发板和 TCP 服务器连接在同一个 Wi-Fi 网络中，还需要准备一首 MP3 音乐命名为 `esp32.mp3` 拷贝到 TCP 服务器脚本同一文件夹下面，Python 脚本运行日志如下：
 
 ```
-python2 tcp_server.py
+python tcp_server.py
 Get the esp32.mp3 size is 1453677
 starting listen on ip 192.168.5.72, port 8080
 waiting for client to connect

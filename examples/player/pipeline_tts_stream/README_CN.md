@@ -19,7 +19,7 @@
 
 ### IDF 默认分支
 
-本例程支持 IDF release/v3.3 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v5.0 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 ### 配置
 
@@ -66,12 +66,12 @@ idf.py build
 |0x1000 | build/bootloader/bootloader.bin|
 |0x8000 | build/partitions.bin|
 |0x10000 | build/play_tts_example.bin|
-|0x100000 | components/esp-sr/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat|
+|0x100000 | components/esp-sr/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaoxin_small.dat|
 
 
 在 ``menuconfig > Audio HAL`` 中选择兼容的音频板，编译项目并将其烧录至开发板上。运行监控工具，查看串行输出。
 
-- 将 `components/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaole.dat` 烧录到分区表地址中。
+- 将 `components/esp-tts/esp_tts_chinese/esp_tts_voice_data_xiaoxin_small.dat` 烧录到分区表地址中。
 - 接着，烧录应用程序 bin 文件，烧录完成后，开发板将会自动开始播放语音。
 
 退出调试界面使用 ``Ctrl-]``。

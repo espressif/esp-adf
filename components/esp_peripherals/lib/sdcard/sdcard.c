@@ -38,6 +38,10 @@
 #include "driver/sdmmc_defs.h"
 #include "driver/gpio.h"
 
+#if SOC_SDMMC_IO_POWER_EXTERNAL
+#include "sd_pwr_ctrl_by_on_chip_ldo.h"
+#endif
+
 #include "sdcard.h"
 #include "board.h"
 #include "esp_idf_version.h"
@@ -71,13 +75,33 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         .max_files = get_sdcard_open_file_num_max(),
         .allocation_unit_size = 64 * 1024,
     };
+
+#if defined SD_PWR_CTRL_LDO_INTERNAL_IO
+    sd_pwr_ctrl_ldo_config_t ldo_config = {
+        .ldo_chan_id = SD_PWR_CTRL_LDO_INTERNAL_IO,
+    };
+    sd_pwr_ctrl_handle_t pwr_ctrl_handle = NULL;
+
+    ret = sd_pwr_ctrl_new_on_chip_ldo(&ldo_config, &pwr_ctrl_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create a new on-chip LDO power control driver");
+        return ESP_FAIL;
+    }
+#endif // SD_PWR_CTRL_LDO_INTERNAL_IO
+
     if (mode != SD_MODE_SPI) {
 #if SOC_SDMMC_HOST_SUPPORTED
         ESP_LOGI(TAG, "Using %d-line SD mode,  base path=%s", mode, base_path);
 
         sdmmc_host_t host = SDMMC_HOST_DEFAULT();
         // host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
-
+    /* Note: default sdmmc use slot0, hosted use slot1 */
+#if defined CONFIG_IDF_TARGET_ESP32P4
+        host.slot = SDMMC_HOST_SLOT_0;
+#endif // CONFIG_IDF_TARGET_ESP32P4
+#if defined SD_PWR_CTRL_LDO_INTERNAL_IO
+        host.pwr_ctrl_handle = pwr_ctrl_handle;
+#endif
         sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
         // slot_config.gpio_cd = g_gpio;
         slot_config.width = mode;
@@ -104,8 +128,10 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 #endif
     } else {
         ESP_LOGI(TAG, "Using SPI mode, base path=%s", base_path);
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0))
         sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+#if defined SD_PWR_CTRL_LDO_INTERNAL_IO
+        host.pwr_ctrl_handle = pwr_ctrl_handle;
+#endif
         spi_bus_config_t bus_cfg = {
             .mosi_io_num = ESP_SD_PIN_CMD,
             .miso_io_num = ESP_SD_PIN_D0,
@@ -114,11 +140,7 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
             .quadhd_io_num = -1,
             .max_transfer_sz = 4000,
         };
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
         ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CH_AUTO);
-#else
-        ret = spi_bus_initialize(host.slot, &bus_cfg, host.slot);
-#endif
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Failed to initialize bus.");
             return ret;
@@ -127,16 +149,6 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         slot_config.gpio_cs = ESP_SD_PIN_D3;
         slot_config.host_id = host.slot;
         ret = esp_vfs_fat_sdspi_mount(base_path, &host, &slot_config, &mount_config, &card);
-#else
-        sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-        sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
-        slot_config.gpio_miso = ESP_SD_PIN_D0;
-        slot_config.gpio_mosi = ESP_SD_PIN_CMD;
-        slot_config.gpio_sck  = ESP_SD_PIN_CLK;
-        slot_config.gpio_cs   = ESP_SD_PIN_D3;
-
-        ret = esp_vfs_fat_sdmmc_mount(base_path, &host, &slot_config, &mount_config, &card);
-#endif
     }
 
     switch (ret) {

@@ -427,6 +427,7 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &periph_wifi->wifi_config));
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
 
+#ifdef CONFIG_ESP_WIFI_ENABLED
     if (periph_wifi->wpa2_e_cfg->diasble_wpa2_e) {
         unsigned int ca_pem_bytes = periph_wifi->wpa2_e_cfg->ca_pem_end - periph_wifi->wpa2_e_cfg->ca_pem_start;
         unsigned int client_crt_bytes = periph_wifi->wpa2_e_cfg->wpa2_e_cert_end - periph_wifi->wpa2_e_cfg->wpa2_e_cert_start;
@@ -447,8 +448,8 @@ static esp_err_t _wifi_init(esp_periph_handle_t self)
         esp_wpa2_config_t wpa2_config = WPA2_CONFIG_INIT_DEFAULT();
         ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_enable(&wpa2_config));
 #endif
-
     }
+#endif
 
     ESP_ERROR_CHECK(esp_wifi_start());
     periph_wifi->is_open = true;

@@ -24,7 +24,7 @@ This example runs on the boards that are marked with a green checkbox in the [ta
 
 ### Default IDF Branch
 
-This example supports IDF release/v3.3 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
+This example supports IDF release/v5.0 and later branches. By default, it runs on ADF's built-in branch `$ADF_PATH/esp-idf`.
 
 ### Configuration
 
@@ -56,17 +56,17 @@ idf.py -p PORT flash monitor
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project.
+See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v5.3/esp32/index.html) for full steps to configure and build an ESP-IDF project.
 
 
 ## How to Use the Example
 
 ### Example Functionality
 
-- First of all, run the Python script with python 2.7. Make sure the development board and TCP server are connected to the same Wi-Fi network. Prepare an MP3 audio file, name it `esp32.mp3`, and copy it to the same directory where the Python script is. Below is the log of running the script.
+- First of all, run the Python script with python 3.x. Make sure the development board and TCP server are connected to the same Wi-Fi network. Prepare an MP3 audio file, name it `esp32.mp3`, and copy it to the same directory where the Python script is. Below is the log of running the script.
 
 ```c
-python2 tcp_server.py
+python tcp_server.py
 Get the esp32.mp3 size is 1453677
 starting listen on ip 192.168.5.72, port 8080
 waiting for client to connect

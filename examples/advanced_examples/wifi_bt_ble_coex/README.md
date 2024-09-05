@@ -20,11 +20,6 @@ This example runs on the boards that are marked with a green checkbox in the [ta
 
 ## Build and Flash
 
-### Default IDF Branch
-
-This example involves the coexistence of Wi-Fi, A2DP, HFP, and Bluetooth LE, so the IDF branch that optimizes coexistence is used - [audio/stack_on_psram_v3.3](https://github.com/espressif/esp-idf/tree/audio/stack_on_psram_v3.3).
-
-
 ### Configuration
 
 The default board for this example is `ESP32-Lyrat V4.3`, if you need to run this example on other development boards, select the board in menuconfig, such as `ESP32-Lyrat-Mini V1.1`.
@@ -44,7 +39,7 @@ idf.py -p PORT flash monitor
 
 To exit the serial monitor, type ``Ctrl-]``.
 
-See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v4.2/esp32/index.html) for full steps to configure and build an ESP-IDF project.
+See [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/release-v5.3/esp32/index.html) for full steps to configure and build an ESP-IDF project.
 
 
 ## How to Use the Example
