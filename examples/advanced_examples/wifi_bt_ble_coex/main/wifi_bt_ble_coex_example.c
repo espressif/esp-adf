@@ -371,7 +371,7 @@ void app_main(void)
     input_key_service_info_t input_key_info[] = INPUT_KEY_DEFAULT_INFO();
     input_key_service_cfg_t input_cfg = INPUT_KEY_SERVICE_DEFAULT_CONFIG();
     input_cfg.handle = g_coex_handle->set;
-    input_cfg.based_cfg.task_stack = 2048;
+    input_cfg.based_cfg.task_stack = 3072;
     input_cfg.based_cfg.extern_stack = true;
     periph_service_handle_t input_ser = input_key_service_create(&input_cfg);
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);

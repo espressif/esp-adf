@@ -10,6 +10,8 @@
 
 本例程的经典蓝牙部分实现了 A2DP SINK 部分。程序启动后，智能手机等蓝牙设备可以发现名为 `ESP_ADF_COEX_EXAMPLE` 的设备，建立连接后，使用 AVRCP 配置文件控制蓝牙音乐状态。
 
+本例程按 [Mode] 键切换 HTTP 或 A2DP 音频; 长按 [Set] 键进入配网模式。
+
 
 ## 环境配置
 
@@ -191,6 +193,17 @@ W (25846) AUDIO_PIPELINE: There are no listener registered
 I (26066) COEX_EXAMPLE: A2DP sink user cb
 I (26066) COEX_EXAMPLE: User cb A2DP event: 1
 
+```
+
+- 本例中，可以长按 [Set] 进入配网模式以更新 Wi-Fi 信息。
+
+```c
+I (249738) COEX_EXAMPLE: [ * ] input key id is 2, key type is 1
+I (251838) COEX_EXAMPLE: [ * ] input key id is 2, key type is 3
+I (251838) COEX_EXAMPLE: [ * ] [Set] Setting Wi-Fi
+W (251838) WIFI_SERV: STATE type:3, pdata:0x0, len:0
+I (251838) COEX_EXAMPLE: WIFI_DISCONNECTED
+I (252588) COEX_EXAMPLE: [ * ] input key id is 2, key type is 4
 ```
 
 ### 日志输出

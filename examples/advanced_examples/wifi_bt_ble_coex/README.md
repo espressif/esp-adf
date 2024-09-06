@@ -10,6 +10,8 @@ This example creates several GATT services and starts ADV with the name of `BLUF
 
 The Classic Bluetooth part of this example implements the A2DP SINK. After the program is launched, Bluetooth devices such as smart phones can find the device named `ESP_ADF_COEX_EXAMPLE` and connect to it. Then, you can use the AVRCP configuration file to control the Bluetooth music status.
 
+In this routine, press [Mode] to switch HTTP or A2DP audio; long press [Set] to enter network configuration mode.
+
 
 ## Environment Setup
 
@@ -191,6 +193,17 @@ W (25846) AUDIO_PIPELINE: There are no listener registered
 I (26066) COEX_EXAMPLE: A2DP sink user cb
 I (26066) COEX_EXAMPLE: User cb A2DP event: 1
 
+```
+
+- In this example, you can long press [Set] to enter the network configuration mode to update the Wi-Fi information.
+
+```c
+I (249738) COEX_EXAMPLE: [ * ] input key id is 2, key type is 1
+I (251838) COEX_EXAMPLE: [ * ] input key id is 2, key type is 3
+I (251838) COEX_EXAMPLE: [ * ] [Set] Setting Wi-Fi
+W (251838) WIFI_SERV: STATE type:3, pdata:0x0, len:0
+I (251838) COEX_EXAMPLE: WIFI_DISCONNECTED
+I (252588) COEX_EXAMPLE: [ * ] input key id is 2, key type is 4
 ```
 
 ### Example Log
