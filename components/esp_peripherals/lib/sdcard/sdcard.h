@@ -75,7 +75,7 @@ esp_err_t sdcard_unmount(const char *base_path, periph_sdcard_mode_t mode);
  *
  * @return
  *      - ESP_OK on success
- *      - ESP_FAIL destory sdcard gpio handle failed
+ *      - ESP_FAIL destroy sdcard gpio handle failed
  */
 esp_err_t sdcard_destroy(void);
 

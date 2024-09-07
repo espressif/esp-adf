@@ -87,7 +87,7 @@ TEST_CASE("Initialize a2dp sink, create bluetooth stream and destroy stream late
     TEST_ASSERT_FALSE(esp_periph_start(set, bt_periph));
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
-    ESP_LOGI(TAG, "Destory stream");
+    ESP_LOGI(TAG, "Destroy stream");
     TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_stop_all(set));
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_stop(bt_stream_reader));
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(bt_stream_reader));
@@ -135,7 +135,7 @@ TEST_CASE("Initialize a2dp source, create bluetooth stream and destroy stream la
     ESP_LOGI(TAG, "Start bt peripheral");
     TEST_ASSERT_FALSE(esp_periph_start(set, bt_periph));
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    ESP_LOGI(TAG, "Destory stream");
+    ESP_LOGI(TAG, "Destroy stream");
     TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_stop_all(set));
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_stop(bt_stream_writer));
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(bt_stream_writer));
@@ -181,7 +181,7 @@ TEST_CASE("Initialize a2dp sink, test discovery and cancel discovery", "[bluetoo
     TEST_ASSERT_EQUAL(ESP_OK, periph_bluetooth_cancel_discover(bt_periph));
     audio_element_run(bt_stream_reader);
 
-    ESP_LOGI(TAG, "Destory stream");
+    ESP_LOGI(TAG, "Destroy stream");
     TEST_ASSERT_EQUAL(ESP_OK, esp_periph_set_stop_all(set));
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_stop(bt_stream_reader));
     TEST_ASSERT_EQUAL(ESP_OK, audio_element_deinit(bt_stream_reader));
