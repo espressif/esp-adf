@@ -177,7 +177,7 @@ void mixer_manager(void *para)
     xEventGroupSetBits(mixer_pipe->evt_sync, MP_DESTROYED);
     audio_mixer_set_read_cb(mixer_pipe->mixer, mixer_pipe->idx, NULL, NULL);
     _mixer_pipeline_event_dispatcher(MIXER_PIP_EVENT_DESTROY, mixer_pipe, mixer_pipe->idx);
-    ESP_LOGI(TAG, "mixer pipeline destory");
+    ESP_LOGI(TAG, "mixer pipeline destroy");
     vTaskDelete(NULL);
 }
 

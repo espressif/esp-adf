@@ -83,7 +83,7 @@ typedef struct {
 bdsc_cmd_data_t *bdsc_cmd_data_create(int32_t flag, uint16_t buffer_length, uint8_t *buffer, char *sn);
 
 /**
- * @brief      Destory bdsc cmd data
+ * @brief      Destroy bdsc cmd data
  *
  * @param[in]  data           bdsc_cmd_data_t handle
  *

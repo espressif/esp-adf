@@ -29,7 +29,7 @@ Refer to the table below for the supported commands:
 |03| pmixer| Play a single audio channel. Multiple channels can be played simultaneously using different slots to achieve mixing effects |cli_play_mixer|
 |04| smixer| Stop playback initiated by `pmixer` |cli_replay_mixer|
 |05| rpmixer| Replay the audio of the `pmixer`. Ensure that the pmixer is in a stopped or completed state before replay |cli_stop_mixer|
-|06| dmixer| Destroy the PMixer, which allows the released slots to be reused by other channels after destruction |cli_destory_mixer|
+|06| dmixer| Destroy the PMixer, which allows the released slots to be reused by other channels after destruction |cli_destroy_mixer|
 |07| gmixer| Set the gain value for the corresponding slot |cli_mixer_gain_set|
 |08| record| Starting or stopping recording while playing or pausing can simulate a karaoke scene |recorder_fn|
 
@@ -385,7 +385,7 @@ I (210661) MIXER_PIPE: Mixer manager REC CMD:8,dat:14 src:0x3c16c014, Mixer:0x3c
 ```c
 esp32> dmixer 0
 I (230031) MIXER_PIPE: Waiting the task destroied...
-I (230031) MIXER_PIPE: mixer pipeline destory
+I (230031) MIXER_PIPE: mixer pipeline destroy
 W (230041) AUDIO_ELEMENT: [mixing_in] Element has not create when AUDIO_ELEMENT_TERMINATE
 W (230051) AUDIO_ELEMENT: [mixing_dec] Element has not create when AUDIO_ELEMENT_TERMINATE
 I (230061) CODEC_ELEMENT_HELPER: The element is 0x3c1579a0. The reserve data 2 is 0x0.

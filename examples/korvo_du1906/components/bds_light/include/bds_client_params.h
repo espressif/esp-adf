@@ -204,7 +204,7 @@ bdsc_engine_params_t *bdsc_engine_params_create(char *sn, uint32_t pid, char *ho
         char *cuid, char *app, LAUNCH_MODE_T launch_mode, uint16_t pam_len, char *pam);
 
 /**
- * @brief      destory bdsc engine params
+ * @brief      destroy bdsc engine params
  *
  * @param[in]  params               params
  *

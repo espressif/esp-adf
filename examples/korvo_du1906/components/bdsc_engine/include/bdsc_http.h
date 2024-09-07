@@ -64,7 +64,7 @@ int bdsc_send_https_post_sync(char *server, int port,
  */
 int bdsc_send_http_get_with_cb(esp_http_client_handle_t client, char *url, uint64_t pos);
 
-esp_err_t bdsc_http_cb_destory();
+esp_err_t bdsc_http_cb_destroy();
 #ifdef __cplusplus
 }
 #endif

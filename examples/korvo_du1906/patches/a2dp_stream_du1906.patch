@@ -37,13 +37,13 @@ index 1d5c1905..1ddc0346 100644
                      audio_free(recv_msg.data);
                      recv_msg.data = NULL;
 -                break;
--            case A2DP_TYPE_DESTORY:
+-            case A2DP_TYPE_DESTROY:
 -                _aadp_task_run = false;
 -                break;
 -            default:
 -                break;
 +                    break;
-+                case A2DP_TYPE_DESTORY:
++                case A2DP_TYPE_DESTROY:
 +                    _aadp_task_run = false;
 +                    break;
 +                default:

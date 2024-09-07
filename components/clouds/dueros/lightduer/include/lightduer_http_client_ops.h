@@ -28,7 +28,7 @@ extern "C" {
 
 extern duer_http_client_t *duer_create_http_client(void);
 
-extern void duer_destory_http_client(duer_http_client_t *client);
+extern void duer_destroy_http_client(duer_http_client_t *client);
 
 #ifdef __cplusplus
 }

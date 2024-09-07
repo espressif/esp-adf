@@ -133,7 +133,7 @@ extern void *duer_ota_installer_get_custom_data(duer_ota_installer_t const *inst
 extern duer_ota_installer_t *duer_ota_installer_create_installer(char const *name);
 
 /*
- * Destory a OTA installer
+ * Destroy a OTA installer
  *
  * @param installer: OTA installer
  *
