@@ -10,7 +10,22 @@
 
 其中，[esp audio](../../components/esp-adf-libs/esp_audio/include/esp_audio.h) 处理音频播放，[wifi service](../../components/wifi_service) 接口管理配网和连接 Wi-Fi，[audio recorder](../../components/audio_recorder/include/audio_recorder.h) 负责唤醒和语音数据管理，[display service](../../components/display_service/display_service.c) 管理系统指示灯，[Dueros service](../../components/dueros_service) 连接 DuerOS，[esp_periph_set_register_callback](../../components/esp_peripherals/include/esp_peripherals.h) 管理按键事件，也可以使用 [Key service](../../components/input_key_service/input_key_service.c) 按键服务来管理按键。
 
-此外，本例程需要预先在 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 申请 DuerOS 的 profile，并替换 `ADF_PATH/components/dueros_service/duer_profile` 中的空文件。
+此外，本例程需要预先在 [百度 DuerOS 开放平台](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) 申请 DuerOS 的 profile，并拷贝内容到 `ADF_PATH/components/dueros_service/duer_profile` 文件中。
+
+## 小度APP
+
+本例程已经支持接入`小度APP`并使用该应用配置 WiFi，使用该功能需要联系百度以获取其特殊提供的 DuerOS profile，设备名前缀和密钥，当前无法自行通过网页获取。
+
+### 使用 `小度APP` 配置 WiFi
+
+- 选择`小度APP`配网模式，并填写配置
+  - `menuconfig > Example Configuration > WiFi Setting type > Lightduer DIPB WiFi config`
+  - Duer client ID: 由百度提供
+  - Duer device ID：DuerOS profile 中的 `uuid` 字段
+  - Duer ECC public key：由百度提供
+- 设置设备名
+  - `menuconfig > Component config > DuerOS Service > Duer device name`
+  - 设备名需要特殊前缀，由百度提供。不同前缀对应的不同设备类型，如 `xdtp-D1` 在配网时需要选择 `添加设备 -> 儿童设备 -> 儿童故事机`
 
 ## 文心一言
 

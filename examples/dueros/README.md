@@ -10,7 +10,19 @@ This example demonstrates how to connect to the DuerOS 3.2 cloud developed by Ba
 
 Among them, [esp audio](../../components/esp-adf-libs/esp_audio/include/esp_audio.h) manages audio playback, [wifi service](../../components/wifi_service) manages provisioning and Wi-Fi connection, [audio recorder](../../components/audio_recorder/include/audio_recorder.h) manages wake-up and voice data, [display service](../../components/display_service/display_service.c) manages system indicators, [Dueros service](../../components/dueros_service) manages connection to DuerOS, and [esp_periph_set_register_callback](../../components/esp_peripherals/include/esp_peripherals.h) or [Key service](../../components/input_key_service/input_key_service.c) manages key events.
 
-In addition, you need to apply for the DuerOS profile on the [DuerOS Open Platform](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) in advance, and replace the empty file in `ADF_PATH/components/dueros_service/duer_profile`.
+In addition, you need to apply for the DuerOS profile on the [DuerOS Open Platform](https://dueros.baidu.com/didp/doc/overall/console-guide_markdown) in advance, and copy the content to the empty file: `ADF_PATH/components/dueros_service/duer_profile`.
+
+## XiaoDu APP
+
+This example works with the XiaoDu app provided by Baidu and uses the app for Wi-Fi configuration. To use this feature, the profile, device name prefix, and encryption key are provided specifically. Please contact Baidu to obtain these, as they are currently not available through the webpage.
+
+- Select `Lightduer DIPB WiFi config` and complete the configuration.
+  - Duer client ID: Provied by Baidu
+  - Duer device ID：`uuid` in DuerOS profile
+  - Duer ECC public key：Provied by Baidu
+- Set device name
+  - `menuconfig > Component config > DuerOS Service > Duer device name`
+  - The device name requires a specific prefix provided by Baidu. Different prefixes correspond to different devices. For example, `xdtp-D1` should select `Add Device > Children -> Story Machine` during Wi-Fi provisioning.
 
 ## `WenXinYiYan` support
 
