@@ -205,11 +205,55 @@ typedef struct {
 
 #define I2S_STREAM_CFG_DEFAULT() I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, 44100, I2S_DATA_BIT_WIDTH_16BIT, AUDIO_STREAM_WRITER)
 
-#define I2S_STREAM_CFG_DEFAULT_WITH_PARA(port, rate, bits, stream_type)  {      \
+#define I2S_STREAM_CFG_DEFAULT_WITH_PARA(port, rate, bits, stream_type)  I2S_STREAM_CFG_DEFAULT_WITH_TYLE_AND_CH(port, rate, bits, stream_type, I2S_SLOT_MODE_STEREO)
+
+#if CONFIG_IDF_TARGET_ESP32
+#define I2S_STD_PHILIPS_SLOT_DEFAULT_ADF_CONFIG(bits_per_sample, mono_or_stereo) { \
+    .data_bit_width = bits_per_sample,                                        \
+    .slot_bit_width = I2S_SLOT_BIT_WIDTH_AUTO,                                \
+    .slot_mode = mono_or_stereo,                                              \
+    .slot_mask = (mono_or_stereo == I2S_SLOT_MODE_MONO) ?                     \
+                I2S_STD_SLOT_LEFT : I2S_STD_SLOT_BOTH,                        \
+    .ws_width = bits_per_sample,                                              \
+    .ws_pol = false,                                                          \
+    .bit_shift = true,                                                        \
+    .msb_right = (bits_per_sample <= I2S_DATA_BIT_WIDTH_16BIT) ?              \
+                true : false,                                                 \
+}
+#elif CONFIG_IDF_TARGET_ESP32S2
+#define I2S_STD_PHILIPS_SLOT_DEFAULT_ADF_CONFIG(bits_per_sample, mono_or_stereo) { \
+    .data_bit_width = bits_per_sample,                                        \
+    .slot_bit_width = I2S_SLOT_BIT_WIDTH_AUTO,                                \
+    .slot_mode = mono_or_stereo,                                              \
+    .slot_mask = (mono_or_stereo == I2S_SLOT_MODE_MONO) ?                     \
+                 I2S_STD_SLOT_LEFT : I2S_STD_SLOT_BOTH,                       \
+    .ws_width = bits_per_sample,                                              \
+    .ws_pol = false,                                                          \
+    .bit_shift = true,                                                        \
+    .msb_right = true,                                                        \
+}
+#else
+#define I2S_STD_PHILIPS_SLOT_DEFAULT_ADF_CONFIG(bits_per_sample, mono_or_stereo) { \
+    .data_bit_width = bits_per_sample,                                         \
+    .slot_bit_width = I2S_SLOT_BIT_WIDTH_AUTO,                                 \
+    .slot_mode = mono_or_stereo,                                               \
+    .slot_mask = (mono_or_stereo == I2S_SLOT_MODE_MONO) ?                      \
+                 I2S_STD_SLOT_LEFT : I2S_STD_SLOT_BOTH,                        \
+    .ws_width = bits_per_sample,                                               \
+    .ws_pol = false,                                                           \
+    .bit_shift = true,                                                         \
+    .left_align = true,                                                        \
+    .big_endian = false,                                                       \
+    .bit_order_lsb = false                                                     \
+}
+#endif
+
+
+#define I2S_STREAM_CFG_DEFAULT_WITH_TYLE_AND_CH(port, rate, bits, stream_type, channel)  { \
     .type = stream_type,                                                        \
     .std_cfg = {                                                                \
         .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(rate),                           \
-        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(bits, I2S_SLOT_MODE_STEREO),  \
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_ADF_CONFIG(bits, channel),     \
         .gpio_cfg = {                                                           \
             .invert_flags = {                                                   \
                 .mclk_inv = false,                                              \
