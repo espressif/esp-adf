@@ -66,7 +66,7 @@ typedef struct {
 typedef struct {
     enum {
         A2DP_TYPE_SINK ,
-        A2DP_TYPE_DESTORY,
+        A2DP_TYPE_DESTROY,
     } type;
     void *data;
     size_t size;
@@ -96,7 +96,7 @@ static void audio_a2dp_stream_thread(void *pvParameters)
                     audio_free(recv_msg.data);
                     recv_msg.data = NULL;
                 break;
-            case A2DP_TYPE_DESTORY:
+            case A2DP_TYPE_DESTROY:
                 _aadp_task_run = false;
                 break;
             default:
@@ -267,15 +267,15 @@ static int32_t bt_a2d_source_data_cb(uint8_t *data, int32_t len)
     return 0;
 }
 
-static esp_err_t a2dp_sink_destory(audio_element_handle_t self)
+static esp_err_t a2dp_sink_destroy(audio_element_handle_t self)
 {
-    ESP_LOGI(TAG, "a2dp_sink_destory");
+    ESP_LOGI(TAG, "a2dp_sink_destroy");
 
-    a2dp_data_t destory_msg = {
-        .type = A2DP_TYPE_DESTORY,
+    a2dp_data_t destroy_msg = {
+        .type = A2DP_TYPE_DESTROY,
     };
-    if ( xQueueSend( s_aadp_handler.a2dp_queue, &destory_msg, 0 )  != pdPASS ) {
-        ESP_LOGE(TAG, "Destory audio_a2dp_stream_thread failed");
+    if ( xQueueSend( s_aadp_handler.a2dp_queue, &destroy_msg, 0 )  != pdPASS ) {
+        ESP_LOGE(TAG, "Destroy audio_a2dp_stream_thread failed");
         return ESP_FAIL;
     }
     s_aadp_handler.sink_stream = NULL;
@@ -283,7 +283,7 @@ static esp_err_t a2dp_sink_destory(audio_element_handle_t self)
     return ESP_OK;
 }
 
-static esp_err_t a2dp_source_destory(audio_element_handle_t self)
+static esp_err_t a2dp_source_destroy(audio_element_handle_t self)
 {
     s_aadp_handler.source_stream = NULL;
     memset(&s_aadp_handler.user_callback, 0, sizeof(a2dp_stream_user_callback_t));
@@ -322,7 +322,7 @@ audio_element_handle_t a2dp_stream_init(a2dp_stream_config_t *config)
     if (config->type == AUDIO_STREAM_READER) {
         // A2DP sink
         s_aadp_handler.stream_type = AUDIO_STREAM_READER;
-        cfg.destroy = a2dp_sink_destory;
+        cfg.destroy = a2dp_sink_destroy;
         el = s_aadp_handler.sink_stream = audio_element_init(&cfg);
 
         esp_a2d_sink_register_data_callback(bt_a2d_sink_data_cb);
@@ -331,7 +331,7 @@ audio_element_handle_t a2dp_stream_init(a2dp_stream_config_t *config)
     } else {
         // A2DP source
         s_aadp_handler.stream_type = AUDIO_STREAM_WRITER;
-        cfg.destroy = a2dp_source_destory;
+        cfg.destroy = a2dp_source_destroy;
         el = s_aadp_handler.source_stream = audio_element_init(&cfg);
 
         esp_a2d_register_callback(bt_a2d_source_cb);

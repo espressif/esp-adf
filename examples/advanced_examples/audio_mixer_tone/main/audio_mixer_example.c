@@ -144,7 +144,7 @@ static esp_err_t cli_stop_mixer(esp_periph_handle_t periph, int argc, char *argv
     return ESP_OK;
 }
 
-static esp_err_t cli_destory_mixer(esp_periph_handle_t periph, int argc, char *argv[])
+static esp_err_t cli_destroy_mixer(esp_periph_handle_t periph, int argc, char *argv[])
 {
     if (argc < 1) {
         ESP_LOGE(TAG, "Usage: stop_mixer paramsters");
@@ -331,7 +331,7 @@ const periph_console_cmd_t cli_cmd[] = {
     "    example: pmixer /sdcard/test.mp3 1\n             pmixer flash://tone/1_wozai.mp3 2\n             pmixer https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3 3", .func = cli_play_mixer },
     { .cmd = "rpmixer", .id = 11, .help = "Replays the audio from pmixer. Ensures that pmixer is in a stopped or finished state before replaying.\n    example: rpmixer 1\n", .func = cli_replay_mixer },
     { .cmd = "smixer",  .id = 12, .help = "Stop pmixer, temporarily halting audio playback.\n    example: smixer 1\n", .func = cli_stop_mixer },
-    { .cmd = "dmixer",  .id = 13, .help = "Destroys pmixer, allowing the freed slots to be used by other channels after destruction.\n    example: dmixer 1\n", .func = cli_destory_mixer },
+    { .cmd = "dmixer",  .id = 13, .help = "Destroys pmixer, allowing the freed slots to be used by other channels after destruction.\n    example: dmixer 1\n", .func = cli_destroy_mixer },
     { .cmd = "gmixer",  .id = 14, .help = "Set the gain value for the output of the corresponding slot.\n    example: gmixer 1 -3\\n", .func = cli_mixer_gain_set },
 
     { .cmd = "setvol",  .id = 15, .help = "Set volume", .func = cli_set_vol },

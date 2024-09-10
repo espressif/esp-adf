@@ -72,7 +72,7 @@ static esp_err_t _gpio_isr_run(esp_periph_handle_t self, audio_event_iface_msg_t
     return ESP_FAIL;
 }
 
-static esp_err_t _gpio_isr_destory(esp_periph_handle_t self)
+static esp_err_t _gpio_isr_destroy(esp_periph_handle_t self)
 {
     esp_err_t ret = ESP_OK;
     gpio_isr_node_t *tmp, *item;
@@ -151,7 +151,7 @@ esp_periph_handle_t periph_gpio_isr_init(periph_gpio_isr_cfg_t *isr_config)
     }
 
     esp_periph_set_data(periph, &gpio_isr_info_list);
-    esp_periph_set_function(periph, _gpio_isr_init, _gpio_isr_run, _gpio_isr_destory);
+    esp_periph_set_function(periph, _gpio_isr_init, _gpio_isr_run, _gpio_isr_destroy);
     g_handle = periph;
     return periph;
 }

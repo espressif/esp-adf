@@ -29,7 +29,7 @@
    |03| pmixer| 播放单一音频通道。可以同时使用不同的槽位播放多个通道，做到混音的效果|cli_play_mixer|
    |04| smixer| 停止由 pmixer启动的播放 |cli_replay_mixer|
    |05| rpmixer| 重新播放pmixer的音频。确保pmixer处于停止或完成的状态后再重新播放|cli_stop_mixer|
-   |06| dmixer| 销毁pmixer，销毁后可以让被释放的槽位被其他通道重新使用|cli_destory_mixer|
+   |06| dmixer| 销毁pmixer，销毁后可以让被释放的槽位被其他通道重新使用|cli_destroy_mixer|
    |07| gmixer| 设置相应槽位银牌的增益值|cli_mixer_gain_set|
    |08| record| 开始录音或者停止录音并同时播放出来或暂停， 可以模拟卡拉ok场景|recorder_fn|
 ## 环境配置
@@ -385,7 +385,7 @@ I (210661) MIXER_PIPE: Mixer manager REC CMD:8,dat:14 src:0x3c16c014, Mixer:0x3c
 ```c
 esp32> dmixer 0
 I (230031) MIXER_PIPE: Waiting the task destroied...
-I (230031) MIXER_PIPE: mixer pipeline destory
+I (230031) MIXER_PIPE: mixer pipeline destroy
 W (230041) AUDIO_ELEMENT: [mixing_in] Element has not create when AUDIO_ELEMENT_TERMINATE
 W (230051) AUDIO_ELEMENT: [mixing_dec] Element has not create when AUDIO_ELEMENT_TERMINATE
 I (230061) CODEC_ELEMENT_HELPER: The element is 0x3c1579a0. The reserve data 2 is 0x0.
