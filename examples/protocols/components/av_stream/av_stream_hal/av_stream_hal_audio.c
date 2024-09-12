@@ -180,6 +180,8 @@ int av_stream_audio_write(char *buf, int len, TickType_t wait_time, bool uac_en)
         int ret = audio_element_output(i2s_io_writer, buf, len);
         if (ret < 0) {
             ESP_LOGE(TAG, "i2s write failed");
+        } else {
+            bytes_writen = ret;
         }
     }
     return bytes_writen;
