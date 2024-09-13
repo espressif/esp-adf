@@ -55,13 +55,9 @@ esp_periph_handle_t led_bar_is31x_init();
 esp_err_t led_bar_is31x_pattern(void *handle, int pat, int value);
 
 /**
- * @brief      Destroy esp_periph_handle_t instance
+ * @brief  Destroy esp_periph_handle_t instance
  *
- * @param      handle  led bar instance
- *
- * @return
- *     - ESP_OK
- *     - ESP_FAIL
+ * @param  handle  led bar instance
  */
 void led_bar_is31x_deinit(esp_periph_handle_t handle);
 

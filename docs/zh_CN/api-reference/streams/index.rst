@@ -30,7 +30,7 @@
 - :example_file:`advanced_examples/algorithm/main/algorithm_examples.c`
 - :example_file:`protocols/voip/main/voip_app.c`
 
-.. include:: /_build/inc/algorithm_stream.inc
+.. include-build-file:: inc/algorithm_stream.inc
 
 
 .. _api-reference-stream_fatfs:
@@ -47,7 +47,7 @@ FatFs 流从 FatFs 文件系统中读取和写入数据，具有读和写两种�
 - 读类型示例：:example:`player/pipeline_play_sdcard_music`
 - 写类型示例：:example:`recorder/pipeline_recording_to_sdcard`
 
-.. include:: /_build/inc/fatfs_stream.inc
+.. include-build-file:: inc/fatfs_stream.inc
 
 
 .. _api-reference-stream_http:
@@ -70,7 +70,7 @@ HTTP 流通过 :cpp:func:`esp_http_client` 获取和发送数据，具有读和�
 
   - :example:`recorder/pipeline_raw_http`
 
-.. include:: /_build/inc/http_stream.inc
+.. include-build-file:: inc/http_stream.inc
 
 .. _api-reference-stream_i2s:
 
@@ -86,7 +86,7 @@ I2S 流通过芯片的 I2S、PDM、ADC、DAC 接口接收和发送音频数据�
 - 读类型示例：:example:`recorder/pipeline_wav_amr_sdcard`
 - 写类型示例：:example:`get-started/play_mp3_control`
 
-.. include:: /_build/inc/i2s_stream.inc
+.. include-build-file:: inc/i2s_stream.inc
 
 
 .. _api-reference-stream_pwm:
@@ -103,7 +103,7 @@ PWM 流
 - 写类型示例：:example:`player/pipeline_play_mp3_with_dac_or_pwm`
 
 
-.. include:: /_build/inc/pwm_stream.inc
+.. include-build-file:: inc/pwm_stream.inc
 
 
 .. _api-reference-stream_raw:
@@ -121,7 +121,7 @@ PWM 流
 - 写类型示例：:example:`advanced_examples/downmix_pipeline`
 
 
-.. include:: /_build/inc/raw_stream.inc
+.. include-build-file:: inc/raw_stream.inc
 
 
 .. _api-reference-stream_spiffs:
@@ -138,7 +138,7 @@ SPIFFS 流从 SPIFFS 读取和写入音频数据。
 - :example:`player/pipeline_spiffs_mp3`
 
 
-.. include:: /_build/inc/spiffs_stream.inc
+.. include-build-file:: inc/spiffs_stream.inc
 
 
 .. _api-reference-stream_tcp_client:
@@ -155,7 +155,7 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 - :example:`get-started/pipeline_tcp_client`
 
 
-.. include:: /_build/inc/tcp_client_stream.inc
+.. include-build-file:: inc/tcp_client_stream.inc
 
 
 .. _api-reference-stream_tone:
@@ -172,7 +172,7 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 - :example:`player/pipeline_flash_tone`
 
 
-.. include:: /_build/inc/tone_stream.inc
+.. include-build-file:: inc/tone_stream.inc
 
 
 .. _api-reference-embed_flash:
@@ -189,7 +189,7 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 - :example:`player/pipeline_embed_flash_tone`
 
 
-.. include:: /_build/inc/embed_flash_stream.inc
+.. include-build-file:: inc/embed_flash_stream.inc
 
 
 .. _api-reference-stream_tts:
@@ -205,4 +205,4 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 
 - 读类型示例：:example:`player/pipeline_tts_stream`
 
-.. include:: /_build/inc/tts_stream.inc
+.. include-build-file:: inc/tts_stream.inc

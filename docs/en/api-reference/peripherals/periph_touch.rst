@@ -13,5 +13,5 @@ Implementation of this API is demonstrated in :example:`get-started/play_mp3_con
 API Reference
 -------------
 
-.. include:: /_build/inc/periph_touch.inc
+.. include-build-file:: inc/periph_touch.inc
 

@@ -14,4 +14,4 @@ Please refer to :example_file:`cli/main/console_example.c`.
 API Reference
 -------------
 
-.. include:: /_build/inc/periph_console.inc
+.. include-build-file:: inc/periph_console.inc

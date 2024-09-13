@@ -13,4 +13,4 @@ The available Audio Element types intended for development with this API are lis
 API Reference
 -------------
 
-.. include:: /_build/inc/audio_element.inc
+.. include-build-file:: inc/audio_element.inc

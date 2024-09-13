@@ -58,13 +58,9 @@ led_indicator_handle_t led_indicator_init(gpio_num_t num);
 esp_err_t led_indicator_pattern(void *handle, int pat, int value);
 
 /**
- * @brief      Destroy led_indicator_handle_t instance
+ * @brief  Destroy led_indicator_handle_t instance
  *
- * @param      handle  led indicator instance
- *
- * @return
- *     - ESP_OK
- *     - ESP_FAIL
+ * @param  handle  led indicator instance
  */
 void led_indicator_deinit(led_indicator_handle_t handle);
 

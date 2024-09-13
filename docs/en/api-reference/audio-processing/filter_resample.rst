@@ -17,4 +17,4 @@ Implementation of this API is demonstrated in the following examples:
 API Reference
 -------------
 
-.. include:: /_build/inc/filter_resample.inc
+.. include-build-file:: inc/filter_resample.inc

@@ -27,5 +27,5 @@
     核心转储上传服务 <coredump_upload_service>
 
 
-.. include:: /_build/inc/periph_service.inc
-.. include:: /_build/inc/audio_service.inc
+.. include-build-file:: inc/periph_service.inc
+.. include-build-file:: inc/audio_service.inc

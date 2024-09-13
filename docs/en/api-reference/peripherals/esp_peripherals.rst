@@ -16,4 +16,4 @@ Please refer to :example_file:`player/pipeline_http_mp3/main/play_http_mp3_examp
 API Reference
 -------------
 
-.. include:: /_build/inc/esp_peripherals.inc
+.. include-build-file:: inc/esp_peripherals.inc

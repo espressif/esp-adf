@@ -26,6 +26,9 @@
 .if-label-build_docs: &if-label-build_docs
   if: '$BOT_LABEL_BUILD_DOCS || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*build_docs(?:,[^,\n\r]+)*$/i'
 
+.if-label-docs_full: &if-label-docs_full
+  if: '$BOT_LABEL_DOCS_FULL || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*docs_full(?:,[^,\n\r]+)*$/i'
+
 .doc-rules:build:docs:
   rules:
     - <<: *if-protected
@@ -34,39 +37,139 @@
       when: never
     - <<: *if-label-build_docs
 
-build_docs:
+.doc-rules:deploy:docs_production:
+  rules:
+    - <<: *if-protected
+
+.before_script_install_requirements:
   stage: build
-  extends:
-    - .doc-rules:build:docs
-  image: $CI_DOCKER_REGISTRY/esp-idf-doc-env:v7
+  image: "$CI_DOCKER_REGISTRY/esp-idf-doc-env-v5.0:4-4"
   tags:
     - build_docs
+  variables:
+    DOCS_DIR: $CI_PROJECT_DIR/docs
+    IDF_VERSION_TAG: "v5.0"
+    IDF_TAG_FLAG: "true"
+  dependencies: []
+
+.build_docs_html_template:
+  extends:
+    - .before_script_install_requirements
+  variables:
+    DOC_BUILDERS: "html"
+  script:
+    - pip install -r docs/requirements.txt
+    - cd $DOCS_DIR
+    - mkdir -p $ADF_PATH/docs/_build/${DOCLANG}/generic/inc
+    - build-docs -bs $DOC_BUILDERS -l $DOCLANG build
+    - ./check_lang_folder_sync.sh
+    - echo "ESP-ADF Guide preview available at $CI_JOB_URL/artifacts/file/docs/_build/$DOCLANG/generic/html/index.html"
+
+.build_docs_pdf_template:
+  extends:
+    - .before_script_install_requirements
+  script:
+    - pip install -r docs/requirements.txt
+    - cd $DOCS_DIR
+    - mkdir -p $ADF_PATH/docs/_build/${DOCLANG}/generic/inc
+    - build-docs --skip-reqs-check -l $DOCLANG  -bs latex
+
+build_docs_html:
+  extends:
+    - .build_docs_html_template
+    - .doc-rules:build:docs
   artifacts:
     when: always
     paths:
-      # English version of documentation
-      - docs/en/doxygen-warning-log.txt
-      - docs/en/sphinx-warning-log.txt
-      - docs/en/sphinx-warning-log-sanitized.txt
-      - docs/en/_build/html
-      # Chinese version of documentation
-      - docs/zh_CN/doxygen-warning-log.txt
-      - docs/zh_CN/sphinx-warning-log.txt
-      - docs/zh_CN/sphinx-warning-log-sanitized.txt
-      - docs/zh_CN/_build/html
-    expire_in: 1 mos
+      - $DOCS_DIR/_build/*/*/*.txt
+      - $DOCS_DIR/_build/*/*/html/*
+    expire_in: 4 days
+  parallel:
+    matrix:
+      - DOCLANG: "en"
+      - DOCLANG: "zh_CN"
+
+build_docs_pdf:
+  extends:
+    - .build_docs_pdf_template
+    - .doc-rules:build:docs
+  artifacts:
+    when: always
+    paths:
+      - $DOCS_DIR/_build/*/*/latex/*
+      - $DOCS_DIR/_build/*/*/*.txt
+    expire_in: 4 days
+  parallel:
+    matrix:
+      - DOCLANG: "en"
+      - DOCLANG: "zh_CN"
+
+.deploy_docs_template:
+  stage: test_deploy
+  image: "$CI_DOCKER_REGISTRY/esp-idf-doc-env-v5.0"
+  variables:
+    DOCS_BUILD_DIR: "${CI_PROJECT_DIR}/docs/_build/"
+    PYTHONUNBUFFERED: 1
+  tags:
+    - deploy
+    - shiny
+  needs:
+    - job: "build_docs_html"
+      artifacts: true
+      optional: true
+    - job: "build_docs_pdf"
+      artifacts: true
+      optional: true
   script:
-    - source /opt/pyenv/activate && pyenv global 3.6.10
-    - pip install "setuptools<57.5.0"
-    - pip install "funcparserlib==0.3.6"
-    - /opt/pyenv/pyenv-1.2.16/versions/3.6.10/bin/python -m pip install --user -r $ADF_PATH/docs/requirements.txt
-    - cd docs
-    - ./check_lang_folder_sync.sh
-    - cd en
-    - make gh-linkcheck
-    - make html
-    - ../check_doc_warnings.sh
-    - cd ../zh_CN
-    - make gh-linkcheck
-    - make html
-    - ../check_doc_warnings.sh
+    - source ${CI_PROJECT_DIR}/tools/ci/utils.sh
+    - add_doc_server_ssh_keys $DOCS_DEPLOY_PRIVATEKEY $DOCS_DEPLOY_SERVER $DOCS_DEPLOY_SERVER_USER
+    - export GIT_VER=$(git describe --always ${PIPELINE_COMMIT_SHA} --)
+    - deploy-docs
+
+# stage: test_deploy
+.deploy_docs_preview:
+  extends:
+    - .deploy_docs_template
+  rules:
+    - <<: *if-merge_request_event
+    - <<: *if-open-merge-request
+      when: never
+    - <<: *if-dev-push
+      when: never
+    - <<: *if-label-build_docs
+    - <<: *if-label-docs_full
+      changes: *patterns-docs-preview
+  variables:
+    TYPE: "preview"
+    # older branches use DOCS_DEPLOY_KEY, DOCS_SERVER, DOCS_SERVER_USER, DOCS_PATH for preview server so we keep these names for 'preview'
+    DOCS_DEPLOY_PRIVATEKEY: "$DOCS_DEPLOY_KEY"
+    DOCS_DEPLOY_SERVER: "$DOCS_SERVER"
+    DOCS_DEPLOY_SERVER_USER: "$DOCS_SERVER_USER"
+    DOCS_DEPLOY_PATH: "$DOCS_PATH"
+    DOCS_DEPLOY_URL_BASE: "https://$DOCS_PREVIEW_SERVER_URL/docs/esp-adf"
+
+# stage: post_deploy
+deploy_docs_production:
+  # The DOCS_PROD_* variables used by this job are "Protected" so these branches must all be marked "Protected" in Gitlab settings
+  extends:
+    - .deploy_docs_template
+    - .doc-rules:deploy:docs_production
+  stage: post_deploy
+  dependencies:  # set dependencies to null to avoid missing artifacts issue
+  needs: # ensure runs after push_to_github succeeded
+    - job: "build_docs_html"
+      artifacts: true
+      optional: true
+    - job: "build_docs_pdf"
+      artifacts: true
+      optional: true
+    - job: push_to_github
+      artifacts: false
+  variables:
+    TYPE: "preview"
+    DOCS_DEPLOY_PRIVATEKEY: "$DOCS_PROD_DEPLOY_KEY"
+    DOCS_DEPLOY_SERVER: "$DOCS_PROD_SERVER"
+    DOCS_DEPLOY_SERVER_USER: "$DOCS_PROD_SERVER_USER"
+    DOCS_DEPLOY_PATH: "$DOCS_PROD_PATH"
+    DOCS_DEPLOY_URL_BASE: "https://docs.espressif.com/projects/esp-adf"
+    DEPLOY_STABLE: 1

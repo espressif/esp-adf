@@ -16,15 +16,15 @@ Implementation of this API is demonstrated in the following examples:
 API Reference - Decoder
 -----------------------
 
-.. include:: /_build/inc/amr_decoder.inc
+.. include-build-file:: inc/amr_decoder.inc
 
 API Reference - AMR-NB Encoder
 ------------------------------
 
-.. include:: /_build/inc/amrnb_encoder.inc
+.. include-build-file:: inc/amrnb_encoder.inc
 
 API Reference - AMR-WB Encoder
 ------------------------------
 
-.. include:: /_build/inc/amrwb_encoder.inc
+.. include-build-file:: inc/amrwb_encoder.inc
 

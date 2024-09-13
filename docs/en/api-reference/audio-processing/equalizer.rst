@@ -25,4 +25,4 @@ Implementation of this API is demonstrated in the :example:`audio_processing/pip
 API Reference
 -------------
 
-.. include:: /_build/inc/equalizer.inc
+.. include-build-file:: inc/equalizer.inc

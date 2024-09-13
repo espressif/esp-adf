@@ -7,6 +7,6 @@ This component provides several simple high level APIs. It is intended for quick
 API Reference
 -------------
 
-.. include:: /_build/inc/audio_def.inc
+.. include-build-file:: inc/audio_def.inc
 
-.. include:: /_build/inc/esp_audio.inc
+.. include-build-file:: inc/esp_audio.inc

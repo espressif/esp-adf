@@ -14,4 +14,4 @@ Implementation of this API is demonstrated in :example:`checks/check_display_led
 API Reference
 -------------
 
-.. include:: /_build/inc/periph_is31fl3216.inc
+.. include-build-file:: inc/periph_is31fl3216.inc

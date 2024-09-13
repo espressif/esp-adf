@@ -14,5 +14,5 @@ Implementation of this API is demonstrated in the following example:
 * :example:`system/battery`
 
 
-.. include:: /_build/inc/battery_service.inc
-.. include:: /_build/inc/voltage_monitor.inc
+.. include-build-file:: inc/battery_service.inc
+.. include-build-file:: inc/voltage_monitor.inc

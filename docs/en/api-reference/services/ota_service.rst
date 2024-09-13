@@ -13,6 +13,6 @@ Implementation of this API is demonstrated in the following example:
 * :example:`ota`
 
 
-.. include:: /_build/inc/ota_service.inc
-.. include:: /_build/inc/ota_proc_default.inc
-.. include:: /_build/inc/esp_fs_ota.inc
+.. include-build-file:: inc/ota_service.inc
+.. include-build-file:: inc/ota_proc_default.inc
+.. include-build-file:: inc/esp_fs_ota.inc

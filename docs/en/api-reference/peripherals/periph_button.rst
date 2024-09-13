@@ -13,4 +13,4 @@ Implementation of this API is demonstrated in :example:`cloud_services/google_tr
 API Reference
 -------------
 
-.. include:: /_build/inc/periph_button.inc
+.. include-build-file:: inc/periph_button.inc

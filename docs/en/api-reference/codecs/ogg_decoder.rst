@@ -7,5 +7,5 @@ Decode an audio data stream provided in OGG format.
 API Reference
 -------------
 
-.. include:: /_build/inc/ogg_decoder.inc
+.. include-build-file:: inc/ogg_decoder.inc
 
