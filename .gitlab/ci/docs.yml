@@ -11,6 +11,9 @@
 .patterns-docs-preview: &patterns-docs-preview
   - "docs/**/*"
 
+.if-schedule: &if-schedule
+  if: '$CI_PIPELINE_SOURCE == "schedule"'
+
 .if-merge_request_event: &if-merge_request_event
   if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
@@ -39,6 +42,8 @@
 
 .doc-rules:deploy:docs_production:
   rules:
+    - <<: *if-schedule
+      when: never
     - <<: *if-protected
 
 .before_script_install_requirements:
@@ -127,10 +132,12 @@ build_docs_pdf:
     - deploy-docs
 
 # stage: test_deploy
-.deploy_docs_preview:
+deploy_docs_preview:
   extends:
     - .deploy_docs_template
   rules:
+    - <<: *if-schedule
+      when: never
     - <<: *if-merge_request_event
     - <<: *if-open-merge-request
       when: never
@@ -141,12 +148,12 @@ build_docs_pdf:
       changes: *patterns-docs-preview
   variables:
     TYPE: "preview"
-    # older branches use DOCS_DEPLOY_KEY, DOCS_SERVER, DOCS_SERVER_USER, DOCS_PATH for preview server so we keep these names for 'preview'
-    DOCS_DEPLOY_PRIVATEKEY: "$DOCS_DEPLOY_KEY"
-    DOCS_DEPLOY_SERVER: "$DOCS_SERVER"
-    DOCS_DEPLOY_SERVER_USER: "$DOCS_SERVER_USER"
-    DOCS_DEPLOY_PATH: "$DOCS_PATH"
-    DOCS_DEPLOY_URL_BASE: "https://$DOCS_PREVIEW_SERVER_URL/docs/esp-adf"
+    # older branches use DOCS_PREVIEW_PRIVATEKEY, DOCS_PREVIEW_SERVER, DOCS_PREVIEW_SERVER_USER, DOCS_PATH for preview server so we keep these names for 'preview'
+    DOCS_DEPLOY_PRIVATEKEY: "$DOCS_PREVIEW_PRIVATEKEY"
+    DOCS_DEPLOY_SERVER: "$DOCS_PREVIEW_SERVER"
+    DOCS_DEPLOY_SERVER_USER: "$DOCS_PREVIEW_SERVER_USER"
+    DOCS_DEPLOY_PATH: "$DOCS_PREVIEW_PATH"
+    DOCS_DEPLOY_URL_BASE: "$DOCS_PREVIEW_URL_BASE"
 
 # stage: post_deploy
 deploy_docs_production:
