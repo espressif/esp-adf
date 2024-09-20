@@ -75,23 +75,6 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 
-# The version info for the project you're documenting, acts as replacement for
-# |version| and |release|, also used in various other places throughout the
-# built documents.
-#
-
-# Readthedocs largely ignores 'version' and 'release', and displays one of
-# 'latest', tag name, or branch name, depending on the build type.
-# Still, this is useful for non-RTD builds.
-# This is supposed to be "the short X.Y version", but it's the only version
-# visible when you open index.html.
-# Display full version to make things less confusing.
-version = run_cmd_get_output('git describe')
-# The full version, including alpha/beta/rc tags.
-# If needed, nearest tag is returned by 'git describe --abbrev=0'.
-release = version
-print('Version: {0}  Release: {1}'.format(version, release))
-
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
 #today = ''
