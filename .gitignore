@@ -28,6 +28,7 @@ examples/**/managed_components
 examples/**/dependencies.lock
 
 # Doc build artifacts
+docs/_build/
 docs/*/_build/
 docs/*/doxygen-warning-log.txt
 docs/*/sphinx-warning-log.txt

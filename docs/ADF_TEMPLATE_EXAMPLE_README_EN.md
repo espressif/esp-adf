@@ -1,4 +1,4 @@
-_Note that this is a template for an ESP-ADF example README.md file. When using this template, replace all these emphasised placeholders with example-specific content._
+_Note that this is a template for an ESP-ADF example README.md file. When using this template, replace all the emphasized placeholders (in italics) with example-specific content._
 
 # _Example Title_
 
@@ -124,7 +124,7 @@ _Command to build the example_
 _Command to flash the example_
 
 - Legacy GNU Make command: `make flash monitor`
-- CMake command: `idf.py -p PORT flash monitor`
+- CMake command: `idf.py build flash monitor`
 
 For full steps to configure and build an ESP-IDF project, please go to [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) and select the chip and version in the upper left corner of the page.
 
