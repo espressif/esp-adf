@@ -239,7 +239,7 @@ esp_err_t i2c_bus_probe_addr(i2c_bus_handle_t bus, uint8_t addr)
     i2c_bus_info_t *bus_info = (i2c_bus_info_t *)bus;
     esp_err_t ret = ESP_OK;
     mutex_lock(master[bus_info->port].bus_lock);
-    ret = i2c_master_probe(master[bus_info->port].master_handle, addr, DEFAULT_I2C_TRANS_TIMEOUT);
+    ret = i2c_master_probe(master[bus_info->port].master_handle, addr >> 1, DEFAULT_I2C_TRANS_TIMEOUT);
     mutex_unlock(master[bus_info->port].bus_lock);
     return ret;
 }

@@ -142,18 +142,19 @@ static bool start_frame_synced()
 
 static int start_video_encoder()
 {
+    int ret = -1;
     uint16_t width = 0, height = 0;
     av_record_get_video_size(av_record.record_cfg.video_quality, &width, &height);
     if (av_record.record_cfg.video_fmt == AV_RECORD_VIDEO_FMT_MJPEG) {
-        jpeg_enc_info_t info = DEFAULT_JPEG_ENC_CONFIG();
-        info.width = width;
-        info.height = height;
-        info.src_type = JPEG_RAW_TYPE_YCbYCr;
-        info.subsampling = JPEG_SUB_SAMPLE_YUV420;
-        info.quality = 40;
-        av_record.video_enc = jpeg_enc_open(&info);
+        jpeg_enc_config_t config = DEFAULT_JPEG_ENC_CONFIG();
+        config.width = width;
+        config.height = height;
+        config.src_type = JPEG_PIXEL_FORMAT_YCbYCr;
+        config.subsampling = JPEG_SUBSAMPLE_420;
+        config.quality = 40;
+        ret = jpeg_enc_open(&config, &av_record.video_enc);
         if (av_record.video_enc == NULL) {
-            ESP_LOGE(TAG, "Fail to create jpeg encoder");
+            ESP_LOGE(TAG, "Fail to create jpeg encoder %d", ret);
             return ESP_MEDIA_ERR_NOT_SUPPORT;
         }
     } else if (av_record.record_cfg.video_fmt == AV_RECORD_VIDEO_FMT_H264) {
@@ -165,7 +166,7 @@ static int start_video_encoder()
             .gop_size = av_record.record_cfg.video_fps * 3,
             .target_bitrate = 400000,
         };
-        int ret = esp_h264_enc_open(&cfg, (esp_h264_enc_t*)&av_record.video_enc);
+        ret = esp_h264_enc_open(&cfg, (esp_h264_enc_t *)&av_record.video_enc);
         if (av_record.video_enc == NULL) {
             ESP_LOGE(TAG, "Fail to create h264 encoder %d", ret);
             return ESP_MEDIA_ERR_NOT_SUPPORT;
