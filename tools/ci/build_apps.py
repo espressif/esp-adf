@@ -92,7 +92,6 @@ def get_cmake_apps(
             build_log_filename='build_log.txt',
             size_json_filename='size.json',
             check_warnings=True,
-            preserve=True,
             default_build_targets=default_build_targets,
             manifest_files=[str(p) for p in Path(os.environ['ADF_PATH']).glob('**/.build-test-rules.yml')],
         )
@@ -106,7 +105,7 @@ def main(args):  # type: (argparse.Namespace) -> None
     else:
         apps_to_build = apps[:]
 
-    print('Found %d apps after filtering', len(apps_to_build))
+    print(f'Found {len(apps_to_build)} apps after filtering')
     print(
         'Suggest setting the parallel count to %d for this build job',
         len(apps_to_build) // APPS_BUILD_PER_JOB + 1,
