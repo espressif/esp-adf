@@ -714,14 +714,14 @@ int av_audio_get_vol(av_stream_handle_t av_stream, int *vol)
 
 static void init_jpeg_encoder(av_stream_handle_t av_stream)
 {
-    jpeg_enc_info_t info = DEFAULT_JPEG_ENC_CONFIG();
-    info.width = av_resolution[av_stream->config.hal.video_framesize].width;
-    info.height = av_resolution[av_stream->config.hal.video_framesize].height;
-    info.src_type = JPEG_RAW_TYPE_YCbYCr;
-    info.subsampling = JPEG_SUB_SAMPLE_YUV420;
-    // info.rotate = JPEG_ROTATE_0D;
-    info.quality = 40;
-    av_stream->video_enc = jpeg_enc_open(&info);
+    jpeg_enc_config_t config = DEFAULT_JPEG_ENC_CONFIG();
+    config.width = av_resolution[av_stream->config.hal.video_framesize].width;
+    config.height = av_resolution[av_stream->config.hal.video_framesize].height;
+    config.src_type = JPEG_PIXEL_FORMAT_YCbYCr;
+    config.subsampling = JPEG_SUBSAMPLE_420;
+    // config.rotate = JPEG_ROTATE_0D;
+    config.quality = 40;
+    jpeg_enc_open(&config, &av_stream->video_enc);
 }
 
 static int init_h264_encoder(av_stream_handle_t av_stream)
@@ -872,8 +872,11 @@ int av_video_dec_start(av_stream_handle_t av_stream)
     AUDIO_NULL_CHECK(TAG, av_stream, return ESP_ERR_INVALID_ARG);
     if (av_stream->jpeg_dec == NULL) {
         jpeg_dec_config_t config = DEFAULT_JPEG_DEC_CONFIG();
-        config.output_type = JPEG_RAW_TYPE_RGB565_BE;
-        av_stream->jpeg_dec = jpeg_dec_open(&config);
+        config.output_type = JPEG_PIXEL_FORMAT_RGB565_BE;
+        jpeg_dec_open(&config, &av_stream->jpeg_dec);
+        if (av_stream->jpeg_dec == NULL) {
+            return ESP_FAIL;
+        }
         av_stream->jpeg_dec_io = audio_calloc(1, sizeof(jpeg_dec_io_t));
         if (av_stream->jpeg_dec_io == NULL) {
             return ESP_FAIL;
@@ -882,7 +885,7 @@ int av_video_dec_start(av_stream_handle_t av_stream)
         if (av_stream->out_info == NULL) {
             return ESP_FAIL;
         }
-        av_stream->vdec_buf = jpeg_malloc_align(VIDEO_DEC_SIZE, 16);
+        av_stream->vdec_buf = jpeg_calloc_align(VIDEO_DEC_SIZE, 16);
     }
     return ESP_OK;
 }

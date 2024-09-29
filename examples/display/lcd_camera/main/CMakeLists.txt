@@ -4,5 +4,6 @@
 idf_component_register(
     SRCS
         "lcd_camera_main.c"
+        "img_convert.c"
     INCLUDE_DIRS
         ".")

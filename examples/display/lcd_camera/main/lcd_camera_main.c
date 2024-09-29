@@ -12,6 +12,7 @@
 #include "board.h"
 #include "audio_mem.h"
 #include "esp_jpeg_common.h"
+#include "img_convert.h"
 
 static const char *TAG = "LCD_Camera";
 
@@ -94,7 +95,7 @@ static esp_err_t example_lcd_rgb_draw(esp_lcd_panel_handle_t panel_handle, uint8
 /* example: YUV422 -> RGB565 -> LCD */
 static esp_err_t example_lcd_yuv422_draw(esp_lcd_panel_handle_t panel_handle, uint8_t *image)
 {
-    jpeg_yuv2rgb(JPEG_SUB_SAMPLE_YUV422, JPEG_RAW_TYPE_RGB565_BE, image, EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES, rgb_buffer);
+    jpeg_yuv2rgb(JPEG_SUBSAMPLE_422, JPEG_PIXEL_FORMAT_RGB565_BE, image, EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES, rgb_buffer);
     example_lcd_rgb_draw(panel_handle, rgb_buffer);
     return ESP_OK;
 }

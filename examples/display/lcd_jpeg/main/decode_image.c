@@ -30,13 +30,19 @@ const char *TAG = "ImageDec";
 
 int decode_image(uint16_t ***pixels)
 {
+    int ret = 0;
+
     // Generate default configuration
     jpeg_dec_config_t config = DEFAULT_JPEG_DEC_CONFIG();
-    config.output_type = JPEG_RAW_TYPE_RGB565_BE;
+    config.output_type = JPEG_PIXEL_FORMAT_RGB565_BE;
     // Empty handle to jpeg_decoder
     jpeg_dec_handle_t jpeg_dec = NULL;
     // Create jpeg_dec
-    jpeg_dec = jpeg_dec_open(&config);
+    ret = jpeg_dec_open(&config, &jpeg_dec);
+    if (ret < 0) {
+        ESP_LOGE(TAG, "Got an error by jpeg_dec_open, ret:%d", ret);
+        return ret;
+    }
     // Create io_callback handle
     jpeg_dec_io_t *jpeg_io = calloc(1, sizeof(jpeg_dec_io_t));
     if (jpeg_io == NULL) {
@@ -53,7 +59,6 @@ int decode_image(uint16_t ***pixels)
     jpeg_io->inbuf = (unsigned char *)image_jpg_start;
     jpeg_io->inbuf_len = image_jpg_end - image_jpg_start;
 
-    int ret = 0;
     // Parse jpeg picture header and get picture for user and decoder
     ret = jpeg_dec_parse_header(jpeg_dec, jpeg_io, out_info);
     if (ret < 0) {
@@ -62,16 +67,16 @@ int decode_image(uint16_t ***pixels)
     }
     // Calloc out_put data buffer and update inbuf ptr and inbuf_len
     int outbuf_len;
-    if (config.output_type == JPEG_RAW_TYPE_RGB565_LE
-        || config.output_type == JPEG_RAW_TYPE_RGB565_BE) {
+    if (config.output_type == JPEG_PIXEL_FORMAT_RGB565_LE
+        || config.output_type == JPEG_PIXEL_FORMAT_RGB565_BE) {
         outbuf_len = out_info->height * out_info->width * 2;
-    } else if (config.output_type == JPEG_RAW_TYPE_RGB888) {
+    } else if (config.output_type == JPEG_PIXEL_FORMAT_RGB888) {
         outbuf_len = out_info->height * out_info->width * 3;
     } else {
         return ESP_FAIL;
     }
     ESP_LOGI(TAG, "The image size is %d bytes, width:%d, height:%d", outbuf_len, out_info->width, out_info->height);
-    unsigned char *out_buf = jpeg_malloc_align(outbuf_len, 16);
+    unsigned char *out_buf = jpeg_calloc_align(outbuf_len, 16);
     jpeg_io->outbuf = out_buf;
     int inbuf_consumed = jpeg_io->inbuf_len - jpeg_io->inbuf_remain;
     jpeg_io->inbuf = (unsigned char *)(image_jpg_start + inbuf_consumed);
