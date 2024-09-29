@@ -1,3 +1,4 @@
+import re
 import sys, os
 from esp_docs.conf_docs import *  # noqa: F403,F401
 from local_util import run_cmd_get_output, copy_if_modified
@@ -27,6 +28,14 @@ extensions += ['link-roles',
                'esp_docs.esp_extensions.dummy_build_system',
                'esp_docs.esp_extensions.run_doxygen',
                ]
+
+# Custom added feature to allow redirecting old URLs
+with open('../page_redirects.txt') as f:
+    lines = [re.sub(' +', ' ', line.strip()) for line in f.readlines() if line.strip() != '' and not line.startswith('#')]
+    for line in lines:  # check for well-formed entries
+        if len(line.split(' ')) != 2:
+            raise RuntimeError('Invalid line in page_redirects.txt: %s' % line)
+html_redirect_pages = [tuple(line.split(' ')) for line in lines]
 
 # Disable format_esp_target
 extensions.remove('esp_docs.esp_extensions.format_esp_target')
