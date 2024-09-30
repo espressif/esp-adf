@@ -402,8 +402,7 @@ void app_main(void)
     i2s_stream_cfg_t i2s_cfg2 = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg2.type = AUDIO_STREAM_READER;
 #if defined CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    i2s_cfg2.i2s_port = 1;
-    i2s_cfg2.i2s_config.use_apll = false;
+    i2s_cfg2.chan_cfg.id = 1;
 #endif
     i2s_stream_reader = i2s_stream_init(&i2s_cfg2);
 
