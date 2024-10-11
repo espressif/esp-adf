@@ -325,9 +325,7 @@ esp_err_t esp_periph_set_list_destroy(esp_periph_set_handle_t periph_set)
 {
     esp_periph_handle_t periph;
     STAILQ_FOREACH(periph, &periph_set->periph_list, entries) {
-        if (periph->destroy) {
-            periph->destroy(periph);
-        }
+        esp_periph_destroy(periph);
     }
     return ESP_OK;
 }
@@ -509,7 +507,20 @@ esp_err_t esp_periph_run(esp_periph_handle_t periph)
 
 esp_err_t esp_periph_destroy(esp_periph_handle_t periph)
 {
-    return periph->destroy(periph);
+    esp_err_t ret = ESP_OK;
+    if (periph->destroy) {
+        ret = periph->destroy(periph);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Destroy peripheral failed");
+        }
+    } else {
+        ESP_LOGW(TAG, "Peripheral destroy has not been set");
+    }
+    if (periph->tag) {
+        audio_free(periph->tag);
+    }
+    audio_free(periph);
+    return ret;
 }
 
 esp_err_t esp_periph_register_on_events(esp_periph_handle_t periph, esp_periph_event_t *evts)

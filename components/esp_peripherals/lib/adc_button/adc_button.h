@@ -29,7 +29,47 @@
 extern "C" {
 #endif
 
+#ifndef ADC_LEGACY_API
+#if CONFIG_ADC_SUPPRESS_DEPRECATE_WARN || CONFIG_ADC_CALI_SUPPRESS_DEPRECATE_WARN
+#define ADC_LEGACY_API  true
+#else
+#define ADC_LEGACY_API  false
+#endif  /* CONFIG_ADC_CALI_SUPPRESS_DEPRECATE_WARN || CONFIG_ADC_SUPPRESS_DEPRECATE_WARN */
+#endif  /* ADC_LEGACY_API */
+
 #include "esp_err.h"
+#if ADC_LEGACY_API
+#include "driver/adc.h"
+#include "esp_adc_cal.h"
+#endif  /* ADC_LEGACY_API */
+#if !ADC_LEGACY_API
+#include "esp_adc/adc_oneshot.h"
+#endif  /* !ADC_LEGACY_API */
+
+#if ADC_LEGACY_API
+/* Provide default ADC channel macros if not defined externally. */
+#ifndef ADC_CHANNEL_0
+#define ADC_CHANNEL_0  ADC1_CHANNEL_0
+#endif
+#ifndef ADC_CHANNEL_1
+#define ADC_CHANNEL_1  ADC1_CHANNEL_1
+#endif
+#ifndef ADC_CHANNEL_2
+#define ADC_CHANNEL_2  ADC1_CHANNEL_2
+#endif
+#ifndef ADC_CHANNEL_3
+#define ADC_CHANNEL_3  ADC1_CHANNEL_3
+#endif
+#ifndef ADC_CHANNEL_4
+#define ADC_CHANNEL_4  ADC1_CHANNEL_4
+#endif
+#ifndef ADC_CHANNEL_5
+#define ADC_CHANNEL_5  ADC1_CHANNEL_5
+#endif
+#ifndef ADC_CHANNEL_6
+#define ADC_CHANNEL_6  ADC1_CHANNEL_6
+#endif
+#endif  /* ADC_LEGACY_API */
 
 typedef enum {
     USER_KEY_ID0,
@@ -43,6 +83,7 @@ typedef enum {
 } user_key_id_num;
 
 typedef struct {
+    int adc_unit;
     int adc_ch;
     int *adc_level_step;
     int total_steps;
@@ -66,7 +107,7 @@ typedef struct {
 
 typedef struct adc_btn {
     adc_arr_t adc_info;
-    btn_decription *btn_dscp;
+    btn_decription *btn_desc;
     struct adc_btn *next;
 } adc_btn_list;
 

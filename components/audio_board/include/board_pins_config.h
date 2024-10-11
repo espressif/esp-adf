@@ -162,6 +162,14 @@ int8_t get_input_rec_id(void);
 int8_t get_input_mode_id(void);
 
 /**
+ * @brief  Get the number for color-button
+ *
+ * @return  -1      non-existent
+ *          Others  number
+ */
+int8_t get_input_color_id(void);
+
+/**
  * @brief Get number for set function
  *
  * @return -1       non-existent

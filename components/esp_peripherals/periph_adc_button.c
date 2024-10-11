@@ -56,9 +56,15 @@ static void btn_cb(void *user_data, int adc, int id, adc_btn_state_t state)
 static esp_err_t _adc_button_destroy(esp_periph_handle_t self)
 {
     periph_adc_btn_t *periph_adc_btn = esp_periph_get_data(self);
+    if (NULL == periph_adc_btn) {
+        return ESP_OK;
+    }
     adc_btn_delete_task();
-    adc_btn_destroy_list(periph_adc_btn->list);
+    if (periph_adc_btn->list) {
+        adc_btn_destroy_list(periph_adc_btn->list);
+    }
     audio_free(periph_adc_btn);
+    esp_periph_set_data(self, NULL);
     return ESP_OK;
 }
 
@@ -83,8 +89,8 @@ esp_periph_handle_t periph_adc_button_init(periph_adc_button_cfg_t *config)
     periph_adc_btn->list = adc_btn_create_list(config->arr, config->arr_size);
     memcpy(&periph_adc_btn->task_cfg, &config->task_cfg, sizeof(adc_btn_task_cfg_t));
     AUDIO_MEM_CHECK(TAG, periph_adc_btn->list, {
+        _adc_button_destroy(periph);
         audio_free(periph);
-        audio_free(periph_adc_btn);
         return NULL;
     });
 
