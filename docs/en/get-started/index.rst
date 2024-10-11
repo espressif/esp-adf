@@ -83,24 +83,58 @@ Windows
     git clone --recursive https://gitee.com/EspressifSystems/esp-adf.git
 
 
-2. Install the ``$ESP-IDF`` compilation environment in the command prompt window::
+2. Install the ``$ESP-IDF`` compilation environment in the command prompt window:
 
-    cd esp-adf
-    .\install.bat
+   **Using Command Prompt (cmd.exe):**
+
+   .. code-block:: batch
+
+        cd esp-adf
+        .\install.bat
+
+    **Using PowerShell:**
+
+   .. code-block:: powershell
+
+        cd esp-adf
+        .\install.ps1
 
    Or first download the full ESP-IDF Windows Installer from `ESP-IDF Windows Installer <https://dl.espressif.com/dl/esp-idf>`_ (Please download the `ESP-IDF versions <https://github.com/espressif/esp-adf/blob/master/README.md#idf-version>`_ supported by ESP-ADF). And then turn off the antivirus software (Because it may prevent the installation as the software writes the Windows system regedit) and install the downloaded file. After the installation is complete, open the ESP-IDF CMD shortcut icon on the desktop, the script will automatically help you download submodules, and set environment variables such as ``IDF_PATH``.
 
+3. Set the ``ADF_PATH`` by running the following commands:
 
-3. Set the ``ADF_PATH`` by running the following commands::
+   **Using Command Prompt (cmd.exe):**
 
-    .\export.bat
-    echo %ADF_PATH%
+   .. code-block:: batch
 
+       .\export.bat
+       echo %ADF_PATH%
 
-4. If your ``ADF_PATH`` variable prints correctly, it's time to compile the ADF routines::
+   **Using PowerShell:**
 
-    cd %ADF_PATH%\examples\get-started\play_mp3_control
-    idf.py build flash monitor
+   .. code-block:: powershell
+
+       .\export.ps1
+       echo $ADF_PATH
+       // or
+       echo $env:ADF_PATH
+
+4. If your ``ADF_PATH`` variable prints correctly, it's time to compile the ADF routines:
+
+   **Using Command Prompt (cmd.exe):**
+
+   .. code-block:: batch
+
+       cd %ADF_PATH%\examples\get-started\play_mp3_control
+       idf.py build flash monitor
+
+   **Using PowerShell:**
+
+   .. code-block:: powershell
+
+       cd $ADF_PATH\examples\get-started\play_mp3_control
+       idf.py build flash monitor
+
 
 
 .. _get-started-step-by-step:
