@@ -1,5 +1,5 @@
 .target_ut_test_template:
-  image: ciregistry.espressif.cn:8443/target-test-env-v5.4:1
+  image: ciregistry.espressif.cn:8443/target-test-env-v5.4:2
   stage: target_test
   timeout: 24 hour
   cache:

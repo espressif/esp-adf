@@ -6,7 +6,7 @@ set -o errexit
 
 if ! type jq >/dev/null 2>&1;then
     apt-get update
-    apt-get install jq -y
+    apt-get install jq -y --fix-missing
 else
     echo "The jq tool has been installed"
 fi

@@ -68,9 +68,9 @@ list(APPEND COMPONENT_REQUIRES esp_lcd)
 ENDIF()
 
 if (idf_version VERSION_GREATER_EQUAL "5.0")
-list(APPEND COMPONENT_PRIV_REQUIRES esp_adc)
+list(APPEND COMPONENT_REQUIRES esp_adc)
 else()
-list(APPEND COMPONENT_PRIV_REQUIRES esp_adc_cal)
+list(APPEND COMPONENT_REQUIRES esp_adc_cal)
 endif()
 
 register_component()

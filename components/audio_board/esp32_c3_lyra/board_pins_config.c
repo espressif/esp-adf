@@ -109,6 +109,11 @@ int8_t get_input_mode_id(void)
     return BUTTON_MODE_ID;
 }
 
+int8_t get_input_color_id(void)
+{
+    return BUTTON_COLOR_ID;
+}
+
 int8_t get_input_set_id(void)
 {
     return BUTTON_SET_ID;
