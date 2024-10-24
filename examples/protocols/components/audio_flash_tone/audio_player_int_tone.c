@@ -41,8 +41,7 @@ static audio_element_handle_t i2s_writer;
 static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
     stream_func i2s_write_func = (stream_func)ctx;
-    size_t bytes_write = 0, size = len;
-    AUDIO_UNUSED(size);
+    size_t size = len;
 #ifndef CONFIG_ESP32_S3_KORVO2L_V1_BOARD
     /* Drop right channel */
     int16_t *tmp = (int16_t *)buf;
@@ -51,15 +50,14 @@ static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_
     }
     size = len / 2;
 #endif
-
 #if CONFIG_IDF_TARGET_ESP32
     algorithm_mono_fix((uint8_t *)buf, size);
 #endif
-    int ret = i2s_write_func(el, buf, len, wait_time, ctx);
+    int ret = i2s_write_func(el, buf, size, wait_time, ctx);
     if (ret < 0) {
         ESP_LOGE(TAG, "i2s write failed");
     }
-    return bytes_write;
+    return len;
 }
 
 audio_err_t audio_player_int_tone_init(int sample_rate, int channel_format, int bits_per_sample)
