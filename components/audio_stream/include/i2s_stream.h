@@ -189,7 +189,6 @@ typedef struct {
 #if SOC_I2S_SUPPORTS_TDM
     i2s_tdm_config_t     tdm_cfg;               /*!< I2S TDM mode major configuration that including clock/slot/gpio configuration  */
 #endif // SOC_I2S_SUPPORTS_TDM
-    i2s_data_bit_width_t expand_src_bits;       /*!< The source bits per sample when data expand */
     bool                 use_alc;               /*!< It is a flag for ALC. If use ALC, the value is true. Or the value is false */
     int                  volume;                /*!< The volume of audio input data will be set. */
     int                  out_rb_size;           /*!< Size of output ringbuffer */
@@ -200,6 +199,7 @@ typedef struct {
     int                  multi_out_num;         /*!< The number of multiple output */
     bool                 uninstall_drv;         /*!< whether uninstall the i2s driver when stream destroyed*/
     bool                 need_expand;           /*!< whether to expand i2s data */
+    i2s_data_bit_width_t expand_src_bits;       /*!< The source bits per sample when data expand */
     int                  buffer_len;            /*!< Buffer length use for an Element. Note: when 'bits_per_sample' is 24 bit, the buffer length must be a multiple of 3. The recommended value is 3600 */
 } i2s_stream_cfg_t;
 
@@ -251,6 +251,14 @@ typedef struct {
 
 #define I2S_STREAM_CFG_DEFAULT_WITH_TYLE_AND_CH(port, rate, bits, stream_type, channel)  { \
     .type = stream_type,                                                        \
+    .transmit_mode = I2S_COMM_MODE_STD,                                         \
+    .chan_cfg = {                                                               \
+        .id = port,                                                             \
+        .role = I2S_ROLE_MASTER,                                                \
+        .dma_desc_num = 3,                                                      \
+        .dma_frame_num = 312,                                                   \
+        .auto_clear = true,                                                     \
+    },                                                                          \
     .std_cfg = {                                                                \
         .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(rate),                           \
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_ADF_CONFIG(bits, channel),     \
@@ -260,14 +268,6 @@ typedef struct {
                 .bclk_inv = false,                                              \
             },                                                                  \
         },                                                                      \
-    },                                                                          \
-    .transmit_mode = I2S_COMM_MODE_STD,                                         \
-    .chan_cfg = {                                                               \
-        .id = port,                                                             \
-        .role = I2S_ROLE_MASTER,                                                \
-        .dma_desc_num = 3,                                                      \
-        .dma_frame_num = 312,                                                   \
-        .auto_clear = true,                                                     \
     },                                                                          \
     .use_alc = false,                                                           \
     .volume = 0,                                                                \

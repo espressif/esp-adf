@@ -25,12 +25,13 @@
 #ifndef _PERIPH_LCD_H_
 #define _PERIPH_LCD_H_
 
+#include "esp_lcd_panel_io.h"  // Do not use extern "C" with this header to avoid C++ linkage issues.
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
-#include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
 #include "driver/spi_master.h"
 #include "esp_peripherals.h"

@@ -35,8 +35,8 @@ extern "C"
 #define MIXER_PIPELINE_TASK_PRIO       (5)
 
 #define AUDIO_MIXER_PIPELINE_CFG_DEFAULT() { \
-    .mixer = NULL,                           \
     .url = NULL,                             \
+    .mixer = NULL,                           \
     .slot = 0,                               \
     .resample_rate = 44100,                  \
     .resample_channel = 2,                   \

@@ -25,6 +25,14 @@
 #ifndef _DUER_APP_H_
 #define _DUER_APP_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void duer_app_init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -42,16 +42,16 @@ extern "C" {
 #define   CNV_CFG_DEFAULT() {                                                \
             .source_size             = 2048,                                 \
             .audio_samplerate        = CNV_AUDIO_SAMPLE,                     \
+            .audio_resolution_bits   = CNV_AUDIO_RESOLUTION_BITS,            \
             .n_samples               = CNV_N_SAMPLES,                        \
-            .default_rms_min         = CNV_AUDIO_MIN_RMS,                    \
-            .default_rms_max         = CONFIG_EXAMPLE_DEFAULT_AUDIO_MAX_RMS, \
             .window_max_width_db     = CNV_AUDIO_WINDOW_MAX_WIDTH_DB,        \
             .regress_threshold_vol   = CNV_AUDIO_REGRESS_THRESHOLD_VOL,      \
-            .audio_resolution_bits   = CNV_AUDIO_RESOLUTION_BITS,            \
+            .default_rms_min         = CNV_AUDIO_MIN_RMS,                    \
+            .default_rms_max         = CONFIG_EXAMPLE_DEFAULT_AUDIO_MAX_RMS, \
             .total_leds              = CNV_TOTAL_LEDS,                       \
             .task_stack              = 3072,                                 \
-            .task_core               = 0,                                    \
             .task_prio               = 12,                                   \
+            .task_core               = 0,                                    \
 }
 
 typedef struct cnv_handle_s cnv_handle_t;
