@@ -391,7 +391,7 @@ static int es8374_config_adc_input(audio_codec_es8374_t *codec, es_adc_input_t i
 
 static int es8374_set_adc_dac_volume(audio_codec_es8374_t *codec, esp_codec_dec_work_mode_t mode, float db_value)
 {
-    int reg = esp_codec_dev_vol_calc_db(&vol_range, db_value);
+    int reg = esp_codec_dev_vol_calc_reg(&vol_range, db_value);
     int ret = ESP_CODEC_DEV_OK;
     if (mode & ESP_CODEC_DEV_WORK_MODE_ADC) {
         ret = es8374_write_reg(codec, 0x25, (uint8_t) reg);

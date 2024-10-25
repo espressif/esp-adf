@@ -156,12 +156,9 @@ static int es8388_config_fmt(audio_codec_es8388_t *codec, esp_codec_dec_work_mod
 
 static int es8388_set_mic_gain(audio_codec_es8388_t *codec, float db)
 {
-    es_mic_gain_t gain = db > 0 ? (int) (db / 3) + MIC_GAIN_0DB : MIC_GAIN_0DB;
-    int res, gain_n;
-    gain_n = (int) gain / 3;
-    gain_n = (gain_n << 4) + gain_n;
-    res = es8388_write_reg(codec, ES8388_ADCCONTROL1, gain_n); // MIC PGA
-    return res;
+    int gain = db > 0 ? (int) (db / 3) : 0;
+    gain = (gain << 4) + gain;
+    return es8388_write_reg(codec, ES8388_ADCCONTROL1, gain); // MIC PGA
 }
 
 static es_bits_length_t get_bits_enum(uint8_t bits)

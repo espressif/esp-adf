@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.2
+
+### Bug Fixes
+
+- Fix `ES8374` volume register set error
+- Fix `ES8388` microphone volume gain set incorrect
+
+
 ## v1.3.1
 
 ### Features
