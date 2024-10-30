@@ -33,10 +33,14 @@
 
 #include "duer_wifi_cfg.h"
 #include "duer_wifi_cfg_if.h"
+#include "duer_profile.h"
 #include "lightduer_dipb_data_handler.h"
 #include "lightduer_types.h"
 
+#define DUER_DEV_ID_LEN (32)
+
 static duer_wifi_cfg_t *duer_wifi_cfg;
+static char duer_device_id[DUER_DEV_ID_LEN];
 static const char *TAG = "DUER_WIFI_CFG";
 
 static void duer_on_ble_recv_data(void *data, size_t len, uint16_t handle)
@@ -107,7 +111,7 @@ static const char *get_profile_value(int key)
         case PROFILE_KEY_CLIENT_ID:
             return duer_wifi_cfg->client_id;
         case PROFILE_KEY_DEVICE_ID:
-            return duer_wifi_cfg->device_id;
+            return duer_device_id;
         case PROFILE_KEY_DEVICE_ECC_PUB_KEY:
             return duer_wifi_cfg->pub_key;
         default:
@@ -143,6 +147,7 @@ int duer_wifi_cfg_init(duer_wifi_cfg_t *cfg)
     AUDIO_NULL_CHECK(TAG, duer_wifi_cfg, return ESP_ERR_NO_MEM);
     memcpy(duer_wifi_cfg, cfg, sizeof(duer_wifi_cfg_t));
 
+    ESP_ERROR_CHECK(duer_profile_get_uuid(duer_device_id, DUER_DEV_ID_LEN - 1));
     ESP_ERROR_CHECK(duer_wifi_cfg_ble_host_init(&host_cb));
     ESP_ERROR_CHECK(duer_dipb_data_handler_init(&dipb_cbs));
 
@@ -159,5 +164,6 @@ int duer_wifi_cfg_deinit(void)
     ESP_ERROR_CHECK(duer_dipb_data_handler_deinit());
     audio_free(duer_wifi_cfg);
     duer_wifi_cfg = NULL;
+    memset(duer_device_id, 0x00, DUER_DEV_ID_LEN);
     return 0;
 }

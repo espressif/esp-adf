@@ -61,7 +61,7 @@ typedef struct {
 } duer_ap_t;
 
 typedef struct {
-    int (*ble_send_data)(uint8_t *data, size_t data_len, uint16_t handle);
+    int (*ble_send_data)(uint8_t *data, uint32_t data_len, uint16_t handle);
 
     duer_ap_t* (*scan_wifi)(int *list_num);
 

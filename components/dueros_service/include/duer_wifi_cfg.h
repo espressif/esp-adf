@@ -60,7 +60,6 @@ typedef void (*duer_wifi_cfg_user_cb_t)(duer_wifi_cfg_event_t event, void *data)
 typedef struct {
     duer_wifi_cfg_user_cb_t user_cb; /*!< User callback */
     const char *client_id;           /*!< Duer client id */
-    const char *device_id;           /*!< Duer device id */
     const char *pub_key;             /*!< Duer public key */
 } duer_wifi_cfg_t;
 

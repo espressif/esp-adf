@@ -65,13 +65,6 @@ config DUER_CLIENT_ID
     help
         The duer client id.
 
-config DUER_DEVICE_ID
-    string "Duer device ID"
-    depends on DUER_WIFI_CONFIG
-    default "device id"
-    help
-        The duer device id.
-
 config DUER_ECC_PUB_KEY
     string "Duer ECC public key"
     depends on DUER_WIFI_CONFIG
