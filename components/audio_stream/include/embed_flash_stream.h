@@ -27,6 +27,10 @@
 
 #include "audio_element.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief   Flash-embedding stream configurations, if any entry is zero then the configuration will be set to default values
  */
@@ -90,5 +94,8 @@ audio_element_handle_t embed_flash_stream_init(embed_flash_stream_cfg_t *config)
  */
 esp_err_t  embed_flash_stream_set_context(audio_element_handle_t embed_stream, const embed_item_info_t *context, int max_num);
 
-#endif // __EMBED_FLASH_H__
+#ifdef __cplusplus
+}
+#endif
 
+#endif // __EMBED_FLASH_H__

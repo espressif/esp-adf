@@ -55,8 +55,8 @@
 #define HEADPHONE_DETECT          GPIO_NUM_19
 #define PA_ENABLE_GPIO            GPIO_NUM_21
 #define ES8311_MCLK_SOURCE        1   /* 0 From MCLK of esp32   1 From BCLK */
-#define CODEC_ADC_I2S_PORT        (1)
-#define CODEC_ADC_BITS_PER_SAMPLE (16) /* 16bit */
+#define CODEC_ADC_I2S_PORT        ((i2s_port_t)1)
+#define CODEC_ADC_BITS_PER_SAMPLE ((i2s_data_bit_width_t)16) /* 16bit */
 #define CODEC_ADC_SAMPLE_RATE     (16000)
 #define RECORD_HARDWARE_AEC       (true)
 #define BOARD_PA_GAIN             (20) /* Power amplifier gain defined by board (dB) */

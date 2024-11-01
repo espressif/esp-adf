@@ -44,9 +44,9 @@ extern "C"
 }
 
 #define AUDIO_MIXER_DEFAULT_CONF(samplerate, channels, bits_per_sample, max_slot) { \
-    .sample_rate = samplerate,                                                      \
     .channel     = channels,                                                        \
     .bits        = bits_per_sample,                                                 \
+    .sample_rate = samplerate,                                                      \
     .task_stack  = 4096,                                                            \
     .task_prio   = 6,                                                               \
     .task_core   = 1,                                                               \

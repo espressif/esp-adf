@@ -38,25 +38,25 @@ extern "C" {
 #define   PIXEL_RENDERER_CTRL_IO        (CONFIG_EXAMPLE_LED_CTRL_IO)             /*!< LED control signal pin */
 
 #define   PIXEL_RENDERER_CFG_DEFAULT() {                   \
-            .total_leds     = CNV_TOTAL_LEDS,              \
             .x_axis_points  = CNV_TOTAL_LEDS,              \
             .y_axis_points  = 1,                           \
             .origin_offset  = 0,                           \
+            .total_leds     = CNV_TOTAL_LEDS,              \
             .queue_size     = 3,                           \
             .task_stack     = 3072,                        \
-            .task_core      = 0,                           \
             .task_prio      = 21,                          \
+            .task_core      = 0,                           \
 }
 
 #define   PIXEL_RENDERER_SPECTRUM_DISPLAY_CFG_DEFAULT() {  \
-            .total_leds     = 64,                          \
             .x_axis_points  = 8,                           \
             .y_axis_points  = 8,                           \
             .origin_offset  = 7,                           \
+            .total_leds     = 64,                          \
             .queue_size     = 3,                           \
             .task_stack     = 3072,                        \
-            .task_core      = 0,                           \
             .task_prio      = 21,                          \
+            .task_core      = 0,                           \
 }
 
 typedef struct pixel_renderer_handle pixel_renderer_handle_t;

@@ -93,21 +93,21 @@ typedef struct {
     }
 #endif
 
-#define DEFAULT_RECORDER_SR_CFG() {             \
-    .afe_cfg          = AFE_CONFIG_DEFAULT(),   \
-    .input_order      = INPUT_ORDER_DEFAULT(),  \
-    .multinet_init    = true,                   \
-    .feed_task_core   = FEED_TASK_PINNED_CORE,  \
-    .feed_task_prio   = FEED_TASK_PRIO,         \
-    .feed_task_stack  = FEED_TASK_STACK_SZ,     \
-    .fetch_task_core  = FETCH_TASK_PINNED_CORE, \
-    .fetch_task_prio  = FETCH_TASK_PRIO,        \
-    .fetch_task_stack = FETCH_TASK_STACK_SZ,    \
-    .rb_size          = SR_OUTPUT_RB_SIZE,      \
-    .partition_label  = "model",                \
-    .mn_language      = ESP_MN_CHINESE,         \
-    .wn_wakeword      = NULL,                   \
-};
+#define DEFAULT_RECORDER_SR_CFG() {                 \
+    .afe_cfg          = AFE_CONFIG_DEFAULT(),       \
+    .input_order      = INPUT_ORDER_DEFAULT(),      \
+    .multinet_init    = true,                       \
+    .feed_task_core   = FEED_TASK_PINNED_CORE,      \
+    .feed_task_prio   = FEED_TASK_PRIO,             \
+    .feed_task_stack  = FEED_TASK_STACK_SZ,         \
+    .fetch_task_core  = FETCH_TASK_PINNED_CORE,     \
+    .fetch_task_prio  = FETCH_TASK_PRIO,            \
+    .fetch_task_stack = FETCH_TASK_STACK_SZ,        \
+    .rb_size          = SR_OUTPUT_RB_SIZE,          \
+    .partition_label  = "model",                    \
+    .mn_language      = ESP_MN_CHINESE,             \
+    .wn_wakeword      = NULL,                       \
+}
 
 /**
  * @brief Initialize sr processor, and the sr is disabled as default.

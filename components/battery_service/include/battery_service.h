@@ -64,16 +64,15 @@ typedef struct {
     void *charger_monitor; /*!< Charger monitor. Not supported yet */
 } battery_service_config_t;
 
-#define BATTERY_SERVICE_DEFAULT_CONFIG() \
-    {                                    \
-        .task_stack = 3 * 1024,          \
-        .task_prio = 6,                  \
-        .task_core = 0,                  \
-        .evt_cb = NULL,                  \
-        .cb_ctx = NULL,                  \
-        .extern_stack = true,            \
-        .vol_monitor = NULL,             \
-    }
+#define BATTERY_SERVICE_DEFAULT_CONFIG() {  \
+    .task_stack   = 3 * 1024,               \
+    .task_prio    = 6,                      \
+    .task_core    = 0,                      \
+    .extern_stack = true,                   \
+    .evt_cb       = NULL,                   \
+    .cb_ctx       = NULL,                   \
+    .vol_monitor  = NULL,                   \
+}
 
 /**
   * @brief     Create the battery service instance
