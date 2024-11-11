@@ -40,6 +40,20 @@ config ESP32_P4_FUNCTION_EV_BOARD
 
 endchoice
 
+choice ESP_LYRAT_MINI_V1_1_ADC
+    prompt "ESP LYRAT MINI Board ADC chip"
+    depends on ESP_LYRAT_MINI_V1_1_BOARD
+    default ESP_LYRAT_MINI_V1_1_ADC_ES7243E
+    help
+        Select ADC chip to use on ESP_LYRAT_MINI_V1_1 board
+
+config ESP_LYRAT_MINI_V1_1_ADC_ES7243E
+    bool "ESP_LYRAT_MINI_V1_1_ADC_ES7243E"
+config ESP_LYRAT_MINI_V1_1_ADC_ES7243
+    bool "ESP_LYRAT_MINI_V1_1_ADC_ES7243"
+
+endchoice
+
 choice ESP32_KORVO_DU1906_DAC
     prompt "ESP32 KORVO DU1906 Board DAC chip"
     depends on ESP32_KORVO_DU1906_BOARD

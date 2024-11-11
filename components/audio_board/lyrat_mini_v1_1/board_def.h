@@ -26,29 +26,27 @@
 #define _AUDIO_BOARD_DEFINITION_H_
 
 /**
- * @brief SDCARD Function Definition
+ * @brief  SDCARD Function Definition
  */
 #define FUNC_SDCARD_EN            (1)
-#define SDCARD_OPEN_FILE_NUM_MAX  5
+#define SDCARD_OPEN_FILE_NUM_MAX  (5)
 #define SDCARD_INTR_GPIO          GPIO_NUM_34
 #define SDCARD_PWR_CTRL           GPIO_NUM_13
 
 #define ESP_SD_PIN_CLK            GPIO_NUM_14
 #define ESP_SD_PIN_CMD            GPIO_NUM_15
 #define ESP_SD_PIN_D0             GPIO_NUM_2
-#define ESP_SD_PIN_D3             -1
-
+#define ESP_SD_PIN_D3             (-1)
 
 /**
- * @brief LED Function Definition
+ * @brief  LED Function Definition
  */
 #define FUNC_SYS_LEN_EN           (1)
 #define BLUE_LED_GPIO             GPIO_NUM_27
 #define GREEN_LED_GPIO            GPIO_NUM_22
 
-
 /**
- * @brief Audio Codec Chip Function Definition
+ * @brief  Audio Codec Chip Function Definition
  */
 #define FUNC_AUDIO_CODEC_EN       (1)
 #define ES7243_MCLK_GPIO          GPIO_NUM_0
@@ -59,66 +57,71 @@
 #define CODEC_ADC_BITS_PER_SAMPLE ((i2s_data_bit_width_t)16) /* 16bit */
 #define CODEC_ADC_SAMPLE_RATE     (16000)
 #define RECORD_HARDWARE_AEC       (true)
-#define BOARD_PA_GAIN             (20) /* Power amplifier gain defined by board (dB) */
+#define BOARD_PA_GAIN             (20)  /* Power amplifier gain defined by board (dB) */
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
+#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_ADC_ES7243E
+extern audio_hal_func_t AUDIO_CODEC_ES7243E_DEFAULT_HANDLE;
+#elif CONFIG_ESP_LYRAT_MINI_V1_1_ADC_ES7243
 extern audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE;
-#define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
-        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
-        .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
-        .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
-        .i2s_iface = {                                  \
-            .mode = AUDIO_HAL_MODE_SLAVE,               \
-            .fmt = AUDIO_HAL_I2S_NORMAL,                \
-            .samples = AUDIO_HAL_48K_SAMPLES,           \
-            .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
-        },                                              \
+#endif  /* CONFIG_ESP_LYRAT_MINI_V1_1_ADC_ES7243E */
+
+#define AUDIO_CODEC_DEFAULT_CONFIG() {               \
+        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,     \
+        .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,      \
+        .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,     \
+        .i2s_iface  = {                              \
+            .mode    = AUDIO_HAL_MODE_SLAVE,         \
+            .fmt     = AUDIO_HAL_I2S_NORMAL,         \
+            .samples = AUDIO_HAL_48K_SAMPLES,        \
+            .bits    = AUDIO_HAL_BIT_LENGTH_16BITS,  \
+        },                                           \
 };
 
-
 /**
- * @brief Button Function Definition
+ * @brief  Button Function Definition
  */
 #define FUNC_BUTTON_EN            (1)
 #define ADC_DETECT_GPIO           GPIO_NUM_39
-#define INPUT_KEY_NUM             6
-#define BUTTON_VOLUP_ID           0
-#define BUTTON_VOLDOWN_ID         1
-#define BUTTON_SET_ID             2
-#define BUTTON_PLAY_ID            3
-#define BUTTON_MODE_ID            4
-#define BUTTON_REC_ID             5
-#define INPUT_KEY_DEFAULT_INFO() {                      \
-     {                                                  \
-        .type = PERIPH_ID_ADC_BTN,                      \
-        .user_id = INPUT_KEY_USER_ID_REC,               \
-        .act_id = BUTTON_REC_ID,                        \
-    },                                                  \
-    {                                                   \
-        .type = PERIPH_ID_ADC_BTN,                      \
-        .user_id = INPUT_KEY_USER_ID_MODE,              \
-        .act_id = BUTTON_MODE_ID,                       \
-    },                                                  \
-    {                                                   \
-        .type = PERIPH_ID_ADC_BTN,                      \
-        .user_id = INPUT_KEY_USER_ID_SET,               \
-        .act_id = BUTTON_SET_ID,                        \
-    },                                                  \
-    {                                                   \
-        .type = PERIPH_ID_ADC_BTN,                      \
-        .user_id = INPUT_KEY_USER_ID_PLAY,              \
-        .act_id = BUTTON_PLAY_ID,                       \
-    },                                                  \
-    {                                                   \
-        .type = PERIPH_ID_ADC_BTN,                      \
-        .user_id = INPUT_KEY_USER_ID_VOLUP,             \
-        .act_id = BUTTON_VOLUP_ID,                      \
-    },                                                  \
-    {                                                   \
-        .type = PERIPH_ID_ADC_BTN,                      \
-        .user_id = INPUT_KEY_USER_ID_VOLDOWN,           \
-        .act_id = BUTTON_VOLDOWN_ID,                    \
-    }                                                   \
+#define INPUT_KEY_NUM             (6)
+#define BUTTON_VOLUP_ID           (0)
+#define BUTTON_VOLDOWN_ID         (1)
+#define BUTTON_SET_ID             (2)
+#define BUTTON_PLAY_ID            (3)
+#define BUTTON_MODE_ID            (4)
+#define BUTTON_REC_ID             (5)
+
+#define INPUT_KEY_DEFAULT_INFO() {             \
+    {                                          \
+        .type    = PERIPH_ID_ADC_BTN,          \
+        .user_id = INPUT_KEY_USER_ID_REC,      \
+        .act_id  = BUTTON_REC_ID,              \
+    },                                         \
+    {                                          \
+        .type    = PERIPH_ID_ADC_BTN,          \
+        .user_id = INPUT_KEY_USER_ID_MODE,     \
+        .act_id  = BUTTON_MODE_ID,             \
+    },                                         \
+    {                                          \
+        .type    = PERIPH_ID_ADC_BTN,          \
+        .user_id = INPUT_KEY_USER_ID_SET,      \
+        .act_id  = BUTTON_SET_ID,              \
+    },                                         \
+    {                                          \
+        .type    = PERIPH_ID_ADC_BTN,          \
+        .user_id = INPUT_KEY_USER_ID_PLAY,     \
+        .act_id  = BUTTON_PLAY_ID,             \
+    },                                         \
+    {                                          \
+        .type    = PERIPH_ID_ADC_BTN,          \
+        .user_id = INPUT_KEY_USER_ID_VOLUP,    \
+        .act_id  = BUTTON_VOLUP_ID,            \
+    },                                         \
+    {                                          \
+        .type    = PERIPH_ID_ADC_BTN,          \
+        .user_id = INPUT_KEY_USER_ID_VOLDOWN,  \
+        .act_id  = BUTTON_VOLDOWN_ID,          \
+    }                                          \
 }
 
-#endif
+#endif  /* _AUDIO_BOARD_DEFINITION_H_ */
