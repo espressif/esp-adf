@@ -68,6 +68,19 @@ int gzip_miniz_read(gzip_miniz_handle_t zip, uint8_t *out, int out_size);
  */
 int gzip_miniz_deinit(gzip_miniz_handle_t zip);
 
+/**
+ * @brief         Zip data into gzip format
+ * @param         in: Data to be zipped
+ * @param         in_size: Data size to be zipped
+ * @param         in_size: Data size to be zipped
+ * @param         out: Store output gzip format data
+ * @param         out_size: Zipped data size
+ * @return        >= 0: On success
+ *                -1: Fail to init gzip deflate
+ *                -2: Fail to deflate           
+ */
+int gzip_miniz_zip(const uint8_t* in, size_t in_size, uint8_t *out, int out_size);
+
 #ifdef __cplusplus
 }
 #endif

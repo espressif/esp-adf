@@ -287,3 +287,41 @@ int gzip_miniz_deinit(gzip_miniz_handle_t h)
     free(zip);
     return 0;
 }
+
+int gzip_miniz_zip(const uint8_t *input, size_t input_size, uint8_t *out, int out_size)
+{
+    int pos = 0;
+    const uint8_t header[10] = {0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03};
+    memcpy(out, header, 10);
+    pos += 10;
+
+    mz_stream stream = {0};
+    if (mz_deflateInit2(&stream, MZ_BEST_COMPRESSION, MZ_DEFLATED, -MZ_DEFAULT_WINDOW_BITS, 1, MZ_DEFAULT_STRATEGY) != MZ_OK) {
+        ESP_LOGE(TAG, "Failed to init deflate");
+        return -1;
+    }
+
+    stream.next_in = (const unsigned char *)input;
+    stream.avail_in = input_size;
+    int ret;
+    do {
+        stream.next_out = out + pos;
+        stream.avail_out = out_size - pos;
+        ret = mz_deflate(&stream, MZ_FINISH);
+        if (ret != MZ_OK && ret != MZ_STREAM_END) {
+            ESP_LOGE(TAG, "Failed to deflate ret %d", ret);
+            mz_deflateEnd(&stream);
+            return -2;
+        }
+        pos += (out_size - pos) - stream.avail_out;
+    } while (ret != MZ_STREAM_END);
+    // Clean up compression stream
+    mz_deflateEnd(&stream);
+
+    uint32_t crc_value = mz_crc32(0, input, input_size);
+    memcpy(out + pos, &crc_value, 4);
+    pos += 4;
+    memcpy(out + pos, &input_size, 4);
+    pos += 4;
+    return pos;
+}
