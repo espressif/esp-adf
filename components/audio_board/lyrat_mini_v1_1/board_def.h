@@ -60,11 +60,8 @@
 #define BOARD_PA_GAIN             (20)  /* Power amplifier gain defined by board (dB) */
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
-#ifdef CONFIG_ESP_LYRAT_MINI_V1_1_ADC_ES7243E
 extern audio_hal_func_t AUDIO_CODEC_ES7243E_DEFAULT_HANDLE;
-#elif CONFIG_ESP_LYRAT_MINI_V1_1_ADC_ES7243
 extern audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE;
-#endif  /* CONFIG_ESP_LYRAT_MINI_V1_1_ADC_ES7243E */
 
 #define AUDIO_CODEC_DEFAULT_CONFIG() {               \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,     \

@@ -56,7 +56,7 @@
 
 build_micropython_adf:
   extends:
-    - .rules:build:non-regular-board-idf-ver-tag
+    - .rules:build:micropython-test
     - .build_micropython_cmake_template
     - .matrix_template
   variables:

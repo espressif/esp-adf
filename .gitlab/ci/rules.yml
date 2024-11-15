@@ -47,6 +47,9 @@
 .if-label-example: &if-label-example
   if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example(?:,[^,\n\r]+)*$/i'
 
+.if-label-micropython-test: &if-label-micropython-test
+  if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*micropython_test(?:,[^,\n\r]+)*$/i'
+
 .if-idf-version-tag-v5-0: &if-idf-version-tag-v5-0
   if: '($IDF_VERSION_TAG == "v5.0.4" || $IDF_VERSION_TAG == "v5.0")'
   variables:
@@ -93,6 +96,12 @@
 .rules:ref:master-schedule:
   rules:
     - <<: *if-ref-master
+    - <<: *if-schedule
+
+.rules:build:micropython-test:
+  rules:
+    - <<: *if-label-micropython-test
+    - <<: *if-protected
     - <<: *if-schedule
 
 .rules:ref:check-label:

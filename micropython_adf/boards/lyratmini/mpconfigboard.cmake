@@ -14,10 +14,12 @@ set(ADF_BOARD_DIR "$ENV{ADF_PATH}/components/audio_board/lyrat_mini_v1_1")
 
 set(ADF_BOARD_CODEC_SRC
             ${ADF_COMPS}/audio_hal/driver/es8311/es8311.c
-            ${ADF_COMPS}/audio_hal/driver/es7243/es7243.c)
+            ${ADF_COMPS}/audio_hal/driver/es7243/es7243.c
+            ${ADF_COMPS}/audio_hal/driver/es7243e/es7243e.c)
 set(ADF_BOARD_CODEC_INC
             ${ADF_COMPS}/audio_hal/driver/es8311
-            ${ADF_COMPS}/audio_hal/driver/es7243)
+            ${ADF_COMPS}/audio_hal/driver/es7243
+            ${ADF_COMPS}/audio_hal/driver/es7243e)
 set(ADF_BOARD_INIT_SRC
             $ENV{ADF_PATH}/components $ENV{ADF_PATH}/micropython_adf/boards/lyratmini/board_init.c)
 
