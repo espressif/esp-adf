@@ -257,5 +257,126 @@ static int mz_inflateEnd(mz_streamp pStream)
     return MZ_OK;
 }
 
+static int mz_deflateEnd(mz_streamp pStream)
+{
+    if (!pStream)
+        return MZ_STREAM_ERROR;
+    if (pStream->state)
+    {
+        free(pStream->state);
+        pStream->state = NULL;
+    }
+    return MZ_OK;
+}
+
+static int tdefl_create_comp_flags_from_zip_params(int level, int window_bits, int strategy)
+{
+    static const mz_uint s_tdefl_num_probes[11] = { 0, 1, 6, 32, 16, 32, 128, 256, 512, 768, 1500 };
+    mz_uint comp_flags = s_tdefl_num_probes[(level >= 0) ? MZ_MIN(10, level) : MZ_DEFAULT_LEVEL] | ((level <= 3) ? TDEFL_GREEDY_PARSING_FLAG : 0);
+    if (window_bits > 0)
+        comp_flags |= TDEFL_WRITE_ZLIB_HEADER;
+
+    if (!level)
+        comp_flags |= TDEFL_FORCE_ALL_RAW_BLOCKS;
+    else if (strategy == MZ_FILTERED)
+        comp_flags |= TDEFL_FILTER_MATCHES;
+    else if (strategy == MZ_HUFFMAN_ONLY)
+        comp_flags &= ~TDEFL_MAX_PROBES_MASK;
+    else if (strategy == MZ_FIXED)
+        comp_flags |= TDEFL_FORCE_ALL_STATIC_BLOCKS;
+    else if (strategy == MZ_RLE)
+        comp_flags |= TDEFL_RLE_MATCHES;
+
+    return comp_flags;
+}
+
+static int mz_deflateInit2(mz_streamp pStream, int level, int method, int window_bits, int mem_level, int strategy)
+{
+    tdefl_compressor *pComp;
+    mz_uint comp_flags = TDEFL_COMPUTE_ADLER32 | tdefl_create_comp_flags_from_zip_params(level, window_bits, strategy);
+
+    if (!pStream)
+        return MZ_STREAM_ERROR;
+    if ((method != MZ_DEFLATED) || ((mem_level < 1) || (mem_level > 9)) || ((window_bits != MZ_DEFAULT_WINDOW_BITS) && (-window_bits != MZ_DEFAULT_WINDOW_BITS)))
+        return MZ_PARAM_ERROR;
+
+    pStream->data_type = 0;
+    pStream->adler = MZ_ADLER32_INIT;
+    pStream->msg = NULL;
+    pStream->total_in = 0;
+    pStream->total_out = 0;
+    pComp = (tdefl_compressor *)calloc(1, sizeof(tdefl_compressor));
+    if (!pComp)
+        return MZ_MEM_ERROR;
+
+    pStream->state = (struct mz_internal_state *)pComp;
+
+    if (tdefl_init(pComp, NULL, NULL, comp_flags) != TDEFL_STATUS_OKAY)
+    {
+        mz_deflateEnd(pStream);
+        return MZ_PARAM_ERROR;
+    }
+
+    return MZ_OK;
+}
+
+static int mz_deflate(mz_streamp pStream, int flush)
+{
+    size_t in_bytes, out_bytes;
+    mz_ulong orig_total_in, orig_total_out;
+    int mz_status = MZ_OK;
+
+    if ((!pStream) || (!pStream->state) || (flush < 0) || (flush > MZ_FINISH) || (!pStream->next_out))
+        return MZ_STREAM_ERROR;
+    if (!pStream->avail_out)
+        return MZ_BUF_ERROR;
+
+    if (flush == MZ_PARTIAL_FLUSH)
+        flush = MZ_SYNC_FLUSH;
+
+    if (((tdefl_compressor *)pStream->state)->m_prev_return_status == TDEFL_STATUS_DONE)
+        return (flush == MZ_FINISH) ? MZ_STREAM_END : MZ_BUF_ERROR;
+
+    orig_total_in = pStream->total_in;
+    orig_total_out = pStream->total_out;
+    for (;;)
+    {
+        tdefl_status defl_status;
+        in_bytes = pStream->avail_in;
+        out_bytes = pStream->avail_out;
+
+        defl_status = tdefl_compress((tdefl_compressor *)pStream->state, pStream->next_in, &in_bytes, pStream->next_out, &out_bytes, (tdefl_flush)flush);
+        pStream->next_in += (mz_uint)in_bytes;
+        pStream->avail_in -= (mz_uint)in_bytes;
+        pStream->total_in += (mz_uint)in_bytes;
+        pStream->adler = tdefl_get_adler32((tdefl_compressor *)pStream->state);
+
+        pStream->next_out += (mz_uint)out_bytes;
+        pStream->avail_out -= (mz_uint)out_bytes;
+        pStream->total_out += (mz_uint)out_bytes;
+
+        if (defl_status < 0)
+        {
+            mz_status = MZ_STREAM_ERROR;
+            break;
+        }
+        else if (defl_status == TDEFL_STATUS_DONE)
+        {
+            mz_status = MZ_STREAM_END;
+            break;
+        }
+        else if (!pStream->avail_out)
+            break;
+        else if ((!pStream->avail_in) && (flush != MZ_FINISH))
+        {
+            if ((flush) || (pStream->total_in != orig_total_in) || (pStream->total_out != orig_total_out))
+                break;
+            return MZ_BUF_ERROR; /* Can't make forward progress without some input.
+                                    */
+        }
+    }
+    return mz_status;
+}
+
 #endif
 #endif
