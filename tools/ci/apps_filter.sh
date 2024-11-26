@@ -73,7 +73,7 @@ for num in $(seq 0 $len); do
                 idf_vers=$(echo $board | tr ',' ' ')
                 idf_version_control ${idf_vers[@]}
             else
-                echo "skip"
+                echo -e "\e[31m ERROR: \"$audio_hal\" not found in the \"$audio_board_idf_json_path\" JSON file \e[0m"
             fi
         else
             echo "skip"
