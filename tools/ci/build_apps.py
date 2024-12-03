@@ -106,10 +106,7 @@ def main(args):  # type: (argparse.Namespace) -> None
         apps_to_build = apps[:]
 
     print(f'Found {len(apps_to_build)} apps after filtering')
-    print(
-        'Suggest setting the parallel count to %d for this build job',
-        len(apps_to_build) // APPS_BUILD_PER_JOB + 1,
-    )
+    print(f'Suggest setting the parallel count to {len(apps_to_build) // APPS_BUILD_PER_JOB + 1} for this build job')
 
     ret_code = build_apps(
         apps_to_build,

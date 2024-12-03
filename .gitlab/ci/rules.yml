@@ -102,7 +102,7 @@
   rules:
     - <<: *if-label-micropython-test
     - <<: *if-protected
-    - <<: *if-schedule
+    - <<: *if-merge_request_event
 
 .rules:ref:check-label:
   rules:
@@ -117,17 +117,6 @@
     - <<: *if-dev-push
       when: never
     - <<: *if-schedule
-      when: never
-    - <<: *if-idf-version-tag-v5-0
-    - <<: *if-idf-version-tag-v5-1
-    - <<: *if-idf-version-tag-v5-2
-    - <<: *if-idf-version-tag-v5-3
-
-.rules:build:non-regular-board-idf-ver-tag:
-  rules:
-    - <<: *if-dev-push
-      when: never
-    - <<: *if-merge_request_event
       when: never
     - <<: *if-idf-version-tag-v5-0
     - <<: *if-idf-version-tag-v5-1

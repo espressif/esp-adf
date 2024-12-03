@@ -92,7 +92,7 @@
       - IDF_VERSION_TAG: ['v5.1', 'v5.2', 'v5.3']
         parallel: [1/2, 2/2]
 
-build_examples_cmake_esp32_lyrat_v4_3:
+.build_examples_esp32_lyrat_v4_3:
   extends:
     - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
@@ -101,16 +101,16 @@ build_examples_cmake_esp32_lyrat_v4_3:
     IDF_TARGET: esp32
     AUDIO_BOARD: ESP_LYRAT_V4_3
 
-build_examples_cmake_esp32_lyrat_mini_v1_1:
+build_examples_esp32_lyrat_mini_v1_1:
   extends:
-    - .rules:build:non-regular-board-idf-ver-tag
+    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
     - .matrix_template_esp32_esp32s3_esp32s2
   variables:
     IDF_TARGET: esp32
     AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
 
-build_examples_cmake_esp32s2_kaluga_v1_2:
+build_examples_esp32s2_kaluga_v1_2:
   extends:
     - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
@@ -119,7 +119,7 @@ build_examples_cmake_esp32s2_kaluga_v1_2:
     IDF_TARGET: esp32s2
     AUDIO_BOARD: ESP32_S2_KALUGA_1_V1_2
 
-build_examples_cmake_esp32s3_korvo_v2:
+build_examples_esp32s3_korvo_v2:
   extends:
     - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
@@ -128,7 +128,7 @@ build_examples_cmake_esp32s3_korvo_v2:
     IDF_TARGET: esp32s3
     AUDIO_BOARD: ESP32_S3_KORVO2_V3
 
-build_examples_cmake_esp32c3_lyra_v2:
+build_examples_esp32c3_lyra_v2:
   extends:
     - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
@@ -137,7 +137,7 @@ build_examples_cmake_esp32c3_lyra_v2:
     IDF_TARGET: esp32c3
     AUDIO_BOARD: ESP32_C3_LYRA_V2
 
-build_examples_cmake_esp32c6_devkit:
+build_examples_esp32c6_devkit:
   extends:
     - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template_c6
