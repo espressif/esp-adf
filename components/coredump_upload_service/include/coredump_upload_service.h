@@ -42,7 +42,7 @@ typedef struct {
     int task_core;            /*!< Service task running in core (0 or 1) */
     periph_service_cb evt_cb; /*!< Service callback function */
     void *cb_ctx;             /*!< Callback context */
-    bool (*do_post)(char *url, uint8_t *data, size_t len); /*!< POST interface, users can override this to customize the http client.
+    bool (*do_post)(char *url, uint32_t *data, size_t len); /*!< POST interface, users can override this to customize the http client.
                                                                 if left NULL, the service will use the default one */
 } coredump_upload_service_config_t;
 

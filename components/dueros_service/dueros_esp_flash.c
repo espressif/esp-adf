@@ -80,7 +80,7 @@ duer_flash_string_context_t *duer_flash_string_init(duer_flash_module module)
     rt->ctx.len = ((esp_partition_t *)(rt->ctx.handle))->size;
 
     if (!rt->ele_list) {
-        rt->ele_list = (uint32_t *)audio_malloc(sizeof(uint32_t) * rt->max_ele_count);
+        rt->ele_list = (unsigned int *)audio_malloc(sizeof(unsigned int *) * rt->max_ele_count);
         for (i = 0; i < rt->max_ele_count; ++i) {
             rt->ele_list[i] = FLASH_INVALID_ADDR;
         }

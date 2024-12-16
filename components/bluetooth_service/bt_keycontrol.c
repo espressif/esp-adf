@@ -103,7 +103,7 @@ esp_err_t bt_key_act_sm_init(void)
     key_cb.state = KEY_ACT_STATE_IDLE;
     key_cb.key_code = 0;
     key_cb.key_tmr = xTimerCreate("key_tmr", portMAX_DELAY,
-                                  pdFALSE, (void *)tmr_id, key_act_time_out);
+                                  pdFALSE, (void *)tmr_id, (TimerCallbackFunction_t)key_act_time_out);
     if (key_cb.key_tmr == NULL) {
         ESP_LOGW(BTKEYCTRL_TAG, "%s timer creation failure", __func__);
         return false;
