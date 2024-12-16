@@ -235,14 +235,12 @@ static inline esp_err_t i2s_stream_check_data_bits(i2s_stream_t *i2s, int *bits)
 {
     if (i2s->config.transmit_mode == I2S_COMM_MODE_STD) {
 #if (defined (CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2))
-        i2s->config.expand_src_bits = *bits;
         if (*bits == I2S_DATA_BIT_WIDTH_24BIT) {
             i2s->config.need_expand = true;
             *bits = I2S_DATA_BIT_WIDTH_32BIT;
             i2s->config.std_cfg.slot_cfg.data_bit_width = I2S_DATA_BIT_WIDTH_32BIT;
             i2s->config.std_cfg.slot_cfg.ws_width = I2S_DATA_BIT_WIDTH_32BIT;
         } else {
-            i2s->config.need_expand = false;
             i2s->config.std_cfg.slot_cfg.data_bit_width = *bits;
             i2s->config.std_cfg.slot_cfg.ws_width = *bits;
         }
