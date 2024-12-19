@@ -50,7 +50,11 @@ The block diagram below presents main components of the ESP32-LyraT and intercon
 Components
 ^^^^^^^^^^
 
-The following list and figure describe key components, interfaces and controls of the ESP32-LyraT used in this guide. This covers just what is needed now. For detailed technical documentation of this board, please refer to :doc:`board-esp32-lyrat-v4.3` and `ESP32 LyraT V4.3 schematic`_ (PDF).
+The following list and figure describe key components, interfaces and controls of the ESP32-LyraT used in this guide. This covers just what is needed now. 
+
+.. note::
+
+    For detailed technical documentation of this board, please refer to :doc:`board-esp32-lyrat-v4.3` and `ESP32 LyraT V4.3 schematic`_ (PDF).
 
 
 ESP32-WROVER-E Module
