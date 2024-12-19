@@ -349,7 +349,7 @@ int esp_codec_dev_set_out_mute(esp_codec_dev_handle_t handle, bool mute)
     }
     // When codec not support mute set volume instead
     if (dev->sw_vol) {
-        float db_value = mute ? -100.0 : dev->volume;
+        float db_value = mute ? -100.0 : _get_vol_db(&dev->vol_curve, dev->volume);
         dev->sw_vol->set_vol(dev->sw_vol, db_value);
     }
     return ESP_CODEC_DEV_NOT_SUPPORT;

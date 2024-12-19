@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3.3
+
+### Bug Fixes
+
+- Fix codec without mute API, set mute wrong behavior
+
+
 ## v1.3.2
 
 ### Bug Fixes
