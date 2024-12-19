@@ -21,6 +21,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+#include <string.h>
 
 #include "duer_profile.h"
 #include "audio_error.h"
@@ -30,7 +31,7 @@
 #include "esp_log.h"
 #include "nvs.h"
 
-#define DUER_USER_AGENT_VER ("app/3.0.0.1 DcsSdk/3.0")
+#define DUER_USER_AGENT_VER ("app/3.0.0.1 DcsSdk/3.3 didp/1 version/1")
 
 static char *TAG = "DUER_PROFILE";
 
@@ -145,6 +146,26 @@ int32_t duer_profile_certified()
         ret = 0;
     } else {
         ret = 3;
+    }
+    baidu_json_Delete(root);
+    duer_profile_release(profile);
+    return ret;
+}
+
+int32_t duer_profile_get_uuid(char *buf, size_t blen)
+{
+    const char *profile = duer_profile_load();
+    AUDIO_NULL_CHECK(TAG, profile, return 1);
+
+    baidu_json *root = baidu_json_Parse(profile);
+    AUDIO_NULL_CHECK(TAG, root, return 2);
+
+    int32_t ret = 3;
+    baidu_json *uuid = baidu_json_GetObjectItem(root, "uuid");
+    if (uuid) {
+        ret = 0;
+        snprintf(buf, blen, "%s", uuid->valuestring);
+        ESP_LOGI(TAG, "got uuid form profile: %s", buf);
     }
     baidu_json_Delete(root);
     duer_profile_release(profile);

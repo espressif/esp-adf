@@ -143,6 +143,26 @@ void duer_dcs_stop_listen_handler(void);
 
 /**
  * DESC:
+ * Developer needs to implement this interface to set voice id.
+ *
+ * PARAM[in] voice_id: the id of voice
+ *
+ * @RETURN: none.
+ */
+void duer_dcs_set_voice_handler(int voice_id);
+
+/**
+ * DESC:
+ * Developer needs to implement this interface to get voice id.
+ *
+ * PARAM: none
+ *
+ * @RETURN: voice id.
+ */
+int duer_dcs_get_voice_id(void);
+
+/**
+ * DESC:
  * Initialize dcs voice output interface
  *
  * PARAM: none

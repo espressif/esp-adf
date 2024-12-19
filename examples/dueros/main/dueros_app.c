@@ -305,7 +305,6 @@ static esp_err_t wifi_cfg_start()
     duer_wifi_cfg_t duer_wifi = {
         .user_cb = duer_wifi_cfg_user_cb,
         .client_id = CONFIG_DUER_CLIENT_ID,
-        .device_id = CONFIG_DUER_DEVICE_ID,
         .pub_key = CONFIG_DUER_ECC_PUB_KEY,
     };
     return dueros_start_wifi_cfg(duer_serv_handle, &duer_wifi);

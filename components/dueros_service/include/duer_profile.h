@@ -68,6 +68,17 @@ esp_err_t duer_profile_update(const char *bduss, const char *client_id);
  */
 int32_t duer_profile_certified();
 
+/**
+ * @brief Get the 'uuid' of the profile
+ *
+ * @return
+ *     - (0), OK
+ *     - (1), Profile load failed
+ *     - (2), Profile parse failed
+ *     - (3), Profile has no 'uuid'
+ */
+int32_t duer_profile_get_uuid(char *buf, size_t blen);
+
 #ifdef __cplusplus
 }
 #endif

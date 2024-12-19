@@ -166,6 +166,7 @@ extern const char *DCS_RENDER_AUDIO_LIST;
 extern const char *DCS_RENDER_ALBUM_LIST;
 extern const char *DCS_SET_ACTIVE_DIALOG;
 extern const char *DCS_REQUIRE_PUSH_ACK;
+extern const char *DCS_SET_VOICE_NAME;
 
 // internal directive.
 extern const char *DCS_DIALOGUE_FINISHED_NAME;
@@ -191,6 +192,7 @@ extern const char *DCS_SPEECH_STATE_NAME;
 extern const char *DCS_LINK_CLICKED_NAME;
 extern const char *DCS_RECOMMEND_NAME;
 extern const char *DCS_PUSH_ACK_NAME;
+extern const char *DCS_VOICE_CHANGED_NAME;
 
 // internal exception type
 extern const char *DCS_UNEXPECTED_INFORMATION_RECEIVED_TYPE;
