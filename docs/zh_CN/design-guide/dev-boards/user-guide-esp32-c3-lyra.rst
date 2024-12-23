@@ -290,7 +290,7 @@ ESP32-C3-Lyra 的开发框架是 `ESP-ADF <https://github.com/espressif/esp-adf>
 GPIO 分配列表
 ---------------
 
-`表 <../../../_static/esp32-c3-lyra-gpio-allocation.pdf>`_ 为 ESP32-C3-WROOM-02 模组管脚的 GPIO 分配列表，用于控制开发板的特定组件或功能。
+`表 <../../_static/esp32-c3-lyra-gpio-allocation.pdf>`_ 为 ESP32-C3-WROOM-02 模组管脚的 GPIO 分配列表，用于控制开发板的特定组件或功能。
 
 供电说明
 ------------------
