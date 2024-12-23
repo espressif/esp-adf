@@ -50,7 +50,11 @@ ESP32-LyraT V4.3 是一款基于 `乐鑫 <https://espressif.com>`_ ESP32 的开�
 组件
 ^^^^^^
 
-以下列表和图片仅涉及 ESP32-LyraT 的主要组件、接口和控制方式，仅展示目前所需的信息。欲访问详细的技术文档，请前往 :doc:`board-esp32-lyrat-v4.3` 和 `ESP32 LyraT V4.3 schematic`_ (PDF)。
+以下列表和图片仅涉及 ESP32-LyraT 的主要组件、接口和控制方式，仅展示目前所需的信息。
+
+.. note::
+
+    欲访问详细的技术文档，请前往 :doc:`board-esp32-lyrat-v4.3` 和 `ESP32 LyraT V4.3 schematic`_ (PDF)。
 
 
 ESP32-WROVER-E 模组
@@ -58,7 +62,7 @@ ESP32-WROVER-E 模组
 耳机输出
     输出插槽可连接 3.5 mm 立体声耳机。
 
-    .. 注意::
+    .. note::
 
         该插槽可接入移动电话耳机，只与 OMPT 标准耳机兼容，与 CTIA 耳机不兼容。更多耳机标准信息请访问维基百科 `Phone connector (audio) <https://en.wikipedia.org/wiki/Phone_connector_(audio)#TRRS_standards>`_ 词条。
 
@@ -121,6 +125,7 @@ ESP32-LyraT 上电之前，请首先确认开发板完好无损。
 * **Start a Project** 为开发板提供音频应用程序示例；
 * **Connect Your Device** 准备加载应用程序；
 * **Build the Project** 运行应用程序，播放音乐。
+
 
 与 LyraT V4.2 相比的主要变化
 ----------------------------
