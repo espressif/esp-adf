@@ -99,7 +99,7 @@ esp_err_t _setup_lcd(esp_periph_handle_t self)
 {
     periph_lcd_t *periph_lcd = esp_periph_get_data(self);
     // Attach the LCD to the specific bus
-    ESP_ERROR_CHECK(periph_lcd->new_panel_io((esp_lcd_spi_bus_handle_t)periph_lcd->io_bus,
+    ESP_ERROR_CHECK(periph_lcd->new_panel_io(periph_lcd->io_bus,
                     &periph_lcd->lcd_io_cfg, &periph_lcd->lcd_io_handle));
     // Initialize the LCD configuration
     ESP_ERROR_CHECK(periph_lcd->new_lcd_panel(periph_lcd->lcd_io_handle, &periph_lcd->lcd_dev_cfg, &periph_lcd->lcd_panel_handle));

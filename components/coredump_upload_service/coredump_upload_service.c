@@ -51,7 +51,7 @@
 typedef struct {
     xQueueHandle cmd_q;
     EventGroupHandle_t sync_evt;
-    bool (*do_post)(char *url, uint8_t *data, size_t len);
+    bool (*do_post)(char *url, uint32_t *data, size_t len);
 } coredump_upload_t;
 
 typedef struct {
@@ -68,7 +68,7 @@ typedef struct {
 
 static char *TAG = "COREDUMP_UPLOAD";
 
-static bool coredump_read(uint8_t **des, size_t *len)
+static bool coredump_read(uint32_t **des, size_t *len)
 {
     size_t addr = 0;
 
@@ -92,7 +92,7 @@ static bool coredump_read(uint8_t **des, size_t *len)
     return true;
 }
 
-static bool coredump_do_http_post(char *url, uint8_t *data, size_t len)
+static bool coredump_do_http_post(char *url, uint32_t *data, size_t len)
 {
     esp_http_client_config_t config = {
         .url = url,
@@ -115,7 +115,7 @@ static bool coredump_do_http_post(char *url, uint8_t *data, size_t len)
 
 static bool coredump_upload_partition(coredump_upload_t *uploader, char *url)
 {
-    uint8_t *buf = NULL;
+    uint32_t *buf = NULL;
     size_t len = 0;
     bool ret = false;
     if (coredump_read(&buf, &len) == true) {

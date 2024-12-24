@@ -224,7 +224,7 @@ static void * fs_dir_open (lv_fs_drv_t * drv, const char *path)
     d = opendir(path);
 
     if (NULL == d) {
-        return LV_FS_RES_UNKNOWN;
+        return NULL;
     }
 
     return d;
