@@ -290,7 +290,7 @@ This section provides more detailed information about the board's hardware.
 GPIO Allocation
 ---------------
 
-The `table <../../../_static/esp32-c3-lyra-gpio-allocation.pdf>`_ provides the allocation of GPIOs exposed on terminals of the ESP32-C3-WROOM-02 module to control specific components or functions of the board.
+The `table <../../_static/esp32-c3-lyra-gpio-allocation.pdf>`_ provides the allocation of GPIOs exposed on terminals of the ESP32-C3-WROOM-02 module to control specific components or functions of the board.
 
 Power Distribution
 ------------------
