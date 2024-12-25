@@ -6,7 +6,7 @@ ESP32-S3-Korvo-2 V3.0
 
 本指南将帮助您快速上手 ESP32-S3-Korvo-2 V3.0，并提供该款开发板的详细信息。
 
-ESP32-S3-Korvo-2 是一款基于 ESP32-S3 芯片的多媒体开发板，搭载双麦克风阵列，支持语音识别和近/远场语音唤醒。同时它还搭载 LCD、摄像头、microSD 卡等外设，可支持基于 JPEG 的视频流处理，满足用户对低成本、低功耗、联网的音视频产品开发需求。
+ESP32-S3-Korvo-2 V3.0 是一款基于 ESP32-S3 芯片的多媒体开发板，搭载双麦克风阵列，支持语音识别和近/远场语音唤醒。同时它还搭载 LCD、摄像头、microSD 卡等外设，可支持基于 JPEG 的视频流处理，满足用户对低成本、低功耗、联网的音视频产品开发需求。
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-overview.png
     :align: center
@@ -15,13 +15,8 @@ ESP32-S3-Korvo-2 是一款基于 ESP32-S3 芯片的多媒体开发板，搭载�
     
     ESP32-S3-Korvo-2 V3.0（板载 ESP32-S3-WROOM-1 模组）
 
-ESP32-S3-Korvo-2 开发板主要由以下几个部分组成：
 
-- 主板：ESP32-S3-Korvo-2
-- LCD 扩展板：:doc:`ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>`
-- 摄像头
-
-本文档主要介绍 ESP32-S3-Korvo-2 主板，有关其他部分的信息请点击相应的链接。
+ESP32-S3-Korvo-2 V3.0 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>` 搭配使用。本文档主要介绍 ESP32-S3-Korvo-2 V3.0 主板，更多关于 LCD 扩展版的信息请点击相应的链接。
 
 本指南包括如下内容：
 
@@ -242,12 +237,12 @@ ESP32-S3-Korvo-2 V3.0 可为音频组件和 ESP 模组提供相互独立的电�
     ESP32-S3-Korvo-2 V3.0 - 音频供电
 
 
-GPIO 分配列表
------------------------
+管脚分配列表
+------------
 
-下表为 ESP32-S3-WROOM-1 模组管脚的 GPIO 分配列表，用于控制开发板的特定组件或功能。
+下表为 ESP32-S3-WROOM-1 模组的管脚分配列表，用于控制开发板的特定组件或功能。
 
-.. list-table:: ESP32-S3-WROOM-1 GPIO 分配
+.. list-table:: ESP32-S3-WROOM-1 管脚分配
    :header-rows: 1
    :widths: 10 10 10 10 10 10 10 10 10 10
 
@@ -644,7 +639,7 @@ GPIO 分配列表
 
 .. [#one] 管脚 - ESP32-S3-WROOM-1 模组管脚号，不含 GND 和供电管脚。
 
-分配给 IO 扩展器的 GPIO 被近一步分配为多个 GPIO。
+分配给 IO 扩展器的 GPIO 被进一步分配为多个 GPIO。
 
 .. list-table:: IO 扩展器 GPIO 分配
    :header-rows: 1
@@ -845,7 +840,7 @@ No.  I2C 管脚     ESP32-S3 管脚
 ========
 
 - `ESP32-S3 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_cn.pdf>`_ (PDF)
-- `ESP32-S3-WROOM-1/1U 技术规格书 <https://www.espressif.com/en/sites/default/files/documentation/esp32-s3-wroom-1_datasheet_cn.pdf>`_ (PDF)
+- `ESP32-S3-WROOM-1/1U 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_cn.pdf>`_ (PDF)
 - `ESP32-S3-Korvo-2 V3.0 原理图`_ (PDF)
 - `ESP32-S3-Korvo-2 V3.0 PCB 布局图 <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-KORVO-2_V3.0_20210918.pdf>`_ (PDF)
 

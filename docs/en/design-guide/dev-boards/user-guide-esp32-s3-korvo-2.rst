@@ -6,7 +6,7 @@ ESP32-S3-Korvo-2 V3.0
 
 This user guide will help you get started with ESP32-S3-Korvo-2 V3.0 and will also provide more in-depth information.
 
-The ESP32-S3-Korvo-2 is a multimedia development board based on the ESP32-S3 chip. It is equipped with a two-microphone array which is suitable for voice recognition and near/far-field voice wake-up applications. The board integrates multiple peripherals such as LCD, camera, and microSD card. It also supports JPEG video stream processing. With all of its outstanding features, the board is an ideal choice for the development of low-cost and low-power network-connected audio and video products.
+The ESP32-S3-Korvo-2 V3.0 is a multimedia development board based on the ESP32-S3 chip. It is equipped with a two-microphone array which is suitable for voice recognition and near/far-field voice wake-up applications. The board integrates multiple peripherals such as LCD, camera, and microSD card. It also supports JPEG video stream processing. With all of its outstanding features, the board is an ideal choice for the development of low-cost and low-power network-connected audio and video products.
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-overview.png
     :align: center
@@ -15,13 +15,8 @@ The ESP32-S3-Korvo-2 is a multimedia development board based on the ESP32-S3 chi
 
     ESP32-S3-Korvo-2 V3.0 with ESP32-S3-WROOM-1 module
 
-This board mainly consists of the following parts:
 
-- Main board: ESP32-S3-Korvo-2
-- LCD extension board: :doc:`ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>`
-- Camera
-
-This document is mostly dedicated to the main board. For detailed information on other parts, click the links above.
+The main board ESP32-S3-Korvo-2 V3.0 can be used with the LCD extension board :doc:`ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>`. This document is mostly dedicated to the main board ESP32-S3-Korvo-2 V3.0. For detailed information about the LCD extension board, please click the corresponding link.
 
 The document consists of the following sections:
 
@@ -242,12 +237,12 @@ ESP32-S3-Korvo-2 V3.0 features independent power supplies to the audio component
     ESP32-S3-Korvo-2 V3.0 - Audio Power Supply
 
 
-GPIO Allocation Summary
------------------------
+Pin Allocation Summary
+------------------------
 
-The table below provides allocation of GPIOs exposed on terminals of ESP32-S3-WROOM-1 module to control specific components or functions of the board.
+The table below provides allocation of pins exposed on terminals of ESP32-S3-WROOM-1 module to control specific components or functions of the board.
 
-.. list-table:: ESP32-S3-WROOM-1 GPIO Allocation
+.. list-table:: ESP32-S3-WROOM-1 Pin Allocation
    :header-rows: 1
    :widths: 10 10 10 10 10 10 10 10 10 10
 
@@ -826,6 +821,7 @@ No.  UART Pin
 
 I2C Test Point/J18
 ^^^^^^^^^^^^^^^^^^
+
 ===  ==========  ============
 No.  I2C Pin     ESP32-S3 Pin
 ===  ==========  ============
