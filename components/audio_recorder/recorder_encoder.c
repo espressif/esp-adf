@@ -58,6 +58,7 @@ static esp_err_t recorder_encoder_enable(void *handle, bool enable)
     } else {
         rb_done_write(recorder_encoder->out_rb);
         audio_pipeline_stop(recorder_encoder->pipeline);
+        audio_pipeline_wait_for_stop(recorder_encoder->pipeline);
         audio_pipeline_reset_elements(recorder_encoder->pipeline);
         audio_pipeline_reset_items_state(recorder_encoder->pipeline);
     }

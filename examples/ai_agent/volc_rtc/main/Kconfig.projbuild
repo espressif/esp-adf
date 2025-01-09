@@ -1,0 +1,30 @@
+menu "Example Configuration"
+
+choice AUDIO_DECODER_SUPPORT
+    prompt "Audio Decoder"
+    default AUDIO_SUPPORT_OPUS_DECODER
+
+config AUDIO_SUPPORT_G711A_DECODER
+    bool "AUDIUO-G711-DECODER"
+
+config AUDIO_SUPPORT_OPUS_DECODER
+    bool "AUDIO-OPUS-DECODER"
+
+config AUDIO_SUPPORT_AAC_DECODER
+    bool "AUDIO-AAC-DECODER"
+
+endchoice
+
+choice AUDIO_CONVERSATION_MODE_SUPPORT
+    prompt "Conversion Mode"
+    default CONTINUOUS_CONVERSATION_MODE
+
+config LANGUAGE_WAKEUP_MODE
+    bool "LANGUAGE-WAKEUP-MODE"
+
+config CONTINUOUS_CONVERSATION_MODE
+    bool "CONTINUOUS-CONVERSATION-MODE"
+
+endchoice
+
+endmenu
