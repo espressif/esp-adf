@@ -305,6 +305,11 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
     esp_err_t ret = ESP_OK;
     i2c_init(); // ESP32 in master mode
 
+    /* Enhance ES8311 I2C noise immunity */
+    ret |= es8311_write_reg(ES8311_GPIO_REG44, 0x08);
+    /* Due to occasional failures during the first I2C write with the ES8311 chip, a second write is performed to ensure reliability */
+    ret |= es8311_write_reg(ES8311_GPIO_REG44, 0x08);
+
     ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG01, 0x30);
     ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG02, 0x00);
     ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG03, 0x10);
@@ -667,7 +672,7 @@ esp_err_t es8311_start(es_module_t mode)
     ret |= es8311_write_reg(ES8311_GP_REG45, 0x00);
 
     /* set internal reference signal (ADCL + DACR) */
-    ret |= es8311_write_reg(ES8311_GPIO_REG44, 0x50);
+    ret |= es8311_write_reg(ES8311_GPIO_REG44, 0x58);
 
     return ret;
 }

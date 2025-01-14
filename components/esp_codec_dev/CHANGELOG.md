@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3.4
+
+### Bug Fixes
+
+- Enhance ES8311 I2C noise immunity
+
+
 ## v1.3.3
 
 ### Bug Fixes

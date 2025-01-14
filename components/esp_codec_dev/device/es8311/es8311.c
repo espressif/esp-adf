@@ -491,6 +491,12 @@ static int es8311_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     }
     int regv;
     int ret = ESP_CODEC_DEV_OK;
+
+    /* Enhance ES8311 I2C noise immunity */
+    ret |= es8311_write_reg(codec, ES8311_GPIO_REG44, 0x08);
+    /* Due to occasional failures during the first I2C write with the ES8311 chip, a second write is performed to ensure reliability */
+    ret |= es8311_write_reg(codec, ES8311_GPIO_REG44, 0x08);
+
     ret |= es8311_write_reg(codec, ES8311_CLK_MANAGER_REG01, 0x30);
     ret |= es8311_write_reg(codec, ES8311_CLK_MANAGER_REG02, 0x00);
     ret |= es8311_write_reg(codec, ES8311_CLK_MANAGER_REG03, 0x10);
@@ -541,9 +547,9 @@ static int es8311_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     ret |= es8311_write_reg(codec, ES8311_ADC_REG1C, 0x6A);
     if (codec_cfg->no_dac_ref == false) {
         /* set internal reference signal (ADCL + DACR) */
-        ret |= es8311_write_reg(codec, ES8311_GPIO_REG44, 0x50);
+        ret |= es8311_write_reg(codec, ES8311_GPIO_REG44, 0x58);
     } else {
-        ret |= es8311_write_reg(codec, ES8311_GPIO_REG44, 0);
+        ret |= es8311_write_reg(codec, ES8311_GPIO_REG44, 0x08);
     }
     if (ret != 0) {
         return ESP_CODEC_DEV_WRITE_FAIL;
