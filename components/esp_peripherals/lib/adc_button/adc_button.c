@@ -57,7 +57,8 @@
 #define USER_KEY_MAX                    7
 #endif
 
-static char *TAG = "ADC_BTN";
+static const char *TAG = "ADC_BTN";
+
 static EventGroupHandle_t g_event_bit;
 
 typedef struct {

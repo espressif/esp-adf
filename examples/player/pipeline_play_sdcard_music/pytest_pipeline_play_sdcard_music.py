@@ -31,6 +31,7 @@ def test_audio_similarity_compare(dut: Dut)-> None:
     recorder.request_audio_similarity(url)
 
 @pytest.mark.esp32s3
+@pytest.mark.esp32p4
 @pytest.mark.ADF_EXAMPLE_GENERIC
 def test_str_detect(dut: Dut)-> None:
     dut.expect(r'Receive music info from', timeout=20)

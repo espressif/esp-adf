@@ -26,8 +26,12 @@ IGNORE_WARNINGS = [
 ]
 
 def compare_versions(v1, v2):
-    v1_parts = v1[1:].split('.')
-    v2_parts = v2[1:].split('.')
+    if v1.startswith("v"):
+        v1 = v1[1:]
+    if v2.startswith("v"):
+        v2 = v2[1:]
+    v1_parts = v1.split('.')
+    v2_parts = v2.split('.')
 
     if int(v1_parts[0]) > int(v2_parts[0]):
         return True
@@ -52,7 +56,7 @@ def _get_idf_version():
             m = regex.match(line)
             if m:
                 ver[m.group(1)] = m.group(2)
-    return '{}.{}'.format(int(ver['MAJOR']), int(ver['MINOR']))
+    return 'v{}.{}'.format(int(ver['MAJOR']), int(ver['MINOR']))
 
 def get_cmake_apps(
     paths,
@@ -84,7 +88,7 @@ def get_cmake_apps(
         return apps
     else:
         apps = find_apps(
-            paths,
+            paths=[str(p) for p in paths],
             recursive=True,
             target=target,
             build_dir=f'{idf_ver}/build_@t_@w',

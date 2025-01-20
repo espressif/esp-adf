@@ -16,9 +16,13 @@ else
     echo "The yq tool has been installed"
 fi
 
-cat apps.txt | grep -o 'examples/.*' > check_apps_json_and_sdk.txt
+if [ -f "apps.txt" ]; then
+    cat apps.txt | grep -o 'examples/.*' > check_apps_json_and_sdk.txt
+    APPS_CHECK_RESULT="OK"
+else
+    APPS_CHECK_RESULT="FAIL"
+fi
 BOARD_NAME=(`cat $ADF_PATH/tools/ci/audio_board_idf.json | grep -E "ESP+[0-9a-zA-Z_]+" -o | sort -u -r`)
-APPS_CHECK_RESULT="OK"
 
 function check_sdkcfg() {
     CHIP_TYPES=(`echo $audio_boards | grep -E "esp+[0-9a-z]+" -o | sort -u`)

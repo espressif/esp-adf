@@ -29,13 +29,6 @@ CONFIG_AFE_MIC_NUM=1
 # end of Audio Recorder
 
 #
-# ESP Speech Recognition
-#
-CONFIG_USE_WAKENET=y
-CONFIG_SR_WN_WN5_HILEXIN=y
-# CONFIG_USE_MULTINET is not set
-
-#
 # ESP32-specific
 #
 CONFIG_ESP32_ECO3_CACHE_LOCK_FIX=y

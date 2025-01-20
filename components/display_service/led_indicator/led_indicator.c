@@ -28,7 +28,7 @@
 #include "driver/gpio.h"
 #include "audio_mem.h"
 
-static char *TAG = "LED_INDI";
+static const char *TAG = "LED_INDI";
 
 typedef struct led_indicator_impl {
     gpio_num_t              gpio_num;

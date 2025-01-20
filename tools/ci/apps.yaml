@@ -10,6 +10,7 @@ DEFAULTS:
   - ESP32_S3_KORVO2_V3: "v4.4-${LATEST_IDF_VERSION}"
   - ESP32_C3_LYRA_V2: "v5.1-${LATEST_IDF_VERSION}"
   - ESP32_C6_DEVKIT: "${LATEST_IDF_VERSION}"
+  - ESP32_P4_FUNCTION_EV: "${LATEST_IDF_VERSION}"
 
 APPS:
   - app_dir: examples/advanced_examples/dlna
@@ -28,6 +29,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1: v5.4
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.4
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.4
   - app_dir: examples/advanced_examples/aec
     board:
       esp32:
@@ -42,6 +45,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/advanced_examples/flexible_pipeline
     board:
       esp32:
@@ -74,6 +79,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/advanced_examples/audio_mixer_tone
     board:
       esp32:
@@ -95,6 +102,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/audio_processing/pipeline_audio_forge
     board:
       esp32:
@@ -109,10 +118,14 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/audio_processing/pipeline_passthru
     board:
       esp32:
         - ESP_LYRAT_V4_3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/audio_processing/pipeline_resample
     board:
       esp32:
@@ -145,6 +158,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/checks/check_board_buttons
     board:
       esp32:
@@ -178,6 +193,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/cloud_services/pipeline_aws_polly_mp3
     board:
       esp32:
@@ -187,6 +204,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/cloud_services/pipeline_baidu_speech_mp3
     board:
       esp32:
@@ -196,6 +215,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/get-started/pipeline_a2dp_sink_and_hfp
     board:
       esp32:
@@ -210,6 +231,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/get-started/pipeline_tcp_client
     board:
       esp32:
@@ -219,6 +242,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/ota
     board:
       esp32:
@@ -228,6 +253,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/dueros
     board:
       esp32:
@@ -235,6 +262,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1: v5.4
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.4
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.4
   - app_dir: examples/player/pipeline_a2dp_sink_stream
     board:
       esp32:
@@ -268,6 +297,8 @@ APPS:
         - ESP32_C3_LYRA_V2
       esp32c6:
         - ESP32_C6_DEVKIT
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/player/pipeline_hfp_stream
     board:
       esp32:
@@ -286,6 +317,8 @@ APPS:
         - ESP32_C3_LYRA_V2
       esp32c6:
         - ESP32_C6_DEVKIT
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/player/pipeline_http_select_decoder
     board:
       esp32:
@@ -295,6 +328,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/player/pipeline_living_stream
     board:
       esp32:
@@ -308,6 +343,8 @@ APPS:
         - ESP32_C3_LYRA_V2
       esp32c6:
         - ESP32_C6_DEVKIT
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/player/pipeline_play_sdcard_music
     board:
       esp32:
@@ -315,6 +352,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/player/pipeline_sdcard_mp3_control
     board:
       esp32:
@@ -329,6 +368,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/player/pipeline_spiffs_mp3
     board:
       esp32:
@@ -342,6 +383,8 @@ APPS:
         - ESP32_C3_LYRA_V2
       esp32c6:
         - ESP32_C6_DEVKIT
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/player/pipeline_play_mp3_with_dac_or_pwm
     board:
       esp32:
@@ -359,6 +402,8 @@ APPS:
         - ESP32_C3_LYRA_V2
       esp32c6:
         - ESP32_C6_DEVKIT
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/player/pipeline_loop_playback_without_gap
     board:
       esp32:
@@ -366,6 +411,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/recorder/element_cb_sdcard_amr
     board:
       esp32:
@@ -373,6 +420,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/recorder/element_wav_amr_sdcard
     board:
       esp32:
@@ -380,6 +429,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/recorder/pipeline_raw_http
     board:
       esp32:
@@ -396,6 +447,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/recorder/pipeline_recording_to_sdcard
     board:
       esp32:
@@ -403,6 +456,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/recorder/av_muxer_sdcard
     board:
       esp32s3:
@@ -414,6 +469,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1: v5.4
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.4
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.4
   - app_dir: examples/speech_recognition/vad
     board:
       esp32:
@@ -430,6 +487,8 @@ APPS:
         - ESP32_S2_KALUGA_1_V1_2
       esp32s3:
         - ESP32_S3_KORVO2_V3
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/system/power_save
     board:
       esp32:

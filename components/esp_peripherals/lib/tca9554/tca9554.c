@@ -28,7 +28,8 @@
 #include "esp_log.h"
 #include "tca9554.h"
 
-static char *TAG = "TCA9554";
+static const char *TAG = "TCA9554";
+
 static i2c_bus_handle_t i2c_handle;
 
 #define SET_BITS(_m, _s, _v)  ((_v) ? (_m)|((_s)) : (_m)&~((_s)))
@@ -41,8 +42,8 @@ static i2c_bus_handle_t i2c_handle;
 #define TCA9554_CONFIGURATION_PORT      0x03
 
 typedef struct {
-    uint8_t addr;
-    char *name;
+    uint8_t     addr;
+    const char *name;
 } tca9554_dev_t;
 
 static tca9554_dev_t dev_list[] = {

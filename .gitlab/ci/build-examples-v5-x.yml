@@ -1,9 +1,5 @@
 .apply_idf_patch: &apply_idf_patch |
-  if [ -n "$IDF_PATCH" ]; then
-      cd "$IDF_PATH"
-      git apply "$IDF_PATCH_DIR/$IDF_PATCH"
-      cd -
-  fi
+  ${ESP_PYTHON} ${ADF_PATH}/tools/adf_install_patches.py apply-patch
 
 .build_cmake_template: &build_cmake_template
   stage: build
@@ -16,14 +12,13 @@
   dependencies: # set dependencies to null to avoid missing artifacts issue
   variables:
     # Obtain release/${IDF_VERSION_TAG} first based on this variable. View details in the 'check_idf_version()' of utils.sh
-    IDF_TAG_FLAG: "false"
     IDF_VERSION_TAG: v5.1
     DEEP_CLONE: "false"
     IDF_FIND_APP_PATH_ARG: "-p"
     IDF_PATH: "$ADF_PATH/esp-idf"
     IDF_PATCH_DIR: "$ADF_PATH/idf_patches"
     SDKCFG_DEFAULTS: "sdkconfig.defaults.$IDF_TARGET"
-    LATEST_IDF_VERSION: "v5.3"
+    LATEST_IDF_VERSION: "v5.4"
   artifacts:
     paths:
       - "**/build*/size.json"
@@ -47,8 +42,6 @@
     when: always
     expire_in: 4 days
   script:
-    - echo $SDKCFG_DEFAULTS
-    - echo $IDF_PATCH_DIR
     - fetch_idf_branch ${IDF_VERSION_TAG}
     - common_before_scripts
     - setup_tools_and_idf_python_venv
@@ -57,8 +50,6 @@
     - cd $ADF_PATH
     - *apply_idf_patch
     # - pip install --upgrade idf-component-manager
-    - echo ${CI_NODE_INDEX}
-    - echo ${parallel}
     - pip install idf_build_apps
     - run_cmd python $ADF_PATH/tools/ci/build_apps.py ${EXAMPLES} \
                    -t $IDF_TARGET -vv \
@@ -80,68 +71,77 @@
                    --parallel-count 1 \
                    --parallel-index 1
 
-.matrix_template_esp32_esp32s3_esp32s2: &matrix_template_esp32_esp32s3_esp32s2
+.matrix_template_esp32_s2_c3_s3: &matrix_template_esp32_s2_c3_s3
   parallel:
     matrix:
-      - IDF_VERSION_TAG: ['v5.0', 'v5.1', 'v5.2', 'v5.3']
+      - IDF_VERSION_TAG: ['v5.1', 'v5.2', 'v5.3', 'default']
         parallel: [1/2, 2/2]
 
-.matrix_template_esp32c3_esp32c6: &matrix_template_esp32c3_esp32c6
+.matrix_template_c6_p4: &matrix_template_c6_p4
   parallel:
     matrix:
-      - IDF_VERSION_TAG: ['v5.1', 'v5.2', 'v5.3']
+      - IDF_VERSION_TAG: ['default']
         parallel: [1/2, 2/2]
 
 .build_examples_esp32_lyrat_v4_3:
   extends:
-    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
-    - .matrix_template_esp32_esp32s3_esp32s2
+    - .matrix_template_esp32_s2_c3_s3
+    - .rules:build:regular-board-idf-ver-tag
   variables:
     IDF_TARGET: esp32
     AUDIO_BOARD: ESP_LYRAT_V4_3
 
 build_examples_esp32_lyrat_mini_v1_1:
   extends:
-    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
-    - .matrix_template_esp32_esp32s3_esp32s2
+    - .matrix_template_esp32_s2_c3_s3
+    - .rules:build:regular-board-idf-ver-tag
   variables:
     IDF_TARGET: esp32
     AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
 
 build_examples_esp32s2_kaluga_v1_2:
   extends:
-    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
-    - .matrix_template_esp32_esp32s3_esp32s2
+    - .matrix_template_esp32_s2_c3_s3
+    - .rules:build:regular-board-idf-ver-tag
   variables:
     IDF_TARGET: esp32s2
     AUDIO_BOARD: ESP32_S2_KALUGA_1_V1_2
 
 build_examples_esp32s3_korvo_v2:
   extends:
-    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
-    - .matrix_template_esp32_esp32s3_esp32s2
+    - .matrix_template_esp32_s2_c3_s3
+    - .rules:build:regular-board-idf-ver-tag
   variables:
     IDF_TARGET: esp32s3
     AUDIO_BOARD: ESP32_S3_KORVO2_V3
 
 build_examples_esp32c3_lyra_v2:
   extends:
-    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template
-    - .matrix_template_esp32c3_esp32c6
+    - .matrix_template_esp32_s2_c3_s3
+    - .rules:build:regular-board-idf-ver-tag
   variables:
     IDF_TARGET: esp32c3
     AUDIO_BOARD: ESP32_C3_LYRA_V2
 
 build_examples_esp32c6_devkit:
   extends:
-    - .rules:build:regular-board-idf-ver-tag
     - .build_cmake_template_c6
-    - .matrix_template_esp32c3_esp32c6
+    - .matrix_template_c6_p4
+    - .rules:build:regular-board-idf-ver-tag
   variables:
     IDF_TARGET: esp32c6
     AUDIO_BOARD: ESP32_C6_DEVKIT
+
+build_examples_esp32p4_function_ev_board:
+  extends:
+    - .build_cmake_template
+    - .matrix_template_c6_p4
+    - .rules:build:regular-board-idf-ver-tag
+  variables:
+    IDF_TARGET: esp32p4
+    AUDIO_BOARD: ESP32_P4_FUNCTION_EV

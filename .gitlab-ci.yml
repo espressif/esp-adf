@@ -17,6 +17,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: none
   ADF_PATH: "$CI_PROJECT_DIR"
   IDF_PATH: "$CI_PROJECT_DIR/esp-idf"
+  IDF_TAG_FLAG: "true"
   ADF_TEST_PACKAGE_PATH: "${ADF_PATH}/tools/adf_test_package"
   CI_TARGET_UT_TEST_CONFIG_FILE: "$CI_PROJECT_DIR/.gitlab/ci/target-ut-test.yml"
   CI_TARGET_TEST_CONFIG_FILE: "$CI_PROJECT_DIR/.gitlab/ci/target-test.yml"

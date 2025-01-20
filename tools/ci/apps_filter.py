@@ -49,6 +49,7 @@ def create_audo_board_idf_json_file(board, board_dict):
     """
     if board not in board_dict:
         print(f"\033[31mERROR: Board '{board}' not found in DEFAULTS section of the YAML file\033[0m")
+        sys.exit(1)
     else:
         print(f"Board '{board}' found in DEFAULTS. Proceeding...")
         ADF_PATH = os.getenv('ADF_PATH')

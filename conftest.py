@@ -20,7 +20,7 @@ PYTEST_ROOT_DIR = str(pathlib.Path(__file__).parent)
 logging.info(f'Pytest root dir: {PYTEST_ROOT_DIR}')
 
 
-SUPPORTED_TARGETS = ['esp32', 'esp32s2', 'esp32c3', 'esp32s3', 'esp32c2', 'esp32c6', 'esp32h2']
+SUPPORTED_TARGETS = ['esp32', 'esp32s2', 'esp32c3', 'esp32s3', 'esp32c2', 'esp32c6', 'esp32h2', 'esp32p4']
 PREVIEW_TARGETS: List[str] = []  # this PREVIEW_TARGETS excludes 'linux' target
 DEFAULT_SDKCONFIG = 'default'
 
@@ -32,11 +32,12 @@ TARGET_MARKERS = {
     'esp32c2': 'support esp32c2 target',
     'esp32c6': 'support esp32c6 target',
     'esp32h2': 'support esp32h2 target',
+    'esp32p4': 'support esp32p4 target',
     'linux': 'support linux target',
 }
 
 SPECIAL_MARKERS = {
-    'supported_targets': "support all officially announced supported targets ('esp32', 'esp32s2', 'esp32c3', 'esp32s3', 'esp32c2', 'esp32c6')",
+    'supported_targets': "support all officially announced supported targets ('esp32', 'esp32s2', 'esp32c3', 'esp32s3', 'esp32c2', 'esp32c6', 'esp32h2', 'esp32p4')",
     'preview_targets': "support all preview targets ('none')",
     'all_targets': 'support all targets, including supported ones and preview ones',
     'temp_skip_ci': 'temp skip tests for specified targets only in ci',

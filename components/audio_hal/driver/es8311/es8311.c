@@ -202,7 +202,7 @@ static const struct _coeff_div coeff_div[] = {
     {1536000 , 96000, 0x01, 0x08, 0x01, 0x01, 0x01, 0x00, 0x7f, 0x02, 0x10, 0x10},
 };
 
-static char *TAG = "DRV8311";
+static const char *TAG = "DRV8311";
 
 #define ES_ASSERT(a, format, b, ...) \
     if ((a) != 0) { \

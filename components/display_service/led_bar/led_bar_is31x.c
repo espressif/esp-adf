@@ -28,8 +28,7 @@
 #include "led_bar_is31x.h"
 #include "periph_is31fl3216.h"
 
-
-static char *TAG = "LED_BAR_IS31X";
+static const char *TAG = "LED_BAR_IS31X";
 
 esp_periph_handle_t led_bar_is31x_init(void)
 {

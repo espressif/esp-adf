@@ -33,7 +33,8 @@
 
 #include "audio_idf_version.h"
 
-static char *TAG = "SMART_CONFIG";
+static const char *TAG = "SMART_CONFIG";
+
 static esp_wifi_setting_handle_t sm_setting_handle;
 
 typedef struct {

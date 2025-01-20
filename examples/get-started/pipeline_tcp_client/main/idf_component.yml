@@ -1,9 +1,11 @@
 dependencies:
   espressif/esp_hosted:
-    version: "~0.0.9"
+    version: "~1.1"
     rules:
       - if: "target in [esp32p4]"
   espressif/esp_wifi_remote:
-    version: "~0.3.0"
-    rules:
-      - if: "target in [esp32p4]"
+    matches:
+      - if: "idf_version <=5.4.0 && target in [esp32p4]"
+        version: "~0.4"
+      - if: "idf_version >5.4.0 && target in [esp32p4]"
+        version: "~0.6"
