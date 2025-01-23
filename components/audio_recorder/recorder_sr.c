@@ -264,6 +264,9 @@ static void fetch_task(void *parameters)
             recorder_sr->afe_monitor(
                     recorder_sr_afe_result_convert(recorder_sr, afe_result, &sr_result),
                     recorder_sr->afe_monitor_ctx);
+            if (sr_result.type == SR_RESULT_WAKEUP) {
+                rb_reset(recorder_sr->out_rb);
+            }
         }
         recorder_sr_output(recorder_sr, afe_result->data, afe_result->data_size);
     }

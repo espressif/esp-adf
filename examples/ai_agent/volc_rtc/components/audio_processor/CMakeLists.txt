@@ -1,11 +1,11 @@
 set(SRC_FILES "audio_processor.c")
 
 if (CONFIG_ESP32_S3_KORVO2_V3_BOARD OR CONFIG_ESP32_S3_BOX_3_BOARD)
-    list(APPEND  SRC_FILES "audio_stream_dual_microphones.c")
+    list(APPEND SRC_FILES "audio_stream_dual_microphones.c")
 elseif (CONFIG_ESP32_S3_KORVO2L_V1_BOARD)
-    list(APPEND  SRC_FILES "audio_stream_single_microphone.c")
+    list(APPEND SRC_FILES "audio_stream_single_microphone.c")
 else ()
-    list(APPEND  SRC_FILES "audio_stream_single_microphone.c")
+    list(APPEND SRC_FILES "audio_stream_single_microphone.c")
     message(WARNING "Please add supported hardware and select the type of microphone, default use single microphone")
 endif()
 

@@ -1,33 +1,21 @@
-/*
- * ESPRESSIF MIT License
- *
- * Copyright (c) 2025 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
- *
- * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
- * it is free of charge, to any person obtaining a copy of this software and associated
- * documentation files (the "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the Software is furnished
- * to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- */
+/* volc rtc example code
+
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
+
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+*/
  
 #include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "freertos/idf_additions.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_netif.h"
+#include "esp_netif_sntp.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 
@@ -41,10 +29,12 @@
 #include "board.h"
 
 #include "volc_rtc.h"
-#include "config.h"
+
+// #define ENABLE_TASK_MONITOR
 
 static char *TAG = "main";
 
+#if defined(ENABLE_TASK_MONITOR)
 static void monitor_task(void *arg)
 {
     while (1) {
@@ -53,6 +43,7 @@ static void monitor_task(void *arg)
         vTaskDelay(10000 / portTICK_RATE_MS);
     }
 }
+#endif
 
 void app_main()
 {
@@ -63,8 +54,10 @@ void app_main()
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
 
+#if CONFIG_ENABLE_RECORDER_DEBUG
     // Initialize SD Card peripheral
-    // audio_board_sdcard_init(set, SD_MODE_1_LINE);
+    audio_board_sdcard_init(set, SD_MODE_1_LINE);
+#endif
 
     periph_spiffs_cfg_t spiffs_cfg = {
         .root = "/spiffs",
@@ -79,10 +72,6 @@ void app_main()
         vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 
-    audio_board_handle_t board_handle = audio_board_init();
-    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
-    audio_hal_set_volume(board_handle->audio_hal, 90);
-
     periph_wifi_cfg_t wifi_cfg = {
         .wifi_config.sta.ssid = CONFIG_WIFI_SSID,
         .wifi_config.sta.password = CONFIG_WIFI_PASSWORD,
@@ -91,7 +80,29 @@ void app_main()
     esp_periph_start(set, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 
-    // audio_thread_create(NULL, "monitor_task", monitor_task, NULL, 5 * 1024, 13, true, 0);
+    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
+    esp_netif_sntp_init(&config);
+
+    // wait for time to be set
+    int retry = 0;
+    const int retry_count = 5;
+    while (esp_netif_sntp_sync_wait(1000 / portTICK_PERIOD_MS) == ESP_ERR_TIMEOUT && ++retry < retry_count) {
+        ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+    }
+    // Set timezone to China Standard Time
+    time_t now = 0;
+    struct tm timeinfo = { 0 };
+    setenv("TZ", "CST-8", 1);
+    tzset();
+    localtime_r(&now, &timeinfo);
+
+    audio_board_handle_t board_handle = audio_board_init();
+    audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
+    audio_hal_set_volume(board_handle->audio_hal, 80);
+
+#if defined(ENABLE_TASK_MONITOR)
+    audio_thread_create(NULL, "monitor_task", monitor_task, NULL, 5 * 1024, 13, true, 0);
+#endif
 
     // init byte rtc engine
     volc_rtc_init();

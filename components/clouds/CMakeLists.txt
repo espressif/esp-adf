@@ -12,7 +12,7 @@ register_component()
 
 target_link_libraries(${COMPONENT_TARGET} INTERFACE "-L${CMAKE_CURRENT_LIST_DIR}/dueros/lightduer/${CONFIG_IDF_TARGET}")
 
-IF ((CONFIG_IDF_TARGET STREQUAL "esp32s3"))
+IF ((CONFIG_IDF_TARGET STREQUAL "esp32s3") OR (CONFIG_IDF_TARGET STREQUAL "esp32") OR (CONFIG_IDF_TARGET STREQUAL "esp32c5"))
 IF (IDF_VERSION_MAJOR EQUAL 5)
 add_prebuilt_library(VolcEngineRTCLite "${CMAKE_CURRENT_LIST_DIR}/volc_engine_rtc/libs/${CONFIG_IDF_TARGET}/libVolcEngineRTCLite.a"
                     REQUIRES mbedtls espressif__zlib json lwip)

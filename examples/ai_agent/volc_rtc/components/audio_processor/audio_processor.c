@@ -1,26 +1,11 @@
-/*
- * ESPRESSIF MIT License
- *
- * Copyright (c) 2025 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
- *
- * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
- * it is free of charge, to any person obtaining a copy of this software and associated
- * documentation files (the "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the Software is furnished
- * to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- */
+/* Audio processor example code
+
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
+
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+*/
  
 #include <string.h>
 
@@ -53,7 +38,8 @@
 #include "audio_stream.h"
 #include "audio_processor.h"
 
-static const char *TAG = "audio processor";
+static const char *TAG = "AUDIO_PROCESSOR";
+
 #if (defined CONFIG_ESP32_S3_KORVO2_V3_BOARD || defined CONFIG_ESP32_S3_BOX_3_BOARD)
 #define USE_ES7210_AS_RECORD_DEVICE   (1)
 #define USE_ES8311_AS_RECORD_DEVICE   (0)
@@ -65,8 +51,7 @@ static const char *TAG = "audio processor";
 #endif
 
 // aec debug
-// #define ENABLE_AEC_DEBUG
-#if defined (ENABLE_AEC_DEBUG)
+#if CONFIG_ENABLE_RECORDER_DEBUG
 #include <stdio.h>
 #include <errno.h>
 #include "esp_timer.h"
@@ -110,13 +95,14 @@ typedef struct {
     audio_element_handle_t  i2s_stream_writer;
     pipe_player_state_e     player_state;
     bool                    running;
+    tone_play_callback_t    tone_cb;
 } audio_player_t;
 
 static audio_player_t             *s_audio_player      = NULL;
 static struct recorder_pipeline_t *s_recorder_pipeline = NULL;
 static struct player_pipeline_t   *s_player_pipeline   = NULL;
 
-#if defined (ENABLE_AEC_DEBUG)
+#if CONFIG_ENABLE_RECORDER_DEBUG
 void aec_debug_data_write(char *data, int len)
 {
     if (record_flag) {
@@ -200,7 +186,7 @@ esp_err_t recorder_pipeline_close(recorder_pipeline_handle_t pipeline)
 int recorder_pipeline_get_default_read_size(recorder_pipeline_handle_t pipeline)
 {
     #if defined (CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
-        return 160;
+        return 80;
     #elif defined (CONFIG_AUDIO_SUPPORT_AAC_DECODER)
         return 512;
     #elif defined (CONFIG_AUDIO_SUPPORT_G711A_DECODER)
@@ -368,7 +354,7 @@ audio_element_handle_t player_pipeline_get_raw_write(player_pipeline_handle_t pl
 
 static int input_cb_for_afe(int16_t *buffer, int buf_sz, void *user_ctx, TickType_t ticks)
 {
-#if defined (ENABLE_AEC_DEBUG)
+#if CONFIG_ENABLE_RECORDER_DEBUG
     aec_debug_data_write((char *)buffer, buf_sz);
 #endif // ENABLE_AEC_DEBUG
     return raw_stream_read(s_recorder_pipeline->raw_reader, (char *)buffer, buf_sz);
@@ -412,6 +398,7 @@ void * audio_record_engine_init(recorder_pipeline_handle_t pipeline, rec_event_c
     cfg.encoder_handle = recorder_encoder_create(&recorder_encoder_cfg, &cfg.encoder_iface);
     pipeline->recorder_engine = audio_recorder_create(&cfg);
 #if defined (CONFIG_CONTINUOUS_CONVERSATION_MODE)
+    vTaskDelay(pdMS_TO_TICKS(200));
     audio_recorder_trigger_start(pipeline->recorder_engine);
 #endif // CONFIG_CONTINUOUS_CONVERSATION_MODE
     return pipeline->recorder_engine;
@@ -445,12 +432,13 @@ static void audio_player_state_task(void *arg)
             && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
             ESP_LOGI(TAG, "[ * ] Stop event received");
             audio_tone_stop();
+            s_audio_player->tone_cb(AEL_STATUS_STATE_FINISHED);
             s_audio_player->player_state = PIPE_STATE_IDLE;
         }
     }
 }
 
-esp_err_t audio_tone_init(void)
+esp_err_t audio_tone_init(tone_play_callback_t callback)
 {
     s_audio_player = (audio_player_t *)audio_calloc(1, sizeof(audio_player_t));
     AUDIO_MEM_CHECK(TAG, s_audio_player, goto _exit_open);
@@ -484,6 +472,7 @@ esp_err_t audio_tone_init(void)
     audio_pipeline_set_listener(s_audio_player->pipeline, evt);
     audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
 
+    s_audio_player->tone_cb = callback;
     audio_thread_create(NULL, "audio_player_state_task", audio_player_state_task, (void *)evt, 5 * 1024, 15, true, 1);
 
     return ESP_OK;
@@ -502,9 +491,6 @@ esp_err_t audio_tone_play(const char *uri)
     ESP_RETURN_ON_FALSE(s_audio_player != NULL, ESP_FAIL, TAG, "audio tone not initialized");
     if (s_audio_player->player_state == PIPE_STATE_RUNNING) {
         return ESP_FAIL;
-    }
-    if (s_audio_player->player_state == PIPE_STATE_RUNNING) {
-        audio_pipeline_stop(s_audio_player->pipeline);
     }
     ESP_LOGI(TAG, "audio_tone_play: %s", uri);
     

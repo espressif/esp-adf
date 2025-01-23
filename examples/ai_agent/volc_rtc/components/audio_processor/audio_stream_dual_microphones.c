@@ -1,3 +1,12 @@
+/* Audio stream dual microphones example code
+
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
+
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+*/
+
 #include "esp_log.h"
 
 #include "audio_stream.h"
@@ -21,11 +30,11 @@
 #endif
 #include "audio_stream.h"
 
-static const char *TAG = "audio_stream_7210";
+static const char *TAG = "DUAL_MICROPHONES";
 
 #if defined (CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
 #define SAMPLE_RATE         16000
-#define BIT_RATE            64000
+#define BIT_RATE            32000
 #define COMPLEXITY          0
 #define FRAME_TIME_MS       20 
 #endif
@@ -77,6 +86,12 @@ audio_element_handle_t create_record_raw_stream(void)
 
 audio_element_handle_t create_record_i2s_stream(void)
 {
+    es7210_adc_set_gain(ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2, GAIN_34_5DB);
+#if defined (CONFIG_ESP32_S3_BOX_3_BOARD)
+    es7210_adc_set_gain(ES7210_INPUT_MIC3, GAIN_6DB);
+#else
+    es7210_adc_set_gain(ES7210_INPUT_MIC3, GAIN_27DB);
+#endif
     audio_element_handle_t i2s_stream = NULL;
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, 16000, 32, AUDIO_STREAM_READER);
     i2s_stream = i2s_stream_init(&i2s_cfg);
@@ -197,10 +212,10 @@ audio_element_handle_t create_tone_i2s_stream(void)
 recorder_sr_cfg_t get_default_audio_record_config(void)
 {
     recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG(AUDIO_ADC_INPUT_CH_FORMAT, "model", AFE_TYPE_SR, AFE_MODE_LOW_COST);
-    recorder_sr_cfg.afe_cfg->aec_init = true;
     recorder_sr_cfg.multinet_init = false;
     recorder_sr_cfg.fetch_task_core = 0;
     recorder_sr_cfg.feed_task_core = 1;
+    recorder_sr_cfg.afe_cfg->vad_mode = VAD_MODE_3;
     recorder_sr_cfg.afe_cfg->memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     recorder_sr_cfg.afe_cfg->agc_mode = AFE_MN_PEAK_NO_AGC;
     return recorder_sr_cfg;

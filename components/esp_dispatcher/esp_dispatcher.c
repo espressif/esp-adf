@@ -311,7 +311,7 @@ esp_dispatcher_handle_t esp_dispatcher_create(esp_dispatcher_config_t *cfg)
     impl->mutex = mutex_create();
     AUDIO_MEM_CHECK(TAG, impl->mutex, goto _failed;);
     STAILQ_INIT(&impl->exe_list);
-    ESP_LOGE(TAG, "exe first list: %p", STAILQ_FIRST(&impl->exe_list));
+    ESP_LOGI(TAG, "exe first list: %p", STAILQ_FIRST(&impl->exe_list));
 
     if (ESP_OK != audio_thread_create(&impl->thread,
                                           "esp_dispatcher",
