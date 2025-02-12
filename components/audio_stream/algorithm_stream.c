@@ -95,16 +95,16 @@ static esp_err_t _algo_close(audio_element_handle_t self)
     while (xEventGroupWaitBits(algo->state, FETCH_STOPPED_BIT, false, true, 10 / portTICK_PERIOD_MS) != FETCH_STOPPED_BIT) {
         algo->afe_handle->feed(algo->afe_data, algo->aec_buff);
     }
+    if (algo->afe_data) {
+        algo->afe_handle->destroy(algo->afe_data);
+        algo->afe_data = NULL;
+    }
     return ESP_OK;
 }
 
 static esp_err_t _algo_destroy(audio_element_handle_t self)
 {
     algo_stream_t *algo = (algo_stream_t *)audio_element_getdata(self);
-    if (algo->afe_data) {
-        algo->afe_handle->destroy(algo->afe_data);
-        algo->afe_data = NULL;
-    }
 
     if (algo->aec_buff) {
         audio_free(algo->aec_buff);
