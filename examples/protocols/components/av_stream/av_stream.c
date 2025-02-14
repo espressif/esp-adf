@@ -315,7 +315,7 @@ int av_audio_enc_start(av_stream_handle_t av_stream)
     #if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
         algo_config.ref_linear_factor = 3;
     #endif
-    #if (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD || CONFIG_ESP32_S3_KORVO2_V3_BOARD)
+    #if (CONFIG_ESP_LYRAT_MINI_V1_1_BOARD || CONFIG_ESP32_S3_KORVO2_V3_BOARD || CONFIG_ESP32_S3_BOX_3_BOARD)
         algo_config.swap_ch = true;
     #endif
         algo_config.task_core = 0;
