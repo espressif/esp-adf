@@ -213,6 +213,12 @@ static esp_err_t _algo_open(audio_element_handle_t self)
         afe_config.voice_communication_agc_gain = algo->agc_gain;
     }
 
+    if (algo->afe_data) {
+        algo->afe_handle->destroy(algo->afe_data);
+        algo->afe_data = NULL;
+    }
+
+
     algo->afe_data = algo->afe_handle->create_from_config(&afe_config);
     algo->afe_fetch_run = true;
 
