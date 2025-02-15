@@ -416,7 +416,7 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
                 if (http->hls_key->key_url == NULL) {
                     ESP_LOGE(TAG, "No memory for hls key url");
                     return ESP_FAIL;
-                } 
+                }
             }
             http->hls_key->sequence_no = hls_playlist_get_sequence_no(hls);
         }
@@ -519,6 +519,7 @@ _stream_redirect:
     int status_code = esp_http_client_get_status_code(http->client);
     if (status_code == 301 || status_code == 302) {
         esp_http_client_set_redirection(http->client);
+        esp_http_client_close(http->client); // Temporary fix to handle stuck on redirection
         goto _stream_redirect;
     }
     if (status_code != 200
@@ -570,7 +571,7 @@ _stream_open_begin:
         ESP_LOGE(TAG, "Error open connection, uri = NULL");
         return ESP_FAIL;
     }
-    
+
     ESP_LOGD(TAG, "URI=%s", uri);
     // if not initialize http client, initial it
     if (http->client == NULL) {
@@ -745,8 +746,8 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         return ESP_OK;
     } else {
         if (http->hls_key) {
-            int ret = esp_aes_crypt_cbc(&http->hls_key->aes_ctx, ESP_AES_DECRYPT, 
-                 rlen, (unsigned char*)http->hls_key->key.iv, 
+            int ret = esp_aes_crypt_cbc(&http->hls_key->aes_ctx, ESP_AES_DECRYPT,
+                 rlen, (unsigned char*)http->hls_key->key.iv,
                  (unsigned char*)buffer, (unsigned char*)buffer);
             if (rlen % 16 != 0) {
                 ESP_LOGE(TAG, "Data length %d not aligned", rlen);
@@ -964,6 +965,7 @@ redirection:
         int status_code = esp_http_client_get_status_code(http->client);
         if (status_code == 301 || status_code == 302) {
             esp_http_client_set_redirection(http->client);
+            esp_http_client_close(http->client); // Temporary fix to handle stuck on redirection
             goto redirection;
         }
         return ESP_OK;
