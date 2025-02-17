@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2024 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ * Copyright (c) 2025 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -67,9 +67,10 @@
 /**
  * @brief ADC input data format
  */
-#define AUDIO_ADC_INPUT_CH_FORMAT "MR"
+#define AUDIO_ADC_INPUT_CH_FORMAT   "RMNM"
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
+extern audio_hal_func_t AUDIO_CODEC_ES7210_DEFAULT_HANDLE;
 
 #define AUDIO_CODEC_DEFAULT_CONFIG(){             \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,  \

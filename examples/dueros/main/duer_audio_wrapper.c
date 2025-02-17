@@ -255,18 +255,13 @@ void *duer_audio_start_recorder(rec_event_cb_t cb)
     audio_pipeline_run(pipeline);
     ESP_LOGI(TAG, "Recorder has been created");
 
-    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.aec_init = RECORD_HARDWARE_AEC;
+    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG(AUDIO_ADC_INPUT_CH_FORMAT, "model", AFE_TYPE_SR, AFE_MODE_LOW_COST);
+    recorder_sr_cfg.afe_cfg->aec_init = RECORD_HARDWARE_AEC;
     recorder_sr_cfg.multinet_init = false;
-    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
-    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
+    recorder_sr_cfg.afe_cfg->memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg->agc_mode = AFE_MN_PEAK_NO_AGC;
 #ifdef CONFIG_ESP32_P4_FUNCTION_EV_BOARD
-    recorder_sr_cfg.afe_cfg.pcm_config.mic_num = 1;
-    recorder_sr_cfg.afe_cfg.pcm_config.ref_num = 1;
-    recorder_sr_cfg.afe_cfg.pcm_config.total_ch_num = 2;
-    recorder_sr_cfg.afe_cfg.wakenet_mode = DET_MODE_90;
-    recorder_sr_cfg.input_order[0] = DAT_CH_0;
-    recorder_sr_cfg.input_order[1] = DAT_CH_1;
+    recorder_sr_cfg.afe_cfg->wakenet_mode = DET_MODE_90;
 #endif // CONFIG_ESP32_P4_FUNCTION_EV_BOARD
 
     audio_rec_cfg_t cfg = AUDIO_RECORDER_DEFAULT_CFG();

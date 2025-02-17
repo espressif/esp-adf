@@ -96,6 +96,8 @@
 #define BUTTON_COLOR_ID           4
 #define BUTTON_MODE_ID            5
 
+#define AUDIO_ADC_INPUT_CH_FORMAT "N"
+
 #define INPUT_KEY_DEFAULT_INFO() {                  \
     {                                               \
         .type = PERIPH_ID_ADC_BTN,                  \

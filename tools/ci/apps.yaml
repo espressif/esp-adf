@@ -28,6 +28,13 @@ APPS:
         - ESP_LYRAT_MINI_V1_1: v5.4
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.4
+  - app_dir: examples/advanced_examples/aec
+    board:
+      esp32:
+        - ESP_LYRAT_V4_3: v5.4
+        - ESP_LYRAT_MINI_V1_1: v5.4
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.4
   - app_dir: examples/advanced_examples/downmix_pipeline
     board:
       esp32:
@@ -224,10 +231,10 @@ APPS:
   - app_dir: examples/dueros
     board:
       esp32:
-        - ESP_LYRAT_V4_3
-        - ESP_LYRAT_MINI_V1_1
+        - ESP_LYRAT_V4_3: v5.4
+        - ESP_LYRAT_MINI_V1_1: v5.4
       esp32s3:
-        - ESP32_S3_KORVO2_V3
+        - ESP32_S3_KORVO2_V3: v5.4
   - app_dir: examples/player/pipeline_a2dp_sink_stream
     board:
       esp32:

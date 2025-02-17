@@ -59,6 +59,11 @@
 #define RECORD_HARDWARE_AEC       (true)
 #define BOARD_PA_GAIN             (20)  /* Power amplifier gain defined by board (dB) */
 
+/**
+ * @brief ADC input data format
+ */
+#define AUDIO_ADC_INPUT_CH_FORMAT "RMNM"
+
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 extern audio_hal_func_t AUDIO_CODEC_ES7243E_DEFAULT_HANDLE;
 extern audio_hal_func_t AUDIO_CODEC_ES7243_DEFAULT_HANDLE;

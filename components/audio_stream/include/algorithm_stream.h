@@ -26,6 +26,7 @@
 #define _ALGORITHM_STREAM_H_
 
 #include "audio_element.h"
+#include "esp_afe_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,7 +35,7 @@ extern "C" {
 #define ALGORITHM_STREAM_PINNED_TO_CORE     0
 #define ALGORITHM_STREAM_TASK_PERIOD        21
 #define ALGORITHM_STREAM_RINGBUFFER_SIZE    1024
-#define ALGORITHM_STREAM_TASK_STACK_SIZE    (5 * 1024)
+#define ALGORITHM_STREAM_TASK_STACK_SIZE    (8 * 1024)
 
 #define ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ   8000
 #define ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT       16
@@ -108,25 +109,29 @@ typedef enum {
 } algorithm_stream_mask_t;
 
 /**
- * @brief Algorithm stream configurations
+ * @brief  Algorithm stream configurations
  */
 typedef struct {
-    algorithm_stream_input_type_t input_type;   /*!< Input type of stream */
-    int task_stack;                             /*!< Task stack size */
-    int task_prio;                              /*!< Task peroid */
-    int task_core;                              /*!< The core that task to be created */
-    int out_rb_size;                            /*!< Size of output ringbuffer */
-    bool stack_in_ext;                          /*!< Try to allocate stack in external memory */
-    int rec_linear_factor;                      /*!< The linear amplication factor of record signal*/
-    int ref_linear_factor;                      /*!< The linear amplication factor of reference signal */
-    bool debug_input;                           /*!< debug algorithm input data */
-    bool swap_ch;                               /*!< Swap left and right channels */
-    int8_t algo_mask;                           /*!< Choose algorithm to use */
-    int sample_rate;                            /*!< The sampling rate of the input PCM (in Hz) */
-    int mic_ch;                                 /*!< MIC channel num */
-    int agc_gain;                               /*!< AGC gain(dB) for voice communication */
-    bool aec_low_cost;                          /*!< AEC uses less cpu and ram resources, but has poor suppression of nonlinear distortion */
-    char *partition_label;                      /*!< Partition label which stored the model data */
+    algorithm_stream_input_type_t input_type; /*!< Input type of stream , when enabled the ALGORITHM_STREAM_INPUT_TYPE2, the input_format must be `MR`*/
+    int            task_stack;                /*!< Task stack size */
+    int            task_prio;                 /*!< Task peroid */
+    int            task_core;                 /*!< The core that task to be created */
+    int            out_rb_size;               /*!< Size of output ringbuffer */
+    bool           stack_in_ext;              /*!< Try to allocate stack in external memory */
+    int            rec_linear_factor;         /*!< The linear amplication factor of record signal*/
+    int            ref_linear_factor;         /*!< The linear amplication factor of reference signal */
+    bool           debug_input;               /*!< debug algorithm input data */
+    int8_t         algo_mask;                 /*!< Choose algorithm to use */
+    int            sample_rate;               /*!< The sampling rate of the input PCM (in Hz) */
+    char          *partition_label;           /*!< Partition label which stored the model data */
+    const char    *input_format;              /*!< The arrangement order of input data */
+    afe_type_t     afe_type;                  /*!< AFE type */
+    afe_mode_t     mode;                      /*!< AFE mode */
+    afe_agc_mode_t agc_mode;                  /*!< AGC mode */
+    int            agc_compression_gain_db;   /*!< AGC compression gain(dB) */
+    int            agc_target_level_dbfs;     /*!< AGC target level(dBFS) */
+    bool           enable_se;                 /*!< Speech Enhancement, microphone array processing enable*/
+    int            multi_in_rb_num;           /*!< The number of input ringbuffer */
 } algorithm_stream_cfg_t;
 
 #define ALGORITHM_STREAM_DEFAULT_MASK    (ALGORITHM_STREAM_USE_AEC | ALGORITHM_STREAM_USE_NS)
@@ -141,13 +146,14 @@ typedef struct {
     .rec_linear_factor = 1,                                                                       \
     .ref_linear_factor = 1,                                                                       \
     .debug_input = false,                                                                         \
-    .swap_ch = false,                                                                             \
     .algo_mask = ALGORITHM_STREAM_DEFAULT_MASK,                                                   \
-    .sample_rate = ALGORITHM_STREAM_DEFAULT_SAMPLE_RATE_HZ,                                       \
-    .mic_ch = ALGORITHM_STREAM_DEFAULT_MIC_CHANNELS,                                              \
-    .agc_gain = ALGORITHM_STREAM_DEFAULT_AGC_GAIN_DB,                                             \
-    .aec_low_cost = false,                                                                        \
+    .afe_type = AFE_TYPE_VC,                                                                      \
     .partition_label = "model",                                                                   \
+    .agc_mode = AFE_AGC_MODE_WAKENET,                                                             \
+    .input_format = AUDIO_ADC_INPUT_CH_FORMAT,                                                    \
+    .agc_target_level_dbfs = -3,                                                                  \
+    .enable_se = true,                                                                             \
+    .multi_in_rb_num = false,                                                                     \
 }
 
 /**
