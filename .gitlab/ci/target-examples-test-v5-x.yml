@@ -1,5 +1,5 @@
 .target_test_template:
-  image: "$CI_DOCKER_REGISTRY/target-test-env-v5.0:3"
+  image: "$CI_DOCKER_REGISTRY/target-test-env-v5.3:1"
   stage: target_test
   timeout: 1 hour
   variables:
@@ -32,6 +32,7 @@
       - "**/*.log"
       - $LOG_PATH
       - "$ADF_PATH/examples/player/**/record.wav"
+      - "$CI_PROJECT_DIR/**/output.wav"
     reports:
       junit: XUNIT_RESULT.xml
     expire_in: 1 week
@@ -39,6 +40,7 @@
     - pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
     - job_tags=$(python $ADF_PATH/tools/ci/gitlab_api.py get_job_tags $CI_PROJECT_ID --job_id $CI_JOB_ID)
     - markers=$(echo $job_tags | sed -e "s/,/ and /g")
+    - echo $markers
     - pytest $TEST_DIR --target ${IDF_TARGET} -m "${markers}" --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1
   retry: 2
 
@@ -184,3 +186,23 @@ example_test_pytest_esp32s3_v5.3:
     - 'build_examples_esp32s3_korvo_v2: [v5.3, 1/2]'
     - 'build_examples_esp32s3_korvo_v2: [v5.3, 2/2]'
   tags: [ esp32s3, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32_audio_loopback:
+  image: "$ADF_DOCKER_REGISTRY/target_test_env_v5.3:2"
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION_TAG: release/v5.3
+  needs:
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.3, 1/2]'
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.3, 2/2]'
+  tags: [ esp32, AUDIO_LOOPBACK_ENV ]
+  script:
+    - export PYTHONPATH="/usr/local/lib/python3.9/dist-packages:$PYTHONPATH"
+    - pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
+    - arecord -l
+    - job_tags=$(python $ADF_PATH/tools/ci/gitlab_api.py get_job_tags $CI_PROJECT_ID --job_id $CI_JOB_ID)
+    - markers=$(echo $job_tags | sed -e "s/,/ and /g")
+    - echo $markers
+    - pytest $TEST_DIR --target ${IDF_TARGET} -m "${markers}" --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1
