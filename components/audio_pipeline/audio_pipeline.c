@@ -462,6 +462,9 @@ static esp_err_t _pipeline_rb_linked(audio_pipeline_handle_t pipeline, audio_ele
 {
     static ringbuf_handle_t rb;
     ringbuf_item_t *rb_item;
+    if (first) {
+        rb = NULL;
+    }
     if (last) {
         audio_element_set_input_ringbuf(el, rb);
     } else {
