@@ -58,6 +58,7 @@ Below are getting started guides and hardware details of audio development board
     ESP32-LyraT V4 Getting Started Guide <get-started-esp32-lyrat-v4>
     ESP32-LyraTD-MSC V2.2 Getting Started Guide <get-started-esp32-lyratd-msc>
     ESP32-Korvo-DU1906 <get-started-esp32-korvo-du1906>
-    ESP32-S3-Korvo-2 V3.0 <user-guide-esp32-s3-korvo-2>
+    ESP32-S3-Korvo-2 V3.1 <user-guide-esp32-s3-korvo-2>
+    ESP32-S3-Korvo-2 V3.0 <user-guide-esp32-s3-korvo-2-v3.0>
     ESP32-S3-Korvo-2-LCD V1.0 <user-guide-esp32-s3-korvo-2-lcd>
     ESP32-C3-Lyra V2.0 <user-guide-esp32-c3-lyra>

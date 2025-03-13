@@ -1,25 +1,24 @@
-======================
-ESP32-S3-Korvo-2 V3.1
-======================
+=====================
+ESP32-S3-Korvo-2 V3.0
+=====================
 
 :link_to_translation:`en: [English]`
 
-更早版本： :doc:`ESP32-S3-Korvo-2 V3.0 <user-guide-esp32-s3-korvo-2-v3.0>`
+最新版本： :doc:`ESP32-S3-Korvo-2 V3.1 <user-guide-esp32-s3-korvo-2>`
 
-本指南将帮助您快速上手 ESP32-S3-Korvo-2 V3.1，并提供该款开发板的详细信息。
+本指南将帮助您快速上手 ESP32-S3-Korvo-2 V3.0，并提供该款开发板的详细信息。
 
-ESP32-S3-Korvo-2 V3.1 是一款基于 ESP32-S3 芯片的多媒体开发板，搭载双麦克风阵列，支持语音识别和近/远场语音唤醒。同时它还搭载 LCD、摄像头、microSD 卡等外设，可支持基于 JPEG 的视频流处理，满足用户对低成本、低功耗、联网的音视频产品开发需求。
-
+ESP32-S3-Korvo-2 V3.0 是一款基于 ESP32-S3 芯片的多媒体开发板，搭载双麦克风阵列，支持语音识别和近/远场语音唤醒。同时它还搭载 LCD、摄像头、microSD 卡等外设，可支持基于 JPEG 的视频流处理，满足用户对低成本、低功耗、联网的音视频产品开发需求。
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-overview.png
     :align: center
     :scale: 45%
-    :alt: ESP32-S3-Korvo-2 V3.1（板载 ESP32-S3-WROOM-1 模组）
+    :alt: ESP32-S3-Korvo-2 V3.0（板载 ESP32-S3-WROOM-1 模组）
     
-    ESP32-S3-Korvo-2 V3.1（板载 ESP32-S3-WROOM-1 模组）
+    ESP32-S3-Korvo-2 V3.0（板载 ESP32-S3-WROOM-1 模组）
 
 
-ESP32-S3-Korvo-2 V3.1 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>` 搭配使用。本文档主要介绍 ESP32-S3-Korvo-2 V3.1 主板，更多关于 LCD 扩展版的信息，请参阅 :doc:`ESP32-S3-Korvo-2-LCD 用户指南 <user-guide-esp32-s3-korvo-2-lcd>`。
+ESP32-S3-Korvo-2 V3.0 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <user-guide-esp32-s3-korvo-2-lcd>` 搭配使用。本文档主要介绍 ESP32-S3-Korvo-2 V3.0 主板，更多关于 LCD 扩展版的信息，请参阅 :doc:`ESP32-S3-Korvo-2-LCD 用户指南 <user-guide-esp32-s3-korvo-2-lcd>`。
 
 本指南包括如下内容：
 
@@ -32,7 +31,7 @@ ESP32-S3-Korvo-2 V3.1 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 入门指南
 ========
 
-本小节将简要介绍 ESP32-S3-Korvo-2 V3.1，说明如何在 ESP32-S3-Korvo-2 V3.1 上烧录固件及相关准备工作。
+本小节将简要介绍 ESP32-S3-Korvo-2 V3.0，说明如何在 ESP32-S3-Korvo-2 V3.0 上烧录固件及相关准备工作。
 
 
 组件介绍
@@ -41,9 +40,9 @@ ESP32-S3-Korvo-2 V3.1 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0.png
     :align: center
     :scale: 70%
-    :alt: ESP32-S3-Korvo-2 V3.1（点击放大）
+    :alt: ESP32-S3-Korvo-2 V3.0（点击放大）
     
-    ESP32-S3-Korvo-2 V3.1（点击放大）
+    ESP32-S3-Korvo-2 V3.0（点击放大）
 
 以下按照顺时针的顺序依次介绍开发板上的主要组件。
 
@@ -102,7 +101,7 @@ ESP32-S3-Korvo-2 V3.1 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 必备硬件
 ^^^^^^^^
 
-- 1 x ESP32-S3-Korvo-2 V3.1
+- 1 x ESP32-S3-Korvo-2 V3.0
 - 1 x 扬声器
 - 2 x USB 2.0 数据线（标准 A 型转 Micro-B 型）
 - 1 x 电脑（Windows、Linux 或 macOS）
@@ -131,7 +130,7 @@ ESP32-S3-Korvo-2 V3.1 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 5. 此时，红色电源指示灯应亮起。
 
 
-.. _esp32-s3-korvo-2-v3.0-software-setup:
+
 
 软件设置
 ^^^^^^^^
@@ -179,14 +178,14 @@ ESP32-S3-Korvo-2 V3.1 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 功能框图
 --------
 
-ESP32-S3-Korvo-2 V3.1 的主要组件和连接方式如下图所示。
+ESP32-S3-Korvo-2 V3.0 的主要组件和连接方式如下图所示。
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-electrical-block-diagram.png
     :align: center
     :scale: 55%
-    :alt: ESP32-S3-Korvo-2 V3.1 电气功能框图
+    :alt: ESP32-S3-Korvo-2 V3.0 电气功能框图
     
-    ESP32-S3-Korvo-2 V3.1 电气功能框图
+    ESP32-S3-Korvo-2 V3.0 电气功能框图
 
 
 供电说明
@@ -200,44 +199,44 @@ USB 与电池供电
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-usb-ps.png
     :align: center
     :scale: 40%
-    :alt: ESP32-S3-Korvo-2 V3.1 - USB 电源供电
+    :alt: ESP32-S3-Korvo-2 V3.0 - USB 电源供电
     
-    ESP32-S3-Korvo-2 V3.1 - USB 电源供电
+    ESP32-S3-Korvo-2 V3.0 - USB 电源供电
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-battery-ps.png
     :align: center
     :scale: 40%
-    :alt: ESP32-S3-Korvo-2 V3.1 - 电池供电
+    :alt: ESP32-S3-Korvo-2 V3.0 - 电池供电
     
-    ESP32-S3-Korvo-2 V3.1 - 电池供电
+    ESP32-S3-Korvo-2 V3.0 - 电池供电
 
 如下图所示，当 USB 供电和电池供电同时存在时，VBUS 为高电平，Q14 处于截止状态，VBAT 自动与系统电源切断。此时，USB 为系统供电。
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-ps-options.png
     :align: center
     :scale: 40%
-    :alt: ESP32-S3-Korvo-2 V3.1 - 供电选项
+    :alt: ESP32-S3-Korvo-2 V3.0 - 供电选项
     
-    ESP32-S3-Korvo-2 V3.1 - 供电选项
+    ESP32-S3-Korvo-2 V3.0 - 供电选项
 
 音频和数字独立供电
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-ESP32-S3-Korvo-2 V3.1 可为音频组件和 ESP 模组提供相互独立的电源，可降低数字组件给音频信号带来的噪声并提高组件的整体性能。
+ESP32-S3-Korvo-2 V3.0 可为音频组件和 ESP 模组提供相互独立的电源，可降低数字组件给音频信号带来的噪声并提高组件的整体性能。
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-digital-ps.png
     :align: center
     :scale: 40%
-    :alt: ESP32-S3-Korvo-2 V3.1 - 数字供电
+    :alt: ESP32-S3-Korvo-2 V3.0 - 数字供电
     
-    ESP32-S3-Korvo-2 V3.1 - 数字供电
+    ESP32-S3-Korvo-2 V3.0 - 数字供电
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-audio-ps.png
     :align: center
     :scale: 40%
-    :alt: ESP32-S3-Korvo-2 V3.1 - 音频供电
+    :alt: ESP32-S3-Korvo-2 V3.0 - 音频供电
     
-    ESP32-S3-Korvo-2 V3.1 - 音频供电
+    ESP32-S3-Korvo-2 V3.0 - 音频供电
 
 
 管脚分配列表
@@ -655,7 +654,7 @@ ESP32-S3-Korvo-2 V3.1 可为音频组件和 ESP 模组提供相互独立的电�
    * - 4
      - P0
      - 
-     - 
+     - PA_CTRL
    * - 5
      - P1
      - LCD_CTRL
@@ -737,30 +736,30 @@ AEC 电路
 
 AEC 电路为 AEC 算法提供参考信号。
 
-ESP32-S3-Korvo-2 V3.1 回声参考信号源有两路兼容设计，一路是 Codec (ES8311) DAC 输出 (DAC_AOUTLN/DAC_AOUTLP)，一路是 PA (NS4150) 输出 (PA_OUTL+/PA_OUTL-)。默认推荐将 Codec (ES8311) DAC 输出 (DAC_AOUTLN/DAC_AOUTLP) 作为回声参考信号，同时将下图中电阻 R132、R140 NC。
+ESP32-S3-Korvo-2 回声参考信号源有两路兼容设计，一路是 Codec (ES8311) DAC 输出 (DAC_AOUTLN/DAC_AOUTLP)，一路是 PA (NS4150) 输出 (PA_OUTL+/PA_OUTL-)。默认推荐将 Codec (ES8311) DAC 输出 (DAC_AOUTLN/DAC_AOUTLP) 作为回声参考信号，同时将下图中电阻 R132、R140 NC。
 
 回声参考信号通过 ADC (ES7210) 的 ADC_MIC3P/ADC_MIC3N 采集后送回给 ESP32-S3 用于 AEC 算法。
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-codec-o.png
     :align: center
     :scale: 60%
-    :alt: ESP32-S3-Korvo-2 V3.1 - AEC Codec DAC 输出（点击放大）
+    :alt: ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC 输出（点击放大）
     
-    ESP32-S3-Korvo-2 V3.1 - AEC Codec DAC 输出（点击放大）
+    ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC 输出（点击放大）
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-pa-o.png
     :align: center
     :scale: 30%
-    :alt: ESP32-S3-Korvo-2 V3.1 - AEC PA 输出 （点击放大）
+    :alt: ESP32-S3-Korvo-2 V3.0 - AEC PA 输出 （点击放大）
     
-    ESP32-S3-Korvo-2 V3.1 - AEC PA 输出（点击放大）
+    ESP32-S3-Korvo-2 V3.0 - AEC PA 输出（点击放大）
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-signal-collection.png
     :align: center
     :scale: 60%
-    :alt: ESP32-S3-Korvo-2 V3.1 - AEC 参考信号采集（点击放大）
+    :alt: ESP32-S3-Korvo-2 V3.0 - AEC 参考信号采集（点击放大）
     
-    ESP32-S3-Korvo-2 V3.1 - 参考信号采集（点击放大）
+    ESP32-S3-Korvo-2 V3.0 - 参考信号采集（点击放大）
 
 硬件设置选项
 ----------------------
@@ -771,13 +770,13 @@ ESP32-S3-Korvo-2 V3.1 回声参考信号源有两路兼容设计，一路是 Cod
 可以通过两种方式使 ESP 开发板进入下载模式：
 
 - 手动按下 Boot 和 RST 键，然后先松开 RST，再松开 Boot 键。
-- 由软件自动执行下载。软件利用串口的 DTR 和 RTS 信号来控制 ESP 开发板的 EN、IO0 管脚的状态。详情请参见 `ESP32-S3-Korvo-2 V3.1 原理图`_ (PDF)。
+- 由软件自动执行下载。软件利用串口的 DTR 和 RTS 信号来控制 ESP 开发板的 EN、IO0 管脚的状态。详情请参见 `ESP32-S3-Korvo-2 V3.0 原理图`_ (PDF)。
 
 
 ESP 管脚测试点分配
 -------------------
 
-本节介绍了 ESP32-S3-Korvo-2 V3.1 板上可分配的测试点。
+本节介绍了 ESP32-S3-Korvo-2 V3.0 板上可分配的测试点。
 
 测试点是裸通孔，具有标准的 2.54 毫米/0.1 英寸间距。您可能需要接入排针或排针插孔，从而连接外部硬件。
 
@@ -837,26 +836,16 @@ No.  I2C 管脚     ESP32-S3 管脚
 硬件版本
 ============
 
-ESP32-S3-Korvo-2 V3.1
------------------------
-
-删除 PA_CTRL 与 U4 IO 扩展芯片的连接，保留与 ESP32-S3 模组的连接。
-
-
-ESP32-S3-Korvo-2 V3.0
--------------------------
-
-:doc:`首次发布 <user-guide-esp32-s3-korvo-2-v3.0>`
-
+无历史版本。
 
 相关文档
 ========
 
 - `ESP32-S3 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_cn.pdf>`_ (PDF)
 - `ESP32-S3-WROOM-1/1U 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_cn.pdf>`_ (PDF)
-- `ESP32-S3-Korvo-2 V3.1 原理图`_ (PDF)
-- `ESP32-S3-Korvo-2 V3.1 PCB 布局图 <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-Korvo-2_V3.1_20221104.pdf>`_ (PDF)
+- `ESP32-S3-Korvo-2 V3.0 原理图`_ (PDF)
+- `ESP32-S3-Korvo-2 V3.0 PCB 布局图 <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-KORVO-2_V3.0_20210918.pdf>`_ (PDF)
 
 有关本开发板的更多设计文档，请联系我们的商务部门 `sales@espressif.com <sales@espressif.com>`_。
 
-.. _ESP32-S3-Korvo-2 V3.1 原理图: https://dl.espressif.com/dl/schematics/SCH_ESP32-S3-Korvo-2_V3.1.2_20240116.pdf
+.. _ESP32-S3-Korvo-2 V3.0 原理图: https://dl.espressif.com/dl/schematics/SCH_ESP32-S3-KORVO-2_V3_0_20210918.pdf
