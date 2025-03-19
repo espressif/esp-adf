@@ -15,7 +15,7 @@
 #include "esp_heap_caps.h"
 #include "cJSON.h"
 #include "audio_error.h"
-#include "http_client_request.h"
+#include "http_client_handler.h"
 #include "coze_http_request.h"
 
 
@@ -220,7 +220,7 @@ coze_http_req_result_t *coze_http_request(coze_http_req_config_t *config, req_sv
         { NULL, NULL },
     };
 
-    esp_err_t err = http_client_post(config->uri, header, req_body, &http_response);
+    esp_err_t err = http_client_handler(config->uri, header, req_body, &http_response);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "HTTP POST request failed: %s", esp_err_to_name(err));
         goto _clean_buffer;
@@ -237,17 +237,17 @@ coze_http_req_result_t *coze_http_request(coze_http_req_config_t *config, req_sv
 
 _clean_buffer:
     // clear up
-    http_req_safe_free(http_response.body, free);
-    http_req_safe_free(req_body, free);
+    http_req_safe_free(http_response.body, impl_free_fn);
+    http_req_safe_free(req_body, impl_free_fn);
 
     return req_result;
 }
 
 void coze_http_request_free(coze_http_req_result_t *result)
 {
-    http_req_safe_free(result->room_id, free);
-    http_req_safe_free(result->app_id, free);
-    http_req_safe_free(result->token, free);
-    http_req_safe_free(result->uid, free);
-    http_req_safe_free(result, free);
+    http_req_safe_free(result->room_id, impl_free_fn);
+    http_req_safe_free(result->app_id, impl_free_fn);
+    http_req_safe_free(result->token, impl_free_fn);
+    http_req_safe_free(result->uid, impl_free_fn);
+    http_req_safe_free(result, impl_free_fn);
 }

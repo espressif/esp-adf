@@ -118,6 +118,9 @@ void app_main()
     
     ESP_LOGI(TAG, "[3.1] Create algorithm stream for aec");
     aec_stream_cfg_t aec_config = AEC_STREAM_CFG_DEFAULT();
+#ifdef DEBUG_AEC_INPUT
+    aec_config.debug_aec = true;
+#endif // DEBUG_AEC_INPUT
 #if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD || CONFIG_ESP32_S3_KORVO2_V3_BOARD
     aec_config.input_format = "RM";
 #else

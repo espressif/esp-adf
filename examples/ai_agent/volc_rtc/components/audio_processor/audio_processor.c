@@ -76,6 +76,7 @@ struct recorder_pipeline_t {
     audio_element_handle_t  audio_encoder;
     audio_element_handle_t  raw_reader;
     audio_rec_handle_t      recorder_engine;
+    void                    *recorder_encoder;
     pipe_player_state_e     record_state;
 };
 
@@ -89,13 +90,14 @@ struct player_pipeline_t {
 };
 
 typedef struct {
-    audio_pipeline_handle_t pipeline;
-    audio_element_handle_t  spiffs_stream;
-    audio_element_handle_t  audio_decoder; // only support for wav; 16k, 16bit, double channel
-    audio_element_handle_t  i2s_stream_writer;
-    pipe_player_state_e     player_state;
-    bool                    running;
-    tone_play_callback_t    tone_cb;
+    audio_pipeline_handle_t    pipeline;
+    audio_element_handle_t     spiffs_stream;
+    audio_element_handle_t     audio_decoder;  // Only supports WAV format: 16 kHz, 16-bit, stereo (2 channels).
+    audio_element_handle_t     i2s_stream_writer;
+    audio_event_iface_handle_t evt;
+    pipe_player_state_e        player_state;
+    bool                       running;
+    tone_play_callback_t       tone_cb;
 } audio_player_t;
 
 static audio_player_t             *s_audio_player      = NULL;
@@ -325,18 +327,7 @@ esp_err_t player_pipeline_close(player_pipeline_handle_t player_pipeline)
         return ESP_FAIL;
     }
     audio_pipeline_terminate(player_pipeline->audio_pipeline);
-
-    audio_pipeline_unregister(player_pipeline->audio_pipeline, player_pipeline->raw_writer);
-    audio_pipeline_unregister(player_pipeline->audio_pipeline, player_pipeline->i2s_stream_writer);
-    audio_pipeline_unregister(player_pipeline->audio_pipeline, player_pipeline->audio_decoder);
-    audio_pipeline_unregister(player_pipeline->audio_pipeline, player_pipeline->player_rsp);
-
-    /* Release all resources */
-    audio_pipe_safe_free(player_pipeline->player_rsp, audio_element_deinit);
-    audio_pipe_safe_free(player_pipeline->raw_writer, audio_element_deinit);
-    audio_pipe_safe_free(player_pipeline->i2s_stream_writer, audio_element_deinit);
-    audio_pipe_safe_free(player_pipeline->audio_decoder, audio_element_deinit);
-    audio_pipe_safe_free(player_pipeline->audio_pipeline, audio_pipeline_deinit);
+    audio_pipeline_deinit(player_pipeline->audio_pipeline);
     audio_pipe_safe_free(player_pipeline, audio_free);
     return ESP_OK;
 };
@@ -360,7 +351,7 @@ static int input_cb_for_afe(int16_t *buffer, int buf_sz, void *user_ctx, TickTyp
     return raw_stream_read(s_recorder_pipeline->raw_reader, (char *)buffer, buf_sz);
 }
 
-void * audio_record_engine_init(recorder_pipeline_handle_t pipeline, rec_event_cb_t cb)
+void *audio_record_engine_init(recorder_pipeline_handle_t pipeline, rec_event_cb_t cb)
 {
     recorder_sr_cfg_t recorder_sr_cfg = get_default_audio_record_config();
 #if defined (CONFIG_CONTINUOUS_CONVERSATION_MODE)
@@ -396,12 +387,19 @@ void * audio_record_engine_init(recorder_pipeline_handle_t pipeline, rec_event_c
     cfg.vad_start = 0;
 #endif // CONFIG_CONTINUOUS_CONVERSATION_MODE
     cfg.encoder_handle = recorder_encoder_create(&recorder_encoder_cfg, &cfg.encoder_iface);
+    pipeline->recorder_encoder = cfg.encoder_handle;
     pipeline->recorder_engine = audio_recorder_create(&cfg);
 #if defined (CONFIG_CONTINUOUS_CONVERSATION_MODE)
     vTaskDelay(pdMS_TO_TICKS(200));
     audio_recorder_trigger_start(pipeline->recorder_engine);
 #endif // CONFIG_CONTINUOUS_CONVERSATION_MODE
     return pipeline->recorder_engine;
+}
+
+void audio_record_engine_deinit(recorder_pipeline_handle_t pipeline)
+{
+    audio_recorder_destroy(pipeline->recorder_engine);
+    recorder_encoder_destroy(pipeline->recorder_encoder);
 }
 
 static void audio_player_state_task(void *arg)
@@ -468,12 +466,12 @@ esp_err_t audio_tone_init(tone_play_callback_t callback)
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
-    audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
-    audio_pipeline_set_listener(s_audio_player->pipeline, evt);
-    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), evt);
+    s_audio_player->evt = audio_event_iface_init(&evt_cfg);
+    audio_pipeline_set_listener(s_audio_player->pipeline, s_audio_player->evt);
+    audio_event_iface_set_listener(esp_periph_set_get_event_iface(set), s_audio_player->evt);
 
     s_audio_player->tone_cb = callback;
-    audio_thread_create(NULL, "audio_player_state_task", audio_player_state_task, (void *)evt, 5 * 1024, 15, true, 1);
+    audio_thread_create(NULL, "audio_player_state_task", audio_player_state_task, (void *)s_audio_player->evt, 5 * 1024, 15, true, 1);
 
     return ESP_OK;
 
@@ -513,4 +511,13 @@ esp_err_t audio_tone_stop(void)
     audio_pipeline_reset_elements(s_audio_player->pipeline);
     s_audio_player->player_state = PIPE_STATE_IDLE;
     return ESP_OK;
+}
+
+void audio_tone_deinit(void)
+{
+    audio_pipeline_stop(s_audio_player->pipeline);
+    audio_pipeline_wait_for_stop(s_audio_player->pipeline);
+    audio_pipeline_terminate(s_audio_player->pipeline);
+    audio_event_iface_destroy(s_audio_player->evt);
+    audio_pipeline_deinit(s_audio_player->pipeline);
 }

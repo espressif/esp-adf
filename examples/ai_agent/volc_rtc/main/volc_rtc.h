@@ -16,21 +16,13 @@ extern "C" {
 #endif
 
 /**
- * @brief  Initialize the Volc RTC module.
+ * @brief  Initialize the Volc RTC module and start the application.
  *
  * @return
  *     - ESP_OK: Initialization was successful.
  *     - Other: Appropriate erro code indicating the failure reason.
  */
-esp_err_t volc_rtc_init(void);
-
-/**
- * @brief  Deinitialize the Volc RTC module..
- *
- * @return
- *     - ESP_OK: Deinitialization was successful.
- */
-esp_err_t volc_rtc_deinit(void);
+esp_err_t volc_rtc_app_startup(void);
 
 #ifdef __cplusplus
 }
