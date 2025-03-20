@@ -207,10 +207,11 @@ function set_env_variable() {
 
 function check_apps_and_filter() {
   if [[ -n "${ADF_PATH}" && -n "${IDF_TARGET}" && -n "${AUDIO_BOARD}" && -n "${IDF_VERSION_TAG}" && -n "${SDKCFG_DEFAULTS}" ]]; then
-    echo -e "\e[32m$ source ${ADF_PATH}/tools/ci/apps_filter.sh ${IDF_TARGET} ${AUDIO_BOARD} ${IDF_VERSION_TAG} ${ADF_PATH}/tools/ci/apps.json ${ADF_PATH}/tools/ci/audio_board_idf.json\e[0m"
-    source ${ADF_PATH}/tools/ci/apps_filter.sh ${IDF_TARGET} ${AUDIO_BOARD} ${IDF_VERSION_TAG} ${ADF_PATH}/tools/ci/apps.json ${ADF_PATH}/tools/ci/audio_board_idf.json
+    echo -e "\e[32m$ python ${ADF_PATH}/tools/ci/apps_filter.py --target ${IDF_TARGET} --board ${AUDIO_BOARD} --idf_ver ${IDF_VERSION_TAG} --config_file ${ADF_PATH}/tools/ci/apps.yaml\e[0m"
+    python ${ADF_PATH}/tools/ci/apps_filter.py --target ${IDF_TARGET} --board ${AUDIO_BOARD} --idf_ver ${IDF_VERSION_TAG} --config_file ${ADF_PATH}/tools/ci/apps.yaml
     echo -e "\e[32m$ source ${ADF_PATH}/tools/ci/check_apps_json_and_sdkcfg.sh ${SDKCFG_DEFAULTS} ${AUDIO_BOARD}\e[0m"
     source ${ADF_PATH}/tools/ci/check_apps_json_and_sdkcfg.sh ${SDKCFG_DEFAULTS} ${AUDIO_BOARD}
+    export EXAMPLES=$(cat apps.txt)
   else
     echo "Environment variables are empty"
   fi

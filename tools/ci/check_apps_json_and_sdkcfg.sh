@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# This script is used to check the sdkconfig.defaults / sdkconfig.defaults.xxx & apps.json.
+# This script is used to check the sdkconfig.defaults / sdkconfig.defaults.xxx & apps.yaml.
 # The first parameter is the name of the configuration file to check.
 # The second parameter is the name of the development board to be checked
 
@@ -9,11 +9,11 @@
 
 set +e
 
-if ! type jq >/dev/null 2>&1;then
-    apt-get update
-    apt-get install jq -y
+if ! type yq >/dev/null 2>&1;then
+    wget https://github.com/mikefarah/yq/releases/download/v4.44.5/yq_linux_amd64 -O /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+    yq --version
 else
-    echo "The jq tool has been installed"
+    echo "The yq tool has been installed"
 fi
 
 cat apps.txt | grep -o 'examples/.*' > check_apps_json_and_sdk.txt
@@ -48,7 +48,7 @@ function check_audio_board() {
     done
 
     if [ ! -n "$result" ];then
-        echo "The error occurs in the definition of" ${line} "in apps.json"
+        echo "The error occurs in the definition of" ${line} "in apps.yaml"
         echo -e "\e[31m ERROR: not found support board \e[0m"
         APPS_CHECK_RESULT="FAIL"
     fi
@@ -72,8 +72,8 @@ function update_audio_hal() {
 
 while read line
 do
-    if jq ".[] | .app_dir == \"$line\"" ${ADF_PATH}/tools/ci/apps.json > /dev/null; then
-        audio_boards=$(jq ".[] | select(.app_dir == \"$line\") | .board" ${ADF_PATH}/tools/ci/apps.json)
+    if yq eval ".APPS[] | select(.app_dir == \"$line\")" ${ADF_PATH}/tools/ci/apps.yaml > /dev/null; then
+        audio_boards=$(yq eval ".APPS[] | select(.app_dir == \"$line\") | .board" ${ADF_PATH}/tools/ci/apps.yaml)
 
         # Check if the example's file(sdkconfg.defaults.xxx / sdkconfg.defaults) is missing
         check_sdkcfg
@@ -81,7 +81,6 @@ do
         check_audio_board
         # Update AUDIO_BOARD
         update_audio_hal $1 $2
-
     else
         echo -e "\e[31m ERROR:" $line "exist but not found it in apps.json \e[0m"
         APPS_CHECK_RESULT="FAIL"
