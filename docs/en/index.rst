@@ -5,12 +5,15 @@ Espressif Audio Development Guide
 This is the documentation for Espressif Audio Development Framework (ADF).
 
 
-+------------------+------------------+------------------+
-| |Get Started|_   | |API Reference|_ | |Design Guide|_  |
-+------------------+------------------+------------------+
-| `Get Started`_   | `API Reference`_ | `Design Guide`_  |
-+------------------+------------------+------------------+
-
++---------------------+------------------+------------------+
+| |Get Started|_      | |API Reference|_ | |Design Guide|_  |
++---------------------+------------------+------------------+
+| `Get Started`_      | `API Reference`_ | `Design Guide`_  |
++---------------------+------------------+------------------+
+| |Knowledge Center|_ |                  |                  |
++---------------------+------------------+------------------+
+| `Knowledge Center`_ |                  |                  |
++---------------------+------------------+------------------+
 
 .. |Get Started| image:: ../_static/get-started.png
 .. _Get Started: get-started/index.html
@@ -21,6 +24,8 @@ This is the documentation for Espressif Audio Development Framework (ADF).
 .. |Design Guide| image:: ../_static/design-guide.png
 .. _Design Guide: design-guide/index.html
 
+.. |Knowledge Center| image:: ../_static/knowledge-center.png
+.. _Knowledge Center: knowledge-center/index.html
 
 .. toctree::
     :hidden:
@@ -28,6 +33,7 @@ This is the documentation for Espressif Audio Development Framework (ADF).
     Get Started <get-started/index>
     API Reference <api-reference/index>
     Design Guide <design-guide/index>
+    Knowledge Center <knowledge-center/index>
     Resources <resources>
     Copyrights <COPYRIGHT>
     English-Chinese Glossary <english-chinese-glossary>
