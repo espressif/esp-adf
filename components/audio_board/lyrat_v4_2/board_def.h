@@ -60,6 +60,11 @@
 #define RECORD_HARDWARE_AEC       (false)
 #define BOARD_PA_GAIN             (10) /* Power amplifier gain defined by board (dB) */
 
+/**
+ * @brief ADC input data format
+ */
+#define AUDIO_ADC_INPUT_CH_FORMAT "N"
+
 extern audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE;
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \

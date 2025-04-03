@@ -62,6 +62,11 @@
 #define PA_ENABLE_GPIO            GPIO_NUM_12
 #define BOARD_PA_GAIN             (10) /* Power amplifier gain defined by board (dB) */
 
+/**
+ * @brief ADC input data format
+ */
+#define AUDIO_ADC_INPUT_CH_FORMAT "N"
+
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \

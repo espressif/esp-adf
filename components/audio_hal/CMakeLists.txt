@@ -35,7 +35,7 @@ set(COMPONENT_SRCS ./audio_hal.c
                     ./driver/tas5805m/tas5805m.c
                     )
 
-IF (NOT ((CONFIG_IDF_TARGET STREQUAL "esp32c3") OR (CONFIG_IDF_TARGET STREQUAL "esp32c6") OR (CONFIG_IDF_TARGET STREQUAL "esp32p4")))
+IF (NOT ((CONFIG_IDF_TARGET STREQUAL "esp32c3") OR (CONFIG_IDF_TARGET STREQUAL "esp32c6") OR (CONFIG_IDF_TARGET STREQUAL "esp32p4") OR (CONFIG_IDF_TARGET STREQUAL "esp32c5")))
     list(APPEND COMPONENT_SRCS 
     ./driver/zl38063/zl38063.c
     ./driver/zl38063/api_lib/vprocTwolf_access.c
@@ -49,7 +49,7 @@ endif()
 
 register_component()
 
-IF (NOT ((CONFIG_IDF_TARGET STREQUAL "esp32c3") OR (CONFIG_IDF_TARGET STREQUAL "esp32c6") OR (CONFIG_IDF_TARGET STREQUAL "esp32p4")))
+IF (NOT ((CONFIG_IDF_TARGET STREQUAL "esp32c3") OR (CONFIG_IDF_TARGET STREQUAL "esp32c6") OR (CONFIG_IDF_TARGET STREQUAL "esp32p4") OR (CONFIG_IDF_TARGET STREQUAL "esp32c5")))
     target_link_libraries(${COMPONENT_TARGET} INTERFACE "-L${CMAKE_CURRENT_LIST_DIR}/driver/zl38063/firmware")
     target_link_libraries(${COMPONENT_TARGET} INTERFACE firmware)
 ENDIF()

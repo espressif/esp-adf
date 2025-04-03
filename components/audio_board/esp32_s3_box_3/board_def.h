@@ -85,6 +85,11 @@
 #define HEADPHONE_DETECT          (-1)
 #define ES7210_MIC_SELECT         (ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2 | ES7210_INPUT_MIC3)
 
+/**
+ * @brief ADC input data format
+ */
+#define AUDIO_ADC_INPUT_CH_FORMAT "RMNM"
+
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 extern audio_hal_func_t AUDIO_CODEC_ES7210_DEFAULT_HANDLE;
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \

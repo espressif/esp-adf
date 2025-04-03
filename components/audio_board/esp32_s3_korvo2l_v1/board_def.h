@@ -124,6 +124,11 @@
 #define RECORD_HARDWARE_AEC         (true)
 #define BOARD_PA_GAIN               (6) /* Power amplifier gain defined by board (dB) */
 
+/**
+ * @brief ADC input data format
+ */
+#define AUDIO_ADC_INPUT_CH_FORMAT "MR"
+
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \

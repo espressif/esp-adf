@@ -140,6 +140,13 @@ bool audio_mem_spiram_stack_is_enabled(void);
 
 #define AUDIO_MEM_SHOW(x)  audio_mem_print(x, __LINE__, __func__)
 
+#define AUDIO_SAFE_FREE(ptr, free_fn) do {   \
+    if (ptr && free_fn != NULL ) {           \
+        free_fn(ptr);                        \
+        ptr = NULL;                          \
+    }                                        \
+} while (0)
+
 #ifdef __cplusplus
 }
 #endif

@@ -29,7 +29,6 @@
 #include "esp_err.h"
 #include "recorder_sr_iface.h"
 #include "esp_mn_models.h"
-#include "ch_sort.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,8 +57,7 @@ typedef void *recorder_sr_handle_t;
  *        the effectiveness of command word detection will be limited.
  */
 typedef struct {
-    afe_config_t afe_cfg;                               /*!< Configuration of AFE */
-    int8_t       input_order[DAT_CH_MAX];               /*!< Channel order of the input data */
+    afe_config_t *afe_cfg;                              /*!< Configuration of AFE */
     bool         multinet_init;                         /*!< Enable of speech command recognition */
     int          feed_task_core;                        /*!< Core id of feed task */
     int          feed_task_prio;                        /*!< Priority of feed task*/
@@ -73,40 +71,19 @@ typedef struct {
     char         *wn_wakeword;                          /*!< Wake Word for WakeNet to load. This is useful when multiple Wake Words are selected in sdkconfig. Setting this to NULL will use the first found model. */
 } recorder_sr_cfg_t;
 
-#if CONFIG_IDF_TARGET_ESP32
-#define INPUT_ORDER_DEFAULT() { \
-        DAT_CH_1,               \
-        DAT_CH_0,               \
-        DAT_CH_IDLE,            \
-        DAT_CH_IDLE,            \
-    }
-#elif CONFIG_IDF_TARGET_ESP32S3
-#define INPUT_ORDER_DEFAULT() { \
-        DAT_CH_2,               \
-        DAT_CH_0,               \
-        DAT_CH_IDLE,            \
-        DAT_CH_1,               \
-    }
-#else
-#define INPUT_ORDER_DEFAULT() { \
-        DAT_CH_IDLE,            \
-    }
-#endif
-
-#define DEFAULT_RECORDER_SR_CFG() {                 \
-    .afe_cfg          = AFE_CONFIG_DEFAULT(),       \
-    .input_order      = INPUT_ORDER_DEFAULT(),      \
-    .multinet_init    = true,                       \
-    .feed_task_core   = FEED_TASK_PINNED_CORE,      \
-    .feed_task_prio   = FEED_TASK_PRIO,             \
-    .feed_task_stack  = FEED_TASK_STACK_SZ,         \
-    .fetch_task_core  = FETCH_TASK_PINNED_CORE,     \
-    .fetch_task_prio  = FETCH_TASK_PRIO,            \
-    .fetch_task_stack = FETCH_TASK_STACK_SZ,        \
-    .rb_size          = SR_OUTPUT_RB_SIZE,          \
-    .partition_label  = "model",                    \
-    .mn_language      = ESP_MN_CHINESE,             \
-    .wn_wakeword      = NULL,                       \
+#define DEFAULT_RECORDER_SR_CFG(fmt, partition, sr_type, afe_mode) {                  \
+    .afe_cfg = afe_config_init(fmt, esp_srmodel_init(partition), sr_type, afe_mode),  \
+    .multinet_init = true,                                                            \
+    .feed_task_core = FEED_TASK_PINNED_CORE,                                          \
+    .feed_task_prio = FEED_TASK_PRIO,                                                 \
+    .feed_task_stack = FEED_TASK_STACK_SZ,                                            \
+    .fetch_task_core = FETCH_TASK_PINNED_CORE,                                        \
+    .fetch_task_prio = FETCH_TASK_PRIO,                                               \
+    .fetch_task_stack = FETCH_TASK_STACK_SZ,                                          \
+    .rb_size = SR_OUTPUT_RB_SIZE,                                                     \
+    .partition_label = partition,                                                     \
+    .mn_language = ESP_MN_CHINESE,                                                    \
+    .wn_wakeword = NULL,                                                              \
 }
 
 /**

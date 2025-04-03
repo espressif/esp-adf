@@ -7,7 +7,8 @@
 #include "audio_common.h"
 #include "i2s_stream.h"
 #include "wav_decoder.h"
-#include "es7210.h"
+#include "es8311.h"
+#include "board.h"
 
 #if defined (CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
 #include "raw_opus_encoder.h"
@@ -182,16 +183,11 @@ audio_element_handle_t create_audio_player_spiffs_stream(void)
 
 recorder_sr_cfg_t get_default_audio_record_config(void)
 {
-    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.aec_init = true;
+    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG(AUDIO_ADC_INPUT_CH_FORMAT, "model", AFE_TYPE_SR, AFE_MODE_LOW_COST);
+    recorder_sr_cfg.afe_cfg->aec_init = true;
     recorder_sr_cfg.multinet_init = false;
-    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
-    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
-    recorder_sr_cfg.afe_cfg.pcm_config.mic_num = 1;
-    recorder_sr_cfg.afe_cfg.pcm_config.ref_num = 1;
-    recorder_sr_cfg.afe_cfg.pcm_config.total_ch_num = 2;
-    recorder_sr_cfg.afe_cfg.wakenet_mode = DET_MODE_90;
-    recorder_sr_cfg.input_order[0] = DAT_CH_0;
-    recorder_sr_cfg.input_order[1] = DAT_CH_1;
+    recorder_sr_cfg.afe_cfg->memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg->agc_mode = AFE_MN_PEAK_NO_AGC;
+    recorder_sr_cfg.afe_cfg->wakenet_mode = DET_MODE_90;
     return recorder_sr_cfg;
 }

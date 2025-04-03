@@ -1,4 +1,4 @@
-/* Algorithm Example
+/* AEC Example
 
    This example code is in the Public Domain (or CC0 licensed, at your option.)
 
@@ -16,23 +16,21 @@
 #include "audio_pipeline.h"
 #include "board.h"
 #include "es8311.h"
-#ifdef CONFIG_ESP32_S3_KORVO2_V3_BOARD
-#include "es7210.h"
-#endif  /* CONFIG_ESP32_S3_KORVO2_V3_BOARD */
 #include "fatfs_stream.h"
 #include "i2s_stream.h"
-#include "algorithm_stream.h"
+#include "aec_stream.h"
 #include "wav_encoder.h"
 #include "mp3_decoder.h"
 #include "filter_resample.h"
 #include "audio_mem.h"
-#include "audio_sys.h"
-#include "audio_idf_version.h"
+#if defined(CONFIG_ESP32_S3_KORVO2_V3_BOARD) || defined(CONFIG_ESP32_S3_KORVO2L_V1_BOARD)
+#include "es7210.h"
+#endif  /* CONFIG_ESP32_S3_KORVO2_V3_BOARD */
 
-static const char *TAG = "ALGORITHM_EXAMPLES";
+static const char *TAG = "AEC_EXAMPLE";
 
 /* Debug original input data for AEC feature*/
-// #define DEBUG_ALGO_INPUT
+// #define DEBUG_AEC_INPUT
 
 #define I2S_SAMPLE_RATE     16000
 #if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD || CONFIG_ESP32_S3_KORVO2L_V1_BOARD
@@ -42,17 +40,9 @@ static const char *TAG = "ALGORITHM_EXAMPLES";
 #endif
 #define I2S_BITS            CODEC_ADC_BITS_PER_SAMPLE
 
-/* The AEC internal buffering mechanism requires that the recording signal
-   is delayed by around 0 - 10 ms compared to the corresponding reference (playback) signal. */
-#define DEFAULT_REF_DELAY_MS    0
-#define ESP_RING_BUFFER_SIZE    256
-
 extern const uint8_t adf_music_mp3_start[] asm("_binary_test_mp3_start");
 extern const uint8_t adf_music_mp3_end[]   asm("_binary_test_mp3_end");
 
-#if !RECORD_HARDWARE_AEC
-static ringbuf_handle_t ringbuf_ref;
-#endif
 static audio_element_handle_t i2s_stream_reader;
 static audio_element_handle_t i2s_stream_writter;
 
@@ -72,35 +62,19 @@ int mp3_music_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t 
 
 static int i2s_read_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
-
     size_t bytes_read = audio_element_input(i2s_stream_reader, buf, len);
-    if (bytes_read > 0) {
-#if (CONFIG_IDF_TARGET_ESP32 && !RECORD_HARDWARE_AEC)
-        algorithm_mono_fix((uint8_t *)buf, bytes_read);
-#endif
-    } else {
-        ESP_LOGE(TAG, "i2s read failed");
-    }
-
+    if (bytes_read <= 0) {
+        ESP_LOGE(TAG, "I2S read failed, %d", len);
+    } 
     return bytes_read;
 }
 
 static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_t wait_time, void *ctx)
 {
     int bytes_write = 0;
-
-#if !RECORD_HARDWARE_AEC
-    if (rb_write(ringbuf_ref, buf, len, wait_time) <= 0) {
-        ESP_LOGW(TAG, "ringbuf write timeout");
-    }
-#endif
-
-#if (CONFIG_IDF_TARGET_ESP32 && !RECORD_HARDWARE_AEC)
-    algorithm_mono_fix((uint8_t *)buf, len);
-#endif
     bytes_write = audio_element_output(i2s_stream_writter, buf, len);
     if (bytes_write < 0) {
-        ESP_LOGE(TAG, "i2s write failed");
+        ESP_LOGE(TAG, "I2S write failed, %d", len);
     }
     return bytes_write;
 }
@@ -128,10 +102,10 @@ void app_main()
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
     audio_hal_set_volume(board_handle->audio_hal, 80);
 #if CONFIG_ESP32_S3_KORVO2_V3_BOARD
-    es7210_adc_set_gain(ES7210_INPUT_MIC3, GAIN_0DB);
-    es7210_adc_set_gain(ES7210_INPUT_MIC2 | ES7210_INPUT_MIC1, GAIN_33DB);
-#endif  /* CONFIG_ESP32_S3_KORVO2_V3_BOARD */
-
+    es7210_adc_set_gain(ES7210_INPUT_MIC3, GAIN_30DB);
+#elif CONFIG_ESP32_S3_KORVO2L_V1_BOARD
+    es8311_set_mic_gain(ES8311_MIC_GAIN_24DB);
+#endif
     i2s_stream_cfg_t i2s_r_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(CODEC_ADC_I2S_PORT, I2S_SAMPLE_RATE, I2S_BITS, AUDIO_STREAM_READER);
     i2s_r_cfg.task_stack = -1;
     i2s_stream_set_channel_type(&i2s_r_cfg, I2S_CHANNELS);
@@ -141,29 +115,18 @@ void app_main()
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     audio_pipeline_handle_t pipeline_rec = audio_pipeline_init(&pipeline_cfg);
     mem_assert(pipeline_rec);
-
+    
     ESP_LOGI(TAG, "[3.1] Create algorithm stream for aec");
-    algorithm_stream_cfg_t algo_config = ALGORITHM_STREAM_CFG_DEFAULT();
-#if CONFIG_ESP32_S3_KORVO2_V3_BOARD || CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    algo_config.input_format = "RM";
-#elif CONFIG_ESP32_S3_KORVO2L_V1_BOARD
-    algo_config.input_format = "MR";
+    aec_stream_cfg_t aec_config = AEC_STREAM_CFG_DEFAULT();
+#if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD || CONFIG_ESP32_S3_KORVO2_V3_BOARD
+    aec_config.input_format = "RM";
+#else
+    aec_config.input_format = "MR";
 #endif
-#if !RECORD_HARDWARE_AEC
-    algo_config.input_type = ALGORITHM_STREAM_INPUT_TYPE2;
-#endif
-#if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-    algo_config.ref_linear_factor = 3;
-#endif
-#ifdef DEBUG_ALGO_INPUT
-    algo_config.debug_input = true;
-#endif
-    algo_config.sample_rate = I2S_SAMPLE_RATE;
-    algo_config.out_rb_size = ESP_RING_BUFFER_SIZE;
-    audio_element_handle_t element_algo = algo_stream_init(&algo_config);
-    audio_element_set_music_info(element_algo, I2S_SAMPLE_RATE, 1, ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT);
-    audio_element_set_read_cb(element_algo, i2s_read_cb, NULL);
-    audio_element_set_input_timeout(element_algo, portMAX_DELAY);
+    audio_element_handle_t element_aec = aec_stream_init(&aec_config);
+    mem_assert(element_aec);
+    audio_element_set_read_cb(element_aec, i2s_read_cb, NULL);
+    audio_element_set_input_timeout(element_aec, portMAX_DELAY);
 
     ESP_LOGI(TAG, "[3.2] Create wav encoder to encode wav format");
     wav_encoder_cfg_t wav_cfg = DEFAULT_WAV_ENCODER_CONFIG();
@@ -175,16 +138,16 @@ void app_main()
     audio_element_handle_t fatfs_stream_writer = fatfs_stream_init(&fatfs_wd_cfg);
 
     ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline_rec");
-    audio_pipeline_register(pipeline_rec, element_algo, "algo");
+    audio_pipeline_register(pipeline_rec, element_aec, "aec");
     audio_pipeline_register(pipeline_rec, wav_encoder, "wav_encoder");
     audio_pipeline_register(pipeline_rec, fatfs_stream_writer, "fatfs_stream");
 
-    ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->algorithm-->wav_encoder-->fatfs_stream-->[sdcard]");
-    const char *link_rec[3] = {"algo", "wav_encoder", "fatfs_stream"};
+    ESP_LOGI(TAG, "[3.5] Link it together [codec_chip]-->aec-->wav_encoder-->fatfs_stream-->[sdcard]");
+    const char *link_rec[3] = {"aec", "wav_encoder", "fatfs_stream"};
     audio_pipeline_link(pipeline_rec, &link_rec[0], 3);
 
     ESP_LOGI(TAG, "[3.6] Set up  uri (file as fatfs_stream, wav as wav encoder)");
-#ifdef DEBUG_ALGO_INPUT
+#ifdef DEBUG_AEC_INPUT
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/aec_in.wav");
 #else
     audio_element_set_uri(fatfs_stream_writer, "/sdcard/aec_out.wav");
@@ -194,11 +157,12 @@ void app_main()
     audio_pipeline_cfg_t pipeline_play_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     audio_pipeline_handle_t pipeline_play = audio_pipeline_init(&pipeline_play_cfg);
 
-    ESP_LOGI(TAG, "[4.2] Create mp3 decoder to decode mp3 file");
+    ESP_LOGI(TAG, "[4.1] Create mp3 decoder to decode mp3 file");
     mp3_decoder_cfg_t mp3_decoder_cfg = DEFAULT_MP3_DECODER_CONFIG();
     audio_element_handle_t mp3_decoder = mp3_decoder_init(&mp3_decoder_cfg);
     audio_element_set_read_cb(mp3_decoder, mp3_music_read_cb, NULL);
 
+    ESP_LOGI(TAG, "[4.1] Create resample filter to resample mp3");
     rsp_filter_cfg_t rsp_cfg_w = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_cfg_w.src_rate = 16000;
     rsp_cfg_w.src_ch = 1;
@@ -221,16 +185,6 @@ void app_main()
     const char *link_tag[2] = {"mp3_decoder", "filter_w"};
     audio_pipeline_link(pipeline_play, &link_tag[0], 2);
 
-#if !RECORD_HARDWARE_AEC
-    // Please reference the way of ALGORITHM_STREAM_INPUT_TYPE2 in "algorithm_stream.h"
-    ringbuf_ref = rb_create(ALGORITHM_STREAM_RINGBUFFER_SIZE, 1);
-    audio_element_set_multi_input_ringbuf(element_algo, ringbuf_ref, 0);
-
-    /* When the playback signal far ahead of the recording signal,
-        the playback signal needs to be delayed */
-    algo_stream_set_delay(element_algo, ringbuf_ref, DEFAULT_REF_DELAY_MS);
-#endif
-
     ESP_LOGI(TAG, "[5.0] Set up event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
@@ -246,18 +200,17 @@ void app_main()
     audio_element_info_t fat_info = {0};
     audio_element_getinfo(fatfs_stream_writer, &fat_info);
     fat_info.sample_rates = I2S_SAMPLE_RATE;
-    fat_info.bits = ALGORITHM_STREAM_DEFAULT_SAMPLE_BIT;
-#ifdef DEBUG_ALGO_INPUT
+    fat_info.bits = 16;
+#ifdef DEBUG_AEC_INPUT
     fat_info.channels = 2;
 #else
     fat_info.channels = 1;
 #endif
+
     audio_element_setinfo(fatfs_stream_writer, &fat_info);
 
     audio_pipeline_run(pipeline_play);
     audio_pipeline_run(pipeline_rec);
-
-    ESP_LOGI(TAG, "[7.0] Listen for all pipeline events");
 
     while (1) {
         audio_event_iface_msg_t msg;
@@ -285,8 +238,7 @@ void app_main()
             break;
         }
     }
-
-    ESP_LOGI(TAG, "[8.0] Stop audio_pipeline");
+    ESP_LOGI(TAG, "[7.0] Stop audio_pipeline");
 
     audio_pipeline_stop(pipeline_rec);
     audio_pipeline_wait_for_stop(pipeline_rec);

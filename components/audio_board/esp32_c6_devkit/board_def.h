@@ -94,6 +94,11 @@
 
 extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
 
+/**
+ * @brief ADC input data format
+ */
+#define AUDIO_ADC_INPUT_CH_FORMAT "MR"
+
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
         .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \

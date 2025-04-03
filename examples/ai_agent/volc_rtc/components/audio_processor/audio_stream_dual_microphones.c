@@ -196,12 +196,12 @@ audio_element_handle_t create_tone_i2s_stream(void)
 
 recorder_sr_cfg_t get_default_audio_record_config(void)
 {
-    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.aec_init = true;
+    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG(AUDIO_ADC_INPUT_CH_FORMAT, "model", AFE_TYPE_SR, AFE_MODE_LOW_COST);
+    recorder_sr_cfg.afe_cfg->aec_init = true;
     recorder_sr_cfg.multinet_init = false;
     recorder_sr_cfg.fetch_task_core = 0;
     recorder_sr_cfg.feed_task_core = 1;
-    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
-    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
+    recorder_sr_cfg.afe_cfg->memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg->agc_mode = AFE_MN_PEAK_NO_AGC;
     return recorder_sr_cfg;
 }

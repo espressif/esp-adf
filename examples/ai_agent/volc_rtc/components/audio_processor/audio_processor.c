@@ -75,7 +75,7 @@ static bool    record_flag = true;
 static FILE   *sfp         = NULL;
 static int64_t start_tm    = 0;
 #define AEC_DEBUDG_FILE_NAME "/sdcard/rec.pcm"
-#define AEC_RECORD_TIME       (20)  // s
+#define AEC_RECORD_TIME       (30)  // s
 #endif  // ENABLE_AEC_DEBUG
 
 #define audio_pipe_safe_free(x, fn) do { \
@@ -378,9 +378,9 @@ void * audio_record_engine_init(recorder_pipeline_handle_t pipeline, rec_event_c
 {
     recorder_sr_cfg_t recorder_sr_cfg = get_default_audio_record_config();
 #if defined (CONFIG_CONTINUOUS_CONVERSATION_MODE)
-    recorder_sr_cfg.afe_cfg.wakenet_init = false;
-    recorder_sr_cfg.afe_cfg.se_init = false;
-    recorder_sr_cfg.afe_cfg.vad_init = false;
+    recorder_sr_cfg.afe_cfg->wakenet_init = false;
+    recorder_sr_cfg.afe_cfg->se_init = false;
+    recorder_sr_cfg.afe_cfg->vad_init = false;
 #endif // CONFIG_CONTINUOUS_CONVERSATION_MODE
 
     recorder_encoder_cfg_t recorder_encoder_cfg = { 0 };

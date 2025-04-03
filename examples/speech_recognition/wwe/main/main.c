@@ -284,6 +284,7 @@ static int input_cb_for_afe(int16_t *buffer, int buf_sz, void *user_ctx, TickTyp
 
 static void start_recorder()
 {
+    char *audio_sr_input_fmt = AUDIO_ADC_INPUT_CH_FORMAT;
     audio_element_handle_t i2s_stream_reader;
     audio_pipeline_handle_t pipeline;
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -294,6 +295,7 @@ static void start_recorder()
     }
 
 #if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
+    audio_sr_input_fmt = "RM";
     bits_per_sample = 16;
 #else
     bits_per_sample = CODEC_ADC_BITS_PER_SAMPLE;
@@ -332,10 +334,10 @@ static void start_recorder()
     audio_pipeline_run(pipeline);
     ESP_LOGI(TAG, "Recorder has been created");
 
-    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG();
-    recorder_sr_cfg.afe_cfg.memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
-    recorder_sr_cfg.afe_cfg.wakenet_init = WAKENET_ENABLE;
-    recorder_sr_cfg.afe_cfg.vad_mode = VAD_MODE_4;
+    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG(audio_sr_input_fmt, "model", AFE_TYPE_SR, AFE_MODE_LOW_COST);
+    recorder_sr_cfg.afe_cfg->memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
+    recorder_sr_cfg.afe_cfg->wakenet_init = WAKENET_ENABLE;
+    recorder_sr_cfg.afe_cfg->vad_mode = VAD_MODE_4;
     recorder_sr_cfg.multinet_init = MULTINET_ENABLE;
 #if !defined(CONFIG_SR_MN_CN_NONE)
     recorder_sr_cfg.mn_language = ESP_MN_CHINESE;
@@ -344,15 +346,13 @@ static void start_recorder()
 #else
     recorder_sr_cfg.mn_language = "";
 #endif
-    recorder_sr_cfg.afe_cfg.aec_init = RECORD_HARDWARE_AEC;
-    recorder_sr_cfg.afe_cfg.agc_mode = AFE_MN_PEAK_NO_AGC;
+    recorder_sr_cfg.afe_cfg->aec_init = RECORD_HARDWARE_AEC;
+    recorder_sr_cfg.afe_cfg->agc_mode = AFE_MN_PEAK_NO_AGC;
 #if (CONFIG_ESP32_S3_KORVO2_V3_BOARD == 1 || CONFIG_ESP32_P4_FUNCTION_EV_BOARD == 1) && (CONFIG_AFE_MIC_NUM == 1)
-    recorder_sr_cfg.afe_cfg.pcm_config.mic_num = 1;
-    recorder_sr_cfg.afe_cfg.pcm_config.ref_num = 1;
-    recorder_sr_cfg.afe_cfg.pcm_config.total_ch_num = 2;
-    recorder_sr_cfg.afe_cfg.wakenet_mode = DET_MODE_90;
-    recorder_sr_cfg.input_order[0] = DAT_CH_0;
-    recorder_sr_cfg.input_order[1] = DAT_CH_1;
+    recorder_sr_cfg.afe_cfg->pcm_config.mic_num = 1;
+    recorder_sr_cfg.afe_cfg->pcm_config.ref_num = 1;
+    recorder_sr_cfg.afe_cfg->pcm_config.total_ch_num = 2;
+    recorder_sr_cfg.afe_cfg->wakenet_mode = DET_MODE_90;
 #if defined(CONFIG_ESP32_S3_KORVO2_V3_BOARD)
     es7210_mic_select(ES7210_INPUT_MIC1 | ES7210_INPUT_MIC3);
 #endif
