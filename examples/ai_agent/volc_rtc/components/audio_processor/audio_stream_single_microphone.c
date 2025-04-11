@@ -1,3 +1,12 @@
+/* Audio stream single microphones example code
+
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
+
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+*/
+
 #include "esp_log.h"
 
 #include "audio_stream.h"
@@ -9,7 +18,6 @@
 #include "wav_decoder.h"
 #include "es8311.h"
 #include "board.h"
-
 #if defined (CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
 #include "raw_opus_encoder.h"
 #include "raw_opus_decoder.h"
@@ -22,11 +30,11 @@
 #endif
 #include "audio_stream.h"
 
-static const char *TAG = "audio_stream_8311";
+static const char *TAG = "SINGLE_MICROPHONE";
 
 #if defined (CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
 #define SAMPLE_RATE         16000
-#define BIT_RATE            64000
+#define BIT_RATE            32000
 #define COMPLEXITY          0
 #define FRAME_TIME_MS       20 
 #endif
@@ -81,6 +89,7 @@ audio_element_handle_t create_record_i2s_stream(void)
     audio_element_handle_t i2s_stream = NULL;
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(I2S_NUM_0, 16000, 16, AUDIO_STREAM_READER);
     i2s_stream = i2s_stream_init(&i2s_cfg);
+    es8311_set_mic_gain(ES8311_MIC_GAIN_36DB);
     return i2s_stream;
 }
 
@@ -183,11 +192,14 @@ audio_element_handle_t create_audio_player_spiffs_stream(void)
 
 recorder_sr_cfg_t get_default_audio_record_config(void)
 {
-    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG(AUDIO_ADC_INPUT_CH_FORMAT, "model", AFE_TYPE_SR, AFE_MODE_LOW_COST);
+    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG("MR", "model", AFE_TYPE_SR, AFE_MODE_LOW_COST);
     recorder_sr_cfg.afe_cfg->aec_init = true;
     recorder_sr_cfg.multinet_init = false;
     recorder_sr_cfg.afe_cfg->memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     recorder_sr_cfg.afe_cfg->agc_mode = AFE_MN_PEAK_NO_AGC;
+    recorder_sr_cfg.afe_cfg->pcm_config.mic_num = 1;
+    recorder_sr_cfg.afe_cfg->pcm_config.ref_num = 1;
+    recorder_sr_cfg.afe_cfg->pcm_config.total_ch_num = 2;
     recorder_sr_cfg.afe_cfg->wakenet_mode = DET_MODE_90;
     return recorder_sr_cfg;
 }

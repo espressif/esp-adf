@@ -8,29 +8,49 @@
 
 本例程主要功能是连接豆包 volcano rtc 云端并进行语音交互，可以适用于智能音箱产品、智能玩具、语音控制设备等。此示例是一个综合性较强的例程，使用了 ADF 提供的高封装简易实用接口。建议用户构建项目时，优先使用 ADF 提供的高封装接口，可快速简便地构建项目。
 
-目前 demo 中支持两种模式， 一个是唤醒对话模式，一个是普通模式 
-- 唤醒对话模式是用户需要通过唤醒词去唤醒设备，唤醒后设备进入语音交互模式，用户可以与设备进行语音交互。默认的唤醒词是 `Hi 乐鑫`, 可以在 `menuconfig -> ESP Speech Recognition → use wakenet → Select wake words` 中去更换唤醒词
-- 普通模式是用户无需唤醒词，直接与设备进行语音交互。
-
 ## 环境配置
 
 ### 硬件要求
 
-目前 volcano rtc 仅仅支持 `esp32s3` 相关的开发板。
+目前该 example 支持 `esp32s3` 和 `esp32`  相关的开发板。
+默认使用的是 `ESP32-S3-Korvo-2 v3` 开发板。
 
 ## 前期准备
 
 1. 关于豆包简介
 
-请参考[火山·引擎 开放平台](https://www.volcengine.com/docs/6348/1315561) 开通火山引擎服务， 需要获取 `appid`, `userid`, `roomid` 和 `临时token`, 将四个参数填到 `config.h` 对应的参数中， 然后在 [api-explorer](https://api.volcengine.com/api-explorer/?action=AssumeRole&groupName=%E8%A7%92%E8%89%B2%E6%89%AE%E6%BC%94&serviceCode=sts&version=2018-01-01) 中启动智能体，之后设备就可以连接到火山引擎进行语音交互了。
+- 请参考 [火山·引擎 开放平台](https://www.volcengine.com/docs/6348/1315561) 开通火山引擎服务的正式版本，需要获取 `appid`, `userid`, `roomid` 和 `临时token`, 需要先使能 RTC_TOKEN_REQUEST, 将四个参数填到 `menuconfig-> Example Configuration` 对应的配置中， 然后在 [api-explorer](https://api.volcengine.com/api-explorer?action=StartVoiceChat&groupName=%E6%99%BA%E8%83%BD%E4%BD%93&serviceCode=rtc&version=2024-12-01) 中启动智能体，之后设备就可以连接到火山引擎进行语音交互了。
 
-2. 在 `config.h` 中配置 wifi 的 SSID 和 PASSWORD。
+- 如果使用 [coze 方案](https://www.coze.cn/open/docs/developer_guides/coze_api_overview)，需要注册相关的账号，example 默认使能 coze 的测试账号，该测试账号每次的使用时间是 5 分钟。
+
+2. 关于 wifi 配置
+ - 在 menuconfig 中， 填写 SSID 和 PASSWORD， 然后编译下载到开发板中。
+
+3. 关于编码格式
+ - 在 menuconfig 中，可选择 `PCMA` , `OPUS` 和 `AAC` 编解码格式，  默认是 `OPUS` 格式。
+ > `OPUS` 编码默认的是 32kbps。
+
+4. 关于工作模式
+ 
+ 目前支持 普通模式 和 唤醒模式
+ - **普通模式** 用户无需唤醒词，直接与设备进行语音交互。
+- **唤醒对话模式** 用户需要通过唤醒词唤醒设备，唤醒后用户可与设备进行语音交互。默认的唤醒词是 `Hi 乐鑫`, 可在 `menuconfig -> ESP Speech Recognition → use wakenet → Select wake words` 中选择唤醒词。
+
+> 如果使用唤醒模式，建议使能 120M flash 和 120M PSRAM
+  - CONFIG_IDF_EXPERIMENTAL_FEATURES=y
+  - CONFIG_ESPTOOLPY_FLASHFREQ_120M=y
+  - CONFIG_SPIRAM_SPEED_120M=y
+
+
+## 使用说明
+
+### 配置
 
 ## 编译和下载
 
 ### IDF 默认分支
 
-本例程支持 IDF release/v5.3.1 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
+本例程支持 IDF release/v5.4 及以后的分支，例程默认使用 ADF 的內建分支 `$ADF_PATH/esp-idf`。
 
 ### 编译和下载
 
@@ -48,7 +68,7 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程运行后，会先尝试连接 Wi-Fi 网络，待成功获取 IP 地址后会进入一个房间。 进入房间成功后，log 中会有 `volc_rtc: join room success` 的打印，设备端听到服务器下发的"你好呀，很高兴认识你，哈哈哈"，便可以与智能体进行对话。
+- 例程运行时，会先尝试连接 Wi-Fi 网络，待成功获取 IP 地址后会进入 RTC 房间。log 中会有 `volc_rtc: join room success` 的打印，设备端播放服务器下发的"你好呀，很高兴认识你，哈哈哈"类的提示语，便可以与智能体进行对话。
 ```c
 I (25) boot: ESP-IDF v5.5-dev-972-gfa41fafd27-dirty 2nd stage bootloader
 I (25) boot: compile time Jan 10 2025 10:39:14
@@ -268,10 +288,17 @@ I (7018) main_task: Returned from app_main()
 
 ## 故障排除
 
-- 出现加入房间房间打印后没有任何声音
- > 请检查 token 的有效性和智能体是否开启, 更多的查看 [常见的集成问题](https://bytedance.larkoffice.com/docx/TEMCdrJ3VouilPxSpjbc6CyUnAh)
-- 出现自问自答的现象
- > 需要确认 AEC 是否生效, 可以在 `audiuo_processor.c` 中将宏 `ENABLE_AEC_DEBUG`打开，再次运行，查看录音数据
+#### 加入房间后没有任何声音
+- 检查 token 有效性：token 是连接服务的关键凭证，其有效性直接关系到语音交互功能能否正常使用。您可通过 [web 端](https://www.volcengine.com/docs/6348/77374) 验证 token 的有效性。
+- 确认智能体是否开启：智能体未开启会致使无法正常进行语音交互与声音输出。
+- 查看常见集成问题：更多详细的排查方法与解决方案，可查看 [常见的集成问题](https://bytedance.larkoffice.com/docx/TEMCdrJ3VouilPxSpjbc6CyUnAh)
+
+
+#### 出现自问自答的现象
+ - 不同硬件所采用的麦克风、喇叭型号各异，且麦克风与喇叭之间的距离也不尽相同。这些因素可能致使采集到的数据出现增益过大或过小的情况，最终使得回声消除（AEC）效果大打折扣 。
+ - 需要确认 `AEC` 是否生效, 在 `menuconfig` 中使能 `ENABLE_RECORDER_DEBUG`，然后查看录音数据。需要注意两点
+   - 确定回采参考信号是否出现饱和
+   - 定麦克风录音是否出现饱和
 
 ## 技术支持
 请按照下面的链接获取技术支持：

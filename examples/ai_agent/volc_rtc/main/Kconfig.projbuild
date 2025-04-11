@@ -1,5 +1,19 @@
 menu "Example Configuration"
 
+config WIFI_SSID
+    string "WiFi SSID"
+    default "myssid"
+    help
+        SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+    default "mypasswod"
+    help
+        WiFi password (WPA or WPA2) for the example to use.
+
+        Can be left blank if the network has no security set.
+
 choice AUDIO_DECODER_SUPPORT
     prompt "Audio Decoder"
     default AUDIO_SUPPORT_OPUS_DECODER
@@ -20,11 +34,67 @@ choice AUDIO_CONVERSATION_MODE_SUPPORT
     default CONTINUOUS_CONVERSATION_MODE
 
 config LANGUAGE_WAKEUP_MODE
+    select USE_WAKENET
+    select SR_WN_WN9_HILEXIN
     bool "LANGUAGE-WAKEUP-MODE"
 
 config CONTINUOUS_CONVERSATION_MODE
     bool "CONTINUOUS-CONVERSATION-MODE"
 
 endchoice
+
+choice RTC_MODE_CHOICE
+    prompt "rtc mode choice"
+    default COZE_REQUEST
+    help
+        Select rtc request mode
+
+    config COZE_REQUEST
+        bool "enable coze request"
+
+    config RTC_TOKEN_REQUEST
+        bool "enable rtc token request"
+endchoice
+
+
+config COZE_URL
+    string "COZE-URL"
+    default "http://115.190.92.216:8899"
+    depends on COZE_REQUEST
+
+    config COZE_AUTHORIZATION
+        string "COZE-AUTHORIZATION"
+        default "af78e3067582ac8c04ba20174410bd1"
+        depends on COZE_REQUEST
+    
+    config COZE_BOTID
+        string "COZE-BOTID"
+        default "ep-20241104163951-sdmjc"
+        depends on COZE_REQUEST
+
+
+config RTC_TOKEN
+    depends on RTC_TOKEN_REQUEST
+    config APPID
+        string "appid"
+        depends on RTC_TOKEN_REQUEST
+    
+    config ROOMID
+        string "roomid"
+        depends on RTC_TOKEN_REQUEST
+    
+    config UID
+        string "userid"
+        depends on RTC_TOKEN_REQUEST
+
+    config TOKEN
+        string "token"
+        depends on RTC_TOKEN_REQUEST
+
+config ENABLE_RECORDER_DEBUG
+    bool "enable recorder debug save to sdcard"
+    default "n"
+    help
+        Save the data processed by AEC to the SD card. The saved file name is "rec.pcm", and by default, 30 seconds' worth of data will be saved.
 
 endmenu

@@ -24,7 +24,9 @@ extern "C" {
 #define __byte_rtc_api__ __attribute__((visibility("default")))
 #endif
 
-#define BYTE_RTC_API_VERSION "1.0.2"
+#define BYTE_RTC_API_VERSION "1.0.3"
+#define BYTE_RTC_API_VERSION_NUM 0x1003
+
 
 /**
  * @locale zh
@@ -393,7 +395,12 @@ typedef enum {
      * @brief PCMA
      */
     AUDIO_DATA_TYPE_PCMA    = 4,
-   
+
+    /**
+     * @locale zh
+     * @brief PCM
+     */
+    AUDIO_DATA_TYPE_PCM = 5,
 } audio_data_type_e;
 
 /**
@@ -459,6 +466,23 @@ typedef struct {
      *        - false：否        
      */
     bool auto_subscribe_video;
+
+    /**
+     * @locale zh
+     * @brief 是否自动发布本端用户的音频流。<br>
+     *        - true： 是
+     *        - false：否   
+     */
+
+    bool auto_publish_audio;
+
+    /**
+     * @locale zh
+     * @brief 是否自动发布本端用户的视频流。<br>
+     *        - true： 是
+     *        - false：否   
+     */
+    bool auto_publish_video;
 
 } byte_rtc_room_options_t;
 
@@ -622,12 +646,12 @@ void (*on_key_frame_gen_req)(byte_rtc_engine_t engine,const char * room, const c
  * @param room 房间名
  * @param uid 远端用户名
  * @param sent_ts 发送时间 （暂不支持）
- * @param codec 音频编码类型，参看 audio_codec_type_e{@link #audio_codec_type_e}
+ * @param data 音频数据类型，参看 audio_data_type_e{@link #audio_data_type_e}
  * @param data_ptr 音频数据
  * @param data_len 音频数据长度，单位字节
  */
 void (*on_audio_data)(byte_rtc_engine_t engine,const char * room, const char * uid ,uint16_t sent_ts,
-                      audio_codec_type_e codec, const void * data_ptr, size_t data_len);
+    audio_data_type_e codec, const void * data_ptr, size_t data_len);
 
 /**
  * @locale zh
@@ -741,7 +765,7 @@ void (*on_fini_notify)(byte_rtc_engine_t engine);
  * @brief 获取 SDK 版本号
  * @return SDK 版本号
  */
-extern const char * byte_rtc_get_version(void);
+extern __byte_rtc_api__ const char * byte_rtc_get_version(void);
 
 /**
  * @locale zh
