@@ -82,32 +82,32 @@ static int on_function_calling_message_received(const cJSON* root, const char* j
 
     cJSON *tool_calls = cJSON_GetObjectItem(root, "tool_calls");
     if (!cJSON_IsArray(tool_calls)) {
-        ESP_LOGE(TAG , "`tool_calls` is not array") 
-        return 1;
+        ESP_LOGE(TAG , "`tool_calls` is not array");
+        return -1;
     }
 
     cJSON *tool_call_item = cJSON_GetArrayItem(tool_calls, 0);
     if (!tool_call_item) {
-        ESP_LOGE(TAG, "Get tool_call_item falied")
-        return ;
+        ESP_LOGE(TAG, "Get tool_call_item falied");
+        return -1;
     }
 
     cJSON *function_obj = cJSON_GetObjectItem(tool_call_item, "function");
     if (!function_obj) {
         ESP_LOGE(TAG, "Get function_obj falied");
-        return ;
+        return -1;
     }
 
     cJSON *arguments = cJSON_GetObjectItem(function_obj, "arguments");
     if (!cJSON_IsString(arguments)) {
         ESP_LOGE(TAG, "Get arguments falied");
-        return 1;
+        return -1;
     }
 
     cJSON *arguments_json = cJSON_Parse(arguments->valuestring);
     if (!arguments_json) {
         ESP_LOGE(TAG, "Parse arguments_json falied");
-        return 1;
+        return -1;
     }
 
     cJSON *cmd = cJSON_GetObjectItem(arguments_json, "命令");
