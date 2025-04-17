@@ -31,6 +31,8 @@ config ESP32_S3_BOX_BOARD
     bool "ESP32-S3-BOX"
 config ESP32_S3_BOX_3_BOARD
     bool "ESP32-S3-BOX-3"
+config M5STACK_ATOMS3R_BOARD
+    bool "M5STACK-ATOMS3R"
 config ESP32_C3_LYRA_V2_BOARD
     bool "ESP32-C3-Lyra-v2.0"
 config ESP32_C6_DEVKIT_BOARD
