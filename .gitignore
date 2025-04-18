@@ -27,6 +27,13 @@ examples/**/build
 examples/**/managed_components
 examples/**/dependencies.lock
 
+# Components files
+components/**/sdkconfig
+components/**/sdkconfig.old
+components/**/build
+components/**/managed_components
+components/**/dependencies.lock
+
 # Doc build artifacts
 docs/_build/
 docs/*/_build/
