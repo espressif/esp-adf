@@ -16,7 +16,7 @@ INSTRUCTIONS
 
 Before submitting a new issue, please follow the checklist and try to find the answer.
 
-- [ ] I have read the documentation [Espressif Audio Development Guide](https://docs.espressif.com/projects/esp-adf/en/latest/index.html) and the issue is not addressed there.
+- [ ] I have read the documentation [Espressif Advanced Development Framework Guide](https://docs.espressif.com/projects/esp-adf/en/latest/index.html) and the issue is not addressed there.
 - [ ] I have updated my ADF and IDF branch (master or release) to the latest version and checked that the issue is present there.
 - [ ] I have searched the issue tracker for a similar issue and not found a similar issue.
 
