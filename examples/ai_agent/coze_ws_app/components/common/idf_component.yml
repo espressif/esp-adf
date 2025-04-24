@@ -1,0 +1,9 @@
+dependencies:
+  espressif/gmf_core:
+    version: "^0.6"
+  espressif/gmf_io:
+    version: "^0.6"
+  espressif/gmf_misc:
+    version: "^0.6"
+  espressif/gmf_audio:
+    version: "^0.6"
