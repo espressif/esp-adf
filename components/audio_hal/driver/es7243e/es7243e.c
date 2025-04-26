@@ -27,9 +27,11 @@
 #include "board.h"
 #include "esp_log.h"
 
-static char *TAG = "DRV7243E";
-static i2c_bus_handle_t i2c_handle;
+static const char *TAG = "DRV7243E";
+
 static int es7243e_addr = 0x20;
+
+static i2c_bus_handle_t i2c_handle;
 
 audio_hal_func_t AUDIO_CODEC_ES7243E_DEFAULT_HANDLE = {
     .audio_codec_initialize = es7243e_adc_init,

@@ -42,7 +42,7 @@
 #define ES7210_MIC_SELECT (ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2)
 #endif  /* ES7210_MIC_SELECT */
 
-static char *TAG = "ES7210";
+static const char *TAG = "ES7210";
 
 static struct {
     i2c_bus_handle_t i2c_handle;

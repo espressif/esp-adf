@@ -4,7 +4,7 @@
 #include "esp_log.h"
 #include "audio_mem.h"
 
-static char *TAG = "AUDIO_URL";
+static const char *TAG = "AUDIO_URL";
 
 static unsigned char char_to_hex(unsigned char x)
 {

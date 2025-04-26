@@ -16,7 +16,8 @@ from pytest_embedded import Dut
 @pytest.mark.esp32
 @pytest.mark.esp32s2
 @pytest.mark.esp32s3
+@pytest.mark.esp32p4
 @pytest.mark.ADF_EXAMPLE_GENERIC
-def test_cli(dut: Dut)-> None:
+def test_str_detect(dut: Dut)-> None:
     dut.expect(r'Receive music info from', timeout=100)
     dut.expect(r'Element has not create when AUDIO_ELEMENT_TERMINATE', timeout=100)

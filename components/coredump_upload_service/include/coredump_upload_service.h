@@ -34,16 +34,16 @@ extern "C" {
 #endif
 
 /**
- * @brief coredump service configuration parameters
+ * @brief  coredump service configuration parameters
  */
 typedef struct {
-    int task_stack;           /*!< >0 Service task stack; =0 with out task created */
-    int task_prio;            /*!< Service task priority (based on freeRTOS priority) */
-    int task_core;            /*!< Service task running in core (0 or 1) */
-    periph_service_cb evt_cb; /*!< Service callback function */
-    void *cb_ctx;             /*!< Callback context */
-    bool (*do_post)(char *url, uint32_t *data, size_t len); /*!< POST interface, users can override this to customize the http client.
-                                                                if left NULL, the service will use the default one */
+    int               task_stack;                           /*!< >0 Service task stack; =0 with out task created */
+    int               task_prio;                            /*!< Service task priority (based on freeRTOS priority) */
+    int               task_core;                            /*!< Service task running in core (0 or 1) */
+    periph_service_cb evt_cb;                               /*!< Service callback function */
+    void             *cb_ctx;                               /*!< Callback context */
+    bool (*do_post)(char *url, uint8_t *data, size_t len);  /*!< POST interface, users can override this to customize the http client.
+                                                                 if left NULL, the service will use the default one */
 } coredump_upload_service_config_t;
 
 #define COREDUMP_UPLOAD_SERVICE_DEFAULT_CONFIG() \

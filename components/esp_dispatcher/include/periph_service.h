@@ -59,20 +59,20 @@ typedef esp_err_t (*periph_service_io)(void *ioctl_handle, int cmd, int value);
 typedef esp_err_t (*periph_service_cb)(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx);
 
 /**
- * @brief Peripheral service configurations
+ * @brief  Peripheral service configurations
  */
 typedef struct {
-    int                         task_stack;             /*!< >0 Service task stack; =0 with out task created */
-    int                         task_prio;              /*!< Service task priority (based on freeRTOS priority) */
-    int                         task_core;              /*!< Service task running in core (0 or 1) */
-    TaskFunction_t              task_func;              /*!< Service task function */
-    bool                        extern_stack;           /*!< Task stack allocate on the extern ram */
-    periph_service_ctrl         service_start;          /*!< Start function */
-    periph_service_ctrl         service_stop;           /*!< Stop function */
-    periph_service_ctrl         service_destroy;        /*!< Destroy function */
-    periph_service_io           service_ioctl;          /*!< In out control function */
-    char                        *service_name;          /*!< Name of peripheral service */
-    void                        *user_data;             /*!< User data */
+    int                 task_stack;       /*!< >0 Service task stack; =0 with out task created */
+    int                 task_prio;        /*!< Service task priority (based on freeRTOS priority) */
+    int                 task_core;        /*!< Service task running in core (0 or 1) */
+    TaskFunction_t      task_func;        /*!< Service task function */
+    bool                extern_stack;     /*!< Task stack allocate on the extern ram */
+    periph_service_ctrl service_start;    /*!< Start function */
+    periph_service_ctrl service_stop;     /*!< Stop function */
+    periph_service_ctrl service_destroy;  /*!< Destroy function */
+    periph_service_io   service_ioctl;    /*!< In out control function */
+    const char         *service_name;     /*!< Name of peripheral service */
+    void               *user_data;        /*!< User data */
 } periph_service_config_t;
 
 /**

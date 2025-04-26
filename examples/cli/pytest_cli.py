@@ -17,6 +17,7 @@ from pytest_embedded import Dut
 @pytest.mark.esp32
 @pytest.mark.esp32s2
 @pytest.mark.esp32s3
+@pytest.mark.esp32p4
 @pytest.mark.ADF_EXAMPLE_GENERIC
 @pytest.mark.flaky(reruns=1, reruns_delay=5)
 def test_cli(dut: Dut)-> None:

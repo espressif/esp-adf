@@ -1,10 +1,5 @@
 .apply_idf_patch: &apply_idf_patch |
-  if [ -n "${IDF_PATCH_DIR}/${IDF_PATCH}" ]; then
-      cd "$IDF_PATH"
-      echo "$IDF_PATCH_DIR/$IDF_PATCH"
-      git apply "$IDF_PATCH_DIR/$IDF_PATCH"
-      cd -
-  fi
+  ${ESP_PYTHON} ${ADF_PATH}/tools/adf_install_patches.py apply-patch
 
 .update_source: &update_source
   - fetch_idf_branch ${IDF_VERSION_TAG}
@@ -17,7 +12,7 @@
 
 .build_esp_adf_unit_test_template: &build_esp_adf_unit_test_template
   stage: build
-  image: ciregistry.espressif.cn:8443/esp-env-v5.3:1
+  image: ciregistry.espressif.cn:8443/esp-env-v5.4:1
   tags:
     - adf_build
   variables:
@@ -44,8 +39,6 @@
   variables:
     LOG_PATH: "$CI_PROJECT_DIR/log_ut_make"
     OUTPUT_PATH: ${IDF_PATH}/tools/unit-test-app/output
-    IDF_PATCH_DIR: "$ADF_PATH/idf_patches"
-    IDF_PATCH: idf_v5.3_freertos.patch
   script:
     - *update_source
     - cd $ADF_PATH
@@ -58,7 +51,7 @@ esp_adf_libs_components_test:
     - .rules:build:unit-test
     - .build_esp_adf_tests_make
   variables:
-    IDF_VERSION_TAG: v5.3
+    IDF_VERSION_TAG: default
     IDF_TAG_FLAG: false
     IDF_TARGET: esp32s3
     DEEP_CLONE: "true"

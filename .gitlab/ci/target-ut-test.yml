@@ -1,5 +1,5 @@
 .target_ut_test_template:
-  image: ciregistry.espressif.cn:8443/target-test-env-v5.3:1
+  image: ciregistry.espressif.cn:8443/target-test-env-v5.4:1
   stage: target_test
   timeout: 24 hour
   cache:
@@ -21,8 +21,7 @@
       junit: XUNIT_RESULT.xml
     expire_in: 1 week
   variables:
-    IDF_VERSION_TAG: release/v5.3
-    IDF_TAG_FLAG: false
+    IDF_VERSION_TAG: default
   before_script:
     - source ${ADF_PATH}/tools/ci/utils.sh
     - check_idf_version $IDF_VERSION_TAG

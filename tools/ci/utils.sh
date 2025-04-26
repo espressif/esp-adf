@@ -105,11 +105,29 @@ function setup_tools_and_idf_python_venv() {
   cd -
 }
 
+function get_default_idf_version() {
+  pushd ${ADF_PATH} > /dev/null
+  # Get the remote repository address of esp-idf
+  idf_url=$(git config --file .gitmodules --get submodule.esp-idf.url)
+  IDF_VERSION_COMMIT_ID=$(git submodule | grep "esp-idf" | sed -r 's/-(.*) esp-idf/\1/g' | awk '{print $1}')
+  popd > /dev/null
+  pushd ${IDF_PATH} > /dev/null
+  # Query the remote branch to which the commit belongs
+  export IDF_VERSION_TAG=$(git ls-remote "$idf_url" | grep "$IDF_VERSION_COMMIT_ID" | grep -E 'tags/v|release/v' | sed -E 's|.*/(v[0-9]+\.[0-9]+).*|\1|')
+  popd > /dev/null
+}
+
 function check_idf_version() {
   # This function prioritizes obtaining the release/${IDF_VERSION_TAG} branch based on the ${IDF_VERSION_TAG} variable.
-  # If release/${IDF_TAG_FLAG} does not exist, then ${IDF_VERSION_TAG} is considered a coommit ID.
-  # If ${IDF_TAG_FLAG} is true, then ${IDF_VERSION_TAG} is considered the tag version
+  # If release/${IDF_TAG_FLAG} does not exist, then ${IDF_VERSION_TAG} is considered a commit ID.
+  # If ${IDF_TAG_FLAG} is true, then ${IDF_VERSION_TAG} is considered the tag version.
+  # If the passed parameter is 'default', get the default idf version first.
   local idf_ver_tag="${1}"
+  if [[ "$idf_ver_tag" == "default" ]]; then
+    get_default_idf_version
+    idf_ver_tag="${IDF_VERSION_TAG}"
+  fi
+
   if [[ "$IDF_TAG_FLAG" = "true" ]]; then
     export IDF_VERSION="${idf_ver_tag}"
   else
@@ -153,12 +171,6 @@ function set_idf() {
       git checkout ${IDF_VERSION}
       echo "The IDF branch is "${IDF_VERSION}
   fi
-
-  git log -1
-  # Removes the mqtt submodule, so the next submodule update doesn't fail
-  rm -rf $IDF_PATH/components/mqtt/esp-mqtt
-  git submodule update --init --recursive --depth 1
-
   popd
 }
 
@@ -178,24 +190,32 @@ function update_submodule_remote() {
 function fetch_idf_branch() {
   local idf_ver="${1}"
   update_submodule_remote
-  check_idf_version ${idf_ver}
+  if [[ "$idf_ver" != "default" ]]; then
+    check_idf_version ${idf_ver}
 
-  if [[ -n "${IDF_PATH}" ]]; then
-    pushd ${IDF_PATH}
-    git init
-    git clean -f
-    local result=$(git remote)
-    if [[ -n "$result" ]]; then
-      git remote set-url origin ${GITLAB_SSH_SERVER}/espressif/esp-idf.git
+    if [[ -n "${IDF_PATH}" ]]; then
+      pushd ${IDF_PATH}
+      git init
+      git clean -f
+      local result=$(git remote)
+      if [[ -n "$result" ]]; then
+        git remote set-url origin ${GITLAB_SSH_SERVER}/espressif/esp-idf.git
+      else
+        git remote add origin ${GITLAB_SSH_SERVER}/espressif/esp-idf.git
+      fi
+      popd
+
+      set_idf
     else
-      git remote add origin ${GITLAB_SSH_SERVER}/espressif/esp-idf.git
+      echo "IDF_PATH not set"
     fi
-    popd
-
-    set_idf
-  else
-    echo "IDF_PATH not set"
   fi
+  pushd $IDF_PATH > /dev/null
+  git log -1
+  # Removes the mqtt submodule, so the next submodule update doesn't fail
+  rm -rf $IDF_PATH/components/mqtt/esp-mqtt
+  git submodule update --init --recursive --depth 1
+  popd > /dev/null
 }
 
 function set_env_variable() {
@@ -207,6 +227,10 @@ function set_env_variable() {
 
 function check_apps_and_filter() {
   if [[ -n "${ADF_PATH}" && -n "${IDF_TARGET}" && -n "${AUDIO_BOARD}" && -n "${IDF_VERSION_TAG}" && -n "${SDKCFG_DEFAULTS}" ]]; then
+    if [[ "$IDF_VERSION_TAG" == "default" ]]; then
+      get_default_idf_version
+    fi
+
     echo -e "\e[32m$ python ${ADF_PATH}/tools/ci/apps_filter.py --target ${IDF_TARGET} --board ${AUDIO_BOARD} --idf_ver ${IDF_VERSION_TAG} --config_file ${ADF_PATH}/tools/ci/apps.yaml\e[0m"
     python ${ADF_PATH}/tools/ci/apps_filter.py --target ${IDF_TARGET} --board ${AUDIO_BOARD} --idf_ver ${IDF_VERSION_TAG} --config_file ${ADF_PATH}/tools/ci/apps.yaml
     echo -e "\e[32m$ source ${ADF_PATH}/tools/ci/check_apps_json_and_sdkcfg.sh ${SDKCFG_DEFAULTS} ${AUDIO_BOARD}\e[0m"

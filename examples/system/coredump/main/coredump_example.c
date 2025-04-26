@@ -91,7 +91,7 @@ void app_main()
     ESP_ERROR_CHECK(esp_netif_init());
 #else
     tcpip_adapter_init();
-#endif
+#endif  /* (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)) */
 
     ESP_LOGI(TAG, "[1.0] Initialize peripherals management");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
@@ -112,7 +112,7 @@ void app_main()
         coredump_upload_service_config_t coredump_upload_service_cfg = COREDUMP_UPLOAD_SERVICE_DEFAULT_CONFIG();
 #if CUSTOMIZE_POST
         coredump_upload_service_cfg.do_post = do_http_post;
-#endif
+#endif  /* CUSTOMIZE_POST */
         periph_service_handle_t uploader = coredump_upload_service_create(&coredump_upload_service_cfg);
         if (NULL != uploader) {
             result = coredump_upload(uploader, CONFIG_COREDUMP_UPLOAD_URI);
@@ -121,6 +121,10 @@ void app_main()
     }
     ESP_LOGI(TAG, "result %d", result);
     if (result == ESP_FAIL) {
+#if __XTENSA__
         __asm__ __volatile__("ill");
+#elif __riscv
+        __asm__ __volatile__("unimp");
+#endif  /* __XTENSA__ */
     }
 }

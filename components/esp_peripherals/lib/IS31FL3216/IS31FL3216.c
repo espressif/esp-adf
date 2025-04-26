@@ -50,7 +50,7 @@ typedef struct {
 
 uint8_t Is31Value[10] = {0x80, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-static char *TAG = "IS31";
+static const char *TAG = "IS31";
 
 /**
  * @brief set software shutdown mode
