@@ -29,17 +29,18 @@
 | 13  | getspeed  |  获取速度                                                                   |  cli_get_speed  |
 | 14  | join      |  作为 station 与 Wi-Fi AP 连接                                                   |  wifi_set  |
 | 15  | wifi      |  获取已连接的 AP 信息                                              |  wifi_info  |
-| 16  | led       |  Lyrat-MSC LED 灯带模式                                                   |  led  |
-| 17  | scan      |  扫描 microSD 卡中的音乐文件，命令为 "scan [path]"，如 "scan /sdcard"          |  playlist_sd_scan  |
-| 18  | list      |  显示扫描的播放列表                                                        |  playlist_sd_show  |
-| 19  | next      |  播放下 x 个文件，命令为 "next [step]"                                    |  playlist_sd_next  |
-| 20  | prev      |  播放上 x 个文件，命令为 "prev [step]"                                |  playlist_sd_prev  |
-| 21  | mode      |  设置自动播放模式，命令为 "mode [value]"， 0 表示仅播放一次，其他值表示列表内循环播放|  playlist_set_mode  |
-| 22  | reboot    |  重启系统                                                                |  sys_reset  |
-| 23  | free      |  获取系统空闲内存                                                       |  show_free_mem  |
-| 24  | stat      |  显示所有 FreeRTOS 任务处理时间                                    |  run_time_stats  |
-| 25  | tasks     |  获取正在运行的任务信息                                          |  task_list  |
-| 26  | system    |  获取所有 FreeRTOS 任务状态信息                                    |  task_real_time_states  |
+| 16  | blufi     |  进入蓝牙配网状态                                                  |  blufi_start  |
+| 17  | led       |  Lyrat-MSC LED 灯带模式                                                   |  led  |
+| 18  | scan      |  扫描 microSD 卡中的音乐文件，命令为 "scan [path]"，如 "scan /sdcard"          |  playlist_sd_scan  |
+| 19  | list      |  显示扫描的播放列表                                                        |  playlist_sd_show  |
+| 20  | next      |  播放下 x 个文件，命令为 "next [step]"                                    |  playlist_sd_next  |
+| 21  | prev      |  播放上 x 个文件，命令为 "prev [step]"                                |  playlist_sd_prev  |
+| 22  | mode      |  设置自动播放模式，命令为 "mode [value]"， 0 表示仅播放一次，其他值表示列表内循环播放|  playlist_set_mode  |
+| 23  | reboot    |  重启系统                                                                |  sys_reset  |
+| 24  | free      |  获取系统空闲内存                                                       |  show_free_mem  |
+| 25  | stat      |  显示所有 FreeRTOS 任务处理时间                                    |  run_time_stats  |
+| 26  | tasks     |  获取正在运行的任务信息                                          |  task_list  |
+| 27  | system    |  获取所有 FreeRTOS 任务状态信息                                    |  task_real_time_states  |
 
 
 ## 环境配置
