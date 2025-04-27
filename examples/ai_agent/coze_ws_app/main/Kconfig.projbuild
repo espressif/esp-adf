@@ -1,0 +1,38 @@
+menu "Example Audio Configuration"
+
+source "../components/common/Kconfig.in"
+
+#
+# Select how the audio conversation is triggered
+#
+choice
+    prompt "Audio Conversation Trigger Mode"
+    default CONTINUOUS_CONVERSATION_MODE
+
+config VOICE_WAKEUP_MODE
+    bool "Wake Word Mode"
+    select SR_WN_WN9_HILEXIN
+    help
+      System is activated by a predefined wake word (e.g. 'Hi Lexin').
+
+config CONTINUOUS_CONVERSATION_MODE
+    bool "Continuous Mode"
+    help
+      Keeps the system active after the initial trigger for ongoing conversation.
+
+config KEY_PRESS_DIALOG_MODE
+    bool "Key Press Mode"
+    help
+      System is triggered by a physical key press.
+
+endchoice
+
+config COZE_BOT_ID
+    string "COZE_BOT_ID"
+    default "7239506**************"
+
+config COZE_ACCESS_TOKEN
+    string "COZE_ACCESS_TOKEN"
+    default "pat_******************"
+
+endmenu

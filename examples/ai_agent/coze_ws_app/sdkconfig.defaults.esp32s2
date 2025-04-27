@@ -1,0 +1,5 @@
+#
+# Audio HAL
+#
+CONFIG_ESP32_S2_KALUGA_1_V1_2_BOARD=y
+# end of Audio HAL
