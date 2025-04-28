@@ -2,7 +2,7 @@
 Get Started
 ***********
 
-This document is intended to help users set up the software environment for the development of audio applications using hardware based on the ESP32 family of chips by Espressif. After that, a simple example will show you how to use ESP-ADF (Espressif Audio Development Framework).
+This document is intended to help users set up the software environment for the development of audio applications using hardware based on the ESP32 family of chips by Espressif. After that, a simple example will show you how to use ESP-ADF (Espressif Advanced Development Framework).
 
 Development Board Overview
 ==========================
@@ -40,7 +40,8 @@ Quick Start
 This section provides quick steps to run a simple ADF sample project on an ESP device for experienced users. For beginners, please go through the complete steps from :ref:`get-started-setup-esp-idf` to :ref:`get-started-build-monitor` to build a project.
 
 .. note::
-    If you encounter issues in the following steps, you could refer to the complete steps from :ref:`get-started-setup-esp-idf` to :ref:`get-started-build-monitor` or describe them in `GitHub Issues <https://github.com/espressif/esp-adf/issues>`_ or `ESP Forum <https://esp32.com/viewforum.php?f=20>`_.
+    - If you want to install using an IED, please refer to Section :ref:`vs-code-extension` VS Code or Section :ref:`idf-eclipse-plugin-esp-ide`.
+    - If you encounter issues in the following steps, you could refer to the complete steps from :ref:`get-started-setup-esp-idf` to :ref:`get-started-build-monitor` or describe them in `GitHub Issues <https://github.com/espressif/esp-adf/issues>`_ or `ESP Forum <https://esp32.com/viewforum.php?f=20>`_.
 
 
 Linux and macOS
@@ -138,9 +139,9 @@ Configure your PC according to **Getting Started** section of **ESP-IDF Programm
 
     This guide uses the directory ``~/esp`` on Linux and macOS or ``%userprofile%\esp`` on Windows as an installation folder for ESP-ADF. You can use any directory, but you will need to adjust paths for the commands accordingly. Keep in mind that ESP-ADF does not support spaces in paths.
 
-To make the installation easier and less prone to errors, use the ``~/esp`` default directory for the installation. 
+To make the installation easier and less prone to errors, use the ``~/esp`` default directory for the installation.
 
-If this is your first exposure to the `ESP-IDF <https://github.com/espressif/esp-idf>`_, then it is recommended to get familiar with **hello_world** or **blink** example first. 
+If this is your first exposure to the `ESP-IDF <https://github.com/espressif/esp-idf>`_, then it is recommended to get familiar with **hello_world** or **blink** example first.
 
 After getting familiar with ESP-IDF, decide on which ESP-IDF version to use for your application depending on the Espressif chip that you have and your project type. For this, consult `Versions <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/versions.html>`_ section of ESP-IDF Programming Guide.
 
@@ -426,6 +427,7 @@ Now you are ready to try some other :adf:`examples`, or go right to developing y
 
 The first line contains ``ADF_PATH`` to point the toolchain to another file in ESP-ADF directory that provides configuration variables and path to ESP-ADF :adf:`components` reacquired by the toolchain. You need similar ``Makefile`` in your own applications developed with the ESP-ADF.
 
+.. _vs-code-extension:
 
 VS Code Extension
 =================
@@ -451,6 +453,8 @@ VS Code Extension
 
 6. On the toolbar at the bottom of VS Code, click the plug-in symbol ``Select Port`` to configure the serial port and click the lightning symbol ``Flash Device`` to flash firmware. After the firmware is flashed successfully, click ``Monitor Device`` to start the monitor function. Or, you can also use the flame symbol to build, flash, and monitor the example at the same time.
 
+
+.. _idf-eclipse-plugin-esp-ide:
 
 IDF Eclipse Plugin and Espressif IDE
 ====================================
@@ -490,7 +494,7 @@ To import existing ESP-ADF examples, go to ``File`` > ``Import`` > ``Espressif``
 Quick Start
 ~~~~~~~~~~~~~
 
-1. Select a project from ``Project Explorer``. 
+1. Select a project from ``Project Explorer``.
 
 2. In the **Launch Mode** drop-down menu, select ``Run``.
 

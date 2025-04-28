@@ -9,11 +9,11 @@ The **ESP-ADF** provides a range of API components including **Audio Streams**, 
 
 .. figure:: ../_static/adf_block_diagram.png
     :align: center
-    :alt: Espressif Audio Development Framework
+    :alt: Espressif Advanced Development Framework
     :figclass: align-center
 
-    Espressif Audio Development Framework
+    Espressif Advanced Development Framework
 
 The ESP-ADF also provides integration with **Baidu DauerOS** cloud services. A range of components is coming to provide integration with DeepBrain, Amazon, Google, Alibaba and Turing cloud services.
 
-The **ESP-ADF** builds on well established, FreeRTOS based, Espressif IOT Development Framework `ESP-IDF <https://github.com/espressif/esp-idf>`_. 
+The **ESP-ADF** builds on well established, FreeRTOS based, Espressif IOT Development Framework `ESP-IDF <https://github.com/espressif/esp-idf>`_.
