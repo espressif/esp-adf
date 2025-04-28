@@ -13,3 +13,6 @@ targets:
   - esp32p4
   - esp32c3
   - esp32c6
+
+examples:
+  - path: ../../examples/ai_agent/coze_ws_app

@@ -81,6 +81,7 @@ typedef void (*esp_coze_chat_event_callback_t)(esp_coze_chat_event_t event, char
     .mode                      = ESP_COZE_CHAT_SPEECH_INTERRUPT_MODE, \
     .audio_type                = ESP_COZE_CHAT_AUDIO_TYPE_PCM,        \
     .websocket_connect_timeout = 30000,                               \
+    .websocket_buffer_size     = 20480,                               \
     .subscribe_event           = NULL,                                \
     .audio_callback            = NULL,                                \
     .event_callback            = NULL,                                \
@@ -109,6 +110,7 @@ typedef struct {
     esp_coze_chat_mode_t            mode;                      /*!< Chat mode: interruptible or normal */
     esp_coze_chat_audio_type_t      audio_type;                /*!< Type of audio input/output to use */
     int                             websocket_connect_timeout; /*!< Websocet connect timeout time (ms) */
+    int                             websocket_buffer_size;     /*!< Websocket buffer size (bytes) */
     const char                    **subscribe_event;           /*!< Customize subscription events. Specific event reference https://www.coze.cn/open/docs/developer_guides/streaming_chat_event Currently,
                                                             the code defaults to subscribing to `{"conversation.audio.delta", "conversation.message.delta", "conversation.chat.completed",
                                                             "input_audio_buffer.speech_started", "input_audio_buffer.speech_stopped", "chat.created", "error"}` events.
