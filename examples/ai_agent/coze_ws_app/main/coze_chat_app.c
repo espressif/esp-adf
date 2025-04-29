@@ -13,7 +13,9 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_check.h"
+#ifndef CONFIG_KEY_PRESS_DIALOG_MODE
 #include "esp_gmf_afe.h"
+#endif  /* CONFIG_KEY_PRESS_DIALOG_MODE */
 #include "esp_gmf_oal_sys.h"
 #include "esp_gmf_oal_thread.h"
 #include "esp_gmf_oal_mem.h"
@@ -29,7 +31,6 @@ static char *TAG = "COZE_CHAT_APP";
 
 struct coze_chat_t {
     esp_coze_chat_handle_t chat;
-    EventGroupHandle_t     wakeup_event;
     bool                   wakeuped;
     esp_gmf_oal_thread_t   read_thread;
     esp_gmf_oal_thread_t   btn_thread;
@@ -67,6 +68,7 @@ static esp_err_t init_coze_chat()
     chat_config.audio_callback = audio_data_callback;
     chat_config.event_callback = audio_event_callback;
 #ifdef CONFIG_KEY_PRESS_DIALOG_MODE
+    chat_config.websocket_buffer_size = 4096;
     chat_config.mode = ESP_COZE_CHAT_NORMAL_MODE;
 #endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
 
@@ -158,7 +160,7 @@ static void audio_data_read_task(void *pv)
         ret = audio_recorder_read_data(data, 640);
         esp_coze_chat_send_audio_data(coze_chat.chat, (char *)data, ret);
 
-#elif defined CONFIG_LANGUAGE_WAKEUP_MODE
+#elif defined CONFIG_VOICE_WAKEUP_MODE
         ret = audio_recorder_read_data(data, 4096 * 3);
         if (coze_chat.wakeuped) {
             esp_coze_chat_send_audio_data(coze_chat.chat, (char *)data, ret);
@@ -173,11 +175,11 @@ static void audio_data_read_task(void *pv)
 static void audio_pipe_open()
 {
     audio_manager_init();
-    audio_prompt_open();
 
 #if CONFIG_KEY_PRESS_DIALOG_MODE
     audio_recorder_open(NULL, NULL);
 #else
+    audio_prompt_open();
     audio_recorder_open(recorder_event_callback_fn, NULL);
 #endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
     audio_playback_open();
@@ -187,32 +189,33 @@ static void audio_pipe_open()
 esp_err_t coze_chat_app_init(void)
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-
-    coze_chat.wakeup_event = xEventGroupCreate();
+    coze_chat.wakeuped = false;
 
 #if CONFIG_KEY_PRESS_DIALOG_MODE
-    button_config_t btn_cfg = {
-        .type = BUTTON_TYPE_ADC,
-        .adc_button_config = {
-            .adc_channel = ADC_CHANNEL_4,  // ADC1 channel 4 is GPIO5
-            .button_index = 0,
-            .min = 2310,                   // middle is 2410mV
-            .max = 2510}};
-    button_handle_t btn = iot_button_create(&btn_cfg);
-    ESP_ERROR_CHECK(iot_button_register_cb(btn, BUTTON_PRESS_DOWN, button_event_cb, NULL));
-    ESP_ERROR_CHECK(iot_button_register_cb(btn, BUTTON_PRESS_UP, button_event_cb, NULL));
-    coze_chat.btn_evt_q = xQueueCreate(2, sizeof(button_event_t));
+    /** ESP32-S3-Korvo2 board */
+    button_handle_t btn = NULL;
+    const button_config_t btn_cfg = {0};
+    button_adc_config_t btn_adc_cfg = {
+        .unit_id = ADC_UNIT_1,
+        .adc_channel = 4,
+        .button_index = 0,
+        .min = 2310,
+        .max = 2510
+    };
+    iot_button_new_adc_device(&btn_cfg, &btn_adc_cfg, &btn);
+    ESP_ERROR_CHECK(iot_button_register_cb(btn, BUTTON_PRESS_DOWN, NULL, button_event_cb, NULL));
+    ESP_ERROR_CHECK(iot_button_register_cb(btn, BUTTON_PRESS_UP, NULL, button_event_cb, NULL));
     coze_chat.data_evt_group = xEventGroupCreate();
     coze_chat.btn_evt_q = xQueueCreate(2, sizeof(button_event_t));
     esp_gmf_oal_thread_create(&coze_chat.btn_thread, "btn_event_task", btn_event_task, (void *)NULL, 3096, 12, true, 1);
+
 #endif  /* CONFIG_KEY_PRESS_DIALOG_MODE */
 
     init_coze_chat();
 
     audio_pipe_open();
 
-    
-    esp_gmf_oal_thread_create(&coze_chat.read_thread, "audio_data_read_task", audio_data_read_task, (void *)NULL, 2048 << 1, 12, true, 1);
+    esp_gmf_oal_thread_create(&coze_chat.read_thread, "audio_data_read_task", audio_data_read_task, (void *)NULL, 3096, 12, true, 1);
 
     return ESP_OK;
 }

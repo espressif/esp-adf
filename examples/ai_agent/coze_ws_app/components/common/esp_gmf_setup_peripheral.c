@@ -234,6 +234,7 @@ void teardown_periph_record_codec(void *record_dev)
 
 void esp_gmf_setup_periph_sdmmc(void **out_card)
 {
+#if defined SOC_SDMMC_HOST_SUPPORTED
     sdmmc_card_t *card = NULL;
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
@@ -276,11 +277,16 @@ void esp_gmf_setup_periph_sdmmc(void **out_card)
 #endif  /* defined CONFIG_IDF_TARGET_ESP32P4 */
     esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card);
     *out_card = card;
+#else
+    ESP_LOGE(TAG, "SDMMC host is not supported");
+#endif  /* SOC_SDMMC_HOST_SUPPORTED */
 }
 
 void esp_gmf_teardown_periph_sdmmc(void *card)
 {
+#if defined SOC_SDMMC_HOST_SUPPORTED
     esp_vfs_fat_sdcard_unmount("/sdcard", card);
+#endif  /* SOC_SDMMC_HOST_SUPPORTED */
 }
 
 void esp_gmf_setup_periph_i2c(int port)

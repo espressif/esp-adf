@@ -1,6 +1,6 @@
-version: "0.5.0"
+version: "0.5.1"
 description: Espressif Coze WebSocket APP base on ESP-GMF
-url: https://github.com/espressif/esp-adf/tree/master/examples/ai_agent/coze_websocket
+url: https://github.com/espressif/esp-adf/tree/master/examples/ai_agent/coze_ws_app
 issues: https://github.com/espressif/esp-adf/issues
 
 tags:

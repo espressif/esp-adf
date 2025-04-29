@@ -6,6 +6,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 /**
  * @brief  Type definition for the audio recorder event callback function
  *
@@ -30,7 +34,7 @@ esp_err_t audio_manager_init();
  *       - ESP_OK  On success
  *       - Other   Appropriate esp_err_t error code on failure
  */
-esp_err_t audio_manager_init();
+esp_err_t audio_manager_deinit();
 
 /**
  * @brief  Opens the audio recorder and registers an event callback
@@ -132,15 +136,6 @@ esp_err_t audio_prompt_open(void);
 esp_err_t audio_prompt_close(void);
 
 /**
- * @brief  Deinitializes the audio prompt system
- *
- * @return
- *       - ESP_OK  On success
- *       - Other   Appropriate esp_err_t error code on failure
- */
-esp_err_t audio_prompt_deinit(void);
-
-/**
  * @brief  Plays an audio prompt from the specified URL
  *
  * @param[in]  url  URL pointing to the audio prompt file to be played
@@ -159,3 +154,7 @@ esp_err_t audio_prompt_play(const char *url);
  *       - Other   Appropriate esp_err_t error code on failure
  */
 esp_err_t audio_prompt_stop(void);
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */

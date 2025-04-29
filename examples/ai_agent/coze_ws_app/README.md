@@ -1,6 +1,6 @@
 # COZE WebSocket Bidirectional Streaming Conversation
 
-- [Chinese](./README_CN.md)
+- [Chinese](./README_CN.md)|English
 
 ## Example Introduction
 
@@ -15,6 +15,7 @@ This example is compatible with IDF release/v5.4 and later branches.
 ### Prerequisites
 
 First, obtain the `Access Token` and `BOT ID` from the [Coze documentation](https://bytedance.larkoffice.com/docx/Da6qd87pQodvNrxdFYrcnzMxnsh).
+
 For more details on WebSocket integration, refer to the [Bidirectional Streaming Conversation Events documentation](https://www.coze.cn/open/docs/developer_guides/streaming_chat_event).
 
 This example is built on the [ESP-GMF](https://github.com/espressif/esp-gmf) framework and demonstrates audio initialization along with `3A processing` (Automatic Gain Control, Echo Cancellation, and Noise Suppression).
@@ -42,26 +43,41 @@ To use a different board version, go to `menuconfig -> Example Configuration →
 
 - `Key Press Mode`: Users can activate the device by pressing a button, after which they can interact with the device via voice. The default button is `REC`.
 
-> The default operating mode is `Continuous Mode` mode.
+> The default operating mode is `Continuous Mode`.
+
+The support of each operation mode across different chips is as follows:
+
+|  CHIPS   |  Wake Word Mode  |   Continuous Mode  |   Key Press Mode  |
+|  ----  | ----  |  ----  | ----  |
+| ESP32S3  | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32P4  | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32  | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32C3  | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32C6  | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32C5  | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/no-icon.png "Incompatible") <sup> **1** </sup> | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32S2  | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+
+**Note 1:** Planned to be supported in future versions
+
 When using different modes, you need to adjust corresponding parameters in
 `Component config → ESP Audio Simple Player`.
 1.When using key press mode, the audio input and output are configured as 16-bit, mono. The configuration is as follows:
 
-```c
+```text
 CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=1
 CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_16BIT=y
 ```
 
 2.When using a single ES8311 for both input and output, and enabling functions such as echo cancellation, the audio input and output are configured as 16-bit, stereo. The configuration is as follows:
 
-```c
+```text
 CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=2
 CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_16BIT=y
 ```
 
 3.When using ES8311 for audio output and ES7210 for input, the audio input and output are configured as 32-bit, stereo. The configuration is as follows (default mode):
 
-```c
+```text
 CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=2
 CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_32BIT=y
 ```
@@ -76,27 +92,26 @@ Compilation and Download
 
 Before compiling this example, ensure that the ESP-IDF environment is properly set up. If it is already configured, you can skip this step and proceed to the next configuration. If not, run the script below in the root directory of ESP-IDF to set up the build environment. For detailed setup and usage instructions, please refer to the [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/index.html).
 
-
-```c
+```bash
 ./install.sh
 . ./export.sh
 ```
 
 - Set the target chip (using ESP32-S3 as an example):：
 
-```c
+```bash
 idf.py set-target esp32s3
 ```
 
 - Compile the example program:
 
-```c
+```bash
 idf.py build
 ```
 
 - Flash the program and use the monitor tool to view serial output (replace PORT with the actual port name):
 
-```c
+```bash
 idf.py -p PORT flash monitor
 ```
 
@@ -106,7 +121,7 @@ idf.py -p PORT flash monitor
 
 - Once the example starts running, if the following log appears, it indicates that a connection has been successfully established with the server, and you can begin the conversation.:
 
-```c
+```text
 IE (1029) COZE_CHAT_WS: Failed to get SPIFFS partition information (ESP_ERR_INVALID_STATE)
 I (1031) example_connect: Start example_connect.
 I (1035) pp: pp rom version: e7ae62f
@@ -334,3 +349,9 @@ I (8397) ESP_GMF_TASK: One times job is complete, del[wk:0x3c728b54,ctx:0x3c71ff
 I (8407) ESP_GMF_PORT: ACQ IN, new self payload:0x3c728b54, port:0x3c72f554, el:0x3c71ffe8-aud_simp_dec
 I (8527) ESP_GMF_PORT: ACQ OUT, new self payload:0x3c720374, port:0x3c2ec964, el:0x3c2ec864-gmf_afe
 ```
+
+## Planned Features
+
+1.Support for Opus encoding and audio transmission to the server
+
+2.Support for multiple functional modes, such as enabling the speaker to perform mixing functionalities
