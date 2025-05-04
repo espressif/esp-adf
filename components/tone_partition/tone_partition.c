@@ -92,7 +92,7 @@ esp_err_t tone_partition_get_file_info(tone_partition_handle_t handle, uint16_t 
     AUDIO_NULL_CHECK(TAG, handle, return ESP_FAIL);
     AUDIO_NULL_CHECK(TAG, info, return ESP_FAIL);
 
-    if (handle->header.total_num < index) {
+    if (handle->header.total_num <= index) {
         ESP_LOGE(TAG, "Wanted index out of range index[%d]", index);
         return ESP_FAIL;
     }
