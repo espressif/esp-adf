@@ -130,6 +130,9 @@ static esp_err_t es8156_resume(void)
 esp_err_t es8156_pa_power(bool enable)
 {
     esp_err_t ret = ESP_OK;
+    if (get_pa_enable_gpio() == -1) {
+        return ret;
+    }
     if (enable) {
         ret = gpio_set_level(get_pa_enable_gpio(), 1);
     } else {
@@ -166,14 +169,16 @@ esp_err_t es8156_codec_init(audio_hal_codec_config_t *cfg)
     es8156_write_reg(0x00, 0x03);
     es8156_write_reg(0x25, 0x20);
 
-    gpio_config_t io_conf;
-    memset(&io_conf, 0, sizeof(io_conf));
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
-    io_conf.pull_down_en = 0;
-    io_conf.pull_up_en = 0;
-    gpio_config(&io_conf);
-    es8156_pa_power(true);
+    if (get_pa_enable_gpio() != -1) {
+        gpio_config_t io_conf;
+        memset(&io_conf, 0, sizeof(io_conf));
+        io_conf.mode = GPIO_MODE_OUTPUT;
+        io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
+        io_conf.pull_down_en = 0;
+        io_conf.pull_up_en = 0;
+        gpio_config(&io_conf);
+        es8156_pa_power(true);
+    }
 
     codec_dac_volume_config_t vol_cfg = ES8156_DAC_VOL_CFG_DEFAULT();
     dac_vol_handle = audio_codec_volume_init(&vol_cfg);

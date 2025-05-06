@@ -122,16 +122,20 @@ static esp_err_t tas5805m_transmit_registers(const tas5805m_cfg_reg_t *conf_buf,
 esp_err_t tas5805m_init(audio_hal_codec_config_t *codec_cfg)
 {
     esp_err_t ret = ESP_OK;
-    ESP_LOGI(TAG, "Power ON CODEC with GPIO %d", TAS5805M_RST_GPIO);
-    gpio_config_t io_conf;
-    io_conf.pin_bit_mask = BIT64(TAS5805M_RST_GPIO);
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.intr_type = GPIO_INTR_DISABLE;
-    gpio_config(&io_conf);
-    gpio_set_level(TAS5805M_RST_GPIO, 0);
-    vTaskDelay(20 / portTICK_RATE_MS);
-    gpio_set_level(TAS5805M_RST_GPIO, 1);
-    vTaskDelay(200 / portTICK_RATE_MS);
+    if ((TAS5805M_RST_GPIO) != -1) {
+        ESP_LOGI(TAG, "Power ON CODEC with GPIO %d", TAS5805M_RST_GPIO);
+        gpio_config_t io_conf;
+        io_conf.pin_bit_mask = BIT64(TAS5805M_RST_GPIO);
+        io_conf.mode = GPIO_MODE_OUTPUT;
+        io_conf.intr_type = GPIO_INTR_DISABLE;
+        gpio_config(&io_conf);
+        gpio_set_level(TAS5805M_RST_GPIO, 0);
+        vTaskDelay(20 / portTICK_RATE_MS);
+        gpio_set_level(TAS5805M_RST_GPIO, 1);
+        vTaskDelay(200 / portTICK_RATE_MS);
+    } else {
+        ESP_LOGW(TAG, "PA power gpio is not set");
+    }
 
     ret = get_i2c_pins(I2C_NUM_0, &i2c_cfg);
     i2c_handler = i2c_bus_create(I2C_NUM_0, &i2c_cfg);

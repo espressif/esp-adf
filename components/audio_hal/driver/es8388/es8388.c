@@ -258,43 +258,43 @@ esp_err_t es8388_deinit(void)
 
 /**
  * @return
- *     - (-1)  Error
- *     - (0)   Success
+ *       - (-1)  Error
+ *       - (0)   Success
  */
 esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
 {
     int res = 0;
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     headphone_detect_init(get_headphone_detect_gpio());
-#endif
+#endif  /* CONFIG_ESP_LYRAT_V4_3_BOARD */
 
-    res = i2c_init(); // ESP32 in master mode
+    res = i2c_init();  // ESP32 in master mode
 
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL3, 0x04);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
     /* Chip Control and Power Management */
     res |= es_write_reg(ES8388_ADDR, ES8388_CONTROL2, 0x50);
-    res |= es_write_reg(ES8388_ADDR, ES8388_CHIPPOWER, 0x00); //normal all and power up all
+    res |= es_write_reg(ES8388_ADDR, ES8388_CHIPPOWER, 0x00);  // normal all and power up all
 
     // Disable the internal DLL to improve 8K sample rate
     res |= es_write_reg(ES8388_ADDR, 0x35, 0xA0);
     res |= es_write_reg(ES8388_ADDR, 0x37, 0xD0);
     res |= es_write_reg(ES8388_ADDR, 0x39, 0xD0);
 
-    res |= es_write_reg(ES8388_ADDR, ES8388_MASTERMODE, cfg->i2s_iface.mode); //CODEC IN I2S SLAVE MODE
+    res |= es_write_reg(ES8388_ADDR, ES8388_MASTERMODE, cfg->i2s_iface.mode);  // CODEC IN I2S SLAVE MODE
 
     /* dac */
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACPOWER, 0xC0);  //disable DAC and disable Lout/Rout/1/2
-    res |= es_write_reg(ES8388_ADDR, ES8388_CONTROL1, 0x12);  //Enfr=0,Play&Record Mode,(0x17-both of mic&paly)
-//    res |= es_write_reg(ES8388_ADDR, ES8388_CONTROL2, 0);  //LPVrefBuf=0,Pdn_ana=0
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL1, 0x18);//1a 0x18:16bit iis , 0x00:24
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL2, 0x02);  //DACFsMode,SINGLE SPEED; DACFsRatio,256
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, 0x00); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL17, 0x90); // only left DAC to left mixer enable 0db
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL20, 0x90); // only right DAC to right mixer enable 0db
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); // set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL23, 0x00); // vroi=0
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACPOWER, 0xC0);  // disable DAC and disable Lout/Rout/1/2
+    res |= es_write_reg(ES8388_ADDR, ES8388_CONTROL1, 0x12);  // Enfr=0,Play&Record Mode,(0x17-both of mic&paly)
+    // res |= es_write_reg(ES8388_ADDR, ES8388_CONTROL2, 0);  //LPVrefBuf=0,Pdn_ana=0
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL1, 0x18);   // 1a 0x18:16bit iis , 0x00:24
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL2, 0x02);   // DACFsMode,SINGLE SPEED; DACFsRatio,256
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL16, 0x00);  // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL17, 0x90);  // only left DAC to left mixer enable 0db
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL20, 0x90);  // only right DAC to right mixer enable 0db
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL21, 0x80);  // set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL23, 0x00);  // vroi=0
 
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL24, 0x1E); // Set L1 R1 L2 R2 volume. 0x00: -30dB, 0x1E: 0dB, 0x21: 3dB
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL24, 0x1E);  // Set L1 R1 L2 R2 volume. 0x00: -30dB, 0x1E: 0dB, 0x21: 3dB
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, 0x1E);
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, 0);
     res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, 0);
@@ -307,10 +307,10 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     } else {
         tmp = DAC_OUTPUT_LOUT1 | DAC_OUTPUT_LOUT2 | DAC_OUTPUT_ROUT1 | DAC_OUTPUT_ROUT2;
     }
-    res |= es_write_reg(ES8388_ADDR, ES8388_DACPOWER, tmp);  //0x3c Enable DAC and Enable Lout/Rout/1/2
+    res |= es_write_reg(ES8388_ADDR, ES8388_DACPOWER, tmp);  // 0x3c Enable DAC and Enable Lout/Rout/1/2
     /* adc */
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0xFF);
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, 0xbb); // MIC Left and Right channel PGA gain
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL1, 0xbb);  // MIC Left and Right channel PGA gain
     tmp = 0;
     if (AUDIO_HAL_ADC_INPUT_LINE1 == cfg->adc_input) {
         tmp = ADC_INPUT_LINPUT1_RINPUT1;
@@ -319,24 +319,26 @@ esp_err_t es8388_init(audio_hal_codec_config_t *cfg)
     } else {
         tmp = ADC_INPUT_DIFFERENCE;
     }
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL2, tmp);  //0x00 LINSEL & RINSEL, LIN1/RIN1 as ADC Input; DSSEL,use one DS Reg11; DSR, LINPUT1-RINPUT1
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL2, tmp);  // 0x00 LINSEL & RINSEL, LIN1/RIN1 as ADC Input; DSSEL,use one DS Reg11; DSR, LINPUT1-RINPUT1
     res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL3, 0x02);
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL4, 0x0c); // 16 Bits length and I2S serial audio data format
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL5, 0x02);  //ADCFsMode,singel SPEED,RATIO=256
-    //ALC for Microphone
-    res |= es8388_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);      // 0db
-    res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0x09);    // Power on ADC, enable LIN&RIN, power off MICBIAS, and set int1lp to low power mode
-    
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL4, 0x0c);  // 16 Bits length and I2S serial audio data format
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCCONTROL5, 0x02);  // ADCFsMode,singel SPEED,RATIO=256
+    // ALC for Microphone
+    res |= es8388_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);    // 0db
+    res |= es_write_reg(ES8388_ADDR, ES8388_ADCPOWER, 0x09);  // Power on ADC, enable LIN&RIN, power off MICBIAS, and set int1lp to low power mode
+
     /* es8388 PA gpio_config */
-    gpio_config_t  io_conf;
-    memset(&io_conf, 0, sizeof(io_conf));
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
-    io_conf.pull_down_en = 0;
-    io_conf.pull_up_en = 0;
-    gpio_config(&io_conf);
-    /* enable es8388 PA */
-    es8388_pa_power(true);
+    if (get_pa_enable_gpio() != -1) {
+        gpio_config_t io_conf;
+        memset(&io_conf, 0, sizeof(io_conf));
+        io_conf.mode = GPIO_MODE_OUTPUT;
+        io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
+        io_conf.pull_down_en = 0;
+        io_conf.pull_up_en = 0;
+        gpio_config(&io_conf);
+        /* enable es8388 PA */
+        es8388_pa_power(true);
+    }
 
     codec_dac_volume_config_t vol_cfg = ES8388_DAC_VOL_CFG_DEFAULT();
     dac_vol_handle = audio_codec_volume_init(&vol_cfg);
@@ -573,6 +575,9 @@ esp_err_t es8388_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_ifa
 esp_err_t es8388_pa_power(bool enable)
 {
     esp_err_t res = ESP_OK;
+    if (get_pa_enable_gpio() == -1) {
+        return res;
+    }
     if (enable) {
         res = gpio_set_level(get_pa_enable_gpio(), 1);
     } else {

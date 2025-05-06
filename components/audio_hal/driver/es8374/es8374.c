@@ -794,8 +794,12 @@ esp_err_t es8374_codec_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t 
 
 esp_err_t es8374_pa_power(bool enable)
 {
+    if (get_pa_enable_gpio() == -1) {
+        ESP_LOGW(ES8374_TAG, "PA power gpio is not set");
+        return ESP_OK;
+    }
     esp_err_t ret = ESP_OK;
-    gpio_config_t  io_conf;
+    gpio_config_t io_conf;
     memset(&io_conf, 0, sizeof(io_conf));
     io_conf.mode = GPIO_MODE_OUTPUT;
     io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
