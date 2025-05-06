@@ -8,6 +8,7 @@
 This example is to play music while performing echo cancellation of the sound recorded by the microphone, and then save it to the microSD card.
 
 This AEC example consists of two pipelines: one for playing an MP3 file from flash and another for recording audio. First, the audio is processed using the AEC algorithm, then encoded into WAV format and saved to a microSD card. Finally, the original audio is compared with the recorded audio.
+> In comparison to the complete `algorithm`, the AEC mode does not allow the activation of AGC and NS features, however, it supports audio input at an 8 kHz sampling rate.
 
 - Playing MP3 pipeline:
 

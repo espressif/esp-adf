@@ -537,9 +537,9 @@ audio_rec_handle_t audio_recorder_create(audio_rec_cfg_t *config)
 
         sr_iface->set_afe_monitor(recorder->sr_handle, audio_recorder_afe_monitor, recorder);
         sr_iface->base.set_read_cb(recorder->sr_handle, recorder->read, NULL);
-    #ifdef CONFIG_USE_MULTINET
+    #if !defined(CONFIG_SR_MN_CN_NONE) || !defined(CONFIG_SR_MN_EN_NONE)
         sr_iface->set_mn_monitor(recorder->sr_handle, audio_recorder_mn_monitor, recorder);
-    #endif // CONFIG_USE_MULTINET
+    #endif /* !defined(CONFIG_SR_MN_CN_NONE) || !defined(CONFIG_SR_MN_EN_NONE) */
         sr_iface->base.enable(recorder->sr_handle, true);
     }
 

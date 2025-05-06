@@ -111,7 +111,7 @@ void app_main()
 
     ESP_LOGI(TAG, "[ 2 ] Initialize av stream");
     av_stream_config_t av_stream_config = {
-        .algo_mask = ALGORITHM_STREAM_USE_AEC,
+        .enable_aec = true,
         .acodec_samplerate = AUDIO_CODEC_SAMPLE_RATE,
         .acodec_type = AV_ACODEC_G711A,
         .vcodec_type = AV_VCODEC_MJPEG,

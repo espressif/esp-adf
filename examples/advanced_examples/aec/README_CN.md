@@ -8,16 +8,17 @@
 本例程的功能是在播放音乐的同时将麦克风收录的声音先进行回声消除，然后存储到 microSD 卡中。
 
 本例程有两条管道，第一条管道读取 flash 中的 MP3 音乐文件并播放；第二条管道是录音的过程，读取到的数据经过 AEC 法处理，再编码成 WAV 格式，最后保存在 microSD 卡中。最后我们可以比较原始音频与录制的音频之间的差异。
+> 与 algorithm 方案相比，AEC 模式下无法启用 AGC 和 NS 功能，但支持 8kHZ 采样率的音频数据输入。
 
 - 播放 MP3 的管道：
 
-  ```c
+  ```text
   [flash] ---> mp3_decoder ---> filter ---> i2s_stream ---> [codec_chip]
   ```
 
  - 录制 WAV 的管道：
 
-   ```c
+   ```text
    [codec_chip] ---> i2s_stream ---> filter ---> AEC ---> wav_encoder ---> fatfs_stream ---> [sdcard]
    ```
 
@@ -26,7 +27,6 @@
 ### 硬件要求
 
 本例程支持的开发板在 `$ADF_PATH/examples/README_CN.md` 文档中[例程与乐鑫音频开发板的兼容性表格](../../README_CN.md#例程与乐鑫音频开发板的兼容性)中有标注，表格中标有绿色复选框的开发板均可运行本例程。请记住，如下面的 [配置](#配置) 一节所述，可以在 `menuconfig` 中选择开发板。
-
 
 ## 编译和下载
 
@@ -49,7 +49,7 @@
 
 请先编译版本并烧录到开发板上，然后运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
-```
+```bash
 idf.py -p PORT flash monitor
 ```
 
@@ -60,8 +60,11 @@ idf.py -p PORT flash monitor
 ## 如何使用例程
 
 ### 功能和用法
+
 下载运行后，开发板应该输出以下日志：
-```I (27) boot: ESP-IDF v5.3.1-dirty 2nd stage bootloader
+
+```text
+I (27) boot: ESP-IDF v5.3.1-dirty 2nd stage bootloader
 I (27) boot: compile time Mar  3 2025 17:26:29
 I (27) boot: Multicore bootloader
 I (28) boot: chip revision: v0.2
