@@ -31,6 +31,7 @@
 #include "periph_button.h"
 #include "tca9554.h"
 #include "board.h"
+#include "esp_lcd_ili9341.h"
 
 static const char *TAG = "AUDIO_BOARD";
 
@@ -115,7 +116,7 @@ void *audio_board_lcd_init(esp_periph_set_handle_t set, void *cb)
         .io_bus = (void *)SPI2_HOST,
         .new_panel_io = _get_lcd_io_bus,
         .lcd_io_cfg = &io_config,
-        .new_lcd_panel = esp_lcd_new_panel_st7789,
+        .new_lcd_panel = esp_lcd_new_panel_ili9341,
         .lcd_dev_cfg = &panel_config,
         .rest_cb = NULL,
         .rest_cb_ctx = NULL,
