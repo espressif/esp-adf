@@ -290,6 +290,9 @@ static void es8311_suspend(void)
 esp_err_t es8311_pa_power(bool enable)
 {
     esp_err_t ret = ESP_OK;
+    if (get_pa_enable_gpio() == -1) {
+        return ret;
+    }
     if (enable) {
         ret = gpio_set_level(get_pa_enable_gpio(), 1);
     } else {
@@ -303,7 +306,7 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
     uint8_t datmp, regv;
     int coeff;
     esp_err_t ret = ESP_OK;
-    i2c_init(); // ESP32 in master mode
+    i2c_init();  // ESP32 in master mode
 
     /* Enhance ES8311 I2C noise immunity */
     ret |= es8311_write_reg(ES8311_GPIO_REG44, 0x08);
@@ -321,20 +324,16 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
     ret |= es8311_write_reg(ES8311_SYSTEM_REG10, 0x1F);
     ret |= es8311_write_reg(ES8311_SYSTEM_REG11, 0x7F);
     ret |= es8311_write_reg(ES8311_RESET_REG00, 0x80);
-    /*
-     * Set Codec into Master or Slave mode
-     */
+    /* Set Codec into Master or Slave mode */
     regv = es8311_read_reg(ES8311_RESET_REG00);
-    /*
-     * Set master/slave audio interface
-     */
+    /* Set master/slave audio interface */
     audio_hal_codec_i2s_iface_t *i2s_cfg = &(codec_cfg->i2s_iface);
     switch (i2s_cfg->mode) {
-        case AUDIO_HAL_MODE_MASTER:    /* MASTER MODE */
+        case AUDIO_HAL_MODE_MASTER:  /* MASTER MODE */
             ESP_LOGI(TAG, "ES8311 in Master mode");
             regv |= 0x40;
             break;
-        case AUDIO_HAL_MODE_SLAVE:    /* SLAVE MODE */
+        case AUDIO_HAL_MODE_SLAVE:  /* SLAVE MODE */
             ESP_LOGI(TAG, "ES8311 in Slave mode");
             regv &= 0xBF;
             break;
@@ -343,9 +342,7 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
     }
     ret |= es8311_write_reg(ES8311_RESET_REG00, regv);
     ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG01, 0x3F);
-    /*
-     * Select clock source for internal mclk
-     */
+    /* Select clock source for internal mclk */
     switch (get_es8311_mclk_src()) {
         case FROM_MCLK_PIN:
             regv = es8311_read_reg(ES8311_CLK_MANAGER_REG01);
@@ -400,9 +397,7 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
         ESP_LOGE(TAG, "Unable to configure sample rate %dHz with %dHz MCLK", sample_fre, mclk_fre);
         return ESP_FAIL;
     }
-    /*
-     * Set clock parammeters
-     */
+    /* Set clock parammeters */
     if (coeff >= 0) {
         regv = es8311_read_reg(ES8311_CLK_MANAGER_REG02) & 0x07;
         regv |= (coeff_div[coeff].pre_div - 1) << 5;
@@ -425,7 +420,7 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
         }
 
         if (get_es8311_mclk_src() == FROM_SCLK_PIN) {
-            datmp = 3;     /* DIG_MCLK = LRCK * 256 = BCLK * 8 */
+            datmp = 3;  /* DIG_MCLK = LRCK * 256 = BCLK * 8 */
         }
         regv |= (datmp) << 3;
         ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG02, regv);
@@ -461,9 +456,7 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
         ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG06, regv);
     }
 
-    /*
-     * mclk inverted or not
-     */
+    /* mclk inverted or not */
     if (INVERT_MCLK) {
         regv = es8311_read_reg(ES8311_CLK_MANAGER_REG01);
         regv |= 0x40;
@@ -473,9 +466,7 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
         regv &= ~(0x40);
         ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG01, regv);
     }
-    /*
-     * sclk inverted or not
-     */
+    /* sclk inverted or not */
     if (INVERT_SCLK) {
         regv = es8311_read_reg(ES8311_CLK_MANAGER_REG06);
         regv |= 0x20;
@@ -492,15 +483,17 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
     AUDIO_RET_ON_FALSE(TAG, ret, return ret, "es8311 initialize failed");
 
     /* pa power gpio init */
-    gpio_config_t  io_conf;
-    memset(&io_conf, 0, sizeof(io_conf));
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
-    io_conf.pull_down_en = 0;
-    io_conf.pull_up_en = 0;
-    gpio_config(&io_conf);
-    /* enable pa power */
-    es8311_pa_power(true);
+    if (get_pa_enable_gpio() != -1) {
+        gpio_config_t io_conf;
+        memset(&io_conf, 0, sizeof(io_conf));
+        io_conf.mode = GPIO_MODE_OUTPUT;
+        io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
+        io_conf.pull_down_en = 0;
+        io_conf.pull_up_en = 0;
+        gpio_config(&io_conf);
+        /* enable pa power */
+        es8311_pa_power(true);
+    }
 
     codec_dac_volume_config_t vol_cfg = ES8311_DAC_VOL_CFG_DEFAULT();
     dac_vol_handle = audio_codec_volume_init(&vol_cfg);

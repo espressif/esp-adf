@@ -48,7 +48,11 @@ audio_board_handle_t audio_board_init(void)
 
 audio_hal_handle_t audio_board_codec_init(void)
 {
-    gpio_config_t  io_conf = {0};
+    if (get_pa_enable_gpio() == -1) {
+        ESP_LOGW(TAG, "PA power gpio is not set");
+        return NULL;
+    }
+    gpio_config_t io_conf = {0};
     bool enable = true;
     io_conf.mode = GPIO_MODE_OUTPUT;
     io_conf.pin_bit_mask = BIT64(get_pa_enable_gpio());
