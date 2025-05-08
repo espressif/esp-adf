@@ -37,6 +37,14 @@
 #include "wav_decoder.h"
 #include "aac_decoder.h"
 #include "http_stream.h"
+#include "wifi_service.h"
+#if CONFIG_SOC_BT_SUPPORTED && CONFIG_BT_ENABLED
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+#include "esp_gap_bt_api.h"
+#include "blufi_config.h"
+#include "ble_gatts_module.h"
+#endif  /* CONFIG_SOC_BT_SUPPORTED && CONFIG_BT_ENABLED */
 #include "wav_encoder.h"
 #include "display_service.h"
 #include "led_bar_is31x.h"
@@ -56,13 +64,15 @@
 
 // #define  ESP_AUDIO_AUTO_PLAY
 
-static const char *TAG = "CONSOLE_EXAMPLE";
-static esp_audio_handle_t               player;
-static esp_periph_set_handle_t          set;
-static playlist_operator_handle_t       playlist;
-static xTimerHandle                     tone_stop_tm_handle;
-static int                              auto_play_type;
-static audio_element_handle_t           mp3_el;
+static const char                *TAG = "CONSOLE_EXAMPLE";
+static esp_audio_handle_t         player;
+static esp_periph_set_handle_t    set;
+static playlist_operator_handle_t playlist;
+static xTimerHandle               tone_stop_tm_handle;
+static int                        auto_play_type;
+static audio_element_handle_t     mp3_el;
+static esp_wifi_setting_handle_t  wifi_setting_handle = NULL;
+static periph_service_handle_t    wifi_serv           = NULL;
 
 static int _http_stream_event_handle(http_stream_event_msg_t *msg)
 {
@@ -104,9 +114,9 @@ static esp_err_t cli_play(esp_periph_handle_t periph, int argc, char *argv[])
                 return ESP_ERR_INVALID_ARG;
             }
             sdcard_list_choose(playlist, index, &str);
-            ESP_LOGI(TAG, "play index= %d, URI:%s, byte_pos:%d", index, str, byte_pos);
+            ESP_LOGI(TAG, "Play index= %d, URI:%s, byte_pos:%d", index, str, byte_pos);
         } else {
-            ESP_LOGI(TAG, "play index= %d, URI:%s, byte_pos:%d", -1, argv[0], byte_pos);
+            ESP_LOGI(TAG, "Play index= %d, URI:%s, byte_pos:%d", -1, argv[0], byte_pos);
             str = argv[0];
         }
     } else {
@@ -276,6 +286,18 @@ static esp_err_t cli_stop_tone(esp_periph_handle_t periph, int argc, char *argv[
     return ESP_OK;
 }
 
+static esp_err_t blufi_start(esp_periph_handle_t periph, int argc, char *argv[])
+{
+#if CONFIG_SOC_BT_SUPPORTED && CONFIG_BT_ENABLED
+    ble_gatts_module_start_adv();
+    blufi_set_sta_connected_flag(wifi_setting_handle, false);
+    wifi_service_setting_start(wifi_serv, 0);
+#else
+    ESP_LOGW(TAG, "Not support blufi now");
+#endif
+    return ESP_OK;
+}
+
 static esp_err_t wifi_set(esp_periph_handle_t periph, int argc, char *argv[])
 {
     wifi_config_t w_config = {0};
@@ -285,10 +307,10 @@ static esp_err_t wifi_set(esp_periph_handle_t periph, int argc, char *argv[])
             FALL_THROUGH;
         case 1:
             memcpy(w_config.sta.ssid, argv[0], sizeof(w_config.sta.ssid));
-            esp_wifi_disconnect();
             ESP_LOGI(TAG, "Connecting Wi-Fi, SSID:\"%s\" PASSWORD:\"%s\"", w_config.sta.ssid, w_config.sta.password);
-            esp_wifi_set_config(WIFI_IF_STA, &w_config);
-            esp_wifi_connect();
+            wifi_service_set_sta_info(wifi_serv, &w_config);
+            wifi_service_disconnect(wifi_serv);
+            wifi_service_connect(wifi_serv);
             break;
         default:
             ESP_LOGE(TAG, "Invalid SSID or PASSWORD");
@@ -433,16 +455,16 @@ static esp_err_t show_free_mem(esp_periph_handle_t periph, int argc, char *argv[
 
 static esp_err_t cli_get_mp3_id3_info(esp_periph_handle_t periph, int argc, char *argv[])
 {
-    if(mp3_el) {
-        const esp_id3_info_t* id3_info = NULL;
+    if (mp3_el) {
+        const esp_id3_info_t *id3_info = NULL;
 #ifdef ESP_AUDIO_AUTO_PLAY
         id3_info = esp_decoder_get_id3_info(mp3_el);
 #else
         id3_info = mp3_decoder_get_id3_info(mp3_el);
-#endif        
-        if(id3_info) {
+#endif
+        if (id3_info) {
             ESP_LOGI(TAG, "ID3 information obtained successfully.");
-            esp_id3_free((esp_id3_info_t**)&id3_info);
+            esp_id3_free((esp_id3_info_t **)&id3_info);
             return ESP_OK;
         }
         ESP_LOGI(TAG, "Get ID3 infomation isn't exist. line %d", __LINE__);
@@ -481,53 +503,54 @@ static esp_err_t task_real_time_states(esp_periph_handle_t periph, int argc, cha
 const periph_console_cmd_t cli_cmd[] = {
     /* ======================== Esp_audio ======================== */
     {
-        .cmd = "play",        .id = 1, .help = "Play music, cmd:\"play [index or url] [byte_pos]\",\n\
-        \te.g. 1.\"play\"; 2. play with index after scan,\"play index_number\"; 3.play with specific url, \"play url_path\"",               .func = cli_play
-    },
+        .cmd = "play", .id = 1, .help = "Play music, cmd:\"play [index or url] [byte_pos]\",\n\
+        \te.g. 1.\"play\"; 2. play with index after scan,\"play index_number\"; 3.play with specific url, \"play url_path\"",
+        .func = cli_play},
 
-    { .cmd = "pause",       .id = 2,  .help = "Pause",                    .func = cli_pause },
-    { .cmd = "resume",      .id = 3,  .help = "Resume",                   .func = cli_resume },
-    { .cmd = "stop",        .id = 3,  .help = "Stop player",              .func = cli_stop },
-    { .cmd = "setvol",      .id = 4,  .help = "Set volume",               .func = cli_set_vol },
-    { .cmd = "getvol",      .id = 5,  .help = "Get volume",               .func = cli_get_vol },
-    { .cmd = "getpos",      .id = 6,  .help = "Get position by seconds",  .func = get_pos },
-    { .cmd = "seek",        .id = 7,  .help = "Seek position by second",  .func = cli_seek },
-    { .cmd = "duration",    .id = 8,  .help = "Get music duration",       .func = cli_duration },
-    { .cmd = "tone",        .id = 9,  .help = "Insert tone to play",      .func = cli_insert_tone },
-    { .cmd = "stone",       .id = 9,  .help = "Stop tone by a timer",     .func = cli_stop_tone },
-    { .cmd = "setspeed",    .id = 10, .help = "Set speed",                .func = cli_set_speed },
-    { .cmd = "getspeed",    .id = 11, .help = "Get speed",                .func = cli_get_speed },
-    { .cmd = "getmp3id3",   .id = 12, .help = "Get MP3 ID3 info",         .func = cli_get_mp3_id3_info },
+    {.cmd = "pause", .id = 2, .help = "Pause", .func = cli_pause},
+    {.cmd = "resume", .id = 3, .help = "Resume", .func = cli_resume},
+    {.cmd = "stop", .id = 3, .help = "Stop player", .func = cli_stop},
+    {.cmd = "setvol", .id = 4, .help = "Set volume", .func = cli_set_vol},
+    {.cmd = "getvol", .id = 5, .help = "Get volume", .func = cli_get_vol},
+    {.cmd = "getpos", .id = 6, .help = "Get position by seconds", .func = get_pos},
+    {.cmd = "seek", .id = 7, .help = "Seek position by second", .func = cli_seek},
+    {.cmd = "duration", .id = 8, .help = "Get music duration", .func = cli_duration},
+    {.cmd = "tone", .id = 9, .help = "Insert tone to play", .func = cli_insert_tone},
+    {.cmd = "stone", .id = 9, .help = "Stop tone by a timer", .func = cli_stop_tone},
+    {.cmd = "setspeed", .id = 10, .help = "Set speed", .func = cli_set_speed},
+    {.cmd = "getspeed", .id = 11, .help = "Get speed", .func = cli_get_speed},
+    {.cmd = "getmp3id3", .id = 12, .help = "Get MP3 ID3 info", .func = cli_get_mp3_id3_info},
 
     /* ======================== Wi-Fi ======================== */
-    { .cmd = "join",        .id = 20, .help = "Join Wi-Fi AP as a station",     .func = wifi_set },
-    { .cmd = "wifi",        .id = 21, .help = "Get connected AP information",   .func = wifi_info },
+    {.cmd = "join", .id = 20, .help = "Join Wi-Fi AP as a station", .func = wifi_set},
+    {.cmd = "wifi", .id = 21, .help = "Get connected AP information", .func = wifi_info},
+    {.cmd = "blufi", .id = 22, .help = "Config Wi-Fi using BLE", .func = blufi_start},
 
     /* ======================== Led bar ======================== */
-    { .cmd = "led",         .id = 50,  .help = "Lyrat-MSC led bar pattern",      .func = led },
+    {.cmd = "led", .id = 50, .help = "Lyrat-MSC led bar pattern", .func = led},
 
     /* ======================== Playlist ======================== */
-    { .cmd = "scan",        .id = 40, .help = "Scan sdcard music file, cmd: \"scan [path]\",e.g. \"scan /sdcard\"",             .func = playlist_sd_scan },
-    { .cmd = "list",        .id = 41, .help = "Show scanned playlist",                                                          .func = playlist_sd_show },
-    { .cmd = "next",        .id = 42, .help = "Next x file to play, cmd: \"next [step]\"",                                      .func = playlist_sd_next },
-    { .cmd = "prev",        .id = 43, .help = "Previous x file to play, cmd: \"prev [step]\"",                                  .func = playlist_sd_prev },
-    { .cmd = "mode",        .id = 44, .help = "Set auto play mode, cmd:\"mode [value]\", 0:once; others: playlist loop all",    .func = playlist_set_mode },
+    {.cmd = "scan", .id = 40, .help = "Scan sdcard music file, cmd: \"scan [path]\",e.g. \"scan /sdcard\"", .func = playlist_sd_scan},
+    {.cmd = "list", .id = 41, .help = "Show scanned playlist", .func = playlist_sd_show},
+    {.cmd = "next", .id = 42, .help = "Next x file to play, cmd: \"next [step]\"", .func = playlist_sd_next},
+    {.cmd = "prev", .id = 43, .help = "Previous x file to play, cmd: \"prev [step]\"", .func = playlist_sd_prev},
+    {.cmd = "mode", .id = 44, .help = "Set auto play mode, cmd:\"mode [value]\", 0:once; others: playlist loop all", .func = playlist_set_mode},
 
     /* ======================== System ======================== */
-    { .cmd = "reboot",      .id = 30, .help = "Reboot system",                                  .func = sys_reset },
-    { .cmd = "free",        .id = 31, .help = "Get system free memory",                         .func = show_free_mem },
+    {.cmd = "reboot", .id = 30, .help = "Reboot system", .func = sys_reset},
+    {.cmd = "free", .id = 31, .help = "Get system free memory", .func = show_free_mem},
 #ifdef CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS
-    { .cmd = "stat",        .id = 32, .help = "Show processor time of all FreeRTOS tasks",      .func = run_time_stats },
-#endif
+    {.cmd = "stat", .id = 32, .help = "Show processor time of all FreeRTOS tasks", .func = run_time_stats},
+#endif  /* CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS */
 #ifdef CONFIG_FREERTOS_USE_TRACE_FACILITY
-    { .cmd = "tasks",       .id = 33, .help = "Get information about running tasks",            .func = task_list },
-#endif
-    { .cmd = "system",      .id = 34, .help = "Get freertos all task states information",       .func = task_real_time_states },
+    {.cmd = "tasks", .id = 33, .help = "Get information about running tasks", .func = task_list},
+#endif  /* CONFIG_FREERTOS_USE_TRACE_FACILITY */
+    {.cmd = "system", .id = 34, .help = "Get freertos all task states information", .func = task_real_time_states},
 };
 
-static void esp_audio_state_task (void *para)
+static void esp_audio_state_task(void *para)
 {
-    QueueHandle_t que = (QueueHandle_t) para;
+    QueueHandle_t que = (QueueHandle_t)para;
     esp_audio_state_t esp_state = {0};
     while (1) {
         xQueueReceive(que, &esp_state, portMAX_DELAY);
@@ -543,7 +566,7 @@ static void esp_audio_state_task (void *para)
             if (auto_play_type) {
                 char *url = NULL;
                 if (sdcard_list_next(playlist, 1, &url) == ESP_OK) {
-                    ESP_LOGI(TAG, "play index= %d, URI:%s, byte_pos:%d", sdcard_list_get_url_id(playlist), url, 0);
+                    ESP_LOGI(TAG, "Play index= %d, URI:%s, byte_pos:%d", sdcard_list_get_url_id(playlist), url, 0);
                     esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, url, 0);
                 }
             }
@@ -552,16 +575,59 @@ static void esp_audio_state_task (void *para)
     vTaskDelete(NULL);
 }
 
-static void cli_setup_wifi()
+static esp_err_t wifi_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
 {
-    ESP_LOGI(TAG, "Start Wi-Fi");
-    periph_wifi_cfg_t wifi_cfg = {
-        .disable_auto_reconnect = true,
-        .wifi_config.sta.ssid = "YOUR_SSID",
-        .wifi_config.sta.password = "YOUR_PASSWORD",
+    ESP_LOGD(TAG, "Event type:%d,source:%p, data:%p,len:%d,ctx:%p",
+             evt->type, evt->source, evt->data, evt->len, ctx);
+    if (evt->type == WIFI_SERV_EVENT_CONNECTED) {
+        ESP_LOGI(TAG, "WIFI_CONNECTED");
+    } else if (evt->type == WIFI_SERV_EVENT_DISCONNECTED) {
+        ESP_LOGI(TAG, "WIFI_DISCONNECTED");
+    } else if (evt->type == WIFI_SERV_EVENT_SETTING_TIMEOUT) {
+        ESP_LOGI(TAG, "WIFI_SETTING_TIMEOUT");
+    }
+    return ESP_OK;
+}
+
+static void cli_setup_ble(void)
+{
+#if CONFIG_SOC_BT_SUPPORTED && CONFIG_BT_ENABLED
+#if CONFIG_IDF_TARGET_ESP32
+    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+#endif
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
+    ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_BLE));
+    esp_bluedroid_init();
+    esp_bluedroid_enable();
+    ble_gatts_module_init();
+    wifi_setting_handle = blufi_config_create(NULL);
+#endif
+}
+
+static void cli_setup_wifi(void)
+{
+    wifi_config_t sta_cfg = {
+        .sta = {
+            .ssid = "ssid",
+            .password = "password",
+            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+        },
     };
-    esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(set, wifi_handle);
+
+    wifi_service_config_t cfg = WIFI_SERVICE_DEFAULT_CONFIG();
+    cfg.task_stack = 6 * 1024;
+    cfg.extern_stack = true;
+    cfg.evt_cb = wifi_service_cb;
+    cfg.cb_ctx = NULL;
+    cfg.setting_timeout_s = 60;
+    wifi_serv = wifi_service_create(&cfg);
+
+    int reg_idx = 0;
+    esp_wifi_setting_register_notify_handle(wifi_setting_handle, (void *)wifi_serv);
+    wifi_service_register_setting_handle(wifi_serv, wifi_setting_handle, &reg_idx);
+    wifi_service_set_sta_info(wifi_serv, &sta_cfg);
+    wifi_service_connect(wifi_serv);
 }
 
 static void cli_setup_console()
@@ -693,9 +759,13 @@ void app_main(void)
     tcpip_adapter_init();
 #endif
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
+#if !CONFIG_FREERTOS_UNICORE
+    periph_cfg.task_core = 1;
+#endif
     set = esp_periph_set_init(&periph_cfg);
 
     audio_board_sdcard_init(set, SD_MODE_1_LINE);
+    cli_setup_ble();
     cli_setup_wifi();
     cli_setup_player();
 

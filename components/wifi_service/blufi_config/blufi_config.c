@@ -32,6 +32,8 @@
 #include "esp_wifi_setting.h"
 #include "audio_idf_version.h"
 
+#if CONFIG_SOC_BT_SUPPORTED
+
 #if ((defined CONFIG_BT_BLE_BLUFI_ENABLE) || (defined CONFIG_BT_NIMBLE_ENABLED) || (defined CONFIG_BLUEDROID_ENABLED))
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
 #include "esp_blufi.h"
@@ -163,7 +165,7 @@ static void wifi_ble_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_par
             break;
         case ESP_BLUFI_EVENT_SET_WIFI_OPMODE:
             ESP_LOGI(TAG, "BLUFI Set WIFI opmode %d", param->wifi_mode.op_mode);
-            ESP_ERROR_CHECK( esp_wifi_set_mode(param->wifi_mode.op_mode) );
+            ESP_ERROR_CHECK(esp_wifi_set_mode(param->wifi_mode.op_mode));
             break;
         case ESP_BLUFI_EVENT_REQ_CONNECT_TO_AP:
             ESP_LOGI(TAG, "BLUFI requset wifi connect to AP");
@@ -179,7 +181,7 @@ static void wifi_ble_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_par
             ESP_LOGE(TAG, "BLUFI report error, error code %d", param->report_error.state);
             esp_blufi_send_error_info(param->report_error.state);
             break;
-        case ESP_BLUFI_EVENT_GET_WIFI_STATUS:{
+        case ESP_BLUFI_EVENT_GET_WIFI_STATUS: {
             wifi_mode_t mode;
             esp_blufi_extra_info_t info = {0};
             esp_wifi_get_mode(&mode);
@@ -188,12 +190,12 @@ static void wifi_ble_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_par
                 info.sta_ssid = cfg->sta_config.sta.ssid;
                 info.sta_ssid_len = strlen((char *)cfg->sta_config.sta.ssid);
                 esp_blufi_send_wifi_conn_report(mode, ESP_BLUFI_STA_CONN_SUCCESS, 0, &info);
-                } else {
+            } else {
                 esp_blufi_send_wifi_conn_report(mode, ESP_BLUFI_STA_CONN_FAIL, 0, NULL);
-                }
+            }
             ESP_LOGI(TAG, "BLUFI get wifi status from AP");
             break;
-            }
+        }
         case ESP_BLUFI_EVENT_RECV_SLAVE_DISCONNECT_BLE:
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
             esp_blufi_disconnect();
@@ -208,27 +210,26 @@ static void wifi_ble_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_par
             memcpy(cfg->sta_config.sta.bssid, param->sta_bssid.bssid, 6);
             cfg->sta_config.sta.bssid_set = 1;
             esp_wifi_set_config(WIFI_IF_STA, &cfg->sta_config);
-            ESP_LOGI(TAG, "Recv STA BSSID %s\n", cfg->sta_config.sta.ssid);
+            ESP_LOGI(TAG, "Recv STA BSSID %s", cfg->sta_config.sta.ssid);
             break;
         case ESP_BLUFI_EVENT_RECV_STA_SSID:
             strncpy((char *)cfg->sta_config.sta.ssid, (char *)param->sta_ssid.ssid, param->sta_ssid.ssid_len);
             cfg->sta_config.sta.ssid[param->sta_ssid.ssid_len] = '\0';
             esp_wifi_set_config(WIFI_IF_STA, &cfg->sta_config);
-            ESP_LOGI(TAG, "Recv STA SSID %s\n", cfg->sta_config.sta.ssid);
+            ESP_LOGI(TAG, "Recv STA SSID %s", cfg->sta_config.sta.ssid);
             break;
         case ESP_BLUFI_EVENT_RECV_STA_PASSWD:
             strncpy((char *)cfg->sta_config.sta.password, (char *)param->sta_passwd.passwd, param->sta_passwd.passwd_len);
             cfg->sta_config.sta.password[param->sta_passwd.passwd_len] = '\0';
             esp_wifi_set_config(WIFI_IF_STA, &cfg->sta_config);
-            ESP_LOGI(TAG, "Recv STA PASSWORD %s\n", cfg->sta_config.sta.password);
+            ESP_LOGI(TAG, "Recv STA PASSWORD %s", cfg->sta_config.sta.password);
             break;
-        case ESP_BLUFI_EVENT_GET_WIFI_LIST:{
+        case ESP_BLUFI_EVENT_GET_WIFI_LIST: {
             wifi_scan_config_t scanConf = {
                 .ssid = NULL,
                 .bssid = NULL,
                 .channel = 0,
-                .show_hidden = false
-            };
+                .show_hidden = false};
             esp_wifi_scan_start(&scanConf, true);
             break;
         }
@@ -416,3 +417,4 @@ esp_err_t blufi_send_customized_data(esp_wifi_setting_handle_t handle)
 }
 #endif
 
+#endif
