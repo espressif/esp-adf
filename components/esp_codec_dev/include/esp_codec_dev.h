@@ -55,6 +55,26 @@ esp_codec_dev_handle_t esp_codec_dev_new(esp_codec_dev_cfg_t *codec_dev_cfg);
 int esp_codec_dev_open(esp_codec_dev_handle_t codec, esp_codec_dev_sample_info_t *fs);
 
 /**
+ * @brief         Read register value from codec
+ * @param         codec: Codec device handle
+ * @param         reg: Register address to be read
+ * @param         val: Value to be read
+ * @return        ESP_CODEC_DEV_OK: Read success
+ *                ESP_CODEC_DEV_INVALID_ARG: Invalid arguments
+ */
+int esp_codec_dev_read_reg(esp_codec_dev_handle_t codec, int reg, int *val);
+
+/**
+ * @brief         Write register value to codec
+ * @param         codec: Codec device handle
+ * @param         reg: Register address to be wrote
+ * @param         val: Value to be wrote
+ * @return        ESP_CODEC_DEV_OK: Read success
+ *                ESP_CODEC_DEV_INVALID_ARG: Invalid arguments
+ */
+int esp_codec_dev_write_reg(esp_codec_dev_handle_t codec, int reg, int val);
+
+/**
  * @brief         Read data from codec
  * @param         codec: Codec device handle
  * @param         data: Data to be read
