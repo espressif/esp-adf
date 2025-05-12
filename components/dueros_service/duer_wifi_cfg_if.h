@@ -36,7 +36,7 @@ typedef struct {
     void (*on_ble_connect_status)(bool status);
 } duer_ble_wifi_cfg_callbacks_t;
 
-int duer_ble_send_data(uint8_t *data, uint32_t data_len, uint16_t attr_id);
+int duer_ble_send_data(uint8_t *data, size_t data_len, uint16_t attr_id);
 
 int duer_wifi_cfg_ble_host_init(duer_ble_wifi_cfg_callbacks_t *callbacks);
 

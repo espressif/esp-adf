@@ -57,7 +57,7 @@ typedef struct {
 static void key_act_state_hdl_idle(key_act_cb_t *key_cb, bt_key_act_param_t *param);
 static void key_act_state_hdl_press(key_act_cb_t *key_cb, bt_key_act_param_t *param);
 static void key_act_state_hdl_release(key_act_cb_t *key_cb, bt_key_act_param_t *param);
-static void key_act_time_out(void *p);
+static void key_act_time_out(TimerHandle_t p);
 
 static key_act_cb_t key_cb;
 
@@ -82,7 +82,7 @@ void bt_key_act_state_machine(bt_key_act_param_t *param)
     mutex_unlock(key_cb.lock);
 }
 
-static void key_act_time_out(void *p)
+static void key_act_time_out(TimerHandle_t p)
 {
     bt_key_act_param_t param;
     memset(&param, 0, sizeof(bt_key_act_param_t));

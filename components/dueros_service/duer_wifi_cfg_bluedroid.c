@@ -524,7 +524,7 @@ static void esp_ble_wifi_cfg_gap_event_cb(esp_gap_ble_cb_event_t event, esp_ble_
     }
 }
 
-int duer_ble_send_data(uint8_t *data, uint32_t data_len, uint16_t attr_id)
+int duer_ble_send_data(uint8_t *data, size_t data_len, uint16_t attr_id)
 {
     int offset = 0;
     int send_len = 0;

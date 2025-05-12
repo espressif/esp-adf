@@ -81,7 +81,7 @@ static bool coredump_read(uint8_t **des, size_t *len)
     }
     *des = audio_calloc(1, *len);
     AUDIO_MEM_CHECK(TAG, *des, return false);
-    if (SPI_READ(addr, *des, *len) != ESP_OK) {
+    if (SPI_READ(addr, (void*) *des, *len) != ESP_OK) {
         ESP_LOGE(TAG, "Core dump read ERROR");
         free(*des);
         *des = NULL;
