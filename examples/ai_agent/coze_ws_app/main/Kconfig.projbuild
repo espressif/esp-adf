@@ -1,6 +1,6 @@
 menu "Example Audio Configuration"
 
-source "../components/common/Kconfig.in"
+rsource "../components/common/Kconfig.in"
 
 #
 # Select how the audio conversation is triggered

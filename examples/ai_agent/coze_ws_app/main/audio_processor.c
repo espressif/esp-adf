@@ -9,16 +9,12 @@
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "esp_log.h"
-#include "esp_vad.h"
 
 #include "esp_gmf_element.h"
 #include "esp_gmf_pool.h"
 #include "esp_gmf_io.h"
 #include "esp_gmf_pipeline.h"
 #include "esp_gmf_pool.h"
-#include "esp_afe_config.h"
-#include "esp_gmf_afe_manager.h"
-#include "esp_gmf_afe.h"
 #include "esp_audio_simple_player.h"
 #include "esp_audio_simple_player_advance.h"
 #include "esp_gmf_setup_pool.h"
@@ -27,6 +23,12 @@
 #include "esp_codec_dev.h"
 #include "esp_gmf_fifo.h"
 
+#ifndef CONFIG_KEY_PRESS_DIALOG_MODE
+#include "esp_vad.h"
+#include "esp_afe_config.h"
+#include "esp_gmf_afe_manager.h"
+#include "esp_gmf_afe.h"
+#endif  /* CONFIG_KEY_PRESS_DIALOG_MODE */
 #include "audio_processor.h"
 
 #define VAD_ENABLE       (true)
@@ -47,6 +49,8 @@
 #define SAMPLE_BITS         16
 #endif  // CODEC_ES7210_IN_ES8311_OUT
 #endif  // CONFIG_KEY_PRESS_DIALOG_MODE
+
+#define DEFAULT_PLAYBACK_VOLUME (70)
 
 static char *TAG = "AUDIO_PROCESSOR";
 
@@ -71,7 +75,7 @@ typedef struct {
     esp_gmf_afe_manager_handle_t  afe_manager;
     afe_config_t                 *afe_cfg;
     esp_gmf_task_handle_t         task;
-#endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
+#endif  /* CONFIG_KEY_PRESS_DIALOG_MODE */
 } audio_recordert_t;
 
 typedef struct {
@@ -91,16 +95,17 @@ static audio_recordert_t audio_recorder;
 static audio_playback_t  audio_playback;
 static audio_prompt_t    audio_prompt;
 
-esp_err_t audio_manager_init()
+esp_err_t audio_manager_init(void)
 {
     // void *card = NULL;
     // esp_gmf_setup_periph_sdmmc(&card);
+
     esp_gmf_setup_periph_i2c(0);
     esp_gmf_setup_periph_aud_info play_info = {
         .sample_rate = 16000,
         .channel = CAHNNELS,
         .bits_per_sample = SAMPLE_BITS,
-        .port_num = 0,
+        .port_num  = 0,
     };
     esp_gmf_setup_periph_aud_info record_info = {
         .sample_rate = 16000,
@@ -108,14 +113,15 @@ esp_err_t audio_manager_init()
         .bits_per_sample = SAMPLE_BITS,
         .port_num = 0,
     };
+
     esp_gmf_setup_periph_codec(&play_info, &record_info, &audio_manager.play_dev, &audio_manager.rec_dev);
     esp_gmf_pool_init(&audio_manager.pool);
     pool_register_io(audio_manager.pool);
     pool_register_audio_codecs(audio_manager.pool);
     pool_register_audio_effects(audio_manager.pool);
     pool_register_codec_dev_io(audio_manager.pool, audio_manager.play_dev, audio_manager.rec_dev);
+    esp_codec_dev_set_out_vol(audio_manager.play_dev, DEFAULT_PLAYBACK_VOLUME);
 
-    esp_codec_dev_set_out_vol(audio_manager.play_dev, 70);
     return ESP_OK;
 }
 
@@ -201,7 +207,7 @@ static void esp_gmf_afe_event_cb(esp_gmf_obj_handle_t obj, esp_gmf_afe_evt_t *ev
 #if CONFIG_LANGUAGE_WAKEUP_MODE
             esp_gmf_afe_vcmd_detection_cancel(obj);
             esp_gmf_afe_vcmd_detection_begin(obj);
-#endif /* CONFIG_LANGUAGE_WAKEUP_MODE */
+#endif  /* CONFIG_LANGUAGE_WAKEUP_MODE */
             esp_gmf_afe_wakeup_info_t *info = event->event_data;
             ESP_LOGI(TAG, "WAKEUP_START [%d : %d]", info->wake_word_index, info->wakenet_model_index);
             break;
@@ -209,7 +215,7 @@ static void esp_gmf_afe_event_cb(esp_gmf_obj_handle_t obj, esp_gmf_afe_evt_t *ev
         case ESP_GMF_AFE_EVT_WAKEUP_END: {
 #if CONFIG_LANGUAGE_WAKEUP_MODE
             esp_gmf_afe_vcmd_detection_cancel(obj);
-#endif /* CONFIG_LANGUAGE_WAKEUP_MODE */
+#endif  /* CONFIG_LANGUAGE_WAKEUP_MODE */
             ESP_LOGI(TAG, "WAKEUP_END");
             break;
         }
@@ -217,14 +223,14 @@ static void esp_gmf_afe_event_cb(esp_gmf_obj_handle_t obj, esp_gmf_afe_evt_t *ev
 #ifndef CONFIG_LANGUAGE_WAKEUP_MODE
             esp_gmf_afe_vcmd_detection_cancel(obj);
             esp_gmf_afe_vcmd_detection_begin(obj);
-#endif /* CONFIG_LANGUAGE_WAKEUP_MODE */
+#endif  /* CONFIG_LANGUAGE_WAKEUP_MODE */
             ESP_LOGI(TAG, "VAD_START");
             break;
         }
         case ESP_GMF_AFE_EVT_VAD_END: {
 #ifndef CONFIG_LANGUAGE_WAKEUP_MODE
             esp_gmf_afe_vcmd_detection_cancel(obj);
-#endif /* CONFIG_LANGUAGE_WAKEUP_MODE */
+#endif  /* CONFIG_LANGUAGE_WAKEUP_MODE */
             ESP_LOGI(TAG, "VAD_END");
             break;
         }
@@ -240,8 +246,7 @@ static void esp_gmf_afe_event_cb(esp_gmf_obj_handle_t obj, esp_gmf_afe_evt_t *ev
         }
     }
 }
-
-#endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
+#endif  /* CONFIG_KEY_PRESS_DIALOG_MODE */
 
 esp_err_t audio_recorder_open(recorder_event_callback_t cb, void *ctx)
 {
@@ -354,7 +359,7 @@ esp_err_t audio_recorder_read_data(uint8_t *data, int data_size)
     memcpy(data, blk.buf, blk.valid_size);
     esp_gmf_fifo_release_read(audio_recorder.fifo, &blk, portMAX_DELAY);
     return blk.valid_size;
-#endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
+#endif  /* CONFIG_KEY_PRESS_DIALOG_MODE */
 }
 
 esp_err_t audio_playback_feed_data(uint8_t *data, int data_size)
@@ -393,7 +398,7 @@ static int playback_write_callback(uint8_t *data, int data_size, void *ctx)
     esp_codec_dev_handle_t dev = (esp_codec_dev_handle_t)ctx;
     int ret =  esp_codec_dev_write(dev, data, data_size);
     if (ret != ESP_CODEC_DEV_OK) {
-        ESP_LOGE(TAG, "Write to codec dev failed (0x%x)\n");
+        ESP_LOGE(TAG, "Write to codec dev failed (0x%x)\n", ret);
         return -1;
     }
     return data_size;

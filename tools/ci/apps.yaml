@@ -541,3 +541,7 @@ APPS:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.4
+  - app_dir: examples/ai_agent/coze_ws_app
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.4
