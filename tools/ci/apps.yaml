@@ -522,7 +522,7 @@ APPS:
   - app_dir: examples/display/music_player
     board:
       esp32s3:
-        - ESP32_S3_KORVO2_V3
+        - ESP32_S3_KORVO2_V3: v5.4
   - app_dir: examples/protocols/voip
     board:
       esp32:

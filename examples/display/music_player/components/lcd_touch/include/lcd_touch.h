@@ -1,7 +1,7 @@
 /*
  * ESPRESSIF MIT License
  *
- * Copyright (c) 2021 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+ * Copyright (c) 2025 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
  *
  * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
@@ -22,60 +22,29 @@
  *
  */
 
-#pragma once
+#ifndef LCD_TOUCH_H
+#define LCD_TOUCH_H
 
-#include <stdint.h>
-#include "esp_err.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * @brief Init TT21100 touch panel
- * 
- * @return 
- *    - ESP_OK: Success
- *    - Others: Fail
- */
-esp_err_t tt21100_tp_init(void);
+#include "esp_lcd_touch.h"
 
 /**
- * @brief Read packet from TT21100
- * 
- * @return 
- *    - ESP_OK: Success
- *    - Others: Fail
- */
-esp_err_t tt21100_tp_read(void);
-
-/**
- * @brief Get the touch point position
- * 
- * @param p_tp_num      Pointer to touch number
- * @param p_x           Pointer to X direction
- * @param p_y           Pointer to y direction
+ * @brief  Initialize the LCD touch controller.
+ *
+ * @param[out]  ret_touch  Pointer to where the initialized touch handle will be stored.
  *
  * @return
- *    - ESP_OK: Success
- *    - Others: Fail
+ *       - ESP_OK              Success
+ *       - ESP_ERR_NOT_FOUND   Touch driver not found
  */
-esp_err_t tt21100_get_touch_point(uint8_t *p_tp_num, uint16_t *p_x, uint16_t *p_y);
-
-/**
- * @brief Get button value
- * 
- * @param p_btn_val    Pointer to button value
- * @param p_btn_signal Pointer to button singal
- *
- * @return
- *    - ESP_OK: Success
- *    - Others: Fail
- */
-esp_err_t tt21100_get_btn_val(uint8_t *p_btn_val, uint16_t *p_btn_signal);
-
+esp_err_t lcd_touch_init(esp_lcd_touch_handle_t *ret_touch);
 
 #ifdef __cplusplus
 }
 #endif
 
+#endif
