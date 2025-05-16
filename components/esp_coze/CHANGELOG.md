@@ -1,3 +1,9 @@
+## v0.5.1~1
+
+- Enhanced coze_ws_app example
+    - Fixed Kconfig dependency configuration
+    - Improved documentation in README
+    - Upgraded button component version
 
 ## v0.5.1
 
