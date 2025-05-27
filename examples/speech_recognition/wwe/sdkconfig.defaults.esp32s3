@@ -45,14 +45,6 @@ CONFIG_SR_MN_EN_NONE=y
 # end of ESP Speech Recognition
 
 #
-# Component config
-#
-
-#
-# Driver configurations
-#
-
-#
 # ESP32S3-Specific
 #
 # CONFIG_ESP32S3_DEFAULT_CPU_FREQ_80 is not set

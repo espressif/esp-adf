@@ -58,6 +58,9 @@
 static const char *TAG = "RECORDER_SR";
 
 #if !defined(CONFIG_SR_MN_CN_NONE) || !defined(CONFIG_SR_MN_EN_NONE)
+#ifdef CONFIG_IDF_TARGET_ESP32
+#error "ESP32 does not support multi-net"
+#endif
 static const esp_mn_iface_t *multinet = NULL;
 #endif
 
@@ -135,52 +138,17 @@ static recorder_sr_result_t *recorder_sr_afe_result_convert(
 
 #if !defined(CONFIG_SR_MN_CN_NONE) || !defined(CONFIG_SR_MN_EN_NONE)
 
-#ifdef CONFIG_IDF_TARGET_ESP32
-static void recorder_sr_enable_wakenet_aec(recorder_sr_t *recorder_sr)
-{
-    recorder_sr->afe_handle->enable_wakenet(recorder_sr->afe_data);
-    if (recorder_sr->aec_enable) {
-        recorder_sr->afe_handle->enable_aec(recorder_sr->afe_data);
-    }
-}
-
-static void recorder_sr_disable_wakenet_aec(recorder_sr_t *recorder_sr)
-{
-    recorder_sr->afe_handle->disable_wakenet(recorder_sr->afe_data);
-    if (recorder_sr->aec_enable) {
-        recorder_sr->afe_handle->disable_aec(recorder_sr->afe_data);
-    }
-}
-#endif
-
 static esp_err_t recorder_mn_detect(recorder_sr_t *recorder_sr, afe_fetch_result_t *afe_result)
 {
     static int detect_flag = 0;
 
-    if (!recorder_sr->mn_enable) {
-        if (detect_flag == 1) {
-#if CONFIG_IDF_TARGET_ESP32
-            recorder_sr_enable_wakenet_aec(recorder_sr);
-#endif
-            detect_flag = 0;
-        }
-        return ESP_OK;
-    }
-    if (recorder_sr->wwe_enable) {
-#if CONFIG_IDF_TARGET_ESP32
-        if (afe_result->wakeup_state == WAKENET_DETECTED) {
-            detect_flag = 1;
-            recorder_sr_disable_wakenet_aec(recorder_sr);
-        }
-#else
-        if (afe_result->wakeup_state == WAKENET_CHANNEL_VERIFIED) {
-            detect_flag = 1;
-        }
-#endif
-    } else {
-        if (afe_result->vad_state == VAD_SPEECH) {
-            detect_flag = 1;
-        }
+    if (afe_result->raw_data_channels == 1 && afe_result->wakeup_state == WAKENET_DETECTED) {
+        ESP_LOGD(TAG, "WAKENET_DETECTED");
+        detect_flag = 1;
+    } else if (afe_result->raw_data_channels > 1 && afe_result->wakeup_state == WAKENET_CHANNEL_VERIFIED) {
+        // For a multi-channel AFE, it is necessary to wait for the channel to be verified.
+        ESP_LOGD(TAG, "AFE_FETCH_CHANNEL_VERIFIED, channel index: %d", afe_result->trigger_channel_id);
+        detect_flag = 1;
     }
     if (detect_flag == 1) {
         esp_mn_state_t mn_state = multinet->detect(recorder_sr->mn_handle, afe_result->data);
@@ -198,16 +166,10 @@ static esp_err_t recorder_mn_detect(recorder_sr_t *recorder_sr, afe_fetch_result
                 memcpy(sr_result.info.mn_info.str, mn_result->string, RECORDER_SR_MN_STRING_MAX_LEN);
                 recorder_sr->mn_monitor(&sr_result, recorder_sr->mn_monitor_ctx);
             }
-#if CONFIG_IDF_TARGET_ESP32
-            recorder_sr_enable_wakenet_aec(recorder_sr);
-#endif
             detect_flag = 0;
         }
 
         if (mn_state == ESP_MN_STATE_TIMEOUT) {
-#if CONFIG_IDF_TARGET_ESP32
-            recorder_sr_enable_wakenet_aec(recorder_sr);
-#endif
             detect_flag = 0;
             ESP_LOGI(TAG, "MN dect quit");
         }

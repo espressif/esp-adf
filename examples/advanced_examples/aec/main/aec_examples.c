@@ -32,7 +32,7 @@ static const char *TAG = "AEC_EXAMPLE";
 /* Debug original input data for AEC feature*/
 // #define DEBUG_AEC_INPUT
 
-#define I2S_SAMPLE_RATE     16000
+#define I2S_SAMPLE_RATE     8000
 #if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD || CONFIG_ESP32_S3_KORVO2L_V1_BOARD
 #define I2S_CHANNELS        I2S_CHANNEL_FMT_RIGHT_LEFT
 #else
