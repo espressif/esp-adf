@@ -1,10 +1,10 @@
-version: "0.5.1~1"
+version: "0.6.0"
 description: Espressif Coze is a lightweight SDK based on WebSocket
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_coze
 issues: https://github.com/espressif/esp-adf/issues
 
 dependencies:
-  espressif/esp_websocket_client: ^1.2.3
+  espressif/esp_websocket_client: ^1.4.0
 
 targets:
   - esp32

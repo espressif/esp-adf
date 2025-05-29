@@ -18,6 +18,5 @@ jobs:
           directories: >
             components/esp_codec_dev;
             components/esp_coze;
-            examples/ai_agent/coze_ws_app;
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}
