@@ -51,3 +51,8 @@ ifdef CONFIG_ESP32_C3_LYRA_V2_BOARD
 COMPONENT_ADD_INCLUDEDIRS += ./esp32_c3_lyra
 COMPONENT_SRCDIRS += ./esp32_c3_lyra
 endif
+
+ifdef CONFIG_DFROBOT_ESP32S3_AI_CAM
+COMPONENT_ADD_INCLUDEDIRS += ./dfrobot_esp32_s3_ai_cam
+COMPONENT_SRCDIRS += ./dfrobot_esp32_s3_ai_cam
+endif
