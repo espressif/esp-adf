@@ -178,6 +178,7 @@ static int set_drv_fs(i2s_chan_handle_t channel, bool playback, uint8_t slot_bit
             } else {
 #if SOC_I2S_SUPPORTS_PDM_TX
                 i2s_pdm_tx_clk_config_t clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(fs->sample_rate);
+                clk_cfg.up_sample_fs = fs->sample_rate / 100;
                 i2s_pdm_tx_slot_config_t slot_cfg = I2S_PDM_TX_SLOT_DEFAULT_CONFIG(slot_bits, I2S_SLOT_MODE_STEREO);
                 // Stereo channel mask is ignored, need use mono instead
                 if (fs->channel_mask && fs->channel_mask < 3) {

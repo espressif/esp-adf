@@ -55,6 +55,10 @@ if (CONFIG_CODEC_AW88298_SUPPORT)
   list(APPEND COMPONENT_SRCS device/aw88298/aw88298.c)
 endif()
 
+if (CONFIG_CODEC_ES8389_SUPPORT)
+  list(APPEND COMPONENT_SRCS device/es8389/es8389.c)
+endif()
+
 if (CONFIG_CODEC_ZL38063_SUPPORT)
   list(APPEND COMPONENT_SRCS device/zl38063/zl38063.c
     device/zl38063/api_lib/vprocTwolf_access.c
