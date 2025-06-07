@@ -10,8 +10,8 @@ COMPONENT_PRIV_INCLUDEDIRS := ./driver/include
 COMPONENT_ADD_INCLUDEDIRS += ./driver/es8388 ./driver/es8374
 COMPONENT_SRCDIRS += ./driver/es8388 ./driver/es8374
 
-COMPONENT_ADD_INCLUDEDIRS += ./driver/es8311 ./driver/es7243
-COMPONENT_SRCDIRS += ./driver/es8311 ./driver/es7243
+COMPONENT_ADD_INCLUDEDIRS += ./driver/es8311 ./driver/es7243 ./driver/tlv320
+COMPONENT_SRCDIRS += ./driver/es8311 ./driver/es7243 ./driver/tlv320
 
 COMPONENT_ADD_INCLUDEDIRS += ./driver/zl38063 ./driver/zl38063/api_lib ./driver/zl38063/example_apps ./driver/zl38063/firmware
 COMPONENT_SRCDIRS += ./driver/zl38063 ./driver/zl38063/api_lib ./driver/zl38063/example_apps ./driver/zl38063/firmware

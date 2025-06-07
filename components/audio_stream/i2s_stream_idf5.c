@@ -114,6 +114,11 @@ static int i2s_driver_startup(audio_element_handle_t self, i2s_stream_cfg_t *i2s
     i2s_key_slot[i2s->port].chan_cfg.auto_clear = true;
     ret = i2s_new_channel(&i2s_key_slot[i2s->port].chan_cfg, i2s_key_slot[i2s->port].dir & I2S_DIR_TX ?  &i2s_key_slot[i2s->port].tx_handle : NULL,
                           i2s_key_slot[i2s->port].dir & I2S_DIR_RX ?  &i2s_key_slot[i2s->port].rx_handle : NULL);
+
+    i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.invert_flags.bclk_inv = 0;
+    i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.invert_flags.mclk_inv = 0;
+    i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.invert_flags.ws_inv = 0;
+
     switch (i2s_mode) {
         case I2S_COMM_MODE_STD:
             if (i2s_key_slot[i2s->port].dir & I2S_DIR_TX) {
@@ -604,6 +609,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         return NULL;
     }
     int i2s_port = config->chan_cfg.id;
+    ESP_LOGE(TAG, "I2s Port is : %d" ,i2s_port);
     i2s_dir_t i2s_dir = 0;
     if (i2s_port == I2S_NUM_AUTO) {
         ESP_LOGE(TAG, "Please specify the port number of I2S.");
@@ -676,6 +682,18 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     if (i2s_key_slot[i2s_port].dir & I2S_DIR_RX) {
         i2s_channel_enable(i2s_key_slot[i2s_port].rx_handle);
     }
+
+    ESP_LOGE(TAG, "I2S Pins -> BCLK : %d" ,i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.bclk);
+    ESP_LOGE(TAG, "I2S Pins -> MCLK : %d" ,i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.mclk);
+    ESP_LOGE(TAG, "I2S Pins -> SDO : %d" ,i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.dout);
+    ESP_LOGE(TAG, "I2S Pins -> SDI : %d" ,i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.din);
+    ESP_LOGE(TAG, "I2S Pins -> WS : %d" ,i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.ws);
+
+    ESP_LOGE(TAG, "I2S Pins -> bclk_inv : %d" ,i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.invert_flags.bclk_inv);
+    ESP_LOGE(TAG, "I2S Pins -> mclk_inv : %d" ,i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.invert_flags.mclk_inv);
+    ESP_LOGE(TAG, "I2S Pins -> ws_inv : %d" ,i2s_key_slot[i2s->port].tx_std_cfg.gpio_cfg.invert_flags.ws_inv);
+
+    
 
 i2s_end:
     i2s_safe_unlock(s_i2s_tx_mutex[i2s_port]);

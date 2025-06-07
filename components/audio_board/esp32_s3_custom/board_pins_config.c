@@ -30,14 +30,14 @@
 #include "audio_mem.h"
 #include "soc/soc_caps.h"
 
-static const char *TAG = "ESP32_S3_KORVO_2";
+static const char *TAG = "ESP32_S3_CUSTOM";
 
 esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
 {
     AUDIO_NULL_CHECK(TAG, i2c_config, return ESP_FAIL);
     if (port == I2C_NUM_0 || port == I2C_NUM_1) {
-        i2c_config->sda_io_num = GPIO_NUM_17;  //GPIO_NUM_17
-        i2c_config->scl_io_num = GPIO_NUM_18;  //GPIO_NUM_18
+        i2c_config->sda_io_num = GPIO_NUM_2;  //GPIO_NUM_17
+        i2c_config->scl_io_num = GPIO_NUM_1;  //GPIO_NUM_18
     } else {
         i2c_config->sda_io_num = -1;
         i2c_config->scl_io_num = -1;
@@ -51,11 +51,11 @@ esp_err_t get_i2s_pins(int port, board_i2s_pin_t *i2s_config)
 {
     AUDIO_NULL_CHECK(TAG, i2s_config, return ESP_FAIL);
     if (port == 0) {
-        i2s_config->bck_io_num =        GPIO_NUM_9;  //GPIO_NUM_39;
-        i2s_config->ws_io_num =         GPIO_NUM_35; // GPIO_NUM_40;
-        i2s_config->data_out_num =      GPIO_NUM_8;  //GPIO_NUM_42;
-        i2s_config->data_in_num =       GPIO_NUM_10; // GPIO_NUM_41;
-        i2s_config->mck_io_num =        GPIO_NUM_16; // GPIO_NUM_38;
+        i2s_config->bck_io_num =      GPIO_NUM_39;  //GPIO_NUM_9;  
+        i2s_config->ws_io_num =       GPIO_NUM_40;  //GPIO_NUM_35;  
+        i2s_config->data_out_num =    GPIO_NUM_41;  //GPIO_NUM_8;  
+        i2s_config->data_in_num =     GPIO_NUM_42;  //GPIO_NUM_10;  
+        i2s_config->mck_io_num =      GPIO_NUM_38;  //GPIO_NUM_16;  
     } else if (port == 1) {
         i2s_config->bck_io_num = -1;
         i2s_config->ws_io_num = -1;
@@ -161,7 +161,7 @@ int8_t get_blue_led_gpio(void)
     return BLUE_LED_GPIO;
 }
 
-int8_t get_es8311_mclk_src(void)
+int8_t get_tlv320_mclk_src(void)
 {
-    return ES8311_MCLK_SOURCE;
+    return TLV320_MCLK_SOURCE;
 }

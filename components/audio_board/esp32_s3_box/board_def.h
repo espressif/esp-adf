@@ -29,8 +29,8 @@
  * @brief LCD SCREEN Function Definition
  */
 #define FUNC_LCD_SCREEN_EN          (1)
-#define LCD_CTRL_GPIO               GPIO_NUM_45
-#define LCD_RST_GPIO                GPIO_NUM_48
+#define LCD_CTRL_GPIO               GPIO_NUM_35
+#define LCD_RST_GPIO                GPIO_NUM_38
 #define LCD_DC_GPIO                 GPIO_NUM_4
 #define LCD_CS_GPIO                 GPIO_NUM_5
 #define LCD_CLK_GPIO                GPIO_NUM_7
@@ -84,7 +84,7 @@
 #define CODEC_ADC_SAMPLE_RATE     (48000)
 #define RECORD_HARDWARE_AEC       (true)
 #define BOARD_PA_GAIN             (0)  /* Power amplifier gain defined by board (dB) */
-#define PA_ENABLE_GPIO            GPIO_NUM_46
+#define PA_ENABLE_GPIO            GPIO_NUM_36
 #define HEADPHONE_DETECT          -1
 #define ES7210_MIC_SELECT         (ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2 | ES7210_INPUT_MIC3)
 

@@ -161,13 +161,4 @@ set(COMPONENT_SRCS
 )
 endif()
 
-if (CONFIG_ESP32_P4_FUNCTION_EV_SUB_BOARD)
-message(STATUS "Current board name is " CONFIG_ESP32_P4_FUNCTION_EV_SUB_BOARD)
-list(APPEND COMPONENT_ADD_INCLUDEDIRS ./esp32_p4_function_ev_sub_board)
-set(COMPONENT_SRCS
-./esp32_p4_function_ev_sub_board/board.c
-./esp32_p4_function_ev_sub_board/board_pins_config.c
-)
-endif()
-
 register_component()

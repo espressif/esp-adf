@@ -397,7 +397,8 @@ int av_audio_enc_start(av_stream_handle_t av_stream)
         audio_pipeline_register(av_stream->audio_enc, av_stream->audio_enc_read, "raw");
         audio_element_set_read_cb(filter, audio_read_cb, av_stream);
         audio_element_set_input_timeout(filter, get_audio_max_delay(av_stream, AUDIO_MAX_SIZE) / portTICK_PERIOD_MS);
-        const char *link_tag[2] = {"filter", "raw"};
+        // const char *link_tag[2] = {"filter", "raw"};
+        const char *link_tag[2] = {"raw", "filter"};
         audio_pipeline_link(av_stream->audio_enc, &link_tag[0], 2);
     #endif
     }
