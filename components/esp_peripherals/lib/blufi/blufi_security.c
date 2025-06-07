@@ -38,13 +38,13 @@
 #include "audio_idf_version.h"
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
-#include "esp32/rom/crc.h"
+#include "esp_crc.h"
 #else
 #include "rom/crc.h"
-#endif //(ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#endif  //(ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
 #include "esp_random.h"
-#endif
+#endif  /* (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)) */
 
 #define BLUFI_SECURITY_TAG "BLUFI_SECURITY"
 /*
@@ -200,7 +200,11 @@ int blufi_aes_decrypt(uint8_t iv8, uint8_t *crypt_data, int crypt_len)
 uint16_t blufi_crc_checksum(uint8_t iv8, uint8_t *data, int len)
 {
     /* This iv8 ignore, not used */
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+    return esp_crc16_be(0, data, len);
+#else
     return crc16_be(0, data, len);
+#endif
 }
 
 esp_err_t blufi_security_init(void)

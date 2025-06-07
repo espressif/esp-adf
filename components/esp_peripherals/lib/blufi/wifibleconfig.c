@@ -30,7 +30,7 @@
 #include "audio_mem.h"
 #include "audio_idf_version.h"
 
-#if defined(CONFIG_BT_BLE_BLUFI_ENABLE)
+#if CONFIG_SOC_BT_SUPPORTED && defined(CONFIG_BT_BLE_BLUFI_ENABLE)
 #include "esp_system.h"
 #include "esp_bt.h"
 #include "esp_log.h"
@@ -39,7 +39,7 @@
 #include "esp_blufi.h"
 #else
 #include "esp_blufi_api.h"
-#endif
+#endif  /* (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) */
 
 #ifdef CONFIG_BT_BLE_BLUFI_ENABLE
 #include "esp_bt_defs.h"

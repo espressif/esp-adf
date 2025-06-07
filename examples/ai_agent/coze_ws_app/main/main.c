@@ -28,25 +28,25 @@ static esp_err_t spiffs_filesystem_init(void)
   
       esp_err_t ret = esp_vfs_spiffs_register(&conf);
   
-      if (ret != ESP_OK) {
-          if (ret == ESP_FAIL) {
-              ESP_LOGE(TAG, "Failed to mount or format filesystem");
-          } else if (ret == ESP_ERR_NOT_FOUND) {
-              ESP_LOGE(TAG, "Failed to find SPIFFS partition");
-              return ESP_FAIL;
-            } else {
-                ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
-                return ESP_FAIL;
-          }
-      }
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            ESP_LOGE(TAG, "Failed to mount or format filesystem");
+        } else if (ret == ESP_ERR_NOT_FOUND) {
+            ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+            return ESP_FAIL;
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+            return ESP_FAIL;
+        }
+    }
 
-      size_t total = 0, used = 0;
-      ret = esp_spiffs_info(NULL, &total, &used);
-      if (ret != ESP_OK) {
-          ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
-      } else {
-          ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
-      }
+    size_t total = 0, used = 0;
+    ret = esp_spiffs_info(NULL, &total, &used);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
+    } else {
+        ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+    }
     return ESP_OK;
 }
 

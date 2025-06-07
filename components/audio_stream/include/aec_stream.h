@@ -39,7 +39,7 @@
     .task_core     = AEC_STREAM_PINNED_TO_CORE,   \
     .debug_aec     = false,                       \
     .stack_in_ext  = true,                        \
-    .type          = AFE_TYPE_VC,                 \
+    .type          = AFE_TYPE_VC_8K,              \
     .mode          = AFE_MODE_LOW_COST,           \
     .filter_length = 4,                           \
     .input_format  = "RM",                        \
@@ -51,7 +51,7 @@ typedef struct {
     int        task_core;      /*!< The core that task to be created */
     bool       stack_in_ext;   /*!< Try to allocate stack in external memory */
     bool       debug_aec;      /*!< debug AEC input data */
-    afe_type_t type;           /*!< The type of afe， AFE_TYPE_SR or AFE_TYPE_VC */
+    afe_type_t type;           /*!< The type of afe， AFE_TYPE_SR , AFE_TYPE_VC , AFE_TYPE_VC_8K */
     afe_mode_t mode;           /*!< The mode of afe， AFE_MODE_LOW_COST or AFE_MODE_HIGH_PERF */
     int        filter_length;  /*!< The filter length of aec */
     char      *input_format;   /*!< The input format is as follows: For example, 'MR', 'RMNM'.

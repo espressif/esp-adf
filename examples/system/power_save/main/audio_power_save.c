@@ -266,7 +266,9 @@ void app_main(void)
         }
         audio_deinit();
         // Shut down the power amplifier for the purpose of eliminating noise.
-        gpio_set_level(get_pa_enable_gpio(), 0);
+        if (get_pa_enable_gpio() != -1) {
+            gpio_set_level(get_pa_enable_gpio(), 0);
+        }
 #else
         count = 40;
         // Some task to do

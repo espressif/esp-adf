@@ -28,9 +28,10 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_lcd_touch.h"
 #include "lv_port.h"
 #include "lvgl.h"
-#include "tt21100.h"
+#include "lcd_touch.h"
 
 #ifndef LCD_H_RES
 #define LCD_H_RES 320
@@ -50,6 +51,7 @@ typedef enum {
 static lv_disp_drv_t disp_drv;
 static const char *TAG = "lv_port";
 static esp_lcd_panel_handle_t panel_handle;
+static esp_lcd_touch_handle_t touch_handle;
 
 static void *p_user_data = NULL;
 static bool (*p_on_trans_done_cb)(void *) = NULL;
@@ -71,86 +73,24 @@ static bool lv_port_flush_ready(void *arg)
     return false;
 }
 
-static esp_err_t touch_ic_read(uint8_t *tp_num, uint16_t *x, uint16_t *y, uint8_t *btn_val)
-{
-    esp_err_t ret_val = ESP_OK;
-    uint16_t btn_signal = 0;
-
-    switch (tp_vendor) {
-        case TP_VENDOR_TT:
-            ret_val |= tt21100_tp_read();
-            ret_val |= tt21100_get_touch_point(tp_num, x, y);
-            ret_val |= tt21100_get_btn_val(btn_val, &btn_signal);
-            break;
-        case TP_VENDOR_FT:
-            break;
-        default:
-            return ESP_ERR_NOT_FOUND;
-            break;
-    }
-
-#if TOUCH_PANEL_SWAP_XY
-    uint16_t swap = *x;
-    *x = *y;
-    *y = swap;
-#endif
-
-#if TOUCH_PANEL_INVERSE_X
-    *x = LCD_H_RES - ( *x + 1);
-#endif
-
-#if TOUCH_PANEL_INVERSE_Y
-    *y = LCD_V_RES - (*y + 1);
-#endif
-
-    ESP_LOGV(TAG, "[%3u, %3u]", *x, *y);
-    return ret_val;
-}
-
-static void button_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
-{
-    static uint8_t prev_btn_id = 0;
-    uint8_t tp_num = 0, btn_val = 0;
-    uint16_t x = 0, y = 0;
-    /* Read touch point(s) via touch IC */
-    if (ESP_OK != touch_ic_read(&tp_num, &x, &y, &btn_val)) {
-        return;
-    }
-
-    /*Get the pressed button's ID*/
-    if (btn_val) {
-        data->btn_id = btn_val;
-        data->state = LV_INDEV_STATE_PRESSED;
-    } else {
-        data->btn_id = 0;
-        data->state = LV_INDEV_STATE_RELEASED;
-    }
-
-    if (prev_btn_id != data->btn_id) {
-        lv_event_send(lv_scr_act(), LV_EVENT_HIT_TEST, (void *) (int)btn_val);
-    }
-
-    prev_btn_id = btn_val;
-}
-
 static IRAM_ATTR void touchpad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 {
-    uint8_t tp_num = 0, btn_val = 0;
-    uint16_t x = 0, y = 0;
-    /* Read touch point(s) via touch IC */
-    if (ESP_OK != touch_ic_read(&tp_num, &x, &y, &btn_val)) {
-        return;
-    }
+    uint16_t touchpad_x[1] = {0};
+    uint16_t touchpad_y[1] = {0};
+    uint8_t touchpad_cnt = 0;
 
-    ESP_LOGV(TAG, "Touch (%u) : [%3u, %3u]", tp_num, x, y);
+    /* Read data from touch controller into memory */
+    esp_lcd_touch_read_data(touch_handle);
 
-    /* FT series touch IC might return 0xff before first touch. */
-    if ((0 == tp_num) || (5 < tp_num)) {
-        data->state = LV_INDEV_STATE_REL;
-    } else {
-        data->point.x = x;
-        data->point.y = y;
+    /* Read data from touch controller */
+    bool touchpad_pressed = esp_lcd_touch_get_coordinates(touch_handle, touchpad_x, touchpad_y, NULL, &touchpad_cnt, 1);
+
+    if (touchpad_pressed && touchpad_cnt > 0) {
+        data->point.x = touchpad_x[0];
+        data->point.y = touchpad_y[0];
         data->state = LV_INDEV_STATE_PR;
+    } else {
+        data->state = LV_INDEV_STATE_REL;
     }
 }
 
@@ -209,10 +149,6 @@ static void lv_port_indev_init(void)
     indev_drv_tp.read_cb = touchpad_read;
     lv_indev_drv_register(&indev_drv_tp);
 
-    lv_indev_drv_init(&indev_drv_btn);
-    indev_drv_btn.type = LV_INDEV_TYPE_BUTTON;
-    indev_drv_btn.read_cb = button_read;
-    lv_indev_drv_register(&indev_drv_btn);
 }
 
 static esp_err_t lv_port_tick_init(void)
@@ -257,7 +193,12 @@ esp_err_t lv_port_init(void *lcd_panel_handle)
 
     xSemaphoreGive(lcd_flush_done_sem);
 
-    tt21100_tp_init();
+    esp_err_t ret = lcd_touch_init(&touch_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize touch controller");
+        vSemaphoreDelete(lcd_flush_done_sem);
+        return ret;
+    }
 
     /* Initialize LVGL library */
     lv_init();

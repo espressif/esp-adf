@@ -213,7 +213,7 @@ typedef struct {
     .slot_bit_width = I2S_SLOT_BIT_WIDTH_AUTO,                                \
     .slot_mode = mono_or_stereo,                                              \
     .slot_mask = (mono_or_stereo == I2S_SLOT_MODE_MONO) ?                     \
-                I2S_STD_SLOT_LEFT : I2S_STD_SLOT_BOTH,                        \
+                I2S_STD_SLOT_RIGHT : I2S_STD_SLOT_BOTH,                       \
     .ws_width = bits_per_sample,                                              \
     .ws_pol = false,                                                          \
     .bit_shift = true,                                                        \

@@ -80,7 +80,7 @@ typedef struct {
  */
 typedef struct {
     void                        *ctx;               /*!< AV stream user context */
-    int8_t                      algo_mask;          /*!< Choose the algorithm to be used */
+    bool                        enable_aec;         /*!< Enable AEC */
     av_stream_acodec_t          acodec_type;        /*!< Audio codec type */
     uint32_t                    acodec_samplerate;  /*!< If the sample rate is different with HAL, av_stream will resample to match it */
     av_stream_vcodec_t          vcodec_type;        /*!< Video codec type */

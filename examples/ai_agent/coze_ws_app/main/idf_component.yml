@@ -1,7 +1,11 @@
 
 dependencies:
+  protocol_examples_common:
+    path: ${IDF_PATH}/examples/common_components/protocol_examples_common
   espressif/gmf_ai_audio:
-    version: '^0.6'
+    version: '~0.6'
+    rules:
+      - if: "target in [esp32p4, esp32s3, esp32]"
   espressif/gmf_audio:
     version: '^0.6'
   espressif/gmf_io:
@@ -9,10 +13,19 @@ dependencies:
   espressif/gmf_misc:
     version: '^0.6'
   espressif/esp_audio_simple_player:
-    version: '^0.9'
-  protocol_examples_common:
-    path: ${IDF_PATH}/examples/common_components/protocol_examples_common
+    version: '^0.9.3'
   espressif/esp_websocket_client: ^1.2.3
   espressif/esp_coze:
     version: '^0.5'
-  espressif/button: ^3.3.1
+  espressif/button:
+    version: '^4.1.3'
+  espressif/esp_hosted:
+    version: "~1.1"
+    rules:
+      - if: "target in [esp32p4]"
+  espressif/esp_wifi_remote:
+    matches:
+      - if: "idf_version <=5.4.0 && target in [esp32p4]"
+        version: "~0.4"
+      - if: "idf_version >5.4.0 && target in [esp32p4]"
+        version: "~0.6"

@@ -72,7 +72,7 @@ static esp_err_t _aec_open(audio_element_handle_t self)
         ESP_LOGW(TAG, "aec already opened");
         return ESP_OK;
     }
-    aec->aec_handle = afe_aec_create(aec->input_format, 4, aec->type, aec->mode);
+    aec->aec_handle = afe_aec_create(aec->input_format, aec->filter_length, aec->type, aec->mode);
     ESP_LOGW(TAG, "Create AEC, handle %p, mic: %d, total_ch_num: %d, sample_rate: %d, chunk size: %d", aec->aec_handle, aec->aec_handle->pcm_config.mic_num, 
              aec->aec_handle->pcm_config.total_ch_num, aec->aec_handle->pcm_config.sample_rate, afe_aec_get_chunksize(aec->aec_handle));
     AUDIO_MEM_CHECK(TAG, aec->aec_handle, return ESP_FAIL);

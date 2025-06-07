@@ -311,18 +311,20 @@ esp_err_t zl38063_codec_init(audio_hal_codec_config_t *cfg)
     borad_conf.pin_bit_mask = 1UL << (get_reset_board_gpio());
     borad_conf.pull_down_en = 0;
     borad_conf.pull_up_en = 0;
-
-    gpio_config_t  pa_conf;
-    memset(&pa_conf, 0, sizeof(pa_conf));
-    pa_conf.mode = GPIO_MODE_OUTPUT;
-    pa_conf.pin_bit_mask = 1UL << (get_pa_enable_gpio());
-    pa_conf.pull_down_en = 0;
-    pa_conf.pull_up_en = 0;
-
-    gpio_config(&pa_conf);
     gpio_config(&borad_conf);
-    gpio_set_level(get_pa_enable_gpio(), 1);        //enable PA
-    gpio_set_level(get_reset_board_gpio(), 0);      //enable DSP
+    gpio_set_level(get_reset_board_gpio(), 0);  //enable DSP
+
+    if (get_pa_enable_gpio() != -1) {
+        gpio_config_t  pa_conf;
+        memset(&pa_conf, 0, sizeof(pa_conf));
+        pa_conf.mode = GPIO_MODE_OUTPUT;
+        pa_conf.pin_bit_mask = 1UL << (get_pa_enable_gpio());
+        pa_conf.pull_down_en = 0;
+        pa_conf.pull_up_en = 0;
+        gpio_config(&pa_conf);
+        gpio_set_level(get_pa_enable_gpio(), 1);  //enable PA
+    }
+
     codec_init_flag = 1;
     return ESP_OK;
 }

@@ -334,7 +334,7 @@ static void start_recorder()
     audio_pipeline_run(pipeline);
     ESP_LOGI(TAG, "Recorder has been created");
 
-    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG(audio_sr_input_fmt, "model", AFE_TYPE_SR, AFE_MODE_LOW_COST);
+    recorder_sr_cfg_t recorder_sr_cfg = DEFAULT_RECORDER_SR_CFG(audio_sr_input_fmt, "model", AFE_TYPE_SR, AFE_MODE_HIGH_PERF);
     recorder_sr_cfg.afe_cfg->memory_alloc_mode = AFE_MEMORY_ALLOC_MORE_PSRAM;
     recorder_sr_cfg.afe_cfg->wakenet_init = WAKENET_ENABLE;
     recorder_sr_cfg.afe_cfg->vad_mode = VAD_MODE_4;

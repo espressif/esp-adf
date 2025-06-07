@@ -1,0 +1,3 @@
+dependencies:
+  esp_lcd_touch_tt21100: ">=1.0.0"
+  esp_lcd_touch_gt911: "^1"

@@ -1,6 +1,6 @@
 # 扣子 Websocket 双向流式对话
 
-- [English](./README.md)
+- [English](./README.md)|中文
 
 ## 例程简介
 
@@ -15,6 +15,7 @@
 ### 预备知识
 
 首先需要在[Coze文档中](https://bytedance.larkoffice.com/docx/Da6qd87pQodvNrxdFYrcnzMxnsh)申请 `Access token` 和 `BOT ID`账号
+
 更多的 Websocket 文档可以参考 [双向流式对话事件](https://www.coze.cn/open/docs/developer_guides/streaming_chat_event)
 
 本示例基于 [ESP-GMF](https://github.com/espressif/esp-gmf) 框架，演示了音频初始化及 3A（自动增益、回声消除、噪声抑制）算法的应用。
@@ -41,63 +42,76 @@
 
 - **唤醒对话模式**：用户通过按键唤醒设备，唤醒后可进行语音交互。默认按键为 `REC`。
 
-> 默认启用的工作模式为 **普通模式** 模式
+> 默认启用的工作模式为 **普通模式**
+
+不同芯片对各工作模式的支持情况如下:
+
+|  CHIPS   |  Wake Word Mode  |   Continuous Mode  |   Key Press Mode  |
+|  ----  | ----  |  ----  | ----  |
+| ESP32S3  | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32P4  | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32  | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32C3  | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32C6  | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32C5  | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/no-icon.png "Incompatible") <sup> **1** </sup> | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+| ESP32S2  | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
+
+**Note 1:** 计划在后续版本中支持
 
 在不同模式时，需要在 `Component config → ESP Audio Simple Player` 中调整不同的参数参数。
 
 1.使用按键模式， 音频的输入输出会配置为 `16bit`， `单通道`，配置如下
 
-```c
+```text
 CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=1
 CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_16BIT=y
 ```
 
 2.使用单 `ES8311` 作为音频的输入输出， 并使用回音消除等功能，音频的输入输出会配置为 `16bit`， `双通道`，配置如下
 
-```c
+```text
 CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=2
 CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_16BIT=y
 ```
 
 3.使用 `ES8311` 作为音频的输出， `ES7210` 作为输入， 音频的输入输出会配置为 `32bit`， `双通道`，配置如下(默认模式)
 
-```c
+```text
 CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=2
 CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_32BIT=y
 ```
 
 ### 配置
 
-1. 将获取到的 `Access token` 和 `BOT ID` 信息填入 `Menuconfig->Example Configuration` 中。`Access token` 默认是以 `pat_` 开头的。
+1. 将获取到的 `Access token` 和 `BOT ID` 信息填入 `Menuconfig->Example Configuration` 中。`Access token` 默认是 `pat_` 为前缀。
 2. 將 wifi 信息填入 `Menuconfig->>Example Configuration` 中。
 
 ### 编译和下载
 
-编译与下载
+编译和下载
 在编译本例程之前，请确保已配置好 ESP-IDF 环境。如果已配置，可以跳过此步骤，直接进行后续配置。如果尚未配置，请在 ESP-IDF 根目录运行以下脚本来设置编译环境。有关完整的配置和使用步骤，请参考 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/index.html)。
 
-编译本例程前需要先确保已配置 ESP-IDF 的环境，如果已配置可跳到下一项配置，如果未配置需要先在 ESP-IDF 根目录运行下面脚本设置编译环境，有关配置和使用 ESP-IDF 完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/index.html)
 
-```c
+```bash
 ./install.sh
 . ./export.sh
 ```
 
 - 选择编译芯片，以 esp32s3 为例：
 
-```c
+```bash
 idf.py set-target esp32s3
 ```
 
-- 编译例子程序
+- 编译程序
 
-```c
+```bash
 idf.py build
 ```
 
 - 烧录程序并运行 monitor 工具来查看串口输出 (替换 PORT 为端口名称)：
 
-```c
+```bash
 idf.py -p PORT flash monitor
 ```
 
@@ -105,9 +119,9 @@ idf.py -p PORT flash monitor
 
 ### 功能和用法
 
-- 例程开始运行后， 当出现以下log就说明了与服务端建立了连接， 就可以对话了:
+- 例程开始运行后，下方 log 表明与服务端成功建立连接，已具备对话条件:
 
-```c
+```text
 E (1029) COZE_CHAT_WS: Failed to get SPIFFS partition information (ESP_ERR_INVALID_STATE)
 I (1031) example_connect: Start example_connect.
 I (1035) pp: pp rom version: e7ae62f
@@ -335,3 +349,9 @@ I (8397) ESP_GMF_TASK: One times job is complete, del[wk:0x3c728b54,ctx:0x3c71ff
 I (8407) ESP_GMF_PORT: ACQ IN, new self payload:0x3c728b54, port:0x3c72f554, el:0x3c71ffe8-aud_simp_dec
 I (8527) ESP_GMF_PORT: ACQ OUT, new self payload:0x3c720374, port:0x3c2ec964, el:0x3c2ec864-gmf_afe
 ```
+
+## 计划功能
+
+1.支持 Opus 编码并将音频发送至服务器
+
+2.支持多功能形态，例如音响设备可实现混音功能

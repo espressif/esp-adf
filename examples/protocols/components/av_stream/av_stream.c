@@ -27,7 +27,7 @@
 #include "audio_thread.h"
 #include "audio_mem.h"
 #include "raw_stream.h"
-#include "algorithm_stream.h"
+#include "aec_stream.h"
 #include "fatfs_stream.h"
 #include "i2s_stream.h"
 #include "wav_encoder.h"
@@ -167,7 +167,7 @@ static int audio_read_cb(audio_element_handle_t el, char *buf, int len, TickType
     av_stream_handle_t av_stream = (av_stream_handle_t) ctx;
     int16_t *temp = (int16_t *)buf;
 
-    if ((av_stream->config.algo_mask != 0) && !_have_hardware_ref(av_stream)) {
+    if (av_stream->config.enable_aec && !_have_hardware_ref(av_stream)) {
         memset(av_stream->ref_buf, 0, AUDIO_MAX_SIZE);
         /* Copy reference data from decoded pcm */
         if (av_stream->adec_run && (rb_bytes_filled(av_stream->ringbuf_ref) != 0)) {
@@ -307,25 +307,22 @@ int av_audio_enc_start(av_stream_handle_t av_stream)
         audio_element_handle_t fatfs_stream_writer = fatfs_stream_init(&fatfs_wd_cfg);
     #endif
 
-    if (av_stream->config.algo_mask != 0) {
-    algorithm_stream_cfg_t algo_config = ALGORITHM_STREAM_CFG_DEFAULT();
-    #if DEBUG_AEC_INPUT
-        algo_config.debug_input = true;
-    #endif
-    #if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD || CONFIG_ESP32_S3_KORVO2_V3_BOARD || CONFIG_ESP32_S3_BOX_BOARD
-        algo_config.input_format = "RM";
-    #endif
-
-    #if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD
-        algo_config.ref_linear_factor = 3;
-    #endif
-        algo_config.task_core = 0;
-        algo_config.algo_mask = av_stream->config.algo_mask;
-        algo_config.sample_rate = av_stream->config.hal.audio_samplerate;
-        algo_config.out_rb_size = av_stream->config.hal.audio_framesize;
-        av_stream->element_algo = algo_stream_init(&algo_config);
+        if (av_stream->config.enable_aec) {
+            aec_stream_cfg_t aec_config = AEC_STREAM_CFG_DEFAULT();
+        #if DEBUG_AEC_INPUT
+            aec_config.debug_input = true;
+        #endif
+        #if CONFIG_ESP_LYRAT_MINI_V1_1_BOARD || CONFIG_ESP32_S3_KORVO2_V3_BOARD || CONFIG_ESP32_S3_BOX_BOARD
+            aec_config.input_format = "RM";
+        #endif
+        if (av_stream->config.hal.audio_samplerate == 8000) {
+            aec_config.type = AFE_TYPE_VC_8K;
+        } else  {
+            aec_config.type = AFE_TYPE_VC;
+        }
+        aec_config.task_core = 0;
+        av_stream->element_algo = aec_stream_init(&aec_config);
     
-        audio_element_set_music_info(av_stream->element_algo, av_stream->config.hal.audio_samplerate, 1, 16);
         audio_element_set_read_cb(av_stream->element_algo, audio_read_cb, av_stream);
         audio_element_set_input_timeout(av_stream->element_algo, get_audio_max_delay(av_stream, AUDIO_MAX_SIZE) / portTICK_PERIOD_MS);
         audio_pipeline_register(av_stream->audio_enc, av_stream->element_algo, "algo");
@@ -363,7 +360,7 @@ int av_audio_enc_start(av_stream_handle_t av_stream)
     rsp_cfg.task_core = 1;
     rsp_cfg.out_rb_size = av_stream->config.hal.audio_framesize;
 
-    if (av_stream->config.algo_mask != 0) {
+    if (av_stream->config.enable_aec) {
         if (av_stream->config.acodec_samplerate != av_stream->config.hal.audio_samplerate) {
             filter = rsp_filter_init(&rsp_cfg);
             audio_pipeline_register(av_stream->audio_enc, filter, "filter");
@@ -491,7 +488,7 @@ static void _audio_dec(void* pv)
                 write_ptr = (char *)resample->rsp_out;
             }
 
-            if (!_have_hardware_ref(av_stream) && (av_stream->config.algo_mask & ALGORITHM_STREAM_USE_AEC)) {
+            if (!_have_hardware_ref(av_stream)) {
                 if (rb_write(av_stream->ringbuf_ref, write_ptr, write_len, 0) != write_len) {
                     ESP_LOGW(TAG, "AEC reference write timeout ref %d", rb_bytes_filled(av_stream->ringbuf_ref));
                 }
@@ -554,7 +551,6 @@ int av_audio_dec_start(av_stream_handle_t av_stream)
     if (!_have_hardware_ref(av_stream)) {
         av_stream->ringbuf_ref = rb_create(8*av_stream->config.hal.audio_framesize, 1);
         AUDIO_NULL_CHECK(TAG, av_stream->ringbuf_ref, return ESP_FAIL);
-        algo_stream_set_delay(av_stream->element_algo, av_stream->ringbuf_ref, 0);
     }
 
     av_stream->adec_run = true;
