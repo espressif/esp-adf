@@ -41,6 +41,9 @@
 #ifdef CONFIG_CODEC_ZL38063_SUPPORT
 #include "zl38063_codec.h"
 #endif
+#ifdef CONFIG_CODEC_TLV320_SUPPORT
+#include "tlv320_codec.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

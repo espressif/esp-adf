@@ -103,6 +103,8 @@ audio_err_t audio_player_int_tone_stop()
 
 audio_err_t audio_player_int_tone_play(const char *url)
 {
-    esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, url, 0);
+    audio_err_t res = ESP_OK;
+    res = esp_audio_play(player, AUDIO_CODEC_TYPE_DECODER, url, 0);
+    ESP_LOGI(TAG, "esp_audio_play : %d" ,res);
     return ESP_OK;
 }

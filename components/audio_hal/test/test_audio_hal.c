@@ -30,6 +30,7 @@
 #include "driver/gpio.h"
 #include "unity.h"
 #include "es8311.h"
+#include "tlv320.h"
 #include "es8388.h"
 #include "zl38063.h"
 

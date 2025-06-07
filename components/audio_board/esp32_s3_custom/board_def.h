@@ -61,9 +61,9 @@
 #define SDCARD_INTR_GPIO            -1
 #define SDCARD_PWR_CTRL             -1
 
-#define ESP_SD_PIN_CLK              GPIO_NUM_15
-#define ESP_SD_PIN_CMD              GPIO_NUM_7
-#define ESP_SD_PIN_D0               GPIO_NUM_4
+#define ESP_SD_PIN_CLK              -1    //GPIO_NUM_15
+#define ESP_SD_PIN_CMD              -1    //GPIO_NUM_7
+#define ESP_SD_PIN_D0               -1    //GPIO_NUM_4
 #define ESP_SD_PIN_D1               -1
 #define ESP_SD_PIN_D2               -1
 #define ESP_SD_PIN_D3               -1
@@ -81,21 +81,21 @@
 #define FUNC_CAMERA_EN              (1)
 #define CAM_PIN_PWDN                -1
 #define CAM_PIN_RESET               -1
-#define CAM_PIN_XCLK                GPIO_NUM_40
-#define CAM_PIN_SIOD                GPIO_NUM_17
-#define CAM_PIN_SIOC                GPIO_NUM_18
+#define CAM_PIN_XCLK                -1  //GPIO_NUM_40
+#define CAM_PIN_SIOD                -1  //GPIO_NUM_17
+#define CAM_PIN_SIOC                -1  //GPIO_NUM_18
 
-#define CAM_PIN_D7                  GPIO_NUM_39
-#define CAM_PIN_D6                  GPIO_NUM_41
-#define CAM_PIN_D5                  GPIO_NUM_42
-#define CAM_PIN_D4                  GPIO_NUM_12
-#define CAM_PIN_D3                  GPIO_NUM_3
-#define CAM_PIN_D2                  GPIO_NUM_14
-#define CAM_PIN_D1                  GPIO_NUM_47
-#define CAM_PIN_D0                  GPIO_NUM_13
-#define CAM_PIN_VSYNC               GPIO_NUM_21
-#define CAM_PIN_HREF                GPIO_NUM_38
-#define CAM_PIN_PCLK                GPIO_NUM_11
+#define CAM_PIN_D7                  -1  //GPIO_NUM_39
+#define CAM_PIN_D6                  -1  //GPIO_NUM_41
+#define CAM_PIN_D5                  -1  //GPIO_NUM_42
+#define CAM_PIN_D4                  -1  //GPIO_NUM_12
+#define CAM_PIN_D3                  -1  //GPIO_NUM_3
+#define CAM_PIN_D2                  -1  //GPIO_NUM_14
+#define CAM_PIN_D1                  -1  //GPIO_NUM_47
+#define CAM_PIN_D0                  -1  //GPIO_NUM_13
+#define CAM_PIN_VSYNC               -1  //GPIO_NUM_21
+#define CAM_PIN_HREF                -1  //GPIO_NUM_38
+#define CAM_PIN_PCLK                -1  //GPIO_NUM_11
 
 
 /**
@@ -111,31 +111,33 @@
  */
 #define FUNC_AUDIO_CODEC_EN       (1)
 #define CODEC_ADC_I2S_PORT        ((i2s_port_t)0)
-#define CODEC_ADC_BITS_PER_SAMPLE ((i2s_data_bit_width_t)32)  /* 32bit */
-#define CODEC_ADC_SAMPLE_RATE     (48000)
+#define CODEC_ADC_BITS_PER_SAMPLE ((i2s_data_bit_width_t)16)  /* 32bit */
+#define CODEC_ADC_SAMPLE_RATE     (8000)
 #define RECORD_HARDWARE_AEC       (true)
-#define BOARD_PA_GAIN             (6)  /* Power amplifier gain defined by board (dB) */
+#define BOARD_PA_GAIN             (0)  /* Power amplifier gain defined by board (dB) */
 #define HEADPHONE_DETECT          (-1)
 #define PA_ENABLE_GPIO            GPIO_NUM_38
-#define ES8311_MCLK_SOURCE        (0)  /* 0 From MCLK of esp32   1 From BCLK */
+#define TLV320_MCLK_SOURCE        (0)  /* 0 From MCLK of esp32   1 From BCLK */
 #define ES7210_MIC_SELECT         (ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2 | ES7210_INPUT_MIC3)
 
 /**
  * @brief ADC input data format
  */
-#define AUDIO_ADC_INPUT_CH_FORMAT "RMNM"
+#define AUDIO_ADC_INPUT_CH_FORMAT "RM"
 
-extern audio_hal_func_t AUDIO_CODEC_ES8311_DEFAULT_HANDLE;
+extern audio_hal_func_t AUDIO_CODEC_TLV320_DEFAULT_HANDLE;
 extern audio_hal_func_t AUDIO_CODEC_ES7210_DEFAULT_HANDLE;
 
+
+// edit sample 48 to 8
 #define AUDIO_CODEC_DEFAULT_CONFIG(){                   \
-        .adc_input  = AUDIO_HAL_ADC_INPUT_LINE1,        \
+        .adc_input  = AUDIO_HAL_ADC_INPUT_ALL,        \
         .dac_output = AUDIO_HAL_DAC_OUTPUT_ALL,         \
         .codec_mode = AUDIO_HAL_CODEC_MODE_BOTH,        \
         .i2s_iface = {                                  \
             .mode = AUDIO_HAL_MODE_SLAVE,               \
             .fmt = AUDIO_HAL_I2S_NORMAL,                \
-            .samples = AUDIO_HAL_48K_SAMPLES,           \
+            .samples = AUDIO_HAL_08K_SAMPLES,           \
             .bits = AUDIO_HAL_BIT_LENGTH_16BITS,        \
         },                                              \
 };

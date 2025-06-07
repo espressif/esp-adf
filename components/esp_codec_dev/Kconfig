@@ -57,6 +57,12 @@ menu "Audio Codec Device Configuration"
         default y
         help
             Enable this option to support codec ES8388.
+    
+    config CODEC_TLV320_SUPPORT
+        bool "Support TLV320 Codec Chip"
+        default y
+        help
+            Enable this option to support codec TLV320.
 
     config CODEC_TAS5805M_SUPPORT
         bool "Support TAS5805M Codec Chip"

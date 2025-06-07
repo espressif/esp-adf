@@ -270,7 +270,7 @@ typedef struct {
         },                                                                      \
     },                                                                          \
     .use_alc = false,                                                           \
-    .volume = 0,                                                                \
+    .volume = 100,                                                                \
     .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,                                  \
     .task_stack = I2S_STREAM_TASK_STACK,                                        \
     .task_core = I2S_STREAM_TASK_CORE,                                          \

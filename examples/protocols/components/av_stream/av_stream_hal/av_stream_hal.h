@@ -46,7 +46,7 @@ extern "C" {
 #if CONFIG_ESP32_S3_KORVO2L_V1_BOARD // ES8311 need ADCL + DACR for AEC feature
 #define I2S_CHANNELS                I2S_CHANNEL_TYPE_RIGHT_LEFT
 #else
-#define I2S_CHANNELS                I2S_CHANNEL_TYPE_ONLY_LEFT
+#define I2S_CHANNELS                I2S_CHANNEL_TYPE_RIGHT_LEFT
 #endif
 
 #define USB_CAMERA_FRAME_INTERVAL(fps) ((10000000) / fps)
