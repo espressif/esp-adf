@@ -47,14 +47,14 @@
     - <<: *if-protected
 
 .before_script_install_requirements:
-  stage: build
+  stage: trigger_build
   image: "$CI_DOCKER_REGISTRY/esp-idf-doc-env-v5.0:4-4"
   tags:
     - build_docs
+  interruptible: true
   variables:
     DOCS_DIR: $CI_PROJECT_DIR/docs
     IDF_VERSION_TAG: "v5.0"
-    IDF_TAG_FLAG: "true"
   dependencies: []
 
 .build_docs_html_template:
@@ -75,7 +75,7 @@
   script:
     - pip install -r docs/requirements.txt
     - cd $DOCS_DIR
-    - mkdir -p $ADF_PATH/docs/_build/${DOCLANG}/generic/inc
+    - mkdir -p $PROJECT_ROOT/docs/_build/${DOCLANG}/generic/inc
     - build-docs --skip-reqs-check -l $DOCLANG  -bs latex
 
 .build_docs_html:

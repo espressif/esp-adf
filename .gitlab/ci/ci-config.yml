@@ -1,0 +1,127 @@
+variables:
+  # Version configuration
+  IDF_VERSIONS:
+    - v5.2:
+        BUILD_IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.2:2"
+        TEST_IMAGE: "$CI_DOCKER_REGISTRY/target-test-env-v5.3:1"
+    - v5.3:
+        BUILD_IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.3:1"
+        TEST_IMAGE: "$CI_DOCKER_REGISTRY/target-test-env-v5.3:1"
+    - v5.4.3:
+        BUILD_IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.4:1"
+        TEST_IMAGE: "$CI_DOCKER_REGISTRY/target-test-env-v5.3:1"
+    - v5.5.3:
+        BUILD_IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.5:3"
+        TEST_IMAGE: "$CI_DOCKER_REGISTRY/target-test-env-v5.5:2"
+    # NEXT VERSION
+    # - v6.0:
+    #    BUILD_IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v6.0:3"
+    #    TEST_IMAGE: "$CI_DOCKER_REGISTRY/target-test-env-v6.0:2"
+
+  # Latest version (required): ``${LATEST_IDF_VERSION}``
+  # Scanners and generated_triggers in tools/ci/apps.yaml all depend on this field
+  LATEST_IDF_VERSION: v5.5.3
+
+  ADF_PATH: "$CI_PROJECT_DIR"
+  PROJECT_ROOT: "$CI_PROJECT_DIR"
+  IDF_PATH: "/root/.espressif/esp-idf"
+  MAKEFLAGS: "-j5 --no-keep-going"
+  GET_SOURCES_ATTEMPTS: "10"
+  ARTIFACT_DOWNLOAD_ATTEMPTS: "10"
+  GIT_STRATEGY: "clone"
+  GIT_SUBMODULE_STRATEGY: "none"
+  PROJECT_TEST_PACKAGE_PATH: "$CI_PROJECT_DIR/tools/adf_test_package"
+  IDF_SKIP_CHECK_SUBMODULES: "1"
+  GIT_DEPTH: "1"
+  IDF_EXTRA_ACTIONS_PATH: "./managed_components/espressif__esp_board_manager"
+  MAX_APPS_PER_BUILD_JOB: "10"
+
+
+PRIORITY_LIST:
+  - commit_tag
+  - changes
+
+
+SUPPORT_BOARDS:
+  - ESP_LYRAT_V4_3:
+      chip: "esp32"
+      board_name: ""
+      idf_version: ""
+  - ESP_LYRATD_MSC_V2_2:
+      chip: "esp32"
+      board_name: ""
+      idf_version: ""
+  - ESP_LYRAT_MINI_V1_1:
+      chip: "esp32"
+      board_name: "lyrat_mini_v1_1"
+      idf_version: ">=3.3,<=${LATEST_IDF_VERSION}"
+  - ESP32_KORVO_DU1906:
+      chip: "esp32"
+      board_name: ""
+      idf_version: ""
+  - ESP32_S2_KALUGA_1_V1_2:
+      chip: "esp32s2"
+      board_name: ""
+      idf_version: ">=4.2,<=${LATEST_IDF_VERSION}"
+  - ESP32_S3_KORVO2_V3:
+      chip: "esp32s3"
+      board_name: "esp32_s3_korvo2_v3"
+      idf_version: ">=4.4,<=${LATEST_IDF_VERSION}"
+  - ESP32_C3_LYRA_V2:
+      chip: "esp32c3"
+      board_name: "esp32_c3_lyra"
+      idf_version: ">=5.1,<=${LATEST_IDF_VERSION}"
+  - ESP32_C6_DEVKIT:
+      chip: "esp32c6"
+      board_name: ""
+      idf_version: ">=5.4,<=${LATEST_IDF_VERSION}"
+  - ESP32_P4_FUNCTION_EV:
+      chip: "esp32p4"
+      board_name: "esp32_p4_function_ev"
+      idf_version: ">=5.4,<=${LATEST_IDF_VERSION}"
+
+
+# Trigger rule configuration
+# Decide which IDF versions to trigger by file changes, commit messages, or branch names
+trigger_rules:
+  # Rules are evaluated by priority; the first matching rule is used
+
+  # Rule 1: Core component changes - trigger all versions
+  - name: "Core components changed"
+    changes:
+      - "^components/"
+    trigger_versions: all
+
+  # Rule 2: Example code changes - trigger all versions
+  - name: "Examples changed"
+    changes:
+      - "^examples/"
+    trigger_versions: all
+
+  # Rule 3: Documentation changes - trigger latest version only
+  - name: "Documentation changed"
+    changes:
+      - "^docs/"
+      - "\\.md$"
+      - "\\.rst$"
+    trigger_versions: latest
+
+  # Rule 4: Tool script changes - trigger all versions
+  - name: "Tools changed"
+    changes:
+      - "^tools/"
+      - ".gitlab/"
+      - ".github/"
+    trigger_versions: all
+
+  # Rule 5: Commit message tag - [test-all]
+  - name: "Commit message: [test-all]"
+    commit_tag:
+      - "\\[test-all\\]"
+    trigger_versions: all
+
+  # Rule 6: Commit message tag - [test-latest]
+  - name: "Commit message: [test-latest]"
+    commit_tag:
+      - "\\[test-latest\\]"
+    trigger_versions: latest

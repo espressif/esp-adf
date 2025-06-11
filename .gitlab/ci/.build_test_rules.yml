@@ -1,0 +1,29 @@
+# The file mainly marks apps with special rules, while other apps are enabled by default
+
+.disable_test_apps: &disable_test_apps
+  disable:
+    - if: TARGET_DIR_TYPE == "test_apps"
+
+.disable_example: &disable_example
+  disable:
+    - if: TARGET_DIR_TYPE == "example"
+
+.disable_test_apps_esp32: &disable_test_apps_esp32
+  disable:
+    - if: TARGET_DIR_TYPE == "test_apps" AND IDF_TARGET == "esp32"
+
+.disable_example_esp32s3: &disable_example_esp32s3
+  disable:
+    - if: TARGET_DIR_TYPE == "example" AND IDF_TARGET == "esp32s3"
+
+.disable_example_esp32c3: &disable_example_esp32c3
+  disable:
+    - if: TARGET_DIR_TYPE == "example" AND IDF_TARGET == "esp32c3"
+
+.disable_example_esp32c5: &disable_example_esp32c5
+  disable:
+    - if: TARGET_DIR_TYPE == "example" AND IDF_TARGET == "esp32c5"
+
+.disable_example_esp32p4: &disable_example_esp32p4
+  disable:
+    - if: TARGET_DIR_TYPE == "example" AND IDF_TARGET == "esp32p4"

@@ -1,0 +1,20 @@
+include:
+  - '.gitlab/ci/common.yml'
+
+component_test_esp32s3:
+  extends:
+    - .rules:build:enable-unit-test-esp32s3
+    - .build_component_test_template
+  variables:
+    IDF_TARGET: esp32s3
+    BOARD: ESP32_S3_KORVO2_V3
+    DEEP_CLONE: "false"
+
+component_test_esp32p4:
+  extends:
+    - .rules:build:enable-unit-test-esp32p4
+    - .build_component_test_template
+  variables:
+    IDF_TARGET: esp32p4
+    BOARD: ESP32_P4_FUNCTION_EV
+    DEEP_CLONE: "false"

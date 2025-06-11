@@ -1,15 +1,12 @@
 .patterns-build_components: &patterns-build_components
-  - "CMakeList.txt"
+  - "CMakeLists.txt"
   - ".gitmodules"
-  - "tools/**/*"
-  - "idf_patches/**/*"
   - "components/**/*"
 
 .patterns-example_test: &patterns-example_test
-  - "CMakeList.txt"
+  - "CMakeLists.txt"
   - ".gitmodules"
-  - "tools/**/*"
-  - "idf_patches/**/*"
+  - "components/**/*"
   - "examples/**/*"
 
 ##############
@@ -21,8 +18,17 @@
 .if-ref-master: &if-ref-master
   if: '$CI_COMMIT_REF_NAME == "master"'
 
+.if-trigger: &if-trigger
+  if: '$CI_PIPELINE_SOURCE == "trigger"'
+
 .if-schedule: &if-schedule
   if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+.if-pipeline: &if-pipeline
+  if: '$CI_PIPELINE_SOURCE == "pipeline"'
+
+.if-child-pipeline: &if-child-pipeline
+  if: '$CI_PIPELINE_SOURCE == "parent_pipeline"'
 
 .if-merge_request_event: &if-merge_request_event
   if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -46,18 +52,80 @@
 .if-label-example_test: &if-label-example_test
   if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example_test(?:,[^,\n\r]+)*$/i'
 
+.if-latest-idf-version: &if-latest-idf-version
+  if: '$LATEST_IDF_VERSION_ENV == "1"'
+
+.if-puppet_env: &if-puppet_env
+  if: '$PUPPET_ENV == "1"'
+
+# <CHIP>_ENV is a comma-separated test-type list (EXAMPLE_TEST / COMPONENT_TEST).
+# A non-empty value means this chip enables at least one test type.
+.if-esp32-env: &if-esp32-env
+  if: '$ESP32_ENV != ""'
+
+.if-esp32s2-env: &if-esp32s2-env
+  if: '$ESP32S2_ENV != ""'
+
+.if-esp32s3-env: &if-esp32s3-env
+  if: '$ESP32S3_ENV != ""'
+
+.if-esp32c3-env: &if-esp32c3-env
+  if: '$ESP32C3_ENV != ""'
+
+.if-esp32c6-env: &if-esp32c6-env
+  if: '$ESP32C6_ENV != ""'
+
+.if-esp32p4-env: &if-esp32p4-env
+  if: '$ESP32P4_ENV != ""'
+
 .if-label-example: &if-label-example
   if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example(?:,[^,\n\r]+)*$/i'
 
-.if-label-micropython-test: &if-label-micropython-test
-  if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*micropython_test(?:,[^,\n\r]+)*$/i'
+.if-idf-version-tag-v5-0: &if-idf-version-tag-v5-0
+  if: '($IDF_VERSION_TAG == "v5.0.4" || $IDF_VERSION_TAG == "v5.0")'
+  variables:
+    IMAGE: "$ADF_DOCKER_REGISTRY/env_v5.0:4"
 
-.rules:build:enable-adf-example-test:
+.rules:build:enable-example-test:
   rules:
     - <<: *if-open-merge-request
       when: never
-    - <<: *if-label-example
+    - if: '$ESP32_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+    - if: '$ESP32S2_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+    - if: '$ESP32S3_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+    - if: '$ESP32C3_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+    - if: '$ESP32C6_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+    - if: '$ESP32P4_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
     - <<: *if-label-example_test
+
+.rules:build:enable-unit-test:
+  rules:
+    - <<: *if-dev-push
+      when: never
+    - if: '$ESP32_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$ESP32S2_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$ESP32S3_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$ESP32C3_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$ESP32C6_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$ESP32P4_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+
+.rules:build:enable-unit-test-esp32:
+  rules:
+    - <<: *if-dev-push
+      when: never
+    - if: '$ESP32_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+
+.rules:build:enable-unit-test-esp32s3:
+  rules:
+    - <<: *if-dev-push
+      when: never
+    - if: '$ESP32S3_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+
+.rules:build:enable-unit-test-esp32p4:
+  rules:
+    - <<: *if-dev-push
+      when: never
+    - if: '$ESP32P4_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
 
 .rules:build:adf-idfs-example-test:
   rules:
@@ -66,21 +134,10 @@
     - <<: *if-open-merge-request
       when: never
 
-.rules:build:unit-test:
-  rules:
-    - <<: *if-protected
-    - <<: *if-label-unit_test
-
 .rules:ref:master-schedule:
   rules:
     - <<: *if-ref-master
     - <<: *if-schedule
-
-.rules:build:micropython-test:
-  rules:
-    - <<: *if-label-micropython-test
-    - <<: *if-protected
-    - <<: *if-merge_request_event
 
 .rules:ref:check-label:
   rules:
@@ -90,12 +147,72 @@
     - <<: *if-open-merge-request
       when: never
 
-.rules:build:regular-board-idf-ver-tag:
+.rules:build:trigger-pipeline:
   rules:
     - <<: *if-dev-push
       when: never
     - <<: *if-schedule
       when: never
+    - changes: *patterns-example_test
+    - changes: *patterns-build_components
+    - <<: *if-protected
+    - <<: *if-trigger
+    - <<: *if-pipeline
+    - <<: *if-child-pipeline
+
+.rules:build:example_test_audio_loopback:
+  rules:
+    - <<: *if-dev-push
+      when: never
+    - if: '$ESP32_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+
+.rules:build:enable-example-test-esp32:
+  rules:
+    - <<: *if-open-merge-request
+      when: never
+    - if: '$ESP32_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+
+.rules:build:enable-example-test-esp32s2:
+  rules:
+    - <<: *if-open-merge-request
+      when: never
+    - if: '$ESP32S2_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+
+.rules:build:enable-example-test-esp32s3:
+  rules:
+    - <<: *if-open-merge-request
+      when: never
+    - if: '$ESP32S3_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+
+.rules:build:enable-example-test-esp32c3:
+  rules:
+    - <<: *if-open-merge-request
+      when: never
+    - if: '$ESP32C3_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+
+.rules:build:enable-example-test-esp32c6:
+  rules:
+    - <<: *if-open-merge-request
+      when: never
+    - if: '$ESP32C6_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+
+.rules:build:enable-example-test-esp32p4:
+  rules:
+    - <<: *if-open-merge-request
+      when: never
+    - if: '$ESP32P4_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+
+.rules:puppet_env:
+  rules:
+    - <<: *if-open-merge-request
+      when: never
+    - <<: *if-puppet_env
+    - <<: *if-esp32-env
+    - <<: *if-esp32s2-env
+    - <<: *if-esp32s3-env
+    - <<: *if-esp32c3-env
+    - <<: *if-esp32c6-env
+    - <<: *if-esp32p4-env
 
 .rules:build:push-to-github:
   rules:

@@ -24,6 +24,8 @@ SUPPORTED_TARGETS = ['esp32', 'esp32s2', 'esp32c3', 'esp32s3', 'esp32c2', 'esp32
 PREVIEW_TARGETS: List[str] = []  # this PREVIEW_TARGETS excludes 'linux' target
 DEFAULT_SDKCONFIG = 'default'
 
+collect_ignore_glob = ['**/managed_components/**']
+
 TARGET_MARKERS = {
     'esp32': 'support esp32 target',
     'esp32s2': 'support esp32s2 target',
@@ -206,7 +208,8 @@ def build_dir(
             f'checking binary path: {binary_path} ... missing ... try another place')
 
     logging.error(
-        f'no build dir. Please build the binary "python tools/build_apps.py {app_path}" and run pytest again')
+        f'no build dir. Please build the binary "python tools/ci/app_service/apps_service.py build {app_path}" '
+        f'(or apps_build.py) and run pytest again')
     sys.exit(1)
 
 

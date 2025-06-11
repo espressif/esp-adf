@@ -4,7 +4,7 @@ url: https://github.com/espressif/esp-adf/tree/master/components/esp_coze
 issues: https://github.com/espressif/esp-adf/issues
 
 dependencies:
-  espressif/esp_websocket_client: ^1.4.0
+  espressif/esp_websocket_client: ==1.4.0
 
 targets:
   - esp32
