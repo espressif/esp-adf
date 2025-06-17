@@ -56,3 +56,8 @@ ifdef CONFIG_DFROBOT_ESP32S3_AI_CAM
 COMPONENT_ADD_INCLUDEDIRS += ./dfrobot_esp32_s3_ai_cam
 COMPONENT_SRCDIRS += ./dfrobot_esp32_s3_ai_cam
 endif
+
+ifdef CONFIG_UNIHIKER_K10
+COMPONENT_ADD_INCLUDEDIRS += ./unihiker_k10
+COMPONENT_SRCDIRS += ./unihiker_k10
+endif
