@@ -212,6 +212,30 @@ int esp_codec_dev_open(esp_codec_dev_handle_t handle, esp_codec_dev_sample_info_
     return ESP_CODEC_DEV_OK;
 }
 
+int esp_codec_dev_read_reg(esp_codec_dev_handle_t handle, int reg, int *val)
+{
+    codec_dev_t *dev = (codec_dev_t *) handle;
+    if (dev == NULL || val == NULL) {
+        return ESP_CODEC_DEV_INVALID_ARG;
+    }
+    if (dev->codec_if && dev->codec_if->get_reg) {
+        return dev->codec_if->get_reg(dev->codec_if, reg, val);
+    }
+    return ESP_CODEC_DEV_NOT_SUPPORT;
+}
+
+int esp_codec_dev_write_reg(esp_codec_dev_handle_t handle, int reg, int val)
+{
+    codec_dev_t *dev = (codec_dev_t *) handle;
+    if (dev == NULL) {
+        return ESP_CODEC_DEV_INVALID_ARG;
+    }
+    if (dev->codec_if && dev->codec_if->set_reg) {
+        return dev->codec_if->set_reg(dev->codec_if, reg, val);
+    }
+    return ESP_CODEC_DEV_NOT_SUPPORT;
+}
+
 int esp_codec_dev_read(esp_codec_dev_handle_t handle, void *data, int len)
 {
     codec_dev_t *dev = (codec_dev_t *) handle;

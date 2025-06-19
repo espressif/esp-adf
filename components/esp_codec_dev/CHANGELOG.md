@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.3.5
+
+### Feature
+
+- Added support for ES8389 codec，see detail datasheet [ES8389](http://www.everest-semi.com/pdf/ES8389%20PB.pdf)
+- Added read/write register APIs
+- Disabled `CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE` by default.
+  For ESP-IDF v5.x users who wish to continue using the legacy `i2c_driver_xx` APIs, please enable this option manually.
+
+### Bug Fixes
+
+- Fixed I2S PDM play noise issue
+
 ## v1.3.4
 
 ### Bug Fixes
