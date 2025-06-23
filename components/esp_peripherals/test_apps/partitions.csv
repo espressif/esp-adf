@@ -1,0 +1,4 @@
+# Name,     Type, SubType, Offset,   Size
+nvs,        data, nvs,     0x9000,   0x6000,
+factory,    app,  factory, 0x010000, 1M
+flash_test, data, fat,     ,         0x10,

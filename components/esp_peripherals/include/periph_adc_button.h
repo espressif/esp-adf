@@ -25,7 +25,6 @@
 #ifndef _PERIPH_ADC_BUTTON_H_
 #define _PERIPH_ADC_BUTTON_H_
 
-#include "driver/adc.h"
 #include "adc_button.h"
 #include "esp_peripherals.h"
 
@@ -47,6 +46,7 @@ typedef struct {
 } periph_adc_button_cfg_t;
 
 #define PERIPH_ADC_BUTTON_DEFAULT_CONFIG() {   \
+    .arr_size = 1,                             \
     .task_cfg = {                              \
         .task_stack = ADC_BUTTON_STACK_SIZE,   \
         .task_core  = ADC_BUTTON_TASK_CORE_ID, \
@@ -75,9 +75,9 @@ typedef enum {
 *   ADC1_CHANNEL_7 -  GPIO35
 *
 **/
-
 #define ADC_DEFAULT_ARR() {   \
-    .adc_ch = ADC1_CHANNEL_3, \
+    .adc_unit = ADC_UNIT_1,   \
+    .adc_ch = ADC_CHANNEL_3,  \
     .adc_level_step = NULL,   \
     .total_steps = 6,         \
     .press_judge_time = 3000, \
