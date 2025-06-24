@@ -12,11 +12,11 @@ Resources
 
 * The `esp32.com forum <https://esp32.com>`_ is a place to ask questions and find community resources. The forum has a section dedicated to `ESP-ADF <https://esp32.com/viewforum.php?f=20>`_.
 
-* This `ESP Advanced Development Framework <https://github.com/espressif/esp-adf>`_ inherits from `ESP IoT Development Framework <https://github.com/espressif/esp-idf>`_ and you can learn about it in `ESP-IDF Programming Guide <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/>`_.
+* This `ESP Audio Development Framework <https://github.com/espressif/esp-adf>`_ inherits from `ESP IoT Development Framework <https://github.com/espressif/esp-idf>`_ and you can learn about it in `ESP-IDF Programming Guide <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/>`_.
 
 * Check the `Issues <https://github.com/espressif/esp-adf/issues>`_  section on GitHub if you find a bug or have a feature request. Please check existing `Issues <https://github.com/espressif/esp-adf/issues>`_ before opening a new one.
 
-* If you're interested in contributing to ESP Advanced Development Framework, please check the `Contributions Guide <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/contribute/>`_.
+* If you're interested in contributing to ESP Audio Development Framework, please check the `Contributions Guide <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/contribute/>`_.
 
 * Several `books <https://www.espressif.com/en/ecosystem/iot-college/books>`_ have been written about ESP32 and they are listed on `Espressif <https://www.espressif.com/en/ecosystem/iot-college/books>`__ web site.
 

@@ -1,4 +1,4 @@
-# Espressif Advanced Development Framework
+# Espressif Audio Development Framework
 
 [![Documentation Status](./docs/_static/doc_latest.svg)](https://docs.espressif.com/projects/esp-adf/en/latest/?badge=latest)
 

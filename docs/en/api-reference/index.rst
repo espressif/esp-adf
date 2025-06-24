@@ -5,7 +5,7 @@ API Reference
 This API provides a way to develop audio applications using :doc:`Elements <framework/audio_element>` like :doc:`Codecs <codecs/index>` (Decoders and Encoders), :doc:`Streams <streams/index>` or :doc:`Audio Processing <audio-processing/index>` functions.
 
 .. blockdiag::
-    :caption: **Elements** of the Advanced Development Framework
+    :caption: **Elements** of the Audio Development Framework
     :align: center
 
     blockdiag audio_elements {
