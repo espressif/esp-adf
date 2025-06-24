@@ -5,36 +5,43 @@
  * See LICENSE file for details.
  */
 
- #pragma once
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /**
- * @brief Structure representing an HTTP response
+ * @brief  Structure to hold HTTP response data
  */
 typedef struct {
-    char *body;      /**< Pointer to the response body content */
-    int   body_len;  /**< Length of the response body in bytes */
+    char *body;            /*!< Response body (Need to be freed by the caller) */
+    int   body_len;        /*!< Response body length */
 } http_response_t;
 
 /**
- * @brief Structure representing a single HTTP request header key-value pair
+ * @brief  Structure to represent an HTTP request header key-value pair
  */
 typedef struct {
-    const char *key;    /**< The header field name (e.g., "Content-Type") */
-    const char *value;  /**< The header field value (e.g., "application/json") */
+    const char *key;       /*!< Header key string */
+    const char *value;     /*!< Header value string */
 } http_req_header_t;
 
- /**
- * @brief Send an HTTP POST request to the specified URL
+/**
+ * @brief  Send an HTTP POST request
  *
- * @note This function sends an HTTP POST request with the given headers and body to the specified URL,
- *       and fills the provided response structure with the response data
+ * @param[in]  url       The URL to which the POST request is sent
+ * @param[in]  header    HTTP request headers (terminated by a {NULL, NULL} entry)
+ * @param[in]  body      POST request body
+ * @param[out] response  HTTP response data (must be freed by the caller)
  *
- * @param[in]  url       The target URL to send the POST request to
- * @param[in]  header    Pointer to the HTTP request header structure. Can be NULL if no custom headers are needed
- * @param[in]  body      The request body to send. Can be NULL if body length is 0
- * @param[out] response  Pointer to the response structure to be filled with the server's response
- *
- * @return 0 on success, or a negative error code on failure
+ * @return
+ *       - ESP_OK    On success
+ *       - ESP_FAIL  On failure
  */
- int http_client_post(const char *url, http_req_header_t *header , char *body, http_response_t *response);
-  
+esp_err_t http_client_post(const char *url, http_req_header_t *header, char *body, http_response_t *response);
+
+#ifdef __cplusplus
+}
+#endif
