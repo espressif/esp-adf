@@ -55,6 +55,7 @@ static esp_err_t _aec_close(audio_element_handle_t self)
     AUDIO_SAFE_FREE(aec->aec_handle, afe_aec_destroy);
     AUDIO_SAFE_FREE(aec->in_buffer, audio_free);
     AUDIO_SAFE_FREE(aec->out_buffer, audio_free);
+    aec->is_opened = false;
     return ESP_OK;
 }
 
