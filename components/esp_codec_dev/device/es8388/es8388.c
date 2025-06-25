@@ -250,8 +250,8 @@ static int es8388_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
 
     res |= es8388_write_reg(codec, ES8388_DACCONTROL24, 0x1E); // Set L1 R1 L2 R2 volume. 0x00: -30dB, 0x1E: 0dB, 0x21: 3dB
     res |= es8388_write_reg(codec, ES8388_DACCONTROL25, 0x1E);
-    res |= es8388_write_reg(codec, ES8388_DACCONTROL26, 0);
-    res |= es8388_write_reg(codec, ES8388_DACCONTROL27, 0);
+    res |= es8388_write_reg(codec, ES8388_DACCONTROL26, 0x1E);
+    res |= es8388_write_reg(codec, ES8388_DACCONTROL27, 0x1E);
 
     // TODO default use DAC_ALL
     int tmp = DAC_OUTPUT_LOUT1 | DAC_OUTPUT_LOUT2 | DAC_OUTPUT_ROUT1 | DAC_OUTPUT_ROUT2;
