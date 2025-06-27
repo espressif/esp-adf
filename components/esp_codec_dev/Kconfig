@@ -76,4 +76,10 @@ menu "Audio Codec Device Configuration"
         help
             Enable this option to support codec ZL38063.
             ZL38063 firmware only support xtensa, don't enable for RISC-V IC.
+
+    config CODEC_CJC8910_SUPPORT
+        bool "Support CJC8910 Codec Chip"
+        default n
+        help
+            Enable this option to support codec CJC8910.
  endmenu
