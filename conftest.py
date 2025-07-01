@@ -55,6 +55,10 @@ ENV_MARKERS = {
     'UT_T1_AUDIO_L3': 'Tests should be run on UT_T1_AUDIO_L3 runners.',
     'UT_T1_AUDIO_L4': 'Tests should be run on UT_T1_AUDIO_L4 runners.',
     'UT_T1_AUDIO_L5': 'Tests should be run on UT_T1_AUDIO_L5 runners.',
+    'UT_T1_AUDIO_L6': 'Tests should be run on UT_T1_AUDIO_L6 runners.',
+    'UT_T1_AUDIO_L7': 'Tests should be run on UT_T1_AUDIO_L7 runners.',
+    'UT_T1_AUDIO_L8': 'Tests should be run on UT_T1_AUDIO_L8 runners.',
+    'UT_T1_AUDIO_L9': 'Tests should be run on UT_T1_AUDIO_L9 runners.',
     'UT_T1_AUDIO_E6': 'Tests should be run on UT_T1_AUDIO_E6 runners.',
     'AUDIO_LOOPBACK_ENV': 'Audio loopback testing verifies the functionality by comparing the audio input signal with the output signal.',
 }

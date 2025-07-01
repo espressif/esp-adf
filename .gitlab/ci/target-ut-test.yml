@@ -22,6 +22,12 @@
     expire_in: 1 week
   variables:
     IDF_VERSION_TAG: default
+    TEST_DIR: /builds/adf/esp-adf-internal/components/esp-adf-libs
+    BUILD_JOB_PREFIX: build_pytest_components_
+    IDF_TARGET: esp32s3
+  needs:
+    - 'esp_adf_libs_components_test'
+  retry: 2
   before_script:
     - source ${ADF_PATH}/tools/ci/utils.sh
     - check_idf_version $IDF_VERSION_TAG
@@ -45,13 +51,11 @@
     - if: $CI_PIPELINE_SOURCE == "triggers"
     - if: $CI_PIPELINE_SOURCE == "schedules"
   extends: .pytest_ut_template
-  needs:
-    - 'esp_adf_libs_components_test'
-  variables:
-    TEST_DIR: /builds/adf/esp-adf-internal/components/esp-adf-libs
-    BUILD_JOB_PREFIX: build_pytest_components_
-    IDF_TARGET: esp32s3
-  retry: 2
+
+.pytest_components_dir_schedule_template:
+  extends:
+    - .rules:ref:master-schedule
+    - .pytest_ut_template
 
 pytest_components_esp32s3_ut_01:
   extends:
@@ -77,27 +81,48 @@ pytest_components_esp32s3_ut_03:
 pytest_components_esp32s3_ut_04:
   extends:
     - .pytest_components_dir_template
-  tags: [ ESP32S3, UT_T1_AUDIO_L3 ]
+  tags: [ ESP32S3, UT_T1_AUDIO_L6 ]
   variables:
-    TEST_ENV: "UT_T1_AUDIO_L3"
+    TEST_ENV: "UT_T1_AUDIO_L6"
 
 pytest_components_esp32s3_ut_05:
   extends:
     - .pytest_components_dir_template
-  tags: [ ESP32S3, UT_T1_AUDIO_L4 ]
+  tags: [ ESP32S3, UT_T1_AUDIO_L7 ]
   variables:
-    TEST_ENV: "UT_T1_AUDIO_L4"
+    TEST_ENV: "UT_T1_AUDIO_L7"
 
 pytest_components_esp32s3_ut_06:
   extends:
     - .pytest_components_dir_template
-  tags: [ ESP32S3, UT_T1_AUDIO_L5 ]
+  tags: [ ESP32S3, UT_T1_AUDIO_L8 ]
   variables:
-    TEST_ENV: "UT_T1_AUDIO_L5"
+    TEST_ENV: "UT_T1_AUDIO_L8"
 
 pytest_components_esp32s3_ut_07:
+  extends:
+    - .pytest_components_dir_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L9 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L9"
+
+pytest_components_esp32s3_ut_08:
   extends:
     - .pytest_components_dir_template
   tags: [ ESP32S3, UT_T1_AUDIO_E6 ]
   variables:
     TEST_ENV: "UT_T1_AUDIO_E6"
+
+pytest_components_esp32s3_ut_9:
+  extends:
+    - .pytest_components_dir_schedule_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L4 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L4"
+
+pytest_components_esp32s3_ut_10:
+  extends:
+    - .pytest_components_dir_schedule_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L5 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L5"
