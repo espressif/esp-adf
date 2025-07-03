@@ -1,0 +1,26 @@
+diff --git a/components/newlib/heap.c b/components/newlib/heap.c
+index 5c30eaad0e..51ae0a3024 100644
+--- a/components/newlib/heap.c
++++ b/components/newlib/heap.c
+@@ -41,6 +41,21 @@ void free(void *ptr)
+ 
+ void* _malloc_r(struct _reent *r, size_t size)
+ {
++#if CONFIG_FATFS_VFS_FSTAT_BLKSIZE
++    if (size == CONFIG_FATFS_VFS_FSTAT_BLKSIZE) {
++        uint8_t *buf = NULL;
++#if SOC_SDMMC_PSRAM_DMA_CAPABLE && CONFIG_SPIRAM
++        buf = heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_CACHE_ALIGNED);
++#else
++        buf = heap_caps_malloc(size, MALLOC_CAP_DMA);
++#endif
++        if (buf == NULL) {
++            buf = heap_caps_malloc_default(size);
++        }
++        printf("_malloc_r %p, size: %d\n", buf, size);
++        return buf;
++    }
++#endif
+     return heap_caps_malloc_default(size);
+ }
+ 

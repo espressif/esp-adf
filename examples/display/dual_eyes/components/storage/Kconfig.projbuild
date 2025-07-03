@@ -1,0 +1,27 @@
+menu "Storage Configuration"
+
+    config SDMMC_CMD_PIN
+        int "CMD GPIO number"
+        default 42 if IDF_TARGET_ESP32S3
+
+    config SDMMC_CLK_PIN
+        int "CLK GPIO number"
+        default 2 if IDF_TARGET_ESP32S3
+
+    config SDMMC_D0_PIN
+        int "D0 GPIO number"
+        default 1 if IDF_TARGET_ESP32S3
+
+    config SDMMC_D1_PIN
+        int "D1 GPIO number"
+        default -1 if IDF_TARGET_ESP32S3
+
+    config SDMMC_D2_PIN
+        int "D2 GPIO number"
+        default -1 if IDF_TARGET_ESP32S3
+
+    config SDMMC_D3_PIN
+        int "D3 GPIO number"
+        default -1 if IDF_TARGET_ESP32S3
+
+endmenu

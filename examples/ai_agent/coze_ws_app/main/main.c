@@ -24,9 +24,9 @@ static esp_err_t spiffs_filesystem_init(void)
         .partition_label = "spiffs_data",
         .max_files = 5,
         .format_if_mount_failed = false
-      };
-  
-      esp_err_t ret = esp_vfs_spiffs_register(&conf);
+    };
+
+    esp_err_t ret = esp_vfs_spiffs_register(&conf);
   
     if (ret != ESP_OK) {
         if (ret == ESP_FAIL) {
