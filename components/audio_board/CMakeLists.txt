@@ -161,4 +161,22 @@ set(COMPONENT_SRCS
 )
 endif()
 
+if(CONFIG_DFROBOT_ESP32S3_AI_CAM)
+message(STATUS "Current board name is " DFROBOT_ESP32S3_AI_CAM)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./dfrobot_esp32_s3_ai_cam)
+set(COMPONENT_SRCS
+./dfrobot_esp32_s3_ai_cam/board.c
+./dfrobot_esp32_s3_ai_cam/board_pins_config.c
+)
+endif()
+
+if(CONFIG_UNIHIKER_K10)
+message(STATUS "Current board name is " UNIHIKER_K10)
+list(APPEND COMPONENT_ADD_INCLUDEDIRS ./unihiker_k10)
+set(COMPONENT_SRCS
+./unihiker_k10/board.c
+./unihiker_k10/board_pins_config.c
+)
+endif()
+
 register_component()

@@ -56,3 +56,4 @@ coverage.info
 coverage_report/
 
 .vscode
+examples/rtc-aigc-embedded-demo/
