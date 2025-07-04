@@ -9,8 +9,10 @@
 #include "esp_spiffs.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
-
 #include "protocol_examples_common.h"
+
+#include "esp_gmf_oal_sys.h"
+#include "esp_gmf_oal_mem.h"
 #include "esp_coze_chat.h"
 #include "coze_chat_app.h"
 #include "audio_processor.h"
@@ -65,8 +67,12 @@ void app_main(void)
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-
     ESP_ERROR_CHECK(example_connect());
 
     coze_chat_app_init();
+
+    /* Default disable task stats and memory show, becase this will effect the performance of the application.
+    This is only for debug purpose.*/
+
+    // esp_gmf_app_sys_monitor_start();
 }
