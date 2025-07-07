@@ -20,13 +20,13 @@
 #include "audio_common.h"
 #include "board.h"
 #include "esp_peripherals.h"
-#include "periph_adc_button.h"
 #include "periph_button.h"
 #include "periph_wifi.h"
 #include "periph_led.h"
 #include "google_tts.h"
 #include "google_sr.h"
 #include "google_translate.h"
+#include "board.h"
 
 #include "audio_idf_version.h"
 
@@ -81,7 +81,10 @@ void translate_task(void *pv)
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
 
     // Initialize Button peripheral
-    audio_board_key_init(set);
+    periph_button_cfg_t btn_cfg = {
+        .gpio_mask = (1ULL << get_input_mode_id()) | (1ULL << get_input_rec_id()),
+    };
+    esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
 
     periph_led_cfg_t led_cfg = {
         .led_speed_mode = LEDC_LOW_SPEED_MODE,
@@ -91,7 +94,9 @@ void translate_task(void *pv)
     };
     led_handle = periph_led_init(&led_cfg);
 
+
     // Start wifi & button peripheral
+    esp_periph_start(set, button_handle);
     esp_periph_start(set, wifi_handle);
     esp_periph_start(set, led_handle);
 
@@ -107,7 +112,6 @@ void translate_task(void *pv)
         .record_sample_rates = EXAMPLE_RECORD_PLAYBACK_SAMPLE_RATE,
         .encoding = ENCODING_LINEAR16,
         .on_begin = google_sr_begin,
-        .buffer_size = 6144,
     };
     google_sr_handle_t sr = google_sr_init(&sr_config);
 
@@ -145,7 +149,7 @@ void translate_task(void *pv)
             continue;
         }
 
-        if (msg.source_type != PERIPH_ID_BUTTON && msg.source_type != PERIPH_ID_ADC_BTN) {
+        if (msg.source_type != PERIPH_ID_BUTTON) {
             continue;
         }
 
@@ -158,52 +162,27 @@ void translate_task(void *pv)
             continue;
         }
 
-        if(msg.source_type == PERIPH_ID_BUTTON){
-            if (msg.cmd == PERIPH_BUTTON_PRESSED) {
-                google_tts_stop(tts);
-                ESP_LOGI(TAG, "[ * ] Resuming pipeline");
-                google_sr_start(sr);
-            } else if (msg.cmd == PERIPH_BUTTON_RELEASE || msg.cmd == PERIPH_BUTTON_LONG_RELEASE) {
-                ESP_LOGI(TAG, "[ * ] Stop pipeline");
+        if (msg.cmd == PERIPH_BUTTON_PRESSED) {
+            google_tts_stop(tts);
+            ESP_LOGI(TAG, "[ * ] Resuming pipeline");
+            google_sr_start(sr);
+        } else if (msg.cmd == PERIPH_BUTTON_RELEASE || msg.cmd == PERIPH_BUTTON_LONG_RELEASE) {
+            ESP_LOGI(TAG, "[ * ] Stop pipeline");
 
-                periph_led_stop(led_handle, get_green_led_gpio());
+            periph_led_stop(led_handle, get_green_led_gpio());
 
-                char *original_text = google_sr_stop(sr);
-                if (original_text == NULL) {
-                    continue;
-                }
-                ESP_LOGI(TAG, "Original text = %s", original_text);
-                char *translated_text = google_translate(original_text, GOOGLE_TRANSLATE_LANG_FROM, GOOGLE_TRANSLATE_LANG_TO, CONFIG_GOOGLE_API_KEY);
-                if (translated_text == NULL) {
-                    continue;
-                }
-                ESP_LOGI(TAG, "Translated text = %s", translated_text);
-                google_tts_start(tts, translated_text, GOOGLE_TTS_LANG);
+            char *original_text = google_sr_stop(sr);
+            if (original_text == NULL) {
+                continue;
             }
-        } else if(msg.source_type == PERIPH_ID_ADC_BTN){
-            if (msg.cmd == PERIPH_ADC_BUTTON_PRESSED) {
-                google_tts_stop(tts);
-                ESP_LOGI(TAG, "[ * ] Resuming pipeline");
-                google_sr_start(sr);
-            } else if (msg.cmd == PERIPH_ADC_BUTTON_RELEASE || msg.cmd == PERIPH_ADC_BUTTON_LONG_RELEASE) {
-                ESP_LOGI(TAG, "[ * ] Stop pipeline");
-
-                periph_led_stop(led_handle, get_green_led_gpio());
-
-                char *original_text = google_sr_stop(sr);
-                if (original_text == NULL) {
-                    continue;
-                }
-                ESP_LOGI(TAG, "Original text = %s", original_text);
-                char *translated_text = google_translate(original_text, GOOGLE_TRANSLATE_LANG_FROM, GOOGLE_TRANSLATE_LANG_TO, CONFIG_GOOGLE_API_KEY);
-                if (translated_text == NULL) {
-                    continue;
-                }
-                ESP_LOGI(TAG, "Translated text = %s", translated_text);
-                google_tts_start(tts, translated_text, GOOGLE_TTS_LANG);
+            ESP_LOGI(TAG, "Original text = %s", original_text);
+            char *translated_text = google_translate(original_text, GOOGLE_TRANSLATE_LANG_FROM, GOOGLE_TRANSLATE_LANG_TO, CONFIG_GOOGLE_API_KEY);
+            if (translated_text == NULL) {
+                continue;
             }
+            ESP_LOGI(TAG, "Translated text = %s", translated_text);
+            google_tts_start(tts, translated_text, GOOGLE_TTS_LANG);
         }
-        
 
     }
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
