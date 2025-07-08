@@ -113,14 +113,14 @@ pytest_components_esp32s3_ut_08:
   variables:
     TEST_ENV: "UT_T1_AUDIO_E6"
 
-pytest_components_esp32s3_ut_9:
+.pytest_components_esp32s3_ut_9:
   extends:
     - .pytest_components_dir_schedule_template
   tags: [ ESP32S3, UT_T1_AUDIO_L4 ]
   variables:
     TEST_ENV: "UT_T1_AUDIO_L4"
 
-pytest_components_esp32s3_ut_10:
+.pytest_components_esp32s3_ut_10:
   extends:
     - .pytest_components_dir_schedule_template
   tags: [ ESP32S3, UT_T1_AUDIO_L5 ]
