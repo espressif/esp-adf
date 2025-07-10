@@ -24,14 +24,25 @@ This example is built on the [ESP-GMF](https://github.com/espressif/esp-gmf) fra
 
 ### Hardware Preparation
 
-- This example uses the esp32-s3-korvo-2 development board by default. For hardware details, please refer to the [documentation](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html).
-To use a different board version, go to `menuconfig -> Example Configuration → Audio Board` to make your selection.
+- This example defaults to the `esp32-s3-korvo-2` development board. For hardware reference, please see the related [documentation](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html). Other versions can be selected in `menuconfig->GMF APP Configuration → Target Board`.
 
-> If you are using a custom development board, select Custom audio board and modify the corresponding IO configuration in the [esp_gmf_gpio_config.h](components/common/esp_gmf_gpio_config.h#162) file.
+> If you are using a custom development board, you need to perform the following four steps:
 
-### About encoding formats
+1. Redefine the IO pins and codec chip related to your development board in managed_components->tempotian__codec_board->board_cfg.txt.
+2. Add the relevant board configuration in managed_components->gmf_app_utils->Kconfig.projbuild.
+3. Select the custom board in menuconfig->GMF APP Configuration → Target Board.
+4. Add the relevant configuration in main->board_config.h.
+> **Note:** If using a custom development board, it is recommended to copy the `tempotian__codec_board` and `espressif__gmf_app_utils` folders to the `components` directory
 
-- Currently, upstream data uses the PCM format, while downstream data is encoded in Opus. More audio codecs will be supported in future updates.
+### Software Preparation
+
+- Configure WiFi information in menuconfig->Example Connection Configuration
+- Fill in the applied `Access token` and `BOT ID` information in menuconfig->Example Audio Configuration
+
+
+### About Encoding Formats
+
+- Currently supported audio codec formats include OPUS, G711A, G711U, and PCM. For more information on supported codec formats, please refer to the [Coze official documentation](https://www.coze.cn/open/docs/developer_guides/streaming_chat_event).
 
 ### Operation Modes
 
@@ -58,29 +69,6 @@ The support of each operation mode across different chips is as follows:
 | ESP32S2  | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/no-icon.png "Incompatible") | ![alt text](../../../docs/_static/yes-icon.png "Compatible") |
 
 **Note 1:** Planned to be supported in future versions
-
-When using different modes, you need to adjust corresponding parameters in
-`Component config → ESP Audio Simple Player`.
-1.When using key press mode, the audio input and output are configured as 16-bit, mono. The configuration is as follows:
-
-```text
-CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=1
-CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_16BIT=y
-```
-
-2.When using a single ES8311 for both input and output, and enabling functions such as echo cancellation, the audio input and output are configured as 16-bit, stereo. The configuration is as follows:
-
-```text
-CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=2
-CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_16BIT=y
-```
-
-3.When using ES8311 for audio output and ES7210 for input, the audio input and output are configured as 32-bit, stereo. The configuration is as follows (default mode):
-
-```text
-CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=2
-CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_32BIT=y
-```
 
 ### Configuration Steps
 
@@ -349,9 +337,59 @@ I (8397) ESP_GMF_TASK: One times job is complete, del[wk:0x3c728b54,ctx:0x3c71ff
 I (8407) ESP_GMF_PORT: ACQ IN, new self payload:0x3c728b54, port:0x3c72f554, el:0x3c71ffe8-aud_simp_dec
 I (8527) ESP_GMF_PORT: ACQ OUT, new self payload:0x3c720374, port:0x3c2ec964, el:0x3c2ec864-gmf_afe
 ```
+## Troubleshooting
+
+### Self-Questioning Phenomenon
+
+**Problem Description:**
+
+The device exhibits a "self-questioning" phenomenon, where the audio played by the device is picked up again by the microphone and recognized, causing the system to be falsely triggered.
+
+**Cause:**
+
+Different hardware platforms use different models of microphones and speakers, and the physical distance between the microphone and speaker also varies. These hardware differences may cause the audio capture data to have too much or too little gain, which affects the performance of the Acoustic Echo Cancellation (AEC) algorithm.
+
+**Solution:**
+
+This issue can be resolved by adjusting the audio gain parameters:
+
+- Appropriately modify the values of [DEFAULT_RECORD_DB](./main/audio_processor.c#L70), [DEFAULT_RECOPRD_REF_DB](./main/audio_processor.c#L71), and [DEFAULT_PLAYBACK_VOLUME](./main/audio_processor.c#L70)
+- Enable the `menuconfig->Example Audio Configuration->Enable AEC Debug` option to save recording data to storage for analysis
+
+> **Note:** Enabling the AEC Debug feature requires that the hardware device is equipped with an SD card.
+
+### Audio Data Send Timeout
+
+**Problem Description:**
+
+The system log shows the error message `Audio data send timeout`.
+
+**Cause:**
+
+This problem is usually caused by poor network connection quality, resulting in data packets not being sent to the server properly.
+
+**Solution:**
+
+- Improve the network connection quality in the current test environment
+- Adjust the audio encoding method to reduce data transmission volume
+
+> **Note:** According to tests, occasional `Audio data send timeout` errors do not affect the normal use of the voice recognition function.
+
+### Multiple Modules Sharing the I2C Bus
+
+**Problem Description:**
+
+When other modules (such as LCD, touch screen, etc.) also need to use the I2C bus, abnormal phenomena may occur, such as unresponsive touch.
+
+**Cause Analysis:**
+
+By default, `audio_processor` will initialize the I2C bus and hold the I2C handle. If other modules also initialize or operate the same I2C bus, it may cause handle conflicts or resource contention.
+
+**Recommended Solution:**
+
+- If the I2C bus has already been initialized before `audio_processor` initialization, you can directly pass the existing I2C handle (`I2C_master_handle`) in [codec_info](./main/audio_processor.c#L71).
+- If you need to access I2C after `audio_processor` initialization, you can obtain the initialized I2C handle via `esp_gmf_app_get_i2c_handle()` to avoid repeated initialization and conflicts.
 
 ## Planned Features
 
-1.Support for Opus encoding and audio transmission to the server
-
-2.Support for multiple functional modes, such as enabling the speaker to perform mixing functionalities
+1. Support for multiple functional forms, such as enabling mixing functions for speaker devices.

@@ -25,7 +25,28 @@
 #include "esp_coze_chat.h"
 #include "audio_processor.h"
 
-#define BUTTON_REC_READING (1 << 0)
+#define BUTTON_REC_READING    (1 << 0)
+#define DEFAULT_REC_READ_SIZE 4096
+
+#if defined CONFIG_UPLOAD_FORMAT_OPUS
+#define UPLINK_AUDIO_ENCODE_TYPE ESP_COZE_CHAT_AUDIO_TYPE_OPUS
+#elif defined CONFIG_UPLOAD_FORMAT_G711A
+#define UPLINK_AUDIO_ENCODE_TYPE ESP_COZE_CHAT_AUDIO_TYPE_G711A
+#elif defined CONFIG_UPLOAD_FORMAT_G711U
+#define UPLINK_AUDIO_ENCODE_TYPE ESP_COZE_CHAT_AUDIO_TYPE_G711U
+#elif defined CONFIG_UPLOAD_FORMAT_PCM
+#define UPLINK_AUDIO_ENCODE_TYPE ESP_COZE_CHAT_AUDIO_TYPE_PCM
+#endif  /* CONFIG_UPLOAD_FORMAT_OPUS */
+
+#if defined CONFIG_DOWNLOAD_FORMAT_OPUS
+#define DOWNLINK_AUDIO_ENCODE_TYPE ESP_COZE_CHAT_AUDIO_TYPE_OPUS
+#elif defined CONFIG_DOWNLOAD_FORMAT_G711A
+#define DOWNLINK_AUDIO_ENCODE_TYPE ESP_COZE_CHAT_AUDIO_TYPE_G711A
+#elif defined CONFIG_DOWNLOAD_FORMAT_G711U
+#define DOWNLINK_AUDIO_ENCODE_TYPE ESP_COZE_CHAT_AUDIO_TYPE_G711U
+#elif defined CONFIG_DOWNLOAD_FORMAT_PCM
+#define DOWNLINK_AUDIO_ENCODE_TYPE ESP_COZE_CHAT_AUDIO_TYPE_PCM
+#endif  /* CONFIG_DOWNLOAD_FORMAT_OPUS */
 
 static char *TAG = "COZE_CHAT_APP";
 
@@ -65,6 +86,8 @@ static esp_err_t init_coze_chat()
     chat_config.enable_subtitle = true;
     chat_config.bot_id = CONFIG_COZE_BOT_ID;
     chat_config.access_token = CONFIG_COZE_ACCESS_TOKEN;
+    chat_config.uplink_audio_type = UPLINK_AUDIO_ENCODE_TYPE;
+    chat_config.downlink_audio_type = DOWNLINK_AUDIO_ENCODE_TYPE;
     chat_config.audio_callback = audio_data_callback;
     chat_config.event_callback = audio_event_callback;
 #ifdef CONFIG_KEY_PRESS_DIALOG_MODE
@@ -78,7 +101,12 @@ static esp_err_t init_coze_chat()
         ESP_LOGE(TAG, "esp_coze_chat_init failed, err: %d", ret);
         return ESP_FAIL;
     }
-    esp_coze_chat_start(coze_chat.chat);
+    if (esp_coze_chat_start(coze_chat.chat) != ESP_OK) {
+        ESP_LOGE(TAG, "esp_coze_chat_start failed");
+        esp_coze_chat_deinit(coze_chat.chat);
+        return ESP_FAIL;
+    }
+
     return ESP_OK;
 }
 
@@ -148,25 +176,28 @@ static void btn_event_task(void *pv)
 
 static void audio_data_read_task(void *pv)
 {
-#if defined CONFIG_KEY_PRESS_DIALOG_MODE
-    uint8_t *data = esp_gmf_oal_calloc(1, 640);
-#else
-    uint8_t *data = esp_gmf_oal_calloc(1, 4096 * 3);
-#endif
+    uint8_t *data = esp_gmf_oal_calloc(1, DEFAULT_REC_READ_SIZE);
+    if (data == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate memory");
+        vTaskDelete(NULL);
+    }
+
     int ret = 0;
     while (true) {
 #if defined CONFIG_KEY_PRESS_DIALOG_MODE
         xEventGroupWaitBits(coze_chat.data_evt_group, BUTTON_REC_READING, pdFALSE, pdFALSE, portMAX_DELAY);
-        ret = audio_recorder_read_data(data, 640);
-        esp_coze_chat_send_audio_data(coze_chat.chat, (char *)data, ret);
+        ret = audio_recorder_read_data(data, DEFAULT_REC_READ_SIZE);
+        if (ret > 0) {
+            esp_coze_chat_send_audio_data(coze_chat.chat, (char *)data, ret);
+        }
 
 #elif defined CONFIG_VOICE_WAKEUP_MODE
-        ret = audio_recorder_read_data(data, 4096 * 3);
+        ret = audio_recorder_read_data(data, DEFAULT_REC_READ_SIZE);
         if (coze_chat.wakeuped) {
             esp_coze_chat_send_audio_data(coze_chat.chat, (char *)data, ret);
         }
 #else
-        ret = audio_recorder_read_data(data, 4096 * 3);
+        ret = audio_recorder_read_data(data, DEFAULT_REC_READ_SIZE);
         esp_coze_chat_send_audio_data(coze_chat.chat, (char *)data, ret);
 #endif  /* CONFIG_KEY_PRESS_DIALOG_MODE */
     }
@@ -211,11 +242,14 @@ esp_err_t coze_chat_app_init(void)
 
 #endif  /* CONFIG_KEY_PRESS_DIALOG_MODE */
 
-    init_coze_chat();
+    if (init_coze_chat() != ESP_OK) {
+        ESP_LOGE(TAG, "init_coze_chat failed");
+        return ESP_FAIL;
+    }
 
     audio_pipe_open();
 
-    esp_gmf_oal_thread_create(&coze_chat.read_thread, "audio_data_read_task", audio_data_read_task, (void *)NULL, 3096, 12, true, 1);
-
+    esp_gmf_oal_thread_create(&coze_chat.read_thread, "audio_data_read_task", audio_data_read_task, (void *)NULL, 4096, 12, true, 1);
+    
     return ESP_OK;
 }

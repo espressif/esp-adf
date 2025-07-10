@@ -24,13 +24,26 @@
 
 ### 硬件准备
 
-- 本例程默认的是 `esp32-s3-korvo-2` 开发板，硬件参考相关[文档](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html)，其他的版本可以在 `menuconfig->Example Configuration → Audio Board` 中选择。
+- 本例程默认的是 `esp32-s3-korvo-2` 开发板，硬件参考相关[文档](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html)，其他的版本可以在 `menuconfig->GMF APP Configuration → Target Board` 中选择。
 
-> 如果您使用的是自定义开发板，请选择 Custom audio board，并在 [esp_gmf_gpio_config.h](components/common/esp_gmf_gpio_config.h#162) 文件中修改对应的 IO 配置。
+> 如果您使用的是自定义开发板， 则需要执行以下四步：
 
-### 关于编码格式
+1. 在 managed_components->tempotian__codec_board->board_cfg.txt 重定义自己的开发板相关的 IO pin 和 codec 芯片。
+2. 在 managed_components->espressif__gmf_app_utils->Kconfig.projbuild 中加上相关的 board 的配置
+3. 在 menuconfig->GMF APP Configuration → Target Board 选中自定义的板子
+4. 在 main->board_config.h 中加入相关的配置
+> **注意：** 如果使用自定义开发板，建议将 `tempotian__codec_board` 和 `espressif__gmf_app_utils` 文件夹复制到 `components` 目录下
 
-- 当前上行数据采用 PCM 格式，下行数据为 Opus 编码，后续将支持更多音频编码格式。
+### 软件准备
+
+- 在 menuconfig->Example Connection Configuration 中配置相关的wifi信息
+- 在 menuconfig->Example Audio Configuration 中填写申请的`Access token` 和 `BOT ID`信息
+
+### 编解码格式
+
+- 当前支持的音频编解码格式包括 OPUS、G711A、G711U 和 PCM。如需了解更多支持的编解码格式，请参考 [Coze 官方文档](https://www.coze.cn/open/docs/developer_guides/streaming_chat_event)。
+
+> 默认 opus 一帧为 60ms
 
 ### 关于工作模式
 
@@ -58,29 +71,6 @@
 
 **Note 1:** 计划在后续版本中支持
 
-在不同模式时，需要在 `Component config → ESP Audio Simple Player` 中调整不同的参数参数。
-
-1.使用按键模式， 音频的输入输出会配置为 `16bit`， `单通道`，配置如下
-
-```text
-CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=1
-CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_16BIT=y
-```
-
-2.使用单 `ES8311` 作为音频的输入输出， 并使用回音消除等功能，音频的输入输出会配置为 `16bit`， `双通道`，配置如下
-
-```text
-CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=2
-CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_16BIT=y
-```
-
-3.使用 `ES8311` 作为音频的输出， `ES7210` 作为输入， 音频的输入输出会配置为 `32bit`， `双通道`，配置如下(默认模式)
-
-```text
-CONFIG_AUDIO_SIMPLE_PLAYER_CH_CVT_DEST=2
-CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_32BIT=y
-```
-
 ### 配置
 
 1. 将获取到的 `Access token` 和 `BOT ID` 信息填入 `Menuconfig->Example Configuration` 中。`Access token` 默认是 `pat_` 为前缀。
@@ -90,7 +80,6 @@ CONFIG_AUDIO_SIMPLE_PLAYER_BIT_CVT_DEST_32BIT=y
 
 编译和下载
 在编译本例程之前，请确保已配置好 ESP-IDF 环境。如果已配置，可以跳过此步骤，直接进行后续配置。如果尚未配置，请在 ESP-IDF 根目录运行以下脚本来设置编译环境。有关完整的配置和使用步骤，请参考 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/index.html)。
-
 
 ```bash
 ./install.sh
@@ -350,8 +339,59 @@ I (8407) ESP_GMF_PORT: ACQ IN, new self payload:0x3c728b54, port:0x3c72f554, el:
 I (8527) ESP_GMF_PORT: ACQ OUT, new self payload:0x3c720374, port:0x3c2ec964, el:0x3c2ec864-gmf_afe
 ```
 
+## 故障排查
+
+### 自问自答现象
+
+**问题描述：**
+
+设备出现自问自答现象，即设备播放的音频被麦克风重新采集并识别，导致系统误触发。
+
+**问题原因：**
+
+不同硬件平台采用的麦克风和扬声器型号存在差异，且麦克风与扬声器之间的物理距离各不相同。这些硬件差异可能导致音频采集数据出现增益过大或过小的情况，从而影响回声消除（AEC）算法的效果。
+
+**解决方案：**
+
+可通过调整音频增益参数来解决此问题：
+
+- 适当修改 [DEFAULT_RECORD_DB](./main/audio_processor.c#L70) 、 [DEFAULT_RECOPRD_REF_DB](./main/audio_processor.c#L71)和[DEFAULT_PLAYBACK_VOLUME](./main/audio_processor.c#L70) 参数值
+- 启用 `menuconfig->Example Audio Configuration->Enable AEC Debug` 选项，将录音数据保存至存储设备进行分析
+
+> **注意：** 启用 AEC Debug 功能需要确保硬件设备配备 SD 卡
+
+### 音频数据发送超时
+
+**问题描述：**
+
+系统日志中出现 `Audio data send timeout` 错误信息。
+
+**问题原因：**
+
+该问题通常由网络连接质量不佳导致，数据包无法正常发送至服务器。
+
+**解决方案：**
+
+- 改善当前测试环境的网络连接质量
+- 调整音频编码方式以降低数据传输量
+
+> **说明：** 经测试验证，偶尔出现几次 `Audio data send timeout` 错误不会影响语音识别功能的正常使用
+
+### 多模块共用 I2C 总线
+
+**问题描述：**
+
+当其他模块（如 LCD、触摸屏等）也需要使用 I2C 总线时，可能会出现异常现象，例如触摸无响应等。
+
+**原因分析：**
+
+audio_processor 默认会初始化 I2C 总线并持有 I2C 句柄，若其他模块也初始化或操作同一 I2C 总线，可能导致句柄冲突或资源竞争。
+
+**建议解决方法：**
+
+- 如果在 audio_processor 初始化之前已初始化 I2C，可在 [codec_info](./main/audio_processor.c#L71)）中直接传入已有的 I2C 句柄（I2C_master_handle）。
+- 如果在 audio_processor 初始化之后需要访问 I2C，可通过 `esp_gmf_app_get_i2c_handle()` 获取已初始化的 I2C 句柄，避免重复初始化和冲突。
+
 ## 计划功能
 
-1.支持 Opus 编码并将音频发送至服务器
-
-2.支持多功能形态，例如音响设备可实现混音功能
+1.支持多功能形态，例如音响设备可实现混音功能

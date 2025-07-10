@@ -1,7 +1,5 @@
 menu "Example Audio Configuration"
 
-rsource "../components/common/Kconfig.in"
-
 #
 # Select how the audio conversation is triggered
 #
@@ -26,6 +24,77 @@ config KEY_PRESS_DIALOG_MODE
       System is triggered by a physical key press.
 
 endchoice
+
+#
+# Select audio upload encoding format
+#
+choice
+    prompt "Audio Upload Encoding Format"
+    default UPLOAD_FORMAT_OPUS
+    help
+      Select the audio format for uploading voice data to COZE service.
+
+config UPLOAD_FORMAT_OPUS
+    bool "OPUS"
+    help
+      Use OPUS encoding for uploading audio data.
+
+config UPLOAD_FORMAT_PCM
+    bool "PCM"
+    help
+      Use PCM encoding for uploading audio data.
+      Note: Not recommended for production use due to large data size.
+
+config UPLOAD_FORMAT_G711A
+    bool "G711A (A-law)"
+    help
+      Use G711A (A-law) encoding for uploading audio data.
+
+config UPLOAD_FORMAT_G711U
+    bool "G711U (μ-law)"
+    help
+      Use G711U (μ-law) encoding for uploading audio data.
+
+endchoice
+
+#
+# Select audio download decoding format
+#
+choice
+    prompt "Audio Download Decoding Format"
+    default DOWNLOAD_FORMAT_OPUS
+    help
+      Select the audio format for downloading voice data from COZE service.
+
+config DOWNLOAD_FORMAT_OPUS
+    bool "OPUS"
+    help
+      Use OPUS decoding for downloading audio data.
+
+config DOWNLOAD_FORMAT_PCM
+    bool "PCM"
+    help
+      Use PCM decoding for downloading audio data.
+      Note: Not recommended for production use due to large data size.
+
+config DOWNLOAD_FORMAT_G711A
+    bool "G711A (A-law)"
+    help
+      Use G711A (A-law) decoding for downloading audio data.
+
+config DOWNLOAD_FORMAT_G711U
+    bool "G711U (μ-law)"
+    help
+      Use G711U (μ-law) decoding for downloading audio data.
+
+endchoice
+
+config ENABLE_RECORDER_DEBUG
+    bool "Enable AEC Debug"
+    default n
+    help
+      Enable AEC (Acoustic Echo Cancellation) debug functionality.
+      When enabled, AEC debug data will be written for debugging purposes.
 
 config COZE_BOT_ID
     string "COZE_BOT_ID"
