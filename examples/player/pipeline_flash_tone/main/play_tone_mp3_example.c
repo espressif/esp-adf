@@ -58,6 +58,9 @@ void app_main(void)
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
 #endif
     i2s_cfg.type = AUDIO_STREAM_WRITER;
+    i2s_cfg.std_cfg.clk_cfg.sample_rate_hz = 16000;
+    i2s_cfg.std_cfg.slot_cfg.data_bit_width = I2S_DATA_BIT_WIDTH_16BIT;
+    i2s_cfg.std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
     AUDIO_NULL_CHECK(TAG, i2s_stream_writer, return);
 
@@ -76,7 +79,7 @@ void app_main(void)
     audio_pipeline_link(pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[2.6] Set up  uri (file as tone_stream, mp3 as mp3 decoder, and default output is i2s)");
-    audio_element_set_uri(tone_stream_reader, tone_uri[TONE_TYPE_WECHAT]);
+    audio_element_set_uri(tone_stream_reader, tone_uri[TONE_TYPE_BT_SUCCESS]);
 
     ESP_LOGI(TAG, "[ 3 ] Set up event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -104,8 +107,6 @@ void app_main(void)
 
             ESP_LOGI(TAG, "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
                      music_info.sample_rates, music_info.bits, music_info.channels);
-
-            i2s_stream_set_clk(i2s_stream_writer, music_info.sample_rates, music_info.bits, music_info.channels);
             continue;
         }
 
