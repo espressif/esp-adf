@@ -9,6 +9,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     COZE_HTTP_REQ_SVC_TYPE_COZE,
     COZE_HTTP_REQ_SVC_TYPE_RTC,
@@ -70,3 +74,7 @@ coze_http_req_result_t *coze_http_request(coze_http_req_config_t *config, req_sv
  *      - None
  */
 void coze_http_request_free(coze_http_req_result_t *result);
+
+#ifdef __cplusplus
+}
+#endif

@@ -8,6 +8,7 @@
 */
  
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include <sys/time.h>
 
@@ -104,6 +105,5 @@ void app_main()
     audio_thread_create(NULL, "monitor_task", monitor_task, NULL, 5 * 1024, 13, true, 0);
 #endif
 
-    // init byte rtc engine
-    volc_rtc_init();
+    volc_rtc_app_startup();
 }

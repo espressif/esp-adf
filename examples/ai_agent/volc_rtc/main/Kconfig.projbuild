@@ -59,7 +59,7 @@ endchoice
 
 config COZE_URL
     string "COZE-URL"
-    default "http://115.190.92.216:8899"
+    default "http://115.190.92.216:8899/startvoicechat"
     depends on COZE_REQUEST
 
     config COZE_AUTHORIZATION

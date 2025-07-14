@@ -151,27 +151,29 @@ static esp_err_t recorder_mn_detect(recorder_sr_t *recorder_sr, afe_fetch_result
         detect_flag = 1;
     }
     if (detect_flag == 1) {
-        esp_mn_state_t mn_state = multinet->detect(recorder_sr->mn_handle, afe_result->data);
+        if (recorder_sr->mn_handle) {
+            esp_mn_state_t mn_state = multinet->detect(recorder_sr->mn_handle, afe_result->data);
 
-        if (mn_state == ESP_MN_STATE_DETECTING) {
-            return ESP_OK;
-        }
-        if (mn_state == ESP_MN_STATE_DETECTED) {
-            esp_mn_results_t *mn_result = multinet->get_results(recorder_sr->mn_handle);
-            if (recorder_sr->mn_monitor) {
-                recorder_sr_result_t sr_result = { 0 };
-                sr_result.type = mn_result->command_id[0];
-                sr_result.info.mn_info.phrase_id = mn_result->phrase_id[0];
-                sr_result.info.mn_info.prob = mn_result->prob[0];
-                memcpy(sr_result.info.mn_info.str, mn_result->string, RECORDER_SR_MN_STRING_MAX_LEN);
-                recorder_sr->mn_monitor(&sr_result, recorder_sr->mn_monitor_ctx);
+            if (mn_state == ESP_MN_STATE_DETECTING) {
+                return ESP_OK;
             }
-            detect_flag = 0;
-        }
+            if (mn_state == ESP_MN_STATE_DETECTED) {
+                esp_mn_results_t *mn_result = multinet->get_results(recorder_sr->mn_handle);
+                if (recorder_sr->mn_monitor) {
+                    recorder_sr_result_t sr_result = { 0 };
+                    sr_result.type = mn_result->command_id[0];
+                    sr_result.info.mn_info.phrase_id = mn_result->phrase_id[0];
+                    sr_result.info.mn_info.prob = mn_result->prob[0];
+                    memcpy(sr_result.info.mn_info.str, mn_result->string, RECORDER_SR_MN_STRING_MAX_LEN);
+                    recorder_sr->mn_monitor(&sr_result, recorder_sr->mn_monitor_ctx);
+                }
+                detect_flag = 0;
+            }
 
-        if (mn_state == ESP_MN_STATE_TIMEOUT) {
-            detect_flag = 0;
-            ESP_LOGI(TAG, "MN dect quit");
+            if (mn_state == ESP_MN_STATE_TIMEOUT) {
+                detect_flag = 0;
+                ESP_LOGI(TAG, "MN dect quit");
+            }
         }
     }
     return ESP_OK;

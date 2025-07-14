@@ -215,13 +215,31 @@ audio_element_handle_t player_pipeline_get_raw_write(player_pipeline_handle_t pl
 void *audio_record_engine_init(recorder_pipeline_handle_t pipeline, rec_event_cb_t cb);
 
 /**
+ * @brief  Deinitialize the audio recording engine
+ *
+ * @param[in]  pipeline  The handle to the recorder pipeline to be used by the recording engine
+ *
+ * @return
+ *       - None
+ */
+void audio_record_engine_deinit(recorder_pipeline_handle_t pipeline);
+
+/**
  * @brief Initialize the audio tone.
  *
  * @return
- *      - ESP_OK   if the operation is successful
- *      - ESP_FAIL if the operation fails
+ *      - ESP_OK    if the operation is successful
+ *      - ESP_FAIL  if the operation fails
  */
 esp_err_t audio_tone_init(tone_play_callback_t callbaclk);
+
+/**
+ * @brief  Deinitialize the audio tone
+ *
+ * @return
+ *      - None
+ */
+void audio_tone_deinit(void);
 
 /**
  * @brief  Play audio tone from a specified URI
@@ -229,8 +247,8 @@ esp_err_t audio_tone_init(tone_play_callback_t callbaclk);
  * @param[in]   uri  The URI of the audio source to play. This can be a file path
  *
  * @return
- *      - ESP_OK   if the operation is successful
- *      - ESP_FAIL if the operation fails
+ *      - ESP_OK    if the operation is successful
+ *      - ESP_FAIL  if the operation fails
  */
 esp_err_t audio_tone_play(const char *uri);
 
@@ -238,8 +256,8 @@ esp_err_t audio_tone_play(const char *uri);
  * @brief Stop audio tone playback
  *
  * @return
- *      - ESP_OK   if the operation is successful
- *      - ESP_FAIL if the operation fails
+ *      - ESP_OK    if the operation is successful
+ *      - ESP_FAIL  if the operation fails
  */
 esp_err_t audio_tone_stop(void);
 

@@ -17,40 +17,37 @@
 #include "esp_log.h"
 #include "sdkconfig.h"
 
-#include "esp_timer.h"
+#include "esp_delegate.h"
+#include "esp_dispatcher.h"
 #include "audio_recorder.h"
 #include "recorder_sr.h"
 #include "audio_pipeline.h"
 #include "audio_thread.h"
 #include "raw_stream.h"
 #include "audio_mem.h"
-#include "esp_delegate.h"
-#include "esp_dispatcher.h"
+#include "esp_vfs_mem.h"
 
 #include "VolcEngineRTCLite.h"
 #include "coze_http_request.h"
 #include "audio_processor.h"
 #include "volc_rtc_message.h"
 
-static const char* TAG = "volc_rtc";
+#define STATS_TASK_PRIO                    (5)
+#define JOIN_EVENT_BIT                     (1 << 0)
+#define WAIT_DESTORY_READ_TSK_BIT          (1 << 1)
+#define WAIT_DESTORY_PROC_TSK_BIT          (1 << 2)
+#define WAKEUP_REC_READING                 (1 << 0)
+#define DEFAULT_MAX_QUEUE_NUM              (30)
+#define DEFAULT_QUEUE_CACHE_NUM            (10)
 
-#define STATS_TASK_PRIO          (5)
-#define JOIN_EVENT_BIT           (1 << 0)
-#define WAIT_DESTORY_EVENT_BIT   (1 << 0)
-#define WAKEUP_REC_READING       (1 << 0)
-#define DEFAULT_MAX_QUEUE_NUM    (30)
-#define DEFAULT_QUEUE_CACHE_NUM  (10)
+#define ENABLE_RTCMAIN_TASK_STACK_ON_PSRAM (1)
+// #define ENABLE_RTC_LICENSE_VERIFY (1)
 
-#define volc_rtc_safe_free(x, fn) do {   \
-    if (x) {                             \
-        fn(x);                           \
-        x = NULL;                        \
-    }                                    \
-} while (0)
+static const char* TAG = "VOLC_RTC";
 
 typedef struct {
     char *frame_ptr;
-    int frame_len;
+    int   frame_len;
 } frame_package_t;
 
 typedef enum {
@@ -71,9 +68,10 @@ struct volc_rtc_t {
     coze_http_req_result_t    *user_info;
     esp_dispatcher_handle_t    esp_dispatcher;
     rtc_join_state_t           join_state;
+    audio_thread_t             voice_read_task_handle;
+    audio_thread_t             audio_data_process_task_handle;
     bool                       byte_rtc_running;
     bool                       data_proc_running;
-    esp_timer_handle_t         int_timer_hd;
 #if defined(CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
 #define DEALULT_OPUS_DATA_CHACHE_SIZE (512)
     char                    *opus_data_cache;
@@ -193,11 +191,13 @@ static void audio_tone_player_event_cb(audio_element_status_t evt)
     }
 }
 
+#if CONFIG_LANGUAGE_WAKEUP_MODE
 static esp_err_t dispatcher_audio_play(void *instance, action_arg_t *arg, action_result_t *result)
 {
     audio_tone_play((char *)arg->data);
     return ESP_OK;
 };
+#endif // CONFIG_LANGUAGE_WAKEUP_MODE
 
 static esp_err_t rec_engine_cb(audio_rec_evt_t *event, void *user_data)
 {
@@ -240,7 +240,7 @@ static void byte_rtc_engine_destroy()
     if (s_volc_rtc.engine) {
         byte_rtc_fini(s_volc_rtc.engine);
         vTaskDelay(pdMS_TO_TICKS(1000));
-        byte_rtc_destory(s_volc_rtc.engine);
+        byte_rtc_destroy(s_volc_rtc.engine);
         s_volc_rtc.engine = NULL;
     }
 }
@@ -254,14 +254,19 @@ static esp_err_t byte_rtc_engine_create()
         coze_http_req_audio_type_e audio_type = COZE_HTTP_REQ_AUDIO_TYPE_G711A;
     #endif
     coze_http_req_config_t http_config = COZE_HTTP_DEFAULT_CONFIG();
-    http_config.uri = CONFIG_COZE_URL"/startvoicechat";
+    http_config.uri = CONFIG_COZE_URL;
     http_config.authorization = CONFIG_COZE_AUTHORIZATION;
     http_config.bot_id = CONFIG_COZE_BOTID;
-    http_config.audio_type = audio_type,
+    http_config.audio_type = audio_type;
     s_volc_rtc.user_info = coze_http_request(&http_config, COZE_HTTP_REQ_SVC_TYPE_RTC);
+    if (s_volc_rtc.user_info == NULL) {
+        ESP_LOGE(TAG, "Failed to get user info");
+        return ESP_FAIL;
+    }
     
 #else
     s_volc_rtc.user_info = audio_calloc(1, sizeof(coze_http_req_result_t));
+    AUDIO_MEM_CHECK(TAG, s_volc_rtc.user_info, return ESP_FAIL);
     s_volc_rtc.user_info->app_id = CONFIG_APPID;
     s_volc_rtc.user_info->room_id = CONFIG_ROOMID;
     s_volc_rtc.user_info->uid = CONFIG_UID;
@@ -273,6 +278,7 @@ static esp_err_t byte_rtc_engine_create()
 #if defined (CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
     s_volc_rtc.opus_data_cache_len = DEALULT_OPUS_DATA_CHACHE_SIZE;
     s_volc_rtc.opus_data_cache = audio_calloc(1, s_volc_rtc.opus_data_cache_len);
+    AUDIO_MEM_CHECK(TAG, s_volc_rtc.opus_data_cache, goto cleanup);
 #endif // CONFIG_AUDIO_SUPPORT_OPUS_DECODER
 
     byte_rtc_event_handler_t handler = {
@@ -289,6 +295,7 @@ static esp_err_t byte_rtc_engine_create()
     };
     s_volc_rtc.join_state = RTC_JOIN_IDLE;
     s_volc_rtc.engine = byte_rtc_create(s_volc_rtc.user_info->app_id, &handler);
+    AUDIO_MEM_CHECK(TAG, s_volc_rtc.engine, goto cleanup);
 
     byte_rtc_set_log_level(s_volc_rtc.engine, BYTE_RTC_LOG_LEVEL_ERROR);
 #ifdef RTC_TEST_ENV
@@ -297,8 +304,27 @@ static esp_err_t byte_rtc_engine_create()
     byte_rtc_set_params(s_volc_rtc.engine, "{\"debug\":{\"log_to_console\":1}}"); 
     byte_rtc_set_params(s_volc_rtc.engine,"{\"rtc\":{\"thread\":{\"pinned_to_core\":1}}}");
     byte_rtc_set_params(s_volc_rtc.engine,"{\"rtc\":{\"thread\":{\"priority\":6}}}");
-    // byte_rtc_set_params(s_volc_rtc.engine,"{\"rtc\":{\"network\":{\"audio_jitter_buffer_target_delay_min_ms\":200}}}");
-    // byte_rtc_set_params(s_volc_rtc.engine,"{\"rtc\":{\"license\":{\"enable\":1}}}");
+
+#if defined(ENABLE_RTCMAIN_TASK_STACK_ON_PSRAM)
+    byte_rtc_set_params(s_volc_rtc.engine, "{\"rtc\":{\"thread\":{\"stack_in_ext\":1}}}");
+#endif  /* ENABLE_RTCMAIN_TASK_STACK_ON_PSRAM */
+
+#if defined(ENABLE_RTC_LICENSE_VERIFY)
+    byte_rtc_set_params(s_volc_rtc.engine, "{\"rtc\":{\"license\":{\"enable\":1}}}");
+    //     byte_rtc_set_params(s_volc_rtc.engine, "{\"rtc\":{\"license\":{\"enable\":1, \"content\":\"1234567890\"}}}");
+
+#if defined(ENABLE_RTCMAIN_TASK_STACK_ON_PSRAM) 
+    esp_err_t ret = esp_vfs_mem_register("/mem", 5);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to register memory filesystem: %d", ret);
+        return ESP_FAIL;
+    }
+    byte_rtc_set_params(s_volc_rtc.engine, "{\"rtc\":{\"root_path\":\"/mem\"}}");
+    // need to write license content to /mem/VolcEngineRTCLite.lic
+#else
+    byte_rtc_set_params(s_volc_rtc.engine, "{\"rtc\":{\"root_path\":\"/spiffs\"}}");
+#endif  /* ENABLE_RTCMAIN_TASK_STACK_ON_PSRAM */
+#endif  /* ENABLE_RTC_LICENSE_VERIFY */
 
     byte_rtc_init(s_volc_rtc.engine);
 #if defined (CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
@@ -322,6 +348,12 @@ static esp_err_t byte_rtc_engine_create()
     ESP_LOGI(TAG, "join room success\n");
     s_volc_rtc.join_state = RTC_JOIN;
     return ESP_OK;
+
+cleanup:
+#if defined (CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
+    AUDIO_SAFE_FREE(s_volc_rtc.opus_data_cache, audio_free);
+#endif // CONFIG_AUDIO_SUPPORT_OPUS_DECODER
+    return ESP_FAIL;
 }
 
 static void audio_data_process_task(void *args)
@@ -335,6 +367,7 @@ static void audio_data_process_task(void *args)
             audio_free(frame.frame_ptr);
         }
     }
+    xEventGroupSetBits(s_volc_rtc.wait_destory_event, WAIT_DESTORY_PROC_TSK_BIT);
     vTaskDelete(NULL);
 }
 
@@ -342,7 +375,7 @@ static void voice_read_task(void *args)
 {
     const int voice_data_read_sz = recorder_pipeline_get_default_read_size(s_volc_rtc.record_pipeline);
     uint8_t *voice_data = audio_calloc(1, voice_data_read_sz);
-    bool runing = true;
+    s_volc_rtc.byte_rtc_running = true;
 
 #if defined (CONFIG_AUDIO_SUPPORT_OPUS_DECODER)
     audio_frame_info_t audio_frame_info = {.data_type = AUDIO_DATA_TYPE_OPUS};
@@ -354,10 +387,8 @@ static void voice_read_task(void *args)
 
 #if defined (CONFIG_LANGUAGE_WAKEUP_MODE)
     TickType_t wait_tm = portMAX_DELAY;
-#else
-    TickType_t wait_tm = 0;
 #endif // CONFIG_LANGUAGE_WAKEUP_MODE
-    while (runing) {
+    while (s_volc_rtc.byte_rtc_running) {
     #if defined (CONFIG_LANGUAGE_WAKEUP_MODE)
         EventBits_t bits = xEventGroupWaitBits(s_volc_rtc.wakeup_event, WAKEUP_REC_READING , false, true, wait_tm);
         if (bits & WAKEUP_REC_READING) {
@@ -381,6 +412,7 @@ static void voice_read_task(void *args)
     #endif
     }
     xEventGroupClearBits(s_volc_rtc.wakeup_event, WAKEUP_REC_READING);
+    xEventGroupSetBits(s_volc_rtc.wait_destory_event, WAIT_DESTORY_READ_TSK_BIT);
     audio_free(voice_data);
     vTaskDelete(NULL);
 }
@@ -398,44 +430,91 @@ static void log_clear(void)
     esp_log_level_set("AUDIO_EVT", ESP_LOG_ERROR);
 }
 
-esp_err_t volc_rtc_init(void)
+static esp_err_t volc_rtc_init(void)
 {
-    log_clear();
-    audio_tone_init(audio_tone_player_event_cb);
-
-#if CONFIG_LANGUAGE_WAKEUP_MODE
-    esp_timer_create_args_t timer_cfg = {
-        .callback = rtc_int_timer_expired,
-        .arg = NULL,
-        .dispatch_method = ESP_TIMER_TASK,
-        .name = "int_timer",
-    };
-    esp_timer_create(&timer_cfg, &s_volc_rtc.int_timer_hd);
-#endif
-
-    s_volc_rtc.join_event = xEventGroupCreate();
-    s_volc_rtc.wait_destory_event = xEventGroupCreate();
-    s_volc_rtc.wakeup_event = xEventGroupCreate();
-    s_volc_rtc.frame_q = xQueueCreate(30, sizeof(frame_package_t));
-    s_volc_rtc.esp_dispatcher = esp_dispatcher_get_delegate_handle();
-
+    esp_err_t ret = ESP_OK;
+    /* note: Enable message subtype and function call features */
     // volc_rtc_message_init(VOLC_RTC_MESSAGE_TYPE_SUBTITLE | VOLC_RTC_MESSAGE_TYPE_FUNCTION_CALL);
-    byte_rtc_engine_create();
+    ret = byte_rtc_engine_create();
+    AUDIO_RET_ON_FALSE(TAG, ret, goto cleanup, "Failed to create byte RTC engine");
     s_volc_rtc.recorder_engine = audio_record_engine_init(s_volc_rtc.record_pipeline, rec_engine_cb);
+    AUDIO_MEM_CHECK(TAG, s_volc_rtc.recorder_engine, goto cleanup);
     vTaskDelay(pdMS_TO_TICKS(200));
-    audio_thread_create(NULL, "voice_read_task", voice_read_task, (void *)NULL, 5 * 1024, 5, true, 0);
-    audio_thread_create(NULL, "audio_data_process_task", audio_data_process_task, (void *)NULL, 5 * 1024, 10, true, 0);
+    ret = audio_thread_create(&s_volc_rtc.voice_read_task_handle, "voice_read_task", voice_read_task, (void *)NULL, 5 * 1024, 5, true, 0);
+    AUDIO_RET_ON_FALSE(TAG, ret, goto cleanup, "Failed to create voice read task");
+    ret = audio_thread_create(&s_volc_rtc.audio_data_process_task_handle, "audio_data_process_task", audio_data_process_task, (void *)NULL, 5 * 1024, 10, true, 0);
+    AUDIO_RET_ON_FALSE(TAG, ret, goto cleanup, "Failed to create audio data process task");
     return ESP_OK;
+cleanup:
+    if (s_volc_rtc.voice_read_task_handle) {
+        audio_thread_cleanup(&s_volc_rtc.voice_read_task_handle);
+    }
+    if (s_volc_rtc.audio_data_process_task_handle) {
+        audio_thread_cleanup(&s_volc_rtc.audio_data_process_task_handle);
+    }
+    byte_rtc_engine_destroy();
+    return ESP_FAIL;
 }
 
 esp_err_t volc_rtc_deinit(void)
 {
     s_volc_rtc.byte_rtc_running = false;
     s_volc_rtc.data_proc_running = false;
-    xEventGroupWaitBits(s_volc_rtc.wait_destory_event, WAIT_DESTORY_EVENT_BIT, pdTRUE, pdTRUE, portMAX_DELAY);
+#if defined (CONFIG_LANGUAGE_WAKEUP_MODE)
+    xEventGroupSetBits(s_volc_rtc.wakeup_event, WAKEUP_REC_READING);
+#endif  /* #if defined (CONFIG_LANGUAGE_WAKEUP_MODE) */
+    xEventGroupWaitBits(s_volc_rtc.wait_destory_event, WAIT_DESTORY_READ_TSK_BIT | WAIT_DESTORY_PROC_TSK_BIT, pdTRUE, pdTRUE, portMAX_DELAY);
     byte_rtc_engine_destroy();
-    volc_rtc_safe_free(s_volc_rtc.join_event, vEventGroupDelete);
-    volc_rtc_safe_free(s_volc_rtc.wait_destory_event, vEventGroupDelete);
-    volc_rtc_safe_free(s_volc_rtc.int_timer_hd, esp_timer_delete);
+    AUDIO_SAFE_FREE(s_volc_rtc.join_event, vEventGroupDelete);
+    AUDIO_SAFE_FREE(s_volc_rtc.wait_destory_event, vEventGroupDelete);
+    audio_record_engine_deinit(s_volc_rtc.record_pipeline);
+    player_pipeline_close(s_volc_rtc.player_pipeline);
+    recorder_pipeline_close(s_volc_rtc.record_pipeline);
     return ESP_OK;
+}
+
+void volc_rtc_app_startup(void)
+{
+    esp_err_t ret = ESP_OK;
+    log_clear();
+    ret = audio_tone_init(audio_tone_player_event_cb);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize audio tone: %d", ret);
+        return;
+    }
+
+    s_volc_rtc.join_event = xEventGroupCreate();
+    AUDIO_MEM_CHECK(TAG, s_volc_rtc.join_event, goto cleanup);
+    
+    s_volc_rtc.wait_destory_event = xEventGroupCreate();
+    AUDIO_MEM_CHECK(TAG, s_volc_rtc.wait_destory_event, goto cleanup);
+    
+    s_volc_rtc.wakeup_event = xEventGroupCreate();
+    AUDIO_MEM_CHECK(TAG, s_volc_rtc.wakeup_event, goto cleanup);
+    
+    s_volc_rtc.frame_q = xQueueCreate(DEFAULT_MAX_QUEUE_NUM, sizeof(frame_package_t));
+    AUDIO_MEM_CHECK(TAG, s_volc_rtc.frame_q, goto cleanup);
+    
+    s_volc_rtc.esp_dispatcher = esp_dispatcher_get_delegate_handle();
+    AUDIO_MEM_CHECK(TAG, s_volc_rtc.esp_dispatcher, goto cleanup);
+
+    ret = volc_rtc_init();
+    AUDIO_RET_ON_FALSE(TAG, ret, goto cleanup, "Failed to initialize volc RTC");
+    
+    return;
+
+cleanup:
+    if (s_volc_rtc.frame_q) {
+    vQueueDelete(s_volc_rtc.frame_q);
+    }
+    if (s_volc_rtc.wakeup_event) {
+        vEventGroupDelete(s_volc_rtc.wakeup_event);
+    }
+    if (s_volc_rtc.wait_destory_event) {
+        vEventGroupDelete(s_volc_rtc.wait_destory_event);
+    }
+    if (s_volc_rtc.join_event) {
+        vEventGroupDelete(s_volc_rtc.join_event);
+    }
+    return;
 }
