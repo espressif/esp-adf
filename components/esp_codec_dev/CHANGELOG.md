@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.3.6
+
+### Feature
+
+- Added support for CJC8910 codec.
+
+### Bug Fixed
+
+- Added missing ES8389 include in `esp_codec_dev_defaults.h`.
+
 ## v1.3.5
 
 ### Feature
@@ -56,8 +66,8 @@
 
 ### Features
 
-- Add IDF v5.3 support  
-  Using new i2c driver `esp_driver_i2c`, add `bus_handle` configuration for `audio_codec_i2c_cfg_t`.  
+- Add IDF v5.3 support
+  Using new i2c driver `esp_driver_i2c`, add `bus_handle` configuration for `audio_codec_i2c_cfg_t`.
   User need create the `bus_handle` using API `i2c_new_master_bus` instead of `i2c_driver_install`.
 - Change test code to standalone application, user can directly build it under folder [codec_dev_test](test_apps/codec_dev_test)
 

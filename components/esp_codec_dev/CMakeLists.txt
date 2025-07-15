@@ -70,6 +70,10 @@ if (CONFIG_CODEC_ZL38063_SUPPORT)
     device/zl38063/example_apps/tw_spi_access.c)
 endif()
 
+if (CONFIG_CODEC_CJC8910_SUPPORT)
+  list(APPEND COMPONENT_SRCS device/cjc8910/cjc8910.c)
+endif()
+
 idf_component_register(SRCS "${COMPONENT_SRCS}"
                        INCLUDE_DIRS "${COMPONENT_ADD_INCLUDEDIRS}"
                        PRIV_INCLUDE_DIRS "${COMPONENT_PRIV_INCLUDEDIRS}"

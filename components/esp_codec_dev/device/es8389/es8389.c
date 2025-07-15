@@ -171,7 +171,7 @@ int es8389_set_bias_standby(audio_codec_es8389_t *codec)
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0xD4);
     vTaskDelay(pdMS_TO_TICKS(70));
     ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x61, 0x59);
-    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x64, 0x00); 
+    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x64, 0x00);
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x03, 0x00);
     ret |= es8389_write_reg(codec, ES8389_RESET_REG0x00, 0x7E);
     ret |= es8389_update_bits(codec, ES8389_DAC_CONTROL_REG0x40, 0x03, 0x00);
@@ -183,11 +183,11 @@ int es8389_set_bias_on(audio_codec_es8389_t *codec)
 {
     int ret = es8389_write_reg(codec, ES8389_DAC_CONTROL_REG0x4D, 0x02);
     ret |= es8389_update_bits(codec, ES8389_ANALOG_CONTROL_REG0x69, 0x20, 0x20);
-    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x61, 0xD9);      
-    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x64, 0x8F);        
-    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0xE4);      
-    ret |= es8389_write_reg(codec, ES8389_RESET_REG0x00, 0x01);      
-    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x03, 0xC3); 
+    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x61, 0xD9);
+    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x64, 0x8F);
+    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0xE4);
+    ret |= es8389_write_reg(codec, ES8389_RESET_REG0x00, 0x01);
+    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x03, 0xC3);
     ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x24, 0x6A);
     ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x25, (uint8_t)(0x0A + (0 << 6) + (0 << 5)));
 
@@ -270,28 +270,27 @@ static int get_coeff(uint32_t mclk, uint32_t rate)
     return ESP_CODEC_DEV_NOT_FOUND;
 }
 
-
 static int es8389_suspend(audio_codec_es8389_t *codec)
 {
     int ret = ESP_CODEC_DEV_OK;
     ret |= es8389_update_bits(codec, ES8389_DAC_CONTROL_REG0x40, 0x03, 0x03);
-    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0xD4);    
+    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0xD4);
     vTaskDelay(pdMS_TO_TICKS(70));
-    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x61, 0x59);    
-    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x64, 0x00);    
-    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x63, 0x00);    
-    ret |= es8389_write_reg(codec, ES8389_RESET_REG0x00, 0x7E); 
+    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x61, 0x59);
+    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x64, 0x00);
+    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x63, 0x00);
+    ret |= es8389_write_reg(codec, ES8389_RESET_REG0x00, 0x7E);
     ret |= es8389_update_bits(codec, ES8389_DAC_CONTROL_REG0x40, 0x03, 0x00);
 
-    ret |= es8389_write_reg(codec, ES8389_MISC_CONTROL_REG0x01, 0x28); 
+    ret |= es8389_write_reg(codec, ES8389_MISC_CONTROL_REG0x01, 0x28);
     ret |= es8389_update_bits(codec, ES8389_ANALOG_CONTROL_REG0x69, 0x20, 0x00);
-    ret |= es8389_write_reg(codec, ES8389_VMID_CONTROL_REG0x60, 0x00); 
-    ret |= es8389_write_reg(codec, ES8389_RESET_REG0x00, 0x00); 
-    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0xCC); 
+    ret |= es8389_write_reg(codec, ES8389_VMID_CONTROL_REG0x60, 0x00);
+    ret |= es8389_write_reg(codec, ES8389_RESET_REG0x00, 0x00);
+    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0xCC);
     vTaskDelay(pdMS_TO_TICKS(500));
-    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0x00); 
-    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x61, 0x08); 
-    ret |= es8389_write_reg(codec, ES8389_ISOLATION_CONTROL_REG0xF3, 0xC1); 
+    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0x00);
+    ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x61, 0x08);
+    ret |= es8389_write_reg(codec, ES8389_ISOLATION_CONTROL_REG0xF3, 0xC1);
     ret |= es8389_write_reg(codec, ES8389_PULL_DOWN_CONTROL_REG0xF2, 0x00);
 
     return ret;
@@ -345,7 +344,7 @@ static int es8389_set_vol(const audio_codec_if_t *h, float db_value)
 
 static int es8389_set_mic_gain(const audio_codec_if_t *h, float db)
 {
-    audio_codec_es8389_t *codec = (audio_codec_es8389_t *) h;
+    audio_codec_es8389_t *codec = (audio_codec_es8389_t *)h;
     if (codec == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -367,18 +366,18 @@ static int es8389_set_mic_gain(const audio_codec_if_t *h, float db)
         gain_db = ES8389_MIC_GAIN_18_5DB;
     } else if (db < 24) {
         gain_db = ES8389_MIC_GAIN_21_5DB;
-    } else if (db < 27){
+    } else if (db < 27) {
         gain_db = ES8389_MIC_GAIN_24_5DB;
-    } else if (db < 30){
+    } else if (db < 30) {
         gain_db = ES8389_MIC_GAIN_27_5DB;
-    } else if (db < 33){
-        gain_db = ES8389_MIC_GAIN_30_5DB;  
-    } else if (db < 36){
-        gain_db = ES8389_MIC_GAIN_33_5DB;  
-    } else{
+    } else if (db < 33) {
+        gain_db = ES8389_MIC_GAIN_30_5DB;
+    } else if (db < 36) {
+        gain_db = ES8389_MIC_GAIN_33_5DB;
+    } else {
         gain_db = ES8389_MIC_GAIN_36_5DB;
     }
-    int ret = es8389_write_reg(codec, ES8389_PGA1_GAIN_CONTROL_REG0x72, gain_db | (3 << 4)); // MIC gain scale
+    int ret = es8389_write_reg(codec, ES8389_PGA1_GAIN_CONTROL_REG0x72, gain_db | (3 << 4));  // MIC gain scale
     return ret == 0 ? ESP_CODEC_DEV_OK : ESP_CODEC_DEV_WRITE_FAIL;
 }
 
@@ -390,7 +389,7 @@ static void es8389_pa_power(audio_codec_es8389_t *codec, es_pa_setting_t pa_sett
     }
     if (pa_setting & ES_PA_SETUP) {
         codec->cfg.gpio_if->setup(pa_pin, AUDIO_GPIO_DIR_OUT, AUDIO_GPIO_MODE_FLOAT);
-    } 
+    }
     if (pa_setting & ES_PA_ENABLE) {
         codec->cfg.gpio_if->set(pa_pin, codec->cfg.pa_reverted ? false : true);
     }
@@ -399,13 +398,13 @@ static void es8389_pa_power(audio_codec_es8389_t *codec, es_pa_setting_t pa_sett
     }
 }
 
-static int es8389_config_sample(audio_codec_es8389_t *codec, int sample_rate,int bits)
+static int es8389_config_sample(audio_codec_es8389_t *codec, int sample_rate, int bits)
 {
     int ret = ESP_CODEC_DEV_OK;
     int mclk_fre = sample_rate * bits * 2;
     int rate = mclk_fre / sample_rate;
 
-    int coeff = get_coeff(mclk_fre , rate);
+    int coeff = get_coeff(mclk_fre, rate);
 
     if (coeff < 0) {
         ESP_LOGE(TAG, "Unable to configure sample rate %dHz with %dHz MCLK", sample_rate, mclk_fre);
@@ -419,7 +418,7 @@ static int es8389_config_sample(audio_codec_es8389_t *codec, int sample_rate,int
         ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x09, coeff_div[coeff].Reg0x09);
         ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x0A, coeff_div[coeff].Reg0x0A);
         ret |= es8389_update_bits(codec, ES8389_CLK_MANAGER_REG0x0F, 0xC0, coeff_div[coeff].Reg0x0F);
-        ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x11, coeff_div[coeff].Reg0x11);	
+        ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x11, coeff_div[coeff].Reg0x11);
         ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x21, coeff_div[coeff].Reg0x21);
         ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x22, coeff_div[coeff].Reg0x22);
         ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x26, coeff_div[coeff].Reg0x26);
@@ -429,7 +428,7 @@ static int es8389_config_sample(audio_codec_es8389_t *codec, int sample_rate,int
         ret |= es8389_update_bits(codec, ES8389_DAC_CONTROL_REG0x43, 0x81, coeff_div[coeff].Reg0x43);
         ret |= es8389_update_bits(codec, ES8389_CHIP_MISC_CONTROL_REG0xF0, 0x73, coeff_div[coeff].Reg0xF0);
         ret |= es8389_write_reg(codec, ES8389_CSM_STATE_REG0xF1, coeff_div[coeff].Reg0xF1);
-        ret |= es8389_write_reg(codec, 0x16, coeff_div[coeff].Reg0x16);	
+        ret |= es8389_write_reg(codec, 0x16, coeff_div[coeff].Reg0x16);
         ret |= es8389_write_reg(codec, 0x18, coeff_div[coeff].Reg0x18);
         ret |= es8389_write_reg(codec, 0x19, coeff_div[coeff].Reg0x19);
     }
@@ -439,8 +438,8 @@ static int es8389_config_sample(audio_codec_es8389_t *codec, int sample_rate,int
 
 static int es8389_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
 {
-    audio_codec_es8389_t *codec = (audio_codec_es8389_t *) h;
-    es8389_codec_cfg_t *codec_cfg = (es8389_codec_cfg_t *) cfg;
+    audio_codec_es8389_t *codec = (audio_codec_es8389_t *)h;
+    es8389_codec_cfg_t *codec_cfg = (es8389_codec_cfg_t *)cfg;
     if (codec == NULL || codec_cfg == NULL || codec_cfg->ctrl_if == NULL || cfg_size != sizeof(es8389_codec_cfg_t)) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -448,7 +447,7 @@ static int es8389_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (codec->cfg.mclk_div == 0) {
         codec->cfg.mclk_div = MCLK_DEFAULT_DIV;
     }
-    
+
     int ret = ESP_CODEC_DEV_OK;
 
     ret |= es8389_write_reg(codec, ES8389_ISOLATION_CONTROL_REG0xF3, 0x00);
@@ -467,15 +466,15 @@ static int es8389_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x6F, 0x66);
     ret |= es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x70, 0x99);
 
-    if (ES8389_Analog_DriveSel == ES8389_DriveSel_LowPower) {	
+    if (ES8389_Analog_DriveSel == ES8389_DriveSel_LowPower) {
         es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x6B, 0x80);
         es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x6C, 0x0F);
-        es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x70, 0x66); 
+        es8389_write_reg(codec, ES8389_ANALOG_CONTROL_REG0x70, 0x66);
     }
 
-    ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x23, (int)(0x00 + (0 & 0xC0) + (0 << 2) + (0 & 0x03)));		
-    ret |= es8389_write_reg(codec, ES8389_PGA1_GAIN_CONTROL_REG0x72, (int)((1 << 4) + 0) );     
-    ret |= es8389_write_reg(codec, ES8389_PGA1_GAIN_CONTROL_REG0x73, (int)((1 << 4) + 0) );      
+    ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x23, (int)(0x00 + (0 & 0xC0) + (0 << 2) + (0 & 0x03)));
+    ret |= es8389_write_reg(codec, ES8389_PGA1_GAIN_CONTROL_REG0x72, (int)((1 << 4) + 0));
+    ret |= es8389_write_reg(codec, ES8389_PGA1_GAIN_CONTROL_REG0x73, (int)((1 << 4) + 0));
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x10, 0xC4);
     ret |= es8389_write_reg(codec, ES8389_MISC_CONTROL_REG0x01, (int)(0x08 + (0 << 7) + (0 << 6) + (0 << 5) + (0 << 0)));
     ret |= es8389_write_reg(codec, ES8389_CSM_STATE_REG0xF1, 0x00);
@@ -493,8 +492,8 @@ static int es8389_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x2A, (int)(0x00 + (0 << 4)));
     ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x20, (int)(0x00 + ES8389_S16_LE + (0 << 4) + ES8389_DAIFMT_I2S + (0 << 1) + (0 << 0)));
     ret |= es8389_write_reg(codec, ES8389_DAC_CONTROL_REG0x40, (int)(0x00 + ES8389_S16_LE + (0 << 4) + ES8389_DAIFMT_I2S + (0 << 1) + (0 << 0)));
-    ret |= es8389_write_reg(codec, ES8389_CHIP_MISC_CONTROL_REG0xF0, (int)(0x12 + (0 << 3) + (0 << 2)));
-    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x02, (int)(0x00 + (0 << 6)+ (0 << 1) + (0 << 0)));
+    ret |= es8389_write_reg(codec, ES8389_CHIP_MISC_CONTROL_REG0xF0, (int)(0x1 + (0 << 3) + (0 << 2)));
+    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x02, (int)(0x00 + (0 << 6) + (0 << 1) + (0 << 0)));
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x04, 0x00);
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x05, 0x10);
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x06, 0x00);
@@ -503,21 +502,21 @@ static int es8389_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x09, 0xC0);
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x0A, 0x80);
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x0B, 4);
-    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x0C, (int)(256 >> 8 ));
+    ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x0C, (int)(256 >> 8));
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x0D, (int)(256 & 0xFF));
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x0F, 0x10);
     ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x21, 0x1F);
     ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x22, 0x7F);
     ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x2F, 0xC0);
-    ret |= es8389_write_reg(codec, 0x30, 0xF4);	
+    ret |= es8389_write_reg(codec, 0x30, 0xF4);
     ret |= es8389_write_reg(codec, ES8389_ADC_SP_CONTROL_REG0x31, (int)(0x00 + (0 << 7) + (0 << 6)));
-    ret |= es8389_write_reg(codec, ES8389_DAC_CONTROL_REG0x44, (int)(0x00 + (0 << 3) + (0 << 2) + (0 << 1) + (0 << 0)));	
+    ret |= es8389_write_reg(codec, ES8389_DAC_CONTROL_REG0x44, (int)(0x00 + (0 << 3) + (0 << 2) + (0 << 1) + (0 << 0)));
     ret |= es8389_write_reg(codec, ES8389_DAC_CONTROL_REG0x41, 0x7F);
     ret |= es8389_write_reg(codec, ES8389_DAC_CONTROL_REG0x42, 0x7F);
     ret |= es8389_write_reg(codec, ES8389_DAC_CONTROL_REG0x43, 0x10);
-    ret |= es8389_write_reg(codec, ES8389_DAC_CONTROL_REG0x49, (int)(0x0F + (0 <<4)));
+    ret |= es8389_write_reg(codec, ES8389_DAC_CONTROL_REG0x49, (int)(0x0F + (0 << 4)));
     ret |= es8389_write_reg(codec, 0x4C, 0xC0);
-    
+
     ret |= es8389_write_reg(codec, ES8389_RESET_REG0x00, 0x00);
     ret |= es8389_write_reg(codec, ES8389_CLK_MANAGER_REG0x03, 0xC1);
     ret |= es8389_write_reg(codec, ES8389_RESET_REG0x00, 0x01);

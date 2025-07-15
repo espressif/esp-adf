@@ -29,6 +29,9 @@
 #ifdef CONFIG_CODEC_AW88298_SUPPORT
 #include "aw88298_dac.h"
 #endif
+#ifdef CONFIG_CODEC_ES8389_SUPPORT
+#include "es8389_codec.h"
+#endif
 #ifdef CONFIG_CODEC_ES8374_SUPPORT
 #include "es8374_codec.h"
 #endif
@@ -41,7 +44,9 @@
 #ifdef CONFIG_CODEC_ZL38063_SUPPORT
 #include "zl38063_codec.h"
 #endif
-
+#if CONFIG_CODEC_CJC8910_SUPPORT
+#include "cjc8910_codec.h"
+#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -97,7 +102,7 @@ const audio_codec_ctrl_if_t *audio_codec_new_i2c_ctrl(audio_codec_i2c_cfg_t *i2c
 /**
  * @brief         Get default I2S data interface
  * @return        NULL: Failed
- *                Others: I2S data interface    
+ *                Others: I2S data interface
  */
 const audio_codec_data_if_t *audio_codec_new_i2s_data(audio_codec_i2s_cfg_t *i2s_cfg);
 
