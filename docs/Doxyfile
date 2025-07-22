@@ -13,7 +13,7 @@
 # https://www.stack.nl/~dimitri/doxygen/manual/config.html
 
 
-PROJECT_NAME = "Espressif Advanced Development Framework Guide (ESP-ADF)"
+PROJECT_NAME = "Espressif Audio Development Framework Guide (ESP-ADF)"
 
 ## The 'INPUT' statement below is used as input by script 'gen-df-input.py'
 ## to automatically generate API reference list files heder_file.inc

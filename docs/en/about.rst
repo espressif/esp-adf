@@ -9,10 +9,10 @@ The **ESP-ADF** provides a range of API components including **Audio Streams**, 
 
 .. figure:: ../_static/adf_block_diagram.png
     :align: center
-    :alt: Espressif Advanced Development Framework
+    :alt: Espressif Audio Development Framework
     :figclass: align-center
 
-    Espressif Advanced Development Framework
+    Espressif Audio Development Framework
 
 The ESP-ADF also provides integration with **Baidu DauerOS** cloud services. A range of components is coming to provide integration with DeepBrain, Amazon, Google, Alibaba and Turing cloud services.
 
