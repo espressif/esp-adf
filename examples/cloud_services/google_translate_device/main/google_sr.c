@@ -224,6 +224,9 @@ google_sr_handle_t google_sr_init(google_sr_config_t *config)
 
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_cfg.std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+    i2s_stream_set_channel_type(&i2s_cfg, I2S_CHANNEL_TYPE_ONLY_RIGHT);
+    i2s_cfg.std_cfg.clk_cfg.sample_rate_hz = config->record_sample_rates;
     sr->i2s_reader = i2s_stream_init(&i2s_cfg);
 
     http_stream_cfg_t http_cfg = {

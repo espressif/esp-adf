@@ -63,7 +63,7 @@ google_tts_handle_t google_tts_init(google_tts_config_t *config);
  *  - ESP_OK
  *  - ESP_FAIL
  */
-esp_err_t google_tts_start(google_tts_handle_t tts, const char *text, const char *lang_code);
+esp_err_t google_tts_start(google_tts_handle_t tts, const char *text, const char *lang_code, const char *voice_name);
 
 /**
  * @brief      Stop playing audio from Google Cloud Text-to-Speech

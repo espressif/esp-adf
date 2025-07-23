@@ -41,7 +41,8 @@ static const char *TAG = "GOOGLE_TRANSLATION_EXAMPLE";
 #define GOOGLE_SR_LANG "cmn-Hans-CN"            // https://cloud.google.com/speech-to-text/docs/languages
 #define GOOGLE_TRANSLATE_LANG_FROM "zh-CN"      //https://cloud.google.com/translate/docs/languages
 #define GOOGLE_TRANSLATE_LANG_TO "en"           //https://cloud.google.com/translate/docs/languages
-#define GOOGLE_TTS_LANG "en-US-Wavenet-D"       //https://cloud.google.com/text-to-speech/docs/voices
+#define GOOGLE_TTS_LANG_CODE "en-US"            //https://cloud.google.com/text-to-speech/docs/voices
+#define GOOGLE_TTS_VOICE_NAME "en-US-Wavenet-D" //https://cloud.google.com/text-to-speech/docs/voices
 
 #define EXAMPLE_RECORD_PLAYBACK_SAMPLE_RATE (16000)
 
@@ -114,6 +115,7 @@ void translate_task(void *pv)
     google_tts_config_t tts_config = {
         .api_key = CONFIG_GOOGLE_API_KEY,
         .playback_sample_rate = EXAMPLE_RECORD_PLAYBACK_SAMPLE_RATE,
+        .buffer_size = 6144,
     };
     google_tts_handle_t tts = google_tts_init(&tts_config);
 
@@ -178,7 +180,7 @@ void translate_task(void *pv)
                     continue;
                 }
                 ESP_LOGI(TAG, "Translated text = %s", translated_text);
-                google_tts_start(tts, translated_text, GOOGLE_TTS_LANG);
+                google_tts_start(tts, translated_text, GOOGLE_TTS_LANG_CODE, GOOGLE_TTS_VOICE_NAME);
             }
         } else if(msg.source_type == PERIPH_ID_ADC_BTN){
             if (msg.cmd == PERIPH_ADC_BUTTON_PRESSED) {
@@ -200,7 +202,7 @@ void translate_task(void *pv)
                     continue;
                 }
                 ESP_LOGI(TAG, "Translated text = %s", translated_text);
-                google_tts_start(tts, translated_text, GOOGLE_TTS_LANG);
+                google_tts_start(tts, translated_text, GOOGLE_TTS_LANG_CODE, GOOGLE_TTS_VOICE_NAME);
             }
         }
         
