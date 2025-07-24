@@ -53,17 +53,17 @@ typedef struct {
 google_tts_handle_t google_tts_init(google_tts_config_t *config);
 
 /**
- * @brief      Start sending text to Google Cloud Text-to-Speech and play audio received
+ * @brief  Start sending text to Google Cloud Text-to-Speech and play audio received
  *
  * @param[in]  tts        The Text-to-Speech context
  * @param[in]  text       The text
  * @param[in]  lang_code  The language code
  *
  * @return
- *  - ESP_OK
- *  - ESP_FAIL
+ *       - ESP_OK
+ *       - ESP_FAIL
  */
-esp_err_t google_tts_start(google_tts_handle_t tts, const char *text, const char *lang_code);
+esp_err_t google_tts_start(google_tts_handle_t tts, const char *text, const char *lang_code, const char *voice_name);
 
 /**
  * @brief      Stop playing audio from Google Cloud Text-to-Speech
