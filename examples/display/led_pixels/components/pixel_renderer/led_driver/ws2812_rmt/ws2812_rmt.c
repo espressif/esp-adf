@@ -27,23 +27,23 @@
 #include "driver/rmt.h"
 #include "ws2812_rmt.h"
 
-#define WS2812_RMT_T0H_NS      (350)
-#define WS2812_RMT_T0L_NS      (1000)
-#define WS2812_RMT_T1H_NS      (1000)
-#define WS2812_RMT_T1L_NS      (350)
-#define WS2812_RMT_RESET_US    (280)
+#define WS2812_RMT_T0H_NS   (350)
+#define WS2812_RMT_T0L_NS   (1000)
+#define WS2812_RMT_T1H_NS   (1000)
+#define WS2812_RMT_T1L_NS   (350)
+#define WS2812_RMT_RESET_US (280)
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0))
 static const char *TAG = "WS2812_RMT";
 
 /**
- * @brief Default configuration for LED strip
+ * @brief  Default configuration for LED strip
  *
  */
-#define WS2812_RMT_DEFAULT_CONFIG(number, dev_hdl) {    \
-        .max_leds = number,                             \
-        .dev = dev_hdl,                                 \
-    }
+#define WS2812_RMT_DEFAULT_CONFIG(number, dev_hdl) {  \
+    .max_leds = number,                               \
+    .dev      = dev_hdl,                              \
+}
 
 #define WS2812_RMT_CHECK(a, str, goto_tag, ret_value, ...) do {                   \
         if (!(a))                                                                 \
@@ -82,38 +82,38 @@ typedef struct {
 } ws2812_rmt_config_t;
 
 /**
- * @brief      Conver RGB data to RMT format.
+ * @brief  Convert RGB data to RMT format.
  *
- * @note       For WS2812, R,G,B each contains 256 different choices (i.e. uint8_t)
+ * @note  For WS2812, R,G,B each contains 256 different choices (i.e. uint8_t)
  *
- * @param[in]  src:             Source data, to converted to RMT format
- * @param[in]  dest:            Place where to store the convert result
- * @param[in]  src_size:        Size of source data
- * @param[in]  wanted_num:      Number of RMT items that want to get
- * @param[out] translated_size: Number of source data that got converted
- * @param[out] item_num:        Number of RMT items which are converted from source data
+ * @param[in]   src              Source data, to converted to RMT format
+ * @param[in]   dest             Place where to store the convert result
+ * @param[in]   src_size         Size of source data
+ * @param[in]   wanted_num       Number of RMT items that want to get
+ * @param[out]  translated_size  Number of source data that got converted
+ * @param[out]  item_num         Number of RMT items which are converted from source data
  */
 static void IRAM_ATTR ws2812_rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,
-        size_t wanted_num, size_t *translated_size, size_t *item_num)
+                                         size_t wanted_num, size_t *translated_size, size_t *item_num)
 {
     if (src == NULL || dest == NULL) {
         *translated_size = 0;
-        *item_num = 0;
+        *item_num        = 0;
         return;
     }
-    const rmt_item32_t bit0 = {{{ ws2812_t0h_ticks, 1, ws2812_t0l_ticks, 0 }}}; //Logical 0
-    const rmt_item32_t bit1 = {{{ ws2812_t1h_ticks, 1, ws2812_t1l_ticks, 0 }}}; //Logical 1
-    size_t size = 0;
-    size_t num = 0;
-    uint8_t *psrc = (uint8_t *)src;
-    rmt_item32_t *pdest = dest;
+    const rmt_item32_t bit0  = {{{ws2812_t0h_ticks, 1, ws2812_t0l_ticks, 0}}};  // Logical 0
+    const rmt_item32_t bit1  = {{{ws2812_t1h_ticks, 1, ws2812_t1l_ticks, 0}}};  // Logical 1
+    size_t             size  = 0;
+    size_t             num   = 0;
+    uint8_t           *psrc  = (uint8_t *)src;
+    rmt_item32_t      *pdest = dest;
     while (size < src_size && num < wanted_num) {
-        for (int i = 0; i < 8; i ++) {
+        for (int i = 0; i < 8; i++) {
             // MSB first
             if (*psrc & (1 << (7 - i))) {
-                pdest->val =  bit1.val;
+                pdest->val = bit1.val;
             } else {
-                pdest->val =  bit0.val;
+                pdest->val = bit0.val;
             }
             num++;
             pdest++;
@@ -122,7 +122,7 @@ static void IRAM_ATTR ws2812_rmt_adapter(const void *src, rmt_item32_t *dest, si
         psrc++;
     }
     *translated_size = size;
-    *item_num = num;
+    *item_num        = num;
 }
 
 static esp_err_t _ws2812_rmt_set_pixel(ws2812_t *strip, uint32_t index, uint8_t red, uint8_t green, uint8_t blue)
@@ -131,7 +131,7 @@ static esp_err_t _ws2812_rmt_set_pixel(ws2812_t *strip, uint32_t index, uint8_t 
     ws2812_rmt_dev_t *ws2812 = __containerof(strip, ws2812_rmt_dev_t, parent);
     WS2812_RMT_CHECK(index < ws2812->strip_len, "index out of the maximum number of leds", err, ESP_ERR_INVALID_ARG);
     uint32_t start = index * 3;
-    // In thr order of GRB
+    // In the order of GRB
     ws2812->buffer[start + 0] = green & 0xFF;
     ws2812->buffer[start + 1] = red & 0xFF;
     ws2812->buffer[start + 2] = blue & 0xFF;
