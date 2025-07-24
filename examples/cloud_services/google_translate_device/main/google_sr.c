@@ -224,6 +224,9 @@ google_sr_handle_t google_sr_init(google_sr_config_t *config)
 
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_READER;
+    i2s_cfg.std_cfg.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
+    i2s_stream_set_channel_type(&i2s_cfg, I2S_CHANNEL_TYPE_ONLY_RIGHT);
+    i2s_cfg.std_cfg.clk_cfg.sample_rate_hz = config->record_sample_rates;
     sr->i2s_reader = i2s_stream_init(&i2s_cfg);
 
     http_stream_cfg_t http_cfg = {
@@ -238,7 +241,7 @@ google_sr_handle_t google_sr_init(google_sr_config_t *config)
     sr->on_begin = config->on_begin;
 
     audio_pipeline_register(sr->pipeline, sr->http_stream_writer, "sr_http");
-    audio_pipeline_register(sr->pipeline, sr->i2s_reader,         "sr_i2s");
+    audio_pipeline_register(sr->pipeline, sr->i2s_reader, "sr_i2s");
     const char *link_tag[2] = {"sr_i2s", "sr_http"};
     audio_pipeline_link(sr->pipeline, &link_tag[0], 2);
     i2s_stream_set_clk(sr->i2s_reader, config->record_sample_rates, 16, 1);

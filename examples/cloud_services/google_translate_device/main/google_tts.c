@@ -45,32 +45,30 @@
 
 static const char *TAG = "GOOGLE_TTS";
 
-
-#define GOOGLE_TTS_ENDPOINT         "https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=%s"
-#define GOOGLE_TTS_TEMPLATE         "{"\
-                                        "\"audioConfig\": { \"audioEncoding\" : \"MP3\", \"sampleRateHertz\": %d },"\
-                                        "\"voice\": { \"languageCode\" : \"%s\" },"\
-                                        "\"input\": { \"text\" : \"%s\" }"\
-                                    "}"
-#define GOOGLE_TTS_TASK_STACK (8*1024)
+#define GOOGLE_TTS_ENDPOINT "https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=%s"
+#define GOOGLE_TTS_TEMPLATE "{"                                                                          \
+                            "\"audioConfig\": { \"audioEncoding\" : \"MP3\", \"sampleRateHertz\": %d }," \
+                            "\"voice\": { \"languageCode\" : \"%s\", \"name\" : \"%s\" },"               \
+                            "\"input\": { \"text\" : \"%s\" }"                                           \
+                            "}"
+#define GOOGLE_TTS_TASK_STACK (8 * 1024)
 
 typedef struct google_tts {
     audio_pipeline_handle_t pipeline;
     audio_element_handle_t  i2s_writer;
     audio_element_handle_t  http_stream_reader;
     audio_element_handle_t  mp3_decoder;
-    char                    *api_key;
-    char                    *lang_code;
+    char                   *api_key;
+    char                   *lang_code;
+    char                   *voice_name;
     int                     buffer_size;
-    char                    *buffer;
-    char                    *text;
+    char                   *buffer;
+    char                   *text;
     bool                    is_begin;
     int                     tts_total_read;
     int                     sample_rate;
     int                     remain_len;
 } google_tts_t;
-
-
 static esp_err_t _http_stream_reader_event_handle(http_stream_event_msg_t *msg)
 {
     esp_http_client_handle_t http = (esp_http_client_handle_t)msg->http_client;
@@ -83,7 +81,7 @@ static esp_err_t _http_stream_reader_event_handle(http_stream_event_msg_t *msg)
         ESP_LOGI(TAG, "[ + ] HTTP client HTTP_STREAM_PRE_REQUEST, length=%d", msg->buffer_len);
         tts->tts_total_read = 0;
         tts->is_begin = true;
-        int payload_len = snprintf(tts->buffer, tts->buffer_size, GOOGLE_TTS_TEMPLATE, tts->sample_rate, tts->lang_code, tts->text);
+        int payload_len = snprintf(tts->buffer, tts->buffer_size, GOOGLE_TTS_TEMPLATE, tts->sample_rate, tts->lang_code, tts->voice_name, tts->text);
         esp_http_client_set_post_field(http, tts->buffer, payload_len);
         esp_http_client_set_method(http, HTTP_METHOD_POST);
         esp_http_client_set_header(http, "Content-Type", "application/json");
@@ -121,7 +119,6 @@ static esp_err_t _http_stream_reader_event_handle(http_stream_event_msg_t *msg)
             // *data_ptr = 0;
             data_ptr++;
             process_data_len--;
-
         }
         unsigned int mp3_len = 0;
         int keep_next_time = 0;
@@ -141,11 +138,9 @@ static esp_err_t _http_stream_reader_event_handle(http_stream_event_msg_t *msg)
 
     if (msg->event_id == HTTP_STREAM_POST_REQUEST) {
         ESP_LOGI(TAG, "[ + ] HTTP client HTTP_STREAM_POST_REQUEST, write end chunked marker");
-
     }
 
     if (msg->event_id == HTTP_STREAM_FINISH_REQUEST) {
-
     }
 
     return ESP_OK;
@@ -234,13 +229,18 @@ bool google_tts_check_event_finish(google_tts_handle_t tts, audio_event_iface_ms
     return false;
 }
 
-
-esp_err_t google_tts_start(google_tts_handle_t tts, const char *text, const char *lang_code)
+esp_err_t google_tts_start(google_tts_handle_t tts, const char *text, const char *lang_code, const char *voice_name)
 {
     free(tts->lang_code);
     free(tts->text);
     tts->lang_code = strdup(lang_code);
     if (tts->lang_code == NULL) {
+        ESP_LOGE(TAG, "Error no mem");
+        return ESP_ERR_NO_MEM;
+    }
+    free(tts->voice_name);
+    tts->voice_name = strdup(voice_name);
+    if (tts->voice_name == NULL) {
         ESP_LOGE(TAG, "Error no mem");
         return ESP_ERR_NO_MEM;
     }
