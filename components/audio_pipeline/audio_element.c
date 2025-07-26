@@ -441,7 +441,7 @@ audio_element_err_t audio_element_output(audio_element_handle_t el, char *buffer
                 break;
             case AEL_IO_DONE:
             case AEL_IO_OK:
-                ESP_LOGI(TAG, "OUT-[%s] AEL_IO_DONE,%d", el->tag, output_len);
+                // ESP_LOGI(TAG, "OUT-[%s] AEL_IO_DONE,%d", el->tag, output_len);
                 break;
             case AEL_IO_FAIL:
                 ESP_LOGE(TAG, "OUT-[%s] AEL_STATUS_ERROR_OUTPUT", el->tag);

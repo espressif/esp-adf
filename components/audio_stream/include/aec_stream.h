@@ -25,6 +25,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "audio_element.h"
 #include "esp_afe_aec.h"
 
@@ -37,8 +41,8 @@
     .task_stack    = AEC_STREAM_TASK_STACK_SIZE,  \
     .task_prio     = AEC_STREAM_TASK_PERIOD,      \
     .task_core     = AEC_STREAM_PINNED_TO_CORE,   \
-    .debug_aec     = false,                       \
     .stack_in_ext  = true,                        \
+    .debug_aec     = false,                       \
     .type          = AFE_TYPE_VC_8K,              \
     .mode          = AFE_MODE_LOW_COST,           \
     .filter_length = 4,                           \
@@ -66,3 +70,7 @@ typedef struct {
  * @return     The audio element handle
  */
 audio_element_handle_t aec_stream_init(aec_stream_cfg_t *cfg);
+
+#ifdef __cplusplus
+}
+#endif
