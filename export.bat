@@ -5,16 +5,16 @@ set ADF_PATH=%~dp0
 set ADF_PATH=%ADF_PATH:~0,-1%
 
 :: Check IDF_PATH
-if not defined IDF_PATH (
-   set IDF_PATH=%ADF_PATH%\esp-idf
-)
+
+set IDF_PATH=%ADF_PATH%\esp-idf
+
 
 echo ADF_PATH: %ADF_PATH%
 echo IDF_PATH: %IDF_PATH%
 
 call %IDF_PATH%\export.bat
 if %errorlevel% neq 0 (goto :ErrorHandling)
-python.exe "%ADF_PATH%\tools\adf_install_patches.py" apply-patch
+python "%ADF_PATH%\tools\adf_install_patches.py" apply-patch
 if %errorlevel% neq 0 (goto :ErrorHandling)
 
 echo.
