@@ -269,7 +269,7 @@ TEST_CASE("esp codec dev test using S3 board", "[esp_codec_dev]")
     // New input codec interface
     es7210_codec_cfg_t es7210_cfg = {
         .ctrl_if = in_ctrl_if,
-        .mic_selected = ES7120_SEL_MIC1 | ES7120_SEL_MIC2 | ES7120_SEL_MIC3,
+        .mic_selected = ES7210_SEL_MIC1 | ES7210_SEL_MIC2 | ES7210_SEL_MIC3,
     };
     const audio_codec_if_t *in_codec_if = es7210_codec_new(&es7210_cfg);
     TEST_ASSERT_NOT_NULL(in_codec_if);
@@ -387,7 +387,7 @@ TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
     // New input codec interface
     es7210_codec_cfg_t es7210_cfg = {
         .ctrl_if = in_ctrl_if,
-        .mic_selected = ES7120_SEL_MIC1 | ES7120_SEL_MIC2 | ES7120_SEL_MIC3 | ES7120_SEL_MIC4,
+        .mic_selected = ES7210_SEL_MIC1 | ES7210_SEL_MIC2 | ES7210_SEL_MIC3 | ES7210_SEL_MIC4,
     };
     const audio_codec_if_t *in_codec_if = es7210_codec_new(&es7210_cfg);
     TEST_ASSERT_NOT_NULL(in_codec_if);
