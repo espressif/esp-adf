@@ -15,10 +15,10 @@ extern "C" {
 
 #define ES7210_CODEC_DEFAULT_ADDR (0x80)
 
-#define ES7120_SEL_MIC1           (uint8_t)(1 << 0)
-#define ES7120_SEL_MIC2           (uint8_t)(1 << 1)
-#define ES7120_SEL_MIC3           (uint8_t)(1 << 2)
-#define ES7120_SEL_MIC4           (uint8_t)(1 << 3)
+#define ES7210_SEL_MIC1           (uint8_t)(1 << 0)
+#define ES7210_SEL_MIC2           (uint8_t)(1 << 1)
+#define ES7210_SEL_MIC3           (uint8_t)(1 << 2)
+#define ES7210_SEL_MIC4           (uint8_t)(1 << 3)
 
 /**
  * @brief ES7210 MCLK clock source when work in master mode
