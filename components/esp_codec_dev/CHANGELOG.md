@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.7
+
+### Bug Fixed
+
+- Fixed link error for `vol_range` redefinition.
+
 ## v1.3.6
 
 ### Feature
