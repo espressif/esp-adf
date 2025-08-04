@@ -27,7 +27,7 @@ typedef struct {
    Volume control register 0x14 description:
        0x00 - '-95.5dB' ... 0xFF - '+32dB'
 */
-const esp_codec_dev_vol_range_t vol_range = {
+static const esp_codec_dev_vol_range_t vol_range = {
     .min_vol =
     {
         .vol = 0x0,
