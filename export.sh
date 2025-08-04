@@ -1,9 +1,23 @@
 #!/bin/bash
 
 if [ -z "$ADF_PATH" ]; then
-    basedir=$(dirname "$0")
-    export ADF_PATH=$(cd "${basedir}"; pwd)
+    adf_path="."
+    # shellcheck disable=SC2128,SC2169,SC2039,SC3054,SC3028 # ignore array expansion warning
+    if [ -n "${BASH_SOURCE-}" ]; then
+        # shellcheck disable=SC3028,SC3054 # unreachable with 'dash'
+        adf_path=$(dirname "${BASH_SOURCE[0]}")
+    elif [ -n "${ZSH_VERSION-}" ]; then
+        # shellcheck disable=SC2296  # ignore parameter starts with '{' because it's zsh
+        adf_path=$(dirname "${(%):-%x}")
+    elif [ -n "${ADF_PATH-}" ]; then
+        if [ -f "/.dockerenv" ]; then
+            echo "Using the ADF_PATH found in the environment as docker environment detected."
+            adf_path=$ADF_PATH
+        fi
+    fi
+    export ADF_PATH=$adf_path
 fi
+
 if [ -z "$IDF_PATH" ]; then
     export IDF_PATH=$ADF_PATH/esp-idf
 fi
