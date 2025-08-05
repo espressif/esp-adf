@@ -217,14 +217,22 @@ static esp_err_t pwm_data_list_wait_flushed(pwm_data_handle_t data, TickType_t t
     return ESP_FAIL;
 }
 
-static inline void ledc_set_left_duty_fast(uint32_t duty_val)
+//
+// ensure this is put into IRAM when the compiler does not inline the code
+// because of optimisation options or it chooses not to
+// 
+static inline IRAM_ATTR void ledc_set_left_duty_fast(uint32_t duty_val)
 {
     *g_ledc_left_duty_val = (duty_val) << 4;
     *g_ledc_left_conf0_val |= 0x00000014;
     *g_ledc_left_conf1_val |= 0x80000000;
 }
 
-static inline void ledc_set_right_duty_fast(uint32_t duty_val)
+//
+// ensure this is put into IRAM when the compiler does not inline the code
+// because of optimisation options or it chooses not to
+// 
+static inline IRAM_ATTR void ledc_set_right_duty_fast(uint32_t duty_val)
 {
     *g_ledc_right_duty_val = (duty_val) << 4;
     *g_ledc_right_conf0_val |= 0x00000014;
@@ -239,7 +247,11 @@ static void IRAM_ATTR timer_group_isr(void *para)
         return;
     }
 
-#ifdef CONFIG_IDF_TARGET_ESP32S2
+//
+// add support for ESP32C3 and ESP32C6
+// use same settings as ESP32S2
+//
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined (CONFIG_IDF_TARGET_ESP32C6)
 #if ((ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)) && (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)))
     if (handle->timg_dev->int_st.val & BIT(handle->config.timer_num)) {
         handle->timg_dev->int_clr.val |= (1UL << handle->config.timer_num);
@@ -383,14 +395,27 @@ static esp_err_t audio_pwm_init(const audio_pwm_config_t *cfg)
     }
     AUDIO_CHECK(TAG, 0 != handle->channel_mask, goto init_error, "AUDIO PWM CHANNEL MASK IS 0");
 
-#ifdef CONFIG_IDF_TARGET_ESP32S2
+//
+// add support for ESP32C3 and ESPS32C6
+// by choosing Clock that is equivilant to 80Mhz
+// which the other calculations are based upon
+//
+#if  defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
     handle->ledc_timer.clk_cfg = LEDC_USE_APB_CLK;
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+    handle->ledc_timer.clk_cfg = TIMER_SRC_CLK_PLL_F80M;
 #endif
 
     handle->ledc_timer.speed_mode = LEDC_LOW_SPEED_MODE;
     handle->ledc_timer.duty_resolution = handle->config.duty_resolution;
     handle->ledc_timer.timer_num = handle->config.ledc_timer_sel;
+#if  defined(CONFIG_IDF_TARGET_ESP32C6)
+    // for the esp32C6 the APB_CLK_FREQ is 40M but we cannot use that as 
+    // we are forcing it to use the 80Mhz PLL clock so do the frequency calulation based on that
+    uint32_t freq = ((80 * 1000000) / (1 << handle->ledc_timer.duty_resolution));
+#else
     uint32_t freq = (APB_CLK_FREQ / (1 << handle->ledc_timer.duty_resolution));
+#endif
     handle->ledc_timer.freq_hz = freq - (freq % 1000);
     res = ledc_timer_config(&handle->ledc_timer);
     AUDIO_CHECK(TAG, ESP_OK == res, goto init_error, "AUDIO PWM TIMER ERROR");
@@ -454,7 +479,13 @@ esp_err_t audio_pwm_set_param(int rate, ledc_timer_bit_t bits, int ch)
 
     timer_init(handle->config.tg_num, handle->config.timer_num, &config);
     timer_set_counter_value(handle->config.tg_num, handle->config.timer_num, 0x00000000ULL);
+#if  defined(CONFIG_IDF_TARGET_ESP32C6)
+    // for the esp32C6 the APB_CLK_FREQ is 40M but we cannot use that as 
+    // we are forcing it to use the 80Mhz PLL clock so do the frequency calulation based on that
+    timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, ((80 * 1000000) / config.divider) / handle->framerate);
+#else
     timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, (APB_CLK_FREQ / config.divider) / handle->framerate);
+#endif
     timer_enable_intr(handle->config.tg_num, handle->config.timer_num);
     timer_isr_register(handle->config.tg_num, handle->config.timer_num, timer_group_isr, NULL, ESP_INTR_FLAG_IRAM, NULL);
     return res;
@@ -471,7 +502,10 @@ esp_err_t audio_pwm_set_sample_rate(int rate)
     audio_pwm_handle_t handle = g_audio_pwm_handle;
     handle->framerate = rate;
     uint16_t div = 1;
-#ifdef CONFIG_IDF_TARGET_ESP32S2
+//
+//  Add support for ESP32C3 and ESP32C6
+//
+#if  defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)
 #if ((ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)) && (ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)))
     div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.divider;
 #else
@@ -487,7 +521,13 @@ esp_err_t audio_pwm_set_sample_rate(int rate)
     div = (uint16_t)handle->timg_dev->hw_timer[handle->config.timer_num].config.tn_divider;
 #endif
 
+#if  defined(CONFIG_IDF_TARGET_ESP32C6)
+    // for the esp32C6 the APB_CLK_FREQ is 40M but we cannot use that as 
+    // we are forcing it to use the 80Mhz PLL clock so do the frequency calulation based on that
+    res = timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, ((80 * 1000000) / div) / handle->framerate);
+#else
     res = timer_set_alarm_value(handle->config.tg_num, handle->config.timer_num, (APB_CLK_FREQ / div) / handle->framerate);
+#endif
     return res;
 }
 
