@@ -131,6 +131,19 @@ bool hls_playlist_is_encrypt(hls_handle_t h);
 const char *hls_playlist_get_key_uri(hls_handle_t h);
 
 /**
+ * @brief  Get key URI string by sequence number
+ *
+ * @note  The returned URI is dynamically allocated, need free after unused
+ *
+ * @param[in]  h             HLS handle
+ * @param[in]  sequence_no  Sequence number for the key uri
+ * @return
+ *       - NULL    URI not existed
+ *       - Others  URI string
+ */
+char *hls_playlist_get_key_uri_by_seq(hls_handle_t h, uint64_t sequence_no);
+
+/**
  * @brief         Get sequence number
  * @param         h: HLS handle
  * @return        Sequence number of first media url
