@@ -433,7 +433,7 @@ static esp_err_t audio_pwm_init(const audio_pwm_config_t *cfg)
     g_ledc_right_conf1_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_RIGHT_INDEX].channel].conf1.val;
 
 //    handle->status = AUDIO_PWM_STATUS_IDLE;
-    handle->status = AUDIO_PWM_STATUS_UNINIT;
+    handle->status = AUDIO_PWM_STATUS_UNINIT;   // set the first time in ie timers not setup
     return res;
 
 init_error:
@@ -788,13 +788,18 @@ audio_element_handle_t pwm_stream_init(pwm_stream_cfg_t *config)
 
 esp_err_t pwm_stream_set_clk(audio_element_handle_t pwm_stream, int rate, int bits, int ch)
 {
+    // This is the only way that the audio_pwm is started and could not be called if the audio sample rate/bits or channels altered because
+    // a different source was changed to eg 44100 to 48000 sample rate change
+    // this is overcome by setting the status to AUDIO_PWM_STATUS_UNINIT in audio_pwm_init() such that the first run can be detected
+    // then the first run calls audio_pwm_set_param() which sets the timer properties , ISR etc.
+    // subsequent calls stop the timers etc by calling audio_pwm_stop
+    // then changes only the bits, and ch directly and uses audio_pwm_set_sample_rate() to calculate timer settings
     audio_pwm_handle_t _handle = g_audio_pwm_handle;
     esp_err_t res = ESP_OK;
     if (_handle->status == AUDIO_PWM_STATUS_UNINIT)
-    {
+    { // set parameters, configure the timers, ISR and start
     res |= audio_pwm_set_param(rate, bits, ch);
     _handle->status = AUDIO_PWM_STATUS_IDLE;
-    res |= audio_pwm_start();
     }
     else
     {
@@ -802,8 +807,9 @@ esp_err_t pwm_stream_set_clk(audio_element_handle_t pwm_stream, int rate, int bi
     _handle->channel_set_num = ch;
     _handle->bits_per_sample = bits;
 //    res |= audio_pwm_set_param(rate, bits, ch);
+    // cannot call audio_pwm_set_param() as the timers are already setup
     res |= audio_pwm_set_sample_rate(rate);
-    res |= audio_pwm_start();
     }
+    res |= audio_pwm_start();
     return res;
 }
