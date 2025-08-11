@@ -432,7 +432,8 @@ static esp_err_t audio_pwm_init(const audio_pwm_config_t *cfg)
     g_ledc_right_conf0_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_RIGHT_INDEX].channel].conf0.val;
     g_ledc_right_conf1_val = &LEDC.channel_group[handle->ledc_timer.speed_mode].channel[handle->ledc_channel[CHANNEL_RIGHT_INDEX].channel].conf1.val;
 
-    handle->status = AUDIO_PWM_STATUS_IDLE;
+//    handle->status = AUDIO_PWM_STATUS_IDLE;
+    handle->status = AUDIO_PWM_STATUS_UNINIT;
     return res;
 
 init_error:
@@ -787,8 +788,22 @@ audio_element_handle_t pwm_stream_init(pwm_stream_cfg_t *config)
 
 esp_err_t pwm_stream_set_clk(audio_element_handle_t pwm_stream, int rate, int bits, int ch)
 {
+    audio_pwm_handle_t _handle = g_audio_pwm_handle;
     esp_err_t res = ESP_OK;
+    if (_handle->status == AUDIO_PWM_STATUS_UNINIT)
+    {
     res |= audio_pwm_set_param(rate, bits, ch);
+    _handle->status = AUDIO_PWM_STATUS_IDLE;
     res |= audio_pwm_start();
+    }
+    else
+    {
+    audio_pwm_stop();
+    _handle->channel_set_num = ch;
+    _handle->bits_per_sample = bits;
+//    res |= audio_pwm_set_param(rate, bits, ch);
+    res |= audio_pwm_set_sample_rate(rate);
+    res |= audio_pwm_start();
+    }
     return res;
 }
