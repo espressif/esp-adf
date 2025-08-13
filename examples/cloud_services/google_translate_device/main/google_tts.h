@@ -55,9 +55,10 @@ google_tts_handle_t google_tts_init(google_tts_config_t *config);
 /**
  * @brief  Start sending text to Google Cloud Text-to-Speech and play audio received
  *
- * @param[in]  tts        The Text-to-Speech context
- * @param[in]  text       The text
- * @param[in]  lang_code  The language code
+ * @param[in]  tts         The Text-to-Speech context
+ * @param[in]  text        The text
+ * @param[in]  lang_code   The language code
+ * @param[in]  voice_name  The voice name
  *
  * @return
  *       - ESP_OK
@@ -66,13 +67,13 @@ google_tts_handle_t google_tts_init(google_tts_config_t *config);
 esp_err_t google_tts_start(google_tts_handle_t tts, const char *text, const char *lang_code, const char *voice_name);
 
 /**
- * @brief      Stop playing audio from Google Cloud Text-to-Speech
+ * @brief  Stop playing audio from Google Cloud Text-to-Speech
  *
- * @param[in]  tts   The Text-to-Speech context
+ * @param[in]  tts  The Text-to-Speech context
  *
  * @return
- *  - ESP_OK
- *  - ESP_FAIL
+ *       - ESP_OK
+ *       - ESP_FAIL
  */
 esp_err_t google_tts_stop(google_tts_handle_t tts);
 
@@ -89,25 +90,25 @@ esp_err_t google_tts_stop(google_tts_handle_t tts);
 esp_err_t google_tts_set_listener(google_tts_handle_t tts, audio_event_iface_handle_t listener);
 
 /**
- * @brief      Cleanup the Text-to-Speech object
+ * @brief  Cleanup the Text-to-Speech object
  *
- * @param[in]  tts   The Text-to-Speech context
+ * @param[in]  tts  The Text-to-Speech context
  *
  * @return
- *  - ESP_OK
- *  - ESP_FAIL
+ *       - ESP_OK
+ *       - ESP_FAIL
  */
 esp_err_t google_tts_destroy(google_tts_handle_t tts);
 
 /**
- * @brief      Check if the Text-To-Speech finished playing audio from server
+ * @brief  Check if the Text-To-Speech finished playing audio from server
  *
- * @param[in]  tts   The Text-to-Speech context
- * @param      msg   The message
+ * @param[in]  tts  The Text-to-Speech context
+ * @param      msg  The message
  *
  * @return
- *  - true
- *  - false
+ *       - true
+ *       - false
  */
 bool google_tts_check_event_finish(google_tts_handle_t tts, audio_event_iface_msg_t *msg);
 
