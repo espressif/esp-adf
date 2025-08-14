@@ -18,7 +18,6 @@ list(APPEND COMPONENT_SRCS ./esp_peripherals.c
                 ./periph_is31fl3216.c
                 ./periph_led.c
                 ./periph_spiffs.c
-                ./periph_wifi.c
                 ./periph_aw2013.c
                 ./periph_ws2812.c
                 ./periph_lcd.c
@@ -29,6 +28,10 @@ list(APPEND COMPONENT_SRCS ./esp_peripherals.c
                 ./lib/IS31FL3216/IS31FL3216.c
                 ./lib/tca9554/tca9554.c
                 ./lib/gpio_isr/gpio_isr.c)
+
+if (CONFIG_SOC_WIFI_SUPPORTED OR CONFIG_ESP_HOSTED_ENABLED)
+    list(APPEND COMPONENT_SRCS  ./periph_wifi.c)
+endif()
 
 if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_LESS "5.3")
     list(APPEND COMPONENT_SRCS  ./driver/i2c_bus/i2c_bus.c)
