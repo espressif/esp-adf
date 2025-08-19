@@ -123,7 +123,7 @@ esp_err_t esp_dispatcher_execute(esp_dispatcher_handle_t handle, int sub_event_i
  *
  * @param handle            The ESP dispatcher instance
  * @param sub_event_index   The index of event
- * @param arg               The arguments of execution function
+ * @param in_para               The arguments of execution function
  * @param ret_cb            The call back used to receive the function execute result
  * @param user_data         The data used in callback
  *
