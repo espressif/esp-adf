@@ -34,6 +34,8 @@
 #include "tone_stream.h"
 #include <inttypes.h>
 
+#define DEFAULT_TONE_NUM 4
+
 static const char *TAG = "TONE_STREAM";
 
 /**
@@ -64,7 +66,7 @@ static esp_err_t _tone_open(audio_element_handle_t self)
 
     flash_url += strlen("flash://tone/");
     char *temp = strchr(flash_url, '_');
-    char find_num[2] = { 0 };
+    char find_num[DEFAULT_TONE_NUM] = {0};
     int file_index = 0;
     if (temp != NULL) {
         strncpy(find_num, flash_url, temp - flash_url);
