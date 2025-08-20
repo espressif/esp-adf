@@ -301,10 +301,121 @@ esp_err_t es8311_pa_power(bool enable)
     return ret;
 }
 
+esp_err_t es8311_config_sample(int sample_rate)
+{
+    esp_err_t ret = ESP_OK;
+    uint8_t datmp, regv;
+    int sample_fre = 0;
+    int mclk_fre = 0;
+    int coeff;
+
+    switch (sample_rate) {
+        case AUDIO_HAL_08K_SAMPLES:
+            sample_fre = 8000;
+            break;
+        case AUDIO_HAL_11K_SAMPLES:
+            sample_fre = 11025;
+            break;
+        case AUDIO_HAL_16K_SAMPLES:
+            sample_fre = 16000;
+            break;
+        case AUDIO_HAL_22K_SAMPLES:
+            sample_fre = 22050;
+            break;
+        case AUDIO_HAL_24K_SAMPLES:
+            sample_fre = 24000;
+            break;
+        case AUDIO_HAL_32K_SAMPLES:
+            sample_fre = 32000;
+            break;
+        case AUDIO_HAL_44K_SAMPLES:
+            sample_fre = 44100;
+            break;
+        case AUDIO_HAL_48K_SAMPLES:
+            sample_fre = 48000;
+            break;
+        default:
+            ESP_LOGE(TAG, "Unable to configure sample rate %dHz", sample_fre);
+            break;
+    }
+
+    mclk_fre = sample_fre * MCLK_DIV_FRE;
+    coeff = get_coeff(mclk_fre, sample_fre);
+    if (coeff < 0) {
+        ESP_LOGE(TAG, "Unable to configure sample rate %dHz with %dHz MCLK", sample_fre, mclk_fre);
+        return ESP_FAIL;
+    }
+    /* Set clock parammeters */
+    if (coeff >= 0) {
+        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG02) & 0x07;
+        regv |= (coeff_div[coeff].pre_div - 1) << 5;
+        datmp = 0;
+        switch (coeff_div[coeff].pre_multi) {
+            case 1:
+                datmp = 0;
+                break;
+            case 2:
+                datmp = 1;
+                break;
+            case 4:
+                datmp = 2;
+                break;
+            case 8:
+                datmp = 3;
+                break;
+            default:
+                break;
+        }
+
+        if (get_es8311_mclk_src() == FROM_SCLK_PIN) {
+            datmp = 3;  /* DIG_MCLK = LRCK * 256 = BCLK * 8 */
+            if (sample_fre == 8000) { 
+                /* When the sample rate is 8kHz, BCLK requires at least 512K (slot bit needs to be configured to 32bit).
+                   DIG_MCLK = LRCK * 256 = BCLK * 4 */
+                datmp = 2;
+            }
+        }
+
+        regv |= (datmp) << 3;
+        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG02, regv);
+
+        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG05) & 0x00;
+        regv |= (coeff_div[coeff].adc_div - 1) << 4;
+        regv |= (coeff_div[coeff].dac_div - 1) << 0;
+        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG05, regv);
+
+        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG03) & 0x80;
+        regv |= coeff_div[coeff].fs_mode << 6;
+        regv |= coeff_div[coeff].adc_osr << 0;
+        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG03, regv);
+
+        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG04) & 0x80;
+        regv |= coeff_div[coeff].dac_osr << 0;
+        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG04, regv);
+
+        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG07) & 0xC0;
+        regv |= coeff_div[coeff].lrck_h << 0;
+        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG07, regv);
+
+        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG08) & 0x00;
+        regv |= coeff_div[coeff].lrck_l << 0;
+        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG08, regv);
+
+        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG06) & 0xE0;
+        if (coeff_div[coeff].bclk_div < 19) {
+            regv |= (coeff_div[coeff].bclk_div - 1) << 0;
+        } else {
+            regv |= (coeff_div[coeff].bclk_div) << 0;
+        }
+        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG06, regv);
+    }
+
+    return ESP_OK;
+}
+
 esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
 {
-    uint8_t datmp, regv;
-    int coeff;
+    uint8_t regv;
     esp_err_t ret = ESP_OK;
     i2c_init();  // ESP32 in master mode
 
@@ -360,101 +471,8 @@ esp_err_t es8311_codec_init(audio_hal_codec_config_t *codec_cfg)
             ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG01, regv);
             break;
     }
-    int sample_fre = 0;
-    int mclk_fre = 0;
-    switch (i2s_cfg->samples) {
-        case AUDIO_HAL_08K_SAMPLES:
-            sample_fre = 8000;
-            break;
-        case AUDIO_HAL_11K_SAMPLES:
-            sample_fre = 11025;
-            break;
-        case AUDIO_HAL_16K_SAMPLES:
-            sample_fre = 16000;
-            break;
-        case AUDIO_HAL_22K_SAMPLES:
-            sample_fre = 22050;
-            break;
-        case AUDIO_HAL_24K_SAMPLES:
-            sample_fre = 24000;
-            break;
-        case AUDIO_HAL_32K_SAMPLES:
-            sample_fre = 32000;
-            break;
-        case AUDIO_HAL_44K_SAMPLES:
-            sample_fre = 44100;
-            break;
-        case AUDIO_HAL_48K_SAMPLES:
-            sample_fre = 48000;
-            break;
-        default:
-            ESP_LOGE(TAG, "Unable to configure sample rate %dHz", sample_fre);
-            break;
-    }
-    mclk_fre = sample_fre * MCLK_DIV_FRE;
-    coeff = get_coeff(mclk_fre, sample_fre);
-    if (coeff < 0) {
-        ESP_LOGE(TAG, "Unable to configure sample rate %dHz with %dHz MCLK", sample_fre, mclk_fre);
-        return ESP_FAIL;
-    }
-    /* Set clock parammeters */
-    if (coeff >= 0) {
-        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG02) & 0x07;
-        regv |= (coeff_div[coeff].pre_div - 1) << 5;
-        datmp = 0;
-        switch (coeff_div[coeff].pre_multi) {
-            case 1:
-                datmp = 0;
-                break;
-            case 2:
-                datmp = 1;
-                break;
-            case 4:
-                datmp = 2;
-                break;
-            case 8:
-                datmp = 3;
-                break;
-            default:
-                break;
-        }
 
-        if (get_es8311_mclk_src() == FROM_SCLK_PIN) {
-            datmp = 3;  /* DIG_MCLK = LRCK * 256 = BCLK * 8 */
-        }
-        regv |= (datmp) << 3;
-        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG02, regv);
-
-        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG05) & 0x00;
-        regv |= (coeff_div[coeff].adc_div - 1) << 4;
-        regv |= (coeff_div[coeff].dac_div - 1) << 0;
-        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG05, regv);
-
-        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG03) & 0x80;
-        regv |= coeff_div[coeff].fs_mode << 6;
-        regv |= coeff_div[coeff].adc_osr << 0;
-        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG03, regv);
-
-        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG04) & 0x80;
-        regv |= coeff_div[coeff].dac_osr << 0;
-        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG04, regv);
-
-        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG07) & 0xC0;
-        regv |= coeff_div[coeff].lrck_h << 0;
-        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG07, regv);
-
-        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG08) & 0x00;
-        regv |= coeff_div[coeff].lrck_l << 0;
-        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG08, regv);
-
-        regv = es8311_read_reg(ES8311_CLK_MANAGER_REG06) & 0xE0;
-        if (coeff_div[coeff].bclk_div < 19) {
-            regv |= (coeff_div[coeff].bclk_div - 1) << 0;
-        } else {
-            regv |= (coeff_div[coeff].bclk_div) << 0;
-        }
-        ret |= es8311_write_reg(ES8311_CLK_MANAGER_REG06, regv);
-    }
+    es8311_config_sample(i2s_cfg->samples);
 
     /* mclk inverted or not */
     if (INVERT_MCLK) {
@@ -577,7 +595,9 @@ esp_err_t es8311_set_bits_per_sample(audio_hal_iface_bits_t bits)
 esp_err_t es8311_codec_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t *iface)
 {
     int ret = ESP_OK;
+    ESP_LOGI(TAG, "CFG I2S: mode = %d, bits = %d, fmt = %d, samples = %d", mode, iface->bits, iface->fmt, iface->samples);
     ret |= es8311_set_bits_per_sample(iface->bits);
+    ret |= es8311_config_sample(iface->samples);
     ret |= es8311_config_fmt(iface->fmt);
     return ret;
 }
@@ -750,6 +770,6 @@ void es8311_read_all()
 {
     for (int i = 0; i < 0x4A; i++) {
         uint8_t reg = es8311_read_reg(i);
-        ESP_LOGI(TAG, "REG:%02x, %02x", reg, i);
+        ESP_LOGI(TAG, "REG:%02x, %02x", i, reg);
     }
 }

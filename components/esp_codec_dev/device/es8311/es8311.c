@@ -438,6 +438,11 @@ static int es8311_config_sample(audio_codec_es8311_t *codec, int sample_rate)
     }
     if (codec->cfg.use_mclk == false) {
         datmp = 3;
+        if (sample_rate == 8000) { 
+            /* When the sample rate is 8kHz, BCLK requires at least 512K (slot bit needs to be configured to 32bit).
+                DIG_MCLK = LRCK * 256 = BCLK * 4 */
+            datmp = 2;
+        }
     }
     regv |= (datmp) << 3;
     ret |= es8311_write_reg(codec, ES8311_CLK_MANAGER_REG02, regv);
