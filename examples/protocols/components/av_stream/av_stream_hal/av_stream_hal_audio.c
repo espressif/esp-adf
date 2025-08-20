@@ -86,7 +86,15 @@ static esp_err_t i2s_write_drv_init(int port, uint32_t sample_rate, i2s_channel_
 {
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT_WITH_PARA(port, sample_rate, I2S_DEFAULT_BITS, AUDIO_STREAM_WRITER);
     i2s_cfg.task_stack = -1;
-    i2s_cfg.need_expand = (16 != I2S_DEFAULT_BITS);
+
+    if (ES8311_MCLK_SOURCE == 1 && sample_rate == 8000) {  // For ES8311, when MCLK comes from BLCK, 8kHz audio requires 32-bit data width
+        i2s_cfg.need_expand = true;
+        i2s_cfg.std_cfg.slot_cfg.data_bit_width = I2S_DATA_BIT_WIDTH_32BIT;
+        i2s_cfg.std_cfg.slot_cfg.slot_bit_width = I2S_DATA_BIT_WIDTH_32BIT;
+        i2s_cfg.std_cfg.slot_cfg.ws_width = I2S_DATA_BIT_WIDTH_32BIT;
+    } else {
+        i2s_cfg.need_expand = (I2S_DEFAULT_BITS != I2S_DATA_BIT_WIDTH_16BIT);
+    }
     i2s_stream_set_channel_type(&i2s_cfg, channels);
     i2s_io_writer = i2s_stream_init(&i2s_cfg);
     if (i2s_io_writer == NULL) {
@@ -109,6 +117,12 @@ static audio_board_handle_t i2s_device_init(uint32_t sample_rate)
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
     audio_hal_set_volume(board_handle->audio_hal, 75);
+    if(sample_rate == 8000) {
+        ESP_LOGW(TAG, "i2s_device_init: sample_rate = %ld", sample_rate);
+        audio_hal_codec_config_t audio_codec_cfg = AUDIO_CODEC_DEFAULT_CONFIG();
+        audio_codec_cfg.i2s_iface.samples = AUDIO_HAL_08K_SAMPLES;
+        audio_hal_codec_iface_config(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, &audio_codec_cfg.i2s_iface);
+    }
     return board_handle;
 }
 
@@ -174,9 +188,12 @@ int av_stream_audio_write(char *buf, int len, TickType_t wait_time, bool uac_en)
         #endif
     } else {
         #if CONFIG_IDF_TARGET_ESP32
-        algorithm_mono_fix((uint8_t *)buf, len);
+            audio_element_info_t info;
+            audio_element_getinfo(i2s_io_writer, &info);
+            if (info.bits == I2S_DATA_BIT_WIDTH_16BIT) {
+                algorithm_mono_fix((uint8_t *)buf, len);
+            }
         #endif
-
         int ret = audio_element_output(i2s_io_writer, buf, len);
         if (ret < 0) {
             ESP_LOGE(TAG, "i2s write failed");

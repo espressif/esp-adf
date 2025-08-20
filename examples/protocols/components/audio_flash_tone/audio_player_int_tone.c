@@ -32,6 +32,8 @@
 #include "i2s_stream.h"
 #include "algorithm_stream.h"
 #include "audio_player_int_tone.h"
+#include "audio_hal.h"
+#include "board_def.h"
 
 static const char *TAG = "PLAYER_INT_TONE";
 
@@ -51,7 +53,11 @@ static int i2s_write_cb(audio_element_handle_t el, char *buf, int len, TickType_
     size = len / 2;
 #endif
 #if CONFIG_IDF_TARGET_ESP32
-    algorithm_mono_fix((uint8_t *)buf, size);
+    audio_element_info_t info;
+    audio_element_getinfo(el, &info);
+    if (info.bits == I2S_DATA_BIT_WIDTH_16BIT) {
+        algorithm_mono_fix((uint8_t *)buf, size);
+    }
 #endif
     int ret = i2s_write_func(el, buf, size, wait_time, ctx);
     if (ret < 0) {
@@ -88,6 +94,9 @@ audio_err_t audio_player_int_tone_init(int sample_rate, int channel_format, int 
     i2s_writer_cfg.expand_src_bits = 16;
     i2s_stream_set_channel_type(&i2s_writer_cfg, channel_format);
     i2s_writer = i2s_stream_init(&i2s_writer_cfg);
+    if (ES8311_MCLK_SOURCE == 1 && sample_rate == 8000) {
+        i2s_stream_set_clk(i2s_writer, sample_rate, I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO);
+    }
     esp_audio_output_stream_add(player, i2s_writer);
     audio_element_set_write_cb(i2s_writer, i2s_write_cb, audio_element_get_write_cb(i2s_writer));
     audio_element_set_output_timeout(i2s_writer, portMAX_DELAY);
