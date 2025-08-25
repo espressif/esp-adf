@@ -38,14 +38,14 @@
 #include "driver/sdmmc_defs.h"
 #include "driver/gpio.h"
 
-#if SOC_SDMMC_IO_POWER_EXTERNAL
-#include "sd_pwr_ctrl_by_on_chip_ldo.h"
-#endif
-
 #include "sdcard.h"
 #include "board.h"
 #include "esp_idf_version.h"
-
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+#if CONFIG_IDF_TARGET_ESP32P4
+#include "esp_ldo_regulator.h"
+#endif
+#endif
 static const char *TAG = "SDCARD";
 static int g_gpio = -1;
 static sdmmc_card_t *card = NULL;
@@ -62,6 +62,20 @@ static void sdmmc_card_print_info(const sdmmc_card_t *card)
     ESP_LOGD(TAG, "SCR: sd_spec=%d, bus_width=%d\n", card->scr.sd_spec, card->scr.bus_width);
 }
 
+static void enable_mmc_phy_power(void)
+{
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+#if CONFIG_IDF_TARGET_ESP32P4
+    esp_ldo_channel_config_t ldo_cfg = {
+        .chan_id = 4,
+        .voltage_mv = 3300,
+    };
+    esp_ldo_channel_handle_t ldo_phy_chan;
+    esp_ldo_acquire_channel(&ldo_cfg, &ldo_phy_chan);
+#endif
+#endif
+}
+
 esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 {
     if (mode >= SD_MODE_MAX) {
@@ -76,18 +90,7 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
         .allocation_unit_size = 64 * 1024,
     };
 
-#if defined SD_PWR_CTRL_LDO_INTERNAL_IO
-    sd_pwr_ctrl_ldo_config_t ldo_config = {
-        .ldo_chan_id = SD_PWR_CTRL_LDO_INTERNAL_IO,
-    };
-    sd_pwr_ctrl_handle_t pwr_ctrl_handle = NULL;
-
-    ret = sd_pwr_ctrl_new_on_chip_ldo(&ldo_config, &pwr_ctrl_handle);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to create a new on-chip LDO power control driver");
-        return ESP_FAIL;
-    }
-#endif // SD_PWR_CTRL_LDO_INTERNAL_IO
+    enable_mmc_phy_power();
 
     if (mode != SD_MODE_SPI) {
 #if SOC_SDMMC_HOST_SUPPORTED
@@ -99,9 +102,6 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
 #if defined CONFIG_IDF_TARGET_ESP32P4
         host.slot = SDMMC_HOST_SLOT_0;
 #endif // CONFIG_IDF_TARGET_ESP32P4
-#if defined SD_PWR_CTRL_LDO_INTERNAL_IO
-        host.pwr_ctrl_handle = pwr_ctrl_handle;
-#endif
         sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
         // slot_config.gpio_cd = g_gpio;
         slot_config.width = mode;
@@ -129,9 +129,6 @@ esp_err_t sdcard_mount(const char *base_path, periph_sdcard_mode_t mode)
     } else {
         ESP_LOGI(TAG, "Using SPI mode, base path=%s", base_path);
         sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-#if defined SD_PWR_CTRL_LDO_INTERNAL_IO
-        host.pwr_ctrl_handle = pwr_ctrl_handle;
-#endif
         spi_bus_config_t bus_cfg = {
             .mosi_io_num = ESP_SD_PIN_CMD,
             .miso_io_num = ESP_SD_PIN_D0,
