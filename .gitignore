@@ -21,18 +21,24 @@ GPATH
 .settings
 
 # Example project files
-adf_examples/**/sdkconfig
-adf_examples/**/sdkconfig.old
-adf_examples/**/build
-adf_examples/**/managed_components
-adf_examples/**/dependencies.lock
+examples/**/sdkconfig
+examples/**/sdkconfig.old
+examples/**/build
+examples/**/managed_components
+examples/**/dependencies.lock
+examples/**/sdkconfig.bmgr_board.old
 
 # Components files
-components/**/sdkconfig
-components/**/sdkconfig.old
-components/**/build
-components/**/managed_components
-components/**/dependencies.lock
+**/sdkconfig
+**/sdkconfig.old
+**/build
+**/managed_components
+**/dependencies.lock
+**/sdkconfig.bmgr_board.old
+**/gen_bmgr_codes
+
+**/version.txt
+**/manifest.json
 
 # Doc build artifacts
 docs/_build/

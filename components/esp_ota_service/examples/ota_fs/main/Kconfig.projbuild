@@ -1,0 +1,48 @@
+menu "OTA FS Example"
+
+    choice OTA_FS_EXAMPLE_STORAGE
+        prompt "Storage backend for OTA bin files"
+        default OTA_FS_EXAMPLE_STORAGE_SDCARD
+        help
+            Selects where the example reads firmware.bin / userdata.bin /
+            flash_tone.bin from:
+
+            - SDCARD:  board-manager mounted SD card (default, /sdcard).
+            - USB_MSC: USB Host Mass Storage Class flash drive (/usb).
+
+            The OTA pipeline itself is identical; only the VFS mount point
+            and the mount/unmount code path differ.
+
+        config OTA_FS_EXAMPLE_STORAGE_SDCARD
+            bool "SD card (via esp_board_manager FS_SDCARD)"
+
+        config OTA_FS_EXAMPLE_STORAGE_USB_MSC
+            bool "USB flash drive (USB Host MSC)"
+            depends on IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3 || IDF_TARGET_ESP32P4
+            help
+                Requires a SoC with USB-OTG / USB-HS host capability
+                (ESP32-S2, ESP32-S3, or ESP32-P4).
+    endchoice
+
+    if OTA_FS_EXAMPLE_STORAGE_USB_MSC
+
+        config OTA_FS_EXAMPLE_USB_MOUNT_POINT
+            string "USB flash drive VFS mount point"
+            default "/usb"
+            help
+                VFS path where the first MSC device is mounted.
+                firmware.bin / userdata.bin / flash_tone.bin are looked up
+                under this path (e.g. /usb/firmware.bin).
+
+        config OTA_FS_EXAMPLE_USB_CONNECT_TIMEOUT_MS
+            int "USB flash drive connect timeout (ms)"
+            default 15000
+            range 1000 120000
+            help
+                How long to wait for a USB flash drive to appear after the
+                host stack starts. If no device is inserted within this
+                window, the example skips OTA and continues to idle.
+
+    endif
+
+endmenu

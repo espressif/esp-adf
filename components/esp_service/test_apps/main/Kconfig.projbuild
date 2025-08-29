@@ -1,0 +1,121 @@
+menu "ESP Service test_apps Configuration"
+
+    config ESP_SVC_TEST_WIFI_SSID
+        string "WiFi SSID (test_apps STA)"
+        default "myssid"
+        help
+            SSID for on-device transport tests that need WiFi (HTTP / SSE / WS smoke).
+
+    config ESP_SVC_TEST_WIFI_PASSWORD
+        string "WiFi password (test_apps STA)"
+        default "mypassword"
+        help
+            WPA/WPA2 password for the STA interface used by transport smoke tests.
+
+    if ESP_MCP_ENABLE
+
+    config ESP_SVC_TEST_ENABLE_LIFECYCLE_STRESS
+        bool "Enable transport start/stop lifecycle stress test"
+        default y
+        help
+            Run repeated create / start / stop / destroy cycles on UART
+            (UART_NUM_1, default pins) when CONFIG_ESP_MCP_TRANSPORT_UART is
+            enabled. STDIO is not exercised on-device (console VFS is
+            non-blocking; see ut_transport_lifecycle_test.c). SSE lifecycle
+            stress (if compiled) runs inside ut_sse_transport.c once WiFi is up.
+
+    config ESP_SVC_TEST_LIFECYCLE_STRESS_CYCLES
+        int "Lifecycle stress cycle count per transport"
+        default 100
+        range 1 1000
+        depends on ESP_SVC_TEST_ENABLE_LIFECYCLE_STRESS
+        help
+            Number of create/start/stop/destroy cycles to run per transport.
+
+    config ESP_SVC_TEST_ENABLE_HTTP_TRANSPORT
+        bool "Enable HTTP MCP transport smoke test"
+        default n
+        depends on ESP_MCP_TRANSPORT_HTTP
+        help
+            Run the plain HTTP POST transport smoke (Unity).
+            Requires WiFi and CONFIG_ESP_MCP_TRANSPORT_HTTP=y.
+
+    config ESP_SVC_TEST_ENABLE_SSE_TRANSPORT
+        bool "Enable HTTP+SSE MCP transport smoke test"
+        default n
+        depends on ESP_MCP_TRANSPORT_SSE
+        help
+            Run the HTTP+SSE transport smoke (MCP-recommended).
+            Requires WiFi and CONFIG_ESP_MCP_TRANSPORT_SSE=y.
+            SSE endpoint:      GET  /mcp/sse
+            Messages endpoint: POST /mcp/messages?sessionId=<id>
+
+    config ESP_SVC_TEST_SSE_HOLD_AFTER_SMOKE
+        bool "After SSE Unity smoke, keep MCP HTTP+SSE server running"
+        default n
+        depends on ESP_SVC_TEST_ENABLE_SSE_TRANSPORT
+        help
+            When enabled, the device does not tear down the SSE MCP server after the
+            in-firmware smoke test. Use this so a PC can run scripts/test_mcp_sse.py against
+            the board IP (default http://<ip>:8080/mcp/sse).
+
+    config ESP_SVC_TEST_ENABLE_WS_TRANSPORT
+        bool "Enable WebSocket MCP transport smoke test"
+        default n
+        depends on ESP_MCP_TRANSPORT_WS
+        help
+            Run the WebSocket transport smoke (Unity).
+            Requires WiFi and CONFIG_ESP_MCP_TRANSPORT_WS=y
+            (which in turn requires CONFIG_HTTPD_WS_SUPPORT=y).
+
+    config ESP_SVC_TEST_WS_HOLD_AFTER_SMOKE
+        bool "After WS Unity smoke, keep MCP WebSocket server running"
+        default n
+        depends on ESP_SVC_TEST_ENABLE_WS_TRANSPORT
+        help
+            When enabled, the device does not tear down the WS MCP server after the
+            in-firmware smoke test. Use this so a PC can run scripts/test_mcp_ws.py against
+            the board IP (default ws://<ip>:8081/mcp).
+
+    config ESP_SVC_TEST_ENABLE_UART_TRANSPORT
+        bool "Enable UART MCP transport smoke test"
+        default n
+        depends on ESP_MCP_TRANSPORT_UART
+        help
+            Run the UART transport smoke (Unity).
+            Requires CONFIG_ESP_MCP_TRANSPORT_UART=y.
+
+    config ESP_SVC_TEST_UART_HOLD_AFTER_SMOKE
+        bool "After UART Unity smoke, keep MCP UART transport running"
+        default n
+        depends on ESP_SVC_TEST_ENABLE_UART_TRANSPORT
+        help
+            When enabled, the device does not tear down the UART MCP server after the
+            in-firmware smoke test. Use this so a PC can run scripts/test_mcp_uart.py against
+            the same serial port as the board USB-UART (ESP32-S3 UART0, default GPIO43/44,
+            115200 baud).
+
+    config ESP_SVC_TEST_UART_TX_PIN
+        int "UART TX GPIO pin"
+        default 43
+        depends on ESP_SVC_TEST_ENABLE_UART_TRANSPORT
+        help
+            GPIO for UART MCP TX (ESP32-S3 UART0 default U0TXD is GPIO43).
+
+    config ESP_SVC_TEST_UART_RX_PIN
+        int "UART RX GPIO pin"
+        default 44
+        depends on ESP_SVC_TEST_ENABLE_UART_TRANSPORT
+        help
+            GPIO for UART MCP RX (ESP32-S3 UART0 default U0RXD is GPIO44).
+
+    config ESP_SVC_TEST_UART_BAUD_RATE
+        int "UART baud rate"
+        default 115200
+        depends on ESP_SVC_TEST_ENABLE_UART_TRANSPORT
+        help
+            Baud rate for UART MCP transport.
+
+    endif  # ESP_MCP_ENABLE
+
+endmenu

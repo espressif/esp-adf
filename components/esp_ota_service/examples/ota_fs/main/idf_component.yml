@@ -1,0 +1,7 @@
+dependencies:
+  espressif/esp_board_manager: "*"
+  # USB Host Mass Storage Class driver — consumed by ota_fs_example_usb.c
+  # when CONFIG_OTA_FS_EXAMPLE_STORAGE_USB_MSC=y. Fetched unconditionally
+  # because the component manager resolves deps before Kconfig runs; it
+  # only adds build/link cost when the USB backend is actually selected.
+  espressif/usb_host_msc: ^1.1

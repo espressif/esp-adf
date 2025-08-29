@@ -1,0 +1,35 @@
+menu "Button Service Example"
+
+    config BTN_EXAMPLE_GPIO0_PIN
+        int "GPIO pin number for gpio_button_0"
+        default 0
+        range 0 48
+        help
+            GPIO pin connected to the first key.
+            On ESP32-S3-DevKitC this is GPIO 0 (BOOT button).
+            The pin is configured as input with an internal pull-up;
+            press pulls it low (active-low).
+
+    config BTN_EXAMPLE_GPIO1_PIN
+        int "GPIO pin number for gpio_button_1"
+        default 2
+        range 0 48
+        help
+            GPIO pin connected to the second key.
+            Connect a momentary switch between this pin and GND.
+            An internal pull-up is enabled; press pulls it low.
+
+    config BTN_EXAMPLE_ADC_CHANNEL
+        int "ADC1 channel for adc_button_group"
+        default 4
+        range 0 9
+        help
+            ADC1 channel used for the resistor-ladder ADC button group.
+            On ESP32-S3, channel 4 maps to GPIO 5.
+            Three voltage thresholds are hard-coded in gen_board_device_config.c:
+              button[0] PLAY     ~380 mV
+              button[1] VOL_UP   ~820 mV
+              button[2] VOL_DOWN ~1110 mV
+            Adjust the voltage_range[] array if your resistor values differ.
+
+endmenu

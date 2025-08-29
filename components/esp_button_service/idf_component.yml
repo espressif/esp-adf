@@ -1,0 +1,20 @@
+version: "0.5.0"
+description: Button service integrating esp_board_manager button devices with typed event forwarding
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_button_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_button_service/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "button_service"
+  - "esp_service"
+  - "adf"
+  - "gmf"
+
+dependencies:
+  espressif/esp_service:
+    require: public
+    version: "^0.5"
+    override_path: "../esp_service"
+  espressif/esp_board_manager:
+    require: public
+    version: "*"

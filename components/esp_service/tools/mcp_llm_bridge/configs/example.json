@@ -1,0 +1,11 @@
+{
+  "mcp_server": {
+    "url": "http://10.18.37.200:8080/mcp",
+    "timeout": 10
+  },
+  "llm": {
+    "provider": "deepseek",
+    "api_key": "${DEEPSEEK_API_KEY}",
+    "model": "deepseek-chat"
+  }
+}

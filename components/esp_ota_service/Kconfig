@@ -1,0 +1,95 @@
+menu "OTA Service"
+
+    menu "Verification and rollback"
+        config OTA_FORCE_VERSION_CHECK
+            bool "Require higher firmware version by default"
+            default n
+            help
+                When enabled, esp_ota_service_checker_app_create(NULL) defaults to rejecting
+                firmware images whose version is the same as or older than the
+                currently running firmware. This can also be set per-checker at
+                runtime via esp_ota_service_checker_app_cfg_t::version_policy.
+
+        config OTA_ENABLE_ROLLBACK
+            bool "Enable OTA rollback support"
+            default n
+            help
+                After OTA upgrade, the new image starts in PENDING_VERIFY state.
+                The application must call esp_ota_service_confirm_update() to confirm.
+                If not confirmed before the next reboot, the bootloader rolls back
+                to the previous firmware.
+    endmenu
+
+    menu "Download sources"
+        config OTA_HTTP_TIMEOUT_MS
+            int "HTTP/HTTPS source read timeout (ms)"
+            default 10000
+            range 1000 60000
+            help
+                Default read timeout for the HTTP/HTTPS OTA source.
+                Can be overridden per-source via esp_ota_service_source_http_cfg_t.
+
+        config OTA_ENABLE_BLE_SOURCE
+            bool "Enable BLE OTA source (official ESP BLE OTA APP protocol)"
+            default n
+            help
+                Compile esp_ota_service_source_ble so firmware can be received over BLE
+                using the official ESP BLE OTA APP protocol (svc 0x8018,
+                RECV_FW 0x8020, COMMAND 0x8022, sector-based with ACK).
+                The GATT server is implemented natively on top of NimBLE, so
+                no managed component is required.
+
+        if OTA_ENABLE_BLE_SOURCE
+            config OTA_BLE_RING_BUF_SIZE
+                int "BLE OTA ring buffer size (bytes)"
+                default 8192
+                range 2048 32768
+                help
+                    Size of the ring buffer that holds APP-sent firmware bytes
+                    before the OTA worker reads them. Larger values absorb
+                    bursts when the radio delivers a sector fast.
+
+            config OTA_BLE_WAIT_START_MS
+                int "BLE OTA wait-for-start timeout (ms)"
+                default 30000
+                range 5000 120000
+                help
+                    Max time open() waits for the APP to send the Start OTA
+                    command (which carries the firmware length) before
+                    returning ESP_ERR_TIMEOUT.
+        endif
+    endmenu
+
+    menu "Resume (NVS checkpoint)"
+        config OTA_ENABLE_RESUME
+            bool "Enable OTA resume (breakpoint continuation)"
+            default y
+            help
+                Store OTA progress in NVS. On failure or reboot, the next OTA
+                attempt resumes from the last saved offset instead of starting over.
+
+        if OTA_ENABLE_RESUME
+            config OTA_RESUME_SAVE_INTERVAL_KB
+                int "Resume progress save interval (KB)"
+                default 64
+                range 16 256
+                help
+                    How often (in KB of data written) to save progress to NVS.
+                    Smaller values provide finer resume granularity but increase
+                    NVS wear.
+        endif
+    endmenu
+
+    menu "Advanced targets"
+        config OTA_ENABLE_BOOTLOADER_OTA
+            bool "Enable bootloader OTA target"
+            default n
+            help
+                Compile esp_ota_service_target_bootloader which allows updating the bootloader
+                itself via OTA. The new bootloader image is first written to a
+                staging partition, validated, then copied to the bootloader area.
+                WARNING: Bootloader OTA is inherently risky. A power failure during
+                the final copy step can brick the device.
+    endmenu
+
+endmenu

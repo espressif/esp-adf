@@ -9,6 +9,38 @@ EXAMPLES:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: adf_examples/services_hub
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/adf_event_hub/examples
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_button_service/examples/button_svc_example
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_cli_service/examples
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_ota_service/examples/ota_ble
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_ota_service/examples/ota_fs
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_ota_service/examples/ota_http
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_service/examples/mock_services
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
 
 TEST_APPS:
   - app_dir: components/esp_codec_dev/test_apps/codec_dev_test
@@ -16,6 +48,18 @@ TEST_APPS:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
   - app_dir: components/esp_coze/test_apps
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/adf_event_hub/test_apps
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_ota_service/test_apps
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_service/test_apps
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}

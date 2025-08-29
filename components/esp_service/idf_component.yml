@@ -1,0 +1,17 @@
+version: "0.5.0"
+description: ESP Service is a three-layer service infrastructure providing a lifecycle base class, a dynamic service registry, and an optional MCP server for AI-agent tool invocation over multiple transports
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_service/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "esp_service"
+  - "mcp"
+  - "gmf"
+  - "adf"
+
+dependencies:
+  espressif/adf_event_hub:
+    require: public
+    version: "^0.5"
+    override_path: "../adf_event_hub"

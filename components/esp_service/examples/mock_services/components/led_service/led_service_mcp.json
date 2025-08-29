@@ -1,0 +1,57 @@
+[
+  {
+    "name": "led_service_on",
+    "description": "Turn on the LED",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "led_service_off",
+    "description": "Turn off the LED",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "led_service_blink",
+    "description": "Set LED to blink mode with specified period",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "period_ms": {
+          "type": "integer",
+          "description": "Blink period in milliseconds",
+          "minimum": 0
+        }
+      },
+      "required": ["period_ms"]
+    }
+  },
+  {
+    "name": "led_service_set_brightness",
+    "description": "Set LED brightness level",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "brightness": {
+          "type": "integer",
+          "description": "Brightness level (0-100)",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": ["brightness"]
+    }
+  },
+  {
+    "name": "led_service_get_state",
+    "description": "Get the current LED state. Returns one of: OFF, ON, BLINK",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

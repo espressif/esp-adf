@@ -11,6 +11,7 @@
 | 扣子 WebSocket 双向流式对话 | [ai_agent/coze_ws_app](./ai_agent/coze_ws_app) | 基于 ESP-GMF 的 Coze 语音对话示例。 |
 | 百度 RTC 语音助手演示 | [ai_agent/baidu_rtc/solutions/voice_assistant_app](./ai_agent/baidu_rtc/solutions/voice_assistant_app) | 基于 ESP-GMF 的百度 RTC 实时音视频助手示例。 |
 | ESP 音频分析工具示例 | [checks/esp_audio_analyzer_app](./checks/esp_audio_analyzer_app) | 基于 ESP 音频分析工具全面测试麦克风、扬声器及 AEC 功能的示例。 |
+| 服务中枢综合示例 | [services_hub](./services_hub) | 通过 `adf_event_hub` 与 `esp_service_manager` 集成 Wi-Fi、OTA、CLI 与按键服务的多服务编排示例，可选支持 MCP。 |
 
 ## 使用说明
 

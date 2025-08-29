@@ -1,0 +1,10 @@
+# Firmware artifacts published here by build_firmware.py are deterministic
+# build outputs (app + companion userdata). Keep them out of git — CI / users
+# regenerate with: python3 ../build_firmware.py <example> -v <ver>.
+ota_ble_v*.bin
+ota_fs_v*.bin
+ota_http_v*.bin
+userdata_v*.bin
+
+# Tracked by intent (do not ignore):
+#   README.md, manifest.json, flash_tone_v0.5.0.bin

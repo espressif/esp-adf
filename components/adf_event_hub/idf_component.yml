@@ -1,0 +1,12 @@
+version: "0.5.0"
+description: ADF domain-scoped publish-subscribe event hub with queue and callback delivery modes
+url: https://github.com/espressif/esp-adf/tree/master/components/adf_event_hub
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/adf_event_hub/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "event_hub"
+  - "publish"
+  - "subscribe"
+  - "adf"
+  - "gmf"

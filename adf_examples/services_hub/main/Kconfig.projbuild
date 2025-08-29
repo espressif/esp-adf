@@ -1,0 +1,54 @@
+menu "Services Hub Example"
+
+    config PROD_WIFI_SSID
+        string "WiFi SSID"
+        default "my_ssid"
+        help
+            Wi-Fi SSID the example connects to on boot. Leave empty to skip
+            Wi-Fi start-up (the OTA service will also be idle in that case).
+            Set this per-developer via `idf.py menuconfig`; do not commit
+            concrete credentials to sdkconfig.defaults or Kconfig.
+
+    config PROD_WIFI_PASSWORD
+        string "WiFi Password"
+        default "my_password"
+        help
+            Password for PROD_WIFI_SSID. Empty string means open network.
+            Set this per-developer via `idf.py menuconfig`; do not commit
+            concrete credentials to sdkconfig.defaults or Kconfig.
+
+    config PROD_OTA_HTTP_HOST
+        string "OTA HTTP host (IP or hostname)"
+        default "0.0.0.0"
+        help
+            Host portion of the OTA firmware URL. Override with the IP or
+            hostname printed by components/esp_ota_service/tools/ota_http_serve.py
+            at startup. The default 0.0.0.0 is a placeholder; OTA check will
+            fail until you set a reachable host via `idf.py menuconfig`.
+
+    config PROD_OTA_HTTP_PORT
+        int "OTA HTTP port"
+        default 18070
+        range 1 65535
+        help
+            TCP port ota_http_serve.py listens on. Matches its --port flag
+            (default 18070).
+
+    config PROD_OTA_HTTP_PATH
+        string "OTA HTTP path"
+        default "/firmware.bin"
+        help
+            URL path served by ota_http_serve.py. Default /firmware.bin
+            matches the script's built-in handler; change only if you front
+            the server with a reverse proxy that remaps the path.
+
+    config PROD_OTA_TIMEOUT_MS
+        int "OTA upgrade timeout (ms)"
+        default 120000
+        range 1000 600000
+        help
+            Upper bound app_main waits for the OTA upgrade to finish before
+            treating it as a timeout. Raise this on slow networks (e.g. large
+            RTT to the host) or when other tasks compete for CPU/flash.
+
+endmenu

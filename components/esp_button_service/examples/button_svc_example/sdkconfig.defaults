@@ -1,0 +1,25 @@
+# Target
+CONFIG_IDF_TARGET="esp32s3"
+
+# This example only needs esp_service core + event hub (no MCP / HTTP transports).
+CONFIG_ESP_MCP_ENABLE=n
+
+# Enable button device support in esp_board_manager
+CONFIG_ESP_BOARD_DEV_BUTTON_SUPPORT=y
+CONFIG_ESP_BOARD_DEV_BUTTON_SUB_GPIO_SUPPORT=y
+CONFIG_ESP_BOARD_DEV_BUTTON_SUB_ADC_MULTI_SUPPORT=y
+
+# Peripherals required by this example's generated board (GPIO + ADC oneshot)
+CONFIG_ESP_BOARD_PERIPH_GPIO_SUPPORT=y
+CONFIG_ESP_BOARD_PERIPH_ADC_SUPPORT=y
+
+# Default pin / channel assignments (can be overridden via menuconfig)
+CONFIG_BTN_EXAMPLE_GPIO0_PIN=0
+CONFIG_BTN_EXAMPLE_GPIO1_PIN=2
+CONFIG_BTN_EXAMPLE_ADC_CHANNEL=4
+
+# Increase main task stack — board manager init uses the app-main stack
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# Console output — 1 MBaud for fast logging during key testing
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=1000000
