@@ -260,6 +260,48 @@ static void hls_hex_to_bin(uint8_t* v, char* s, int n)
     }
 }
 
+static int hls_append_key(hls_media_playlist_t* media, hls_tag_info_t* tag_info)
+{
+    if ((media->key_num % 5) == 0) {
+        int key_arr_size = sizeof(hls_key_t) *  (media->key_num + 5);
+        hls_key_t* new_key = audio_realloc(media->key, key_arr_size);
+        if (new_key == NULL) {
+            return -1;
+        }
+        memset(&new_key[media->key_num], 0, sizeof(hls_key_t) * 5);
+        media->key = new_key;
+    }
+    hls_key_t *key_info = &media->key[media->key_num];
+    for (int i = 0; i < tag_info->attr_num; i++) {
+        switch (tag_info->k[i]) {
+            case HLS_ATTR_METHOD:
+                key_info->method = (hls_encrypt_method_t)tag_info->v[i].v;
+                break;
+            case HLS_ATTR_IV: {
+                char* v = tag_info->v[i].s;
+                // Skip leading 0x
+                if (strncasecmp(v, "0x", 2) == 0) {
+                    v += 2;
+                }
+                hls_hex_to_bin(key_info->iv, v, strlen(v));
+                break;
+            }
+            case HLS_ATTR_URI:
+                key_info->uri = strdup(tag_info->v[i].s);
+                break;
+            default:
+                break;
+        }
+    }
+    key_info->range[0] = media->url_num;
+    key_info->range[1] = 0xFFFF;
+    if (media->key_num > 0) {
+        key_info[-1].range[1] = media->url_num ? media->url_num - 1 : 0;
+    }
+    media->key_num++;
+    return 0;
+}
+
 static int hls_media_tag_cb(hls_tag_info_t* tag_info, void* ctx)
 {
     hls_t* hls = (hls_t*)ctx;
@@ -293,36 +335,9 @@ static int hls_media_tag_cb(hls_tag_info_t* tag_info, void* ctx)
             break;
         case HLS_TAG_KEY:
             if (tag_info->attr_num) {
-                // Only support one key currently
-                media->key_num = 1;
-                if (media->key == NULL) {
-                    media->key = (hls_key_t*) audio_calloc(1, sizeof(hls_key_t));
-                }
-                if (media->key == NULL) {
+                if (hls_append_key(media, tag_info) != 0) {
                     ESP_LOGE(TAG, "No memory for key");
-                    break;
-                }
-                for (int i = 0; i < tag_info->attr_num; i++) {
-                    switch (tag_info->k[i]) {
-                        case HLS_ATTR_METHOD:
-                            media->key[0].method = (hls_encrypt_method_t)tag_info->v[i].v;
-                            break;
-                        case HLS_ATTR_IV: {
-                            char* v = tag_info->v[i].s;
-                            // Skip leading 0x
-                            if (strncasecmp(v, "0x", 2) == 0) {
-                                v += 2;
-                            }
-                            hls_hex_to_bin(media->key[0].iv, v, strlen(v));
-                            break;
-                        }
-                        case HLS_ATTR_URI:
-                            HLS_FREE(media->key[0].uri);
-                            media->key[0].uri = join_url(media->uri, tag_info->v[i].s);
-                            break;
-                        default:
-                            break;
-                    }
+                    return -1;
                 }
             }
             break;
@@ -333,6 +348,8 @@ static int hls_media_tag_cb(hls_tag_info_t* tag_info, void* ctx)
                     case HLS_ATTR_URI: {
                         char* url = join_url(media->uri, tag_info->v[i].s);
                         if (url) {
+                            // Inc url number
+                            media->url_num++;
                             hls->cfg.cb(url, hls->cfg.ctx);
                             audio_free(url);
                         }
@@ -429,10 +446,12 @@ static int hls_close_media_playlist(hls_t* hls, hls_media_playlist_t* media)
     }
     media->key_num = 0;
     HLS_FREE(media->key);
-    // release url
-    for (i = 0; i < media->url_num; i++) {
-        hls_url_t* url = &media->url_items[i];
-        HLS_FREE(url->uri);
+    // Release url
+    if (media->url_items) {
+        for (i = 0; i < media->url_num; i++) {
+            hls_url_t* url = &media->url_items[i];
+            HLS_FREE(url->uri);
+        }
     }
     HLS_FREE(media->url_items);
     HLS_FREE(media->uri);
@@ -585,7 +604,7 @@ const char* hls_playlist_get_key_uri(hls_handle_t h)
     }
     hls_media_playlist_t* media = hls->media_playlist;
     if (media->key_num && media->key[0].uri) {
-        return media->key[0].uri;
+        return join_url(media->uri, media->key[0].uri);
     }
     return NULL;
 }
@@ -598,6 +617,26 @@ uint64_t hls_playlist_get_sequence_no(hls_handle_t h)
     }
     hls_media_playlist_t* media = hls->media_playlist;
     return media->media_sequence;
+}
+
+char *hls_playlist_get_key_uri_by_seq(hls_handle_t h, uint64_t sequence_no)
+{
+    hls_t* hls = (hls_t*)h;
+    if (hls == NULL || hls->media_playlist == NULL) {
+        return NULL;
+    }
+    hls_media_playlist_t* media = hls->media_playlist;
+    if (media->key_num == 0) {
+        return NULL;
+    }
+    uint16_t start_idx = sequence_no - media->media_sequence;
+    for (int i = 0; i < media->key_num; i++) {
+        if (start_idx > media->key[i].range[1]) {
+            continue;
+        }
+        return join_url(media->uri, media->key[i].uri);
+    }
+    return NULL;
 }
 
 int hls_playlist_get_key(hls_handle_t h, uint64_t sequence_no, hls_stream_key_t* key)

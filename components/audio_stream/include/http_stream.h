@@ -90,11 +90,12 @@ typedef struct {
                                                              bundle for server verification, must be enabled in menuconfig */
     int                         request_size;           /*!< Request data size each time from `http_client`
                                                              Defaults use DEFAULT_ELEMENT_BUFFER_LENGTH if set to 0
-                                                             Need care this setting if audio frame size is small and want low latency playback */                                                         
+                                                             Need care this setting if audio frame size is small and want low latency playback */
     int                         request_range_size;     /*!< Range size setting for header `Range: bytes=start-end`
                                                              Request full range of resource if set to 0
                                                              Range size bigger than request size is recommended */
     const char                  *user_agent;            /*!< The User Agent string to send with HTTP requests */
+    int                         url_index;              /*!< The url index to be played in playlist */
 } http_stream_cfg_t;
 
 #define HTTP_STREAM_TASK_STACK          (6 * 1024)
@@ -157,6 +158,19 @@ esp_err_t http_stream_restart(audio_element_handle_t el);
  *     - ESP_ERR_NOT_SUPPORTED if playlist is finished
  */
 esp_err_t http_stream_fetch_again(audio_element_handle_t el);
+
+/**
+ * @brief       Get url index in current playlist
+ *
+ *
+ * @param       el       The http_stream element handle
+ * @param       url_idx  Url index in playlist
+ *
+ * @return
+ *     - ESP_OK on success
+ *     - ESP_ERR_NOT_SUPPORTED if playlist not existed
+ */
+esp_err_t http_stream_get_url_index(audio_element_handle_t el, int *url_idx);
 
 /**
  * @brief       Set SSL server certification
