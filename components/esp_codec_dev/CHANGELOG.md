@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.4.0
+
+### Bug Fixed
+
+- Fixed name error in some macro definitions for ES7210.
+- Fixed link error for `vol_range` redefinition.
+
 ## v1.3.6
 
 ### Feature
