@@ -1,9 +1,19 @@
 #!/bin/bash
 
 if [ -z "$ADF_PATH" ]; then
-    basedir=$(dirname "$0")
-    export ADF_PATH=$(cd "${basedir}"; pwd)
+    SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
+    while [ -h "$SCRIPT_PATH" ]; do
+        LINK_TARGET="$(readlink "$SCRIPT_PATH")"
+        if [ "${LINK_TARGET:0:1}" = "/" ]; then
+            SCRIPT_PATH="$LINK_TARGET"
+        else
+            SCRIPT_PATH="$(dirname "$SCRIPT_PATH")/$LINK_TARGET"
+        fi
+    done
+    SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+    export ADF_PATH="$SCRIPT_DIR"
 fi
+
 if [ -z "$IDF_PATH" ]; then
     export IDF_PATH=$ADF_PATH/esp-idf
 fi
