@@ -600,6 +600,6 @@ void es7210_read_all(void)
 {
     for (int i = 0; i <= 0x4E; i++) {
         uint8_t reg = es7210_read_reg(i);
-        ESP_LOGI(TAG, "REG:%02x, %02x", reg, i);
+        ESP_LOGI(TAG, "REG:%02x, %02x", i, reg);
     }
 }

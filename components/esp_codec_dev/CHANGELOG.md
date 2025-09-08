@@ -1,5 +1,11 @@
 # Changelog
 
+## Un-Release
+
+### Bug Fixed
+
+- Fixed the register configuration for es8311 when playing 8kHz audio without using MCLK.
+
 ## v1.4.0
 
 ### Bug Fixed
