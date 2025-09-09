@@ -11,12 +11,14 @@ if (idf_version VERSION_GREATER_EQUAL "5.0")
 list(APPEND COMPONENT_REQUIRES esp_timer)
 endif()
 
+if (CONFIG_SOC_WIFI_SUPPORTED OR CONFIG_ESP_HOSTED_ENABLED)
 list(APPEND COMPONENT_SRCS src/esp_wifi_setting.c
                     src/wifi_service.c
                     src/wifi_ssid_manager.c
                     smart_config/smart_config.c
                     blufi_config/blufi_config.c
                     blufi_config/blufi_security.c)
+endif()
 
 IF (CONFIG_IDF_TARGET STREQUAL "esp32c3" OR CONFIG_IDF_TARGET STREQUAL "esp32c6" OR CONFIG_IDF_TARGET STREQUAL "esp32p4" OR CONFIG_IDF_TARGET STREQUAL "esp32c5")
     register_component()
