@@ -9,17 +9,17 @@ ESP VoIP 是一个基于标准 SIP 协议的电话客户端，可以用于点对
 
 ### 资源列表
 
-内存消耗
+示例内存消耗：
 
 ESP32-LyraT-Mini：
 
-|memory_total (byte)|memory_inram (byte)|memory_psram (byte)
+|Memory_total (Bytes)|Memory_inram (Bytes)|Memory_psram (Bytes)
 |---|---|---
 |392008 |236328 |155680
 
 其他开发板：
 
-|memory_total (byte)|memory_inram (byte)|memory_psram (byte)
+|Memory_total (Bytes)|Memory_inram (Bytes)|Memory_psram (Bytes)
 |---|---|---
 |252900 |111076 |141824
 
@@ -50,6 +50,13 @@ ESP32-LyraT-Mini：
       - 建议关闭服务器 timer，可以通过在 `conf/sip_profiles/internal.xml` 中设置 `<param name="enable-timer" value="false"/>` 来关闭。
 
       - 建议在 `conf/vars.xml` 中删除暂不支持的 Video Codec。
+
+      - 建议关闭服务器自动应答，可以通过在 `conf/dialplan/default.xml` 中设置 `<action application="export" data="sip_auto_answer=false"/>` 来关闭。
+
+      - 建议关闭服务器强制应答，可以通过在 `conf/dialplan/default.xml` 中注释以下三行来关闭。
+      `<action application="answer"/>`
+      `<action application="sleep" data="1000"/>`
+      `<action application="bridge" data="loopback/app=voicemail:default ${domain_name} ${dialed_extension}"/>`
 
   - [Kamailio](https://kamailio.org/docs/tutorials/5.3.x/kamailio-install-guide-git/)
 

@@ -9,17 +9,17 @@ ESP VoIP is a telephone client based on the standard SIP protocol, which can be 
 
 ### Resources
 
-Memory consumption:
+Memory consumption of the entire example:
 
 esp32-lyrat-mini-v1.2:
 
-|memory_total (byte)|memory_inram (byte)|memory_psram (byte)
+|Memory_total (Bytes)|Memory_inram (Bytes)|Memory_psram (Bytes)
 |---|---|---
 |392008 |236328 |155680
 
 other boards:
 
-|memory_total (byte)|memory_inram (byte)|memory_psram (byte)
+|Memory_total (Bytes)|Memory_inram (Bytes)|Memory_psram (Bytes)
 |---|---|---
 |252900 |111076 |141824
 
@@ -48,6 +48,11 @@ Recommended to use `ESP32-S3-Korvo-2L` and `ESP32-LyraT-Mini` boards to run。
       - Recommended to turn off the server event `NOTIFY` by setting `<param name="send-message-query-on-register" value="false"/>` in `conf/sip_profiles/internal.xml`.
       - Recommended to turn off the server timer by setting `<param name="enable-timer" value="false"/>` in `conf/sip_profiles/internal.xml`.
       - Recommended to delete the unsupported Video Codec in `conf/vars.xml`.
+      - Recommended to turn off the auto answer by setting `<action application="export" data="sip_auto_answer=false"/>` in `conf/dialplan/default.xml`.
+      - Recommended to turn off the force answer before brigde by commenting out the following three lines in `conf/dialplan/default.xml`.
+      `<action application="answer"/>`
+      `<action application="sleep" data="1000"/>`
+      `<action application="bridge" data="loopback/app=voicemail:default ${domain_name} ${dialed_extension}"/>`
 
   - [Kamailio](https://kamailio.org/docs/tutorials/5.3.x/kamailio-install-guide-git/)
 
