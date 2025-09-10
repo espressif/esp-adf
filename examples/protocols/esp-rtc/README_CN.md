@@ -7,6 +7,14 @@
 
 ESP RTC 是一个基于标准 SIP 协议的视频通话客户端，可以用于音视频通话等场景。
 
+### 资源列表
+
+示例内存消耗：
+
+|Memory_total (Bytes)|Memory_inram (Bytes)|Memory_psram (Bytes)
+|---|---|---
+|263752 |100144 |163608
+
 ## 环境配置
 
 ### 硬件要求
@@ -31,6 +39,13 @@ ESP RTC 是一个基于标准 SIP 协议的视频通话客户端，可以用于�
       - 建议关闭服务器 timer，可以通过在 `conf/sip_profiles/internal.xml` 中设置 `<param name="enable-timer" value="false"/>` 来关闭。
 
       - 建议在 `conf/vars.xml` 中打开 PCMA、PCMU、VP8、H264。
+
+      - 建议关闭服务器自动应答，可以通过在 `conf/dialplan/default.xml` 中设置 `<action application="export" data="sip_auto_answer=false"/>` 来关闭。
+
+      - 建议关闭服务器强制应答，可以通过在 `conf/dialplan/default.xml` 中注释以下三行来关闭。
+      `<action application="answer"/>`
+      `<action application="sleep" data="1000"/>`
+      `<action application="bridge" data="loopback/app=voicemail:default ${domain_name} ${dialed_extension}"/>`
 
 - 我们建议搭建 Freeswitch 服务器来测试。
 
