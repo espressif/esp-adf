@@ -609,8 +609,8 @@ static void cli_setup_wifi(void)
 {
     wifi_config_t sta_cfg = {
         .sta = {
-            .ssid = "ssid",
-            .password = "password",
+            .ssid = CONFIG_EXAMPLE_WIFI_SSID,
+            .password = CONFIG_EXAMPLE_WIFI_PASSWORD,
             .threshold.authmode = WIFI_AUTH_WPA2_PSK,
         },
     };

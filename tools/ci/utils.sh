@@ -164,11 +164,11 @@ function set_idf() {
 
   if [[ "$IDF_TAG_FLAG" = "true" ]]; then
       git fetch origin tag ${IDF_VERSION} --depth 1
-      git checkout ${IDF_VERSION}
+      git checkout ${IDF_VERSION} -f
       echo "The IDF branch is TAG:"${IDF_VERSION}
   else
       git fetch origin ${IDF_VERSION}:${IDF_VERSION} --depth 1
-      git checkout ${IDF_VERSION}
+      git checkout ${IDF_VERSION} -f
       echo "The IDF branch is "${IDF_VERSION}
   fi
   popd

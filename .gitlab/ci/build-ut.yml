@@ -12,7 +12,7 @@
 
 .build_esp_adf_unit_test_template: &build_esp_adf_unit_test_template
   stage: build
-  image: ciregistry.espressif.cn:8443/esp-env-v5.4:1
+  image: ciregistry.espressif.cn:8443/esp-env-v5.5:3
   tags:
     - adf_build
   variables:
@@ -51,7 +51,7 @@ esp_adf_libs_components_test:
     - .rules:build:unit-test
     - .build_esp_adf_tests_make
   variables:
-    IDF_VERSION_TAG: default
-    IDF_TAG_FLAG: false
+    IDF_VERSION_TAG: v5.5.1
+    IDF_TAG_FLAG: true
     IDF_TARGET: esp32s3
     DEEP_CLONE: "true"

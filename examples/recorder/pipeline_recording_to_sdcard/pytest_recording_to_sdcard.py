@@ -8,5 +8,5 @@ from pytest_embedded import Dut
 @pytest.mark.esp32s3
 @pytest.mark.esp32p4
 @pytest.mark.ADF_EXAMPLE_GENERIC
-def test_str_detect(dut: Dut)-> None:
+def test_pipeline_recording_to_sdcard(dut: Dut)-> None:
     dut.expect(r'Stop audio_pipeline', timeout=100)

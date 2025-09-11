@@ -8,5 +8,5 @@ from pytest_embedded import Dut
 @pytest.mark.esp32s3
 @pytest.mark.esp32c3
 @pytest.mark.ADF_EXAMPLE_GENERIC
-def test_str_detect(dut: Dut)-> None:
+def test_power_save(dut: Dut)-> None:
     dut.expect(r'Returned from sleep, reason: TIMER', timeout=100)

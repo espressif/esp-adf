@@ -16,14 +16,14 @@ from pytest_embedded import Dut
 @pytest.mark.esp32
 @pytest.mark.esp32s3
 @pytest.mark.ADF_EXAMPLE_GENERIC
-def test_cli(dut: Dut)-> None:
+def test_audio_mixer_tone(dut: Dut)-> None:
     dut.expect(r'Returned from app_main', timeout=100)
 
     dut.write('help')
     dut.expect(r'Get freertos all task states information')
 
     dut.write('join Audio_CI esp123456')
-    dut.expect(r'Got ip:')
+    dut.expect(r'Got ip:', timeout=100)
 
     dut.write('play file://sdcard/test.mp3#raw 1')
     dut.expect(r'ESP_AUDIO status is AEL_STATUS_STATE_RUNNING')

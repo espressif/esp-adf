@@ -16,6 +16,6 @@ from pytest_embedded import Dut
 @pytest.mark.esp32
 @pytest.mark.esp32s3
 @pytest.mark.ADF_EXAMPLE_GENERIC
-def test_str_detect(dut: Dut)-> None:
+def test_flexible_pipeline(dut: Dut)-> None:
     dut.expect(r'Start playback pipeline', timeout=100)
     dut.expect(r'A new song playing', timeout=100)

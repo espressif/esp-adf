@@ -39,7 +39,8 @@
     - pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
     - job_tags=$(python $ADF_PATH/tools/ci/gitlab_api.py get_job_tags $CI_PROJECT_ID --job_id $CI_JOB_ID)
     - markers=$(echo $job_tags | sed -e "s/,/ and /g")
-    - echo $markers
+    - eval $(python $ADF_PATH/tools/ci/apps_filter.py --target ${IDF_TARGET} --board ${AUDIO_BOARD} --idf_ver ${IDF_VERSION_TAG} --pytest-export)
+    - test -n "$TEST_DIR" || exit 0
     - pytest $TEST_DIR --target ${IDF_TARGET} -m "${markers}" --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1
   retry: 2
 
@@ -47,8 +48,6 @@
   extends:
     - .rules:build:enable-adf-example-test
     - .pytest_template
-  variables:
-    TEST_DIR: "$ADF_PATH/examples"
 
 example_test_pytest_esp32_v5.1:
   extends:
@@ -56,6 +55,7 @@ example_test_pytest_esp32_v5.1:
   variables:
     IDF_TARGET: esp32
     IDF_VERSION_TAG: v5.1
+    AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
   needs:
     - 'build_examples_esp32_lyrat_mini_v1_1: [v5.1, 1/2]'
     - 'build_examples_esp32_lyrat_mini_v1_1: [v5.1, 2/2]'
@@ -79,6 +79,7 @@ example_test_pytest_esp32s3_v5.1:
   variables:
     IDF_TARGET: esp32s3
     IDF_VERSION_TAG: v5.1
+    AUDIO_BOARD: ESP32_S3_KORVO2_V3
   needs:
     - 'build_examples_esp32s3_korvo_v2: [v5.1, 1/2]'
     - 'build_examples_esp32s3_korvo_v2: [v5.1, 2/2]'
@@ -90,6 +91,7 @@ example_test_pytest_esp32_v5.2:
   variables:
     IDF_TARGET: esp32
     IDF_VERSION_TAG: v5.2
+    AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
   needs:
     - 'build_examples_esp32_lyrat_mini_v1_1: [v5.2, 1/2]'
     - 'build_examples_esp32_lyrat_mini_v1_1: [v5.2, 2/2]'
@@ -113,6 +115,7 @@ example_test_pytest_esp32s3_v5.2:
   variables:
     IDF_TARGET: esp32s3
     IDF_VERSION_TAG: v5.2
+    AUDIO_BOARD: ESP32_S3_KORVO2_V3
   needs:
     - 'build_examples_esp32s3_korvo_v2: [v5.2, 1/2]'
     - 'build_examples_esp32s3_korvo_v2: [v5.2, 2/2]'
@@ -124,6 +127,7 @@ example_test_pytest_esp32_v5.3:
   variables:
     IDF_TARGET: esp32
     IDF_VERSION_TAG: v5.3
+    AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
   needs:
     - 'build_examples_esp32_lyrat_mini_v1_1: [v5.3, 1/2]'
     - 'build_examples_esp32_lyrat_mini_v1_1: [v5.3, 2/2]'
@@ -147,54 +151,106 @@ example_test_pytest_esp32s3_v5.3:
   variables:
     IDF_TARGET: esp32s3
     IDF_VERSION_TAG: v5.3
+    AUDIO_BOARD: ESP32_S3_KORVO2_V3
   needs:
     - 'build_examples_esp32s3_korvo_v2: [v5.3, 1/2]'
     - 'build_examples_esp32s3_korvo_v2: [v5.3, 2/2]'
   tags: [ esp32s3, ADF_EXAMPLE_GENERIC ]
 
-example_test_pytest_esp32_default:
+example_test_pytest_esp32_v5.4:
   extends:
     - .pytest_examples_dir_template
   variables:
     IDF_TARGET: esp32
-    IDF_VERSION_TAG: default
+    IDF_VERSION_TAG: v5.4
+    AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
   needs:
-    - 'build_examples_esp32_lyrat_mini_v1_1: [default, 1/2]'
-    - 'build_examples_esp32_lyrat_mini_v1_1: [default, 2/2]'
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.4, 1/2]'
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.4, 2/2]'
   tags: [ esp32, ADF_EXAMPLE_GENERIC ]
 
-example_test_pytest_esp32s2_default:
+example_test_pytest_esp32s2_v5.4:
   extends:
     - .pytest_examples_dir_template
   variables:
     IDF_TARGET: esp32s2
-    IDF_VERSION_TAG: default
+    IDF_VERSION_TAG: v5.4
     AUDIO_BOARD: ESP32_S2_KALUGA_1_V1_2
   needs:
-    - 'build_examples_esp32s2_kaluga_v1_2: [default, 1/2]'
-    - 'build_examples_esp32s2_kaluga_v1_2: [default, 2/2]'
+    - 'build_examples_esp32s2_kaluga_v1_2: [v5.4, 1/2]'
+    - 'build_examples_esp32s2_kaluga_v1_2: [v5.4, 2/2]'
   tags: [ esp32s2, ADF_EXAMPLE_GENERIC ]
 
-example_test_pytest_esp32s3_default:
+example_test_pytest_esp32s3_v5.4:
   extends:
     - .pytest_examples_dir_template
   variables:
     IDF_TARGET: esp32s3
-    IDF_VERSION_TAG: default
+    IDF_VERSION_TAG: v5.4
+    AUDIO_BOARD: ESP32_S3_KORVO2_V3
   needs:
-    - 'build_examples_esp32s3_korvo_v2: [default, 1/2]'
-    - 'build_examples_esp32s3_korvo_v2: [default, 2/2]'
+    - 'build_examples_esp32s3_korvo_v2: [v5.4, 1/2]'
+    - 'build_examples_esp32s3_korvo_v2: [v5.4, 2/2]'
   tags: [ esp32s3, ADF_EXAMPLE_GENERIC ]
 
-example_test_pytest_esp32p4_default:
+example_test_pytest_esp32p4_v5.4:
   extends:
     - .pytest_examples_dir_template
   variables:
     IDF_TARGET: esp32p4
-    IDF_VERSION_TAG: default
+    IDF_VERSION_TAG: v5.4
+    AUDIO_BOARD: ESP32_P4_FUNCTION_EV
   needs:
-    - 'build_examples_esp32p4_function_ev_board: [default, 1/2]'
-    - 'build_examples_esp32p4_function_ev_board: [default, 2/2]'
+    - 'build_examples_esp32p4_function_ev_board: [v5.4, 1/2]'
+    - 'build_examples_esp32p4_function_ev_board: [v5.4, 2/2]'
+  tags: [ esp32p4, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32_v5.5.1:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32
+    IDF_VERSION_TAG: v5.5.1
+    AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
+  needs:
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.5.1, 1/2]'
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.5.1, 2/2]'
+  tags: [ esp32, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32s2_v5.5.1:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32s2
+    IDF_VERSION_TAG: v5.5.1
+    AUDIO_BOARD: ESP32_S2_KALUGA_1_V1_2
+  needs:
+    - 'build_examples_esp32s2_kaluga_v1_2: [v5.5.1, 1/2]'
+    - 'build_examples_esp32s2_kaluga_v1_2: [v5.5.1, 2/2]'
+  tags: [ esp32s2, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32s3_v5.5.1:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32s3
+    IDF_VERSION_TAG: v5.5.1
+    AUDIO_BOARD: ESP32_S3_KORVO2_V3
+  needs:
+    - 'build_examples_esp32s3_korvo_v2: [v5.5.1, 1/2]'
+    - 'build_examples_esp32s3_korvo_v2: [v5.5.1, 2/2]'
+  tags: [ esp32s3, ADF_EXAMPLE_GENERIC ]
+
+example_test_pytest_esp32p4_v5.5.1:
+  extends:
+    - .pytest_examples_dir_template
+  variables:
+    IDF_TARGET: esp32p4
+    IDF_VERSION_TAG: v5.5.1
+    AUDIO_BOARD: ESP32_P4_FUNCTION_EV
+  needs:
+    - 'build_examples_esp32p4_function_ev_board: [v5.5.1, 1/2]'
+    - 'build_examples_esp32p4_function_ev_board: [v5.5.1, 2/2]'
   tags: [ esp32p4, ADF_EXAMPLE_GENERIC ]
 
 example_test_pytest_esp32_audio_loopback:
@@ -204,11 +260,14 @@ example_test_pytest_esp32_audio_loopback:
   variables:
     IDF_TARGET: esp32
     IDF_VERSION_TAG: v5.3
+    AUDIO_BOARD: ESP_LYRAT_MINI_V1_1
   needs:
     - 'build_examples_esp32_lyrat_mini_v1_1: [v5.3, 1/2]'
     - 'build_examples_esp32_lyrat_mini_v1_1: [v5.3, 2/2]'
-    - 'build_examples_esp32_lyrat_mini_v1_1: [default, 1/2]'
-    - 'build_examples_esp32_lyrat_mini_v1_1: [default, 2/2]'
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.4, 1/2]'
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.4, 2/2]'
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.5.1, 1/2]'
+    - 'build_examples_esp32_lyrat_mini_v1_1: [v5.5.1, 2/2]'
   tags: [ esp32, AUDIO_LOOPBACK_ENV ]
   script:
     - export PYTHONPATH="/usr/local/lib/python3.9/dist-packages:$PYTHONPATH"
@@ -216,5 +275,6 @@ example_test_pytest_esp32_audio_loopback:
     - arecord -l
     - job_tags=$(python $ADF_PATH/tools/ci/gitlab_api.py get_job_tags $CI_PROJECT_ID --job_id $CI_JOB_ID)
     - markers=$(echo $job_tags | sed -e "s/,/ and /g")
-    - echo $markers
+    - eval $(python $ADF_PATH/tools/ci/apps_filter.py --target ${IDF_TARGET} --board ${AUDIO_BOARD} --idf_ver ${IDF_VERSION_TAG} --pytest-export)
+    - test -n "$TEST_DIR" || exit 0
     - pytest $TEST_DIR --target ${IDF_TARGET} -m "${markers}" --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1
