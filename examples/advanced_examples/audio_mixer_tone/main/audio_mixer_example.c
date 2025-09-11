@@ -356,7 +356,7 @@ static void cli_setup_wifi()
 {
     ESP_LOGI(TAG, "Start Wi-Fi");
     periph_wifi_cfg_t wifi_cfg = {
-        .disable_auto_reconnect = true,
+        .disable_auto_reconnect = false,
         .wifi_config.sta.ssid = "",
         .wifi_config.sta.password = "",
     };
