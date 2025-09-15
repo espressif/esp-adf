@@ -389,6 +389,15 @@ static int _i2s_data_enable(const audio_codec_data_if_t *h, esp_codec_dev_type_t
                     ret = _i2s_drv_enable(i2s_data, false, enable);
                     i2s_data->in_disable_pending = false;
                 }
+            } else {
+                if (playback == true && i2s_data->out_disable_pending) {
+                    ESP_LOGI(TAG, "Clearing out_disable_pending flag when enabling out channel");
+                    i2s_data->out_disable_pending = false;
+                }
+                if (playback == false && i2s_data->in_disable_pending) {
+                    ESP_LOGI(TAG, "Clearing in_disable_pending flag when enabling in channel");
+                    i2s_data->in_disable_pending = false;
+                }
             }
         }
     }
