@@ -30,7 +30,7 @@
 #include "av_stream.h"
 #include "esp_rtc.h"
 
-#define VIDEO_FRAME_SIZE AV_FRAMESIZE_QVGA
+#define VIDEO_FRAME_SIZE FRAMESIZE_QVGA
 
 #ifdef __cplusplus
 extern "C" {

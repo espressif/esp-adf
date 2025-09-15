@@ -110,10 +110,12 @@ esp_rtsp_handle_t rtsp_service_start(av_stream_handle_t av_stream, esp_rtsp_mode
     AUDIO_NULL_CHECK(TAG, av_stream, return NULL);
     media_lib_add_default_adapter();
 
+    uint16_t width = 0, height = 0;
+    av_stream_get_video_framesize(RTSP_FRAME_SIZE, &width, &height);
     esp_rtsp_video_info_t vcodec_info = {
         .vcodec = RTSP_VCODEC_MJPEG,
-        .width = av_resolution[RTSP_FRAME_SIZE].width,
-        .height = av_resolution[RTSP_FRAME_SIZE].height,
+        .width = width,
+        .height = height,
         .fps = VIDEO_FPS,
         .len = VIDEO_MAX_SIZE,
     };

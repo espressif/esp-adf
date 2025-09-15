@@ -143,10 +143,12 @@ esp_rtc_handle_t rtc_service_start(av_stream_handle_t av_stream, const char *uri
     AUDIO_NULL_CHECK(TAG, av_stream, return NULL);
     media_lib_add_default_adapter();
 
+    uint16_t width = 0, height = 0;
+    av_stream_get_video_framesize(VIDEO_FRAME_SIZE, &width, &height);
     esp_rtc_video_info_t vcodec_info = {
         .vcodec = RTC_VCODEC_MJPEG,
-        .width = av_resolution[VIDEO_FRAME_SIZE].width,
-        .height = av_resolution[VIDEO_FRAME_SIZE].height,
+        .width = width,
+        .height = height,
         .fps = VIDEO_FPS,
         .len = VIDEO_MAX_SIZE,
     };
