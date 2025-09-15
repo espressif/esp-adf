@@ -92,7 +92,10 @@ static void _multi_room_play_task(void *para)
 static esp_err_t multi_room_play_start(const char *url)
 {
     audio_element_set_uri(http_stream_reader, url);
-    audio_element_process_init(http_stream_reader);
+    if (ESP_OK != audio_element_process_init(http_stream_reader)) {
+        ESP_LOGE(TAG, "Audio element process init failed, can not start multi_room_play service");
+        return ESP_FAIL;
+    }
     audio_element_run(http_stream_reader);
 
     play_task_run = true;
@@ -103,7 +106,7 @@ static esp_err_t multi_room_play_start(const char *url)
                             DEFAULT_MRM_TASK_PRIO,
                             true,
                             0) != ESP_OK) {
-        ESP_LOGE(TAG, "Can not start multi_room_play service");
+        ESP_LOGE(TAG, "Play task create failed, can not start multi_room_play service");
         return ESP_FAIL;
     }
 

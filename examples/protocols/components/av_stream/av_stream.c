@@ -713,8 +713,10 @@ int av_audio_get_vol(av_stream_handle_t av_stream, int *vol)
 static void init_jpeg_encoder(av_stream_handle_t av_stream)
 {
     jpeg_enc_config_t config = DEFAULT_JPEG_ENC_CONFIG();
-    config.width = av_resolution[av_stream->config.hal.video_framesize].width;
-    config.height = av_resolution[av_stream->config.hal.video_framesize].height;
+    uint16_t width = 0, height = 0;
+    av_stream_get_video_framesize(av_stream->config.hal.video_framesize, &width, &height);
+    config.width = width;
+    config.height = height;
     config.src_type = JPEG_PIXEL_FORMAT_YCbYCr;
     config.subsampling = JPEG_SUBSAMPLE_420;
     // config.rotate = JPEG_ROTATE_0D;
@@ -726,9 +728,11 @@ static int init_h264_encoder(av_stream_handle_t av_stream)
 {
 #if CONFIG_IDF_TARGET_ESP32S3
     esp_h264_enc_cfg_t cfg = DEFAULT_H264_ENCODER_CONFIG();
+    uint16_t width = 0, height = 0;
+    av_stream_get_video_framesize(av_stream->config.hal.video_framesize, &width, &height);
     cfg.pic_type = ESP_H264_RAW_FMT_YUV422;
-    cfg.width = av_resolution[av_stream->config.hal.video_framesize].width;
-    cfg.height = av_resolution[av_stream->config.hal.video_framesize].height;
+    cfg.width = width;
+    cfg.height = height;
     cfg.fps = VIDEO_FPS;
     cfg.gop_size = VIDEO_FPS * 3;
     cfg.target_bitrate = 400000;

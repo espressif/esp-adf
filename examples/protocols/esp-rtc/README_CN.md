@@ -71,10 +71,10 @@ idf.py -p PORT flash monitor
 
 ### 下载 flash 提示音
 
-- 此应用额外需要下载一个提示音的 bin 到 flash 中：
+- 此应用额外需要下载一个提示音的 bin 到 flash 中，注意 partition size 0x230000 需要与 partitions.csv 中的信息匹配：
 
 ```
-python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32s3 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x210000 ../components/audio_flash_tone/bin/audio-esp.bin
+python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32s3 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x230000 ../components/audio_flash_tone/bin/audio-esp.bin
 ```
 
 ## 如何使用例程
