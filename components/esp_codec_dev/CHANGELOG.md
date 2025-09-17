@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.0
+
+### Refactor:
+
+- Clean up the component dependency, don't depend on the `driver` component directly
+
 ## Un-Release
 
 ### Bug Fixed
