@@ -69,7 +69,6 @@ typedef struct {
     uint8_t          key_cache[HLS_KEY_CACHE_SIZE];
     uint8_t          key_size;
     hls_stream_key_t key;
-    uint64_t         sequence_no;
     esp_aes_context  aes_ctx;
     bool             aes_used;
 } http_stream_hls_key_t;
@@ -96,7 +95,9 @@ typedef struct http_stream {
     bool                            gzip_encoding;     /* Content is encoded */
     gzip_miniz_handle_t             gzip;              /* GZIP instance */
     http_stream_hls_key_t           *hls_key;
+    uint64_t                         hls_sequence_no;
     hls_handle_t                    *hls_media;
+    int                              url_index;
     int                             request_range_size;
     int64_t                         request_range_end;
     bool                            is_last_range;
@@ -104,6 +105,7 @@ typedef struct http_stream {
 } http_stream_t;
 
 static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
+static int _update_hls_info(http_stream_t *http);
 
 // `errno` is not thread safe in multiple HTTP-clients,
 // so it is necessary to save the errno number of HTTP clients to avoid reading and writing exceptions of HTTP-clients caused by errno exceptions
@@ -272,14 +274,13 @@ static esp_err_t _prepare_crypt(http_stream_t *http)
     if (ret < 0) {
         return ESP_FAIL;
     }
-    ret = hls_playlist_get_key(http->hls_media, http->hls_key->sequence_no, &http->hls_key->key);
+    ret = hls_playlist_get_key(http->hls_media, http->hls_sequence_no, &http->hls_key->key);
     if (ret != 0) {
         return ESP_FAIL;
     }
     esp_aes_init(&hls_key->aes_ctx);
     esp_aes_setkey(&hls_key->aes_ctx, (unsigned char*)hls_key->key.key, 128);
     hls_key->aes_used = true;
-    http->hls_key->sequence_no++;
     return ESP_OK;
 }
 
@@ -387,6 +388,15 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         }
     } while (0);
     if (hls) {
+        http->hls_sequence_no = hls_playlist_get_sequence_no(hls);
+        for (int i = 0; i < http->url_index; i++) {
+            char *next_url = http_playlist_get_next_track(http->playlist);
+            if (next_url == NULL) {
+                ESP_LOGE(TAG, "Url index %d over limited %d", http->url_index, i);
+                return ESP_FAIL;
+            }
+        }
+        http->hls_sequence_no += http->url_index;
         if (hls_playlist_is_encrypt(hls) == false) {
             _free_hls_key(http);
             hls_playlist_close(hls);
@@ -398,27 +408,9 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
                 ESP_LOGE(TAG, "Hls do not have key url");
                 return ESP_FAIL;
             }
-            if (http->hls_key == NULL) {
-                http->hls_key = (http_stream_hls_key_t *) calloc(1, sizeof(http_stream_hls_key_t));
-                if (http->hls_key == NULL) {
-                    ESP_LOGE(TAG, "No memory for hls key");
-                    return ESP_FAIL;
-                }
+            if (_update_hls_info(http) != ESP_OK) {
+                return ESP_FAIL;
             }
-            if (http->hls_key->key_url && strcmp(http->hls_key->key_url, key_url) == 0) {
-                http->hls_key->key_loaded = true;
-            } else {
-                if (http->hls_key->key_url) {
-                    audio_free(http->hls_key->key_url);
-                }
-                http->hls_key->key_loaded = false;
-                http->hls_key->key_url = audio_strdup(key_url);
-                if (http->hls_key->key_url == NULL) {
-                    ESP_LOGE(TAG, "No memory for hls key url");
-                    return ESP_FAIL;
-                } 
-            }
-            http->hls_key->sequence_no = hls_playlist_get_sequence_no(hls);
         }
     }
     return http->is_valid_playlist ? ESP_OK : ESP_FAIL;
@@ -570,7 +562,7 @@ _stream_open_begin:
         ESP_LOGE(TAG, "Error open connection, uri = NULL");
         return ESP_FAIL;
     }
-    
+
     ESP_LOGD(TAG, "URI=%s", uri);
     // if not initialize http client, initial it
     if (http->client == NULL) {
@@ -600,7 +592,7 @@ _stream_open_begin:
         return ESP_FAIL;
     }
 
-    if (_is_playlist(&info, uri) == true) {
+    if (_is_playlist(&info, uri) == true && http->is_playlist_resolved == false) {
         /**
          * `goto _stream_open_begin` blocks on http_open until it gets valid URL.
          * Ensure that the stop command is processed
@@ -704,6 +696,43 @@ static bool _check_range_done(audio_element_handle_t self)
     return last_range;
 }
 
+static int _update_hls_info(http_stream_t *http)
+{
+    char *key_url = hls_playlist_get_key_uri_by_seq(http->hls_media, http->hls_sequence_no);
+    if (key_url && http->hls_key == NULL) {
+        http->hls_key = audio_calloc(1, sizeof(http_stream_hls_key_t));
+        if (http->hls_key == NULL) {
+            ESP_LOGE(TAG, "No mem for HLS key");
+            return ESP_FAIL;
+        }
+    }
+    if (http->hls_key) {
+        if (key_url == NULL) {
+            ESP_LOGE(TAG, "Hls do not have key url");
+            return ESP_FAIL;
+        }
+        // Same key no need reload
+        if (http->hls_key->key_url && strcmp(http->hls_key->key_url, key_url) == 0) {
+            http->hls_key->key_loaded = true;
+            audio_free(key_url);
+        } else {
+            if (http->hls_key->key_url) {
+                audio_free(http->hls_key->key_url);
+            }
+            http->hls_key->key_loaded = false;
+            http->hls_key->key_url = key_url;
+        }
+    }
+    return ESP_OK;
+}
+
+static int _update_next_hls_info(http_stream_t *http)
+{
+    // Check HLS key need update or not
+    http->hls_sequence_no++;
+    return _update_hls_info(http);
+}
+
 static int _http_read(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
 {
     http_stream_t *http = (http_stream_t *)audio_element_getdata(self);
@@ -719,6 +748,9 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
             rlen = _http_read_data(http, buffer, len);
         }
     }
+    if (rlen <= 0) {
+        _update_next_hls_info(http);
+    }
     if (rlen <= 0 && http->auto_connect_next_track) {
         if (http_stream_auto_connect_next_track(self) == ESP_OK) {
             rlen = _http_read_data(http, buffer, len);
@@ -727,7 +759,7 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
     if (rlen <= 0) {
         http->_errno = esp_http_client_get_errno(http->client);
         ESP_LOGW(TAG, "No more data,errno:%d, total_bytes:%llu, rlen = %d", http->_errno, info.byte_pos, rlen);
-        if (http->_errno != 0) {  // Error occuered, reset connection
+        if (http->_errno != 0) {  // Error occurs, reset connection
             ESP_LOGW(TAG, "Got %d errno(%s)", http->_errno, strerror(http->_errno));
             return http->_errno;
         }
@@ -745,8 +777,8 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         return ESP_OK;
     } else {
         if (http->hls_key) {
-            int ret = esp_aes_crypt_cbc(&http->hls_key->aes_ctx, ESP_AES_DECRYPT, 
-                 rlen, (unsigned char*)http->hls_key->key.iv, 
+            int ret = esp_aes_crypt_cbc(&http->hls_key->aes_ctx, ESP_AES_DECRYPT,
+                 rlen, (unsigned char*)http->hls_key->key.iv,
                  (unsigned char*)buffer, (unsigned char*)buffer);
             if (rlen % 16 != 0) {
                 ESP_LOGE(TAG, "Data length %d not aligned", rlen);
@@ -873,6 +905,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     http->user_data = config->user_data;
     http->cert_pem = config->cert_pem;
     http->user_agent = config->user_agent;
+    http->url_index = config->url_index;
 
     if (config->crt_bundle_attach) {
 #if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
@@ -969,6 +1002,19 @@ redirection:
         return ESP_OK;
     }
     return ESP_FAIL;
+}
+
+esp_err_t http_stream_get_url_index(audio_element_handle_t el, int *url_idx)
+{
+    http_stream_t *http = (http_stream_t *)audio_element_getdata(el);
+    if (http->playlist == NULL || http->hls_media == NULL || http->playlist->is_incomplete) {
+        ESP_LOGI(TAG, "Only support for VOD HLS stream");
+        return ESP_ERR_NOT_SUPPORTED;
+    }
+    uint64_t start_seq = hls_playlist_get_sequence_no(http->hls_media);
+    *(url_idx) = (int)(http->hls_sequence_no - start_seq);
+    ESP_LOGI(TAG, "Current url index %d\n", *(url_idx));
+    return ESP_OK;
 }
 
 esp_err_t http_stream_fetch_again(audio_element_handle_t el)
