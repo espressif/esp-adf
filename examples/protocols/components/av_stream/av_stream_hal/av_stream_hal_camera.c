@@ -28,32 +28,112 @@
 
 static const char *TAG = "AV_STREAM_HAL";
 
-const av_resolution_info_t av_resolution[AV_FRAMESIZE_INVALID] = {
-    {   96,   96 }, /* 96x96 */
-    {  160,  120 }, /* QQVGA */
-    {  176,  144 }, /* QCIF  */
-    {  240,  176 }, /* HQVGA */
-    {  240,  240 }, /* 240x240 */
-    {  320,  240 }, /* QVGA  */
-    {  400,  296 }, /* CIF   */
-    {  480,  320 }, /* HVGA  */
-    {  640,  480 }, /* VGA   */
-    {  800,  600 }, /* SVGA  */
-    { 1024,  768 }, /* XGA   */
-    { 1280,  720 }, /* HD    */
-    { 1280, 1024 }, /* SXGA  */
-    { 1600, 1200 }, /* UXGA  */
-    // 3MP Sensors
-    { 1920, 1080 }, /* FHD   */
-    {  720, 1280 }, /* Portrait HD   */
-    {  864, 1536 }, /* Portrait 3MP   */
-    { 2048, 1536 }, /* QXGA  */
-    // 5MP Sensors
-    { 2560, 1440 }, /* QHD    */
-    { 2560, 1600 }, /* WQXGA  */
-    { 1088, 1920 }, /* Portrait FHD   */
-    { 2560, 1920 }, /* QSXGA  */
-};
+void av_stream_get_video_framesize(framesize_t framesize, uint16_t *width, uint16_t *height)
+{
+    switch (framesize) {
+        case FRAMESIZE_96X96:
+            *width = 96;
+            *height = 96;
+            break;
+        case FRAMESIZE_QQVGA:
+            *width = 160;
+            *height = 120;
+            break;
+        case FRAMESIZE_128X128:
+            *width = 128;
+            *height = 128;
+            break;
+        case FRAMESIZE_QCIF:
+            *width = 176;
+            *height = 144;
+            break;
+        case FRAMESIZE_HQVGA:
+            *width = 240;
+            *height = 176;
+            break;
+        case FRAMESIZE_240X240:
+            *width = 240;
+            *height = 240;
+            break;
+        case FRAMESIZE_QVGA:
+        default:
+            *width = 320;
+            *height = 240;
+            break;
+        case FRAMESIZE_320X320:
+            *width = 320;
+            *height = 320;
+            break;
+        case FRAMESIZE_CIF:
+            *width = 400;
+            *height = 296;
+            break;
+        case FRAMESIZE_HVGA:
+            *width = 480;
+            *height = 320;
+            break;
+        case FRAMESIZE_VGA:
+            *width = 640;
+            *height = 480;
+            break;
+        case FRAMESIZE_SVGA:    
+            *width = 800;
+            *height = 600;
+            break;
+        case FRAMESIZE_XGA:
+            *width = 1024;
+            *height = 768;
+            break;
+        case FRAMESIZE_HD:
+            *width = 1280;
+            *height = 720;
+            break;
+        case FRAMESIZE_SXGA:
+            *width = 1280;
+            *height = 1024;
+            break;
+        case FRAMESIZE_UXGA:
+            *width = 1600;
+            *height = 1200;
+            break;
+        case FRAMESIZE_FHD:
+            *width = 1920;
+            *height = 1080;
+            break;
+        case FRAMESIZE_P_HD:
+            *width = 720;
+            *height = 1280;
+            break;
+        case FRAMESIZE_P_3MP:
+            *width = 864;
+            *height = 1536;
+            break;
+        case FRAMESIZE_QXGA:
+            *width = 2048;
+            *height = 1536;
+            break;
+        case FRAMESIZE_QHD:
+            *width = 2560;
+            *height = 1440;
+            break;
+        case FRAMESIZE_WQXGA:
+            *width = 2560;
+            *height = 1600;
+            break;
+        case FRAMESIZE_P_FHD:
+            *width = 1080;
+            *height = 1920;
+            break;
+        case FRAMESIZE_QSXGA:
+            *width = 2560;
+            *height = 1920;
+            break;
+        case FRAMESIZE_5MP:
+            *width = 2592;
+            *height = 1944;
+            break;
+    }
+}
 
 #if CONFIG_IDF_TARGET_ESP32
 int av_stream_camera_init(av_stream_hal_config_t *config, void *cb, void *arg)
@@ -92,9 +172,12 @@ static esp_err_t usb_camera_init(av_stream_hal_config_t *config, void *camera_cb
 
     /* the quick demo skip the standred get descriptors process,
     users need to get params from camera descriptors from demo print */
+    uint16_t width = 0, height = 0;
+    av_stream_get_video_framesize(config->video_framesize, &width, &height);
+    ESP_LOGI(TAG, "camera frame size: %dx%d", width, height);
     uvc_config_t uvc_config = {
-        .frame_width = av_resolution[config->video_framesize].width,
-        .frame_height = av_resolution[config->video_framesize].height,
+        .frame_width = width,
+        .frame_height = height,
         .frame_interval = USB_CAMERA_FRAME_INTERVAL(VIDEO_FPS),
         .xfer_buffer_size = VIDEO_MAX_SIZE,
         .xfer_buffer_a = xfer_buffer_a,

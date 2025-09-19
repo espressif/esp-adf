@@ -29,6 +29,7 @@
 #include "i2s_stream.h"
 #include "board.h"
 #include "esp_lcd_panel_ops.h"
+#include "esp_camera.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,41 +52,6 @@ extern "C" {
 
 #define USB_CAMERA_FRAME_INTERVAL(fps) ((10000000) / fps)
 
-typedef enum {
-    AV_FRAMESIZE_96X96,    // 96x96
-    AV_FRAMESIZE_QQVGA,    // 160x120
-    AV_FRAMESIZE_QCIF,     // 176x144
-    AV_FRAMESIZE_HQVGA,    // 240x176
-    AV_FRAMESIZE_240X240,  // 240x240
-    AV_FRAMESIZE_QVGA,     // 320x240
-    AV_FRAMESIZE_CIF,      // 400x296
-    AV_FRAMESIZE_HVGA,     // 480x320
-    AV_FRAMESIZE_VGA,      // 640x480
-    AV_FRAMESIZE_SVGA,     // 800x600
-    AV_FRAMESIZE_XGA,      // 1024x768
-    AV_FRAMESIZE_HD,       // 1280x720
-    AV_FRAMESIZE_SXGA,     // 1280x1024
-    AV_FRAMESIZE_UXGA,     // 1600x1200
-    // 3MP Sensors
-    AV_FRAMESIZE_FHD,      // 1920x1080
-    AV_FRAMESIZE_P_HD,     //  720x1280
-    AV_FRAMESIZE_P_3MP,    //  864x1536
-    AV_FRAMESIZE_QXGA,     // 2048x1536
-    // 5MP Sensors
-    AV_FRAMESIZE_QHD,      // 2560x1440
-    AV_FRAMESIZE_WQXGA,    // 2560x1600
-    AV_FRAMESIZE_P_FHD,    // 1080x1920
-    AV_FRAMESIZE_QSXGA,    // 2560x1920
-    AV_FRAMESIZE_INVALID
-} av_framesize_t;
-
-typedef struct {
-    const uint16_t width;
-    const uint16_t height;
-} av_resolution_info_t;
-
-extern const av_resolution_info_t av_resolution[];
-
 /**
  * @brief AV stream hal configurations
  */
@@ -97,7 +63,7 @@ typedef struct {
     bool                        video_soft_enc;     /*!< Use software JPEG / H264 encoder */
     uint32_t                    audio_samplerate;   /*!< Audio sample rate */
     uint32_t                    audio_framesize;    /*!< Audio frame size */
-    av_framesize_t              video_framesize;    /*!< Video frame size */
+    framesize_t                 video_framesize;    /*!< Video frame size */
 } av_stream_hal_config_t;
 
 /**
@@ -149,6 +115,15 @@ int av_stream_audio_read(char *buf, int len, TickType_t wait_time, bool uac_en);
  *     - Number of bytes written
  */
 int av_stream_audio_write(char *buf, int len, TickType_t wait_time, bool uac_en);
+
+/**
+ * @brief         Get actual width and height from enum value
+ * 
+ * @param         framesize: Video framesize setting
+ * @param[out]    width: Video width
+ * @param[out]    height: Video height
+ */
+void av_stream_get_video_framesize(framesize_t framesize, uint16_t *width, uint16_t *height);
 
 /**
  * @brief      Intialize camera hal
