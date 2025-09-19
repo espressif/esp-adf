@@ -1,0 +1,15 @@
+dependencies:
+  protocol_examples_common:
+    path: ${IDF_PATH}/examples/common_components/protocol_examples_common
+
+  espressif/esp_hosted:
+    version: ~1.1
+    rules:
+    - if: target in [esp32p4]
+  espressif/esp_wifi_remote:
+    matches:
+    - if: idf_version <=5.4.0 && target in [esp32p4]
+      version: ~0.4
+    - if: idf_version >5.4.0 && target in [esp32p4]
+      version: ~0.6
+  espressif/esp_board_manager: ^0.3.0

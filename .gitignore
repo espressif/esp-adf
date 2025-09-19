@@ -56,3 +56,5 @@ coverage.info
 coverage_report/
 
 .vscode
+
+**/.cache/

@@ -1,0 +1,39 @@
+menu "Example Configuration"
+
+    config BAIDU_APP_ID
+        string "Baidu App ID"
+        default "appid**********"
+        help
+            Baidu application ID for authentication.
+
+    config BAIDU_USER_ID
+        string "Baidu User ID"
+        default "userid**********"
+        help
+            Baidu user ID for identification.
+
+    config BAIDU_WORKFLOW
+        string "Baidu Workflow"
+        default "workflow**********"
+        help
+            Baidu workflow configuration.
+
+    config BAIDU_LICENSE_KEY
+        string "Baidu License Key"
+        default "key**********"
+        help
+            Baidu license key for authorization.
+
+    config BAIDU_INSTANCE_ID
+        int "Baidu Instance ID"
+        default 123456
+        help
+            Baidu instance ID (integer value).
+
+    config SERVER_URL
+        string "Server URL"
+        default "http://192.168.3.73:8936/api/v1/aiagent"
+        help
+            Please refer to the README file in the brtc directory to set up the server, and then obtain the relevant URLs.
+
+endmenu

@@ -1,0 +1,13 @@
+dependencies:
+  espressif/gmf_ai_audio:
+    version: '~0.7'
+    rules:
+      - if: "target in [esp32p4, esp32s3, esp32]"
+  espressif/esp_audio_simple_player:
+    version: '^0.9.4'
+  espressif/gmf_loader:
+    version: "^0.7"
+  espressif/esp_video_codec:
+    version: "^0.5"
+  espressif/esp_capture:
+    version: "^0.7"
