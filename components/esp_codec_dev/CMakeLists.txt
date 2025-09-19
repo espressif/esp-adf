@@ -11,6 +11,13 @@ set(COMPONENT_SRCS
   audio_codec_sw_vol.c
 )
 
+set(priv_requires freertos)
+if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.3")
+  list(APPEND priv_requires esp_driver_gpio esp_driver_i2c esp_driver_i2s esp_driver_spi)
+else()
+  list(APPEND priv_requires driver)
+endif()
+
 list(APPEND COMPONENT_SRCS
   platform/audio_codec_gpio.c
   platform/audio_codec_ctrl_i2c.c
@@ -77,8 +84,7 @@ endif()
 idf_component_register(SRCS "${COMPONENT_SRCS}"
                        INCLUDE_DIRS "${COMPONENT_ADD_INCLUDEDIRS}"
                        PRIV_INCLUDE_DIRS "${COMPONENT_PRIV_INCLUDEDIRS}"
-                       REQUIRES driver
-                       PRIV_REQUIRES freertos)
+                       PRIV_REQUIRES ${priv_requires})
 # Library only support xtensa
 if (CONFIG_CODEC_ZL38063_SUPPORT)
   if (NOT ((CONFIG_IDF_TARGET STREQUAL "esp32c6") OR (CONFIG_IDF_TARGET STREQUAL "esp32c3") OR (CONFIG_IDF_TARGET STREQUAL "esp32p4")))
