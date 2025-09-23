@@ -6,6 +6,12 @@
 
 - Fixed the register configuration for es8311 when playing 8kHz audio without using MCLK.
 
+## v1.5.0
+
+### Refactor:
+
+- Clean up the component dependency, no longer depend on the `driver` component
+
 ## v1.4.0
 
 ### Bug Fixed
