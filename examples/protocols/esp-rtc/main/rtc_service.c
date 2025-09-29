@@ -77,6 +77,9 @@ static int _esp_rtc_event_handler(esp_rtc_event_t event, void *ctx)
             av_video_enc_stop(av_stream);
             av_video_dec_stop(av_stream);
             break;
+        case ESP_RTC_EVENT_CALL_ANSWERED:
+            ESP_LOGI(TAG, "ESP_RTC_EVENT_CALL_ANSWERED");
+            break;
         case ESP_RTC_EVENT_HANGUP:
             ESP_LOGI(TAG, "ESP_RTC_EVENT_HANGUP");
             break;

@@ -9,11 +9,13 @@ ESP Multi-Room Music is a Wi-Fi-based communication protocol to share music amon
 
 ### Resources
 
-Memory consumption:
+Memory consumption of the entire example:
 
-| memory_total (byte) | memory_inram (byte) | memory_psram (byte) |
-|---------------------|---------------------|---------------------|
-| 279632              | 145064              | 134568              |
+| Memory_total (Bytes) | Memory_inram (Bytes) | Memory_psram (Bytes) |
+|----------------------|----------------------|----------------------|
+| 279632               | 145064               | 134568               |
+
+Test is conducted using the ESP32-S3-Korvo-2 board.
 
 ## Environment Setup
 
