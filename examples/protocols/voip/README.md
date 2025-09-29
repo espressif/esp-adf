@@ -91,7 +91,7 @@ See the Getting Started Guide for full steps to configure and use [ESP-IDF Progr
 
 ### Download flash tone
 
-- To use this example, you need to download a tone onto flash:
+- To use this example, you need to download a tone onto flash, note that partition size 0x210000 needs to match the information in partitions.csv:
 
 ```
   python $ADF_PATH/esp-idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x210000 ../components/audio_flash_tone/bin/audio-esp.bin
