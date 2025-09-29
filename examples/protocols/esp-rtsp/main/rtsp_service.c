@@ -32,6 +32,19 @@
 static const char *TAG = "RTSP_SERVICE";
 
 static esp_rtsp_mode_t rtsp_mode;
+static uint32_t stream_first_pts;
+
+static uint32_t get_cur_pts()
+{
+    uint32_t cur_pts = 0;
+    if (stream_first_pts == 0) {
+        stream_first_pts = esp_timer_get_time() / 1000;
+        cur_pts = 0;
+    } else {
+        cur_pts = esp_timer_get_time() / 1000 - stream_first_pts;
+    }
+    return cur_pts;
+}
 
 static char *_get_network_ip()
 {
@@ -49,6 +62,7 @@ static int _esp_rtsp_state_handler(esp_rtsp_state_t state, void *ctx)
             ESP_LOGI(TAG, "RTSP_STATE_SETUP");
             break;
         case RTSP_STATE_PLAY:
+            stream_first_pts = 0;
             if (rtsp_mode == RTSP_CLIENT_PLAY) {
                 av_audio_dec_start(av_stream);
             } else {
@@ -58,6 +72,7 @@ static int _esp_rtsp_state_handler(esp_rtsp_state_t state, void *ctx)
             ESP_LOGI(TAG, "RTSP_STATE_PLAY");
             break;
         case RTSP_STATE_TEARDOWN:
+            stream_first_pts = 0;
             if (rtsp_mode == RTSP_CLIENT_PLAY) {
                 av_audio_dec_stop(av_stream);
             } else {
@@ -70,7 +85,7 @@ static int _esp_rtsp_state_handler(esp_rtsp_state_t state, void *ctx)
     return 0;
 }
 
-static int _send_audio(unsigned char *data, int len, void *ctx)
+static int _send_audio(unsigned char *data, int len, uint32_t *pts, void *ctx)
 {
     av_stream_handle_t av_stream = (av_stream_handle_t) ctx;
     av_stream_frame_t frame = {0};
@@ -79,6 +94,8 @@ static int _send_audio(unsigned char *data, int len, void *ctx)
     if (av_audio_enc_read(&frame, av_stream) < 0) {
         return 0;
     }
+    /* av_stream pts out of sync, use system pts instead */
+    *pts = get_cur_pts();
     return frame.len;
 }
 
@@ -91,7 +108,7 @@ static int _receive_audio(unsigned char *data, int len, void *ctx)
     return av_audio_dec_write(&frame, av_stream);
 }
 
-static int _send_video(unsigned char *data, unsigned int *len, void *ctx)
+static int _send_video(unsigned char *data, unsigned int *len, uint32_t *pts, void *ctx)
 {
     av_stream_handle_t av_stream = (av_stream_handle_t) ctx;
     av_stream_frame_t frame = {0};
@@ -101,6 +118,8 @@ static int _send_video(unsigned char *data, unsigned int *len, void *ctx)
         return ESP_FAIL;
     }
     *len = frame.len;
+    /* av_stream pts out of sync, use system pts instead */
+    *pts = get_cur_pts();
     return ESP_OK;
 }
 

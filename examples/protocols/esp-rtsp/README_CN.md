@@ -16,6 +16,16 @@ ESP RTSP 是一个基于标准 RSTP 协议的客户端和服务器。
 3. 支持作为 RTSP Player，将服务器的 RTSP 流拉下来进行播放。
     - 串口输入: ``` start 2 rtsp://192.168.1.1:554/live ```
 
+### 资源列表
+
+示例内存消耗：
+
+|Memory_total (Bytes)|Memory_inram (Bytes)|Memory_psram (Bytes)
+|---|---|---
+|241364 |97744 |143620
+
+测试使用 ESP32-S3-Korvo-2 开发板，示例模式选择为 Server。
+
 ## 环境配置
 
 ### 硬件要求

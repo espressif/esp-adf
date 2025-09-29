@@ -24,6 +24,16 @@ Detailed codec support for `esp_rtmp` is as follows:
 
 To play RTMP living stream or saved FLV file on a PC, please refer to [Example Functionality](#example-functionality).
 
+### Resources
+
+Memory consumption of the entire example:
+
+| Memory_total (Bytes) | Memory_inram (Bytes) | Memory_psram (Bytes) |
+|----------------------|----------------------|----------------------|
+| 211060               | 95700                | 115360               |
+
+Test is conducted using the ESP32-S3-Korvo-2 board, the example mode is selected as Server.
+
 ## Environment Setup
 
 ### Hardware Required
