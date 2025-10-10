@@ -75,6 +75,15 @@ int esp_codec_dev_read_reg(esp_codec_dev_handle_t codec, int reg, int *val);
 int esp_codec_dev_write_reg(esp_codec_dev_handle_t codec, int reg, int val);
 
 /**
+ * @brief         Dump registers from codec device
+ * @param         codec: Codec device handle
+ * @return        ESP_CODEC_DEV_OK: Read success
+ *                ESP_CODEC_DEV_INVALID_ARG: Invalid arguments
+ *                ESP_CODEC_DEV_NOT_SUPPORT: Not supported
+ */
+int esp_codec_dev_dump_reg(esp_codec_dev_handle_t codec);
+
+/**
  * @brief         Read data from codec
  * @param         codec: Codec device handle
  * @param         data: Data to be read
