@@ -248,7 +248,7 @@ dispose(gd_GIF *gif)
 
 - **帧率对比**
 
-测试同样动画效果的的 GIF 和 AVI 文件（30 fps，240×240×2，双屏显示），实际 FPS 与 CPU Loading 如下：
+测试同样动画效果的 GIF 和 AVI 文件（30 fps，240×240×2，双屏显示），实际 FPS 与 CPU Loading 如下：
 
 |测试条件|FPS|CPU Loading|
 |-------|---|-----------|

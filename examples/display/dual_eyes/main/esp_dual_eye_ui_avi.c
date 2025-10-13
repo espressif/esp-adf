@@ -42,10 +42,11 @@ typedef struct {
     uint32_t       frame_count;
     TaskHandle_t   task_handle;
     uint32_t       notify_bits;
-    void          *panel;
+    lv_obj_t      *img_obj;
+    lv_img_dsc_t  *img_dsc;
 } avi_player_data_t;
 
-static const char *TAG        = "DUAL_EYE_PLAYER";
+static const char *TAG        = "DUAL_EYE_UI_AVI";
 
 #if TASK_STACK_IN_PSRAM
 static const char *AVI_FILE_L = "/sdcard/avi/angry_l.avi";
@@ -55,16 +56,12 @@ static const char *AVI_FILE_L = "/littlefs/angry_l.avi";
 static const char *AVI_FILE_R = "/littlefs/angry_r.avi";
 #endif
 
-// Both eyes share the same spi bus, so we need to use a mutex to protect the panel
-static SemaphoreHandle_t s_panel_mutex = NULL;
-
 /* Function declarations */
 static void  report_fps(avi_player_data_t *player_data);
 static void  free_jpeg_buffers(avi_player_data_t *player_data);
 static void  cleanup_task(esp_gmf_oal_thread_t task);
 static void  cleanup_player_data(avi_player_data_t *player_data);
-static void  cleanup_lcd_panel(esp_lcd_panel_handle_t panel, esp_lcd_panel_io_handle_t io);
-static esp_err_t    init_player_data(esp_lcd_panel_handle_t panel, avi_player_data_t **player_data);
+static esp_err_t    init_player_data(lv_disp_t *disp, avi_player_data_t **player_data);
 static esp_err_t    allocate_jpeg_buffers(avi_player_data_t *player_data, size_t width, size_t height);
 static jpeg_error_t esp_jpeg_decode_one_picture(uint8_t *input_buf, int len, uint8_t *output_buf, int *out_len);
 
@@ -136,13 +133,13 @@ static void lcd_draw_task(void *arg)
     while (1) {
         uint8_t *color_data = NULL;
         if (xQueueReceive(player_data->frame_queue, &color_data, pdMS_TO_TICKS(QUEUE_TIMEOUT_MS)) == pdPASS) {
-            if (xSemaphoreTake(s_panel_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
-                ESP_LOGE(TAG, "Failed to take panel mutex");
-                continue;
-            }
-            esp_lcd_panel_draw_bitmap((esp_lcd_panel_handle_t)player_data->panel, 0, 0,
-                                      LCD_WIDTH, LCD_HEIGHT, color_data);
-            xSemaphoreGive(s_panel_mutex);
+            lvgl_port_lock(0);
+            player_data->img_dsc->data = color_data;
+            lv_img_cache_invalidate_src(player_data->img_dsc);
+            lv_img_set_src(player_data->img_obj, player_data->img_dsc);
+            lv_obj_invalidate(player_data->img_obj);
+            lvgl_port_unlock();
+            vTaskDelay(pdMS_TO_TICKS(1)); // Release CPU usage and ensure alternating refresh as much as possible
         } else {
             ESP_LOGW(TAG, "Timeout waiting for receive data in LCD draw task");
         }
@@ -150,31 +147,47 @@ static void lcd_draw_task(void *arg)
     esp_gmf_oal_thread_delete(NULL);
 }
 
+static lv_obj_t *create_img_object(lv_disp_t *disp)
+{
+    if (!disp) {
+        ESP_LOGE(TAG, "Display is NULL");
+        return NULL;
+    }
+
+    // Set screen background transparency to avoid fill operation
+    lv_obj_set_style_bg_opa(lv_disp_get_scr_act(disp), LV_OPA_TRANSP, LV_PART_MAIN);
+
+    lv_obj_t *img = lv_img_create(lv_disp_get_scr_act(disp));
+    if (!img) {
+        ESP_LOGE(TAG, "Failed to create GIF object");
+        return NULL;
+    }
+
+    // Set object properties
+    lv_obj_set_style_bg_opa(img, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_border_opa(img, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_align(img, LV_ALIGN_CENTER, 0, 0);
+
+    return img;
+}
+
 static void player_task(void *arg)
 {
-    esp_lcd_panel_io_handle_t io_left = NULL;
-    esp_lcd_panel_io_handle_t io_right = NULL;
-    esp_lcd_panel_handle_t panel_left = NULL;
-    esp_lcd_panel_handle_t panel_right = NULL;
     avi_player_data_t *data_left = NULL;
     avi_player_data_t *data_right = NULL;
+    lv_disp_t *disp_left = NULL;
+    lv_disp_t *disp_right = NULL;
     esp_gmf_oal_thread_t draw_left_handle = NULL;
     esp_gmf_oal_thread_t draw_right_handle = NULL;
 
-    s_panel_mutex = xSemaphoreCreateMutex();
-    if (s_panel_mutex == NULL) {
-        ESP_LOGE(TAG, "Failed to create mutex");
-        goto cleanup;
-    }
-
     // Initialize display
-    if (esp_dual_lcd_driver_init(&panel_left, &io_left, &panel_right, &io_right) != ESP_OK) {
+    if (esp_dual_display_start(&disp_left, &disp_right) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize display");
         goto cleanup;
     }
 
-    if (init_player_data(panel_left, &data_left) != ESP_OK ||
-        init_player_data(panel_right, &data_right) != ESP_OK) {
+    if (init_player_data(disp_left, &data_left) != ESP_OK ||
+        init_player_data(disp_right, &data_right) != ESP_OK) {
         goto cleanup;
     }
 
@@ -200,7 +213,7 @@ static void player_task(void *arg)
         .buffer_size = AVI_PLAYER_BUFFER_SIZE,
         .video_cb = avi_video_frame,
         .avi_play_end_cb = avi_play_end,
-        .coreID = SPI_ISR_CPU_ID,
+        .coreID = 0,
         .priority = AVI_PLAYER_TASK_PRIO,
         .user_data = data_left,
         .stack_size = AVI_PLAYER_STACK_SIZE,
@@ -252,11 +265,16 @@ cleanup:
     cleanup_task(draw_right_handle);
     cleanup_player_data(data_left);
     cleanup_player_data(data_right);
-    cleanup_lcd_panel(panel_left, io_left);
-    cleanup_lcd_panel(panel_right, io_right);
-    if (s_panel_mutex) {
-        vSemaphoreDelete(s_panel_mutex);
+    if (disp_left != NULL) {
+        lvgl_port_remove_disp(disp_left);
+        disp_left = NULL;
     }
+    if (disp_right != NULL) {
+        lvgl_port_remove_disp(disp_right);
+        disp_right = NULL;
+    }
+    lvgl_port_deinit();
+    esp_dual_lcd_driver_deinit();
     ESP_LOGW(TAG, "AVI player finished");
     esp_gmf_oal_thread_delete(NULL);
 }
@@ -311,25 +329,20 @@ static void report_fps(avi_player_data_t *player_data)
 
     if (elapsed_time >= FPS_REPORT_INTERVAL_US) {
         float fps = player_data->frame_count * 1000000.0f / elapsed_time;
-        ESP_LOGI(TAG, "FPS(%p): %.1f", player_data->panel, fps);
+        ESP_LOGI(TAG, "FPS(%p): %.1f", player_data->img_obj, fps);
         player_data->last_time = current_time;
         player_data->frame_count = 0;
     }
 }
 
-static esp_err_t init_player_data(esp_lcd_panel_handle_t panel, avi_player_data_t **player_data)
+static esp_err_t init_player_data(lv_disp_t *disp, avi_player_data_t **player_data)
 {
-    if (!player_data || !panel) {
-        return ESP_ERR_INVALID_ARG;
-    }
-
     *player_data = calloc(1, sizeof(avi_player_data_t));
     if (!*player_data) {
         ESP_LOGE(TAG, "Failed to allocate player data");
         return ESP_ERR_NO_MEM;
     }
 
-    (*player_data)->panel = panel;
     (*player_data)->frame_queue = xQueueCreate(2, sizeof(uint8_t *));
     if (!(*player_data)->frame_queue) {
         ESP_LOGE(TAG, "Failed to create data queue");
@@ -337,6 +350,22 @@ static esp_err_t init_player_data(esp_lcd_panel_handle_t panel, avi_player_data_
         *player_data = NULL;
         return ESP_ERR_NO_MEM;
     }
+
+    lvgl_port_lock(0);
+    (*player_data)->img_obj = create_img_object(disp);
+    (*player_data)->img_dsc = calloc(1, sizeof(lv_img_dsc_t));
+    if (!(*player_data)->img_obj || !(*player_data)->img_dsc) {
+        ESP_LOGE(TAG, "Failed to create image object or descriptor");
+        cleanup_player_data(*player_data);
+        *player_data = NULL;
+        lvgl_port_unlock();
+        return ESP_ERR_NO_MEM;
+    }
+    (*player_data)->img_dsc->header.cf = LV_IMG_CF_TRUE_COLOR;
+    (*player_data)->img_dsc->header.w = LCD_WIDTH;
+    (*player_data)->img_dsc->header.h = LCD_HEIGHT;
+    (*player_data)->img_dsc->data_size = LCD_WIDTH * LCD_HEIGHT * 2;
+    lvgl_port_unlock();
 
     return ESP_OK;
 }
@@ -348,18 +377,17 @@ static void cleanup_player_data(avi_player_data_t *player_data)
         if (player_data->frame_queue) {
             vQueueDelete(player_data->frame_queue);
         }
+        if (player_data->img_obj) {
+            lvgl_port_lock(0);
+            lv_obj_del(player_data->img_obj);
+            player_data->img_obj = NULL;
+            lvgl_port_unlock();
+        }
+        if (player_data->img_dsc) {
+            free(player_data->img_dsc);
+            player_data->img_dsc = NULL;
+        }
         free(player_data);
-    }
-}
-
-static void cleanup_lcd_panel(esp_lcd_panel_handle_t panel, esp_lcd_panel_io_handle_t io)
-{
-    // Delete the panel and IO handles
-    if (panel) {
-        esp_lcd_panel_del(panel);
-    }
-    if (io) {
-        esp_lcd_panel_io_del(io);
     }
 }
 
@@ -444,7 +472,7 @@ jpeg_dec_failed:
     return ret;
 }
 
-void avi_player_start(void)
+void dual_eye_ui_avi_start(void)
 {
     esp_gmf_oal_thread_create(NULL, "player_task", player_task, NULL,
                                 PLAYER_TASK_STACK_SIZE, PLAYER_TASK_PRIO, TASK_STACK_IN_PSRAM, 1);

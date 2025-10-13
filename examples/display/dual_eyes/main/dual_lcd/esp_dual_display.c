@@ -16,7 +16,7 @@ esp_err_t esp_dual_display_start(lv_disp_t **disp_left, lv_disp_t **disp_right)
     display_cfg_t cfg = {
         .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),
         .double_buffer = true,
-        .trans_size = TRANS_SIZE,
+        .trans_size = 0,
         .buffer_size = BSP_LCD_H_RES * BSP_LCD_V_RES,
         .flags = {
             .buff_dma = false,
