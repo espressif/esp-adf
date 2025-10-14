@@ -19,6 +19,11 @@ typedef struct {
     float              hw_gain;
 } audio_codec_es8311_t;
 
+typedef struct {
+    audio_codec_es8311_t *adc;
+    audio_codec_es8311_t *dac;
+} paired_8311_codec_t;
+
 /*
  * Clock coefficient structure
  */
@@ -154,6 +159,48 @@ static const esp_codec_dev_vol_range_t vol_range = {
     },
 };
 
+static paired_8311_codec_t paired_8311;
+
+static inline bool es8311_is_used(void)
+{
+    if (paired_8311.adc || paired_8311.dac) {
+        return true;
+    }
+    return false;
+}
+
+static inline void es8311_add_pair(audio_codec_es8311_t *codec)
+{
+    if (codec->cfg.codec_mode & ESP_CODEC_DEV_WORK_MODE_ADC) {
+        if (paired_8311.adc == NULL) {
+            paired_8311.adc = codec;
+            return;
+        }
+    }
+    if (codec->cfg.codec_mode & ESP_CODEC_DEV_WORK_MODE_DAC) {
+        if (paired_8311.dac == NULL) {
+            paired_8311.dac = codec;
+            return;
+        }
+    }
+}
+
+static void es8311_remove_pair(audio_codec_es8311_t *codec)
+{
+    if (codec->cfg.codec_mode & ESP_CODEC_DEV_WORK_MODE_ADC) {
+        if (paired_8311.adc == codec) {
+            paired_8311.adc = NULL;
+            return;
+        }
+    }
+    if (codec->cfg.codec_mode & ESP_CODEC_DEV_WORK_MODE_DAC) {
+        if (paired_8311.dac == codec) {
+            paired_8311.dac = NULL;
+            return;
+        }
+    }
+}
+
 static int es8311_write_reg(audio_codec_es8311_t *codec, int reg, int value)
 {
     return codec->cfg.ctrl_if->write_reg(codec->cfg.ctrl_if, reg, 1, &value, 1);
@@ -240,6 +287,10 @@ static int get_coeff(uint32_t mclk, uint32_t rate)
 
 static int es8311_suspend(audio_codec_es8311_t *codec)
 {
+    es8311_remove_pair(codec);
+    if (es8311_is_used()) {
+        return ESP_CODEC_DEV_OK;
+    }
     int ret = es8311_write_reg(codec, ES8311_DAC_REG32, 0x00);
     ret |= es8311_write_reg(codec, ES8311_ADC_REG17, 0x00);
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG0E, 0xFF);
@@ -289,8 +340,7 @@ static int es8311_start(audio_codec_es8311_t *codec)
     }
     dac_iface &= 0xBF;
     adc_iface &= 0xBF;
-    adc_iface |= BITS(6);
-    dac_iface |= BITS(6);
+
     int codec_mode = codec->cfg.codec_mode;
     if (codec_mode == ESP_CODEC_DEV_WORK_MODE_LINE) {
         ESP_LOGE(TAG, "Codec not support LINE mode");
@@ -308,7 +358,9 @@ static int es8311_start(audio_codec_es8311_t *codec)
 
     ret |= es8311_write_reg(codec, ES8311_ADC_REG17, 0xBF);
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG0E, 0x02);
-    ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG12, 0x00);
+    if (codec_mode == ESP_CODEC_DEV_WORK_MODE_DAC || codec_mode == ESP_CODEC_DEV_WORK_MODE_BOTH) {
+        ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG12, 0x00);
+    }
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG14, 0x1A);
 
     // pdm dmic enable or disable
@@ -324,6 +376,7 @@ static int es8311_start(audio_codec_es8311_t *codec)
     ret |= es8311_write_reg(codec, ES8311_ADC_REG15, 0x40);
     ret |= es8311_write_reg(codec, ES8311_DAC_REG37, 0x08);
     ret |= es8311_write_reg(codec, ES8311_GP_REG45, 0x00);
+    es8311_add_pair(codec);
     return ret;
 }
 
@@ -397,7 +450,7 @@ static void es8311_pa_power(audio_codec_es8311_t *codec, es_pa_setting_t pa_sett
     }
     if (pa_setting & ES_PA_SETUP) {
         codec->cfg.gpio_if->setup(pa_pin, AUDIO_GPIO_DIR_OUT, AUDIO_GPIO_MODE_FLOAT);
-    } 
+    }
     if (pa_setting & ES_PA_ENABLE) {
         codec->cfg.gpio_if->set(pa_pin, codec->cfg.pa_reverted ? false : true);
     }
@@ -438,7 +491,7 @@ static int es8311_config_sample(audio_codec_es8311_t *codec, int sample_rate)
     }
     if (codec->cfg.use_mclk == false) {
         datmp = 3;
-        if (sample_rate == 8000) { 
+        if (sample_rate == 8000) {
             /* When the sample rate is 8kHz, BCLK requires at least 512K (slot bit needs to be configured to 32bit).
                 DIG_MCLK = LRCK * 256 = BCLK * 4 */
             datmp = 2;
@@ -603,11 +656,16 @@ static int es8311_enable(const audio_codec_if_t *h, bool enable)
     if (enable == codec->enabled) {
         return ESP_CODEC_DEV_OK;
     }
+    int codec_mode = codec->cfg.codec_mode;
     if (enable) {
         ret = es8311_start(codec);
-        es8311_pa_power(codec, ES_PA_ENABLE);
+        if (codec_mode == ESP_CODEC_DEV_WORK_MODE_DAC || codec_mode == ESP_CODEC_DEV_WORK_MODE_BOTH) {
+            es8311_pa_power(codec, ES_PA_ENABLE);
+        }
     } else {
-        es8311_pa_power(codec, ES_PA_DISABLE);
+        if (codec_mode == ESP_CODEC_DEV_WORK_MODE_DAC || codec_mode == ESP_CODEC_DEV_WORK_MODE_BOTH) {
+            es8311_pa_power(codec, ES_PA_DISABLE);
+        }
         ret = es8311_suspend(codec);
     }
     if (ret == ESP_CODEC_DEV_OK) {
