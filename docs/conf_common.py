@@ -8,12 +8,17 @@ from local_util import run_cmd_get_output, copy_if_modified
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
 
+doxygen_version = run_cmd_get_output('doxygen --version')
+print(f"Doxygen version: {doxygen_version}")
+
 builddir = '_build'
 if 'BUILDDIR' in os.environ:
     builddir = os.environ['BUILDDIR']
 
 # Generate 'kconfig.inc' file from components' Kconfig files
-kconfig_inc_path = '{}/inc/kconfig.inc'.format(builddir)
+kconfig_inc_folder = f'{builddir}/inc/'
+os.makedirs(kconfig_inc_folder, exist_ok=True)
+kconfig_inc_path = kconfig_inc_folder + 'kconfig.inc'
 os.system('python ../gen-kconfig-doc.py > ' + kconfig_inc_path + '.in')
 copy_if_modified(kconfig_inc_path + '.in', kconfig_inc_path)
 
@@ -22,8 +27,7 @@ languages = ['en', 'zh_CN']
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions += ['link-roles',
-               'sphinx_copybutton',
+extensions += ['sphinx_copybutton',
                'sphinxcontrib.wavedrom',
                'esp_docs.esp_extensions.dummy_build_system',
                'esp_docs.esp_extensions.run_doxygen',

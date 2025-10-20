@@ -20,138 +20,135 @@ PROJECT_NAME = "Espressif Advanced Development Framework Guide (ESP-ADF)"
 ## These files are placed in '_inc' directory
 ## and used to include in API reference documentation
 
-INPUT = \
-    ## Audio Pipeline
-    $(PROJECT_PATH)/components/audio_pipeline/include/audio_element.h \
-    $(PROJECT_PATH)/components/audio_pipeline/include/audio_pipeline.h \
-    $(PROJECT_PATH)/components/audio_pipeline/include/audio_event_iface.h \
-    $(PROJECT_PATH)/components/audio_pipeline/include/audio_common.h \
-    $(PROJECT_PATH)/components/audio_pipeline/include/ringbuf.h \
-    ## Audio Stream
-    $(PROJECT_PATH)/components/audio_stream/include/fatfs_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/http_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/i2s_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/raw_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/spiffs_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/tcp_client_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/algorithm_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/pwm_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/tone_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/embed_flash_stream.h \
-    $(PROJECT_PATH)/components/audio_stream/include/tts_stream.h \
-    ## ESP Codec
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/esp_decoder.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/audio_type_def.h \
-    ## ESP Codec - Decoder
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/aac_decoder.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/amr_decoder.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/flac_decoder.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/mp3_decoder.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/ogg_decoder.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/opus_decoder.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/wav_decoder.h \
-    ## ESP Codec - Encoder
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/amrnb_encoder.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/amrwb_encoder.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/wav_encoder.h \
-    ## ESP Codec - Auto
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_aac_dec.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_amr_dec.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_flac_dec.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_mp3_dec.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_ogg_dec.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_opus_dec.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_wav_dec.h \
-    ## Audio Processing
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/wav_head.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/esp_downmix.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/esp_equalizer.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/esp_resample.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/esp_sonic.h \
-    ## Audio Processing Wrappers
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/downmix.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/equalizer.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/filter_resample.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/audio_sonic.h \
-    ## ESP Audio
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_audio/include/audio_def.h \
-    $(PROJECT_PATH)/components/esp-adf-libs/esp_audio/include/esp_audio.h \
-    ## Speech Recognition
-    $(PROJECT_PATH)/components/audio_recorder/include/audio_recorder.h \
-    $(PROJECT_PATH)/components/audio_recorder/include/recorder_encoder.h \
-    $(PROJECT_PATH)/components/audio_recorder/include/recorder_sr.h \
-    ## Common Peripherals
-    $(PROJECT_PATH)/components/esp_peripherals/include/esp_peripherals.h \
-    $(PROJECT_PATH)/components/esp_peripherals/include/periph_sdcard.h \
-    $(PROJECT_PATH)/components/esp_peripherals/include/periph_touch.h \
-    $(PROJECT_PATH)/components/esp_peripherals/include/periph_button.h \
-    $(PROJECT_PATH)/components/esp_peripherals/include/periph_led.h \
-    $(PROJECT_PATH)/components/esp_peripherals/include/periph_wifi.h \
-    $(PROJECT_PATH)/components/esp_peripherals/include/periph_console.h \
-    $(PROJECT_PATH)/components/esp_peripherals/include/periph_spiffs.h \
-    $(PROJECT_PATH)/components/esp_peripherals/include/periph_is31fl3216.h \
-    $(PROJECT_PATH)/components/esp_peripherals/include/periph_adc_button.h \
-    ## Audio HAL
-    $(PROJECT_PATH)/components/audio_board/include/board_pins_config.h \
-    $(PROJECT_PATH)/components/audio_hal/driver/es8388/es8388.h \
-    $(PROJECT_PATH)/components/audio_hal/driver/es8374/es8374.h \
-    $(PROJECT_PATH)/components/audio_hal/driver/zl38063/zl38063.h \
-    $(PROJECT_PATH)/components/audio_hal/include/audio_hal.h \
-    ## Audio SAL
-    $(PROJECT_PATH)/components/audio_sal/include/audio_mutex.h \
-    $(PROJECT_PATH)/components/audio_sal/include/audio_mem.h \
-    ## Services
-    $(PROJECT_PATH)/components/bluetooth_service/include/bluetooth_service.h \
-    $(PROJECT_PATH)/components/bluetooth_service/include/hfp_stream.h \
-    $(PROJECT_PATH)/components/bluetooth_service/include/bt_keycontrol.h \
-    $(PROJECT_PATH)/components/bluetooth_service/include/a2dp_stream.h \
-    $(PROJECT_PATH)/components/input_key_service/include/input_key_service.h \
-    $(PROJECT_PATH)/components/input_key_service/include/input_key_com_user_id.h \
-    $(PROJECT_PATH)/components/dueros_service/include/dueros_service.h \
-    $(PROJECT_PATH)/components/display_service/include/display_service.h \
-    $(PROJECT_PATH)/components/display_service/led_bar/include/led_bar_aw2013.h \
-    $(PROJECT_PATH)/components/display_service/led_bar/include/led_bar_is31x.h \
-    $(PROJECT_PATH)/components/display_service/led_bar/include/led_bar_ws2812.h \
-    $(PROJECT_PATH)/components/display_service/led_indicator/include/led_indicator.h \
-    $(PROJECT_PATH)/components/coredump_upload_service/include/coredump_upload_service.h \
-    $(PROJECT_PATH)/components/battery_service/include/battery_service.h \
-    $(PROJECT_PATH)/components/battery_service/monitors/include/voltage_monitor.h \
-    $(PROJECT_PATH)/components/ota_service/include/ota_service.h \
-    $(PROJECT_PATH)/components/ota_service/include/esp_fs_ota.h \
-    $(PROJECT_PATH)/components/ota_service/include/ota_proc_default.h \
-    ## Dispatcher framwork
-    $(PROJECT_PATH)/components/esp_dispatcher/include/periph_service.h \
-    $(PROJECT_PATH)/components/esp_dispatcher/include/audio_service.h \
-    ## Cloud Services
-    $(PROJECT_PATH)/components/wifi_service/include/airkiss_config.h \
-    $(PROJECT_PATH)/components/wifi_service/include/blufi_config.h \
-    $(PROJECT_PATH)/components/wifi_service/include/smart_config.h \
-    $(PROJECT_PATH)/components/wifi_service/include/esp_wifi_setting.h \
-    $(PROJECT_PATH)/components/wifi_service/include/wifi_service.h \
-    $(PROJECT_PATH)/components/wifi_service/include/wifi_ssid_manager.h \
-    ## Playlist
-    $(PROJECT_PATH)/components/playlist/include/dram_list.h \
-    $(PROJECT_PATH)/components/playlist/include/flash_list.h \
-    $(PROJECT_PATH)/components/playlist/include/partition_list.h \
-    $(PROJECT_PATH)/components/playlist/include/sdcard_list.h \
-    $(PROJECT_PATH)/components/playlist/include/playlist.h \
-    $(PROJECT_PATH)/components/playlist/include/sdcard_scan.h \
-    ## Codec Device
-    $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev.h \
-    $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev_vol.h \
-    $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev_defaults.h \
-    $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev_os.h \
-    $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev_types.h \
-    $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_vol_if.h \
-    $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_if.h \
-    $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_gpio_if.h \
-    $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_data_if.h \
-    $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_ctrl_if.h \
-    ## Audio Mixer
-    $(PROJECT_PATH)/components/audio_mixer/include/audio_mixer.h \
-    ##
-    ## Audio Player
-    ##
+INPUT =
+## Audio Pipeline
+INPUT += $(PROJECT_PATH)/components/audio_pipeline/include/audio_element.h
+INPUT += $(PROJECT_PATH)/components/audio_pipeline/include/audio_pipeline.h
+INPUT += $(PROJECT_PATH)/components/audio_pipeline/include/audio_event_iface.h
+INPUT += $(PROJECT_PATH)/components/audio_pipeline/include/audio_common.h
+INPUT += $(PROJECT_PATH)/components/audio_pipeline/include/ringbuf.h
+## Audio Stream
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/fatfs_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/http_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/i2s_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/raw_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/spiffs_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/tcp_client_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/algorithm_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/pwm_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/tone_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/embed_flash_stream.h
+INPUT += $(PROJECT_PATH)/components/audio_stream/include/tts_stream.h
+## ESP Codec
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/esp_decoder.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/audio_type_def.h
+## ESP Codec - Decoder
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/aac_decoder.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/amr_decoder.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/flac_decoder.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/mp3_decoder.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/ogg_decoder.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/opus_decoder.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/wav_decoder.h
+## ESP Codec - Encoder
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/amrnb_encoder.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/amrwb_encoder.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/wav_encoder.h
+## ESP Codec - Auto
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_aac_dec.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_amr_dec.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_flac_dec.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_mp3_dec.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_ogg_dec.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_opus_dec.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/auto_wav_dec.h
+## Audio Processing
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/wav_head.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/esp_downmix.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/esp_equalizer.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/esp_resample.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/processing/esp_sonic.h
+## Audio Processing Wrappers
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/downmix.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/equalizer.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/filter_resample.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_codec/include/codec/audio_sonic.h
+## ESP Audio
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_audio/include/audio_def.h
+INPUT += $(PROJECT_PATH)/components/esp-adf-libs/esp_audio/include/esp_audio.h
+## Speech Recognition
+INPUT += $(PROJECT_PATH)/components/audio_recorder/include/audio_recorder.h
+INPUT += $(PROJECT_PATH)/components/audio_recorder/include/recorder_encoder.h
+INPUT += $(PROJECT_PATH)/components/audio_recorder/include/recorder_sr.h
+## Common Peripherals
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/esp_peripherals.h
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/periph_sdcard.h
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/periph_touch.h
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/periph_button.h
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/periph_led.h
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/periph_wifi.h
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/periph_console.h
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/periph_spiffs.h
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/periph_is31fl3216.h
+INPUT += $(PROJECT_PATH)/components/esp_peripherals/include/periph_adc_button.h
+## Audio HAL
+INPUT += $(PROJECT_PATH)/components/audio_board/include/board_pins_config.h
+INPUT += $(PROJECT_PATH)/components/audio_hal/driver/es8388/es8388.h
+INPUT += $(PROJECT_PATH)/components/audio_hal/driver/es8374/es8374.h
+INPUT += $(PROJECT_PATH)/components/audio_hal/driver/zl38063/zl38063.h
+INPUT += $(PROJECT_PATH)/components/audio_hal/include/audio_hal.h
+## Audio SAL
+INPUT += $(PROJECT_PATH)/components/audio_sal/include/audio_mutex.h
+INPUT += $(PROJECT_PATH)/components/audio_sal/include/audio_mem.h
+## Services
+INPUT += $(PROJECT_PATH)/components/bluetooth_service/include/bluetooth_service.h
+INPUT += $(PROJECT_PATH)/components/bluetooth_service/include/hfp_stream.h
+INPUT += $(PROJECT_PATH)/components/bluetooth_service/include/bt_keycontrol.h
+INPUT += $(PROJECT_PATH)/components/bluetooth_service/include/a2dp_stream.h
+INPUT += $(PROJECT_PATH)/components/input_key_service/include/input_key_service.h
+INPUT += $(PROJECT_PATH)/components/input_key_service/include/input_key_com_user_id.h
+INPUT += $(PROJECT_PATH)/components/dueros_service/include/dueros_service.h
+INPUT += $(PROJECT_PATH)/components/display_service/include/display_service.h
+INPUT += $(PROJECT_PATH)/components/display_service/led_bar/include/led_bar_aw2013.h
+INPUT += $(PROJECT_PATH)/components/display_service/led_bar/include/led_bar_is31x.h
+INPUT += $(PROJECT_PATH)/components/display_service/led_bar/include/led_bar_ws2812.h
+INPUT += $(PROJECT_PATH)/components/display_service/led_indicator/include/led_indicator.h
+INPUT += $(PROJECT_PATH)/components/coredump_upload_service/include/coredump_upload_service.h
+INPUT += $(PROJECT_PATH)/components/battery_service/include/battery_service.h
+INPUT += $(PROJECT_PATH)/components/battery_service/monitors/include/voltage_monitor.h
+INPUT += $(PROJECT_PATH)/components/ota_service/include/ota_service.h
+INPUT += $(PROJECT_PATH)/components/ota_service/include/esp_fs_ota.h
+INPUT += $(PROJECT_PATH)/components/ota_service/include/ota_proc_default.h
+## Dispatcher framework
+INPUT += $(PROJECT_PATH)/components/esp_dispatcher/include/periph_service.h
+INPUT += $(PROJECT_PATH)/components/esp_dispatcher/include/audio_service.h
+## Cloud Services
+INPUT += $(PROJECT_PATH)/components/wifi_service/include/airkiss_config.h
+INPUT += $(PROJECT_PATH)/components/wifi_service/include/blufi_config.h
+INPUT += $(PROJECT_PATH)/components/wifi_service/include/smart_config.h
+INPUT += $(PROJECT_PATH)/components/wifi_service/include/esp_wifi_setting.h
+INPUT += $(PROJECT_PATH)/components/wifi_service/include/wifi_service.h
+INPUT += $(PROJECT_PATH)/components/wifi_service/include/wifi_ssid_manager.h
+## Playlist
+INPUT += $(PROJECT_PATH)/components/playlist/include/dram_list.h
+INPUT += $(PROJECT_PATH)/components/playlist/include/flash_list.h
+INPUT += $(PROJECT_PATH)/components/playlist/include/partition_list.h
+INPUT += $(PROJECT_PATH)/components/playlist/include/sdcard_list.h
+INPUT += $(PROJECT_PATH)/components/playlist/include/playlist.h
+INPUT += $(PROJECT_PATH)/components/playlist/include/sdcard_scan.h
+## Codec Device
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev.h
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev_vol.h
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev_defaults.h
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev_os.h
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/include/esp_codec_dev_types.h
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_vol_if.h
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_if.h
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_gpio_if.h
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_data_if.h
+INPUT += $(PROJECT_PATH)/components/esp_codec_dev/interface/audio_codec_ctrl_if.h
+## Audio Mixer
+INPUT += $(PROJECT_PATH)/components/audio_mixer/include/audio_mixer.h
 
 
 ## Get warnings for functions that have no documentation for their parameters or return value

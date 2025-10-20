@@ -58,3 +58,5 @@ coverage_report/
 .vscode
 
 **/.cache/
+
+docs/venv/

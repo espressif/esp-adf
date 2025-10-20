@@ -49,7 +49,7 @@ typedef struct {
     /**
     * @brief Audio recorder event type
     */
-    enum {
+    enum audio_recorder_event_type_t {
         AUDIO_REC_WAKEUP_START = -100, /*!< Wakeup start */
         AUDIO_REC_WAKEUP_END,          /*!< Wakeup stop */
         AUDIO_REC_VAD_START,           /*!< Vad start */

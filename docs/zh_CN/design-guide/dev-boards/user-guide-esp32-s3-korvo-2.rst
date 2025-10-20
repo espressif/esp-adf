@@ -136,7 +136,7 @@ ESP32-S3-Korvo-2 V3.1 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 软件设置
 ^^^^^^^^
 
-请前往 :doc:`../../get-started/index`，在 :ref:`get-started-step-by-step` 小节查看如何快速设置开发环境，并将 :adf:`应用程序示例 <examples>` 烧录至您的开发板。
+请前往 :doc:`../../get-started/index`，在 :ref:`get-started-step-by-step` 小节查看如何快速设置开发环境，并将 :project:`应用程序示例 <examples>` 烧录至您的开发板。
 
 内含组件和包装
 ---------------

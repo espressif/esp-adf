@@ -190,7 +190,7 @@ ESP32-C3-Lyra 的开发框架是 `ESP-ADF <https://github.com/espressif/esp-adf>
 
 - `ESP-IDF <https://github.com/espressif/esp-idf>`__：基于 FreeRTOS 的乐鑫 SoC 开发框架，具有众多组件，包括 LED 控制 (LEDC)、ADC、RMT、SPI 等。
 
-开发板的应用示例存放在 :adf:`application example <examples>` 中。
+开发板的应用示例存放在 :project:`application example <examples>` 中。
 
 
 开始开发应用
