@@ -24,7 +24,7 @@ If you do not have any of the above boards, you can still use ESP-ADF for the ES
 About ESP-ADF
 =============
 
-The ESP-ADF is available as a set of :adf:`components` to extend the functionality already delivered by the `ESP-IDF <https://github.com/espressif/esp-idf>`_ (Espressif IoT Development Framework).
+The ESP-ADF is available as a set of :project:`components` to extend the functionality already delivered by the `ESP-IDF <https://github.com/espressif/esp-idf>`_ (Espressif IoT Development Framework).
 
 To use ESP-ADF you need set up the ESP-IDF first, and this is described in the next section.
 
@@ -251,9 +251,9 @@ Note that it is not recommended to source ``export.sh`` from the profile script 
 Step 4. Start a Project
 =======================
 
-After initial preparation you are ready to build the first audio application. The process has already been described in ESP-IDF documentation. Now we would like to discuss remaining key steps and show how the toolchain is able to access the ESP-ADF :adf:`components` by using the ``ADF_PATH`` variable.
+After initial preparation you are ready to build the first audio application. The process has already been described in ESP-IDF documentation. Now we would like to discuss remaining key steps and show how the toolchain is able to access the ESP-ADF :project:`components` by using the ``ADF_PATH`` variable.
 
-To demonstrate how to build an application, we will use :example:`get-started/play_mp3_control` project from :adf:`examples` directory in the ADF.
+To demonstrate how to build an application, we will use :example:`get-started/play_mp3_control` project from :project:`examples` directory in the ADF.
 
 Windows
 ~~~~~~~
@@ -272,7 +272,7 @@ Linux and macOS
     cp -r $ADF_PATH/examples/get-started/play_mp3_control .
 
 
-There is a range of example projects in the :adf:`examples` directory in ESP-ADF. You can copy any project in the same way as presented above and run it.
+There is a range of example projects in the :project:`examples` directory in ESP-ADF. You can copy any project in the same way as presented above and run it.
 
 It is also possible to build examples in-place, without copying them first.
 
@@ -454,12 +454,12 @@ At this point press the **Reset** button to start the application. Following sev
 
 If there are no issues, besides the above log, you should hear a sound played for about 7 seconds by the speakers or headphones connected to your audio board. Reset the board to hear it again if required.
 
-Now you are ready to try some other :adf:`examples`, or go right to developing your own applications. Check how the :adf:`examples` are made aware of location of the ESP-ADF. Open the :example_file:`get-started/play_mp3_control/Makefile` and you should see ::
+Now you are ready to try some other :project:`examples`, or go right to developing your own applications. Check how the :project:`examples` are made aware of location of the ESP-ADF. Open the :example_file:`get-started/play_mp3_control/Makefile` and you should see ::
 
     include($ENV{ADF_PATH}/CMakeLists.txt)
     include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-The first line contains ``ADF_PATH`` to point the toolchain to another file in ESP-ADF directory that provides configuration variables and path to ESP-ADF :adf:`components` reacquired by the toolchain. You need similar ``Makefile`` in your own applications developed with the ESP-ADF.
+The first line contains ``ADF_PATH`` to point the toolchain to another file in ESP-ADF directory that provides configuration variables and path to ESP-ADF :project:`components` reacquired by the toolchain. You need similar ``Makefile`` in your own applications developed with the ESP-ADF.
 
 .. _vs-code-extension:
 

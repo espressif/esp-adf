@@ -190,7 +190,7 @@ Below are other software repositories developed by Espressif that may help you e
 
 - `ESP-IDF <https://github.com/espressif/esp-idf>`__: development framework for Espressif SoCs based on FreeRTOS with a rich set of components, including LED control (LEDC), ADC, RMT, SPI etc.
 
-Application examples for this board can be found at :adf:`application example <examples>`.
+Application examples for this board can be found at :project:`application example <examples>`.
 
 
 Start Application Development

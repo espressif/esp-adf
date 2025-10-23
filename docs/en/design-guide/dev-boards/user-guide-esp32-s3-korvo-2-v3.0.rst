@@ -135,7 +135,7 @@ Hardware Setup
 Software Setup
 ^^^^^^^^^^^^^^
 
-Please proceed to :doc:`../../get-started/index`, where Section :ref:`get-started-step-by-step` will quickly help you set up the development environment and then flash an :adf:`application example <examples>` onto your board.
+Please proceed to :doc:`../../get-started/index`, where Section :ref:`get-started-step-by-step` will quickly help you set up the development environment and then flash an :project:`application example <examples>` onto your board.
 
 Contents and Packaging
 ----------------------
