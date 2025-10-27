@@ -38,16 +38,74 @@ typedef struct {
     esp_codec_dev_sample_info_t  in_fs;
     esp_codec_dev_sample_info_t  out_fs;
     esp_codec_dev_sample_info_t  fs;
-    esp_codec_dev_mutex_handle_t lock;
 } i2s_data_t;
 
 typedef struct i2s_data_keep_t i2s_data_keep_t;
 struct i2s_data_keep_t {
-    i2s_data_t      *i2s_data;
-    i2s_data_keep_t *next;
+    i2s_data_t                   *i2s_data;
+    esp_codec_dev_mutex_handle_t  mutex;
+    i2s_data_keep_t              *next;
 };
 
 static i2s_data_keep_t *i2s_data_list = NULL;
+
+static esp_codec_dev_mutex_handle_t try_alloc_mutex(uint8_t port)
+{
+    i2s_data_keep_t *cur = i2s_data_list;
+    while (cur != NULL) {
+        if (cur->i2s_data->port == port) {
+            return cur->mutex;
+        }
+        cur = cur->next;
+    }
+    return esp_codec_dev_mutex_create();
+}
+
+static esp_codec_dev_mutex_handle_t get_mutex(i2s_data_t *i2s_data)
+{
+    i2s_data_keep_t *cur = i2s_data_list;
+    while (cur != NULL) {
+        if (cur->i2s_data == i2s_data) {
+            return cur->mutex;
+        }
+        cur = cur->next;
+    }
+    return NULL;
+}
+
+static void try_free_mutex(uint8_t port, esp_codec_dev_mutex_handle_t mutex)
+{
+    uint8_t ref_count = 0;
+    i2s_data_keep_t *cur = i2s_data_list;
+    while (cur != NULL) {
+        if (cur->i2s_data->port == port) {
+            ref_count++;
+        }
+        cur = cur->next;
+    }
+    if (ref_count == 0) {
+        esp_codec_dev_mutex_destroy(mutex);
+    }
+}
+
+static void _i2s_lock(i2s_data_t *i2s_data, const char *func)
+{
+    esp_codec_dev_mutex_handle_t mutex = get_mutex(i2s_data);
+    if (mutex) {
+        int ret = esp_codec_dev_mutex_lock(mutex, DEFAULT_WAIT_TIMEOUT);
+        if (ret != ESP_CODEC_DEV_OK) {
+            ESP_LOGE(TAG, "Lock failed in %s", func);
+        }
+    }
+}
+
+static void _i2s_unlock(i2s_data_t *i2s_data)
+{
+    esp_codec_dev_mutex_handle_t mutex = get_mutex(i2s_data);
+    if (mutex) {
+        esp_codec_dev_mutex_unlock(mutex);
+    }
+}
 
 static void add_to_keeper(i2s_data_t *i2s_data)
 {
@@ -56,6 +114,7 @@ static void add_to_keeper(i2s_data_t *i2s_data)
         ESP_LOGE(TAG, "Out of memory for keeper");
         return;
     }
+    keep_info->mutex = try_alloc_mutex(i2s_data->port);
     keep_info->i2s_data = i2s_data;
     if (i2s_data_list == NULL)  {
         i2s_data_list = keep_info;
@@ -76,6 +135,7 @@ static void remove_from_keeper(i2s_data_t *i2s_data)
             } else {
                 pre->next = cur->next;
             }
+            try_free_mutex(i2s_data->port, cur->mutex);
             free(cur);
             break;
         }
@@ -408,9 +468,6 @@ static int _i2s_data_open(const audio_codec_data_if_t *h, void *data_cfg, int cf
     i2s_data->port = i2s_cfg->port;
     i2s_data->out_handle = i2s_cfg->tx_handle;
     i2s_data->in_handle = i2s_cfg->rx_handle;
-    if (i2s_data->out_handle != NULL && i2s_data->in_handle != NULL) {
-        i2s_data->lock = esp_codec_dev_mutex_create();
-    }
     add_to_keeper(i2s_data);
     return ESP_CODEC_DEV_OK;
 }
@@ -434,12 +491,7 @@ static int _i2s_data_enable(const audio_codec_data_if_t *h, esp_codec_dev_type_t
         return ESP_CODEC_DEV_WRONG_STATE;
     }
     int ret = ESP_CODEC_DEV_OK;
-    if (i2s_data->lock) {
-        ret = esp_codec_dev_mutex_lock(i2s_data->lock, DEFAULT_WAIT_TIMEOUT);
-        if (ret != ESP_CODEC_DEV_OK) {
-            ESP_LOGW(TAG, "Enable wait lock timeout");
-        }
-    }
+    _i2s_lock(i2s_data, __func__);
     if (dev_type == ESP_CODEC_DEV_TYPE_IN_OUT) {
         ret = _i2s_drv_enable(i2s_data, true, enable);
         ret = _i2s_drv_enable(i2s_data, false, enable);
@@ -486,9 +538,7 @@ static int _i2s_data_enable(const audio_codec_data_if_t *h, esp_codec_dev_type_t
     if (dev_type & ESP_CODEC_DEV_TYPE_OUT) {
         i2s_data->out_enable = enable;
     }
-    if (i2s_data->lock) {
-        esp_codec_dev_mutex_unlock(i2s_data->lock);
-    }
+    _i2s_unlock(i2s_data);
     return ret;
 }
 
@@ -524,12 +574,7 @@ static int _i2s_data_set_fmt(const audio_codec_data_if_t *h, esp_codec_dev_type_
     }
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
     int ret;
-    if (i2s_data->lock) {
-        ret = esp_codec_dev_mutex_lock(i2s_data->lock, DEFAULT_WAIT_TIMEOUT);
-        if (ret != ESP_CODEC_DEV_OK) {
-            ESP_LOGW(TAG, "Set format wait lock timeout");
-        }
-    }
+    _i2s_lock(i2s_data, __func__);
     // disable internally
     if (dev_type & ESP_CODEC_DEV_TYPE_OUT) {
         _i2s_drv_enable(i2s_data, true, false);
@@ -548,9 +593,7 @@ static int _i2s_data_set_fmt(const audio_codec_data_if_t *h, esp_codec_dev_type_
     } else {
         ret = check_fs_compatible(i2s_data, dev_type & ESP_CODEC_DEV_TYPE_OUT ? true : false, fs);
     }
-    if (i2s_data->lock) {
-        esp_codec_dev_mutex_unlock(i2s_data->lock);
-    }
+    _i2s_unlock(i2s_data);
     return ret;
 #else
     // When use multichannel data
@@ -638,10 +681,6 @@ static int _i2s_data_close(const audio_codec_data_if_t *h)
     memset(&i2s_data->fs, 0, sizeof(esp_codec_dev_sample_info_t));
     memset(&i2s_data->in_fs, 0, sizeof(esp_codec_dev_sample_info_t));
     memset(&i2s_data->out_fs, 0, sizeof(esp_codec_dev_sample_info_t));
-    if (i2s_data->lock) {
-        esp_codec_dev_mutex_destroy(i2s_data->lock);
-        i2s_data->lock = NULL;
-    }
     i2s_data->is_open = false;
     remove_from_keeper(i2s_data);
     return ESP_CODEC_DEV_OK;

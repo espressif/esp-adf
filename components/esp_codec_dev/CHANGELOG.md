@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.2
+
+### Bug Fixed
+
+- Fixed race condition when duplex I2S used by multiple data interface and run open in parallel.
+
 ## v1.5.1
 
 ### Bug Fixed
