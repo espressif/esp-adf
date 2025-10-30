@@ -1,10 +1,20 @@
 # Changelog
 
-## Un-Release
+## v1.5.2
+
+### Bug Fixed
+
+- Fixed race condition when duplex I2S used by multiple data interface and run open in parallel.
+
+## v1.5.1
 
 ### Bug Fixed
 
 - Fixed the register configuration for es8311 when playing 8kHz audio without using MCLK.
+- Fixed race condition when record or playback disable and enable during another running.
+- Fixed test_app build failed on esp-idf v6.x.
+- Added support for duplex I2S TX and RX use multiple codecs (data_if use same port with one channel only).
+- Added `esp_codec_dev_dump_reg` to dump codec registers.
 
 ## v1.5.0
 
