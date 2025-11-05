@@ -1,0 +1,86 @@
+diff --git a/components/freertos/esp_additions/freertos_tasks_c_additions.h b/components/freertos/esp_additions/freertos_tasks_c_additions.h
+index ec2236b87ac..6b864ee971f 100644
+--- a/components/freertos/esp_additions/freertos_tasks_c_additions.h
++++ b/components/freertos/esp_additions/freertos_tasks_c_additions.h
+@@ -376,6 +376,53 @@ _Static_assert( tskNO_AFFINITY == ( BaseType_t ) CONFIG_FREERTOS_NO_AFFINITY, "C
+ #endif /* ( configSUPPORT_STATIC_ALLOCATION == 1 ) */
+ /*----------------------------------------------------------*/
+ 
++#if ( configSUPPORT_STATIC_ALLOCATION == 1 )
++
++    BaseType_t xTaskCreateRestrictedPinnedToCore( const TaskParameters_t * const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID)
++    {
++	    TCB_t *pxNewTCB;
++	    BaseType_t xReturn = errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
++
++		configASSERT( pxTaskDefinition->puxStackBuffer );
++
++		if( pxTaskDefinition->puxStackBuffer != NULL )
++		{
++			/* Allocate space for the TCB.  Where the memory comes from depends
++			on the implementation of the port malloc function and whether or
++			not static allocation is being used. */
++			pxNewTCB = ( TCB_t * ) pvPortMalloc( sizeof( TCB_t ) );
++
++			if( pxNewTCB != NULL )
++			{
++                memset( pxNewTCB, 0, sizeof( TCB_t ) );
++				/* Store the stack location in the TCB. */
++				pxNewTCB->pxStack = pxTaskDefinition->puxStackBuffer;
++
++				/* Tasks can be created statically or dynamically, so note
++				this task had a statically allocated stack in case it is
++				later deleted.  The TCB was allocated dynamically. */
++				pxNewTCB->ucStaticallyAllocated = tskDYNAMICALLY_ALLOCATED_STACK_AND_TCB;
++
++				prvInitialiseNewTask(	pxTaskDefinition->pvTaskCode,
++										pxTaskDefinition->pcName,
++										pxTaskDefinition->usStackDepth,
++										pxTaskDefinition->pvParameters,
++										pxTaskDefinition->uxPriority,
++										pxCreatedTask, pxNewTCB,
++										pxTaskDefinition->xRegions,
++										xCoreID );
++
++				prvAddNewTaskToReadyList( pxNewTCB );
++				xReturn = pdPASS;
++			}
++		}
++
++		return xReturn;
++    }
++
++#endif /* ( configSUPPORT_STATIC_ALLOCATION == 1 ) */
++/*----------------------------------------------------------*/
++
+ #if ( configUSE_TIMERS == 1 )
+ 
+ /*
+diff --git a/components/freertos/esp_additions/include/freertos/idf_additions.h b/components/freertos/esp_additions/include/freertos/idf_additions.h
+index 5e50dd1ba3c..4a4e2b12c22 100644
+--- a/components/freertos/esp_additions/include/freertos/idf_additions.h
++++ b/components/freertos/esp_additions/include/freertos/idf_additions.h
+@@ -107,6 +107,8 @@
+                                                 StaticTask_t * const pxTaskBuffer,
+                                                 const BaseType_t xCoreID );
+ 
++    BaseType_t xTaskCreateRestrictedPinnedToCore( const TaskParameters_t * const pxTaskDefinition, TaskHandle_t *pxCreatedTask, const BaseType_t xCoreID);
++
+ #endif /* configSUPPORT_STATIC_ALLOCATION */
+ 
+ /* ------------------------------------------------- Task Utilities ------------------------------------------------- */
+diff --git a/components/freertos/linker_common.lf b/components/freertos/linker_common.lf
+index 8e3f63030be..fe7d156f307 100644
+--- a/components/freertos/linker_common.lf
++++ b/components/freertos/linker_common.lf
+@@ -24,6 +24,7 @@ entries:
+         # Task Creation
+         tasks:xTaskCreatePinnedToCore (default)
+         tasks:xTaskCreateStaticPinnedToCore (default)
++        tasks:xTaskCreateRestrictedPinnedToCore (default)
+         # Task Utilities
+         tasks:xTaskGetCoreID (default)
+         tasks:xTaskGetIdleTaskHandleForCore (default)
+-- 
+2.34.1
+

@@ -18,12 +18,12 @@
     IDF_PATH: "$ADF_PATH/esp-idf"
     IDF_PATCH_DIR: "$ADF_PATH/idf_patches"
     SDKCFG_DEFAULTS: "sdkconfig.defaults.$IDF_TARGET"
-    LATEST_IDF_VERSION: "v5.4"
+    LATEST_IDF_VERSION: "v5.5.1"
   artifacts:
     paths:
       - "**/build*/size.json"
       - "**/build*/build_log.txt"
-      - "**/build*/*.bin"
+      - "**/build*/**/*.bin"
       # upload to s3 server to save the artifacts size
       # - "**/build*/*.map"
       # ttfw tests require elf files
@@ -74,13 +74,13 @@
 .matrix_template_esp32_s2_c3_s3: &matrix_template_esp32_s2_c3_s3
   parallel:
     matrix:
-      - IDF_VERSION_TAG: ['v5.1', 'v5.2', 'v5.3', 'default']
+      - IDF_VERSION_TAG: ['v5.1', 'v5.2', 'v5.3', 'v5.4', 'v5.5.1']
         parallel: [1/2, 2/2]
 
 .matrix_template_c6_p4: &matrix_template_c6_p4
   parallel:
     matrix:
-      - IDF_VERSION_TAG: ['default']
+      - IDF_VERSION_TAG: ['v5.4', 'v5.5.1']
         parallel: [1/2, 2/2]
 
 .build_examples_esp32_lyrat_v4_3:
