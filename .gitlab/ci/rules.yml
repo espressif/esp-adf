@@ -70,10 +70,15 @@
   variables:
     IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.3:1"
 
-.if-idf-version-tag-default: &if-idf-version-tag-default
-  if: '$IDF_VERSION_TAG == "default"'
+.if-idf-version-tag-v5-4: &if-idf-version-tag-v5-4
+  if: '$IDF_VERSION_TAG == "v5.4"'
   variables:
     IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.4:1"
+
+.if-idf-version-tag-v5-5-1: &if-idf-version-tag-v5-5-1
+  if: '$IDF_VERSION_TAG == "v5.5.1"'
+  variables:
+    IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.5:3"
 
 .rules:build:enable-adf-example-test:
   rules:
@@ -123,4 +128,5 @@
     - <<: *if-idf-version-tag-v5-1
     - <<: *if-idf-version-tag-v5-2
     - <<: *if-idf-version-tag-v5-3
-    - <<: *if-idf-version-tag-default
+    - <<: *if-idf-version-tag-v5-4
+    - <<: *if-idf-version-tag-v5-5-1

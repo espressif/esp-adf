@@ -1,5 +1,5 @@
 variables:
-  - LATEST_IDF_VERSION: "v5.4"
+  - LATEST_IDF_VERSION: "v5.5.1"
 
 DEFAULTS:
   - ESP_LYRAT_V4_3: "v3.3-${LATEST_IDF_VERSION}"
@@ -9,8 +9,8 @@ DEFAULTS:
   - ESP32_S2_KALUGA_1_V1_2: "v4.2-${LATEST_IDF_VERSION}"
   - ESP32_S3_KORVO2_V3: "v4.4-${LATEST_IDF_VERSION}"
   - ESP32_C3_LYRA_V2: "v5.1-${LATEST_IDF_VERSION}"
-  - ESP32_C6_DEVKIT: "${LATEST_IDF_VERSION}"
-  - ESP32_P4_FUNCTION_EV: "${LATEST_IDF_VERSION}"
+  - ESP32_C6_DEVKIT: "v5.4-${LATEST_IDF_VERSION}"
+  - ESP32_P4_FUNCTION_EV: "v5.4-${LATEST_IDF_VERSION}"
 
 APPS:
   - app_dir: examples/advanced_examples/dlna
@@ -25,19 +25,19 @@ APPS:
   - app_dir: examples/advanced_examples/algorithm
     board:
       esp32:
-        - ESP_LYRAT_V4_3: v5.4
-        - ESP_LYRAT_MINI_V1_1: v5.4
+        - ESP_LYRAT_V4_3: v5.4-${LATEST_IDF_VERSION}
+        - ESP_LYRAT_MINI_V1_1: v5.4-${LATEST_IDF_VERSION}
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
       esp32p4:
-        - ESP32_P4_FUNCTION_EV: v5.4
+        - ESP32_P4_FUNCTION_EV: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/advanced_examples/aec
     board:
       esp32:
-        - ESP_LYRAT_V4_3: v5.4
-        - ESP_LYRAT_MINI_V1_1: v5.4
+        - ESP_LYRAT_V4_3: v5.4-${LATEST_IDF_VERSION}
+        - ESP_LYRAT_MINI_V1_1: v5.4-${LATEST_IDF_VERSION}
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/advanced_examples/downmix_pipeline
     board:
       esp32:
@@ -258,12 +258,12 @@ APPS:
   - app_dir: examples/dueros
     board:
       esp32:
-        - ESP_LYRAT_V4_3: v5.4
-        - ESP_LYRAT_MINI_V1_1: v5.4
+        - ESP_LYRAT_V4_3: v5.4-${LATEST_IDF_VERSION}
+        - ESP_LYRAT_MINI_V1_1: v5.4-${LATEST_IDF_VERSION}
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
       esp32p4:
-        - ESP32_P4_FUNCTION_EV: v5.4
+        - ESP32_P4_FUNCTION_EV: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/player/pipeline_a2dp_sink_stream
     board:
       esp32:
@@ -465,19 +465,19 @@ APPS:
   - app_dir: examples/speech_recognition/wwe
     board:
       esp32:
-        - ESP_LYRAT_V4_3: v5.4
-        - ESP_LYRAT_MINI_V1_1: v5.4
+        - ESP_LYRAT_V4_3: v5.4-${LATEST_IDF_VERSION}
+        - ESP_LYRAT_MINI_V1_1: v5.4-${LATEST_IDF_VERSION}
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
       esp32p4:
-        - ESP32_P4_FUNCTION_EV: v5.4
+        - ESP32_P4_FUNCTION_EV: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/speech_recognition/vad
     board:
       esp32:
-        - ESP_LYRAT_V4_3: v5.4
-        - ESP_LYRAT_MINI_V1_1: v5.4
+        - ESP_LYRAT_V4_3: v5.4-${LATEST_IDF_VERSION}
+        - ESP_LYRAT_MINI_V1_1: v5.4-${LATEST_IDF_VERSION}
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/system/coredump
     board:
       esp32:
@@ -522,22 +522,22 @@ APPS:
   - app_dir: examples/display/music_player
     board:
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/protocols/voip
     board:
       esp32:
-        - ESP_LYRAT_MINI_V1_1: v5.4
+        - ESP_LYRAT_MINI_V1_1: v5.4-${LATEST_IDF_VERSION}
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/protocols/esp-rtc
     board:
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/protocols/esp-rtsp
     board:
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/protocols/rtmp
     board:
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.4
+        - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}

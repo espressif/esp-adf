@@ -12,22 +12,22 @@ Compatibility of examples with Espressif audio boards is presented in tables bel
 ## ESP32 Usage
 
 - Start [CMake](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html) build
-- Choose IDF branch at least [release/v5.0](https://github.com/espressif/esp-idf/tree/release/v5.0)
+- Choose IDF branch at least [release/v5.1](https://github.com/espressif/esp-idf/tree/release/v5.1)
 
 ## ESP32-S2 Usage
 
 - Start [CMake](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/api-guides/build-system.html) build
-- Choose IDF branch at least [release/v5.0](https://github.com/espressif/esp-idf/tree/release/v5.0)
+- Choose IDF branch at least [release/v5.1](https://github.com/espressif/esp-idf/tree/release/v5.1)
 
 ## ESP32-S3 Usage
 
 - Start [CMake](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-guides/build-system.html) build
-- Choose IDF branch at least [release/v5.0](https://github.com/espressif/esp-idf/tree/release/v5.0)
+- Choose IDF branch at least [release/v5.1](https://github.com/espressif/esp-idf/tree/release/v5.1)
 
 ## ESP32-C3 Usage
 
 - Start [CMake](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32c3/api-guides/build-system.html) build
-- Choose IDF branch [release/v5.0](https://github.com/espressif/esp-idf/tree/release/v5.0) to build led_pixels
+- Choose IDF branch [release/v5.1](https://github.com/espressif/esp-idf/tree/release/v5.1) to build led_pixels
 - Choose IDF branch at least [release/v5.1](https://github.com/espressif/esp-idf/tree/release/v5.1) to build other examples
 
 ## ESP32-P4 Usage
