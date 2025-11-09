@@ -6,12 +6,12 @@ Ringbuffer is designed in addition to use as a data buffer, also used to connect
 .. blockdiag::
     :caption: Ring Buffer used in Audio Pipeline
     :align: center
-    
+
     blockdiag {
         default_shape = roundedbox;
         default_group_color = lightgrey;
-        node_height = 60; 
-        node_width = 80; 
+        node_height = 60;
+        node_width = 80;
         span_width = 40;
         span_height = 30;
 
@@ -27,7 +27,7 @@ Ringbuffer is designed in addition to use as a data buffer, also used to connect
 Application Example
 -------------------
 
-In most of ESP-ADF :adf:`examples` connecting of Elements with Ringbuffers is done "behind the scenes" by a function :cpp:func:`audio_pipeline_link`. To see this operation exposed check :example:`player/pipeline_sdcard_mp3_control` example.
+In most of ESP-ADF :project:`examples` connecting of Elements with Ringbuffers is done "behind the scenes" by a function :cpp:func:`audio_pipeline_link`. To see this operation exposed check :example:`player/pipeline_sdcard_mp3_control` example.
 
 
 API Reference

@@ -65,7 +65,6 @@
   script:
     - pip install -r docs/requirements.txt
     - cd $DOCS_DIR
-    - mkdir -p $ADF_PATH/docs/_build/${DOCLANG}/generic/inc
     - build-docs -bs $DOC_BUILDERS -l $DOCLANG build
     - ./check_lang_folder_sync.sh
     - echo "ESP-ADF Guide preview available at $CI_JOB_URL/artifacts/file/docs/_build/$DOCLANG/generic/html/index.html"
@@ -76,7 +75,6 @@
   script:
     - pip install -r docs/requirements.txt
     - cd $DOCS_DIR
-    - mkdir -p $ADF_PATH/docs/_build/${DOCLANG}/generic/inc
     - build-docs --skip-reqs-check -l $DOCLANG  -bs latex
 
 build_docs_html:

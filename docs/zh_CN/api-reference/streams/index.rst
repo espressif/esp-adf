@@ -163,7 +163,7 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 提示音流
 -----------
 
-提示音流 (tone stream) 读取 :adf_file:`tools/audio_tone/mk_audio_tone.py` 生成的数据，只支持 ``AUDIO_STREAM_READER`` 类型。
+提示音流 (tone stream) 读取 :project_file:`tools/audio_tone/mk_audio_tone.py` 生成的数据，只支持 ``AUDIO_STREAM_READER`` 类型。
 
 
 应用示例
@@ -180,7 +180,7 @@ TCP 客户端流 (TCP client stream) 通过 TCP 读取和写入服务器数据�
 嵌入 Flash 流
 ------------------------
 
-嵌入 Flash 流 (flash-embedding stream) 读取 :adf_file:`tools/audio_tone/mk_embed_flash.py` 生成的数据，只支持 ``AUDIO_STREAM_READER`` 类型。
+嵌入 Flash 流 (flash-embedding stream) 读取 :project_file:`tools/audio_tone/mk_embed_flash.py` 生成的数据，只支持 ``AUDIO_STREAM_READER`` 类型。
 
 
 应用示例
