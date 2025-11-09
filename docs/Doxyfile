@@ -20,7 +20,7 @@ PROJECT_NAME = "Espressif Audio Development Framework Guide (ESP-ADF)"
 ## These files are placed in '_inc' directory
 ## and used to include in API reference documentation
 
-INPUT = \
+INPUT =
 ## Audio Pipeline
 INPUT += $(PROJECT_PATH)/components/audio_pipeline/include/audio_element.h
 INPUT += $(PROJECT_PATH)/components/audio_pipeline/include/audio_pipeline.h
