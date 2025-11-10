@@ -18,7 +18,7 @@ The document consists of the following sections:
 
 Board Overview
 ==============
- 
+
 ESP32-C3-Lyra is an ESP32-C3-based audio development board produced by Espressif for controlling light with audio. The board has control over the microphone, speaker, and LED strip, perfectly matching customers' product development needs for ultra-low-cost and high-performance audio broadcasters and rhythm light strips.
 
 .. figure:: ../../../_static/esp32-c3-lyra-isometric-raw.png
@@ -62,8 +62,8 @@ Description of Components
 .. figure:: https://dl.espressif.com/dl/schematics/esp32-c3-lyra-layout-front.png
     :align: center
     :width: 2116
-    :height: 1496    
-    :scale: 34%    
+    :height: 1496
+    :scale: 34%
     :alt: ESP32-C3-Lyra - front (click to enlarge)
 
     ESP32-C3-Lyra - front (click to enlarge)
@@ -83,8 +83,8 @@ The key components of the board are described in a clockwise direction.
    * - Speaker Output Port
      - Output socket to connect a speaker. The 4-ohm and 3-watt speaker is recommended. The pins have a 2.00 mm/0.08” pitch.
    * - Function Press Keys
-     - Six function press keys, including MODE, COLOR, PLAY/PAUSE, SET, VOL+/LM+, VOL-/LM-. They are routed to the **ESP32-C3-WROOM-02 Module** and intended for the development and testing of a UI for audio applications or LED strips using dedicated APIs. 
-   * - Boot/Reset Press Keys 
+     - Six function press keys, including MODE, COLOR, PLAY/PAUSE, SET, VOL+/LM+, VOL-/LM-. They are routed to the **ESP32-C3-WROOM-02 Module** and intended for the development and testing of a UI for audio applications or LED strips using dedicated APIs.
+   * - Boot/Reset Press Keys
      - Boot: holding down the Boot key and momentarily pressing the Reset button initiates the firmware upload mode. Then you can upload firmware through the serial port. Reset: pressing this key alone resets the system.
    * - USB-to-UART Port
      - Functions as the communication interface between the PC and the ESP32-C3-WROOM-02 module.
@@ -96,14 +96,14 @@ The key components of the board are described in a clockwise direction.
      - System Power on/off knob. Toggling it to **ON** turns the 5 V system power on; toggling it to **OFF** turns the 5 V system power off.
    * - LED Strip Power Selection Switch
      - Toggle this switch to select between a 5 V power supply over USB and a 12 V DC power supply for your LED strip according to the working voltage of the LED strip and the type of the power adapter you actually use.
-   * - 12 V DC Power Port 
+   * - 12 V DC Power Port
      - Supports 12 V DC power adapters with a maximum current of 2 A. The DC power Jack contact have an outer diameter of 5.5 mm and an inner contact diameter of 2.5 mm.
    * - 12 V to 5 V Buck Chip
      - The 12 V to 5 V buck chip MP2313 is a high-efficiency synchronous step-down converter that operates at 1 A and 2 MHz.
    * - Addressable LED Strip Port
      - It is a male pin header connector with 4 x 1 pins and a 2.54 mm pitch. It can connect to the addressable LED strip that is controlled with a single wire. It supports 5 V and 12 V LED strips, such as WS2811 and WS2812 LED. ESP32-C3 can send commands to control the LED strips over RMT or SPI.
    * - RGB LED Strip Port
-     - It is a male pin header connector with 4 x 1 pins and a 2.54 mm pitch. It can connect to regular RGB LED strips (non-addressable, individual wire per color) that operate at 5 V or 12 V. ESP32-C3 can output PWM waveform via this port to control the LED strips. 
+     - It is a male pin header connector with 4 x 1 pins and a 2.54 mm pitch. It can connect to regular RGB LED strips (non-addressable, individual wire per color) that operate at 5 V or 12 V. ESP32-C3 can output PWM waveform via this port to control the LED strips.
    * - System Power LED
      - It turns red when **System Power Switch** is toggled to ON.
    * - IR Receiver
@@ -128,7 +128,7 @@ Each ESP32-C3-Lyra comes with a pre-built default firmware that allows you to te
 Preparing Hardware
 ^^^^^^^^^^^^^^^^^^
 
-See Section `Required Hardware`_ and `Optional Hardware`_ for more information. 
+See Section `Required Hardware`_ and `Optional Hardware`_ for more information.
 
 - 1 x ESP32-C3-Lyra
 - 2 x USB 2.0 cable (Standard-A to Micro-B)
@@ -157,14 +157,14 @@ Testing Default Firmware
 #. The board automatically starts the flash test. The log shown on a PC connected to **USB-to-UART Port** is as follows:
 
    .. code-block:: bash
-      
+
       Step1 Flash Test Start
       Step1 Flash Test OK
 
 #. The board tests the **Function Press Keys**. Please press the key as the log prompts. For example, press **VOL+** when you see the following log:
 
    .. code-block:: bash
-      
+
       Step2 Keys Test Start
       Please press The Key: VOL+
 
@@ -173,7 +173,7 @@ Testing Default Firmware
 #. The board tests ADC. If you play the 1 kHz sine audio signal close to the **Microphone** with the mobile phone or music player, the following log will be seen when the board detects the audio signal:
 
    .. code-block:: bash
-      
+
       Step5 Adc Test Start
       Please play 1khz audio
       Step5 Adc Test OK
@@ -190,7 +190,7 @@ Below are other software repositories developed by Espressif that may help you e
 
 - `ESP-IDF <https://github.com/espressif/esp-idf>`__: development framework for Espressif SoCs based on FreeRTOS with a rich set of components, including LED control (LEDC), ADC, RMT, SPI etc.
 
-Application examples for this board can be found at :adf:`application example <examples>`.
+Application examples for this board can be found at :project:`application example <examples>`.
 
 
 Start Application Development
@@ -235,10 +235,10 @@ Optional Hardware
      - Note
    * - 12 V DC adapter
      - 1
-     - The maximum operating current of the adapter is 2 A. It provides power supply for 12 V LED strips. 
+     - The maximum operating current of the adapter is 2 A. It provides power supply for 12 V LED strips.
    * - 5 V or 12 V addressable LED strip/ring
      - 1
-     - It is recommended to use WS2812/WS2811 LED strip (a female connector with 4 x 1 pins and a 2.54 mm pitch), or a WS2812 LED ring with 16 individually addressable RGB LEDs assembled (a female connector with 3 x 1 pins and a 2.54 mm pitch). This LED strip/ring should be connected to the **Addressable LED Strip Port** (:ref:`JP2 <addressable-led-strip-connector>`). 
+     - It is recommended to use WS2812/WS2811 LED strip (a female connector with 4 x 1 pins and a 2.54 mm pitch), or a WS2812 LED ring with 16 individually addressable RGB LEDs assembled (a female connector with 3 x 1 pins and a 2.54 mm pitch). This LED strip/ring should be connected to the **Addressable LED Strip Port** (:ref:`JP2 <addressable-led-strip-connector>`).
    * - 5 V or 12 V RGB LED strip
      - 1
      - It should have a female connector with 4 x 1 pins and a 2.54 mm pitch. This LED strip should be connected to **RGB LED Strip Port** (:ref:`JP1 <rgb-led-strip-connector>`).

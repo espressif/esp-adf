@@ -29,7 +29,7 @@ Setting up the speech recognition application to detect a wakeup word may be don
     }
 
 
-Configuration and use of particular elements is demonstrated in several :adf:`examples <examples>` linked to elsewhere in this documentation. What may need clarification is use of the **Filter** and the **RAW stream**. The filter is used to adjust the sample rate of the I2S stream to match the sample rate of the speech recognition model. The RAW stream is the way to feed the audio input to the model.
+Configuration and use of particular elements is demonstrated in several :project:`examples <examples>` linked to elsewhere in this documentation. What may need clarification is use of the **Filter** and the **RAW stream**. The filter is used to adjust the sample rate of the I2S stream to match the sample rate of the speech recognition model. The RAW stream is the way to feed the audio input to the model.
 
 The above introduction is the primary guidance. ESP-ADF offers users a more flexible and convenient module, namely the :doc:`audio recorder <audio_recorder>`, which is strongly recommended for use.
 

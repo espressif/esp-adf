@@ -14,7 +14,7 @@ ESP32-S3-Korvo-2 V3.0 是一款基于 ESP32-S3 芯片的多媒体开发板，搭
     :align: center
     :scale: 45%
     :alt: ESP32-S3-Korvo-2 V3.0（板载 ESP32-S3-WROOM-1 模组）
-    
+
     ESP32-S3-Korvo-2 V3.0（板载 ESP32-S3-WROOM-1 模组）
 
 
@@ -41,7 +41,7 @@ ESP32-S3-Korvo-2 V3.0 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
     :align: center
     :scale: 70%
     :alt: ESP32-S3-Korvo-2 V3.0（点击放大）
-    
+
     ESP32-S3-Korvo-2 V3.0（点击放大）
 
 以下按照顺时针的顺序依次介绍开发板上的主要组件。
@@ -135,7 +135,7 @@ ESP32-S3-Korvo-2 V3.0 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 软件设置
 ^^^^^^^^
 
-请前往 :doc:`../../get-started/index`，在 :ref:`get-started-step-by-step` 小节查看如何快速设置开发环境，并将 :adf:`应用程序示例 <examples>` 烧录至您的开发板。
+请前往 :doc:`../../get-started/index`，在 :ref:`get-started-step-by-step` 小节查看如何快速设置开发环境，并将 :project:`应用程序示例 <examples>` 烧录至您的开发板。
 
 内含组件和包装
 ---------------
@@ -146,12 +146,12 @@ ESP32-S3-Korvo-2 V3.0 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 
 - LCD 扩展板：ESP32-S3-Korvo-2-LCD
 - 摄像头
-- 连接器 
+- 连接器
 
   - 20 针 FPC 线
 
 - 紧固件：
-  
+
   - 安装螺栓 (x8)
   - 螺丝 (x4)
 
@@ -184,7 +184,7 @@ ESP32-S3-Korvo-2 V3.0 的主要组件和连接方式如下图所示。
     :align: center
     :scale: 55%
     :alt: ESP32-S3-Korvo-2 V3.0 电气功能框图
-    
+
     ESP32-S3-Korvo-2 V3.0 电气功能框图
 
 
@@ -200,14 +200,14 @@ USB 与电池供电
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - USB 电源供电
-    
+
     ESP32-S3-Korvo-2 V3.0 - USB 电源供电
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-battery-ps.png
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - 电池供电
-    
+
     ESP32-S3-Korvo-2 V3.0 - 电池供电
 
 如下图所示，当 USB 供电和电池供电同时存在时，VBUS 为高电平，Q14 处于截止状态，VBAT 自动与系统电源切断。此时，USB 为系统供电。
@@ -216,7 +216,7 @@ USB 与电池供电
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - 供电选项
-    
+
     ESP32-S3-Korvo-2 V3.0 - 供电选项
 
 音频和数字独立供电
@@ -228,14 +228,14 @@ ESP32-S3-Korvo-2 V3.0 可为音频组件和 ESP 模组提供相互独立的电�
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - 数字供电
-    
+
     ESP32-S3-Korvo-2 V3.0 - 数字供电
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-audio-ps.png
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.0 - 音频供电
-    
+
     ESP32-S3-Korvo-2 V3.0 - 音频供电
 
 
@@ -260,383 +260,383 @@ ESP32-S3-Korvo-2 V3.0 可为音频组件和 ESP 模组提供相互独立的电�
      - 其他
    * - 3
      - EN
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
      - EN_KEY
-     - 
-     - 
-     - 
+     -
+     -
+     -
    * - 4
      - IO4
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
      - DATA0
-     - 
-     - 
+     -
+     -
    * - 5
      - IO5
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
      - REC, MUTE, PLAY, SET, VOL-, VOL+
-     - 
-     - 
-     - 
+     -
+     -
+     -
    * - 6
      - IO6
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - BAT_MEAS_ADC
    * - 7
      - IO7
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
      - CMD
-     - 
-     - 
+     -
+     -
    * - 8
      - IO15
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
      - CLK
-     - 
-     - 
+     -
+     -
    * - 9
      - IO16
      - I2S0_MCLK
      - MCLK
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
    * - 10
      - IO17
      - I2C_SDA
      - I2C_SDA
      - SIOD
      - TP_I2C_SDA
-     - 
-     - 
+     -
+     -
      - I2C_SDA
-     - 
+     -
    * - 11
      - IO18
      - I2C_CLK
      - I2C_CLK
      - SIOC
      - TP_I2C_CLK
-     - 
-     - 
+     -
+     -
      - I2C_CLK
-     - 
+     -
    * - 12
      - IO8
      - I2S0_DSDIN
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
    * - 13
      - IO19
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - ESP_USB_DM (Reserve)
    * - 14
      - IO20
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - ESP_USB_DP (Reserve)
    * - 15
      - IO3
-     - 
-     - 
+     -
+     -
      - D5
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 16
      - IO46
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - NC
    * - 17
      - IO9
      - I2S0_SCLK
      - SCLK
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
    * - 18
      - IO10
-     - 
+     -
      - SDOUT
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
    * - 19
      - IO11
-     - 
-     - 
+     -
+     -
      - PCLK
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 20
      - IO12
-     - 
-     - 
+     -
+     -
      - D6
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 21
      - IO13
-     - 
-     - 
+     -
+     -
      - D2
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 22
      - IO14
-     - 
-     - 
+     -
+     -
      - D4
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 23
      - IO21
-     - 
-     - 
+     -
+     -
      - VSYNC
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 24
      - IO47
-     - 
-     - 
+     -
+     -
      - D3
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 25
      - IO48
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - PA_CTRL
    * - 26
      - IO45
      - I2S0_LRCK
      - LRCK
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
    * - 27
      - IO0
-     - 
-     - 
-     - 
+     -
+     -
+     -
      - LCD_SPI_SDA
      - BOOT_KEY
-     - 
-     - 
-     - 
+     -
+     -
+     -
    * - 28
      - IO35
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - NC
    * - 29
      - IO36
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - NC
    * - 30
      - IO37
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - NC
    * - 31
      - IO38
-     - 
-     - 
+     -
+     -
      - HREF
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 32
      - IO39
-     - 
-     - 
+     -
+     -
      - D9
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 33
      - IO40
-     - 
-     - 
+     -
+     -
      - XCLK
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 34
      - IO41
-     - 
-     - 
+     -
+     -
      - D8
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 35
      - IO42
-     - 
-     - 
+     -
+     -
      - D7
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 36
      - RXD0
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - ESP0_UART0_RX
    * - 37
      - TXD0
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - ESP0_UART0_TX
    * - 38
      - IO2
-     - 
-     - 
-     - 
+     -
+     -
+     -
      - LCD_SPI_DC
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
    * - 39
      - IO1
-     - 
-     - 
-     - 
+     -
+     -
+     -
      - LCD_SPI_CLK
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
    * - 41
      - EPAD
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      -
 
 .. [#one] 管脚 - ESP32-S3-WROOM-1 模组管脚号，不含 GND 和供电管脚。
@@ -653,35 +653,35 @@ ESP32-S3-Korvo-2 V3.0 可为音频组件和 ESP 模组提供相互独立的电�
      - 其他
    * - 4
      - P0
-     - 
+     -
      - PA_CTRL
    * - 5
      - P1
      - LCD_CTRL
-     - 
+     -
    * - 6
      - P2
      - LCD_RST
-     - 
+     -
    * - 7
      - P3
      - LCD_CS
-     - 
+     -
    * - 9
      - P4
      - TP_INT
-     - 
+     -
    * - 10
      - P5
-     - 
+     -
      - PERI_PWR_ON
    * - 11
      - P6
-     - 
+     -
      - LED1
    * - 12
      - P7
-     - 
+     -
      - LED2
 
 连接器
@@ -694,7 +694,7 @@ ESP32-S3-Korvo-2 V3.0 可为音频组件和 ESP 模组提供相互独立的电�
 No.  摄像头信号       ESP32-S3 管脚
 ===  =============  =============
 1    SIOD           GPIO17
-2    SIOC           GPIO18 
+2    SIOC           GPIO18
 3    D5             GPIO3
 4    PCLK           GPIO11
 5    D6             GPIO12
@@ -716,10 +716,10 @@ LCD 连接器
 No.  LCD 信号      ESP32-S3 管脚
 ===  ===========  =============
 1    TP_I2C_SDA   GPIO17
-2    TP_I2C_CLK   GPIO18 
-3    LCD_SPI_SDA  GPIO0 
+2    TP_I2C_CLK   GPIO18
+3    LCD_SPI_SDA  GPIO0
 4    LCD_SPI_DC   GPIO2
-5    LCD_SPI_CLK  GPIO1 
+5    LCD_SPI_CLK  GPIO1
 ===  ===========  =============
 
 ===  ============  ============
@@ -744,21 +744,21 @@ ESP32-S3-Korvo-2 回声参考信号源有两路兼容设计，一路是 Codec (E
     :align: center
     :scale: 60%
     :alt: ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC 输出（点击放大）
-    
+
     ESP32-S3-Korvo-2 V3.0 - AEC Codec DAC 输出（点击放大）
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-pa-o.png
     :align: center
     :scale: 30%
     :alt: ESP32-S3-Korvo-2 V3.0 - AEC PA 输出 （点击放大）
-    
+
     ESP32-S3-Korvo-2 V3.0 - AEC PA 输出（点击放大）
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-signal-collection.png
     :align: center
     :scale: 60%
     :alt: ESP32-S3-Korvo-2 V3.0 - AEC 参考信号采集（点击放大）
-    
+
     ESP32-S3-Korvo-2 V3.0 - 参考信号采集（点击放大）
 
 硬件设置选项
@@ -786,10 +786,10 @@ ESP 管脚测试点分配
 No.  编解码器管脚    ESP32-S3 管脚
 ===  ============  =============
 1    MCLK          GPIO16
-2    SCLK          GPIO9 
-3    LRCK          GPIO45 
+2    SCLK          GPIO9
+3    LRCK          GPIO45
 4    DSDIN         GPIO8
-5    ASDOUT        – 
+5    ASDOUT        –
 6    GND           –
 ===  ============  =============
 
@@ -801,7 +801,7 @@ No.  ADC 管脚     ESP32-S3 管脚
 ===  ==========  =============
 1    MCLK        GPIO16
 2    SCLK        GPIO9
-3    LRCK        GPIO45 
+3    LRCK        GPIO45
 4    SDOUT       GPIO10
 5    INT         –
 6    GND         –
@@ -811,14 +811,14 @@ UART 测试点/J17
 ^^^^^^^^^^^^^^^^^^
 
 ===  ==========
-No.  UART 管脚   
+No.  UART 管脚
 ===  ==========
-1    3.3V        
-2    TXD         
-3    RXD        
+1    3.3V
+2    TXD
+3    RXD
 4    IO0
-5    EN          
-6    GND         
+5    EN
+6    GND
 ===  ==========
 
 I2C 测试点/J18

@@ -42,7 +42,7 @@ Description of Components
     :align: center
     :scale: 70%
     :alt: ESP32-S3-Korvo-2 V3.1 (click to enlarge)
-    
+
     ESP32-S3-Korvo-2 V3.1 (click to enlarge)
 
 The key components of the board are described in a clockwise direction.
@@ -85,13 +85,13 @@ The key components of the board are described in a clockwise direction.
      - | Boot: holding down the Boot key and momentarily pressing the Reset key initiates the firmware upload mode. Then you can upload firmware through the serial port.
        | Reset: pressing this button alone resets the system.
    * - MicroSD Slot
-     - The development board supports a microSD card in 1-bit mode, and can store or play audio files in the microSD card. 
+     - The development board supports a microSD card in 1-bit mode, and can store or play audio files in the microSD card.
    * - LCD Connector
      - A FPC connector with 0.5 mm pitch to connect to the LCD extension board.
    * - System LEDs
      - Two general-purpose LEDs (green and red) controlled by ESP32-S3-WROOM-1 module to indicate certain operation states of the audio application using dedicated API.
    * - Camera Connector
-     - An external camera module that can be connected to the development board with the connector to transmit images. 
+     - An external camera module that can be connected to the development board with the connector to transmit images.
 
 
 Start Application Development
@@ -114,7 +114,7 @@ Required Hardware
 Optional Hardware
 ^^^^^^^^^^^^^^^^^
 
-- 1 x MicroSD card 
+- 1 x MicroSD card
 - 1 x Li-ion battery
 
 .. note::
@@ -136,7 +136,7 @@ Hardware Setup
 Software Setup
 ^^^^^^^^^^^^^^
 
-Please proceed to :doc:`../../get-started/index`, where Section :ref:`get-started-step-by-step` will quickly help you set up the development environment and then flash an :adf:`application example <examples>` onto your board.
+Please proceed to :doc:`../../get-started/index`, where Section :ref:`get-started-step-by-step` will quickly help you set up the development environment and then flash an :project:`application example <examples>` onto your board.
 
 Contents and Packaging
 ----------------------
@@ -147,12 +147,12 @@ The main board and its accessories can be ordered separately. The accessories in
 
 - LCD extension board: ESP32-S3-Korvo-2-LCD
 - Camera
-- Connectors: 
+- Connectors:
 
   - 20-pin FPC cable
 
 - Fasteners:
-  
+
   - Copper standoffs (x8)
   - Screws (x4)
 
@@ -185,7 +185,7 @@ The block diagram below shows the components of ESP32-S3-Korvo-2 V3.1 and their 
     :align: center
     :scale: 55%
     :alt: ESP32-S3-Korvo-2 V3.1 Electrical Block Diagram
-    
+
     ESP32-S3-Korvo-2 V3.1 Electrical Block Diagram
 
 
@@ -201,14 +201,14 @@ The main power supply is 5 V and provided by a USB. The secondary power supply i
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.1 - Dedicated USB Power Supply Socket
-    
+
     ESP32-S3-Korvo-2 V3.1 - Dedicated USB Power Supply Socket
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-battery-ps.png
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.1 - Power Supply from a Battery
-    
+
     ESP32-S3-Korvo-2 V3.1 - Power Supply from a Battery
 
 As shown in the figure below, if the USB power supply and battery power supply are connected at the same time with a high VBUS, an off-state Q14, and an automatic cut-off VBAT, the USB becomes the power supply for the system.
@@ -217,7 +217,7 @@ As shown in the figure below, if the USB power supply and battery power supply a
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.1 - Power Supply Options
-    
+
     ESP32-S3-Korvo-2 V3.1 - Power Supply Options
 
 Independent Audio and Digital Power Supply
@@ -229,14 +229,14 @@ ESP32-S3-Korvo-2 V3.1 features independent power supplies to the audio component
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.1 - Digital Power Supply
-    
+
     ESP32-S3-Korvo-2 V3.1 - Digital Power Supply
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-audio-ps.png
     :align: center
     :scale: 40%
     :alt: ESP32-S3-Korvo-2 V3.1 - Audio Power Supply
-    
+
     ESP32-S3-Korvo-2 V3.1 - Audio Power Supply
 
 
@@ -261,388 +261,388 @@ The table below provides allocation of pins exposed on terminals of ESP32-S3-WRO
      - Other
    * - 3
      - EN
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
      - EN_KEY
-     - 
-     - 
-     - 
+     -
+     -
+     -
    * - 4
      - IO4
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
      - DATA0
-     - 
-     - 
+     -
+     -
    * - 5
      - IO5
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
      - REC, MUTE, PLAY, SET, VOL-, VOL+
-     - 
-     - 
-     - 
+     -
+     -
+     -
    * - 6
      - IO6
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - BAT_MEAS_ADC
    * - 7
      - IO7
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
      - CMD
-     - 
-     - 
+     -
+     -
    * - 8
      - IO15
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
      - CLK
-     - 
-     - 
+     -
+     -
    * - 9
      - IO16
      - I2S0_MCLK
      - MCLK
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
    * - 10
      - IO17
      - I2C_SDA
      - I2C_SDA
      - SIOD
      - TP_I2C_SDA
-     - 
-     - 
+     -
+     -
      - I2C_SDA
-     - 
+     -
    * - 11
      - IO18
      - I2C_CLK
      - I2C_CLK
      - SIOC
      - TP_I2C_CLK
-     - 
-     - 
+     -
+     -
      - I2C_CLK
-     - 
+     -
    * - 12
      - IO8
      - I2S0_DSDIN
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
    * - 13
      - IO19
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - ESP_USB_DM (Reserve)
    * - 14
      - IO20
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - ESP_USB_DP (Reserve)
    * - 15
      - IO3
-     - 
-     - 
+     -
+     -
      - D5
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 16
      - IO46
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - NC
    * - 17
      - IO9
      - I2S0_SCLK
      - SCLK
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
    * - 18
      - IO10
-     - 
+     -
      - SDOUT
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
    * - 19
      - IO11
-     - 
-     - 
+     -
+     -
      - PCLK
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 20
      - IO12
-     - 
-     - 
+     -
+     -
      - D6
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 21
      - IO13
-     - 
-     - 
+     -
+     -
      - D2
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 22
      - IO14
-     - 
-     - 
+     -
+     -
      - D4
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 23
      - IO21
-     - 
-     - 
+     -
+     -
      - VSYNC
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 24
      - IO47
-     - 
-     - 
+     -
+     -
      - D3
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 25
      - IO48
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - PA_CTRL
    * - 26
      - IO45
      - I2S0_LRCK
      - LRCK
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
    * - 27
      - IO0
-     - 
-     - 
-     - 
+     -
+     -
+     -
      - LCD_SPI_SDA
      - BOOT_KEY
-     - 
-     - 
-     - 
+     -
+     -
+     -
    * - 28
      - IO35
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - NC
    * - 29
      - IO36
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - NC
    * - 30
      - IO37
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - NC
    * - 31
      - IO38
-     - 
-     - 
+     -
+     -
      - HREF
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 32
      - IO39
-     - 
-     - 
+     -
+     -
      - D9
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 33
      - IO40
-     - 
-     - 
+     -
+     -
      - XCLK
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 34
      - IO41
-     - 
-     - 
+     -
+     -
      - D8
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 35
      - IO42
-     - 
-     - 
+     -
+     -
      - D7
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
    * - 36
      - RXD0
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - ESP0_UART0_RX
    * - 37
      - TXD0
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      - ESP0_UART0_TX
    * - 38
      - IO2
-     - 
-     - 
-     - 
+     -
+     -
+     -
      - LCD_SPI_DC
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
    * - 39
      - IO1
-     - 
-     - 
-     - 
+     -
+     -
+     -
      - LCD_SPI_CLK
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
    * - 41
      - EPAD
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
-     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
      -
 
 .. [#one] Pin - ESP32-S3-WROOM-1 module pin number, GND and power supply pins are not listed.
 
-The GPIOs allocated to the IO expander are further expanded to multiple GPIOs. 
+The GPIOs allocated to the IO expander are further expanded to multiple GPIOs.
 
 .. list-table:: IO Expander GPIO Allocation
    :header-rows: 1
@@ -654,40 +654,40 @@ The GPIOs allocated to the IO expander are further expanded to multiple GPIOs.
      - Other
    * - 4
      - P0
-     - 
-     - 
+     -
+     -
    * - 5
      - P1
      - LCD_CTRL
-     - 
+     -
    * - 6
      - P2
      - LCD_RST
-     - 
+     -
    * - 7
      - P3
      - LCD_CS
-     - 
+     -
    * - 9
      - P4
      - TP_INT
-     - 
+     -
    * - 10
      - P5
-     - 
+     -
      - PERI_PWR_ON
    * - 11
      - P6
-     - 
+     -
      - LED1
    * - 12
      - P7
-     - 
+     -
      - LED2
 
 Connector
 ---------
- 
+
 Camera Connector
 ^^^^^^^^^^^^^^^^
 
@@ -695,7 +695,7 @@ Camera Connector
 No.  Camera Signal  ESP32-S3 Pin
 ===  =============  ============
 1    SIOD           GPIO17
-2    SIOC           GPIO18 
+2    SIOC           GPIO18
 3    D5             GPIO3
 4    PCLK           GPIO11
 5    D6             GPIO12
@@ -717,10 +717,10 @@ LCD Connector
 No.  LCD Signal   ESP32-S3 Pin
 ===  ===========  ============
 1    TP_I2C_SDA   GPIO17
-2    TP_I2C_CLK   GPIO18 
-3    LCD_SPI_SDA  GPIO0 
+2    TP_I2C_CLK   GPIO18
+3    LCD_SPI_SDA  GPIO0
 4    LCD_SPI_DC   GPIO2
-5    LCD_SPI_CLK  GPIO1 
+5    LCD_SPI_CLK  GPIO1
 ===  ===========  ============
 
 ===  ============  ===========
@@ -745,21 +745,21 @@ The echo reference signal is collected by ADC_MIC3P/ADC_MIC3N of ADC (ES7210) an
     :align: center
     :scale: 60%
     :alt: ESP32-S3-Korvo-2 V3.1 - AEC Codec DAC Output (click to enlarge)
-    
+
     ESP32-S3-Korvo-2 V3.1 - AEC Codec DAC Output (click to enlarge)
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-pa-o.png
     :align: center
     :scale: 30%
     :alt: ESP32-S3-Korvo-2 V3.1 - AEC PA Output (click to enlarge)
-    
+
     ESP32-S3-Korvo-2 V3.1 - AEC PA Output (click to enlarge)
 
 .. figure:: ../../../_static/esp32-s3-korvo-2-v3.0-aec-signal-collection.png
     :align: center
     :scale: 60%
     :alt: ESP32-S3-Korvo-2 V3.1 - AEC Reference Signal Collection (click to enlarge)
-    
+
     ESP32-S3-Korvo-2 V3.1 - AEC Reference Signal Collection (click to enlarge)
 
 Hardware Setup Options
@@ -788,10 +788,10 @@ Codec Test Point/J15
 No.  Codec Pin   ESP32-S3 Pin
 ===  ==========  ============
 1    MCLK        GPIO16
-2    SCLK        GPIO9 
-3    LRCK        GPIO45 
+2    SCLK        GPIO9
+3    LRCK        GPIO45
 4    DSDIN       GPIO8
-5    ASDOUT      –  
+5    ASDOUT      –
 6    GND         –
 ===  ==========  ============
 
@@ -803,7 +803,7 @@ No.  ADC Pin     ESP32-S3 Pin
 ===  ==========  ============
 1    MCLK        GPIO16
 2    SCLK        GPIO9
-3    LRCK        GPIO45 
+3    LRCK        GPIO45
 4    SDOUT       GPIO10
 5    INT         –
 6    GND         –
@@ -812,14 +812,14 @@ No.  ADC Pin     ESP32-S3 Pin
 UART Test Point/J17
 ^^^^^^^^^^^^^^^^^^^
 ===  ==========
-No.  UART Pin   
+No.  UART Pin
 ===  ==========
-1    3.3V        
-2    TXD         
-3    RXD        
+1    3.3V
+2    TXD
+3    RXD
 4    IO0
-5    EN          
-6    GND         
+5    EN
+6    GND
 ===  ==========
 
 I2C Test Point/J18

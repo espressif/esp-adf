@@ -18,7 +18,7 @@ ESP32-C3-Lyra V2.0
 
 开发板概述
 ==============
- 
+
 ESP32-C3-Lyra 是乐鑫基于 ESP32-C3 推出的音频灯控开发板，该开发板对麦克风、扬声器以及 LED 灯带的控制，可满足客户对超高性价比的音频播报机以及律动灯带的产品开发需求。
 
 .. figure:: ../../../_static/esp32-c3-lyra-isometric-raw.png
@@ -62,8 +62,8 @@ ESP32-C3-Lyra 的主要组件和连接方式如下图所示。
 .. figure:: https://dl.espressif.com/dl/schematics/esp32-c3-lyra-layout-front.png
     :align: center
     :width: 2116
-    :height: 1496    
-    :scale: 34%    
+    :height: 1496
+    :scale: 34%
     :alt: ESP32-C3-Lyra - 正面（点击放大）
 
     ESP32-C3-Lyra - 正面（点击放大）
@@ -157,14 +157,14 @@ ESP32-C3-Lyra 的主要组件和连接方式如下图所示。
 #. 开发板自动开始 flash 测试。连接到 USB-to-UART 端口的 PC 上显示日志如下：
 
    .. code-block:: bash
-      
+
       Step1 Flash Test Start
       Step1 Flash Test OK
 
 #. 开发板测试 **功能按键**。请按照日志提示按键，例如，当显示以下日志时，按下 **VOL+**：
 
    .. code-block:: bash
-      
+
       Step2 Keys Test Start
       Please press The Key: VOL+
 
@@ -173,7 +173,7 @@ ESP32-C3-Lyra 的主要组件和连接方式如下图所示。
 #. 开发板测试 ADC。用手机或音乐播放器靠近 **麦克风**，播放 1 kHz 正弦音频信号。开发板检测到音频信号后，显示如下：
 
    .. code-block:: bash
-      
+
       Step5 Adc Test Start
       Please play 1khz audio
       Step5 Adc Test OK
@@ -190,7 +190,7 @@ ESP32-C3-Lyra 的开发框架是 `ESP-ADF <https://github.com/espressif/esp-adf>
 
 - `ESP-IDF <https://github.com/espressif/esp-idf>`__：基于 FreeRTOS 的乐鑫 SoC 开发框架，具有众多组件，包括 LED 控制 (LEDC)、ADC、RMT、SPI 等。
 
-开发板的应用示例存放在 :adf:`application example <examples>` 中。
+开发板的应用示例存放在 :project:`application example <examples>` 中。
 
 
 开始开发应用
