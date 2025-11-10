@@ -27,7 +27,7 @@ void app_main(void)
     esp_log_level_set("avi player", ESP_LOG_WARN);
 
     esp_littlefs_init("/littlefs", "storage");
-    esp_mmap_init("assets", MMAP_IMAGES_FILES, MMAP_IMAGES_CHECKSUM);
+    esp_mmap_init("assets", MMAP_ASSETS_FILES, MMAP_ASSETS_CHECKSUM);
     esp_sdcard_init();
 
 #if ENABLE_BENCHMARK
@@ -41,6 +41,7 @@ void app_main(void)
     avi_player_start();  // If you show 240*240 and more, you can try this
 #else
     dual_eye_ui_start();  // If just show gif in 128*128, you can try this
+    // dual_eye_ui_avi_start();  // If you show 240*240 and more with LVGL UI by avi player, you can try this
 #endif  /* USE_AVI_PLAYER */
 
     esp_gmf_oal_thread_create(NULL, "system_task", system_task, NULL, 4096, 15, true, 1);

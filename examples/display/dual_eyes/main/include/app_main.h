@@ -14,7 +14,7 @@
 #include "esp_gmf_oal_thread.h"
 #include "esp_log_level.h"
 #include "storage.h"
-#include "mmap_generate_images.h"
+#include "mmap_generate_assets.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +29,11 @@ void dual_eye_ui_start(void);
  * @brief  Start AVI video player
  */
 void avi_player_start(void);
+
+/**
+ * @brief  Start LVGL UI interface with AVI video player
+ */
+void dual_eye_ui_avi_start(void);
 
 #ifdef __cplusplus
 }
