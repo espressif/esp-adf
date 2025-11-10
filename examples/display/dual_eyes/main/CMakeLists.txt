@@ -1,6 +1,7 @@
 set(COMPONENT_SRCS
     app_main.c
     esp_dual_eye_ui.c
+    esp_dual_eye_ui_avi.c
     esp_dual_eye_player.c
 )
 
