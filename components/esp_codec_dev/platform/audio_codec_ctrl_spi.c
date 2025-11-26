@@ -5,6 +5,7 @@
  */
 #include "audio_codec_ctrl_if.h"
 #include "esp_codec_dev_defaults.h"
+#include "esp_idf_version.h"
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"

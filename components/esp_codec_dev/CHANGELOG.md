@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.3
+
+### Bug Fixed
+
+- Add header dependency for passing compiling build after esp-idf v6.0
+
 ## v1.5.2
 
 ### Bug Fixed
