@@ -4,7 +4,7 @@
 - Regular Example: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
 
 
-## 例程简介
+## Example Brief
 
 This example demonstrates how to perform multi-channel mixing using the ADF.
 
