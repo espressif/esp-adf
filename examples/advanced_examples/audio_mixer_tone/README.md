@@ -1,7 +1,7 @@
 # Multiple channel mixing example
 
-- [English Version](./README.md)
-- 例程难度：![alt text](../../../docs/_static/level_regular.png "中级")
+- [中文版本](./README_CN.md)
+- Regular Example: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
 
 
 ## 例程简介
