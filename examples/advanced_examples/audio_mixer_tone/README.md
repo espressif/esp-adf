@@ -9,9 +9,9 @@
 This example demonstrates how to perform multi-channel mixing using the ADF.
 
    ```
-   [sdcard] ---> file_mp3_reader ---> mp3_decoder ---+ 
+   [sdcard] ---> file_mp3_reader ---> mp3_decoder ---+
                                                       |
-   [http] -----> http_mp3_reader ---> mp3_decoder-----|            
+   [http] -----> http_mp3_reader ---> mp3_decoder-----|
                                                       |
                                                       |-------> Audio Mixer ----> i2s_stream_writer ---> [codec_chip] --->PA
    [tone] -----> tone_aac_reader ---> aac_decoder-----|                    |
