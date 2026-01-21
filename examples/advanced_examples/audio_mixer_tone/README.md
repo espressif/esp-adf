@@ -24,7 +24,7 @@ This example demonstrates how to perform multi-channel mixing using the ADF.
 Refer to the table below for the supported commands:
 |Index|Command|Description or Usage|Related Function|
 | -- | -- | -- | -- |
-|01| play| Play a single audio channel using esp_sudio. Currently, `play` can only play one record, while others can be played using PMixer |cli_play|
+|01| play| Play a single audio channel using esp_audio. Currently, `play` can only play one record, while others can be played using PMixer |cli_play|
 |02| stop| Stop playing audio initiated by `play` |cli_stop|
 |03| pmixer| Play a single audio channel. Multiple channels can be played simultaneously using different slots to achieve mixing effects |cli_play_mixer|
 |04| smixer| Stop playback initiated by `pmixer` |cli_replay_mixer|
