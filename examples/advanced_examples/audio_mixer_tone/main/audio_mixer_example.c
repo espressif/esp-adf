@@ -369,7 +369,7 @@ static esp_err_t play_read_callback(uint8_t *data, int len, void *ctx)
     return raw_stream_read(raw_writer_h, (char *)data, len);
 }
 
-static void aduio_play_read_task(void *pv)
+static void audio_play_read_task(void *pv)
 {
     char *buffer = audio_calloc(1, 2048);
     assert(buffer);
@@ -467,7 +467,7 @@ static void cli_setup_player(void)
 
     audio_event_group = xEventGroupCreate();
     assert(audio_event_group);
-    xTaskCreate(aduio_play_read_task, "aduio_play_read_task", 4096, NULL, 5, NULL);
+    xTaskCreate(audio_play_read_task, "audio_play_read_task", 4096, NULL, 5, NULL);
 }
 
 static void cli_setup_console()
