@@ -16,7 +16,7 @@ This example demonstrates how to perform multi-channel mixing using the ADF.
                                                       |-------> Audio Mixer ----> i2s_stream_writer ---> [codec_chip] --->PA
    [tone] -----> tone_aac_reader ---> aac_decoder-----|                    |
                                                       |                    |-----> Sdcard
-   [reorder] ----------> i2s read ------------------- |                    |
+   [recorder] ---------> i2s read ------------------- |                    |
                                                       |                    |-----> Internet
    [Others]
    ```
