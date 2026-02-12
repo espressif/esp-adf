@@ -96,8 +96,10 @@ typedef struct {
                                                              Range size bigger than request size is recommended */
     const char                  *user_agent;            /*!< The User Agent string to send with HTTP requests */
     int                         url_index;              /*!< The url index to be played in playlist */
+    int                         buffer_size;            /*!< HTTP receive buffer size */
 } http_stream_cfg_t;
 
+#define HTTP_STREAM_BUFFER_SIZE         (2048)
 #define HTTP_STREAM_TASK_STACK          (6 * 1024)
 #define HTTP_STREAM_TASK_CORE           (0)
 #define HTTP_STREAM_TASK_PRIO           (4)
@@ -118,6 +120,7 @@ typedef struct {
     .cert_pem  = NULL,                           \
     .crt_bundle_attach = NULL,                   \
     .user_agent = NULL,                          \
+    .buffer_size = HTTP_STREAM_BUFFER_SIZE,      \
 }
 
 /**
