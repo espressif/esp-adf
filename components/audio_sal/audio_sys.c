@@ -92,7 +92,7 @@ esp_err_t audio_sys_get_real_time_stats(void)
     // Allocate array to store tasks states post delay
     end_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
     end_array = audio_malloc(sizeof(TaskStatus_t) * end_array_size);
-    AUDIO_MEM_CHECK(TAG, start_array, {
+    AUDIO_MEM_CHECK(TAG, end_array, {
         ret = ESP_FAIL;
         goto exit;
     });
