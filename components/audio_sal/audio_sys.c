@@ -46,7 +46,7 @@ const char *task_state[] = {
 };
 
 /** @brief
- * "Extr": Allocated task stack from psram, "Intr": Allocated task stack from internel
+ * "Extr": Allocated task stack from psram, "Intr": Allocated task stack from internal ram
  */
 const char *task_stack[] = {"Extr", "Intr"};
 
@@ -160,7 +160,7 @@ exit:    // Common return path
     }
     return ret;
 #else
-    ESP_LOGW(TAG, "Please enbale `CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID` and `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS` in menuconfig");
+    ESP_LOGW(TAG, "Please enable `CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID` and `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS` in menuconfig");
     return ESP_FAIL;
 #endif
 }
