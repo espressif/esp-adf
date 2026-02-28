@@ -1,0 +1,7 @@
+description: Live Photo Capture
+
+dependencies:
+  esp_live_photo:
+    path: ../../../../esp_live_photo
+  espressif/esp_board_manager: '*'
+  espressif/esp_capture: '~0.8'
