@@ -10,9 +10,12 @@
 #include "driver/i2s_std.h"
 #include "driver/i2s_tdm.h"
 #include "soc/soc_caps.h"
+#if SOC_I2S_SUPPORTS_PDM_TX
+#include "driver/i2s_pdm.h"
+#endif  /* SOC_I2S_SUPPORTS_PDM_TX */
 #else
 #include "driver/i2s.h"
-#endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
 #include "esp_private/rtc_clk.h"
 #include "esp_codec_dev.h"
 #include "esp_codec_dev_defaults.h"
@@ -24,10 +27,10 @@
 #define USE_IDF_I2C_MASTER
 #else
 #include "driver/i2c.h"
-#endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0) && !CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE */
 #include "esp_log.h"
 
-#define TAG "CODEC_DEV_UT"
+#define TAG  "CODEC_DEV_UT"
 
 typedef struct {
     int16_t  scl;
@@ -44,21 +47,21 @@ typedef struct {
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 
-#define I2S_MAX_KEEP SOC_I2S_NUM
+#define I2S_MAX_KEEP  SOC_I2S_NUM
 
 typedef struct {
-    i2s_chan_handle_t tx_handle;
-    i2s_chan_handle_t rx_handle;
+    i2s_chan_handle_t  tx_handle;
+    i2s_chan_handle_t  rx_handle;
 } i2s_keep_t;
 
 static i2s_comm_mode_t i2s_in_mode = I2S_COMM_MODE_STD;
 static i2s_comm_mode_t i2s_out_mode = I2S_COMM_MODE_STD;
 static i2s_keep_t *i2s_keep[I2S_MAX_KEEP];
-#endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
 
 #ifdef USE_IDF_I2C_MASTER
 static i2c_master_bus_handle_t i2c_bus_handle;
-#endif
+#endif  /* USE_IDF_I2C_MASTER */
 
 static int ut_i2c_init(uint8_t port, codec_i2c_pin_t *i2c_pin)
 {
@@ -73,32 +76,32 @@ static int ut_i2c_init(uint8_t port, codec_i2c_pin_t *i2c_pin)
     return i2c_new_master_bus(&i2c_bus_config, &i2c_bus_handle);
 #else
     i2c_config_t i2c_cfg = {
-        .mode = I2C_MODE_MASTER,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .mode             = I2C_MODE_MASTER,
+        .sda_pullup_en    = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en    = GPIO_PULLUP_ENABLE,
         .master.clk_speed = 100000,
     };
-    i2c_cfg.sda_io_num = i2c_pin ? i2c_pin->ada, TEST_BOARD_I2C_SDA_PIN;
-    i2c_cfg.scl_io_num = i2c_pin ? i2c_pin->scl, TEST_BOARD_I2C_SCL_PIN;
+    i2c_cfg.sda_io_num = i2c_pin ? i2c_pin->sda : TEST_BOARD_I2C_SDA_PIN;
+    i2c_cfg.scl_io_num = i2c_pin ? i2c_pin->scl : TEST_BOARD_I2C_SCL_PIN;
     esp_err_t ret = i2c_param_config(port, &i2c_cfg);
     if (ret != ESP_OK) {
         return -1;
     }
     return i2c_driver_install(port, i2c_cfg.mode, 0, 0, 0);
-#endif
+#endif  /* USE_IDF_I2C_MASTER */
 }
 
 static int ut_i2c_deinit(uint8_t port)
 {
 #ifdef USE_IDF_I2C_MASTER
-   if (i2c_bus_handle) {
-       i2c_del_master_bus(i2c_bus_handle);
-   }
-   i2c_bus_handle = NULL;
-   return 0;
+    if (i2c_bus_handle) {
+        i2c_del_master_bus(i2c_bus_handle);
+    }
+    i2c_bus_handle = NULL;
+    return 0;
 #else
     return i2c_driver_delete(port);
-#endif
+#endif  /* USE_IDF_I2C_MASTER */
 }
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
@@ -113,7 +116,7 @@ static void ut_clr_i2s_mode(void)
     i2s_in_mode = I2S_COMM_MODE_STD;
     i2s_out_mode = I2S_COMM_MODE_STD;
 }
-#endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
 
 static int ut_i2s_init(uint8_t port, codec_i2s_pin_t *i2s_pin, i2s_clock_src_t clk_src)
 {
@@ -125,7 +128,7 @@ static int ut_i2s_init(uint8_t port, codec_i2s_pin_t *i2s_pin, i2s_clock_src_t c
     i2s_std_config_t std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000),
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_STEREO),
-        .gpio_cfg ={
+        .gpio_cfg = {
             .mclk = i2s_pin ? i2s_pin->mclk : TEST_BOARD_I2S_MCK_PIN,
             .bclk = i2s_pin ? i2s_pin->bclk : TEST_BOARD_I2S_BCK_PIN,
             .ws = i2s_pin ? i2s_pin->ws : TEST_BOARD_I2S_DATA_WS_PIN,
@@ -135,7 +138,7 @@ static int ut_i2s_init(uint8_t port, codec_i2s_pin_t *i2s_pin, i2s_clock_src_t c
     };
     std_cfg.clk_cfg.clk_src = clk_src;
     if (i2s_keep[port] == NULL) {
-        i2s_keep[port] = (i2s_keep_t *) calloc(1, sizeof(i2s_keep_t));
+        i2s_keep[port] = (i2s_keep_t *)calloc(1, sizeof(i2s_keep_t));
         if (i2s_keep[port] == NULL) {
             return -1;
         }
@@ -144,7 +147,7 @@ static int ut_i2s_init(uint8_t port, codec_i2s_pin_t *i2s_pin, i2s_clock_src_t c
     i2s_tdm_slot_mask_t slot_mask = I2S_TDM_SLOT0 | I2S_TDM_SLOT1 | I2S_TDM_SLOT2 | I2S_TDM_SLOT3;
     i2s_tdm_config_t tdm_cfg = {
         .slot_cfg = I2S_TDM_PHILIPS_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_STEREO, slot_mask),
-        .clk_cfg  = I2S_TDM_CLK_DEFAULT_CONFIG(16000),
+        .clk_cfg = I2S_TDM_CLK_DEFAULT_CONFIG(16000),
         .gpio_cfg = {
             .mclk = i2s_pin ? i2s_pin->mclk : TEST_BOARD_I2S_MCK_PIN,
             .bclk = i2s_pin ? i2s_pin->bclk : TEST_BOARD_I2S_BCK_PIN,
@@ -155,11 +158,10 @@ static int ut_i2s_init(uint8_t port, codec_i2s_pin_t *i2s_pin, i2s_clock_src_t c
     };
     tdm_cfg.slot_cfg.total_slot = 4;
     tdm_cfg.clk_cfg.clk_src = clk_src;
-#endif
-
+#endif  /* SOC_I2S_SUPPORTS_TDM */
 
     int ret = i2s_new_channel(&chan_cfg,
-                              i2s_out_mode == I2S_COMM_MODE_NONE ? NULL :&i2s_keep[port]->tx_handle,
+                              i2s_out_mode == I2S_COMM_MODE_NONE ? NULL : &i2s_keep[port]->tx_handle,
                               i2s_in_mode == I2S_COMM_MODE_NONE ? NULL : &i2s_keep[port]->rx_handle);
     TEST_ESP_OK(ret);
     if (i2s_out_mode == I2S_COMM_MODE_STD) {
@@ -169,7 +171,7 @@ static int ut_i2s_init(uint8_t port, codec_i2s_pin_t *i2s_pin, i2s_clock_src_t c
     else if (i2s_out_mode == I2S_COMM_MODE_TDM) {
         ret = i2s_channel_init_tdm_mode(i2s_keep[port]->tx_handle, &tdm_cfg);
     }
-#endif
+#endif  /* SOC_I2S_SUPPORTS_TDM */
     TEST_ESP_OK(ret);
     if (i2s_in_mode == I2S_COMM_MODE_STD) {
         ret = i2s_channel_init_std_mode(i2s_keep[port]->rx_handle, &std_cfg);
@@ -178,33 +180,33 @@ static int ut_i2s_init(uint8_t port, codec_i2s_pin_t *i2s_pin, i2s_clock_src_t c
     else if (i2s_in_mode == I2S_COMM_MODE_TDM) {
         ret = i2s_channel_init_tdm_mode(i2s_keep[port]->rx_handle, &tdm_cfg);
     }
-#endif
+#endif  /* SOC_I2S_SUPPORTS_TDM */
     TEST_ESP_OK(ret);
     // For tx master using duplex mode
     i2s_channel_enable(i2s_keep[port]->tx_handle);
 #else
     i2s_config_t i2s_config = {
-        .mode = (i2s_mode_t) (I2S_MODE_TX | I2S_MODE_RX | I2S_MODE_MASTER),
-        .sample_rate = 44100,
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+        .mode                 = (i2s_mode_t)(I2S_MODE_TX | I2S_MODE_RX | I2S_MODE_MASTER),
+        .sample_rate          = 44100,
+        .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
+        .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
         .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-        .dma_buf_count = 2,
-        .dma_buf_len = 128,
-        .use_apll = true,
-        .tx_desc_auto_clear = true,
+        .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
+        .dma_buf_count        = 2,
+        .dma_buf_len          = 128,
+        .use_apll             = true,
+        .tx_desc_auto_clear   = true,
     };
     int ret = i2s_driver_install(port, &i2s_config, 0, NULL);
     i2s_pin_config_t i2s_pin_cfg = {
-        .mck_io_num = i2s_pin ? i2s_pin->mclk : TEST_BOARD_I2S_MCK_PIN,
-        .bck_io_num = i2s_pin ? i2s_pin->bclk : TEST_BOARD_I2S_BCK_PIN,
-        .ws_io_num = i2s_pin ? i2s_pin->ws : TEST_BOARD_I2S_DATA_WS_PIN,
+        .mck_io_num   = i2s_pin ? i2s_pin->mclk : TEST_BOARD_I2S_MCK_PIN,
+        .bck_io_num   = i2s_pin ? i2s_pin->bclk : TEST_BOARD_I2S_BCK_PIN,
+        .ws_io_num    = i2s_pin ? i2s_pin->ws : TEST_BOARD_I2S_DATA_WS_PIN,
         .data_out_num = i2s_pin ? i2s_pin->dout : TEST_BOARD_I2S_DATA_OUT_PIN,
-        .data_in_num = i2s_pin ? i2s_pin->din : TEST_BOARD_I2S_DATA_IN_PIN,
+        .data_in_num  = i2s_pin ? i2s_pin->din : TEST_BOARD_I2S_DATA_IN_PIN,
     };
     i2s_set_pin(port, &i2s_pin_cfg);
-#endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
     return ret;
 }
 
@@ -218,21 +220,78 @@ static int ut_i2s_deinit(uint8_t port)
     if (i2s_keep[port] == NULL) {
         return 0;
     }
-    i2s_channel_disable(i2s_keep[port]->tx_handle);
-    i2s_channel_disable(i2s_keep[port]->rx_handle);
-    i2s_del_channel(i2s_keep[port]->tx_handle);
-    i2s_del_channel(i2s_keep[port]->rx_handle);
+    if (i2s_keep[port]->tx_handle) {
+        i2s_channel_disable(i2s_keep[port]->tx_handle);
+        i2s_del_channel(i2s_keep[port]->tx_handle);
+    }
+    if (i2s_keep[port]->rx_handle) {
+        i2s_channel_disable(i2s_keep[port]->rx_handle);
+        i2s_del_channel(i2s_keep[port]->rx_handle);
+    }
     free(i2s_keep[port]);
     i2s_keep[port] = NULL;
 #else
     i2s_driver_uninstall(port);
-#endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
     return 0;
 }
 
+#if SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+static int ut_i2s_init_pdm_out(uint8_t port)
+{
+    // The following configuration applies to the ESP32 C3 Lyra board
+    if (port >= I2S_MAX_KEEP) {
+        return -1;
+    }
+    if (i2s_keep[port] == NULL) {
+        i2s_keep[port] = (i2s_keep_t *)calloc(1, sizeof(i2s_keep_t));
+        if (i2s_keep[port] == NULL) {
+            return -1;
+        }
+    }
+
+    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(port, I2S_ROLE_MASTER);
+    int ret = i2s_new_channel(&chan_cfg, &i2s_keep[port]->tx_handle, NULL);
+    TEST_ESP_OK(ret);
+
+    i2s_pdm_tx_config_t pdm_cfg = {
+        .clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(16000),
+        .slot_cfg = I2S_PDM_TX_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_MONO),
+        .gpio_cfg = {
+            .clk = GPIO_NUM_NC,
+            .dout = 3,
+#if SOC_I2S_PDM_MAX_TX_LINES > 1
+            .dout2 = GPIO_NUM_NC,
+#endif  /* SOC_I2S_PDM_MAX_TX_LINES > 1 */
+            .invert_flags = {
+                .clk_inv = false,
+            },
+        },
+    };
+    pdm_cfg.clk_cfg.up_sample_fp = 960;
+    pdm_cfg.clk_cfg.up_sample_fs = 441;
+    pdm_cfg.clk_cfg.bclk_div = 8;
+    pdm_cfg.slot_cfg.data_fmt = I2S_PDM_DATA_FMT_PCM;
+    pdm_cfg.slot_cfg.sd_scale = I2S_PDM_SIG_SCALING_MUL_4;
+    pdm_cfg.slot_cfg.hp_scale = I2S_PDM_SIG_SCALING_MUL_4;
+    pdm_cfg.slot_cfg.lp_scale = I2S_PDM_SIG_SCALING_MUL_4;
+    pdm_cfg.slot_cfg.sinc_scale = I2S_PDM_SIG_SCALING_MUL_4;
+    pdm_cfg.slot_cfg.line_mode = I2S_PDM_TX_ONE_LINE_CODEC;
+#if SOC_I2S_HW_VERSION_1
+    pdm_cfg.slot_cfg.slot_mask = I2S_PDM_SLOT_LEFT;
+#endif  /* SOC_I2S_HW_VERSION_1 */
+
+    ret = i2s_channel_init_pdm_tx_mode(i2s_keep[port]->tx_handle, &pdm_cfg);
+    TEST_ESP_OK(ret);
+    ret = i2s_channel_enable(i2s_keep[port]->tx_handle);
+    TEST_ESP_OK(ret);
+    return 0;
+}
+#endif  /* SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
+
 static void codec_max_sample(uint8_t *data, int size, int *max_value, int *min_value)
 {
-    int16_t *s = (int16_t *) data;
+    int16_t *s = (int16_t *)data;
     size >>= 1;
     int i = 1, max, min;
     max = min = s[0];
@@ -255,7 +314,7 @@ static void test_codec_dev_using_s3_board(bool use_xtal)
 #if SOC_I2S_SUPPORTS_XTAL
         clk_src = I2S_CLK_SRC_XTAL;
         rtc_clk_cpu_set_to_default_config();
-#endif
+#endif  /* SOC_I2S_SUPPORTS_XTAL */
     }
     // Need install driver (i2c and i2s) firstly
     int ret = ut_i2c_init(0, NULL);
@@ -267,7 +326,7 @@ static void test_codec_dev_using_s3_board(bool use_xtal)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
         .rx_handle = i2s_keep[0]->rx_handle,
         .tx_handle = i2s_keep[0]->tx_handle,
-#endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
     };
     if (use_xtal) {
         i2s_cfg.clk_src = clk_src;
@@ -278,7 +337,7 @@ static void test_codec_dev_using_s3_board(bool use_xtal)
     audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR};
 #ifdef USE_IDF_I2C_MASTER
     i2c_cfg.bus_handle = i2c_bus_handle;
-#endif
+#endif  /* USE_IDF_I2C_MASTER */
     const audio_codec_ctrl_if_t *out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
     TEST_ASSERT_NOT_NULL(out_ctrl_if);
 
@@ -334,7 +393,7 @@ static void test_codec_dev_using_s3_board(bool use_xtal)
 
     ret = esp_codec_dev_open(record_dev, &fs);
     TEST_ESP_OK(ret);
-    uint8_t *data = (uint8_t *) malloc(512);
+    uint8_t *data = (uint8_t *)malloc(512);
     int limit_size = 10 * fs.sample_rate * fs.channel * (fs.bits_per_sample >> 3);
     int got_size = 0;
     // Playback the recording content directly
@@ -345,7 +404,7 @@ static void test_codec_dev_using_s3_board(bool use_xtal)
         TEST_ESP_OK(ret);
         int max_sample, min_sample;
         codec_max_sample(data, 512, &max_sample, &min_sample);
-         // Verify recording data not constant
+        // Verify recording data not constant
         TEST_ASSERT(max_sample > min_sample);
         got_size += 512;
     }
@@ -382,6 +441,207 @@ TEST_CASE("esp codec dev test using S3 board with XTAL", "[esp_codec_dev]")
     test_codec_dev_using_s3_board(true);
 }
 
+#if SOC_ADC_SUPPORTED && SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+static void test_codec_dev_using_adc_mic(void)
+{
+    const char *fail_msg = NULL;
+    const audio_codec_data_if_t *adc_data_if = NULL;
+    const audio_codec_data_if_t *pdm_data_if = NULL;
+    const audio_codec_gpio_if_t *gpio_if = NULL;
+    const audio_codec_if_t *dummy_codec_if = NULL;
+    esp_codec_dev_handle_t play_dev = NULL;
+    esp_codec_dev_handle_t record_dev = NULL;
+    uint8_t *data = NULL;
+    bool record_opened = false;
+    bool play_opened = false;
+
+    // The following configuration applies to the ESP32 C3 Lyra board with on-board ADC MIC
+    audio_codec_adc_cfg_t adc_cfg = {
+        .handle = NULL,
+        .continuous_cfg = {
+            .max_store_buf_size = 1024,
+            .conv_frame_size = 256,
+            .sample_freq_hz = 16000,
+            .conv_mode = ADC_CONV_SINGLE_UNIT_1,
+            .format = ADC_DIGI_OUTPUT_FORMAT_TYPE2,
+            .pattern_num = 1,
+            .cfg_mode = AUDIO_CODEC_ADC_CFG_MODE_SINGLE_UNIT,
+            .cfg.single_unit = {
+                .unit_id = ADC_UNIT_1,
+                .atten = ADC_ATTEN_DB_12,
+                .bit_width = ADC_BITWIDTH_12,
+                .channel_id = {0},
+            },
+        },
+    };
+
+    esp_codec_dev_cfg_t rec_dev_cfg = {
+        .codec_if = NULL,
+        .data_if = NULL,
+        .dev_type = ESP_CODEC_DEV_TYPE_IN,
+    };
+
+    esp_codec_dev_sample_info_t fs = {
+        .sample_rate = 16000,
+        .channel = 1,
+        .bits_per_sample = 16,
+    };
+
+    adc_data_if = audio_codec_new_adc_data(&adc_cfg);
+    if (adc_data_if == NULL) {
+        fail_msg = "failed to create ADC data_if";
+        goto cleanup;
+    }
+
+    rec_dev_cfg.data_if = adc_data_if;
+    record_dev = esp_codec_dev_new(&rec_dev_cfg);
+    if (record_dev == NULL) {
+        fail_msg = "failed to create esp_codec_dev for ADC MIC";
+        goto cleanup;
+    }
+
+    if (ut_i2s_init_pdm_out(0) != 0) {
+        fail_msg = "failed to init I2S PDM output";
+        goto cleanup;
+    }
+
+    audio_codec_i2s_cfg_t i2s_cfg = {
+        .tx_handle = i2s_keep[0]->tx_handle,
+    };
+    pdm_data_if = audio_codec_new_i2s_data(&i2s_cfg);
+    if (pdm_data_if == NULL) {
+        fail_msg = "failed to create PDM output data_if";
+        goto cleanup;
+    }
+
+    gpio_if = audio_codec_new_gpio();
+    if (gpio_if == NULL) {
+        fail_msg = "failed to create gpio_if";
+        goto cleanup;
+    }
+
+    dummy_codec_cfg_t dummy_cfg = {
+        .gpio_if = gpio_if,
+        .pa_pin = 1,
+        .pa_reverted = false,
+    };
+    dummy_codec_if = dummy_codec_new(&dummy_cfg);
+    if (dummy_codec_if == NULL) {
+        fail_msg = "failed to create dummy codec";
+        goto cleanup;
+    }
+
+    esp_codec_dev_cfg_t play_dev_cfg = {
+        .codec_if = dummy_codec_if,
+        .data_if = pdm_data_if,
+        .dev_type = ESP_CODEC_DEV_TYPE_OUT,
+    };
+
+    play_dev = esp_codec_dev_new(&play_dev_cfg);
+    if (play_dev == NULL) {
+        fail_msg = "failed to create esp_codec_dev for PDM speaker";
+        goto cleanup;
+    }
+
+    int ret = -1;
+    data = (uint8_t *)malloc(512);
+    if (data == NULL) {
+        fail_msg = "failed to allocate ADC read buffer";
+        goto cleanup;
+    }
+
+    ret = esp_codec_dev_open(play_dev, &fs);
+    if (ret != ESP_CODEC_DEV_OK) {
+        ESP_LOGE(TAG, "Open C3 Lyrat PDM speaker failed: %d", ret);
+        fail_msg = "failed to open PDM speaker codec device";
+        goto cleanup;
+    }
+    play_opened = true;
+
+    ret = esp_codec_dev_set_out_vol(play_dev, 60);
+    if (ret != ESP_CODEC_DEV_OK) {
+        ESP_LOGE(TAG, "Set C3 Lyrat PDM speaker volume failed after open: %d", ret);
+        fail_msg = "failed to set PDM speaker volume";
+        goto cleanup;
+    }
+
+    ret = esp_codec_dev_open(record_dev, &fs);
+    if (ret != ESP_CODEC_DEV_OK) {
+        ESP_LOGE(TAG, "Open C3 Lyrat ADC MIC failed: %d", ret);
+        fail_msg = "failed to open ADC MIC codec device";
+        goto cleanup;
+    }
+    record_opened = true;
+
+    for (int i = 0; i < 300; i++) {
+        ret = esp_codec_dev_read(record_dev, data, 512);
+        if (ret != ESP_CODEC_DEV_OK) {
+            ESP_LOGE(TAG, "Read C3 Lyrat ADC MIC failed at round %d: %d", i, ret);
+            fail_msg = "ADC MIC continuous read failed";
+            goto cleanup;
+        }
+        int max_sample = 0;
+        int min_sample = 0;
+        codec_max_sample(data, 512, &max_sample, &min_sample);
+        if (!(max_sample > min_sample)) {
+            ESP_LOGE(TAG, "ADC MIC data looks constant at round %d, max:%d min:%d", i, max_sample, min_sample);
+            fail_msg = "ADC MIC data is constant";
+            goto cleanup;
+        }
+        ret = esp_codec_dev_write(play_dev, data, 512);
+        if (ret != ESP_CODEC_DEV_OK) {
+            ESP_LOGE(TAG, "Write C3 Lyrat PDM speaker failed at round %d: %d", i, ret);
+            fail_msg = "PDM speaker playback failed";
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    if (record_opened) {
+        int close_ret = esp_codec_dev_close(record_dev);
+        if (close_ret != ESP_CODEC_DEV_OK && fail_msg == NULL) {
+            ESP_LOGE(TAG, "Close C3 Lyrat ADC MIC failed: %d", close_ret);
+            fail_msg = "failed to close ADC MIC codec device";
+        }
+    }
+    if (play_opened) {
+        int close_ret = esp_codec_dev_close(play_dev);
+        if (close_ret != ESP_CODEC_DEV_OK && fail_msg == NULL) {
+            ESP_LOGE(TAG, "Close C3 Lyrat PDM speaker failed: %d", close_ret);
+            fail_msg = "failed to close PDM speaker codec device";
+        }
+    }
+    if (record_dev) {
+        esp_codec_dev_delete(record_dev);
+    }
+    if (play_dev) {
+        esp_codec_dev_delete(play_dev);
+    }
+    if (adc_data_if) {
+        audio_codec_delete_data_if(adc_data_if);
+    }
+    if (pdm_data_if) {
+        audio_codec_delete_data_if(pdm_data_if);
+    }
+    if (dummy_codec_if) {
+        audio_codec_delete_codec_if(dummy_codec_if);
+    }
+    if (gpio_if) {
+        audio_codec_delete_gpio_if(gpio_if);
+    }
+    if (data) {
+        free(data);
+    }
+    TEST_ESP_OK(ut_i2s_deinit(0));
+    TEST_ASSERT_MESSAGE(fail_msg == NULL, fail_msg ? fail_msg : "unexpected failure");
+}  /* SOC_ADC_SUPPORTED && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
+
+TEST_CASE("esp codec dev ADC MIC record and PDM speaker play test (default use ESP32_C3_LYRA)", "[esp_codec_dev]")
+{
+    test_codec_dev_using_adc_mic();
+}
+#endif  /* SOC_ADC_SUPPORTED && SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
+
 TEST_CASE("Record play overlap test", "[esp_codec_dev]")
 {
     // Need install driver (i2c and i2s) firstly
@@ -394,7 +654,7 @@ TEST_CASE("Record play overlap test", "[esp_codec_dev]")
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
         .rx_handle = i2s_keep[0]->rx_handle,
         .tx_handle = i2s_keep[0]->tx_handle,
-#endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
     };
     const audio_codec_data_if_t *data_if = audio_codec_new_i2s_data(&i2s_cfg);
     TEST_ASSERT_NOT_NULL(data_if);
@@ -402,7 +662,7 @@ TEST_CASE("Record play overlap test", "[esp_codec_dev]")
     audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR};
 #ifdef USE_IDF_I2C_MASTER
     i2c_cfg.bus_handle = i2c_bus_handle;
-#endif
+#endif  /* USE_IDF_I2C_MASTER */
     const audio_codec_ctrl_if_t *out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
     TEST_ASSERT_NOT_NULL(out_ctrl_if);
 
@@ -456,7 +716,7 @@ TEST_CASE("Record play overlap test", "[esp_codec_dev]")
 
     int limit_size = 5 * fs.sample_rate * fs.channel * (fs.bits_per_sample >> 3);
     int size = 512;
-    uint8_t *data = (uint8_t *) malloc(size);
+    uint8_t *data = (uint8_t *)malloc(size);
     TEST_ASSERT_NOT_NULL(data);
     // Test playback continuous and record interrupt
     ESP_LOGI(TAG, "Test for playback continuous and record interrupt");
@@ -546,10 +806,10 @@ int init_es8311_inst(codec_es8311_inst_t *inst, bool playback, const audio_codec
     if (data_if == NULL) {
         // Make sure that only assign one handle if not shared data_if
         audio_codec_i2s_cfg_t i2s_cfg = {
-    #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
-            .rx_handle = playback == false ?i2s_keep[0]->rx_handle : NULL,
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+            .rx_handle = playback == false ? i2s_keep[0]->rx_handle : NULL,
             .tx_handle = playback ? i2s_keep[0]->tx_handle : NULL,
-    #endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
         };
         inst->data_if = audio_codec_new_i2s_data(&i2s_cfg);
         TEST_ASSERT_NOT_NULL(inst->data_if);
@@ -559,7 +819,7 @@ int init_es8311_inst(codec_es8311_inst_t *inst, bool playback, const audio_codec
     audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR};
 #ifdef USE_IDF_I2C_MASTER
     i2c_cfg.bus_handle = i2c_bus_handle;
-#endif
+#endif  /* USE_IDF_I2C_MASTER */
     inst->ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
     TEST_ASSERT_NOT_NULL(inst->ctrl_if);
 
@@ -568,7 +828,7 @@ int init_es8311_inst(codec_es8311_inst_t *inst, bool playback, const audio_codec
     // New output codec interface
     es8311_codec_cfg_t es8311_cfg = {
         .codec_mode = playback ? ESP_CODEC_DEV_WORK_MODE_DAC : ESP_CODEC_DEV_WORK_MODE_ADC,
-        .ctrl_if =  inst->ctrl_if,
+        .ctrl_if = inst->ctrl_if,
         .gpio_if = inst->gpio_if,
         .pa_pin = 46,
         .use_mclk = false,
@@ -629,10 +889,10 @@ static void multiple_es8311_run(bool reuse_data_if)
     const audio_codec_data_if_t *data_if = NULL;
     if (reuse_data_if) {
         audio_codec_i2s_cfg_t i2s_cfg = {
-    #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
             .rx_handle = i2s_keep[0]->rx_handle,
             .tx_handle = i2s_keep[0]->tx_handle,
-    #endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
         };
         data_if = audio_codec_new_i2s_data(&i2s_cfg);
         TEST_ASSERT_NOT_NULL(data_if);
@@ -657,7 +917,7 @@ static void multiple_es8311_run(bool reuse_data_if)
     };
     // 64k memory to save recording data
     int limit_size = 4 * fs.sample_rate * fs.channel * (fs.bits_per_sample >> 3);
-    uint8_t *data = (uint8_t *) malloc(limit_size);
+    uint8_t *data = (uint8_t *)malloc(limit_size);
     TEST_ASSERT_NOT_NULL(data);
     int each_size = 512;
     int read_count = limit_size / each_size;
@@ -734,7 +994,6 @@ TEST_CASE("Multiple es8311 codec reuse data_if test use ESP32_S3_KORVO_2L", "[es
     multiple_es8311_run(true);
 }
 
-
 TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
 {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
@@ -742,7 +1001,7 @@ TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
     ut_set_i2s_mode(I2S_COMM_MODE_STD, I2S_COMM_MODE_TDM);
 #else
     TEST_ESP_OK(-1);
-#endif
+#endif  /* SOC_I2S_SUPPORTS_TDM */
     // Need install driver (i2c and i2s) firstly
     int ret = ut_i2c_init(0, NULL);
     TEST_ESP_OK(ret);
@@ -759,7 +1018,7 @@ TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
     audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR};
 #ifdef USE_IDF_I2C_MASTER
     i2c_cfg.bus_handle = i2c_bus_handle;
-#endif
+#endif  /* USE_IDF_I2C_MASTER */
     const audio_codec_ctrl_if_t *out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
     TEST_ASSERT_NOT_NULL(out_ctrl_if);
 
@@ -817,7 +1076,7 @@ TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
     fs.channel_mask = ESP_CODEC_DEV_MAKE_CHANNEL_MASK(0) | ESP_CODEC_DEV_MAKE_CHANNEL_MASK(3);
     ret = esp_codec_dev_open(record_dev, &fs);
     TEST_ESP_OK(ret);
-    uint8_t *data = (uint8_t *) malloc(512);
+    uint8_t *data = (uint8_t *)malloc(512);
     int limit_size = 10 * fs.sample_rate * fs.channel * (fs.bits_per_sample >> 3);
     int got_size = 0;
     // Playback the recording content directly
@@ -854,6 +1113,5 @@ TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
     ut_i2c_deinit(0);
     ut_i2s_deinit(0);
     ut_clr_i2s_mode();
-#endif
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
 }
-

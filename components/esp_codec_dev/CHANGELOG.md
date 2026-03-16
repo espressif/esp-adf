@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.5.5
+
+### Feature
+
+- Added internal ADC microphone data interface support through `audio_codec_new_adc_data`.
+- Added dummy codec support for PA-only speaker designs, allowing `esp_codec_dev_open/close` to control PA automatically.
+
 ## v1.5.4
 
 ### Feature
