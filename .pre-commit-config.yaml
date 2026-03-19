@@ -19,3 +19,14 @@ repos:
         args: ['--pattern', '^[^A-Z]*[A-Z]']
       - id: trailing-whitespace
         types_or: [c, c++]
+
+  - repo: https://github.com/COFFER-S/check-format-tool
+    rev: v1.1.3
+    hooks:
+      - id: code-style
+        args: ['--local', '-f', 'code-style']
+        types_or: [c, c++]
+      - id: branch-name
+        args: ['branch-name']
+      - id: commit-message
+        args: ['--ci', 'commit-message']

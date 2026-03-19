@@ -10,6 +10,8 @@
 * Add unified abstract interface to operate on codec device
 * Support customized codec realization based on provided interface
 * Easy-to-use high-level API for playback and recording
+* Support ADC microphone capture through internal ADC data interface (`audio_codec_new_adc_data`)
+* Support dummy codec for PA-only speaker designs (`dummy_codec_new`), enabling automatic PA control via `esp_codec_dev_open/close`
 * Support for volume adjustment in software when it is not supported in hardware
 * Support customized volume curve and customized volume control
 * Easy to port to other platform after replacing codes under [platform](./platform)
@@ -219,6 +221,14 @@ The steps below take the ES8311 codec as an example to illustrate how to play an
 	esp_codec_dev_read(codec_dev, data, sizeof(data));
 	esp_codec_dev_close(codec_dev);
 	```
+
+### Use ADC mic and dummy codec (no external codec chip)
+
+For boards that use an internal ADC microphone and a speaker PA without an external codec chip:
+
+* Use `audio_codec_new_adc_data` as the input data interface for ADC capture.
+* Use `dummy_codec_new` with `pa_pin` configured to bind PA power control to codec lifecycle.
+* Then `esp_codec_dev_open()` / `esp_codec_dev_close()` can still automatically enable/disable PA.
 
 
 ## How to customize for new codec device

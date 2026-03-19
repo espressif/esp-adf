@@ -21,7 +21,7 @@ menu "Audio Codec Device Configuration"
         default y
         help
             Enable this option to support codec ES7210.
-    
+
     config CODEC_ES7243_SUPPORT
         bool "Support ES7243 Codec Chip"
         default y
@@ -33,7 +33,7 @@ menu "Audio Codec Device Configuration"
         default y
         help
             Enable this option to support codec ES7243E.
-    
+
     config CODEC_ES8156_SUPPORT
         bool "Support ES8156 Codec Chip"
         default y
@@ -82,4 +82,10 @@ menu "Audio Codec Device Configuration"
         default n
         help
             Enable this option to support codec CJC8910.
+
+    config CODEC_DUMMY_SUPPORT
+        bool "Support Dummy Codec Chip"
+        default y
+        help
+            Enable this option to support dummy codec, which is used without a codec chip
  endmenu

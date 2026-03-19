@@ -10,6 +10,8 @@
 * 提供统一的抽象化接口来操作编解码器设备
 * 支持客户定制化编解码器设备 (仅需实例化提供的接口)
 * 为播放和录音提供易用的上层 API
+* 支持通过内部 ADC 数据接口采集 ADC 麦克风 (`audio_codec_new_adc_data`)
+* 支持 PA-only 扬声器场景使用 dummy codec (`dummy_codec_new`)，并通过 `esp_codec_dev_open/close` 自动控制 PA
 * 支持软件音量调节 (硬件不支持音量调节时)
 * 支持定制化音量曲线以及音量控制实现
 * 兼容多平台仅需替换 [platform](./platform)
@@ -219,6 +221,14 @@ audio_codec_data_if_t ..> esp_codec_dev
 	esp_codec_dev_read(codec_dev, data, sizeof(data));
 	esp_codec_dev_close(codec_dev);
 	```
+
+### 使用 ADC mic 和 dummy codec（无外部 codec 芯片）
+
+对于使用内部 ADC 麦克风，且扬声器仅有 PA、没有外部 codec 芯片的板级设计：
+
+* 使用 `audio_codec_new_adc_data` 作为 ADC 录音数据接口。
+* 使用 `dummy_codec_new` 并配置 `pa_pin`，将 PA 电源控制绑定到 codec 生命周期。
+* 这样依然可以通过 `esp_codec_dev_open()` / `esp_codec_dev_close()` 自动开关 PA。
 
 ## 客制化编解码器设备
 
