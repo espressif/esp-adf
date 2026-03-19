@@ -1,6 +1,0 @@
-#
-# WiFi Configuration
-#
-CONFIG_EXAMPLE_WIFI_SSID="${CI_WIFI_SSID}"
-CONFIG_EXAMPLE_WIFI_PASSWORD="${CI_WIFI_PASSWORD}"
-# end of WiFi Configuration
