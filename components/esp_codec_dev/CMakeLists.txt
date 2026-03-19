@@ -22,6 +22,11 @@ if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.0")
   list(APPEND priv_requires esp_adc)
 endif()
 
+set(requires "")
+if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "6.0")
+  list(APPEND requires esp_hal_ana_conv)
+endif()
+
 list(APPEND COMPONENT_SRCS
   platform/audio_codec_gpio.c
   platform/audio_codec_ctrl_i2c.c
@@ -30,7 +35,7 @@ list(APPEND COMPONENT_SRCS
   platform/esp_codec_dev_os.c
 )
 
-if(CONFIG_SOC_ADC_SUPPORTED AND "${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.0")
+if(CONFIG_CODEC_DATA_ADC_SUPPORT AND "${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.0")
   list(APPEND COMPONENT_SRCS platform/audio_codec_data_adc.c)
 endif()
 
@@ -96,7 +101,8 @@ endif()
 idf_component_register(SRCS "${COMPONENT_SRCS}"
                        INCLUDE_DIRS "${COMPONENT_ADD_INCLUDEDIRS}"
                        PRIV_INCLUDE_DIRS "${COMPONENT_PRIV_INCLUDEDIRS}"
-                       PRIV_REQUIRES ${priv_requires})
+                       PRIV_REQUIRES ${priv_requires}
+                       REQUIRES ${requires})
 # Library only support xtensa
 if (CONFIG_CODEC_ZL38063_SUPPORT)
   if (NOT ((CONFIG_IDF_TARGET STREQUAL "esp32c6") OR (CONFIG_IDF_TARGET STREQUAL "esp32c3") OR (CONFIG_IDF_TARGET STREQUAL "esp32p4")))

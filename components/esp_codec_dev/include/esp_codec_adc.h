@@ -7,11 +7,12 @@
 #ifndef _ESP_CODEC_ADC_H_
 #define _ESP_CODEC_ADC_H_
 
+#ifdef CONFIG_CODEC_DATA_ADC_SUPPORT
+
 #include "esp_idf_version.h"
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #include "soc/soc_caps.h"
-#if SOC_ADC_SUPPORTED
-#include "esp_adc/adc_continuous.h"
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) && SOC_ADC_SUPPORTED
+#include "hal/adc_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,7 +52,7 @@ typedef struct {
  * @brief  Codec ADC configuration
  */
 typedef struct {
-    adc_continuous_handle_t          *handle;          /*!< Reuse external handle if not NULL, otherwise create local handle */
+    void                             *handle;          /*!< Reuse external adc_continuous_handle_t directly if not NULL, otherwise create local handle */
     audio_codec_adc_continuous_cfg_t  continuous_cfg;  /*!< ADC continuous configuration */
 } audio_codec_adc_cfg_t;
 
@@ -68,6 +69,6 @@ const audio_codec_data_if_t *audio_codec_new_adc_data(audio_codec_adc_cfg_t *adc
 }
 #endif  /* __cplusplus */
 
-#endif  /* SOC_ADC_SUPPORTED */
-#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) && SOC_ADC_SUPPORTED */
+#endif  /* CONFIG_CODEC_DATA_ADC_SUPPORT */
 #endif  /* _ESP_CODEC_ADC_H_ */
