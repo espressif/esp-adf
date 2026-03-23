@@ -127,6 +127,7 @@ static int cjc8910_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (codec == NULL || codec_cfg == NULL || codec_cfg->ctrl_if == NULL || cfg_size != sizeof(cjc8910_codec_cfg_t)) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
+    cjc8910_pa_power(codec, PA_SETUP | PA_DISABLE);
     memcpy(&codec->cfg, cfg, sizeof(cjc8910_codec_cfg_t));
     int regv;
     int ret = ESP_CODEC_DEV_OK;
@@ -183,7 +184,6 @@ static int cjc8910_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (ret != 0) {
         return ESP_CODEC_DEV_WRITE_FAIL;
     }
-    cjc8910_pa_power(codec, PA_SETUP | PA_ENABLE);
     codec->is_open = true;
     ESP_LOGI(TAG, "Codec is opened");
     return ret;
@@ -311,8 +311,8 @@ static int cjc8910_enable(const audio_codec_if_t *h, bool enable)
         return ESP_CODEC_DEV_OK;
     }
     if (enable) {
-        cjc8910_pa_power(codec, PA_ENABLE);
         cjc8910_mute_output(h, false);
+        cjc8910_pa_power(codec, PA_ENABLE);
     } else {
         cjc8910_pa_power(codec, PA_DISABLE);
         cjc8910_mute_output(h, true);
