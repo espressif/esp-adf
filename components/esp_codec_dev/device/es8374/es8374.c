@@ -322,8 +322,8 @@ static int es8374_i2s_config_clock(audio_codec_es8374_t *codec, es_i2s_clock_t c
         default:
             break;
     }
-    ret |= es8374_write_reg(codec, 0x06, dacratio_h); // ADCFsMode,singel SPEED,RATIO=256
-    ret |= es8374_write_reg(codec, 0x07, dacratio_l); // ADCFsMode,singel SPEED,RATIO=256
+    ret |= es8374_write_reg(codec, 0x06, dacratio_h);  // ADCFsMode, single SPEED, RATIO=256
+    ret |= es8374_write_reg(codec, 0x07, dacratio_l);  // ADCFsMode, single SPEED, RATIO=256
 
     return ret;
 }
@@ -430,10 +430,10 @@ static int es8374_init_reg(audio_codec_es8374_t *codec, es_i2s_fmt_t fmt, es_i2s
 
     ret |= es8374_i2s_config_clock(codec, cfg);
 
-    ret |= es8374_write_reg(codec, 0x24, 0x08); // adc set
-    ret |= es8374_write_reg(codec, 0x36, 0x00); // dac set
-    ret |= es8374_write_reg(codec, 0x12, 0x30); // timming set
-    ret |= es8374_write_reg(codec, 0x13, 0x20); // timming set
+    ret |= es8374_write_reg(codec, 0x24, 0x08);  // adc set
+    ret |= es8374_write_reg(codec, 0x36, 0x00);  // dac set
+    ret |= es8374_write_reg(codec, 0x12, 0x30);  // timing set
+    ret |= es8374_write_reg(codec, 0x13, 0x20);  // timing set
 
     ret |= es8374_config_fmt(codec, fmt);
 
@@ -607,11 +607,12 @@ static void es8374_pa_power(audio_codec_es8374_t *codec, bool enable)
 
 static int es8374_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
 {
-    audio_codec_es8374_t *codec = (audio_codec_es8374_t *) h;
-    es8374_codec_cfg_t *codec_cfg = (es8374_codec_cfg_t *) cfg;
+    audio_codec_es8374_t *codec = (audio_codec_es8374_t *)h;
+    es8374_codec_cfg_t *codec_cfg = (es8374_codec_cfg_t *)cfg;
     if (codec == NULL || codec_cfg == NULL || codec_cfg->ctrl_if == NULL || cfg_size != sizeof(es8374_codec_cfg_t)) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
+    es8374_pa_power(codec, false);
     int ret = ESP_CODEC_DEV_OK;
     memcpy(&codec->cfg, codec_cfg, sizeof(es8374_codec_cfg_t));
     es_i2s_clock_t clkdiv;
@@ -632,14 +633,14 @@ static int es8374_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
 
 static int es8374_close(const audio_codec_if_t *h)
 {
-    audio_codec_es8374_t *codec = (audio_codec_es8374_t *) h;
+    audio_codec_es8374_t *codec = (audio_codec_es8374_t *)h;
     if (codec == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     if (codec->is_open) {
-        es8374_stop(codec);
-        es8374_write_reg(codec, 0x00, 0x7F); // IC Reset and STOP
         es8374_pa_power(codec, false);
+        es8374_stop(codec);
+        es8374_write_reg(codec, 0x00, 0x7F);  // IC Reset and STOP
         codec->is_open = false;
     }
     return ESP_CODEC_DEV_OK;

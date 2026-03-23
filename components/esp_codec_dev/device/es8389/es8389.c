@@ -443,6 +443,8 @@ static int es8389_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (codec == NULL || codec_cfg == NULL || codec_cfg->ctrl_if == NULL || cfg_size != sizeof(es8389_codec_cfg_t)) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
+    es8389_pa_power(codec, ES_PA_SETUP | ES_PA_DISABLE);
+
     memcpy(&codec->cfg, cfg, sizeof(es8389_codec_cfg_t));
     if (codec->cfg.mclk_div == 0) {
         codec->cfg.mclk_div = MCLK_DEFAULT_DIV;
@@ -571,18 +573,18 @@ static int es8389_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (ret != 0) {
         return ESP_CODEC_DEV_WRITE_FAIL;
     }
-    es8389_pa_power(codec, ES_PA_SETUP | ES_PA_ENABLE);
     codec->is_open = true;
     return ESP_CODEC_DEV_OK;
 }
 
 static int es8389_close(const audio_codec_if_t *h)
 {
-    audio_codec_es8389_t *codec = (audio_codec_es8389_t *) h;
+    audio_codec_es8389_t *codec = (audio_codec_es8389_t *)h;
     if (codec == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     if (codec->is_open) {
+        es8389_set_mute(h, true);
         es8389_pa_power(codec, ES_PA_DISABLE);
         es8389_suspend(codec);
         codec->is_open = false;
@@ -611,7 +613,7 @@ static int es8389_set_fs(const audio_codec_if_t *h, esp_codec_dev_sample_info_t 
 static int es8389_enable(const audio_codec_if_t *h, bool enable)
 {
     int ret = ESP_CODEC_DEV_OK;
-    audio_codec_es8389_t *codec = (audio_codec_es8389_t *) h;
+    audio_codec_es8389_t *codec = (audio_codec_es8389_t *)h;
     if (codec == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -624,7 +626,9 @@ static int es8389_enable(const audio_codec_if_t *h, bool enable)
     if (enable) {
         ret = es8389_start(codec);
         es8389_pa_power(codec, ES_PA_ENABLE);
+        es8389_set_mute(h, false);
     } else {
+        es8389_set_mute(h, true);
         es8389_pa_power(codec, ES_PA_DISABLE);
         ret = es8389_suspend(codec);
     }

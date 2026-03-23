@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Bug Fixed
+
+- Fixed es8311 pop issue when init again without close
+
 ## v1.5.5
 
 ### Feature

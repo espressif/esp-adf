@@ -125,7 +125,7 @@ static void es8156_pa_power(audio_codec_es8156_t *codec, es_pa_setting_t pa_sett
     }
     if (pa_setting & ES_PA_SETUP) {
         codec->gpio_if->setup(pa_pin, AUDIO_GPIO_DIR_OUT, AUDIO_GPIO_MODE_FLOAT);
-    } 
+    }
     if (pa_setting & ES_PA_ENABLE) {
         codec->gpio_if->set(pa_pin, codec->pa_reverted ? false : true);
     }
@@ -136,11 +136,13 @@ static void es8156_pa_power(audio_codec_es8156_t *codec, es_pa_setting_t pa_sett
 
 static int es8156_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
 {
-    audio_codec_es8156_t *codec = (audio_codec_es8156_t *) h;
-    es8156_codec_cfg_t *codec_cfg = (es8156_codec_cfg_t *) cfg;
+    audio_codec_es8156_t *codec = (audio_codec_es8156_t *)h;
+    es8156_codec_cfg_t *codec_cfg = (es8156_codec_cfg_t *)cfg;
     if (codec == NULL || codec_cfg == NULL || cfg_size != sizeof(es8156_codec_cfg_t) || codec_cfg->ctrl_if == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
+    es8156_pa_power(codec, ES_PA_SETUP | ES_PA_DISABLE);
+
     int ret = ESP_CODEC_DEV_OK;
     codec->ctrl_if = codec_cfg->ctrl_if;
     codec->gpio_if = codec_cfg->gpio_if;
@@ -168,20 +170,20 @@ static int es8156_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (ret != 0) {
         return ESP_CODEC_DEV_WRITE_FAIL;
     }
-    es8156_pa_power(codec, ES_PA_SETUP | ES_PA_ENABLE);
     codec->is_open = true;
     return ESP_CODEC_DEV_OK;
 }
 
 static int es8156_close(const audio_codec_if_t *h)
 {
-    audio_codec_es8156_t *codec = (audio_codec_es8156_t *) h;
+    audio_codec_es8156_t *codec = (audio_codec_es8156_t *)h;
     if (codec == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     if (codec->is_open) {
-        es8156_stop(codec);
+        es8156_set_mute(h, true);
         es8156_pa_power(codec, ES_PA_DISABLE);
+        es8156_stop(codec);
         codec->is_open = false;
     }
     return ESP_CODEC_DEV_OK;
@@ -190,7 +192,7 @@ static int es8156_close(const audio_codec_if_t *h)
 static int es8156_enable(const audio_codec_if_t *h, bool enable)
 {
     int ret = ESP_CODEC_DEV_OK;
-    audio_codec_es8156_t *codec = (audio_codec_es8156_t *) h;
+    audio_codec_es8156_t *codec = (audio_codec_es8156_t *)h;
     if (codec == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -203,7 +205,9 @@ static int es8156_enable(const audio_codec_if_t *h, bool enable)
     if (enable) {
         ret = es8156_start(codec);
         es8156_pa_power(codec, ES_PA_ENABLE);
+        es8156_set_mute(h, false);
     } else {
+        es8156_set_mute(h, true);
         es8156_pa_power(codec, ES_PA_DISABLE);
         ret = es8156_stop(codec);
     }
