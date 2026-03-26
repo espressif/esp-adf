@@ -271,7 +271,6 @@ static int ut_i2s_init_pdm_out(uint8_t port)
     pdm_cfg.clk_cfg.up_sample_fp = 960;
     pdm_cfg.clk_cfg.up_sample_fs = 441;
     pdm_cfg.clk_cfg.bclk_div = 8;
-    pdm_cfg.slot_cfg.data_fmt = I2S_PDM_DATA_FMT_PCM;
     pdm_cfg.slot_cfg.sd_scale = I2S_PDM_SIG_SCALING_MUL_4;
     pdm_cfg.slot_cfg.hp_scale = I2S_PDM_SIG_SCALING_MUL_4;
     pdm_cfg.slot_cfg.lp_scale = I2S_PDM_SIG_SCALING_MUL_4;
@@ -441,7 +440,7 @@ TEST_CASE("esp codec dev test using S3 board with XTAL", "[esp_codec_dev]")
     test_codec_dev_using_s3_board(true);
 }
 
-#if SOC_ADC_SUPPORTED && SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#if CONFIG_CODEC_DATA_ADC_SUPPORT && SOC_ADC_SUPPORTED && SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 static void test_codec_dev_using_adc_mic(void)
 {
     const char *fail_msg = NULL;
@@ -640,7 +639,7 @@ TEST_CASE("esp codec dev ADC MIC record and PDM speaker play test (default use E
 {
     test_codec_dev_using_adc_mic();
 }
-#endif  /* SOC_ADC_SUPPORTED && SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
+#endif  /* CONFIG_CODEC_DATA_ADC_SUPPORT && SOC_ADC_SUPPORTED && SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
 
 TEST_CASE("Record play overlap test", "[esp_codec_dev]")
 {

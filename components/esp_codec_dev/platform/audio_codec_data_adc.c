@@ -4,12 +4,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "esp_check.h"
 #include "esp_log.h"
+#include "esp_idf_version.h"
 #include "esp_codec_dev_defaults.h"
+#include "esp_adc/adc_continuous.h"
 
 #define TAG  "CODEC_ADC_IF"
+
+/**
+ * Compat shim for IDF < 5.5.2:
+ *   - adc_continuous_parse_data() was added in IDF 5.5.2
+ * Keep the parsed sample type private to this component so
+ * backports of newer ADC helpers do not conflict with local
+ * compatibility code on older branches.
+ */
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 5, 2)
+
+#include "hal/adc_ll.h"
+
+#ifdef ADC_LL_UNIT2_CHANNEL_SUBSTRATION
+#define CODEC_ADC_UNIT2_CHANNEL_SUBSTRATION  ADC_LL_UNIT2_CHANNEL_SUBSTRATION
+#else
+#if CONFIG_IDF_TARGET_ESP32P4
+#define CODEC_ADC_UNIT2_CHANNEL_SUBSTRATION  (2)
+#else
+#define CODEC_ADC_UNIT2_CHANNEL_SUBSTRATION  (0)
+#endif  /* CONFIG_IDF_TARGET_ESP32P4 */
+#endif  /* ADC_LL_UNIT2_CHANNEL_SUBSTRATION */
+
+#endif  /* ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 5, 2) */
 
 /**
  * Optional safety filter on read path:
@@ -19,6 +45,13 @@
 #ifndef ADC_DATA_READ_FILTER_ENABLE
 #define ADC_DATA_READ_FILTER_ENABLE  0
 #endif  /* ADC_DATA_READ_FILTER_ENABLE */
+
+typedef struct {
+    adc_unit_t     unit;
+    adc_channel_t  channel;
+    uint32_t       raw_data;
+    bool           valid;
+} codec_adc_parsed_data_t;
 
 typedef struct {
     audio_codec_data_if_t             base;
@@ -37,7 +70,7 @@ typedef struct {
     bool                              enabled;
     uint8_t                          *raw_read_buf;
     size_t                            raw_read_buf_size;
-    adc_continuous_data_t            *parsed_buf;
+    codec_adc_parsed_data_t          *parsed_buf;
     uint32_t                          current_sample_rate_hz;
     uint8_t                           base_pattern_bits[SOC_ADC_PERIPH_NUM][SOC_ADC_MAX_CHANNEL_NUM];
     uint8_t                           active_pattern_bits[SOC_ADC_PERIPH_NUM][SOC_ADC_MAX_CHANNEL_NUM];
@@ -100,6 +133,94 @@ static bool adc_sample_allowed(const adc_data_t *adc_data, adc_unit_t unit, adc_
     return adc_unit_channel_in_range(unit, channel) && adc_data->active_pattern_bits[unit][channel] != 0;
 }
 #endif  /* ADC_DATA_READ_FILTER_ENABLE */
+
+/**
+ * Parse raw ADC DMA bytes into component-private parsed sample array.
+ * On IDF >= 5.5.2 delegates to the real driver API;
+ * on older IDF performs the parsing locally with full access to
+ * adc_data_t (format, active patterns, etc.).
+ */
+static esp_err_t adc_parse_raw_data(adc_data_t *adc_data,
+                                    const uint8_t *raw_data,
+                                    uint32_t raw_data_size,
+                                    codec_adc_parsed_data_t *parsed_data,
+                                    uint32_t *num_parsed_samples)
+{
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 5, 2)
+    if (!raw_data || !parsed_data || !num_parsed_samples) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (raw_data_size == 0 || raw_data_size % SOC_ADC_DIGI_RESULT_BYTES != 0) {
+        *num_parsed_samples = 0;
+        return ESP_ERR_INVALID_SIZE;
+    }
+
+    uint32_t sample_count = raw_data_size / SOC_ADC_DIGI_RESULT_BYTES;
+    adc_continuous_data_t sdk_parsed_data[sample_count];
+    esp_err_t ret = adc_continuous_parse_data(adc_data->handle, raw_data, raw_data_size,
+                                              sdk_parsed_data, num_parsed_samples);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    for (uint32_t i = 0; i < *num_parsed_samples; i++) {
+        parsed_data[i].unit = sdk_parsed_data[i].unit;
+        parsed_data[i].channel = sdk_parsed_data[i].channel;
+        parsed_data[i].raw_data = sdk_parsed_data[i].raw_data;
+        parsed_data[i].valid = sdk_parsed_data[i].valid;
+    }
+    return ESP_OK;
+#else
+    if (!raw_data || !parsed_data || !num_parsed_samples) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (raw_data_size == 0 || raw_data_size % SOC_ADC_DIGI_RESULT_BYTES != 0) {
+        *num_parsed_samples = 0;
+        return ESP_ERR_INVALID_SIZE;
+    }
+
+    uint32_t samples = raw_data_size / SOC_ADC_DIGI_RESULT_BYTES;
+    for (uint32_t i = 0; i < samples; i++) {
+        adc_digi_output_data_t *p =
+            (adc_digi_output_data_t *)&raw_data[i * SOC_ADC_DIGI_RESULT_BYTES];
+#if CONFIG_IDF_TARGET_ESP32
+        parsed_data[i].unit     = ADC_UNIT_1;
+        parsed_data[i].channel  = p->type1.channel;
+        parsed_data[i].raw_data = p->type1.data;
+#elif CONFIG_IDF_TARGET_ESP32S2
+        if (adc_data->cfg.format == ADC_DIGI_OUTPUT_FORMAT_TYPE2) {
+            parsed_data[i].unit     = p->type2.unit ? ADC_UNIT_2 : ADC_UNIT_1;
+            parsed_data[i].channel  = p->type2.channel;
+            parsed_data[i].raw_data = p->type2.data;
+        } else {
+            bool uses_adc1 = false;
+            for (int j = 0; j < adc_data->active_pattern_num; j++) {
+                if ((adc_unit_t)adc_data->base_patterns[adc_data->active_pattern_idx[j]].unit == ADC_UNIT_1) {
+                    uses_adc1 = true;
+                    break;
+                }
+            }
+            parsed_data[i].unit     = uses_adc1 ? ADC_UNIT_1 : ADC_UNIT_2;
+            parsed_data[i].channel  = p->type1.channel;
+            parsed_data[i].raw_data = p->type1.data;
+        }
+#else
+#if SOC_ADC_PERIPH_NUM == 1
+        parsed_data[i].unit = ADC_UNIT_1;
+#else
+        parsed_data[i].unit = p->type2.unit ? ADC_UNIT_2 : ADC_UNIT_1;
+#endif  /* SOC_ADC_PERIPH_NUM == 1 */
+        parsed_data[i].channel  = (parsed_data[i].unit == ADC_UNIT_2)
+                                      ? p->type2.channel - CODEC_ADC_UNIT2_CHANNEL_SUBSTRATION
+                                      : p->type2.channel;
+        parsed_data[i].raw_data = p->type2.data;
+#endif  /* CONFIG_IDF_TARGET_ESP32 */
+        parsed_data[i].valid =
+            (parsed_data[i].channel < SOC_ADC_CHANNEL_NUM(parsed_data[i].unit));
+    }
+    *num_parsed_samples = samples;
+    return ESP_OK;
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 5, 2) */
+}
 
 static adc_digi_convert_mode_t adc_calc_conv_mode(const adc_digi_pattern_config_t *patterns, uint8_t pattern_num)
 {
@@ -247,17 +368,17 @@ static int _adc_data_read(const audio_codec_data_if_t *h, uint8_t *data, int siz
 
         /* 2) Parse raw bytes into (unit/channel/raw_data/valid) tuples. */
         uint32_t num_parsed = 0;
-        ret = adc_continuous_parse_data(adc_data->handle, adc_data->raw_read_buf, ret_num,
-                                        adc_data->parsed_buf, &num_parsed);
+        ret = adc_parse_raw_data(adc_data, adc_data->raw_read_buf, ret_num,
+                                 adc_data->parsed_buf, &num_parsed);
         if (ret != ESP_OK || num_parsed == 0) {
-            ESP_LOGE(TAG, "Call to adc_continuous_parse_data failed: %s, parsed:%lu",
+            ESP_LOGE(TAG, "Call to adc_parse_raw_data failed: %s, parsed:%lu",
                      esp_err_to_name(ret), (unsigned long)num_parsed);
             return ESP_CODEC_DEV_DRV_ERR;
         }
 
         int valid = 0;
         for (uint32_t i = 0; i < num_parsed; i++) {
-            const adc_continuous_data_t *s = &adc_data->parsed_buf[i];
+            const codec_adc_parsed_data_t *s = &adc_data->parsed_buf[i];
             if (!s->valid) {
                 continue;
             }
@@ -429,9 +550,6 @@ const audio_codec_data_if_t *audio_codec_new_adc_data(audio_codec_adc_cfg_t *adc
     ESP_RETURN_ON_FALSE(adc_cfg->continuous_cfg.sample_freq_hz > 0, NULL, TAG, "Sample_freq_hz should be > 0");
     ESP_RETURN_ON_FALSE(adc_cfg->continuous_cfg.cfg_mode == AUDIO_CODEC_ADC_CFG_MODE_SINGLE_UNIT || adc_cfg->continuous_cfg.cfg_mode == AUDIO_CODEC_ADC_CFG_MODE_PATTERN,
                         NULL, TAG, "Invalid cfg_mode");
-    if (adc_cfg->handle) {
-        ESP_RETURN_ON_FALSE(*adc_cfg->handle != NULL, NULL, TAG, "External handle is NULL");
-    }
 
     /* One allocation owns all runtime state; deleted by audio_codec_delete_data_if(). */
     adc_data_t *adc_data = calloc(1, sizeof(adc_data_t));
@@ -511,7 +629,7 @@ const audio_codec_data_if_t *audio_codec_new_adc_data(audio_codec_adc_cfg_t *adc
     if (parsed_buf_count == 0) {
         parsed_buf_count = 1;
     }
-    adc_data->parsed_buf = calloc(parsed_buf_count, sizeof(adc_continuous_data_t));
+    adc_data->parsed_buf = calloc(parsed_buf_count, sizeof(codec_adc_parsed_data_t));
     if (adc_data->parsed_buf == NULL) {
         free(adc_data->raw_read_buf);
         free(adc_data);
@@ -533,7 +651,7 @@ const audio_codec_data_if_t *audio_codec_new_adc_data(audio_codec_adc_cfg_t *adc
         adc_data->use_ext_handle = false;
     } else {
         /* Reuse mode: external owner manages deinit, we only start/stop/config. */
-        adc_data->handle = *adc_cfg->handle;
+        adc_data->handle = (adc_continuous_handle_t)adc_cfg->handle;
         adc_data->use_ext_handle = true;
     }
 

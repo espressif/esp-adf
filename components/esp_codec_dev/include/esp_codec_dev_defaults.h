@@ -11,7 +11,9 @@
 #include "audio_codec_ctrl_if.h"
 #include "audio_codec_data_if.h"
 #include "audio_codec_gpio_if.h"
+#ifdef CONFIG_CODEC_DATA_ADC_SUPPORT
 #include "esp_codec_adc.h"
+#endif  /* CONFIG_CODEC_DATA_ADC_SUPPORT */
 
 #ifdef CONFIG_CODEC_ES8311_SUPPORT
 #include "es8311_codec.h"

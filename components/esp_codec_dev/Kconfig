@@ -85,7 +85,15 @@ menu "Audio Codec Device Configuration"
 
     config CODEC_DUMMY_SUPPORT
         bool "Support Dummy Codec Chip"
-        default y
+        default n
         help
             Enable this option to support dummy codec, which is used without a codec chip
- endmenu
+
+    config CODEC_DATA_ADC_SUPPORT
+        bool "Support ADC continuous data interface"
+        default n
+        depends on SOC_ADC_SUPPORTED
+        help
+            Enable this option to support ADC continuous mode as an audio codec data interface.
+            This allows using the on-chip ADC for audio input instead of an external codec.
+endmenu
