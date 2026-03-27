@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Feature
+
+- Added support for resolving TX I2S handle from RX pair channel when only RX handle is provided in full duplex mode.
+- Added slot bit width reconfiguration when peer codec on the same I2S port already runs with wider slots.
+
+### Bug Fixed
+
+- Fixed 2ch TDM record wrongly for default right alignment comparing with STD mode.
+- Enhanced compatible check for multiple instance of codec_dev use same I2S port.
+  - Peer lookup prefers another data_if on the same port with only RX or only TX; if none, it matches the same data_if that has both RX and TX.
+
 ## v1.5.6
 
 ### Bug Fixed
