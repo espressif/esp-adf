@@ -1,0 +1,24 @@
+version: "1.0.0"
+description: Espressif Live Photo Generator
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_live_photo
+repository: https://github.com/espressif/esp-adf.git
+issues: https://github.com/espressif/esp-adf/issues
+
+dependencies:
+  idf:
+    version: '>=5.0'
+  espressif/esp_muxer:
+    require: public
+    version: "~1.2"
+  espressif/esp_extractor:
+    require: public
+    version: "~1.0"
+tags:
+  - "live_photo"
+  - "motion_photo"
+  - "muxer"
+  - "extractor"
+  - "multimedia"
+
+examples:
+  - path: "./examples/live_photo_capture"
