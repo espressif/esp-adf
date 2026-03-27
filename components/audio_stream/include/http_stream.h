@@ -96,13 +96,20 @@ typedef struct {
                                                              Range size bigger than request size is recommended */
     const char                  *user_agent;            /*!< The User Agent string to send with HTTP requests */
     int                         url_index;              /*!< The url index to be played in playlist */
+    int                         buffer_size;            /*!< HTTP receive buffer size */
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
+    int                         buffer_size_tx;         /*!< HTTP send buffer size */
+#endif
 } http_stream_cfg_t;
 
+#define HTTP_STREAM_BUFFER_SIZE         (2048)
+#define HTTP_STREAM_BUFFER_SIZE_TX      (1024)
 #define HTTP_STREAM_TASK_STACK          (6 * 1024)
 #define HTTP_STREAM_TASK_CORE           (0)
 #define HTTP_STREAM_TASK_PRIO           (4)
 #define HTTP_STREAM_RINGBUFFER_SIZE     (20 * 1024)
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
 #define HTTP_STREAM_CFG_DEFAULT() {              \
     .type = AUDIO_STREAM_READER,                 \
     .out_rb_size = HTTP_STREAM_RINGBUFFER_SIZE,  \
@@ -118,7 +125,28 @@ typedef struct {
     .cert_pem  = NULL,                           \
     .crt_bundle_attach = NULL,                   \
     .user_agent = NULL,                          \
+    .buffer_size = HTTP_STREAM_BUFFER_SIZE,      \
+    .buffer_size_tx = HTTP_STREAM_BUFFER_SIZE_TX,\
 }
+#else
+#define HTTP_STREAM_CFG_DEFAULT() {              \
+    .type = AUDIO_STREAM_READER,                 \
+    .out_rb_size = HTTP_STREAM_RINGBUFFER_SIZE,  \
+    .task_stack = HTTP_STREAM_TASK_STACK,        \
+    .task_core = HTTP_STREAM_TASK_CORE,          \
+    .task_prio = HTTP_STREAM_TASK_PRIO,          \
+    .stack_in_ext = true,                        \
+    .event_handle = NULL,                        \
+    .user_data = NULL,                           \
+    .auto_connect_next_track = false,            \
+    .enable_playlist_parser = false,             \
+    .multi_out_num = 0,                          \
+    .cert_pem  = NULL,                           \
+    .crt_bundle_attach = NULL,                   \
+    .user_agent = NULL,                          \
+    .buffer_size = HTTP_STREAM_BUFFER_SIZE,      \
+}
+#endif
 
 /**
  * @brief      Create a handle to an Audio Element to stream data from HTTP to another Element
