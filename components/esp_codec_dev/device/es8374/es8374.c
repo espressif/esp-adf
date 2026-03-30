@@ -612,9 +612,9 @@ static int es8374_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (codec == NULL || codec_cfg == NULL || codec_cfg->ctrl_if == NULL || cfg_size != sizeof(es8374_codec_cfg_t)) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
-    es8374_pa_power(codec, false);
     int ret = ESP_CODEC_DEV_OK;
     memcpy(&codec->cfg, codec_cfg, sizeof(es8374_codec_cfg_t));
+    es8374_pa_power(codec, false);
     es_i2s_clock_t clkdiv;
     clkdiv.lclk_div = LCLK_DIV_256;
     clkdiv.sclk_div = MCLK_DIV_4;

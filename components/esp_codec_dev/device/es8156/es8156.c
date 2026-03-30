@@ -141,13 +141,13 @@ static int es8156_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (codec == NULL || codec_cfg == NULL || cfg_size != sizeof(es8156_codec_cfg_t) || codec_cfg->ctrl_if == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
-    es8156_pa_power(codec, ES_PA_SETUP | ES_PA_DISABLE);
 
     int ret = ESP_CODEC_DEV_OK;
     codec->ctrl_if = codec_cfg->ctrl_if;
     codec->gpio_if = codec_cfg->gpio_if;
     codec->pa_pin = codec_cfg->pa_pin;
     codec->pa_reverted = codec_cfg->pa_reverted;
+    es8156_pa_power(codec, ES_PA_SETUP | ES_PA_DISABLE);
 
     ret |= es8156_write_reg(codec, 0x02, 0x04);
     ret |= es8156_write_reg(codec, 0x20, 0x2A);

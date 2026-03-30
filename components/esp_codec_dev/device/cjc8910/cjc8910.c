@@ -127,8 +127,8 @@ static int cjc8910_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (codec == NULL || codec_cfg == NULL || codec_cfg->ctrl_if == NULL || cfg_size != sizeof(cjc8910_codec_cfg_t)) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
-    cjc8910_pa_power(codec, PA_SETUP | PA_DISABLE);
     memcpy(&codec->cfg, cfg, sizeof(cjc8910_codec_cfg_t));
+    cjc8910_pa_power(codec, PA_SETUP | PA_DISABLE);
     int regv;
     int ret = ESP_CODEC_DEV_OK;
     ret |= cjc8910_write_reg(codec, CJC8910_R15_RESET, 0x00);  // Reset
