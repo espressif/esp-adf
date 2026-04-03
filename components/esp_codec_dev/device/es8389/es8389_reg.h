@@ -167,21 +167,44 @@ extern "C" {
 
 #define ES8389_Analog_DriveSel              ES8389_DriveSel_Normal  /* Normal;LowPower;HeadPhone */
 
+/*
+ * PGA1 gain registers REG0x72 (ADCL / MIC1 path) and REG0x73 (ADCR / MIC2 path):
+ * bits [6:4] are the 3-bit analog input mux. Datasheet binary vs software decimal:
+ *   0b001 (1) – differential (ADCL: MIC1P–MIC1N; ADCR: MIC2N–MIC1P; see enumerators)
+ *   0b101 (5) – single-ended (ADCL: MIC1P; ADCR: MIC2N)
+ *   0b110 (6) – single-ended (ADCL: MIC2P; ADCR: MIC1N)
+ * Bits [3:0] are PGA gain steps (es8389_mic_gain_t); bit7 is reverse. Same code selects
+ * different pads on L vs R; see each enumerator.
+ */
 typedef enum {
-    ES8389_MIC_GAIN_MIN = -1,
-    ES8389_MIC_GAIN_0DB,
-    ES8389_MIC_GAIN_3_5DB,
-    ES8389_MIC_GAIN_6_5DB,
-    ES8389_MIC_GAIN_9_5DB,
-    ES8389_MIC_GAIN_12_5DB,
-    ES8389_MIC_GAIN_15_5DB,
-    ES8389_MIC_GAIN_18_5DB,
-    ES8389_MIC_GAIN_21_5DB,
-    ES8389_MIC_GAIN_24_5DB,
-    ES8389_MIC_GAIN_27_5DB,
-    ES8389_MIC_GAIN_30_5DB,
-    ES8389_MIC_GAIN_33_5DB,
-    ES8389_MIC_GAIN_36_5DB,
+    /* ADCL */
+    ES8389_ADC_INSEL_L_DIFF_MIC1P1N = 1,  /* Diff MIC1P-MIC1N (ES8390: LIN1-RIN1) */
+    ES8389_ADC_INSEL_L_SINGLE_MIC1P = 5,  /* Single-ended MIC1P (ES8390: LIN1) */
+    ES8389_ADC_INSEL_L_SINGLE_MIC2P = 6,  /* Single-ended MIC2P (ES8390: LIN2) */
+    /* ADCR */
+    ES8389_ADC_INSEL_R_DIFF_MIC2N2P = 1,  /* Diff MIC2N-MIC1P (ES8390: RIN2-LIN2) */
+    ES8389_ADC_INSEL_R_SINGLE_MIC2N = 5,  /* Single-ended MIC2N (ES8390: RIN2) */
+    ES8389_ADC_INSEL_R_SINGLE_MIC1N = 6,  /* Single-ended MIC1N (ES8390: RIN1) */
+} es8389_adc_insel_t;
+
+#define ES8389_ADCL_InputSel  ES8389_ADC_INSEL_L_DIFF_MIC1P1N
+#define ES8389_ADCR_InputSel  ES8389_ADC_INSEL_R_DIFF_MIC2N2P
+
+typedef enum {
+    ES8389_MIC_GAIN_MIN    = -1,
+    ES8389_MIC_GAIN_0DB    = 0b0000,
+    ES8389_MIC_GAIN_3_5DB  = 0b0001,
+    ES8389_MIC_GAIN_6_5DB  = 0b0010,
+    ES8389_MIC_GAIN_9_5DB  = 0b0011,
+    ES8389_MIC_GAIN_12_5DB = 0b0110,
+    ES8389_MIC_GAIN_15_5DB = 0b0111,
+    ES8389_MIC_GAIN_18_5DB = 0b1000,
+    ES8389_MIC_GAIN_21_5DB = 0b1001,
+    ES8389_MIC_GAIN_24_5DB = 0b1010,
+    ES8389_MIC_GAIN_27_5DB = 0b1011,
+    ES8389_MIC_GAIN_30_5DB = 0b1100,
+    ES8389_MIC_GAIN_33_5DB = 0b1101,
+    ES8389_MIC_GAIN_36_5DB = 0b1110,
     ES8389_MIC_GAIN_MAX
 } es8389_mic_gain_t;
 

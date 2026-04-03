@@ -63,6 +63,10 @@ static i2s_keep_t *i2s_keep[I2S_MAX_KEEP];
 static i2c_master_bus_handle_t i2c_bus_handle;
 #endif  /* USE_IDF_I2C_MASTER */
 
+#if SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+static int ut_i2s_init_pdm_out(uint8_t port) __attribute__((unused));
+#endif  /* SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
+
 static int ut_i2c_init(uint8_t port, codec_i2c_pin_t *i2c_pin)
 {
 #ifdef USE_IDF_I2C_MASTER
@@ -279,6 +283,10 @@ static int ut_i2s_init_pdm_out(uint8_t port)
 #if SOC_I2S_HW_VERSION_1
     pdm_cfg.slot_cfg.slot_mask = I2S_PDM_SLOT_LEFT;
 #endif  /* SOC_I2S_HW_VERSION_1 */
+
+#if SOC_I2S_HW_VERSION_2
+    pdm_cfg.slot_cfg.line_mode = I2S_PDM_TX_ONE_LINE_CODEC;
+#endif  /* SOC_I2S_HW_VERSION_2 */
 
     ret = i2s_channel_init_pdm_tx_mode(i2s_keep[port]->tx_handle, &pdm_cfg);
     TEST_ESP_OK(ret);
