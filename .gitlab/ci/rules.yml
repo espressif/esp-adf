@@ -1,6 +1,5 @@
 .patterns-build_components: &patterns-build_components
   - "CMakeList.txt"
-  - "project.mk"
   - ".gitmodules"
   - "tools/**/*"
   - "idf_patches/**/*"
@@ -8,7 +7,6 @@
 
 .patterns-example_test: &patterns-example_test
   - "CMakeList.txt"
-  - "project.mk"
   - ".gitmodules"
   - "tools/**/*"
   - "idf_patches/**/*"

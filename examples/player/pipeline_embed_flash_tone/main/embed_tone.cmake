@@ -1,1 +1,0 @@
-set(COMPONENT_EMBED_TXTFILES alarm.mp3 new_message.mp3)

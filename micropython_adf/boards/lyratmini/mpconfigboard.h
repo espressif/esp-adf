@@ -1,4 +1,0 @@
-#define MICROPY_HW_BOARD_NAME "ESP-Audio Lyrat mini v1.1"
-#define MICROPY_HW_MCU_NAME "ESP32"
-
-#define AUDIO_RECORDER_DOWN_CH (1)

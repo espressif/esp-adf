@@ -1,2 +1,0 @@
-#define MICROPY_HW_BOARD_NAME "ESP-Audio Lyart v4.3"
-#define MICROPY_HW_MCU_NAME "ESP32"
