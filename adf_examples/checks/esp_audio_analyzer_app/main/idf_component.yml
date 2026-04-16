@@ -1,0 +1,23 @@
+dependencies:
+  espressif/esp_board_manager:
+    version: "*"
+  espressif/gmf_core:
+    version: "*"
+  espressif/gmf_audio:
+    version: "*"
+  espressif/gmf_io:
+    version: "*"
+  espressif/gmf_ai_audio:
+    version: "*"
+  espressif/gmf_loader:
+    version: "*"
+  espressif/esp_hosted:
+    version: "~1.1"
+    rules:
+      - if: "target in [esp32p4]"
+  espressif/esp_wifi_remote:
+    matches:
+      - if: "idf_version <=5.4.0 && target in [esp32p4]"
+        version: "~0.4"
+      - if: "idf_version >5.4.0 && target in [esp32p4]"
+        version: "~0.10"

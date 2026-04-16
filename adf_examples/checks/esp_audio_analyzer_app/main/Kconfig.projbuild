@@ -1,0 +1,109 @@
+menu "ESP Audio Analyzer App Configuration"
+
+    config AUDIO_ANALYZER_HARDWARE_NAME
+        string "Hardware Name"
+        default "ESP-Audio-Hardware"
+        help
+            Specifies the device or hardware name used in the audio test system.
+            This name will be displayed in the generated test reports.
+
+    config AUDIO_ANALYZER_ENABLE_AFE
+        bool "Enable AFE"
+        default y
+        select GMF_AI_AUDIO_INIT_AFE
+        help
+            Enable Audio Front-End (AFE) in the recording pipeline.
+
+        menu "Audio Front-End (AFE) Configuration"
+            depends on AUDIO_ANALYZER_ENABLE_AFE
+
+            config AUDIO_ANALYZER_AFE_ENABLE_AEC
+                bool "Enable AEC"
+                default y
+                select GMF_AI_AUDIO_AFE_AEC_ENABLE
+                help
+                    Enables the internal Acoustic Echo Cancellation (AEC) in the AFE pipeline.
+
+            config AUDIO_ANALYZER_AFE_ENABLE_WAKEUP
+                bool "Enable Wakeup"
+                default n
+                select GMF_AI_AUDIO_WAKEUP_ENABLE
+                help
+                    Enables wake word detection functionality in the AFE pipeline.
+
+            config AUDIO_ANALYZER_AFE_ENABLE_VOICE_COMMAND
+                bool "Enable Voice Command"
+                default n
+                select GMF_AI_AUDIO_VOICE_COMMAND_ENABLE
+                help
+                    Enables voice command detection functionality in the AFE pipeline.
+
+        endmenu
+
+    config AUDIO_ANALYZER_ENABLE_EMBED_FLASH
+        bool "Enable store test audio in embed flash"
+        default y
+        help
+            Enable storing test audio in embed flash to test audio playback.
+
+    config AUDIO_ANALYZER_ENABLE_SYSTEM_MONITOR
+        bool "Enable system monitor"
+        default n
+        select FREERTOS_VTASKLIST_INCLUDE_COREID
+        select FREERTOS_GENERATE_RUN_TIME_STATS
+        help
+            Enable system monitor to monitor the system status.
+
+endmenu
+
+menu "Example WIFI Configuration"
+
+    config ESP_WIFI_SSID
+        string "WiFi STA SSID"
+        default ""
+        help
+        WiFi SSID (network name) to connect to or empty for Off.
+
+    config ESP_WIFI_PASSWORD
+        string "WiFi STA Password"
+        default ""
+        help
+        WiFi Password if WEP/WPA/WPA2 or empty if Open.
+
+    config ESP_WIFI_AP_SSID
+        string "WiFi AP SSID"
+        default ""
+        help
+        AP SSID (network name) to create or empty for Off.
+
+    config ESP_WIFI_AP_PASSWORD
+        string "WiFi AP Password"
+        default ""
+        help
+        AP password for WPA2 or empty for Open.
+
+    config MAX_STA_CONN
+        int "Maximal STA connections"
+        default 1
+        help
+        Max number of the STA connects to AP.
+
+    config ESP_WIFI_AP_CHANNEL
+        string "WiFi AP Channel"
+        default ""
+        help
+        AP channel for better connection performance.
+
+    config SERVER_IP
+        string "WiFi AP IP Address"
+        default "192.168.4.1"
+        help
+            IP address that the ESP will assign to it's AP interface. You can use this IP to connect to the camera after flashing.
+
+    config ESP_MAXIMUM_RETRY
+        int "Maximum retry"
+        default 5
+        help
+        Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
+
+endmenu

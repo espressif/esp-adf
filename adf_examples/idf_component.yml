@@ -1,0 +1,18 @@
+version: "0.1.0"
+description: ESP-ADF Examples
+url: https://github.com/espressif/esp-adf/tree/master/adf_examples
+documentation: "https://github.com/espressif/esp-adf/blob/master/adf_examples/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+   - "adf"
+   - "gmf"
+   - "adf_examples"
+   - "audio_examples"
+   - "video_examples"
+   - "multimedia"
+
+examples:
+   - path: "./ai_agent/coze_ws_app"
+   - path: "./ai_agent/baidu_rtc/solutions/voice_assistant_app"
+   - path: "./checks/esp_audio_analyzer_app"
