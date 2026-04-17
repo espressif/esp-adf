@@ -19,5 +19,6 @@ jobs:
             components/esp_codec_dev;
             components/esp_coze;
             components/esp_live_photo;
+            adf_examples;
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}

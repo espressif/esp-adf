@@ -21,11 +21,11 @@ GPATH
 .settings
 
 # Example project files
-examples/**/sdkconfig
-examples/**/sdkconfig.old
-examples/**/build
-examples/**/managed_components
-examples/**/dependencies.lock
+adf_examples/**/sdkconfig
+adf_examples/**/sdkconfig.old
+adf_examples/**/build
+adf_examples/**/managed_components
+adf_examples/**/dependencies.lock
 
 # Components files
 components/**/sdkconfig
