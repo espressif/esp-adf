@@ -1,0 +1,12 @@
+# Name,   Type, SubType, Offset,  Size, Flags
+# Custom table: SPIFFS + raw config slots (3 feature groups × primary/backup)
+nvs,      data, nvs,     0x9000,  0x6000,
+phy_init, data, phy,     0xf000,  0x1000,
+factory,  app,  factory, 0x10000, 0x100000,
+cfg_pri,  data, 0x99,    ,        0x2000,
+cfg_bak,  data, 0x99,    ,        0x2000,
+cfg2_pri, data, 0x99,    ,        0x1000,
+cfg2_bak, data, 0x99,    ,        0x1000,
+cfg3_pri, data, 0x99,    ,        0x1000,
+cfg3_bak, data, 0x99,    ,        0x1000,
+storage,  data, spiffs,  ,        0xBC000,

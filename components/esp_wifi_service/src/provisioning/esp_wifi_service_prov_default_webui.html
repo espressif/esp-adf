@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wi-Fi setup</title>
+  <style>
+    body{font-family:system-ui,sans-serif;margin:0 auto;max-width:36rem;padding:.75rem 1rem;line-height:1.4;}
+    h2{font-size:1.25rem;margin:.5rem 0 1rem;}
+    label{display:block;margin:.6rem 0;font-weight:600;}
+    input,button,select{font-size:1rem;padding:.55rem .65rem;max-width:100%;box-sizing:border-box;}
+    input[type=text],input[type=password],select,input[type=range]{width:100%;}
+    button{margin:.35rem .5rem .35rem 0;min-height:2.75rem;}
+    .pwd-lbl{display:block;margin:.6rem 0 .25rem;font-weight:600;}
+    .pwd-field{position:relative;width:100%;margin:0 0 .35rem;}
+    .pwd-field input[type=password],.pwd-field input[type=text]{width:100%;padding-right:2.75rem;}
+    button.pwd-toggle{position:absolute;right:.2rem;top:50%;transform:translateY(-50%);width:2.5rem;height:2.5rem;min-height:unset;margin:0;padding:0;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:.25rem;color:#333;}
+    button.pwd-toggle:hover{background:#e8e8e8;}
+    button.pwd-toggle:focus-visible{outline:2px solid #06c;outline-offset:1px;}
+    table{border-collapse:collapse;width:100%;font-size:.9rem;}
+    th,td{border:1px solid #ccc;padding:6px;vertical-align:middle;}
+    #msg{min-height:1.2rem;color:#c00;font-size:.9rem;}
+    .hint{font-size:.85rem;color:#444;margin:.5rem 0;}
+    label.ssid-block{font-weight:600;}
+    .ssid-block .hint{display:block;font-weight:400;font-size:.85rem;color:#444;margin:.2rem 0 .35rem;}
+    .scan-choice-wrap{margin:.75rem 0 1rem;}
+    .scan-choice-wrap h3{margin:.5rem 0;font-size:1.05rem;}
+    .scan-choice-list{display:flex;flex-direction:column;gap:.35rem;}
+    .scan-choice-btn{display:block;width:100%;text-align:left;padding:.65rem .75rem;border:1px solid #ccc;border-radius:.35rem;background:#f8f8f8;font-size:1rem;cursor:pointer;}
+    .scan-choice-btn:active{background:#e8e8e8;}
+    .scan-choice-btn.is-selected{border-color:#06c;background:#eaf3ff;}
+    #scan_choices_status{font-size:.85rem;color:#333;margin:.35rem 0 .25rem;min-height:1.2rem;}
+    .status-wrap{margin:.75rem 0;}
+    .status-wrap h3{margin:.5rem 0;font-size:1.05rem;}
+    pre#status_box{white-space:pre-wrap;word-break:break-word;background:#f5f5f5;padding:.75rem;font-size:.9rem;line-height:1.45;color:#222;}
+  </style>
+</head>
+<body>
+  <h2>Wi-Fi setup</h2>
+  <p class="hint">Connect keeps you on this page (needs JavaScript). Nearby network choices refresh automatically every 10 seconds; you can still type SSID manually.</p>
+
+  <form id="prov_form" method="post" action="/prov/profiles">
+    <label class="ssid-block" for="ssid_input">Network name (SSID)
+      <span class="hint">Pick a network from the list below, or type SSID manually.</span>
+      <input name="ssid" id="ssid_input" type="text" required autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="SSID (select below or type here)">
+    </label>
+
+    <label class="pwd-lbl" for="prov_password">Password (empty for open network)</label>
+    <div class="pwd-field">
+      <input id="prov_password" name="password" type="password" autocomplete="current-password">
+      <button type="button" class="pwd-toggle" id="pwd_toggle" aria-label="Show password" title="Show password">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </div>
+
+    <label>Priority <span class="prinum" id="pri_val">10</span> <span class="hint">(0-20, higher = prefer this network)</span>
+      <input type="range" name="priority" id="priority" min="0" max="20" value="10" oninput="var e=document.getElementById('pri_val');if(e){e.textContent=this.value;}">
+    </label>
+    <button type="submit" id="prov_submit">Connect</button>
+    <p id="msg"></p>
+  </form>
+
+  <div class="status-wrap"><h3>Status</h3><pre id="status_box"></pre></div>
+
+  <div class="scan-choice-wrap">
+    <h3>Nearby networks</h3>
+    <p class="hint">Tap one network to fill SSID automatically. List refreshes every 10 seconds.</p>
+    <div id="scan_choices_status"></div>
+    <div id="scan_choices" class="scan-choice-list"></div>
+  </div>
+
+  <h3>Saved networks</h3>
+  <table>
+    <thead>
+      <tr><th>#</th><th>SSID</th><th>Prio</th><th>On</th><th></th></tr>
+    </thead>
+    <tbody id="profiles"></tbody>
+  </table>
+
+  <p>
+    <button type="button" onclick="refreshAll()">Refresh</button>
+    <button type="button" onclick="clearProfiles()">Clear all</button>
+    <button type="button" onclick="stopProvisioning()">End provisioning</button>
+  </p>
+
+  <script>
+    function setMsg(t, c) {
+      var e = document.getElementById('msg');
+
+      if (e) {
+        e.textContent = t || '';
+        e.style.color = c || '#c00';
+      }
+    }
+
+    function setConnectBtn(state) {
+      var b = document.getElementById('prov_submit');
+
+      if (!b) {
+        return;
+      }
+
+      if (state === 'busy') {
+        b.disabled = true;
+        b.textContent = 'Connecting...';
+        return;
+      }
+
+      b.disabled = false;
+      b.textContent = (state === 'ok') ? 'Connected' : 'Connect';
+    }
+
+    async function req(url, opt) {
+      var r = await fetch(url, opt);
+      var j = null;
+
+      try {
+        j = await r.json();
+      } catch (x) {
+      }
+
+      return {
+        ok: r.ok,
+        status: r.status,
+        json: j
+      };
+    }
+
+    function selectSsid(v) {
+      var si = document.getElementById('ssid_input');
+      var list = document.getElementById('scan_choices');
+      var selected = v || '';
+
+      if (si) {
+        si.value = selected;
+      }
+
+      if (!list) {
+        return;
+      }
+
+      Array.prototype.forEach.call(list.querySelectorAll('button[data-ssid]'), function(btn) {
+        btn.classList.toggle('is-selected', btn.getAttribute('data-ssid') === selected);
+      });
+    }
+
+    function renderScanChoices(aps) {
+      var list = document.getElementById('scan_choices');
+      var n = 0;
+
+      if (!list) {
+        return;
+      }
+
+      list.innerHTML = '';
+
+      (aps || []).forEach(function(a) {
+        var v = a.ssid || '';
+        var lock;
+        var btn;
+
+        if (!v) {
+          return;
+        }
+
+        n++;
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'scan-choice-btn';
+        btn.setAttribute('data-ssid', v);
+
+        lock = (a.encrypted === false) ? '\uD83D\uDD13' : '\uD83D\uDD12';
+        btn.textContent = lock + ' ' + v + ' (' + a.rssi + ' dBm, ch ' + (a.channel || 0) + ')';
+        btn.onclick = function() {
+          selectSsid(v);
+        };
+
+        list.appendChild(btn);
+      });
+
+      if (n === 0) {
+        var p = document.createElement('p');
+        p.className = 'hint';
+        p.textContent = 'No networks found. Type SSID manually.';
+        list.appendChild(p);
+      }
+
+      var si = document.getElementById('ssid_input');
+      if (si) {
+        selectSsid(si.value || '');
+      }
+
+      var s = document.getElementById('scan_choices_status');
+      if (s) {
+        s.textContent = n > 0
+          ? 'Updated: ' + new Date().toLocaleTimeString() + ' (' + n + ' network(s))'
+          : 'No networks found.';
+      }
+    }
+
+    async function refreshScanChoices() {
+      var s = document.getElementById('scan_choices_status');
+      var x = await req('/prov/scan_result');
+
+      if (!x.ok || !x.json) {
+        if (s) {
+          s.textContent = 'Scan refresh failed (HTTP ' + x.status + ')';
+        }
+        return;
+      }
+
+      if (x.json.error) {
+        if (s) {
+          s.textContent = String(x.json.error) + (x.json.detail ? ' ' + x.json.detail : '');
+        }
+        renderScanChoices([]);
+        return;
+      }
+
+      renderScanChoices(x.json.aps || []);
+    }
+
+    function renderStatus(j) {
+      var p = document.getElementById('status_box');
+
+      if (!p) {
+        return;
+      }
+
+      j = j || {};
+      p.textContent =
+        'SSID: ' + (j.ssid || '-') +
+        '\nBSSID: ' + (j.bssid || '-') +
+        '\nRSSI: ' + (j.rssi !== undefined ? j.rssi : '-') + ' dBm' +
+        '\nIP: ' + (j.ip || '0.0.0.0') +
+        '\nNetmask: ' + (j.netmask || '0.0.0.0') +
+        '\nGateway: ' + (j.gw || '0.0.0.0') +
+        '\nConnected: ' + (j.connected ? 'yes' : 'no');
+    }
+
+    async function refreshStatus() {
+      var x = await req('/prov/status');
+      var p = document.getElementById('status_box');
+
+      if (!p) {
+        return;
+      }
+
+      if (!x.ok || !x.json) {
+        p.textContent = 'Status refresh failed (HTTP ' + x.status + ')';
+        return;
+      }
+
+      renderStatus(x.json || {});
+    }
+
+    async function refreshProfiles() {
+      var x = await req('/prov/profiles');
+      var b;
+
+      if (!x.json || !x.json.profiles) {
+        return;
+      }
+
+      b = document.getElementById('profiles');
+      if (!b) {
+        return;
+      }
+
+      b.innerHTML = '';
+
+      (x.json.profiles || []).forEach(function(x) {
+        var tr = document.createElement('tr');
+        var td = document.createElement('td');
+        var del = document.createElement('button');
+        var tog = document.createElement('button');
+
+        tr.innerHTML = '<td>' + x.index + '</td><td></td><td>' + x.priority + '</td><td>' + x.enabled + '</td>';
+        tr.cells[1].textContent = x.ssid;
+
+        del.textContent = 'Delete';
+        del.onclick = function() {
+          deleteProfile(x.index);
+        };
+
+        tog.textContent = x.enabled ? 'Off' : 'On';
+        tog.onclick = function() {
+          setEnabled(x.index, !x.enabled);
+        };
+
+        td.appendChild(del);
+        td.appendChild(tog);
+        tr.appendChild(td);
+        b.appendChild(tr);
+      });
+    }
+
+    async function deleteProfile(i) {
+      await req('/prov/profiles?index=' + i, { method: 'DELETE' });
+      await refreshProfiles();
+    }
+
+    async function clearProfiles() {
+      await req('/prov/profiles/clear', { method: 'POST' });
+      await refreshProfiles();
+    }
+
+    async function stopProvisioning() {
+      var x = await req('/prov/stop', { method: 'POST' });
+
+      if (x.ok) {
+        setMsg('Provisioning ending. SoftAP is closing...', '#0a0');
+        await refreshStatus();
+      } else {
+        setMsg('End provisioning failed (HTTP ' + x.status + ').');
+      }
+    }
+
+    async function setEnabled(i, en) {
+      await req('/prov/profiles/enabled', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index: i, enabled: !!en })
+      });
+      await refreshProfiles();
+    }
+
+    async function provSave(form) {
+      setConnectBtn('busy');
+
+      try {
+        var fd = new FormData(form);
+        var payload = {
+          ssid: String(fd.get('ssid') || ''),
+          password: String(fd.get('password') || '')
+        };
+        var p = fd.get('priority');
+        var x;
+
+        if (p !== null && String(p) !== '') {
+          payload.priority = Number(p);
+        }
+
+        x = await req('/prov/profiles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (x.json && x.json.status) {
+          renderStatus(x.json.status);
+        }
+
+        if (x.ok && x.json && x.json.result === 'ok') {
+          setMsg((x.json && x.json.message) || 'Connected and profile saved.', '#0a0');
+          setConnectBtn('ok');
+          refreshProfiles().catch(function() {});
+
+          if (!(x.json && x.json.status)) {
+            refreshStatus().catch(function() {});
+          }
+        } else {
+          var m = (x.json && x.json.message) ||
+            (x.json && x.json.error) ||
+            (x.json && x.json.result) ||
+            ('HTTP ' + x.status);
+
+          setMsg(m || 'Connect failed.', '#c00');
+          setConnectBtn('idle');
+
+          if (!(x.json && x.json.status)) {
+            refreshStatus().catch(function() {});
+          }
+        }
+      } catch (e) {
+        setConnectBtn('idle');
+        throw e;
+      }
+    }
+
+    async function refreshAll() {
+      try {
+        await refreshProfiles();
+        await refreshStatus();
+        setMsg('');
+      } catch (e) {
+        setMsg('Refresh may be blocked in captive portal; reopen this page.');
+      }
+    }
+
+    var pf = document.getElementById('prov_form');
+    if (pf) {
+      pf.addEventListener('submit', function(e) {
+        e.preventDefault();
+        setMsg('');
+        provSave(pf).catch(function() {
+          setMsg('Connect failed.', '#c00');
+        });
+      });
+    }
+
+    var si = document.getElementById('ssid_input');
+    if (si) {
+      si.addEventListener('input', function() {
+        selectSsid(si.value || '');
+      });
+    }
+
+    (function() {
+      var inp = document.getElementById('prov_password');
+      var btn = document.getElementById('pwd_toggle');
+      var eye;
+      var eyeOff;
+
+      if (!inp || !btn) {
+        return;
+      }
+
+      eye = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      eyeOff = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1 4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+      btn.innerHTML = eye;
+      btn.addEventListener('click', function() {
+        if (inp.type === 'password') {
+          inp.type = 'text';
+          btn.innerHTML = eyeOff;
+          btn.setAttribute('aria-label', 'Hide password');
+          btn.title = 'Hide password';
+        } else {
+          inp.type = 'password';
+          btn.innerHTML = eye;
+          btn.setAttribute('aria-label', 'Show password');
+          btn.title = 'Show password';
+        }
+      });
+    })();
+
+    refreshScanChoices();
+    setInterval(refreshScanChoices, 10000);
+    refreshAll();
+  </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+[
+  {
+    "name": "esp_wifi_service_get_status",
+    "description": "Get Wi-Fi service state, station connection details, IP information, provisioning state, and profile count",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_wifi_service_list_profiles",
+    "description": "List saved Wi-Fi profiles without passwords",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_wifi_service_add_profile",
+    "description": "Add or update a saved Wi-Fi profile. The password is stored but never returned by MCP responses",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ssid": {
+          "type": "string",
+          "description": "Target Wi-Fi SSID"
+        },
+        "password": {
+          "type": "string",
+          "description": "Wi-Fi password; omit or use an empty string for open networks"
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Profile priority from 0 to 20; higher is preferred"
+        }
+      },
+      "required": ["ssid"]
+    }
+  },
+  {
+    "name": "esp_wifi_service_set_profile_enabled",
+    "description": "Enable or disable a saved Wi-Fi profile by SSID",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ssid": {
+          "type": "string",
+          "description": "SSID of the profile to update"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "true to enable the profile, false to disable it"
+        }
+      },
+      "required": ["ssid", "enabled"]
+    }
+  },
+  {
+    "name": "esp_wifi_service_delete_profile",
+    "description": "Delete a saved Wi-Fi profile by index or SSID",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "description": "Profile index to delete"
+        },
+        "ssid": {
+          "type": "string",
+          "description": "SSID of the profile to delete"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_wifi_service_clear_profiles",
+    "description": "Delete all saved Wi-Fi profiles",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_wifi_service_prov_start",
+    "description": "Start all configured Wi-Fi provisioning agents",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_wifi_service_prov_stop",
+    "description": "Stop running Wi-Fi provisioning agents",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_wifi_service_request_reeval",
+    "description": "Request one Wi-Fi selector scan and re-evaluation cycle",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]
