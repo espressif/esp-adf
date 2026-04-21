@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <stdint.h>
 #include <string.h>
+#include "esp_codec_dev_os.h"
 #include "esp_idf_version.h"
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #include "driver/i2s_std.h"
@@ -21,6 +23,7 @@
 #include "esp_codec_dev_defaults.h"
 #include "test_board.h"
 #include "unity.h"
+#include "esp_pm.h"
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0) && !CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE
 #include "driver/i2c_master.h"
@@ -279,7 +282,6 @@ static int ut_i2s_init_pdm_out(uint8_t port)
     pdm_cfg.slot_cfg.hp_scale = I2S_PDM_SIG_SCALING_MUL_4;
     pdm_cfg.slot_cfg.lp_scale = I2S_PDM_SIG_SCALING_MUL_4;
     pdm_cfg.slot_cfg.sinc_scale = I2S_PDM_SIG_SCALING_MUL_4;
-    pdm_cfg.slot_cfg.line_mode = I2S_PDM_TX_ONE_LINE_CODEC;
 #if SOC_I2S_HW_VERSION_1
     pdm_cfg.slot_cfg.slot_mask = I2S_PDM_SLOT_LEFT;
 #endif  /* SOC_I2S_HW_VERSION_1 */
@@ -314,14 +316,25 @@ static void codec_max_sample(uint8_t *data, int size, int *max_value, int *min_v
     *min_value = min;
 }
 
+#if SOC_I2S_SUPPORTS_XTAL && CONFIG_PM_ENABLE
+static void esp_enable_pm_with_freq(int min_freq, int max_freq)
+{
+    esp_pm_config_t pm_config = {
+        .max_freq_mhz = max_freq,
+        .min_freq_mhz = min_freq,
+    };
+    ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
+}
+#endif
+
 static void test_codec_dev_using_s3_board(bool use_xtal)
 {
     i2s_clock_src_t clk_src = I2S_CLK_SRC_DEFAULT;
     if (use_xtal) {
-#if SOC_I2S_SUPPORTS_XTAL
+#if SOC_I2S_SUPPORTS_XTAL && CONFIG_PM_ENABLE
         clk_src = I2S_CLK_SRC_XTAL;
-        rtc_clk_cpu_set_to_default_config();
-#endif  /* SOC_I2S_SUPPORTS_XTAL */
+        esp_enable_pm_with_freq(40, 40);
+#endif
     }
     // Need install driver (i2c and i2s) firstly
     int ret = ut_i2c_init(0, NULL);
@@ -436,16 +449,17 @@ static void test_codec_dev_using_s3_board(bool use_xtal)
 
     ut_i2c_deinit(0);
     ut_i2s_deinit(0);
+
+#if SOC_I2S_SUPPORTS_XTAL && CONFIG_PM_ENABLE
+    if (clk_src == I2S_CLK_SRC_XTAL) {
+        esp_enable_pm_with_freq(240, 240);
+    }
+#endif
 }
 
 TEST_CASE("esp codec dev test using S3 board", "[esp_codec_dev]")
 {
     test_codec_dev_using_s3_board(false);
-}
-
-TEST_CASE("esp codec dev test using S3 board with XTAL", "[esp_codec_dev]")
-{
-    test_codec_dev_using_s3_board(true);
 }
 
 #if CONFIG_CODEC_DATA_ADC_SUPPORT && SOC_ADC_SUPPORTED && SOC_I2S_SUPPORTS_PDM_TX && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
@@ -808,7 +822,8 @@ typedef struct {
     esp_codec_dev_handle_t       codec_dev;
 } codec_es8311_inst_t;
 
-int init_es8311_inst(codec_es8311_inst_t *inst, bool playback, const audio_codec_data_if_t *data_if)
+static int init_es8311_inst_ex(codec_es8311_inst_t *inst, bool playback,
+                               const audio_codec_data_if_t *data_if, int pa_pin, bool use_mclk)
 {
     if (data_if == NULL) {
         // Make sure that only assign one handle if not shared data_if
@@ -837,8 +852,8 @@ int init_es8311_inst(codec_es8311_inst_t *inst, bool playback, const audio_codec
         .codec_mode = playback ? ESP_CODEC_DEV_WORK_MODE_DAC : ESP_CODEC_DEV_WORK_MODE_ADC,
         .ctrl_if = inst->ctrl_if,
         .gpio_if = inst->gpio_if,
-        .pa_pin = 46,
-        .use_mclk = false,
+        .pa_pin = pa_pin,
+        .use_mclk = use_mclk,
     };
     inst->codec_if = es8311_codec_new(&es8311_cfg);
     TEST_ASSERT_NOT_NULL(inst->codec_if);
@@ -850,6 +865,11 @@ int init_es8311_inst(codec_es8311_inst_t *inst, bool playback, const audio_codec
     inst->codec_dev = esp_codec_dev_new(&dev_cfg);
     TEST_ASSERT_NOT_NULL(inst->codec_dev);
     return 0;
+}
+
+int init_es8311_inst(codec_es8311_inst_t *inst, bool playback, const audio_codec_data_if_t *data_if)
+{
+    return init_es8311_inst_ex(inst, playback, data_if, 46, false);
 }
 
 void deinit_es8311_inst(codec_es8311_inst_t *inst)
@@ -865,6 +885,70 @@ void deinit_es8311_inst(codec_es8311_inst_t *inst)
     if (inst->gpio_if) {
         audio_codec_delete_gpio_if(inst->gpio_if);
         inst->gpio_if = NULL;
+    }
+    if (inst->ctrl_if) {
+        audio_codec_delete_ctrl_if(inst->ctrl_if);
+        inst->ctrl_if = NULL;
+    }
+    if (inst->data_if) {
+        audio_codec_delete_data_if(inst->data_if);
+        inst->data_if = NULL;
+    }
+}
+
+typedef struct {
+    const audio_codec_data_if_t *data_if;
+    const audio_codec_ctrl_if_t *ctrl_if;
+    const audio_codec_if_t      *codec_if;
+    esp_codec_dev_handle_t       codec_dev;
+} codec_es7210_inst_t;
+
+static int init_es7210_inst(codec_es7210_inst_t *inst, const audio_codec_data_if_t *data_if)
+{
+    if (data_if == NULL) {
+        audio_codec_i2s_cfg_t i2s_cfg = {
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+            .rx_handle = i2s_keep[0]->rx_handle,
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
+        };
+        inst->data_if = audio_codec_new_i2s_data(&i2s_cfg);
+        TEST_ASSERT_NOT_NULL(inst->data_if);
+        data_if = inst->data_if;
+    }
+
+    audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES7210_CODEC_DEFAULT_ADDR};
+#ifdef USE_IDF_I2C_MASTER
+    i2c_cfg.bus_handle = i2c_bus_handle;
+#endif  /* USE_IDF_I2C_MASTER */
+    inst->ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
+    TEST_ASSERT_NOT_NULL(inst->ctrl_if);
+
+    es7210_codec_cfg_t es7210_cfg = {
+        .ctrl_if = inst->ctrl_if,
+        .mic_selected = ES7210_SEL_MIC1 | ES7210_SEL_MIC2 | ES7210_SEL_MIC3 | ES7210_SEL_MIC4,
+    };
+    inst->codec_if = es7210_codec_new(&es7210_cfg);
+    TEST_ASSERT_NOT_NULL(inst->codec_if);
+
+    esp_codec_dev_cfg_t dev_cfg = {
+        .codec_if = inst->codec_if,
+        .data_if = data_if,
+        .dev_type = ESP_CODEC_DEV_TYPE_IN,
+    };
+    inst->codec_dev = esp_codec_dev_new(&dev_cfg);
+    TEST_ASSERT_NOT_NULL(inst->codec_dev);
+    return 0;
+}
+
+static void deinit_es7210_inst(codec_es7210_inst_t *inst)
+{
+    if (inst->codec_dev) {
+        esp_codec_dev_delete(inst->codec_dev);
+        inst->codec_dev = NULL;
+    }
+    if (inst->codec_if) {
+        audio_codec_delete_codec_if(inst->codec_if);
+        inst->codec_if = NULL;
     }
     if (inst->ctrl_if) {
         audio_codec_delete_ctrl_if(inst->ctrl_if);
@@ -1122,3 +1206,115 @@ TEST_CASE("Playing while recording use TDM mode", "[esp_codec_dev]")
     ut_clr_i2s_mode();
 #endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
 }
+
+TEST_CASE("Play and record use separate data_if with 2ch 32bits", "[esp_codec_dev]")
+{
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    ut_set_i2s_mode(I2S_COMM_MODE_STD, I2S_COMM_MODE_STD);
+    // Need install driver (i2c and i2s) firstly
+    int ret = ut_i2c_init(0, NULL);
+    TEST_ESP_OK(ret);
+    ret = ut_i2s_init(0, NULL, I2S_CLK_SRC_DEFAULT);
+    TEST_ESP_OK(ret);
+
+    esp_codec_dev_sample_info_t fs = {
+        .sample_rate = 16000,
+        .channel = 2,
+        .bits_per_sample = 32,
+        .channel_mask = BIT(0),
+        .mclk_multiple = 256,
+    };
+
+    int record_data_size = 2 * fs.sample_rate * (fs.bits_per_sample >> 3);
+    uint8_t *record_data = (uint8_t *)malloc(record_data_size + sizeof(uint16_t));
+    TEST_ASSERT_NOT_NULL(record_data);
+
+    codec_es7210_inst_t record_inst = {};
+    ret = init_es7210_inst(&record_inst, NULL);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_set_in_gain(record_inst.codec_dev, 30.0);
+    TEST_ESP_OK(ret);
+    // Use 2ch 32bit to get 4ch 16bit, the order is ch3 ch1 ch2 ch4, and mask is 0x01, so data is ch3 ch1
+    ret = esp_codec_dev_open(record_inst.codec_dev, &fs);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_read(record_inst.codec_dev, record_data, record_data_size);
+    TEST_ESP_OK(ret);
+    int max_sample, min_sample;
+    codec_max_sample(record_data, record_data_size, &max_sample, &min_sample);
+    // Verify recording data not constant
+    TEST_ASSERT(max_sample > min_sample);
+    esp_codec_dev_close(record_inst.codec_dev);
+    deinit_es7210_inst(&record_inst);
+
+    codec_es8311_inst_t play_inst = {};
+    ret = init_es8311_inst_ex(&play_inst, true, NULL, TEST_BOARD_PA_PIN, true);
+    TEST_ESP_OK(ret);
+    fs.bits_per_sample = 16;
+    fs.channel = 2;
+    fs.channel_mask = BIT(0) | BIT(1);
+    ret = esp_codec_dev_set_out_vol(play_inst.codec_dev, 60.0);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_open(play_inst.codec_dev, &fs);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_write(play_inst.codec_dev, record_data + 2, record_data_size);
+    TEST_ESP_OK(ret);
+    esp_codec_dev_close(play_inst.codec_dev);
+    deinit_es8311_inst(&play_inst);
+    free(record_data);
+
+    memset(&record_inst, 0, sizeof(codec_es7210_inst_t));
+    ret = init_es7210_inst(&record_inst, NULL);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_set_in_gain(record_inst.codec_dev, 30.0);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_open(record_inst.codec_dev, &fs);
+    TEST_ESP_OK(ret);
+    esp_codec_dev_sleep(100);
+
+    ret = init_es8311_inst_ex(&play_inst, true, NULL, TEST_BOARD_PA_PIN, true);
+    TEST_ESP_OK(ret);
+    fs.bits_per_sample = 16;
+    fs.channel = 2;
+    fs.channel_mask = BIT(0) | BIT(1);
+    ret = esp_codec_dev_set_out_vol(play_inst.codec_dev, 60.0);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_open(play_inst.codec_dev, &fs);
+
+    int data_size = fs.sample_rate * fs.channel * (fs.bits_per_sample >> 3) / 20;
+    uint8_t *data = (uint8_t *)malloc(data_size + sizeof(uint16_t));
+    int limit_size = 10 * fs.sample_rate * fs.channel * (fs.bits_per_sample >> 3);
+    int got_size = 0;
+    // Playback the recording content directly
+    while (got_size < limit_size) {
+        ret = esp_codec_dev_read(record_inst.codec_dev, data, data_size);
+        TEST_ESP_OK(ret);
+        // Data is ch3 ch1, ch1 is for mic, so need to skip 2 bytes
+        ret = esp_codec_dev_write(play_inst.codec_dev, data + 2, data_size);
+        TEST_ESP_OK(ret);
+        int max_sample, min_sample;
+        codec_max_sample(data, data_size, &max_sample, &min_sample);
+        // Verify recording data not constant
+        TEST_ASSERT(max_sample > min_sample);
+        got_size += data_size;
+    }
+    free(data);
+
+    ret = esp_codec_dev_close(play_inst.codec_dev);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_close(record_inst.codec_dev);
+    TEST_ESP_OK(ret);
+    deinit_es8311_inst(&play_inst);
+    deinit_es7210_inst(&record_inst);
+
+    ut_i2c_deinit(0);
+    ut_i2s_deinit(0);
+    ut_clr_i2s_mode();
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) */
+}
+
+#if SOC_I2S_SUPPORTS_XTAL && CONFIG_PM_ENABLE
+TEST_CASE("esp codec dev test using S3 board with XTAL", "[esp_codec_dev]")
+{
+    test_codec_dev_using_s3_board(true);
+}
+#endif
