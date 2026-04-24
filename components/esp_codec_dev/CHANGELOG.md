@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.9
+
+### Bug Fixed
+
+- Fixed build failure on ESP-IDF <= 5.4 caused by missing `bclk_div` field in `clk_cfg`.
+
 ## v1.5.8
 
 ### Bug Fixed

@@ -275,10 +275,10 @@ static int set_drv_fs(i2s_chan_handle_t channel, bool playback, uint8_t slot_bit
                 return ESP_CODEC_DEV_DRV_ERR;
             }
             ESP_LOGI(TAG, "STD: %s, data_bit: %d, slot_bit: %d, ws_width: %d, slot_mode: %s, slot_mask: 0x%x",
-                channel_info.dir == I2S_DIR_RX ? "RX" : "TX", slot_cfg.data_bit_width, slot_cfg.slot_bit_width, slot_cfg.ws_width,
+                channel_info.dir == I2S_DIR_RX ? "RX" : "TX", (int)slot_cfg.data_bit_width, (int)slot_cfg.slot_bit_width, (int)slot_cfg.ws_width,
                 slot_cfg.slot_mode == I2S_SLOT_MODE_MONO ? "MONO" : "STEREO", (int)slot_cfg.slot_mask);
-            ESP_LOGI(TAG, "STD: %s, sample_rate_hz: %d, mclk_multiple: %d, clk_src: %d, bclk_div: %d",
-                channel_info.dir == I2S_DIR_RX ? "RX" : "TX", clk_cfg.sample_rate_hz, clk_cfg.mclk_multiple, clk_cfg.clk_src, clk_cfg.bclk_div);
+            ESP_LOGI(TAG, "STD: %s, sample_rate_hz: %d, mclk_multiple: %d, clk_src: %d",
+                channel_info.dir == I2S_DIR_RX ? "RX" : "TX", (int)clk_cfg.sample_rate_hz, (int)clk_cfg.mclk_multiple, (int)clk_cfg.clk_src);
         }
         break;
 #if SOC_I2S_SUPPORTS_PDM
@@ -393,10 +393,10 @@ static int set_drv_fs(i2s_chan_handle_t channel, bool playback, uint8_t slot_bit
                 return ESP_CODEC_DEV_DRV_ERR;
             }
             ESP_LOGI(TAG, "TDM: %s, data_bit: %d, slot_bit: %d, ws_width: %d, total_slot: %d, slot_mask: 0x%x",
-                channel_info.dir == I2S_DIR_RX ? "RX" : "TX", slot_cfg.data_bit_width, slot_cfg.slot_bit_width,
-                slot_cfg.ws_width, slot_cfg.total_slot, (int)slot_cfg.slot_mask);
-            ESP_LOGI(TAG, "TDM: %s, sample_rate_hz: %d, mclk_multiple: %d, clk_src: %d, bclk_div: %d",
-                    channel_info.dir == I2S_DIR_RX ? "RX" : "TX", clk_cfg.sample_rate_hz, clk_cfg.mclk_multiple, clk_cfg.clk_src, clk_cfg.bclk_div);
+                channel_info.dir == I2S_DIR_RX ? "RX" : "TX", (int)slot_cfg.data_bit_width, (int)slot_cfg.slot_bit_width,
+                (int)slot_cfg.ws_width, (int)slot_cfg.total_slot, (int)slot_cfg.slot_mask);
+            ESP_LOGI(TAG, "TDM: %s, sample_rate_hz: %d, mclk_multiple: %d, clk_src: %d",
+                    channel_info.dir == I2S_DIR_RX ? "RX" : "TX", (int)clk_cfg.sample_rate_hz, (int)clk_cfg.mclk_multiple, (int)clk_cfg.clk_src);
         }
         break;
 #endif  /* SOC_I2S_SUPPORTS_TDM */
