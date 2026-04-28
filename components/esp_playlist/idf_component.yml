@@ -1,0 +1,19 @@
+version: "0.5.0"
+description: Media catalog and playlist management component for Espressif multimedia applications
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_playlist
+repository: https://github.com/espressif/esp-adf.git
+documentation: https://github.com/espressif/esp-adf/tree/master/components/esp_playlist#readme
+issues: https://github.com/espressif/esp-adf/issues
+tags:
+  - playlist
+  - gmf
+  - adf
+
+dependencies:
+  espressif/cjson:
+    version: "^1.7.19"
+    rules:
+      - if: "idf_version >=6.0.0"
+
+examples:
+  - path: "./examples/playlist_benchmark"
