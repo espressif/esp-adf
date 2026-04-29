@@ -1,3 +1,5 @@
 dependencies:
-  protocol_examples_common:
-    path: ${IDF_PATH}/examples/common_components/protocol_examples_common
+  espressif/cjson:
+    version: "^1.7.19"
+    rules:
+      - if: "idf_version >=6.0"

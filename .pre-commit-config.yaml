@@ -21,7 +21,7 @@ repos:
         types_or: [c, c++]
 
   - repo: https://github.com/COFFER-S/check-format-tool
-    rev: v1.1.3
+    rev: v1.1.4
     hooks:
       - id: code-style
         args: ['--local', '-f', 'code-style']

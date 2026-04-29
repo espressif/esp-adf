@@ -183,7 +183,6 @@ variables:
     - cd $CI_PROJECT_DIR
     - pytest_apps test_app
 
-
 .pytest_components_schedule_template:
   extends:
     - .rules:ref:master-schedule
