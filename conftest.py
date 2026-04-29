@@ -47,6 +47,7 @@ SPECIAL_MARKERS = {
     'nightly_run': 'tests should be executed as part of the nightly trigger pipeline',
     'host_test': 'tests which should not be built at the build stage, and instead built in host_test stage',
     'qemu': 'build and test using qemu-system-xtensa, not real target',
+    'generic': 'tests should be run on generic runners',
 }
 
 ENV_MARKERS = {
@@ -335,8 +336,18 @@ class IdfPytestEmbedded:
             items[:] = [item for item in items if 'nightly_run' not in item_marker_names(item)]
 
         # filter all the test cases with target and skip_targets
-        items[:] = [
-            item
-            for item in items
-            if self.target in item_marker_names(item) and self.target not in item_skip_targets(item)
-        ]
+        filtered_items = []
+        for item in items:
+            if self.target in item_skip_targets(item):
+                continue
+
+            match_target = False
+            if self.target in item_marker_names(item):
+                match_target = True
+            elif hasattr(item, 'callspec') and self.target == item.callspec.params.get('target'):
+                match_target = True
+
+            if match_target:
+                filtered_items.append(item)
+
+        items[:] = filtered_items

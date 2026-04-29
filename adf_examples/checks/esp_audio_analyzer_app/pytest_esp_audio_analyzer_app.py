@@ -3,20 +3,26 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-import os
-
 from pytest_embedded import Dut
+from pytest_embedded_idf.utils import idf_parametrize
 
-@pytest.mark.esp32
-@pytest.mark.esp32c2
-@pytest.mark.esp32c3
-@pytest.mark.esp32c5
-@pytest.mark.esp32c6
-@pytest.mark.esp32s2
-@pytest.mark.esp32s3
-@pytest.mark.esp32p4
-@pytest.mark.esp32h4
-@pytest.mark.ADF_EXAMPLE_GENERIC
+
+@pytest.mark.generic
+@idf_parametrize(
+    'target',
+    [
+        'esp32',
+        'esp32c2',
+        'esp32c3',
+        'esp32c5',
+        'esp32c6',
+        'esp32s2',
+        'esp32s3',
+        'esp32p4',
+        'esp32h4',
+    ],
+    indirect=['target']
+)
 def test_esp_audio_analyzer_app(dut: Dut)-> None:
     dut.expect(r'Initializing board...', timeout=10)
     dut.expect(r'Initializing audio system...', timeout=10)
