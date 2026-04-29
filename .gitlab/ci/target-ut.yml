@@ -1,0 +1,79 @@
+include:
+  - '.gitlab/ci/common.yml'
+
+.pytest_components_esp32s3_ut_01:
+  extends:
+    - .pytest_components_template
+  tags: [ ESP32S3, UT_T1_AUDIO ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO"
+
+.pytest_components_esp32s3_ut_02:
+  extends:
+    - .pytest_components_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L1 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L1"
+
+.pytest_components_esp32s3_ut_03:
+  extends:
+    - .pytest_components_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L2 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L2"
+
+.pytest_components_esp32s3_ut_04:
+  extends:
+    - .pytest_components_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L6 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L6"
+
+.pytest_components_esp32s3_ut_05:
+  extends:
+    - .pytest_components_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L7 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L7"
+
+.pytest_components_esp32s3_ut_06:
+  extends:
+    - .pytest_components_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L8 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L8"
+
+.pytest_components_esp32s3_ut_07:
+  extends:
+    - .pytest_components_template
+  tags: [ ESP32S3, UT_T1_AUDIO_L9 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_L9"
+
+.pytest_components_esp32s3_ut_08:
+  extends:
+    - .pytest_components_template
+  tags: [ ESP32S3, UT_T1_AUDIO_E6 ]
+  variables:
+    TEST_ENV: "UT_T1_AUDIO_E6"
+
+pytest_components_esp32s3:
+  extends:
+    - .rules:build:enable-unit-test-esp32s3
+    - .pytest_components_template
+  needs:
+    - 'component_test_esp32s3'
+  tags: [ ESP32S3, ADF_EXAMPLE_GENERIC ]
+  variables:
+    TEST_ENV: "esp32s3"
+
+pytest_components_esp32p4:
+  extends:
+    - .rules:build:enable-unit-test-esp32p4
+    - .pytest_components_template
+  needs:
+    - 'component_test_esp32p4'
+  tags: [ ESP32P4, ADF_EXAMPLE_GENERIC ]
+  variables:
+    TEST_ENV: "esp32p4"
+    IDF_TARGET: esp32p4

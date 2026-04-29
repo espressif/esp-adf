@@ -1,0 +1,32 @@
+include:
+  - '.gitlab/ci/common.yml'
+
+generate-trigger-config:
+  stage: pre_check
+  image: "$ADF_CI_ESP_ENV_DEFAULT"
+  extends:
+    - .rules:build:adf-idfs-example-test
+  script:
+    - git_clone_ci_tools
+    - python ${CI_TOOLS_PATH}/ci/ci_generator/generated_triggers.py --output generated-triggers.yml
+  artifacts:
+    paths:
+      - "generated-triggers.yml"
+      - "**/apps.txt"
+      - "**/apps_dependent.yml"
+      - "**/apps_path.json"
+    expire_in: 1 hour
+
+trigger-dynamic-pipelines:
+  stage: trigger_build
+  extends:
+    - .rules:build:adf-idfs-example-test
+  needs:
+    - 'generate-trigger-config'
+  trigger:
+    include:
+      - artifact: generated-triggers.yml
+        job: generate-trigger-config
+    strategy: depend
+  variables:
+    PARENT_PIPELINE_ID: $CI_PIPELINE_ID

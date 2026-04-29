@@ -1,0 +1,50 @@
+include:
+  - '.gitlab/ci/common.yml'
+
+build_examples_esp32_lyrat_mini_v1_1:
+  extends:
+    - .build_example_test_template
+    - .rules:build:enable-example-test-esp32
+  variables:
+    IDF_TARGET: esp32
+    BOARD: ESP_LYRAT_MINI_V1_1
+
+build_examples_esp32s2_kaluga_v1_2:
+  extends:
+    - .build_example_test_template
+    - .rules:build:enable-example-test-esp32s2
+  variables:
+    IDF_TARGET: esp32s2
+    BOARD: ESP32_S2_KALUGA_1_V1_2
+
+build_examples_esp32s3_korvo_v2:
+  extends:
+    - .build_example_test_template
+    - .rules:build:enable-example-test-esp32s3
+  variables:
+    IDF_TARGET: esp32s3
+    BOARD: ESP32_S3_KORVO2_V3
+
+build_examples_esp32c3_lyra_v2:
+  extends:
+    - .build_example_test_template
+    - .rules:build:enable-example-test-esp32c3
+  variables:
+    IDF_TARGET: esp32c3
+    BOARD: ESP32_C3_LYRA_V2
+
+build_examples_esp32c6_devkit:
+  extends:
+    - .build_example_test_template
+    - .rules:build:enable-example-test-esp32c6
+  variables:
+    IDF_TARGET: esp32c6
+    BOARD: ESP32_C6_DEVKIT
+
+build_examples_esp32p4_function_ev_board:
+  extends:
+    - .build_example_test_template
+    - .rules:build:enable-example-test-esp32p4
+  variables:
+    IDF_TARGET: esp32p4
+    BOARD: ESP32_P4_FUNCTION_EV

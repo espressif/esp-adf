@@ -16,6 +16,7 @@ from pytest_embedded import Dut
 @pytest.mark.esp32s3
 @pytest.mark.esp32p4
 @pytest.mark.esp32h4
+@pytest.mark.ADF_EXAMPLE_GENERIC
 def test_esp_audio_analyzer_app(dut: Dut)-> None:
     dut.expect(r'Initializing board...', timeout=10)
     dut.expect(r'Initializing audio system...', timeout=10)

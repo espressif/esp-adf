@@ -1,0 +1,196 @@
+variables:
+  # Build / make
+  MAKEFLAGS: "-j5 --no-keep-going"
+
+  # GitLab source checkout and submodules
+  GET_SOURCES_ATTEMPTS: "10"
+  ARTIFACT_DOWNLOAD_ATTEMPTS: "10"
+  GIT_STRATEGY: clone
+  GIT_SUBMODULE_STRATEGY: none
+  GIT_DEPTH: 1
+
+  IDF_SKIP_CHECK_SUBMODULES: 1
+
+  ADF_PATH: "$CI_PROJECT_DIR"
+  PROJECT_ROOT: "$CI_PROJECT_DIR"
+  CI_TOOLS_PATH: "$CI_PROJECT_DIR/ci-tools"
+  IDF_PATH: "/root/.espressif/esp-idf"
+  PROJECT_TEST_PACKAGE_PATH: "${PROJECT_ROOT}/tools/adf_test_package"
+  CI_TARGET_UT_TEST_CONFIG_FILE: "$CI_PROJECT_DIR/.gitlab/ci/target-ut.yml"
+  CI_TARGET_TEST_CONFIG_FILE: "$CI_PROJECT_DIR/.gitlab/ci/target-examples.yml"
+
+  # Common image aliases used by trigger.yml
+  ADF_CI_ESP_ENV_DEFAULT: "${CI_DOCKER_REGISTRY}/esp-env-v5.3:1"
+  ADF_CI_DOC_ENV_V5_4: "${CI_DOCKER_REGISTRY}/esp-idf-doc-env-v5.4:1-1"
+
+
+.build_test_template:
+  stage: build
+  image: ${BUILD_IMAGE}
+  tags:
+    - build
+    - audio_server
+  parallel: 1
+  interruptible: true
+  dependencies: # set dependencies to null to avoid missing artifacts issue
+  needs:
+    - pipeline: $PARENT_PIPELINE_ID
+      job: generate-trigger-config
+  variables:
+    BATCH_BUILD: "1"
+    V: "0"
+    CI_TOOLS_PATH: "$CI_PROJECT_DIR/ci-tools"
+
+
+.build_example_test_template:
+  extends:
+    - .build_test_template
+  variables:
+    MAKEFLAGS: "-j5 --no-keep-going"
+    # more attempts for more robust
+    GET_SOURCES_ATTEMPTS: "10"
+    ARTIFACT_DOWNLOAD_ATTEMPTS: "10"
+    GIT_STRATEGY: clone
+    GIT_SUBMODULE_STRATEGY: none
+    ADF_PATH: "$CI_PROJECT_DIR"
+    IDF_SKIP_CHECK_SUBMODULES: 1
+    GIT_DEPTH: 1
+    DEEP_CLONE: "false"
+    IDF_FIND_APP_PATH_ARG: "-p"
+    IDF_PATH: "/root/.espressif/esp-idf"
+    SDKCFG_DEFAULTS: "sdkconfig.defaults.$IDF_TARGET"
+    LATEST_IDF_VERSION: "v5.5.1"
+    IDF_CCACHE_ENABLE: "1"
+    BATCH_BUILD: "1"
+    V: "0"
+    WARNING_STR: ""
+  artifacts:
+    paths:
+      - "**/build*/size.json"
+      - "**/build*/build_log.txt"
+      - "**/build*/**/*.bin"
+      - "**/build*/*.elf"
+      - "**/build*/flasher_args.json"
+      - "**/build*/flash_project_args"
+      - "**/build*/config/sdkconfig.json"
+      - "**/build*/sdkconfig"
+      - "**/build*/bootloader/*.bin"
+      - "**/build*/partition_table/*.bin"
+      - "**/apps_path.json"
+      - size_info.txt
+      - components/idf_test/unit_test/*.yml
+      - "**/apps_dependent.yml"
+      - "**/apps.txt"
+      - "${CI_PROJECT_DIR}/.env"
+    when: always
+    expire_in: 4 days
+  script:
+    - common_script
+    - cd $PROJECT_ROOT
+    - pip install idf_build_apps
+    - build_apps example
+
+
+.build_component_test_template: 
+  extends:
+    - .build_test_template
+  artifacts:
+    when: always
+    paths:
+      - "**/build*/size.json"
+      - "**/build*/build_log.txt"
+      - "**/build*/**/*.bin"
+      - "**/build*/*.elf"
+      - "**/build*/flasher_args.json"
+      - "**/build*/flash_project_args"
+      - "**/build*/config/sdkconfig.json"
+      - "**/build*/sdkconfig"
+      - "**/build*/bootloader/*.bin"
+      - "**/build*/partition_table/*.bin"
+      - "**/apps_path.json"
+      - "${PROJECT_ROOT}/components/**/test_apps/*.py"
+    expire_in: 4 days
+  variables:
+    LOG_PATH: "$CI_PROJECT_DIR/log_ut_make"
+    OUTPUT_PATH: ${IDF_PATH}/tools/unit-test-app/output
+  script:
+    - common_script
+    - cd $PROJECT_ROOT
+    - git log -1
+    - build_apps test_app
+
+
+.target_test_template:
+  image: "${TEST_IMAGE}"
+  stage: target_test
+  timeout: 1 hour
+  retry: 2
+  variables:
+    GIT_DEPTH: 1
+    SUBMODULES_TO_FETCH: "none"
+    LOG_PATH: "$CI_PROJECT_DIR/TEST_LOGS"
+    ENV_FILE: "${IDF_PATH}/ci-test-runner-configs/$CI_RUNNER_DESCRIPTION/EnvConfig.yml"
+    TEST_DIR: ${PROJECT_ROOT}/components
+    BUILD_JOB_PREFIX: build_pytest_components_
+    CI_TOOLS_PATH: "$CI_PROJECT_DIR/ci-tools"
+    IDF_TARGET: esp32s3
+  before_script:
+    - source ${PROJECT_ROOT}/tools/ci/utils.sh
+    - before_script
+    - check_idf_version $IDF_VERSION_TAG
+    - git_clone_ci_tools
+    - set_env_variable
+    - pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
+  cache:
+    # Usually do not need submodule-cache in target_test
+    - key: pip-cache
+      paths:
+        - .cache/pip
+      policy: pull
+
+
+.pytest_example_template:
+  extends:
+    - .target_test_template
+  artifacts:
+    when: always
+    paths:
+      - XUNIT_RESULT.xml
+      - "**/*.log"
+      - $LOG_PATH
+      - "$PROJECT_ROOT/examples/player/**/record.wav"
+      - "$CI_PROJECT_DIR/**/output.wav"
+    reports:
+      junit: XUNIT_RESULT.xml
+    expire_in: 1 week
+  script:
+    - pytest_apps example
+
+
+.pytest_components_template:
+  extends:
+    - .target_test_template
+  timeout: 24 hour
+  artifacts:
+    when: always
+    paths:
+      - XUNIT_RESULT.xml
+      - pytest-embedded/
+    reports:
+      junit: XUNIT_RESULT.xml
+    expire_in: 1 week
+  script:
+    - cd $CI_PROJECT_DIR
+    - pytest $TEST_DIR
+      --target ${IDF_TARGET}
+      -m ${TEST_ENV}
+      --junitxml=XUNIT_RESULT.xml
+      --parallel-count ${CI_NODE_TOTAL:-1}
+      --parallel-index ${CI_NODE_INDEX:-1}
+      ${PYTEST_EXTRA_FLAGS}
+
+
+.pytest_components_schedule_template:
+  extends:
+    - .rules:ref:master-schedule
+    - .pytest_components_template

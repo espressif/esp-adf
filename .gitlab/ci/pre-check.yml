@@ -1,3 +1,11 @@
+.check_labels_script: &check_labels_script |
+  if [[ "$CI_MERGE_REQUEST_LABELS" =~ "unit_test" && "$CI_MERGE_REQUEST_LABELS" =~ "example_test" ]]; then
+    echo "unit_test and example_test labels exist"
+  else
+    echo -e "\033[31mwarning: either unit_test or example_test label is missing. Please add both labels to the MR for the pipeline to succeed\033[0m"
+    exit 1
+  fi
+
 .check_branch_script: &check_branch_script |
   if [[ "$BOT_LABEL_SKIP_BRANCH_CHECK" = "true"  || "$CI_MERGE_REQUEST_LABELS" =~ skip_branch_check ]]; then
     echo "Skip branch name check."
@@ -23,15 +31,28 @@
     fi
   fi
 
+.check_labels:
+  image: $CI_DOCKER_REGISTRY/esp32-ci-env$BOT_DOCKER_IMAGE_TAG
+  stage: pre_check
+  interruptible: true
+  allow_failure: true
+  extends:
+    - .rules:ref:check-label
+  before_script:
+    - echo "skip default before_script"
+  script:
+    - *check_labels_script
+
 check_commit_format:
   image: "$ADF_DOCKER_REGISTRY/pre_commit:1"
   stage: pre_check
+  interruptible: true
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_LABELS !~ /^(?:[^,\n\r]+,)*skip_check(?:,[^,\n\r]+)*$/i'
   script:
     - git clone --depth 1 $CHECK_FORMAT_TOOL_REPO
     - cd check-format-tool/bin
-    - export CHECK_REPO_PATH=${ADF_PATH}
+    - export CHECK_REPO_PATH=${PROJECT_ROOT}
     - export CHECK_TOOLS_PATH=${HOME}/.esp_adf_check_tools
     - ./install.sh
     - . ./export.sh
@@ -42,25 +63,34 @@ check_commit_format:
   allow_failure: true
   artifacts:
     paths:
-      - ${ADF_PATH}/patch
-      - ${ADF_PATH}/formatted
+      - ${PROJECT_ROOT}/patch
+      - ${PROJECT_ROOT}/formatted
     when: always
     expire_in: 4 days
 
 .check_pre_commit_template:
   stage: pre_check
-  image: "$CI_DOCKER_REGISTRY/esp-idf-doc-env-v5.4:1-1"
+  image: "$ADF_CI_DOC_ENV_V5_4"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - pip install pre-commit
-    - git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --depth=1
-    - git fetch origin $CI_COMMIT_REF_NAME --depth=1
     - |
-      echo "Target branch: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-      echo "Source branch: $CI_COMMIT_REF_NAME"
+      MR_API="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}"
+      MR_JSON=$(curl -sS --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" "${MR_API}")
+      BASE_COMMIT=$(echo "$MR_JSON" | python3 -c "import json,sys; d=json.load(sys.stdin); dr=d.get('diff_refs') or {}; print(dr.get('base_sha') or d.get('target_branch_sha') or '')")
 
-      MODIFIED_FILES=$(git diff --name-only origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME..origin/$CI_COMMIT_REF_NAME)
+      if [ -z "$BASE_COMMIT" ] || [ "$BASE_COMMIT" = "null" ]; then
+        echo "Error: Unable to retrieve base commit for the merge request from GitLab API."
+        exit 1
+      fi
+
+      echo "MR base commit: $BASE_COMMIT"
+      echo "CI commit: $CI_COMMIT_SHA"
+
+      git fetch origin "$BASE_COMMIT" 2>/dev/null || true
+
+      MODIFIED_FILES=$(git diff --name-only "${BASE_COMMIT}..${CI_COMMIT_SHA}")
       echo "Modified files to check:"
       echo "$MODIFIED_FILES"
 
@@ -70,6 +100,7 @@ check_commit_format:
           echo "No modified files to check."
       fi
   after_script:
+    - git checkout -- .gitmodules
     - git diff > fixed.patch
     - cat fixed.patch
   artifacts:
@@ -81,3 +112,14 @@ check_commit_format:
 check_pre_commit:
   extends:
     - .check_pre_commit_template
+
+check_pytest:
+  stage: pre_check
+  image: "$CI_DOCKER_REGISTRY/esp-env-v5.5:3"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - common_script
+    - check_pytest
+  variables:
+    IDF_VERSION_TAG: "v5.5.3"

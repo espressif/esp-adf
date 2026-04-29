@@ -1,0 +1,33 @@
+stages:
+  - build
+  - target_test
+
+before_script:
+  - echo ${PROJECT_ROOT}
+  - echo ${IDF_PATH}
+  - echo ${CI_PROJECT_DIR}
+  - echo $CI_PROJECT_DIR
+  - echo ${PROJECT_TEST_PACKAGE_PATH}
+  - source $PROJECT_ROOT/tools/ci/utils.sh
+  - before_script
+
+include:
+  - '.gitlab/ci/common.yml'
+  - '.gitlab/ci/rules.yml'
+  - '.gitlab/ci/build-ut.yml'
+  - '.gitlab/ci/build-examples.yml'
+  - '.gitlab/ci/target-ut.yml'
+  - '.gitlab/ci/target-examples.yml'
+
+puppet_job:
+  stage: build
+  extends:
+    - .rules:puppet_env
+  before_script:
+    - echo "Skip before script"
+  script:
+    - |
+      echo '========================================'
+      echo 'puppet job to prevent pipeline failure'
+      echo '========================================'
+  allow_failure: true
