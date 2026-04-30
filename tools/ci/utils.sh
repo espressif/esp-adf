@@ -69,19 +69,55 @@ function warning() {
   printf "\033[0;33m%s\n\033[0m" "${1}" >&2
 }
 
+# One argv token for logs: prefer '...' when the string has spaces/special chars (readable copy-paste);
+# simple tokens stay unquoted. Matches real argv boundaries; not identical to printf %q escaping style.
+function _run_cmd_arg_print_one() {
+  local _a="${1-}"
+  if [[ -z "${_a}" ]]; then
+    printf "''"
+    return
+  fi
+  if [[ "${_a}" =~ ^[A-Za-z0-9_./:=@+-]+$ ]]; then
+    printf '%s' "${_a}"
+    return
+  fi
+  printf "'"
+  local _i _c
+  for ((_i = 0; _i < ${#_a}; _i++)); do
+    _c="${_a:_i:1}"
+    if [[ "${_c}" == "'" ]]; then
+      printf "'\\''"
+    else
+      printf '%s' "${_c}"
+    fi
+  done
+  printf "'"
+}
+
+function _run_cmd_argv_print() {
+  local _out='' _sep='' _a
+  for _a in "$@"; do
+    _out+="${_sep}$(_run_cmd_arg_print_one "${_a}")"
+    _sep=' '
+  done
+  printf '%s' "${_out}"
+}
+
 function run_cmd() {
   local start=$(date +%s)
-  info "\$ $*"
+  local _printed
+  _printed="$(_run_cmd_argv_print "$@")"
+  info "\$ ${_printed}"
   "$@"
   local ret=$?
   local end=$(date +%s)
   local runtime=$((end-start))
 
   if [[ $ret -eq 0 ]]; then
-    info "==> '\$ $*' succeeded in ${runtime} seconds."
+    info "==> '\$ ${_printed}' succeeded in ${runtime} seconds."
     return 0
   else
-    error "==> '\$ $*' failed (${ret}) in ${runtime} seconds."
+    error "==> '\$ ${_printed}' failed (${ret}) in ${runtime} seconds."
     return $ret
   fi
 }
@@ -480,7 +516,9 @@ function pytest_apps() {
   local pytest_paths=()
   mapfile -t pytest_paths < <(_read_apps_path_json_paths "${apps_json}" "${app_type}" "${IDF_TARGET}" "${BOARD}")
   [[ ${#pytest_paths[@]} -eq 0 ]] && exit 0
-  run_cmd pytest "${pytest_paths[@]}" --target "${IDF_TARGET}" -m "${markers}" --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1
+  # Remove the -m "${markers}" parameter first
+  run_cmd pytest "${pytest_paths[@]}" --target "${IDF_TARGET}" --junitxml=XUNIT_RESULT.xml \
+    --parallel-count "${CI_NODE_TOTAL:-1}" --parallel-index "${CI_NODE_INDEX:-1}"
 }
 
 function define_config_file_name() {

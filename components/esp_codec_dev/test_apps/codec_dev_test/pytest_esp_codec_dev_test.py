@@ -1,14 +1,22 @@
 import pytest
 from pytest_embedded import Dut
+from pytest_embedded_idf.utils import idf_parametrize
 
-@pytest.mark.esp32s3
-@pytest.mark.ADF_EXAMPLE_GENERIC
+
+@pytest.mark.generic
 @pytest.mark.parametrize(
     'config',
     [
         'defaults',
     ],
     indirect=True,
+)
+@idf_parametrize(
+    'target',
+    [
+        'esp32s3',
+    ],
+    indirect=['target']
 )
 def test_esp_codec_dev(dut: Dut) -> None:
     case_list = ['esp codec dev test using S3 board',

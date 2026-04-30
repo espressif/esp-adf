@@ -181,13 +181,7 @@ variables:
     expire_in: 1 week
   script:
     - cd $CI_PROJECT_DIR
-    - pytest $TEST_DIR
-      --target ${IDF_TARGET}
-      -m ${TEST_ENV}
-      --junitxml=XUNIT_RESULT.xml
-      --parallel-count ${CI_NODE_TOTAL:-1}
-      --parallel-index ${CI_NODE_INDEX:-1}
-      ${PYTEST_EXTRA_FLAGS}
+    - pytest_apps test_app
 
 
 .pytest_components_schedule_template:
