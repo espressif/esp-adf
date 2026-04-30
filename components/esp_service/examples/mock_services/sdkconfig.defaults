@@ -1,0 +1,8 @@
+# Defaults for the mock_services usage example.  This example only
+# exercises the six services under components/; framework-level MCP and
+# transports are covered by components/esp_service/test_apps/.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=4096
+CONFIG_FREERTOS_HZ=1000
+
+# Console on UART0 (CP2102 / ttyUSB0).
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y

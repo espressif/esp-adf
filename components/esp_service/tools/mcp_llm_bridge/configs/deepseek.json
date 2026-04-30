@@ -1,0 +1,18 @@
+{
+  "mcp_server": {
+    "url": "http://10.18.37.200:8080/mcp",
+    "timeout": 10
+  },
+  "llm": {
+    "provider": "deepseek",
+    "api_key": "${DEEPSEEK_API_KEY}",
+    "model": "deepseek-chat"
+  },
+  "test_cases": [
+    {"description": "LED 控制 - 开灯", "prompt": "请打开设备的 LED 灯"},
+    {"description": "LED 控制 - 闪烁", "prompt": "让 LED 以 1 秒的周期闪烁"},
+    {"description": "播放器控制 - 音量", "prompt": "把播放器音量调到 75"},
+    {"description": "状态查询", "prompt": "播放器现在是什么状态？LED 是什么状态？"},
+    {"description": "复杂操作", "prompt": "设置播放器音量为 65，LED 亮度为 90，然后让它闪烁（周期 500ms）"}
+  ]
+}

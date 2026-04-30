@@ -1,0 +1,26 @@
+[
+  {
+    "name": "esp_ota_service_get_version",
+    "description": "Get the current and latest checked firmware version, and whether upgrade is available",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_ota_service_get_progress",
+    "description": "Get OTA state and progress: bytes written, total bytes (-1 if unknown), percent (0-100, -1 if unknown)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_ota_service_check_update",
+    "description": "Trigger OTA check_update and return whether update is available with incoming version metadata",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

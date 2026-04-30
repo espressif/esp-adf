@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO., LTD
+# SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
+
+CONFIG_FREERTOS_HZ=1000
+CONFIG_ESP_TASK_WDT_INIT=n
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
+
+CONFIG_UNITY_ENABLE_BACKTRACE_ON_FAIL=y
+
+# Event-hub tests do not need MCP support
+CONFIG_ESP_MCP_ENABLE=n
+
+CONFIG_UNITY_ENABLE_64BIT=y

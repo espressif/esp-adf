@@ -1,0 +1,68 @@
+menu "ESP Service"
+
+    config ESP_MCP_ENABLE
+        bool "Enable MCP (Model Context Protocol) support"
+        default y
+        help
+            Compiles the MCP server and transport layer, which exposes
+            registered services as MCP tools callable by AI models
+            (e.g. Claude, GPT-4) over HTTP/SSE, WebSocket, UART, etc.
+
+            When disabled, only the service base class (esp_service)
+            and service manager are compiled. This saves code space on
+            targets that do not need AI/LLM integration.
+
+    if ESP_MCP_ENABLE
+
+    menu "MCP Transports"
+
+        config ESP_MCP_TRANSPORT_HTTP
+            bool "HTTP transport"
+            default y
+            help
+                Plain HTTP POST transport. Clients send JSON-RPC requests
+                and receive responses synchronously on the same connection.
+
+        config ESP_MCP_TRANSPORT_SSE
+            bool "HTTP+SSE transport (recommended)"
+            default y
+            help
+                MCP-recommended transport using HTTP GET for a persistent
+                Server-Sent Events channel and HTTP POST for JSON-RPC delivery.
+                Requires ESP-IDF >= 5.1 (httpd async handler API).
+
+        config ESP_MCP_TRANSPORT_WS
+            bool "WebSocket transport"
+            default y
+            depends on HTTPD_WS_SUPPORT
+            help
+                WebSocket transport. Requires CONFIG_HTTPD_WS_SUPPORT=y
+                in the HTTP server component.
+
+        config ESP_MCP_TRANSPORT_UART
+            bool "UART transport"
+            default y
+            help
+                UART transport using newline-delimited JSON framing.
+
+        config ESP_MCP_TRANSPORT_STDIO
+            bool "STDIO transport"
+            default y
+            help
+                stdin/stdout transport. Useful for host-side testing
+                and CLI integrations.
+
+        config ESP_MCP_TRANSPORT_SDIO
+            bool "SDIO slave transport"
+            default n
+            depends on IDF_TARGET_ESP32 || IDF_TARGET_ESP32C6
+            help
+                SDIO slave transport. Only available on ESP32 and ESP32-C6.
+                Disabled by default; enable only when using an SDIO
+                host-to-device link.
+
+    endmenu  # MCP Transports
+
+    endif  # ESP_MCP_ENABLE
+
+endmenu  # ESP Service

@@ -1,0 +1,19 @@
+{
+  "mcp_server": {
+    "url": "http://10.18.39.42:8080/mcp",
+    "transport": "sse",
+    "timeout": 15
+  },
+  "llm": {
+    "provider": "doubao",
+    "api_key": "${DOUBAO_API_KEY}",
+    "model": "doubao-seed-1-8-251228"
+  },
+  "test_cases": [
+    {"description": "LED 开灯", "prompt": "请打开设备的 LED 灯"},
+    {"description": "LED 闪烁", "prompt": "让 LED 以 800ms 的周期闪烁"},
+    {"description": "音量控制", "prompt": "把播放器音量调到 75"},
+    {"description": "状态查询", "prompt": "播放器现在是什么状态？LED 是什么状态？"},
+    {"description": "复合操作", "prompt": "设置播放器音量为 60，LED 亮度调到 80，然后让 LED 以 500ms 周期闪烁"}
+  ]
+}

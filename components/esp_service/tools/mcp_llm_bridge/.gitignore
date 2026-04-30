@@ -1,0 +1,25 @@
+# Local / private configs with real API keys (never commit)
+configs/*.local.json
+config.local.json
+config.json
+*.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Environment
+.env
+.venv
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

@@ -1,0 +1,42 @@
+[
+  {
+    "name": "player_service_play",
+    "description": "Start playback of the audio file",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "player_service_set_volume",
+    "description": "Set the playback volume",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "volume": {
+          "type": "integer",
+          "description": "Volume level (0-100)",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": ["volume"]
+    }
+  },
+  {
+    "name": "player_service_get_volume",
+    "description": "Get the current playback volume. Returns the volume level (0-100)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "player_service_get_status",
+    "description": "Get the current player status. Returns one of: IDLE, PLAYING, PAUSED, STOPPED",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

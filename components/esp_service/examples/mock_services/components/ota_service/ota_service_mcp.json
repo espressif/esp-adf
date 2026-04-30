@@ -1,0 +1,26 @@
+[
+  {
+    "name": "ota_service_get_version",
+    "description": "Get the current and latest available firmware version numbers",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "ota_service_get_progress",
+    "description": "Query the current OTA upgrade progress. Returns partition label, percent complete (0-100), bytes written, and total bytes",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "ota_service_check_update",
+    "description": "Check whether a firmware upgrade is available. Returns update_available flag and new version number if found",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

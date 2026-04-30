@@ -1,0 +1,26 @@
+# Defaults for the esp_service on-device test_apps runner.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=4096
+CONFIG_FREERTOS_HZ=1000
+
+# Exercise every transport we can reach over MCP.
+CONFIG_ESP_MCP_ENABLE=y
+CONFIG_ESP_MCP_TRANSPORT_HTTP=y
+CONFIG_ESP_MCP_TRANSPORT_SSE=y
+CONFIG_ESP_MCP_TRANSPORT_WS=y
+CONFIG_ESP_MCP_TRANSPORT_UART=y
+
+# Default on = SSE only (the MCP-recommended transport).  Enable others via
+# menuconfig; the test_apps firmware will start whatever you enable.
+CONFIG_ESP_SVC_TEST_ENABLE_LIFECYCLE_STRESS=y
+# CONFIG_ESP_SVC_TEST_ENABLE_HTTP_TRANSPORT is not set
+# CONFIG_ESP_SVC_TEST_ENABLE_SSE_TRANSPORT is not set
+# CONFIG_ESP_SVC_TEST_ENABLE_WS_TRANSPORT is not set
+# CONFIG_ESP_SVC_TEST_ENABLE_UART_TRANSPORT is not set
+
+# Console on UART0 (CP2102 / ttyUSB0).
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+
+# WebSocket support in the HTTP server, needed by the WS transport test.
+CONFIG_HTTPD_WS_SUPPORT=y
+
+CONFIG_UNITY_ENABLE_64BIT=y

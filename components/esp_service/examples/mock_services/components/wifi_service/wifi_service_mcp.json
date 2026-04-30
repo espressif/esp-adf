@@ -1,0 +1,44 @@
+[
+  {
+    "name": "wifi_service_get_status",
+    "description": "Query the current Wi-Fi connection status. Returns one of: IDLE, SCANNING, CONNECTING, CONNECTED, DISCONNECTED",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "wifi_service_get_ssid",
+    "description": "Get the SSID of the currently connected (or configured target) Wi-Fi network",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "wifi_service_get_rssi",
+    "description": "Get the signal strength (RSSI in dBm) of the currently connected Wi-Fi AP. Returns 0 when not connected",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "wifi_service_reconnect",
+    "description": "Disconnect from the current AP and reconnect to a specified Wi-Fi network",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ssid": {
+          "type": "string",
+          "description": "SSID of the target Wi-Fi network"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password for the target Wi-Fi network (omit or empty string for open networks)"
+        }
+      },
+      "required": ["ssid"]
+    }
+  }
+]

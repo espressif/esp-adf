@@ -1,0 +1,5 @@
+# Registry dependency for esp_board_manager. Optional device stacks (button, codec, …)
+# are selected via Kconfig when you pick a board profile; sdkconfig.defaults and
+# menuconfig must enable the devices your board uses (e.g. CONFIG_ESP_BOARD_DEV_BUTTON_SUPPORT).
+dependencies:
+  espressif/esp_board_manager: "*"

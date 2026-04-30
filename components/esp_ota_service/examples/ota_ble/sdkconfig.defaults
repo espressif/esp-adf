@@ -1,0 +1,28 @@
+# BLE OTA with esp_ota_service + official ESP BLE OTA APP protocol (ESP32-S3)
+
+CONFIG_IDF_TARGET="esp32s3"
+
+# Partition table (4 MB, compatible with the APP defaults)
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# FreeRTOS
+CONFIG_FREERTOS_HZ=1000
+CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
+
+# Bluetooth: NimBLE with large preferred MTU so the APP can use sector-sized writes
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=517
+# Needed for legacy advertising used by the APP
+CONFIG_BT_BLE_42_FEATURES_SUPPORTED=y
+
+# OTA service: use the BLE source (official APP protocol).
+CONFIG_OTA_ENABLE_BLE_SOURCE=y
+CONFIG_OTA_FORCE_VERSION_CHECK=y
+CONFIG_OTA_ENABLE_ROLLBACK=y
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# Disable esp_service MCP layer (not needed for this example)
+CONFIG_ESP_MCP_ENABLE=n

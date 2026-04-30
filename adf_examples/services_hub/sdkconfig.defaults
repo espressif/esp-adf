@@ -1,0 +1,28 @@
+# Flash/partition layout for OTA app target
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# esp_service: enable MCP tool schema/invoke for Wi-Fi/OTA services
+CONFIG_ESP_MCP_ENABLE=y
+CONFIG_ESP_MCP_TRANSPORT_HTTP=n
+CONFIG_ESP_MCP_TRANSPORT_SSE=n
+CONFIG_ESP_MCP_TRANSPORT_UART=n
+CONFIG_ESP_MCP_TRANSPORT_STDIO=y
+
+# CLI service (event_pub + aliases + tasks command)
+CONFIG_FREERTOS_USE_TRACE_FACILITY=y
+CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=y
+
+# OTA behavior
+CONFIG_OTA_ENABLE_ROLLBACK=y
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+CONFIG_OTA_FORCE_VERSION_CHECK=n
+
+# Misc runtime
+CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
+
+# Wi-Fi IDF events run on sys_evt and fan out through adf_event_hub (callback
+# subscribers are invoked synchronously). Default 2304 B overflows on our
+# publish path (logs + calloc + downstream handlers).
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=8192

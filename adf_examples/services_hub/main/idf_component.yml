@@ -1,0 +1,6 @@
+# Registry dependency for esp_board_manager. The component manager pulls
+# the latest compatible release and exposes its headers without needing
+# an explicit REQUIRES entry in CMakeLists.txt (see
+# .cursor/rules/esp-board-manager.mdc).
+dependencies:
+  espressif/esp_board_manager: "*"
