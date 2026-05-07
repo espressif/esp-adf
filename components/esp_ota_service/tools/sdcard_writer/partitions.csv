@@ -2,5 +2,6 @@
 nvs,      data, nvs,      0x9000,    0x4000,
 otadata,  data, ota,      0xd000,    0x2000,
 phy_init, data, phy,      0xf000,    0x1000,
-ota_0,    app,  ota_0,    0x10000,   0x200000,
-ota_1,    app,  ota_1,    0x210000,  0x200000,
+# 3 MiB slots: embedded host firmware (e.g. edge_agent.bin) can exceed 2 MiB after linking app.bin blobs.
+ota_0,    app,  ota_0,    0x10000,   0x300000,
+ota_1,    app,  ota_1,    0x310000,  0x300000,
