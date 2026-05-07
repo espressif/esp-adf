@@ -25,6 +25,9 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <dirent.h>
 #include <sys/stat.h>
 
 #include "freertos/FreeRTOS.h"
@@ -76,11 +79,13 @@ static bool write_payload(const char *mount_point, const payload_t *p)
     ESP_LOGI(TAG, "Writing %zu bytes -> %s", p->size, target);
     dump_hex("  embedded head", p->data, 16);
 
-    remove(target);
+    if (remove(target) != 0 && errno != ENOENT) {
+        ESP_LOGW(TAG, "  remove(%s) failed: %s", target, strerror(errno));
+    }
 
-    FILE *f = fopen(target, "wb");
-    if (!f) {
-        ESP_LOGE(TAG, "  fopen(write) failed for %s", target);
+    int fd = open(target, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0) {
+        ESP_LOGE(TAG, "  open(write) failed for %s: %s", target, strerror(errno));
         return false;
     }
 
@@ -88,7 +93,7 @@ static bool write_payload(const char *mount_point, const payload_t *p)
     uint8_t *buf = malloc(WRITE_CHUNK);
     if (!buf) {
         ESP_LOGE(TAG, "  malloc failed");
-        fclose(f);
+        close(fd);
         return false;
     }
 
@@ -98,37 +103,76 @@ static bool write_payload(const char *mount_point, const payload_t *p)
     while (remaining > 0) {
         size_t to_copy = remaining < WRITE_CHUNK ? remaining : WRITE_CHUNK;
         memcpy(buf, src, to_copy);
-        size_t w = fwrite(buf, 1, to_copy, f);
-        if (w != to_copy) {
-            ESP_LOGE(TAG, "  fwrite short: %zu / %zu at offset %zu", w, to_copy, written);
+        ssize_t w = write(fd, buf, to_copy);
+        if (w < 0) {
+            ESP_LOGE(TAG, "  write failed at offset %zu: %s", written, strerror(errno));
             break;
         }
-        written += w;
+        if ((size_t)w != to_copy) {
+            ESP_LOGE(TAG, "  write short: %zd / %zu at offset %zu", w, to_copy, written);
+            break;
+        }
+        written += (size_t)w;
         src += to_copy;
         remaining -= to_copy;
     }
     free(buf);
-    fflush(f);
-    fsync(fileno(f));
-    fclose(f);
 
     if (written != p->size) {
         ESP_LOGE(TAG, "  write incomplete: %zu / %zu", written, p->size);
+        close(fd);
         return false;
     }
 
-    f = fopen(target, "rb");
-    if (!f) {
-        ESP_LOGE(TAG, "  fopen(readback) failed");
+    if (fsync(fd) != 0) {
+        ESP_LOGW(TAG, "  fsync failed: %s (continuing verify)", strerror(errno));
+    }
+    if (close(fd) != 0) {
+        ESP_LOGE(TAG, "  close(write) failed: %s", strerror(errno));
         return false;
     }
-    uint8_t rb[16] = {0};
-    size_t n = fread(rb, 1, sizeof(rb), f);
+
+    struct stat st_after_close = {0};
+    if (stat(target, &st_after_close) != 0) {
+        ESP_LOGE(TAG, "  stat(after close) failed for %s: %s", target, strerror(errno));
+        DIR *dir = opendir(mount_point);
+        if (!dir) {
+            ESP_LOGE(TAG, "  opendir(%s) failed: %s", mount_point, strerror(errno));
+        } else {
+            ESP_LOGI(TAG, "  listing %s:", mount_point);
+            struct dirent *e = NULL;
+            while ((e = readdir(dir)) != NULL) {
+                ESP_LOGI(TAG, "    - %s", e->d_name);
+            }
+            closedir(dir);
+        }
+    } else {
+        ESP_LOGI(TAG, "  stat(after close): %ld bytes", (long)st_after_close.st_size);
+    }
+
+    fd = open(target, O_RDONLY);
+    if (fd < 0) {
+        ESP_LOGE(TAG, "  open(readback) failed for %s: %s", target, strerror(errno));
+        return false;
+    }
+
     struct stat st = {0};
-    fstat(fileno(f), &st);
-    fclose(f);
+    if (fstat(fd, &st) != 0) {
+        ESP_LOGE(TAG, "  fstat failed: %s", strerror(errno));
+        close(fd);
+        return false;
+    }
 
-    dump_hex("  readback head", rb, n);
+    uint8_t rb[16] = {0};
+    ssize_t n = read(fd, rb, sizeof(rb));
+    if (n < 0) {
+        ESP_LOGE(TAG, "  read(readback) failed: %s", strerror(errno));
+        close(fd);
+        return false;
+    }
+    close(fd);
+
+    dump_hex("  readback head", rb, (size_t)n);
     bool ok = (n == 16 && memcmp(rb, p->data, 16) == 0 && st.st_size == (long)p->size);
     ESP_LOGI(TAG, "  size on SD: %ld bytes  match=%s", (long)st.st_size, ok ? "YES" : "NO");
     return ok;

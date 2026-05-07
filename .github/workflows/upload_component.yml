@@ -19,6 +19,11 @@ jobs:
             components/esp_codec_dev;
             components/esp_coze;
             components/esp_live_photo;
+            components/adf_event_hub;
+            components/esp_service;
+            components/esp_ota_service;
+            components/esp_button_service;
+            components/esp_cli_service;
             adf_examples;
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}
