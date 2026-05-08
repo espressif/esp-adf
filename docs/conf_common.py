@@ -9,7 +9,7 @@ from local_util import run_cmd_get_output, copy_if_modified
 sys.path.insert(0, os.path.abspath('..'))
 
 doxygen_version = run_cmd_get_output('doxygen --version')
-print(f"Doxygen version: {doxygen_version}")
+print(f'Doxygen version: {doxygen_version}')
 
 builddir = '_build'
 if 'BUILDDIR' in os.environ:
@@ -24,6 +24,8 @@ copy_if_modified(kconfig_inc_path + '.in', kconfig_inc_path)
 
 languages = ['en', 'zh_CN']
 
+_esp_docs_conf_setup = setup  # noqa: F405
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
@@ -31,6 +33,7 @@ extensions += ['sphinx_copybutton',
                'sphinxcontrib.wavedrom',
                'esp_docs.esp_extensions.dummy_build_system',
                'esp_docs.esp_extensions.run_doxygen',
+               'feedback_doc_ids',
                ]
 
 # Custom added feature to allow redirecting old URLs
@@ -146,7 +149,7 @@ pygments_style = 'sphinx'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = "../_static/espressif-logo.svg"
+html_logo = '../_static/espressif-logo.svg'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -285,3 +288,6 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+def setup(app):
+    _esp_docs_conf_setup(app)
