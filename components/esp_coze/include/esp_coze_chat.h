@@ -1,171 +1,196 @@
 /*
- * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO., LTD
- * SPDX-License-Identifier: LicenseRef-Espressif-Proprietary
+ * SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO., LTD
+ *
+ * SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
  *
  * See LICENSE file for details.
  */
 
 #pragma once
 
-#include "esp_heap_caps.h"
+#include <stdbool.h>
+#include <stdint.h>
 #include "esp_err.h"
 #include "esp_websocket_client.h"
 
+#include "esp_coze_common.h"
+
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif  /* __cplusplus */
 
-#define COZE_DEFAULT_WS_BASE_URL          "wss://ws.coze.cn/v1/chat"
 #define COZE_DEFAULT_CONV_CREATE_BASE_URL "https://api.coze.cn/v1/conversation/create"
 
+/** Codec type in chat config; same as #esp_coze_audio_type_t. */
+typedef esp_coze_audio_type_t esp_coze_chat_audio_type_t;
+
+#define ESP_COZE_CHAT_AUDIO_TYPE_OPUS   ESP_COZE_AUDIO_TYPE_OPUS
+#define ESP_COZE_CHAT_AUDIO_TYPE_G711A  ESP_COZE_AUDIO_TYPE_G711A
+#define ESP_COZE_CHAT_AUDIO_TYPE_G711U  ESP_COZE_AUDIO_TYPE_G711U
+#define ESP_COZE_CHAT_AUDIO_TYPE_PCM    ESP_COZE_AUDIO_TYPE_PCM
+
+/**
+ * @brief  VAD silence mode used by the server-side turn detector.
+ */
 typedef enum {
-    ESP_COZE_CHAT_VAD_SILENCE_FAST_MODE = 0, /*!< In SILENCE FAST mode, the VAD silence duration is 500 ms. */
-    ESP_COZE_CHAT_VAD_SILENCE_NORMAL_MODE,   /*!< In SILENCE NORMAL mode, the VAD silence duration is 1000 ms. */
+    ESP_COZE_CHAT_VAD_SILENCE_FAST_MODE   = 0,  /*!< In SILENCE FAST mode, the VAD silence duration is 500 ms. */
+    ESP_COZE_CHAT_VAD_SILENCE_NORMAL_MODE = 1,  /*!< In SILENCE NORMAL mode, the VAD silence duration is 1000 ms. */
 } esp_coze_chat_vad_silcence_mode_t;
 
+/**
+ * @brief  One custom key/value parameter passed in `chat_config.parameters`.
+ */
 typedef struct {
-    char *key;
-    char *value;
+    char *key;    /*!< Parameter key */
+    char *value;  /*!< Parameter value */
 } esp_coze_parameters_kv_t;
 
 /**
  * @brief  Chat operation modes for Coze interaction.
  */
 typedef enum {
-    ESP_COZE_CHAT_SPEECH_INTERRUPT_MODE = 0,  /*!< This mode allows direct voice-interruptible conversation */
-    ESP_COZE_CHAT_NORMAL_MODE,                /*!< This mode is typically used for button-triggered conversations */
+    ESP_COZE_CHAT_SPEECH_INTERRUPT_MODE = 0,  /*!< Voice-interruptible conversation */
+    ESP_COZE_CHAT_NORMAL_MODE           = 1,  /*!< Button-triggered conversation */
 } esp_coze_chat_mode_t;
 
 /**
- * @brief  Events that can occur during a COZE chat session
+ * @brief  Chat notifications delivered through #esp_coze_chat_config_t::event_callback
+ *         (and optionally #esp_coze_chat_config_t::audio_callback for downlink audio).
+ *
+ *         For each value, the table describes how to interpret `event_data` passed to
+ *         `event_callback` (unless downlink audio is routed only through `audio_callback`).
  */
 typedef enum {
-    ESP_COZE_CHAT_EVENT_CHAT_CREATE = 0,               /*!< Triggered when a new chat session is created */
-    ESP_COZE_CHAT_EVENT_CHAT_UPDATE,                   /*!< Triggered when there is an update in the chat session */
-    ESP_COZE_CHAT_EVENT_CHAT_COMPLETED,                /*!< Triggered when the chat session is completed */
-    ESP_COZE_CHAT_EVENT_CHAT_SPEECH_STARTED,           /*!< Triggered when speech output starts */
-    ESP_COZE_CHAT_EVENT_CHAT_SPEECH_STOPED,            /*!< Triggered when speech output stops */
-    ESP_COZE_CHAT_EVENT_CHAT_ERROR,                    /*!< Triggered when an error occurs during the chat session */
-    ESP_COZE_CHAT_EVENT_INPUT_AUDIO_BUFFER_COMPLETED,  /*!< Triggered when the input audio buffer processing is completed */
-    ESP_COZE_CHAT_EVENT_CHAT_SUBTITLE_EVENT,           /*!< Triggered when enabled `enable_subtitle`  */
-    ESP_COZE_CHAT_EVENT_CHAT_CUSTOMER_DATA,            /*!< Triggered when custom user data is received  */
+    ESP_COZE_CHAT_EVENT_CHAT_CREATE = 0,               /*!< event_data: NULL */
+    ESP_COZE_CHAT_EVENT_CHAT_UPDATE,                   /*!< event_data: NULL (reserved; not posted by current SDK) */
+    ESP_COZE_CHAT_EVENT_CHAT_COMPLETED,                /*!< event_data: NULL */
+    ESP_COZE_CHAT_EVENT_CHAT_SPEECH_STARTED,           /*!< event_data: NULL */
+    ESP_COZE_CHAT_EVENT_CHAT_SPEECH_STOPED,            /*!< event_data: NULL */
+    ESP_COZE_CHAT_EVENT_CHAT_ERROR,                    /*!< event_data: const char * (\0-terminated JSON) */
+    ESP_COZE_CHAT_EVENT_INPUT_AUDIO_BUFFER_COMPLETED,  /*!< event_data: NULL (reserved; not posted by current SDK) */
+    ESP_COZE_CHAT_EVENT_CHAT_SUBTITLE_EVENT,           /*!< event_data: const char * (\0-terminated text) */
+    ESP_COZE_CHAT_EVENT_CHAT_CUSTOMER_DATA,            /*!< event_data: const char * (\0-terminated JSON) */
+    ESP_COZE_CHAT_EVENT_WS_EVENT,                      /*!< event_data: esp_coze_ws_event_t * */
+    ESP_COZE_CHAT_EVENT_AUDIO_DATA,                    /*!< event_data: esp_coze_chat_audio_data_t * when no audio_callback; otherwise use audio_callback only */
 } esp_coze_chat_event_t;
 
 /**
- * @brief  Supported audio formats for COZE chat
+ * @brief  Payload accompanying #ESP_COZE_CHAT_EVENT_WS_EVENT.
  */
-typedef enum {
-    ESP_COZE_CHAT_AUDIO_TYPE_OPUS = 0,
-    ESP_COZE_CHAT_AUDIO_TYPE_G711A,
-    ESP_COZE_CHAT_AUDIO_TYPE_G711U,
-    ESP_COZE_CHAT_AUDIO_TYPE_PCM,
-} esp_coze_chat_audio_type_t;
-
 typedef struct {
-    void                     *handle;
-    esp_websocket_event_id_t  event_id;
+    void                     *handle;    /*!< WebSocket client handle */
+    esp_websocket_event_id_t  event_id;  /*!< WebSocket event id */
 } esp_coze_ws_event_t;
+
+/**
+ * @brief  Payload accompanying #ESP_COZE_CHAT_EVENT_AUDIO_DATA when using
+ *         #esp_coze_chat_event_callback_t (not used when only #esp_coze_chat_audio_callback_t
+ *         receives raw bytes).
+ *
+ *         `len` is the number of decoded bytes in the flexible array member `data`.
+ *         Valid only for the duration of the `event_callback` invocation; copy if needed.
+ */
+typedef struct {
+    int   len;     /*!< Decoded audio byte length */
+    char  data[];  /*!< Flexible-array payload bytes */
+} esp_coze_chat_audio_data_t;
+
+/**
+ * @brief  Downlink audio callback (decoded bytes).
+ *
+ * @note  Invoked from the WebSocket client task. Do not block; copy or queue for another task.
+ *
+ * @param[in]  data  Pointer to decoded audio bytes
+ * @param[in]  len   Number of valid bytes at data
+ * @param[in]  ctx   Context from #esp_coze_chat_config_t::audio_callback_ctx
+ */
+typedef void (*esp_coze_chat_audio_callback_t)(const uint8_t *data, int len, void *ctx);
+
+/**
+ * @brief  Chat / protocol notifications (non-audio, or #ESP_COZE_CHAT_EVENT_AUDIO_DATA when
+ *         no `audio_callback` is set).
+ *
+ * @note  Invoked from the WebSocket client task; keep work short.
+ *
+ * @param[in]  event       Event id (#esp_coze_chat_event_t)
+ * @param[in]  event_data  Payload per event type (see enum comments), or NULL
+ * @param[in]  ctx         Context from #esp_coze_chat_config_t::event_callback_ctx
+ */
+typedef void (*esp_coze_chat_event_callback_t)(esp_coze_chat_event_t event, void *event_data, void *ctx);
 
 /**
  * @brief  Handle for a COZE chat session.
  */
 typedef void *esp_coze_chat_handle_t;
 
+#define ESP_COZE_CHAT_DEFAULT_CONFIG()  {                              \
+    .ws_base_url               = COZE_DEFAULT_WS_BASE_URL,             \
+    .conv_create_base_url      = COZE_DEFAULT_CONV_CREATE_BASE_URL,    \
+    .bot_id                    = NULL,                                 \
+    .access_token              = NULL,                                 \
+    .user_id                   = "your_userid",                        \
+    .voice_id                  = "7426720361733144585",                \
+    .mode                      = ESP_COZE_CHAT_SPEECH_INTERRUPT_MODE,  \
+    .vad_silence_mode          = ESP_COZE_CHAT_VAD_SILENCE_FAST_MODE,  \
+    .uplink_audio_type         = ESP_COZE_CHAT_AUDIO_TYPE_OPUS,        \
+    .downlink_audio_type       = ESP_COZE_CHAT_AUDIO_TYPE_OPUS,        \
+    .downlink_bitrate          = 16000,                                \
+    .downlink_frame_size_ms    = 60,                                   \
+    .downlink_limit_period     = 1,                                    \
+    .downlink_max_frame_num    = 0,                                    \
+    .downlink_speech_rate      = 20,                                   \
+    .websocket_connect_timeout = 30000,                                \
+    .audio_callback            = NULL,                                 \
+    .event_callback            = NULL,                                 \
+    .audio_callback_ctx        = NULL,                                 \
+    .event_callback_ctx        = NULL,                                 \
+    .subscribe_event           = NULL,                                 \
+    .enable_subtitle           = false,                                \
+}
+
 /**
- * @brief  Callback for receiving audio data during chat
+ * @brief  Configuration structure for initializing a COZE chat session.
  *
- * @param data  Pointer to the audio data buffer
- * @param len   Length of the audio data in bytes
- * @param ctx   User-defined context passed to the callback
- */
-typedef void (*esp_coze_chat_audio_callback_t)(char *data, int len, void *ctx);
-
-/**
- * @brief  Callback for receiving chat events
- *
- * @param event       Chat event type
- * @param event_data  Optional output data associated with the event
- * @param ctx         User-defined context passed to the callback
- */
-typedef void (*esp_coze_chat_event_callback_t)(esp_coze_chat_event_t event, char *event_data, void *ctx);
-
-/**
- * @brief  Callback for receiving websocket events
- *
- * @param event  Websocket event
- */
-typedef void (*esp_coze_char_ws_event_callback_t)(esp_coze_ws_event_t *event);
-
-#define ESP_COZE_CHAT_DEFAULT_CONFIG() {                              \
-    .pull_task_stack_size      = 4096,                                \
-    .pull_task_core            = 1,                                   \
-    .pull_task_priority        = 10,                                  \
-    .pull_task_caps            = MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, \
-    .push_task_stack_size      = 4096,                                \
-    .push_task_core            = 0,                                   \
-    .push_task_priority        = 12,                                  \
-    .push_task_caps            = MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, \
-    .ws_base_url               = COZE_DEFAULT_WS_BASE_URL,            \
-    .conv_create_base_url      = COZE_DEFAULT_CONV_CREATE_BASE_URL,   \
-    .bot_id                    = NULL,                                \
-    .access_token              = NULL,                                \
-    .user_id                   = "userid_123",                        \
-    .voice_id                  = "7426720361733144585",               \
-    .mode                      = ESP_COZE_CHAT_SPEECH_INTERRUPT_MODE, \
-    .vad_silence_mode          = ESP_COZE_CHAT_VAD_SILENCE_FAST_MODE, \
-    .uplink_audio_type         = ESP_COZE_CHAT_AUDIO_TYPE_OPUS,       \
-    .downlink_audio_type       = ESP_COZE_CHAT_AUDIO_TYPE_OPUS,       \
-    .websocket_connect_timeout = 30000,                               \
-    .websocket_buffer_size     = 20480,                               \
-    .subscribe_event           = NULL,                                \
-    .audio_callback            = NULL,                                \
-    .event_callback            = NULL,                                \
-    .ws_event_callback         = NULL,                                \
-    .audio_callback_ctx        = NULL,                                \
-    .event_callback_ctx        = NULL,                                \
-    .enable_subtitle           = false,                               \
-};
-
-/**
- * @brief  Configuration structure for initializing a COZE chat session
+ * @note  After #esp_coze_chat_init, only API functions on the same handle should
+ *        be used to mutate configuration; callbacks run on the WebSocket client task.
  */
 typedef struct {
-    int                                 pull_task_stack_size;      /*!< Stack size for the pull task */
-    int                                 pull_task_core;            /*!< Core ID for the pull task */
-    int                                 pull_task_priority;        /*!< Priority for the pull task */
-    uint32_t                            pull_task_caps;            /*!< Capabilities for the pull task */
-    int                                 push_task_stack_size;      /*!< Stack size for the push task */
-    int                                 push_task_core;            /*!< Core ID for the push task */
-    int                                 push_task_priority;        /*!< Priority for the push task */
-    uint32_t                            push_task_caps;            /*!< Capabilities for the push task */
-    char                               *ws_base_url;               /*!< Websocket base url */
-    char                               *conv_create_base_url;      /*!< Conversation create base url */
-    char                               *bot_id;                    /*!< Bot ID assigned by COZE platform */
-    char                               *access_token;              /*!< Access token for authentication */
-    char                               *event_id;                  /*!< Unique event ID for the current session or interaction */
-    char                               *user_id;                   /*!< User ID representing the client/user. see: https://www.coze.cn/open/docs/developer_guides/streaming_chat_event?from=search */
-    char                               *voice_id;                  /*!< Voice ID specifying the system voice to use. see: https://www.coze.cn/open/docs/guides/sys_voice */
-    esp_coze_chat_mode_t                mode;                      /*!< Chat mode: interruptible or normal */
-    esp_coze_chat_vad_silcence_mode_t   vad_silence_mode;          /*!< VAD silence mode */
-    esp_coze_chat_audio_type_t          uplink_audio_type;         /*!< Uplink audio encoding format to use */
-    esp_coze_chat_audio_type_t          downlink_audio_type;       /*!< Downlink audio encoding format to use */
-    int                                 websocket_connect_timeout; /*!< Websocet connect timeout time (ms) */
-    int                                 websocket_buffer_size;     /*!< Websocket buffer size (bytes) */
-    const char                        **subscribe_event;           /*!< Customize subscription events. Specific event reference https://www.coze.cn/open/docs/developer_guides/streaming_chat_event Currently,
-                                                                      the code defaults to subscribing to `{"conversation.audio.delta", "conversation.message.delta", "conversation.chat.completed",
-                                                                     "input_audio_buffer.speech_started", "input_audio_buffer.speech_stopped", "chat.created", "error"}` events.
-                                                                      Array pointers must end with a null pointer, for example: {"conversation.message.create", NULL} */
-    esp_coze_chat_audio_callback_t      audio_callback;            /*!< Callback function for handling audio data */
-    esp_coze_chat_event_callback_t      event_callback;            /*!< Callback function for handling COZE events */
-    esp_coze_char_ws_event_callback_t   ws_event_callback;         /*!< Callback function for handling websocket events */
-    void                               *audio_callback_ctx;        /*!< Context pointer passed to the audio callback */
-    void                               *event_callback_ctx;        /*!< Context pointer passed to the event callback */
-    bool                                enable_subtitle;           /*!< Enable subtitle output function. Will subscribe to `conversation.message.delta` events,
-                                                                      It will be output as event `ESP_COZE_CHAT_EVENT_CHAT_SUBTITLE_EVENT` */
+    char                              *ws_base_url;                /*!< WebSocket base URL */
+    char                              *conv_create_base_url;       /*!< Conversation-create REST URL */
+    char                              *bot_id;                     /*!< Bot ID assigned by COZE platform */
+    char                              *access_token;               /*!< Access token (PAT or JWT) for authentication */
+    char                              *user_id;                    /*!< User ID. See https://www.coze.cn/open/docs/developer_guides/streaming_chat_event */
+    char                              *voice_id;                   /*!< Voice ID. See https://www.coze.cn/open/docs/guides/sys_voice */
+    esp_coze_chat_mode_t               mode;                       /*!< Chat mode: interruptible or normal */
+    esp_coze_chat_vad_silcence_mode_t  vad_silence_mode;           /*!< VAD silence mode */
+    esp_coze_chat_audio_type_t         uplink_audio_type;          /*!< Uplink audio encoding */
+    esp_coze_chat_audio_type_t         downlink_audio_type;        /*!< Downlink audio encoding */
+    int                                downlink_bitrate;           /*!< Output bitrate in bits/s. Only forwarded when
+                                                                        downlink_audio_type == OPUS; ignored for PCM/G711.
+                                                                        Default 16000. */
+    int                                downlink_frame_size_ms;     /*!< Output frame size in milliseconds. Default 60. */
+    int                                downlink_limit_period;      /*!< Server-side rate-limit window in seconds. Default 1. */
+    int                                downlink_max_frame_num;     /*!< Maximum frames per limit period. Set to 0 to use the
+                                                                        codec-specific built-in default (18 for OPUS,
+                                                                        25 for PCM/G711). */
+    int                                downlink_speech_rate;       /*!< Speech-rate adjustment forwarded to the service.
+                                                                        Default 20. */
+    int                                websocket_connect_timeout;  /*!< WebSocket connect timeout (ms); overridden by Kconfig at init */
+    esp_coze_chat_audio_callback_t     audio_callback;             /*!< Optional downlink audio (decoded bytes) */
+    esp_coze_chat_event_callback_t     event_callback;             /*!< Optional chat / WS-derived events */
+    void                              *audio_callback_ctx;         /*!< Context for audio_callback */
+    void                              *event_callback_ctx;         /*!< Context for event_callback */
+    const char                       **subscribe_event;            /*!< NULL-terminated list of extra subscriptions. */
+    bool                               enable_subtitle;            /*!< Subscribe to conversation.message.delta and post
+                                                                        #ESP_COZE_CHAT_EVENT_CHAT_SUBTITLE_EVENT */
 } esp_coze_chat_config_t;
 
 /**
- * @brief  Instance the chat module
+ * @brief  Instance the chat module.
+ *
+ * @note  All string fields in config are deep-copied internally; the
+ *        caller is free to modify or release the original buffers as soon
+ *        as this function returns.
  *
  * @param[in]   config   Pointer to the chat configuration structure
  * @param[out]  chat_hd  Pointer to the chat handle
@@ -173,186 +198,224 @@ typedef struct {
  * @return
  *       - ESP_OK               On success
  *       - ESP_ERR_NO_MEM       Out of memory
- *       - ESP_ERR_INVALID_ARG  Invalid arguments
+ *       - ESP_ERR_INVALID_ARG  Invalid arguments (missing required fields)
+ *       - ESP_FAIL             Transport or router initialisation failed
  */
 esp_err_t esp_coze_chat_init(esp_coze_chat_config_t *config, esp_coze_chat_handle_t *chat_hd);
 
 /**
- * @brief  Deinitialize the chat module
+ * @brief  Deinitialize the chat module.
  *
  * @param[in]  chat_hd  Handle to the chat instance
- * 
-* @return
- *       - ESP_OK    On success
- *       - ESP_FAIL  On failure
+ *
+ * @return
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd is NULL
  */
 esp_err_t esp_coze_chat_deinit(esp_coze_chat_handle_t chat_hd);
 
 /**
- * @brief  Start the chat session
+ * @brief  Start the chat session.
  *
- * @param[in]  chat_hd  Handle to the chat instance
+ *         Connects the WebSocket, waits up to
+ *         #esp_coze_chat_config_t::websocket_connect_timeout milliseconds
+ *         for the connection to come up, then sends the initial
+ *         `chat.update`.
+ *
+ * @param[in]  chat_hd  Handle returned by #esp_coze_chat_init
  *
  * @return
- *       - ESP_OK    On success
- *       - ESP_FAIL  On failure
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd is NULL
+ *       - ESP_ERR_TIMEOUT      WebSocket did not connect in time
+ *       - Other                As returned by the WebSocket client or chat.update send
  */
 esp_err_t esp_coze_chat_start(esp_coze_chat_handle_t chat_hd);
 
 /**
- * @brief  Stop the chat session
+ * @brief  Stop the chat session and close the underlying WebSocket.
  *
- * @param[in]  chat_hd  Handle to the chat instance
+ * @param[in]  chat_hd  Handle returned by #esp_coze_chat_init
  *
  * @return
- *       - ESP_OK    On success
- *       - ESP_FAIL  On failure
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd is NULL
  */
 esp_err_t esp_coze_chat_stop(esp_coze_chat_handle_t chat_hd);
 
 /**
- * @brief  Set the chat configuration voice id
- * @note   This function must be called before calling the `esp_coze_chat_start` and `esp_coze_chat_update_chat` function
- *         For more details, see: https://www.coze.cn/open/docs/dev_how_to_guides/sys_voice
+ * @brief  Override the voice id used for the next chat.update.
  *
- * @param[in]  chat_hd    Handle to the chat instance
- * @param[in]  voice_id   Voice id
+ * @note  Must be called before #esp_coze_chat_start /
+ *        #esp_coze_chat_update_chat. See
+ *        https://www.coze.cn/open/docs/dev_how_to_guides/sys_voice
+ *
+ * @param[in]  chat_hd   Handle returned by #esp_coze_chat_init
+ * @param[in]  voice_id  NUL-terminated voice id; deep-copied internally
  *
  * @return
- *       - ESP_OK    On success
- *       - ESP_FAIL  On failure
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd or voice_id is NULL
+ *       - ESP_ERR_NO_MEM       Allocation failed
  */
 esp_err_t esp_coze_set_chat_config_voice_id(esp_coze_chat_handle_t chat_hd, const char *voice_id);
 
 /**
- * @brief  Set the chat configuration parameters
- * @note   This function must be called before calling the `esp_coze_chat_start` and `esp_coze_chat_update_chat` function
- *         For more details, see: https://www.coze.cn/open/docs/dev_how_to_guides/variable
+ * @brief  Set custom key/value parameters forwarded to the bot.
  *
- * @param[in]  chat_hd  Handle to the chat instance
- * @param[in]  key_val  Key-value pair for the parameters,For example: "{{"key", "value"}, {"key2", "value2"}, {NULL, NULL}}"
+ * @note  Must be called before #esp_coze_chat_start /
+ *        #esp_coze_chat_update_chat. See
+ *        https://www.coze.cn/open/docs/dev_how_to_guides/variable
+ *
+ * @param[in]  chat_hd  Handle returned by #esp_coze_chat_init
+ * @param[in]  key_val  NULL-terminated array of `{key, value}` pairs;
+ *                      both fields of each entry are deep-copied internally
  *
  * @return
- *       - ESP_OK    On success
- *       - ESP_FAIL  On failure
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd is NULL, or any entry has a NULL value
+ *       - ESP_ERR_NO_MEM       Allocation failed
  */
 esp_err_t esp_coze_set_chat_config_parameters(esp_coze_chat_handle_t chat_hd, esp_coze_parameters_kv_t *key_val);
 
 /**
- * @brief  Set the conversation ID for the chat session
- * @note   This function must be called before calling the `esp_coze_chat_start` and `esp_coze_chat_update_chat` function
- *         If the conversation ID is not set, the server will automatically generate a new conversation ID
+ * @brief  Set the conversation ID for the chat session.
  *
- * @param[in]  chat_hd          Handle to the chat instance
- * @param[in]  conversation_id  Conversation ID
+ * @note  Must be called before #esp_coze_chat_start /
+ *        #esp_coze_chat_update_chat. If the conversation ID is not set,
+ *        the server will automatically generate one.
  *
- */
-esp_err_t esp_coze_set_chat_config_conversation_id(esp_coze_chat_handle_t chat_hd, char *conversation_id);
-
-/**
- * @brief  Get the conversation ID for the chat session
- *
- * @param[in]  chat_hd          Handle to the chat instance
- * @param[out] conversation_id  Conversation ID
+ * @param[in]  chat_hd          Handle returned by #esp_coze_chat_init
+ * @param[in]  conversation_id  NUL-terminated conversation id;
+ *                              deep-copied internally
  *
  * @return
- *       - ESP_OK   On success
- *       - ESP_FAIL On failure
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd or conversation_id is NULL
+ *       - ESP_ERR_NO_MEM       Allocation failed
  */
-esp_err_t esp_coze_get_chat_config_conversation_id(esp_coze_chat_handle_t chat_hd, char **conversation_id);
+esp_err_t esp_coze_set_chat_config_conversation_id(esp_coze_chat_handle_t chat_hd, const char *conversation_id);
 
 /**
- * @brief  Send audio data to the chat session
- * 
-
- * @param[in]  chat_hd  Handle to the chat instance
- * @param[in]  data     Pointer to the audio data buffer
- * @param[in]  len      Length of the audio data in bytes
+ * @brief  Get the conversation ID currently associated with the chat session.
+ *
+ * @note  On success, `*conversation_id` is a heap copy produced under the chat mutex;
+ *        the caller must `free()` it when done. (This avoids a race with
+ *        #esp_coze_set_chat_config_conversation_id, which frees the previous string.)
+ *
+ * @param[in]   chat_hd          Handle returned by #esp_coze_chat_init
+ * @param[out]  conversation_id  Receives a copy of the conversation id (or NULL
+ *                               on error / not set before the call)
  *
  * @return
- *       - ESP_OK   On success
- *       - ESP_FAIL On failure
+ *       - ESP_OK               On success; `*conversation_id` is non-NULL
+ *       - ESP_ERR_INVALID_ARG  chat_hd or conversation_id is NULL
+ *       - ESP_ERR_NOT_FOUND    Conversation ID has not been set
+ *       - ESP_ERR_NO_MEM       `strdup` failed
+ */
+esp_err_t esp_coze_chat_get_config_conversation_id(esp_coze_chat_handle_t chat_hd, char **conversation_id);
+
+/**
+ * @brief  Send a chunk of uplink audio data to the chat session.
+ *
+ *         Frames are base64-encoded and forwarded as
+ *         `input_audio_buffer.append` events.
+ *
+ * @param[in]  chat_hd  Handle returned by #esp_coze_chat_init
+ * @param[in]  data     Pointer to raw audio bytes (encoder output)
+ * @param[in]  len      Length of data in bytes; must be in
+ *                      `(0, ESP_COZE_MAX_AUDIO_SIZE]`
+ *
+ * @return
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_ARG    chat_hd or data is NULL, or len <= 0
+ *       - ESP_ERR_INVALID_SIZE   len exceeds the SDK frame limit
+ *       - ESP_ERR_INVALID_STATE  WebSocket is not connected
+ *       - ESP_ERR_NO_MEM         Allocation failed
+ *       - ESP_FAIL               WebSocket send failed after retries
  */
 esp_err_t esp_coze_chat_send_audio_data(esp_coze_chat_handle_t chat_hd, char *data, int len);
 
 /**
- * @brief  Clear the audio data buffer
+ * @brief  Clear the server-side input audio buffer
+ *         (sends `input_audio_buffer.clear`).
  *
- * @note: The client sends `input_audio_buffer.clear` event
- *        Clean event to inform the server to clear the audio data in the buffer
- *
- * @param[in]  chat_hd  Handle to the chat instance
+ * @param[in]  chat_hd  Handle returned by #esp_coze_chat_init
  *
  * @return
- *       - ESP_OK   On success
- *       - ESP_FAIL On failure
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd is NULL
+ *       - ESP_ERR_NO_MEM       Allocation failed
+ *       - ESP_FAIL             WebSocket send failed after retries
  */
 esp_err_t esp_coze_chat_audio_data_clearup(esp_coze_chat_handle_t chat_hd);
 
 /**
-* @brief  Indicate completion of audio data transmission in interrupt mode
-*
-* @note   This function should be called after all audio data has been sent in interrupt-driven mode
-*         A common use case is voice input triggered by a button press:
-*         when the button is pressed, audio transmission starts; when the button is released,
-*         this function should be called to signal the end of the transmission
-*
-* @param[in]  chat_hd  Handle to the chat instance
-*
-* @return
-*       - ESP_OK   On success
-*       - ESP_FAIL On failure
-*/
-
+ * @brief  Mark the end of an uplink audio segment in interrupt mode
+ *         (sends `input_audio_buffer.complete`).
+ *
+ * @param[in]  chat_hd  Handle returned by #esp_coze_chat_init
+ *
+ * @return
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd is NULL
+ *       - ESP_ERR_NO_MEM       Allocation failed
+ *       - ESP_FAIL             WebSocket send failed after retries
+ */
 esp_err_t esp_coze_chat_send_audio_complete(esp_coze_chat_handle_t chat_hd);
 
 /**
- * @brief  Cancel audio transmission in interrupt mode
+ * @brief  Cancel an in-flight conversation turn
+ *         (sends `conversation.chat.cancel`).
  *
- * @note   The client sends `conversation.chat.cancel` event
- *         This API is specifically used to cancel an ongoing conversation and stop the server
- *         from sending any further audio data
- *
- * @param[in]  chat_hd  Handle to the chat instance
+ * @param[in]  chat_hd  Handle returned by #esp_coze_chat_init
  *
  * @return
- *       - ESP_OK   on success
- *       - ESP_FAIL on failure
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd is NULL
+ *       - ESP_ERR_NO_MEM       Allocation failed
+ *       - ESP_FAIL             WebSocket send failed after retries
  */
-
 esp_err_t esp_coze_chat_send_audio_cancel(esp_coze_chat_handle_t chat_hd);
 
 /**
- * @brief  Update the chat session status
+ * @brief  Push the current chat configuration to the server
+ *         (sends `chat.update`).
  *
- * @param[in]  chat_hd  Handle to the chat instance
+ *         Useful after one of the
+ *         #esp_coze_set_chat_config_voice_id /
+ *         #esp_coze_set_chat_config_parameters /
+ *         #esp_coze_set_chat_config_conversation_id setters has been
+ *         called on a running session.
+ *
+ * @param[in]  chat_hd  Handle returned by #esp_coze_chat_init
  *
  * @return
- *       - ESP_OK   On success
- *       - ESP_FAIL On failure 
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd is NULL
+ *       - ESP_ERR_NO_MEM       Allocation failed
+ *       - ESP_FAIL             WebSocket send failed after retries
  */
 esp_err_t esp_coze_chat_update_chat(esp_coze_chat_handle_t chat_hd);
 
 /**
- * @brief  Send custom data to the chat session
+ * @brief  Send a raw user-supplied JSON event over the WebSocket.
  *
- * @note   This function is primarily used to send events that are not yet implemented in the project
- *         The data must be in JSON format
- *         Users should monitor the `COZE_CHAT_EVENT_CUSTOMERDATA` event in the `event_callback`
- *         to receive and parse the returned JSON data
- *         For more details, see:
- *         https://www.coze.cn/open/docs/developer_guides/streaming_chat_event
-
+ * @note  Useful for events not yet wrapped by the SDK. Inbound messages
+ *        the SDK does not recognise are forwarded via `event_callback` as
+ *        #ESP_COZE_CHAT_EVENT_CHAT_CUSTOMER_DATA. See
+ *        https://www.coze.cn/open/docs/developer_guides/streaming_chat_event
  *
- * @param[in]  chat_hd    Handle to the chat instance.
- * @param[in]  json_str   Pointer to the customer data buffer.
+ * @param[in]  chat_hd  Handle returned by #esp_coze_chat_init
+ * @param[in]  data     NUL-terminated JSON payload to send verbatim
  *
  * @return
- *       - ESP_OK   On success
- *       - ESP_FAIL On failure
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  chat_hd or data is NULL
+ *       - ESP_FAIL             WebSocket send failed after retries
  */
-esp_err_t esp_coze_chat_send_customer_data(esp_coze_chat_handle_t chat_hd, const char *json_str);
+esp_err_t esp_coze_chat_send_customer_data(esp_coze_chat_handle_t chat_hd, const char *data);
 
 #ifdef __cplusplus
 }
-#endif
+#endif  /* __cplusplus */

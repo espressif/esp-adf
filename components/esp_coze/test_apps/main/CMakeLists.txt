@@ -1,6 +1,10 @@
+set(priv_reqs unity esp_coze nvs_flash esp_event esp_netif esp_websocket_client)
+if("${IDF_VERSION_MAJOR}" VERSION_LESS "6")
+    list(APPEND priv_reqs json)
+endif()
+
 idf_component_register(SRC_DIRS .
                        PRIV_INCLUDE_DIRS .
-                       PRIV_REQUIRES unity esp_coze nvs_flash esp_event esp_wifi esp_websocket_client
+                       PRIV_REQUIRES ${priv_reqs}
                        WHOLE_ARCHIVE TRUE
-                       EMBED_FILES nihao.pcm
                        )

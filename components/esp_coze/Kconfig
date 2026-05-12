@@ -1,0 +1,84 @@
+menu "ESP COZE Chat"
+
+    config ESP_COZE_WS_TASK_PRIO
+        int "WebSocket task priority"
+        range 1 24
+        default 12
+        help
+            FreeRTOS priority passed to esp_websocket_client_config_t.task_prio.
+
+    config ESP_COZE_WS_TASK_STACK
+        int "WebSocket task stack size (bytes)"
+        range 0 65536
+        default 0
+        help
+            Passed to esp_websocket_client_config_t.task_stack.
+            Set to 0 to use the websocket client library default stack size.
+
+    config ESP_COZE_WS_TASK_NAME
+        string "WebSocket FreeRTOS task name (empty = library default)"
+        default ""
+        help
+            If non-empty, overrides the websocket worker task name.
+
+    config ESP_COZE_WS_TASK_CORE_ID_SET
+        bool "Pin WebSocket task to a specific CPU core"
+        default n
+        help
+            Sets esp_websocket_client_config_t.task_core_id_set.
+            When disabled, the worker uses default affinity (tskNO_AFFINITY).
+
+    config ESP_COZE_WS_TASK_CORE_ID
+        int "CPU core ID for WebSocket task"
+        depends on ESP_COZE_WS_TASK_CORE_ID_SET
+        range 0 1
+        default 0
+        help
+            esp_websocket_client_config_t.task_core_id when pinning is enabled.
+            On dual-core SoCs use 0 or 1; on single-core chips use 0.
+
+    config ESP_COZE_WS_BUFFER_SIZE
+        int "WebSocket RX/TX buffer size (bytes)"
+        range 1024 131072
+        default 20480
+        help
+            Passed to esp_websocket_client_config_t.buffer_size at init (not configurable via esp_coze_chat_config_t).
+
+    config ESP_COZE_WS_RECONNECT_TIMEOUT_MS
+        int "WebSocket reconnect timeout (ms)"
+        range 100 300000
+        default 1000
+        help
+            reconnect_timeout_ms for esp_websocket_client_config_t.
+
+    config ESP_COZE_WS_NETWORK_TIMEOUT_MS
+        int "WebSocket network I/O timeout (ms)"
+        range 100 300000
+        default 5000
+        help
+            network_timeout_ms for esp_websocket_client_config_t.
+
+    config ESP_COZE_WS_CONNECT_TIMEOUT_MS
+        int "Wait for WebSocket connected after start (ms)"
+        range 1000 300000
+        default 30000
+        help
+            Overrides esp_coze_chat_config_t.websocket_connect_timeout at init.
+
+    config ESP_COZE_WS_AUDIO_SEND_TIMEOUT_MS
+        int "WebSocket send timeout for uplink audio (input_audio_buffer.append, ms)"
+        range 1000 120000
+        default 20000
+        help
+            Passed to esp_websocket_client_send_text() when sending input_audio_buffer.append
+            frames. Increase on slow links; default matches the former fixed 20 s cap.
+
+    config ESP_COZE_DEBUG_TRACE_DATA
+        bool "Trace WebSocket uplink/downlink text (audio: length only)"
+        default n
+        help
+            Log every outbound JSON/text frame and inbound complete text frames.
+            For input_audio_buffer.append and conversation.audio.delta, logs PCM/decoded
+            length only to avoid huge base64 dumps.
+
+endmenu

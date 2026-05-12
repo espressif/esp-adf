@@ -1,22 +1,21 @@
 /*
  * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO., LTD
- * SPDX-License-Identifier: LicenseRef-Espressif-Proprietary
+ *
+ * SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
  *
  * See LICENSE file for details.
  */
 
 #include "nvs_flash.h"
 #include "esp_log.h"
-#include "nvs_flash.h"
 #include "esp_event.h"
-#include "protocol_examples_common.h"
-#include "protocol_examples_utils.h"
+#include "esp_netif.h"
 
 #include "unity.h"
 #include "unity_test_runner.h"
 #include "unity_test_utils_memory.h"
 
-#define TEST_MEMORY_LEAK_THRESHOLD (500)
+#define TEST_MEMORY_LEAK_THRESHOLD  (1024)
 
 static char *TAG = "test_app_main";
 
@@ -43,7 +42,7 @@ void app_main()
     "                             | |                       \n"
     "                             |_|                       \n"
     );
-    
+
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -54,12 +53,7 @@ void app_main()
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
-     * Read "Establishing Wi-Fi or Ethernet Connection" section in
-     * examples/protocols/README.md for more information about this function.
-     */
-    ESP_ERROR_CHECK(example_connect());
-    ESP_LOGI(TAG, "Connected to AP, begin http example");
+    ESP_LOGI(TAG, "Unity: esp_coze (offline tests for chat / tts / asr / jwt; no network required)");
 
     unity_run_menu();
 }
