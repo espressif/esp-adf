@@ -1,4 +1,4 @@
-version: "0.1.0"
+version: "0.1.0~1"
 description: ADF OTA Service is a highly extensible firmware upgrade module with composable source, target, checker, and verifier layers
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_ota_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_ota_service/README.md"

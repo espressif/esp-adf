@@ -1,6 +1,7 @@
 # ADF Event Hub
 
-[中文版](./README_CN.md)
+- [![Component Registry](https://components.espressif.com/components/espressif/adf_event_hub/badge.svg)](https://components.espressif.com/components/espressif/adf_event_hub)
+- [中文版](./README_CN.md)
 
 **ADF Event Hub** is a lightweight, domain-scoped publish-subscribe facility for ADF / GMF components. Every hub handle represents one source domain (e.g. `"wifi"` or `"ota"`); publishers post `adf_event_t` items to that domain and subscribers receive matching events in either queue or callback mode. The module tolerates arbitrary startup ordering: a subscriber may register before the target domain's publisher is created.
 

@@ -1,4 +1,4 @@
-menu "OTA Service"
+menu "ESP-Service: OTA Service"
 
     menu "Verification and rollback"
         config OTA_FORCE_VERSION_CHECK
@@ -92,4 +92,4 @@ menu "OTA Service"
                 the final copy step can brick the device.
     endmenu
 
-endmenu
+endmenu  # ESP-Service: OTA Service

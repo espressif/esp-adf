@@ -1,6 +1,7 @@
 # OTA Service
 
-[中文版](./README_CN.md)
+- [![Component Registry](https://components.espressif.com/components/espressif/esp_ota_service/badge.svg)](https://components.espressif.com/components/espressif/esp_ota_service)
+- [中文版](./README_CN.md)
 
 **OTA Service** is a modular, extensible `esp_service_t` subclass that implements an Over-The-Air firmware upgrade pipeline. It separates the upgrade into four independent abstraction layers — source, target, checker, and verifier — enabling any combination of HTTP/HTTPS, filesystem, and BLE transports with app-partition, data-partition, or bootloader targets, without modifying the core service.
 

@@ -1,6 +1,7 @@
 # Button Service
 
-[中文版](./README_CN.md)
+- [![Component Registry](https://components.espressif.com/components/espressif/esp_button_service/badge.svg)](https://components.espressif.com/components/espressif/esp_button_service)
+- [中文版](./README_CN.md)
 
 **Button Service** is a lightweight `esp_service_t` subclass that integrates `esp_board_manager` button devices into the ADF event system. It automatically discovers every board-manager device of type `button`, registers `iot_button` callbacks for the selected event set, and forwards button actions as typed service events — no manual device-name list required.
 

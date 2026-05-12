@@ -1,6 +1,7 @@
 # OTA Service
 
-[English](./README.md)
+- [![组件注册](https://components.espressif.com/components/espressif/esp_ota_service/badge.svg)](https://components.espressif.com/components/espressif/esp_ota_service)
+- [English](./README.md)
 
 **OTA Service** 是一个模块化、可扩展的 `esp_service_t` 子类，实现了完整的空中固件升级（OTA）流水线。它将升级过程拆分为四个独立的抽象层——数据源、写入目标、版本检查器和完整性校验器——从而支持 HTTP/HTTPS、文件系统、BLE 等传输方式与应用分区、数据分区或 Bootloader 目标的任意组合，无需修改核心服务代码。
 

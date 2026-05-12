@@ -1,6 +1,7 @@
 # CLI Service
 
-[English](./README.md)
+- [![组件注册](https://components.espressif.com/components/espressif/esp_cli_service/badge.svg)](https://components.espressif.com/components/espressif/esp_cli_service)
+- [English](./README.md)
 
 **CLI Service** 是一个 `esp_service_t` 子类，将 ESP-IDF `esp_console` UART REPL 嵌入到 ADF 服务生命周期中。它提供两层命令体系——内置静态系统命令，以及由 `esp_service_manager` 驱动的动态服务/工具命令——无需额外工具，即可通过串口终端进行交互式调试和运行时控制。
 
