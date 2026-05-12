@@ -1,6 +1,7 @@
 # Button Service
 
-[English](./README.md)
+- [![组件注册](https://components.espressif.com/components/espressif/esp_button_service/badge.svg)](https://components.espressif.com/components/espressif/esp_button_service)
+- [English](./README.md)
 
 **Button Service** 是一个轻量级的 `esp_service_t` 封装层，负责将 `esp_board_manager` 按键设备与 ADF 事件系统打通。它自动发现所有类型为 `button` 的板级设备，为选定的事件集注册 `iot_button` 回调，并将按键动作以有类型的服务事件形式转发出去——无需手动维护设备名称列表。
 

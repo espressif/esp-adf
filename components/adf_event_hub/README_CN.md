@@ -1,6 +1,7 @@
 # ADF Event Hub
 
-[English](./README.md)
+- [![组件注册](https://components.espressif.com/components/espressif/adf_event_hub/badge.svg)](https://components.espressif.com/components/espressif/adf_event_hub)
+- [English](./README.md)
 
 **ADF Event Hub** 是面向 ADF / GMF 组件的轻量级按域（domain）发布-订阅机制。每个 hub 句柄对应一个事件源域（如 `"wifi"` 或 `"ota"`）；发布者向该域投递 `adf_event_t`，订阅者可通过 **队列模式** 或 **回调模式** 接收匹配事件。模块对启动顺序无要求：订阅者可以先于发布者注册。
 

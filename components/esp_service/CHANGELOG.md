@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.0~1
+
+### Changes
+
+- Renamed Kconfig menu to `ESP-Service: ESP Service` for consistent menuconfig grouping
+- Added Component Registry badge to README.md and README_CN.md
+
 ## v0.5.0
 
 ### Features

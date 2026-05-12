@@ -1,6 +1,7 @@
 # ESP Service
 
-[中文版](./README_CN.md)
+- [![Component Registry](https://components.espressif.com/components/espressif/esp_service/badge.svg)](https://components.espressif.com/components/espressif/esp_service)
+- [中文版](./README_CN.md)
 
 **ESP Service** is a three-layer service infrastructure for ESP-IDF. It provides `esp_service_t` as the base class for services built on this layer, `esp_service_manager` as a dynamic registry that auto-discovers JSON-schema tools, and an optional MCP (Model Context Protocol) server that exposes those tools over HTTP, SSE, WebSocket, UART, STDIO, or SDIO — enabling direct invocation by LLMs and AI agents.
 

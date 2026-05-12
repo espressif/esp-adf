@@ -1,6 +1,7 @@
 # CLI Service
 
-[中文版](./README_CN.md)
+- [![Component Registry](https://components.espressif.com/components/espressif/esp_cli_service/badge.svg)](https://components.espressif.com/components/espressif/esp_cli_service)
+- [中文版](./README_CN.md)
 
 **CLI Service** is an `esp_service_t` subclass that integrates the ESP-IDF `esp_console` UART REPL into the ADF service lifecycle. It provides two command layers — built-in static system commands and dynamic service/tool commands driven by `esp_service_manager` — making interactive debugging and runtime control accessible from a serial terminal with no extra tooling.
 

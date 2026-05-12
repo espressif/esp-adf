@@ -1,4 +1,4 @@
-menu "ESP Service"
+menu "ESP-Service: ESP Service Base"
 
     config ESP_MCP_ENABLE
         bool "Enable MCP (Model Context Protocol) support"
@@ -65,4 +65,4 @@ menu "ESP Service"
 
     endif  # ESP_MCP_ENABLE
 
-endmenu  # ESP Service
+endmenu  # ESP-Service: ESP Service Base

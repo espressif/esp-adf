@@ -1,6 +1,7 @@
 # ESP Service
 
-[English](./README.md)
+- [![组件注册](https://components.espressif.com/components/espressif/esp_service/badge.svg)](https://components.espressif.com/components/espressif/esp_service)
+- [English](./README.md)
 
 **ESP Service** 是面向 ESP-IDF 的三层服务基础设施。它提供 `esp_service_t` 作为基于该层实现的所有服务的基类，`esp_service_manager` 作为能自动发现 JSON-schema 工具的动态注册中心，以及可选的 MCP（Model Context Protocol）服务器——通过 HTTP、SSE、WebSocket、UART、STDIO 或 SDIO 将这些工具暴露出去，供 LLM 和 AI Agent 直接调用。
 
