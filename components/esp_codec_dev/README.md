@@ -30,7 +30,7 @@ The currently supported codec devices are listed as below:
 |ES7210 |N|Y|
 |ES7243 |N|Y|
 |ES7243E |N|Y|
-|ES8156 |N|Y|
+|ES8156 |Y|N|
 |CJC8910 |Y|Y|
 
 

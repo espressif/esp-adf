@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.5.10
+
+### Bug Fixed
+
+- Fixed ES8389 disable and enable issues: use bias standby via `es8389_stop()` instead of full suspend when disabling the codec.
+- Fixed ES8156 Playback/Record entries in README and README_CN.
+
 ## v1.5.9
 
 ### Bug Fixed
