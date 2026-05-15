@@ -1,0 +1,6 @@
+description: esp_config_manager unit tests
+
+dependencies:
+  espressif/esp_config_manager:
+    version: "*"
+    override_path: "../../../"

@@ -1,0 +1,3 @@
+# Use custom partition table (SPIFFS + cfg_pri/cfg_bak) for FS and FLASH storage demos.
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"

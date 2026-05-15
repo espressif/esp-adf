@@ -1,0 +1,75 @@
+menu "ESP-Service: Wi-Fi Service"
+
+    menu "Provisioning agents"
+
+        config WIFI_SERVICE_PROV_HTTP_ENABLE
+            bool "Enable HTTP provisioning agent"
+            default y
+            help
+                Enable the HTTP provisioning agent and its SoftAP captive portal helper.
+                Disable this option when the application only uses non-HTTP provisioning.
+
+        config WIFI_SERVICE_PROV_HTTP_DEFAULT_WEBUI_ENABLE
+            bool "Embed default HTTP provisioning Web UI"
+            depends on WIFI_SERVICE_PROV_HTTP_ENABLE
+            default y
+            help
+                Embed the built-in HTML page used by the HTTP provisioning agent
+                If disabled, the application must provide esp_wifi_service_prov_http_config_t.web_ui.data.
+
+        config WIFI_SERVICE_PROV_BLUFI_ENABLE
+            bool "Enable BLUFI provisioning agent"
+            depends on BT_BLE_BLUFI_ENABLE || BT_NIMBLE_BLUFI_ENABLE
+            default y
+            help
+                Enable the BLUFI provisioning agent for wifi_service.
+                Disable this option when BLUFI provisioning is not used.
+
+        config WIFI_SERVICE_PROV_BLUFI_BLE_SMP_ENABLE
+            bool "Enable BLE SMP support in BLUFI provisioning"
+            depends on WIFI_SERVICE_PROV_BLUFI_ENABLE && BT_BLUEDROID_ENABLED
+            select BT_BLUFI_BLE_SMP_ENABLE
+            select BT_BLE_SMP_ENABLE
+            default n
+            help
+                Enable BLE Security Manager Protocol (SMP) for BLUFI provisioning.
+
+        config WIFI_SERVICE_PROV_BLUFI_SECURITY_DH_ENABLE
+            bool
+            depends on WIFI_SERVICE_PROV_BLUFI_ENABLE
+            default y
+            select MBEDTLS_DHM_C
+            select MBEDTLS_KEY_EXCHANGE_DHE_RSA
+            help
+                Internal option to keep BLUFI DH symbols linked when BLUFI agent is enabled.
+
+    endmenu
+
+    menu "Selector optional monitors"
+
+        config WIFI_SERVICE_SELECTOR_PROBE_ENABLE
+            bool "Enable selector HTTP probe monitor"
+            default n
+            help
+                Enable the selector HTTP probe monitor used for Internet access checks
+                and latency degradation events.
+
+        config WIFI_SERVICE_SELECTOR_THROUGHPUT_ENABLE
+            bool "Enable selector throughput monitor"
+            default n
+            help
+                Enable the selector throughput monitor used for throughput degradation
+                checks and events.
+
+    endmenu
+
+    config WIFI_SERVICE_MCP_ENABLE
+        bool "Enable Wi-Fi service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Build the Wi-Fi service MCP tool handler and embedded tool schema.
+            This option depends on the global ESP Service MCP support.
+
+endmenu
+

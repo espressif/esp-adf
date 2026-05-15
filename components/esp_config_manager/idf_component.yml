@@ -1,0 +1,13 @@
+version: "0.5.0"
+description: Configuration manager with pluggable storage, optional crypto, defaults merge, backup slot, CRC, and primary repair
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_config_manager
+issues: https://github.com/espressif/esp-adf/issues
+
+tags:
+  - config
+  - nvs
+  - storage
+  - adf
+
+examples:
+  - path: "./examples/config_manager_example"
