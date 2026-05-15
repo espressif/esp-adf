@@ -71,12 +71,12 @@
     IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.3:1"
 
 .if-idf-version-tag-v5-4: &if-idf-version-tag-v5-4
-  if: '$IDF_VERSION_TAG == "v5.4"'
+  if: '$IDF_VERSION_TAG == "v5.4.3"'
   variables:
-    IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.4:1"
+    IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.4:2"
 
-.if-idf-version-tag-v5-5-1: &if-idf-version-tag-v5-5-1
-  if: '$IDF_VERSION_TAG == "v5.5.1"'
+.if-idf-version-tag-v5-5-3: &if-idf-version-tag-v5-5-3
+  if: '$IDF_VERSION_TAG == "v5.5.3"'
   variables:
     IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.5:3"
 
@@ -129,4 +129,4 @@
     - <<: *if-idf-version-tag-v5-2
     - <<: *if-idf-version-tag-v5-3
     - <<: *if-idf-version-tag-v5-4
-    - <<: *if-idf-version-tag-v5-5-1
+    - <<: *if-idf-version-tag-v5-5-3

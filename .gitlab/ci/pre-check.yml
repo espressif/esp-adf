@@ -66,19 +66,28 @@ check_commit_format:
     expire_in: 4 days
 
 .check_pre_commit_template:
-  stage: pre_check  # or "pre-check", depending on your pipeline structure
-  image: $ESP_DOCS_ENV_IMAGE  # Use the same image as other jobs in your repository
+  stage: pre_check
+  image: "$ESP_DOCS_ENV_IMAGE"
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"  # Run this job only for merge request pipelines.
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - pip install pre-commit
-    - git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --depth=1  # Fetch target branch latest commit
-    - git fetch origin $CI_COMMIT_REF_NAME --depth=1  # Fetch source branch latest commit
     - |
-      echo "Target branch: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-      echo "Source branch: $CI_COMMIT_REF_NAME"
+      MR_API="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}"
+      MR_JSON=$(curl -sS --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" "${MR_API}")
+      BASE_COMMIT=$(echo "$MR_JSON" | python3 -c "import json,sys; d=json.load(sys.stdin); dr=d.get('diff_refs') or {}; print(dr.get('base_sha') or d.get('target_branch_sha') or '')")
 
-      MODIFIED_FILES=$(git diff --name-only origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME..origin/$CI_COMMIT_REF_NAME)
+      if [ -z "$BASE_COMMIT" ] || [ "$BASE_COMMIT" = "null" ]; then
+        echo "Error: Unable to retrieve base commit for the merge request from GitLab API."
+        exit 1
+      fi
+
+      echo "MR base commit: $BASE_COMMIT"
+      echo "CI commit: $CI_COMMIT_SHA"
+
+      git fetch origin "$BASE_COMMIT" 2>/dev/null || true
+
+      MODIFIED_FILES=$(git diff --name-only "${BASE_COMMIT}..${CI_COMMIT_SHA}")
       echo "Modified files to check:"
       echo "$MODIFIED_FILES"
 
@@ -87,6 +96,15 @@ check_commit_format:
       else
           echo "No modified files to check."
       fi
+  after_script:
+    - git checkout -- .gitmodules
+    - git diff > fixed.patch
+    - cat fixed.patch
+  artifacts:
+    paths:
+      - fixed.patch
+    expire_in: 1 week
+    when: always
 
 check_pre_commit:
   extends:
