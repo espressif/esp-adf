@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.0~2
+
+### Bugfix
+
+- Fixed a build issue
+
 ## v0.5.0~1
 
 ### Changes

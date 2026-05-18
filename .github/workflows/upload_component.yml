@@ -24,6 +24,8 @@ jobs:
             components/esp_ota_service;
             components/esp_button_service;
             components/esp_cli_service;
+            components/esp_config_manager;
+            components/esp_wifi_service;
             adf_examples;
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}
