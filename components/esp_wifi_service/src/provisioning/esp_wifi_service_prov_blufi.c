@@ -23,12 +23,29 @@
 #include "esp_blufi.h"
 #include "esp_blufi_api.h"
 #include "esp_mac.h"
+#if CONFIG_BT_NIMBLE_ENABLED
+#include "host/ble_hs.h"
+#endif  /* CONFIG_BT_NIMBLE_ENABLED */
 #if CONFIG_WIFI_SERVICE_PROV_BLUFI_BLE_SMP_ENABLE && CONFIG_BT_BLUEDROID_ENABLED
 #include "esp_gap_ble_api.h"
 #endif  /* CONFIG_WIFI_SERVICE_PROV_BLUFI_BLE_SMP_ENABLE && CONFIG_BT_BLUEDROID_ENABLED */
 #include "aes/esp_aes.h"
+#if __has_include("mbedtls/dhm.h")
 #include "mbedtls/dhm.h"
+#define BLUFI_CRYPTO_USE_MBEDTLS_LEGACY  1
+#else
+#include "mbedtls/bignum.h"
+#define BLUFI_CRYPTO_USE_MBEDTLS_LEGACY  0
+#endif  /* __has_include("mbedtls/dhm.h") */
+#if __has_include("mbedtls/md5.h")
 #include "mbedtls/md5.h"
+#define BLUFI_MD5_USE_MBEDTLS_LEGACY  1
+#else
+#define BLUFI_MD5_USE_MBEDTLS_LEGACY  0
+#endif  /* __has_include("mbedtls/md5.h") */
+#if !BLUFI_MD5_USE_MBEDTLS_LEGACY
+#include "psa/crypto.h"
+#endif  /* !BLUFI_MD5_USE_MBEDTLS_LEGACY */
 #endif  /* CONFIG_BT_BLE_BLUFI_ENABLE || CONFIG_BT_NIMBLE_BLUFI_ENABLE */
 
 static const char *TAG = "WIFI_SERVICE_BLUFI";
@@ -72,7 +89,9 @@ typedef struct {
     uint8_t                           *dh_param;
     int                                dh_param_len;
     uint8_t                            iv[16];
+#if BLUFI_CRYPTO_USE_MBEDTLS_LEGACY
     mbedtls_dhm_context                dhm;
+#endif  /* BLUFI_CRYPTO_USE_MBEDTLS_LEGACY */
     esp_aes_context                    aes;
     bool                               security_inited;
 } wifi_prov_blufi_t;
@@ -205,13 +224,132 @@ static int blufi_rand(void *rng_state, unsigned char *output, size_t len)
     return 0;
 }
 
+#if !BLUFI_MD5_USE_MBEDTLS_LEGACY
+static int blufi_md5_psk(wifi_prov_blufi_t *prov)
+{
+    psa_status_t status = psa_crypto_init();
+    if (status != PSA_SUCCESS) {
+        return -1;
+    }
+    size_t hash_len = 0;
+    status = psa_hash_compute(PSA_ALG_MD5, prov->share_key, prov->share_len, prov->psk, BLUFI_PSK_LEN, &hash_len);
+    return (status == PSA_SUCCESS && hash_len == BLUFI_PSK_LEN) ? 0 : -1;
+}
+#endif  /* !BLUFI_MD5_USE_MBEDTLS_LEGACY */
+
+#if !BLUFI_CRYPTO_USE_MBEDTLS_LEGACY
+static int blufi_mpi_dh_complete(wifi_prov_blufi_t *prov, int *output_len)
+{
+    uint8_t *param = prov->dh_param;
+    if (!param || prov->dh_param_len < 2) {
+        return -1;
+    }
+
+    size_t p_len = ((size_t)param[0] << 8) | param[1];
+    size_t p_offset = 2 + p_len;
+    if (p_offset > (size_t)prov->dh_param_len) {
+        return -1;
+    }
+    param += p_offset;
+
+    if ((param - prov->dh_param) + 2 > (size_t)prov->dh_param_len) {
+        return -1;
+    }
+    size_t g_len = ((size_t)param[0] << 8) | param[1];
+    size_t g_offset = (size_t)(param - prov->dh_param) + 2 + g_len;
+    if (g_offset > (size_t)prov->dh_param_len) {
+        return -1;
+    }
+    param += 2 + g_len;
+
+    if ((param - prov->dh_param) + 2 > (size_t)prov->dh_param_len) {
+        return -1;
+    }
+    size_t pub_len = ((size_t)param[0] << 8) | param[1];
+    param += 2;
+    if ((size_t)(param - prov->dh_param) + pub_len > (size_t)prov->dh_param_len) {
+        return -1;
+    }
+    if (pub_len == 0 || pub_len > BLUFI_DH_SELF_PUB_KEY_LEN) {
+        return -1;
+    }
+
+    if (p_len == 0 || p_len > BLUFI_DH_SELF_PUB_KEY_LEN || pub_len != p_len) {
+        return -1;
+    }
+
+    mbedtls_mpi P;
+    mbedtls_mpi G;
+    mbedtls_mpi peer_public;
+    mbedtls_mpi private_key;
+    mbedtls_mpi self_public;
+    mbedtls_mpi shared_secret;
+    mbedtls_mpi p_minus_one;
+    mbedtls_mpi_init(&P);
+    mbedtls_mpi_init(&G);
+    mbedtls_mpi_init(&peer_public);
+    mbedtls_mpi_init(&private_key);
+    mbedtls_mpi_init(&self_public);
+    mbedtls_mpi_init(&shared_secret);
+    mbedtls_mpi_init(&p_minus_one);
+
+    uint8_t *p_data = prov->dh_param + 2;
+    uint8_t *g_data = p_data + p_len + 2;
+    int ret = mbedtls_mpi_read_binary(&P, p_data, p_len);
+    if (ret == 0) {
+        ret = mbedtls_mpi_read_binary(&G, g_data, g_len);
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_read_binary(&peer_public, param, pub_len);
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_sub_int(&p_minus_one, &P, 1);
+    }
+    if (ret == 0 &&
+        (mbedtls_mpi_cmp_int(&G, 1) <= 0 ||
+         mbedtls_mpi_cmp_int(&peer_public, 1) <= 0 ||
+         mbedtls_mpi_cmp_mpi(&G, &p_minus_one) >= 0 ||
+         mbedtls_mpi_cmp_mpi(&peer_public, &p_minus_one) >= 0)) {
+        ret = -1;
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_random(&private_key, 2, &p_minus_one, blufi_rand, NULL);
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_exp_mod(&self_public, &G, &private_key, &P, NULL);
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_exp_mod(&shared_secret, &peer_public, &private_key, &P, NULL);
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_write_binary(&self_public, prov->self_public_key, p_len);
+    }
+    if (ret == 0) {
+        ret = mbedtls_mpi_write_binary(&shared_secret, prov->share_key, p_len);
+        prov->share_len = p_len;
+        *output_len = (int)p_len;
+    }
+
+    mbedtls_mpi_free(&p_minus_one);
+    mbedtls_mpi_free(&shared_secret);
+    mbedtls_mpi_free(&self_public);
+    mbedtls_mpi_free(&private_key);
+    mbedtls_mpi_free(&peer_public);
+    mbedtls_mpi_free(&G);
+    mbedtls_mpi_free(&P);
+    return ret == 0 ? 0 : -1;
+}
+#endif  /* !BLUFI_CRYPTO_USE_MBEDTLS_LEGACY */
+
 static esp_err_t blufi_security_init(wifi_prov_blufi_t *prov)
 {
     if (prov->security_inited) {
         return ESP_OK;
     }
     memset(prov->iv, 0, sizeof(prov->iv));
+#if BLUFI_CRYPTO_USE_MBEDTLS_LEGACY
     mbedtls_dhm_init(&prov->dhm);
+#endif  /* BLUFI_CRYPTO_USE_MBEDTLS_LEGACY */
     esp_aes_init(&prov->aes);
     prov->security_inited = true;
     return ESP_OK;
@@ -226,7 +364,9 @@ static void blufi_security_deinit(wifi_prov_blufi_t *prov)
         heap_caps_free(prov->dh_param);
         prov->dh_param = NULL;
     }
+#if BLUFI_CRYPTO_USE_MBEDTLS_LEGACY
     mbedtls_dhm_free(&prov->dhm);
+#endif  /* BLUFI_CRYPTO_USE_MBEDTLS_LEGACY */
     esp_aes_free(&prov->aes);
     prov->security_inited = false;
 }
@@ -272,14 +412,16 @@ static void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **ou
                 esp_blufi_send_error_info(ESP_BLUFI_DH_PARAM_ERROR);
                 return;
             }
-            uint8_t *param = prov->dh_param;
             memcpy(prov->dh_param, &data[1], prov->dh_param_len);
+            int dhm_len = 0;
+#if BLUFI_CRYPTO_USE_MBEDTLS_LEGACY
+            uint8_t *param = prov->dh_param;
             ret = mbedtls_dhm_read_params(&prov->dhm, &param, &param[prov->dh_param_len]);
             if (ret != 0) {
                 esp_blufi_send_error_info(ESP_BLUFI_READ_PARAM_ERROR);
                 return;
             }
-            int dhm_len = mbedtls_dhm_get_len(&prov->dhm);
+            dhm_len = mbedtls_dhm_get_len(&prov->dhm);
             if (dhm_len > BLUFI_DH_SELF_PUB_KEY_LEN) {
                 esp_blufi_send_error_info(ESP_BLUFI_DH_PARAM_ERROR);
                 return;
@@ -296,7 +438,23 @@ static void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **ou
                 esp_blufi_send_error_info(ESP_BLUFI_DH_PARAM_ERROR);
                 return;
             }
+#if BLUFI_MD5_USE_MBEDTLS_LEGACY
             ret = mbedtls_md5(prov->share_key, prov->share_len, prov->psk);
+#else
+            ret = blufi_md5_psk(prov);
+#endif  /* BLUFI_MD5_USE_MBEDTLS_LEGACY */
+#else
+            ret = blufi_mpi_dh_complete(prov, &dhm_len);
+            if (ret != 0) {
+                esp_blufi_send_error_info(ESP_BLUFI_DH_PARAM_ERROR);
+                return;
+            }
+#if BLUFI_MD5_USE_MBEDTLS_LEGACY
+            ret = mbedtls_md5(prov->share_key, prov->share_len, prov->psk);
+#else
+            ret = blufi_md5_psk(prov);
+#endif  /* BLUFI_MD5_USE_MBEDTLS_LEGACY */
+#endif  /* BLUFI_CRYPTO_USE_MBEDTLS_LEGACY */
             if (ret != 0) {
                 esp_blufi_send_error_info(ESP_BLUFI_CALC_MD5_ERROR);
                 return;
@@ -570,6 +728,7 @@ static void blufi_event_cb(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *par
             blufi_dispatch_stopped(prov);
             break;
         case ESP_BLUFI_EVENT_BLE_CONNECT: {
+            esp_blufi_adv_stop();
             prov->peer_connected = true;
             esp_err_t ret = blufi_register_event_handlers(prov);
             if (ret != ESP_OK) {

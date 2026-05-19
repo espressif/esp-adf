@@ -62,7 +62,7 @@ static esp_err_t checker_data_check(esp_ota_service_checker_t *self, const char 
 
     char ver_str[12];
     if (esp_ota_service_version_unpack_semver(incoming_packed, ver_str, sizeof(ver_str)) == ESP_OK) {
-        strncpy(result->version, ver_str, sizeof(result->version) - 1);
+        snprintf(result->version, sizeof(result->version), "%s", ver_str);
     } else {
         snprintf(result->version, sizeof(result->version), "0x%08" PRIx32, incoming_packed);
     }
@@ -100,7 +100,7 @@ esp_ota_service_checker_t *esp_ota_service_checker_data_version_create(const esp
     obj->base.priv = NULL;
 
     obj->current_packed = esp_ota_service_version_pack_semver(cfg->current_version);
-    strncpy(obj->current_version, cfg->current_version, sizeof(obj->current_version) - 1);
+    snprintf(obj->current_version, sizeof(obj->current_version), "%s", cfg->current_version);
 
     return &obj->base;
 }

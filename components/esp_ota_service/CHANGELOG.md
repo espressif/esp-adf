@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+### Changes
+
+- Added support for ESP-IDF v6.0 and later
+
 ## v0.1.0~1
 
 ### Changes

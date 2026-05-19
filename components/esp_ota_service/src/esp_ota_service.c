@@ -333,7 +333,7 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
             if (bytes_since_last_save >= CONFIG_OTA_RESUME_SAVE_INTERVAL_KB * 1024) {
                 esp_ota_service_resume_point_t rp;
                 memset(&rp, 0, sizeof(rp));
-                strncpy(rp.uri, item->uri, sizeof(rp.uri) - 1);
+                snprintf(rp.uri, sizeof(rp.uri), "%s", item->uri);
                 rp.written_bytes = written_now;
                 rp.item_index = (int8_t)idx;
                 (void)esp_ota_service_resume_save(&rp);

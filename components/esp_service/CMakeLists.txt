@@ -3,7 +3,7 @@ set(srcs
     "service/esp_service.c"
     "service/esp_service_manager.c"
 )
-set(requires freertos esp_timer log json adf_event_hub esp_http_server esp_driver_uart)
+set(requires freertos esp_timer log adf_event_hub esp_http_server esp_driver_uart)
 set(priv_requires)
 
 # MCP layer — compiled only when CONFIG_ESP_MCP_ENABLE=y
@@ -44,3 +44,5 @@ idf_component_register(
     REQUIRES     ${requires}
     PRIV_REQUIRES ${priv_requires}
 )
+
+idf_component_optional_requires(PUBLIC json)

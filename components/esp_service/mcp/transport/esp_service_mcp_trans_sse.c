@@ -101,7 +101,8 @@ static sse_client_t *sse_alloc_client(sse_impl_t *sse, httpd_req_t *async_req, c
     for (uint8_t i = 0; i < sse->config.max_clients; i++) {
         if (!sse->clients[i].active) {
             sse->clients[i].async_req = async_req;
-            snprintf(sse->clients[i].session_id, sizeof(sse->clients[i].session_id), "%s", session_id);
+            memcpy(sse->clients[i].session_id, session_id, SSE_SESSION_ID_LEN - 1);
+            sse->clients[i].session_id[SSE_SESSION_ID_LEN - 1] = '\0';
             sse->clients[i].active = true;
             sse->client_count++;
             ESP_LOGI(TAG, "SSE client connected (session=%s total=%u)",
