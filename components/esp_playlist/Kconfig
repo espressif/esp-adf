@@ -1,0 +1,27 @@
+menu "ESP-Playlist"
+    config ESP_PLAYLIST_NAME_MAX
+        int "Maximum playlist name length (bytes, including NUL)"
+        default 64
+        range 16 256
+        help
+            Size of playlist_name in esp_playlist_info_t. Changing this value
+            changes the component ABI; rebuild all dependent components after
+            modification.
+
+    config ESP_PLAYLIST_MEDIA_NAME_MAX
+        int "Maximum media display name length (bytes, including NUL)"
+        default 128
+        range 32 512
+        help
+            Size of media_name in esp_playlist_info_t. Strings longer than this
+            are truncated when calling curr/next/prev/get_info.
+
+    config ESP_PLAYLIST_URL_MAX
+        int "Maximum media URL length (bytes, including NUL)"
+        default 128
+        range 32 1024
+        help
+            Size of media_url in esp_playlist_info_t. Long SD card paths or HTTP
+            URLs may need a larger value; each esp_playlist_info_t on the stack
+            grows by (new - old) bytes for this field.
+endmenu

@@ -1,0 +1,6 @@
+dependencies:
+  idf:
+    version: ">=5.4.0"
+  esp_playlist:
+    version: "*"
+    override_path: "../../"
