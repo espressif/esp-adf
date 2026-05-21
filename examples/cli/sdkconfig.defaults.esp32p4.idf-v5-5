@@ -1,0 +1,4 @@
+#
+# SPI RAM config
+#
+CONFIG_SPIRAM_XIP_FROM_PSRAM=y

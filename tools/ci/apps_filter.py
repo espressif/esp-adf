@@ -33,16 +33,18 @@ def get_adf_path():
     """
     adf_path = os.getenv('ADF_PATH')
     if adf_path is None:
-        raise EnvironmentError("Environment variable ADF_PATH not set")
+        raise EnvironmentError('Environment variable ADF_PATH not set')
     return adf_path
 
 
 def parse_version(version_str):
     """
-    Parse version string like 'v5.5.1' or 'v5.5' to tuple (5, 5, 1) for comparison.
+    Parse version string like 'V5.5.3' or 'v5.5' to tuple (5, 5, 1) for comparison.
     Shorter versions are padded with zeros (e.g., 'v5.5' becomes (5, 5, 0)).
     """
-    version_str = version_str.lstrip('v')
+    version_str = version_str.strip()
+    if version_str and version_str[0] in 'vV':
+        version_str = version_str[1:]
     parts = version_str.split('.')
     # Pad with zeros to ensure at least 3 parts (major, minor, patch)
     while len(parts) < 3:
@@ -65,10 +67,10 @@ def create_apps_txt(matching_app_dirs):
     if matching_app_dirs:
         with open('apps.txt', 'a', encoding='utf-8') as file:
             for app_dir in matching_app_dirs:
-                file.write(f"{app_dir}\n")
-        print(f"Matching application directories have been written to apps.txt", file=sys.stderr)
+                file.write(f'{app_dir}\n')
+        print(f'Matching application directories have been written to apps.txt', file=sys.stderr)
     else:
-        print("No matching application directories found.", file=sys.stderr)
+        print('No matching application directories found.', file=sys.stderr)
 
 
 def filter_pytest_dirs_and_export(app_dirs):
@@ -89,10 +91,10 @@ def filter_pytest_dirs_and_export(app_dirs):
         pytest_files = glob.glob(os.path.join(full_path, 'pytest_*.py'))
         if pytest_files:
             pytest_dirs.append(full_path)
-            print(f"  Found pytest files in: {app_dir}", file=sys.stderr)
+            print(f'  Found pytest files in: {app_dir}', file=sys.stderr)
 
     if not pytest_dirs:
-        print("No directories with pytest files found", file=sys.stderr)
+        print('No directories with pytest files found', file=sys.stderr)
 
     # Output shell export statements that can be evaluated
     if pytest_dirs:
@@ -117,7 +119,7 @@ def create_audo_board_idf_json_file(board, board_dict):
         with open(output_json_path, 'w', encoding='utf-8') as json_file:
             json.dump(board_dict, json_file, ensure_ascii=False, indent=4)
 
-        print(f"{board} configuration saved to {output_json_path}", file=sys.stderr)
+        print(f'{board} configuration saved to {output_json_path}', file=sys.stderr)
 
 
 def replace_variable_placeholders(value, variable_dict):
@@ -134,7 +136,7 @@ def replace_variable_placeholders(value, variable_dict):
     if isinstance(value, str):
         for var_key, var_value in variable_dict.items():
             if isinstance(var_value, str):
-                value = value.replace(f"${{{var_key}}}", var_value)
+                value = value.replace(f'${{{var_key}}}', var_value)
     return value
 
 
@@ -199,13 +201,13 @@ def app_main():
                     # Replace variable placeholders in version string
                     version = replace_variable_placeholders(version, variable_dict)
                     if board == audio_board and isinstance(version, str) and is_version_in_range(version, idf_version_tag):
-                        print(f"  Matching App Directory: {app_dir}", file=sys.stderr)
+                        print(f'  Matching App Directory: {app_dir}', file=sys.stderr)
                         matching_app_dirs.append(app_dir)
             else:
                 if target_board == audio_board:
                     default_value = default_board_idf_dict.get(audio_board, None)
                     if isinstance(default_value, str) and is_version_in_range(default_value, idf_version_tag):
-                        print(f"  Matching App Directory: {app_dir}", file=sys.stderr)
+                        print(f'  Matching App Directory: {app_dir}', file=sys.stderr)
                         matching_app_dirs.append(app_dir)
 
     create_apps_txt(matching_app_dirs)
@@ -215,5 +217,5 @@ def app_main():
         filter_pytest_dirs_and_export(matching_app_dirs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app_main()

@@ -1,5 +1,5 @@
 variables:
-  - LATEST_IDF_VERSION: "v5.5.1"
+  - LATEST_IDF_VERSION: "v5.5.3"
 
 DEFAULTS:
   - ESP_LYRAT_V4_3: "v3.3-${LATEST_IDF_VERSION}"
@@ -262,8 +262,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1: v5.4-${LATEST_IDF_VERSION}
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
-      esp32p4:
-        - ESP32_P4_FUNCTION_EV: v5.4-${LATEST_IDF_VERSION}
+      # esp32p4:
+      #   - ESP32_P4_FUNCTION_EV: v5.4-${LATEST_IDF_VERSION}
   - app_dir: examples/player/pipeline_a2dp_sink_stream
     board:
       esp32:
