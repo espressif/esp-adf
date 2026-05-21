@@ -109,9 +109,8 @@ static esp_err_t checker_tone_check(esp_ota_service_checker_t *self, const char 
         return ESP_ERR_INVALID_VERSION;
     }
 
-    /* Populate result fields (version/label are NUL-padded already via memset). */
-    strncpy(result->version, incoming.version, sizeof(result->version) - 1);
-    strncpy(result->label, incoming.project_name, sizeof(result->label) - 1);
+    snprintf(result->version, sizeof(result->version), "%s", incoming.version);
+    snprintf(result->label, sizeof(result->label), "%s", incoming.project_name);
 
     /* Tone bins carry a non-IDF magic (0xF55F9876), so esp_ota_service_version_compare_descriptors()
      * cannot be used directly (it enforces ESP_APP_DESC_MAGIC_WORD). Evaluate the policy
@@ -178,11 +177,10 @@ esp_ota_service_checker_t *esp_ota_service_checker_tone_desc_create(const esp_ot
     obj->expected_magic = cfg->expected_magic > 0 ? cfg->expected_magic : ESP_OTA_SERVICE_CHECKER_TONE_DESC_DEFAULT_MAGIC;
     obj->policy = cfg->policy;
 
-    strncpy(obj->current_version, cfg->current_version, sizeof(obj->current_version) - 1);
+    snprintf(obj->current_version, sizeof(obj->current_version), "%s", cfg->current_version);
 
     if (cfg->expected_project_name && cfg->expected_project_name[0] != '\0') {
-        strncpy(obj->expected_project_name, cfg->expected_project_name,
-                sizeof(obj->expected_project_name) - 1);
+        snprintf(obj->expected_project_name, sizeof(obj->expected_project_name), "%s", cfg->expected_project_name);
         obj->have_expected_project = true;
     }
 

@@ -32,8 +32,7 @@ static int parse_version(const char *version)
     }
 
     char buf[33];
-    strncpy(buf, p, sizeof(buf) - 1);
-    buf[sizeof(buf) - 1] = '\0';
+    snprintf(buf, sizeof(buf), "%s", p);
 
     int ver_num = 0;
     int count = 0;

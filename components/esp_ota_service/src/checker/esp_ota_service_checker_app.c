@@ -45,8 +45,8 @@ static esp_err_t checker_app_check(esp_ota_service_checker_t *self, const char *
 
     memset(result, 0, sizeof(*result));
     result->image_size = image_size;
-    strncpy(result->version, incoming.version, sizeof(result->version) - 1);
-    strncpy(result->label, incoming.project_name, sizeof(result->label) - 1);
+    snprintf(result->version, sizeof(result->version), "%s", incoming.version);
+    snprintf(result->label, sizeof(result->label), "%s", incoming.project_name);
 
     esp_app_desc_t cur_desc;
     const esp_app_desc_t *cur_ptr = NULL;

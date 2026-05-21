@@ -24,7 +24,6 @@ set(requires
     esp_app_format
     esp_http_client
     esp_https_ota
-    json
     nvs_flash
 )
 
@@ -55,6 +54,8 @@ idf_component_register(
     PRIV_REQUIRES    ${priv_requires}
     EMBED_FILES      ${embed_files}
 )
+
+idf_component_optional_requires(PUBLIC json)
 
 if (CONFIG_OTA_ENABLE_BLE_SOURCE)
     # BLE source implements the official ESP BLE OTA APP protocol natively

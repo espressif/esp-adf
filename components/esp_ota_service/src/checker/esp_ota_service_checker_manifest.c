@@ -156,11 +156,11 @@ static esp_err_t manifest_evaluate_parsed_root(cJSON *root,
         ESP_LOGE(TAG, "Manifest missing 'version' field");
         return ESP_FAIL;
     }
-    strncpy(result->version, j_version->valuestring, sizeof(result->version) - 1);
+    snprintf(result->version, sizeof(result->version), "%s", j_version->valuestring);
 
     cJSON *j_project = cJSON_GetObjectItem(root, "project_name");
     if (cJSON_IsString(j_project)) {
-        strncpy(result->label, j_project->valuestring, sizeof(result->label) - 1);
+        snprintf(result->label, sizeof(result->label), "%s", j_project->valuestring);
     }
 
     cJSON *j_size = cJSON_GetObjectItem(root, "size");
