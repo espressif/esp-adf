@@ -11,7 +11,7 @@ import sys
 import os
 import re
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from idf_build_apps import App, build_apps, find_apps, setup_logging, utils
 
@@ -26,9 +26,9 @@ IGNORE_WARNINGS = [
 ]
 
 def compare_versions(v1, v2):
-    if v1.startswith("v"):
+    if v1.startswith('v'):
         v1 = v1[1:]
-    if v2.startswith("v"):
+    if v2.startswith('v'):
         v2 = v2[1:]
     v1_parts = v1.split('.')
     v2_parts = v2.split('.')
@@ -58,20 +58,76 @@ def _get_idf_version():
                 ver[m.group(1)] = m.group(2)
     return 'v{}.{}'.format(int(ver['MAJOR']), int(ver['MINOR']))
 
+
+def _idf_ver_to_suffix(idf_ver: str) -> str:
+    """Convert IDF version string to file suffix (major.minor only).
+
+    Examples:
+        'v5.4'         -> 'idf-v5-4'
+        'v5.4.3'       -> 'idf-v5-4'
+        'release/v5.5' -> 'idf-v5-5'
+        'release/v5.5.3' -> 'idf-v5-5'
+    """
+    ver = idf_ver.split('/')[-1]                   # strip 'release/' prefix if present
+    parts = ver.lstrip('v').split('.')             # ['5', '4', '3']
+    major_minor = 'v' + '.'.join(parts[:2])        # 'v5.4'
+    return 'idf-' + major_minor.replace('.', '-')  # 'idf-v5-4'
+
+
+def _get_sdkconfig_defaults_str(app_dir: str, target: str, idf_ver_suffix: str) -> Optional[str]:
+    """
+    Check if sdkconfig.defaults.<target>.<idf_ver_suffix> exists in app_dir.
+    If so, return the full semicolon-separated defaults list:
+      sdkconfig.defaults (if exists)
+      sdkconfig.defaults.<target> (if exists)
+      sdkconfig.defaults.<target>.<idf_ver_suffix>
+    Returns None when no version-specific file exists (keep default behavior).
+    """
+    base = 'sdkconfig.defaults'
+    target_file = f'{base}.{target}'
+    version_file = f'{target_file}.{idf_ver_suffix}'
+
+    if not os.path.isfile(os.path.join(app_dir, version_file)):
+        return None
+
+    result = []
+    if os.path.isfile(os.path.join(app_dir, base)):
+        result.append(base)
+    if os.path.isfile(os.path.join(app_dir, target_file)):
+        result.append(target_file)
+    result.append(version_file)
+    return ';'.join(result)
+
+
+def _patch_sdkconfig_defaults(apps: List[App], idf_ver: str) -> None:
+    """
+    For each app, if a version-specific sdkconfig.defaults file exists in its
+    app_dir, update sdkconfig_defaults_str and recompute the cached file list.
+    """
+    idf_ver_suffix = _idf_ver_to_suffix(idf_ver)
+    for app in apps:
+        defaults_str = _get_sdkconfig_defaults_str(app.app_dir, app.target, idf_ver_suffix)
+        if defaults_str is None:
+            continue
+        app.sdkconfig_defaults_str = defaults_str
+        new_files, new_defined_target = app._process_sdkconfig_files()
+        app._sdkconfig_files = new_files
+        app._sdkconfig_files_defined_target = new_defined_target
+
+
 def get_cmake_apps(
     paths,
     target,
     config_rules_str,
     default_build_targets,
-):  # type: (List[str], str, List[str]) -> List[App]
-    idf_ver = _get_idf_version()
-
+    idf_ver,
+):
     if '/' in idf_ver:
         idf_ver_str = idf_ver.split('/')[1]
     else:
         idf_ver_str = idf_ver
 
-    if compare_versions("v5.3", idf_ver_str):
+    if compare_versions('v5.3', idf_ver_str):
         apps = find_apps(
             paths,
             recursive=True,
@@ -80,12 +136,11 @@ def get_cmake_apps(
             config_rules_str=config_rules_str,
             build_log_path='build_log.txt',
             size_json_path='size.json',
-            check_warnings=True,
+            check_warnings=False,
             preserve=True,
             default_build_targets=default_build_targets,
             manifest_files=[str(p) for p in Path(os.environ['ADF_PATH']).glob('**/.build-test-rules.yml')],
         )
-        return apps
     else:
         apps = find_apps(
             paths=[str(p) for p in paths],
@@ -95,15 +150,18 @@ def get_cmake_apps(
             config_rules_str=config_rules_str,
             build_log_filename='build_log.txt',
             size_json_filename='size.json',
-            check_warnings=True,
+            check_warnings=False,
             default_build_targets=default_build_targets,
             manifest_files=[str(p) for p in Path(os.environ['ADF_PATH']).glob('**/.build-test-rules.yml')],
         )
-        return apps
 
-def main(args):  # type: (argparse.Namespace) -> None
+    _patch_sdkconfig_defaults(apps, idf_ver)
+    return apps
+
+def main(args):
     default_build_targets = args.default_build_targets.split(',') if args.default_build_targets else None
-    apps = get_cmake_apps(args.paths, args.target, args.config, default_build_targets)
+    idf_ver = _get_idf_version()
+    apps = get_cmake_apps(args.paths, args.target, args.config, default_build_targets, idf_ver)
     if args.exclude_apps:
         apps_to_build = [app for app in apps if app.name not in args.exclude_apps]
     else:

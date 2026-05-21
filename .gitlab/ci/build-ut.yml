@@ -51,7 +51,7 @@ esp_adf_libs_components_test:
     - .rules:build:unit-test
     - .build_esp_adf_tests_make
   variables:
-    IDF_VERSION_TAG: v5.5.1
+    IDF_VERSION_TAG: v5.5.3
     IDF_TAG_FLAG: true
     IDF_TARGET: esp32s3
     DEEP_CLONE: "true"
