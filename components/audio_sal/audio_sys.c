@@ -37,19 +37,6 @@ static const char *TAG = "AUDIO_SYS";
 #define ARRAY_SIZE_OFFSET                   8   // Increase this if audio_sys_get_real_time_stats returns ESP_ERR_INVALID_SIZE
 #define AUDIO_SYS_TASKS_ELAPSED_TIME_MS  1000   // Period of stats measurement
 
-const char *task_state[] = {
-    "Running",
-    "Ready",
-    "Blocked",
-    "Suspended",
-    "Deleted"
-};
-
-/** @brief
- * "Extr": Allocated task stack from psram, "Intr": Allocated task stack from internel
- */
-const char *task_stack[] = {"Extr", "Intr"};
-
 int audio_sys_get_tick_by_time_ms(int ms)
 {
     return (ms / portTICK_PERIOD_MS);
@@ -66,6 +53,19 @@ int64_t audio_sys_get_time_ms(void)
 esp_err_t audio_sys_get_real_time_stats(void)
 {
 #if (CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID && CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS)
+    static const char * const task_state[] = {
+        "Running",
+        "Ready",
+        "Blocked",
+        "Suspended",
+        "Deleted"
+    };
+
+    /** @brief
+     * "Extr": Allocated task stack from psram, "Intr": Allocated task stack from internal ram
+     */
+    static const char * const task_stack[] = {"Extr", "Intr"};
+
     TaskStatus_t *start_array = NULL, *end_array = NULL;
     UBaseType_t start_array_size, end_array_size;
     uint32_t start_run_time, end_run_time;
@@ -92,7 +92,7 @@ esp_err_t audio_sys_get_real_time_stats(void)
     // Allocate array to store tasks states post delay
     end_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
     end_array = audio_malloc(sizeof(TaskStatus_t) * end_array_size);
-    AUDIO_MEM_CHECK(TAG, start_array, {
+    AUDIO_MEM_CHECK(TAG, end_array, {
         ret = ESP_FAIL;
         goto exit;
     });
@@ -160,7 +160,7 @@ exit:    // Common return path
     }
     return ret;
 #else
-    ESP_LOGW(TAG, "Please enbale `CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID` and `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS` in menuconfig");
+    ESP_LOGW(TAG, "Please enable `CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID` and `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS` in menuconfig");
     return ESP_FAIL;
 #endif
 }
