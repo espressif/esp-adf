@@ -11,8 +11,9 @@
 - **Multi-Channel Provisioning**: Support HTTP SoftAP/Web UI, DNS captive portal, BluFi, and application-defined provisioning flows, all writing into the shared profile store
 - **Automatic Startup Policy**: Start connection selection when enabled profiles exist, or start configured provisioning channels when no enabled profile is available
 - **Intelligent Selection and Switching**: Select a better SSID/BSSID using user priority, RSSI, historical connectivity, temporary blocklists, and re-evaluate after disconnects or link degradation
+- **Direct Connection Request**: Save or update one profile and ask the selector to connect to it immediately, optionally waiting until the station gets an IP address
 - **Network Quality Probing**: Detect connectivity, latency, and throughput degradation to handle cases where Wi-Fi is connected but the business service is unavailable
-- **Service Events and APIs**: Report connection, provisioning, credential, and error states through a unified service lifecycle and event mechanism so the application can subscribe and control behavior centrally
+- **Service Events and APIs**: Report connection, provisioning, credential, station configuration, and error states through a unified service lifecycle and event mechanism so the application can subscribe and control behavior centrally
 
 ## MCP Tool Support
 
@@ -29,6 +30,7 @@ Exposed tools:
 - `esp_wifi_service_prov_start`: Starts configured provisioning agents
 - `esp_wifi_service_prov_stop`: Stops running provisioning agents
 - `esp_wifi_service_request_reeval`: Requests one selector scan and re-evaluation cycle
+- `esp_wifi_service_request_connect`: Saves or updates one profile and requests an immediate connection to that SSID; accepts `ssid`, optional `password`, `priority`, and `wait_sec`
 
 The MCP tools do not expose saved passwords in responses. Applications that expose MCP transports outside a trusted debug channel should add their own authentication and transport security policy.
 
@@ -149,7 +151,7 @@ JSON is the common response format. Credential submission currently accepts JSON
 
 Notes:
 
-- To avoid blocking the `httpd` task, the HTTP provisioning channel maintains scan results with non-blocking Wi-Fi scans and `WIFI_EVENT_SCAN_DONE`
+- To avoid blocking the `httpd` task and conflicting scan result consumers, the Wi-Fi service scan agent owns non-blocking driver scans. HTTP provisioning copies scan callbacks into its own AP-record cache before serving `GET /prov/scan_result`
 - Captive portal friendly behavior is enabled by default: common OS connectivity-check URLs redirect to the entry page, and SoftAP DNS replies point clients to the device
 
 #### Custom APIs
@@ -252,6 +254,7 @@ Common service APIs:
 
 - `esp_wifi_service_start_provisioning()` / `esp_wifi_service_stop_provisioning()`
 - `esp_wifi_service_is_provisioning_running()`
+- `esp_wifi_service_request_connect()` saves or updates one profile, stops provisioning if needed, starts the selector, and requests an immediate connection to that SSID. Set `wait_sec` to `0` to return after the request is accepted, or to a non-zero timeout to wait until STA got IP.
 - You can write profiles directly through `esp_wifi_service_profile_mgr_add()`, `esp_wifi_service_profile_mgr_delete()`, and related profile manager APIs.
 
 ## WiFi Selection and Switching
@@ -283,6 +286,18 @@ After candidate ranking:
 - If the current connection is already the best candidate, it keeps the current connection
 - If a better AP is found, it disconnects first and then connects to the new candidate
 - If the candidate does not have a clear advantage, it keeps the current connection to avoid frequent switching
+
+Applications can also bypass one scan/re-evaluation cycle by calling `esp_wifi_service_request_connect()`. This direct request still uses the shared profile manager and selector state, but applies the specified saved SSID immediately. It is useful for command-line tools, setup flows, or remote management paths where the operator already knows the target AP.
+
+### Retry Behavior
+
+When no suitable candidate is found, the selector retries scans with a backoff table. The built-in table is `1000, 5000, 10000, 20000, 30000` ms. Applications can provide `selector_policy.retry.scan_retry_ms` and `scan_retry_num` to override it; the table is copied during service creation, every interval must be non-zero, and retries beyond the table length keep using the last interval.
+
+`selector_policy.retry.max_connect_retry` limits consecutive selector-driven connection failures after a candidate has been selected. `0` keeps the previous behavior and retries indefinitely. A non-zero value stops automatic re-evaluation after that many consecutive failures; the counter is cleared after STA gets IP, explicit `esp_wifi_service_request_connect()`, explicit `esp_wifi_service_request_reeval()`, or selector stop.
+
+### Station Configuration Event
+
+Before provisioning channels or the selector call `esp_wifi_set_config()`, the service publishes `ESP_WIFI_SERVICE_EVENT_STA_CONFIG` with an `esp_wifi_service_sta_config_event_t` payload. Callback-mode subscribers can update the provided `wifi_config_t` during synchronous event delivery. This is intended for application-owned station options such as `listen_interval`, PMF policy, or other fields that should be applied consistently to HTTP provisioning, BluFi provisioning, selector switching, and direct connect requests.
 
 ### Network Quality Probing
 
@@ -352,6 +367,12 @@ static void on_wifi_service_event(const adf_event_t *event, void *ctx)
     (void)ctx;
     if (event->event_id == ESP_WIFI_SERVICE_EVENT_STA_GOT_IP) {
         // Network is ready.
+    } else if (event->event_id == ESP_WIFI_SERVICE_EVENT_STA_CONFIG) {
+        const esp_wifi_service_sta_config_event_t *info =
+            (const esp_wifi_service_sta_config_event_t *)event->payload;
+        if (info && info->config) {
+            info->config->sta.listen_interval = 3;
+        }
     }
 }
 
@@ -384,6 +405,7 @@ void wifi_service_startup(void)
 
     // The following configuration demonstrates a custom selector policy.
     // In actual use, selector_policy can be set to NULL to use the built-in default policy.
+    static const uint32_t scan_retry_ms[] = {1000, 5000, 10000, 30000};
     esp_wifi_service_selector_cfg_t selector_cfg = {
         .triggers_mask = ESP_WIFI_SERVICE_SELECTOR_TRIGGER_RSSI_LOW |
                          ESP_WIFI_SERVICE_SELECTOR_TRIGGER_PROBE_FAILED,
@@ -403,6 +425,11 @@ void wifi_service_startup(void)
             .expected_status = 204,
             .blocked_seconds = 15,
         },
+        .retry = {
+            .scan_retry_ms = scan_retry_ms,
+            .scan_retry_num = sizeof(scan_retry_ms) / sizeof(scan_retry_ms[0]),
+            .max_connect_retry = 0,    // 0 keeps retrying until a profile is disabled or removed
+        },
     };
 
     esp_wifi_service_config_t cfg = {
@@ -411,7 +438,8 @@ void wifi_service_startup(void)
         .prov_list = &http_agent,
         .prov_num = 1,
         .selector_policy = &selector_cfg,         /* Set to NULL to use the built-in policy: re-evaluate
-                                                   * networks on low RSSI, then select candidates by probe
+                                                   * networks on low RSSI, use the default scan retry backoff,
+                                                   * retry connection forever, then select candidates by probe
                                                    * trust, signal quality, and profile priority.
                                                    */
     };

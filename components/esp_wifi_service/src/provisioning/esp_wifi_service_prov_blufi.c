@@ -18,6 +18,7 @@
 
 #include "esp_wifi_service_prov.h"
 #include "esp_wifi_service_prov_blufi.h"
+#include "esp_wifi_service_scan.h"
 
 #if CONFIG_BT_BLE_BLUFI_ENABLE || CONFIG_BT_NIMBLE_BLUFI_ENABLE
 #include "esp_blufi.h"
@@ -73,7 +74,6 @@ typedef struct {
     wifi_config_t                      sta_config;
     bool                               started;
     bool                               peer_connected;
-    bool                               scanning;
     bool                               sta_connected;
     bool                               sta_got_ip;
     bool                               sta_connecting;
@@ -128,6 +128,36 @@ static esp_err_t blufi_dispatch_error(wifi_prov_blufi_t *prov, esp_wifi_service_
         },
     };
     return esp_wifi_service_prov_dispatch_event(&prov->base, ESP_WIFI_SERVICE_PROV_EVT_ERROR, &evt);
+}
+
+static inline esp_err_t blufi_dispatch_sta_config(wifi_prov_blufi_t *prov)
+{
+    if (!prov) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    esp_wifi_service_prov_event_t evt = {
+        .name = prov->base.name,
+        .data.sta_config = {
+            .config = &prov->sta_config,
+        },
+    };
+    return esp_wifi_service_prov_dispatch_event(&prov->base, ESP_WIFI_SERVICE_PROV_EVT_STA_CONFIG, &evt);
+}
+
+static inline esp_err_t blufi_apply_sta_config(wifi_prov_blufi_t *prov)
+{
+    esp_err_t ret = blufi_dispatch_sta_config(prov);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "BLUFI STA config event failed: %s", esp_err_to_name(ret));
+        blufi_dispatch_error(prov, ESP_WIFI_SERVICE_PROV_ERR_APPLY_FAILED, ret, "BLUFI STA config event failed");
+        return ret;
+    }
+    ret = esp_wifi_set_config(WIFI_IF_STA, &prov->sta_config);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "BLUFI STA config apply failed: %s", esp_err_to_name(ret));
+        blufi_dispatch_error(prov, ESP_WIFI_SERVICE_PROV_ERR_APPLY_FAILED, ret, "BLUFI STA config apply failed");
+    }
+    return ret;
 }
 
 static esp_err_t blufi_dispatch_custom_data(wifi_prov_blufi_t *prov, const uint8_t *data, uint32_t data_len)
@@ -552,36 +582,38 @@ static void blufi_send_wifi_status(wifi_prov_blufi_t *prov)
     esp_blufi_send_wifi_conn_report(mode, state, blufi_softap_sta_num(), report_info);
 }
 
-static void blufi_send_scan_list(wifi_prov_blufi_t *prov)
+static void blufi_send_scan_list(esp_err_t scan_err, uint16_t ap_count, const wifi_ap_record_t *ap_list, void *ctx)
 {
-    uint16_t ap_count = 0;
-    if (esp_wifi_scan_get_ap_num(&ap_count) != ESP_OK || ap_count == 0) {
+    wifi_prov_blufi_t *prov = (wifi_prov_blufi_t *)ctx;
+    if (!prov || !prov->peer_connected) {
         return;
     }
-    wifi_ap_record_t *ap_list = heap_caps_calloc_prefer(ap_count, sizeof(wifi_ap_record_t), 2,
-                                                        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_DEFAULT);
+    if (scan_err != ESP_OK) {
+        ESP_LOGW(TAG, "BLUFI scan failed: %s", esp_err_to_name(scan_err));
+        esp_blufi_send_error_info(ESP_BLUFI_WIFI_SCAN_FAIL);
+        return;
+    }
+    if (ap_count == 0) {
+        esp_blufi_send_wifi_list(0, NULL);
+        return;
+    }
     if (!ap_list) {
+        esp_blufi_send_error_info(ESP_BLUFI_WIFI_SCAN_FAIL);
         return;
     }
-    if (esp_wifi_scan_get_ap_records(&ap_count, ap_list) != ESP_OK) {
-        heap_caps_free(ap_list);
-        return;
-    }
+
     esp_blufi_ap_record_t *blufi_ap_list = heap_caps_calloc_prefer(
         ap_count, sizeof(esp_blufi_ap_record_t), 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_DEFAULT);
     if (!blufi_ap_list) {
-        heap_caps_free(ap_list);
+        esp_blufi_send_error_info(ESP_BLUFI_WIFI_SCAN_FAIL);
         return;
     }
     for (uint16_t i = 0; i < ap_count; ++i) {
         blufi_ap_list[i].rssi = ap_list[i].rssi;
         memcpy(blufi_ap_list[i].ssid, ap_list[i].ssid, sizeof(ap_list[i].ssid));
     }
-    if (prov->peer_connected) {
-        esp_blufi_send_wifi_list(ap_count, blufi_ap_list);
-    }
+    esp_blufi_send_wifi_list(ap_count, blufi_ap_list);
     heap_caps_free(blufi_ap_list);
-    heap_caps_free(ap_list);
 }
 
 static void blufi_submit(wifi_prov_blufi_t *prov)
@@ -601,12 +633,6 @@ static void blufi_wifi_event_handler(void *arg, esp_event_base_t event_base, int
         return;
     }
     switch (event_id) {
-        case WIFI_EVENT_SCAN_DONE:
-            if (prov->scanning) {
-                blufi_send_scan_list(prov);
-                prov->scanning = false;
-            }
-            break;
         case WIFI_EVENT_STA_START:
             prov->sta_connecting = true;
             blufi_record_wifi_conn_info(prov, BLUFI_INVALID_RSSI, BLUFI_INVALID_REASON);
@@ -757,6 +783,7 @@ static void blufi_event_cb(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *par
                 prov->peer_connected = false;
                 blufi_dispatch_peer(prov, false);
             }
+            esp_wifi_service_scan_remove_cb(prov->base.scan_agent, blufi_send_scan_list);
             blufi_unregister_event_handlers(prov);
             blufi_security_deinit(prov);
             esp_blufi_adv_start();
@@ -766,7 +793,6 @@ static void blufi_event_cb(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *par
             if (n <= sizeof(prov->sta_config.sta.ssid)) {
                 memset(prov->sta_config.sta.ssid, 0, sizeof(prov->sta_config.sta.ssid));
                 memcpy(prov->sta_config.sta.ssid, param->sta_ssid.ssid, n);
-                esp_wifi_set_config(WIFI_IF_STA, &prov->sta_config);
             }
             break;
         }
@@ -775,7 +801,6 @@ static void blufi_event_cb(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *par
             if (n <= sizeof(prov->sta_config.sta.password)) {
                 memset(prov->sta_config.sta.password, 0, sizeof(prov->sta_config.sta.password));
                 memcpy(prov->sta_config.sta.password, param->sta_passwd.passwd, n);
-                esp_wifi_set_config(WIFI_IF_STA, &prov->sta_config);
             }
             break;
         }
@@ -784,8 +809,9 @@ static void blufi_event_cb(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *par
             break;
         case ESP_BLUFI_EVENT_REQ_CONNECT_TO_AP:
             esp_wifi_disconnect();
-            esp_wifi_set_config(WIFI_IF_STA, &prov->sta_config);
-            blufi_wifi_connect(prov);
+            if (blufi_apply_sta_config(prov) == ESP_OK) {
+                blufi_wifi_connect(prov);
+            }
             break;
         case ESP_BLUFI_EVENT_REQ_DISCONNECT_FROM_AP:
             prov->sta_connecting = false;
@@ -798,9 +824,9 @@ static void blufi_event_cb(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *par
                 .channel = 0,
                 .show_hidden = false,
             };
-            if (esp_wifi_scan_start(&scan_cfg, false) == ESP_OK) {
-                prov->scanning = true;
-            } else {
+            esp_err_t ret = esp_wifi_service_scan_request(prov->base.scan_agent, &scan_cfg, blufi_send_scan_list, prov);
+            if (ret != ESP_OK) {
+                ESP_LOGW(TAG, "BLUFI scan request failed: %s", esp_err_to_name(ret));
                 esp_blufi_send_error_info(ESP_BLUFI_WIFI_SCAN_FAIL);
             }
             break;
@@ -824,7 +850,6 @@ static void blufi_event_cb(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *par
         case ESP_BLUFI_EVENT_RECV_STA_BSSID:
             memcpy(prov->sta_config.sta.bssid, param->sta_bssid.bssid, sizeof(prov->sta_config.sta.bssid));
             prov->sta_config.sta.bssid_set = true;
-            esp_wifi_set_config(WIFI_IF_STA, &prov->sta_config);
             break;
         case ESP_BLUFI_EVENT_RECV_SOFTAP_SSID:
             ESP_LOGW(TAG, "SoftAP config is not supported: ignore SoftAP SSID");
@@ -900,6 +925,7 @@ static esp_err_t blufi_stop(esp_wifi_service_prov_t base)
     if (s_blufi_agent == prov) {
         s_blufi_agent = NULL;
     }
+    esp_wifi_service_scan_remove_cb(prov->base.scan_agent, blufi_send_scan_list);
     esp_blufi_adv_stop();
     blufi_unregister_event_handlers(prov);
     blufi_security_deinit(prov);

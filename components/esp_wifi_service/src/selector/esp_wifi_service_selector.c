@@ -62,6 +62,7 @@ typedef struct {
 
 typedef struct {
     esp_wifi_service_profile_mgr_t        profile_manager;
+    esp_wifi_service_scan_handle_t        scan_agent;
     esp_wifi_service_selector_cfg_t       policy;
     esp_wifi_service_selector_event_cb_t  cb;
     void                                 *cb_ctx;
@@ -80,12 +81,18 @@ typedef struct {
     bool                              reeval_inflight;
     bool                              reeval_pending;
     uint8_t                           reeval_scan_retry_idx;
+    uint32_t                         *reeval_scan_retry_ms;
+    uint8_t                           reeval_scan_retry_num;
+    uint8_t                           connect_retry_count;
+    bool                              connect_attempt_pending;
     bool                              pending_switch;
+    bool                              direct_connecting;
+    bool                              direct_disconnect_pending;
     wifi_config_t                     pending_cfg;
     SemaphoreHandle_t                 lock;
 } wifi_selector_ctx_t;
 
-static const uint32_t s_reeval_scan_retry_ms[] = {1000, 5000, 10000, 20000, 30000};
+static const uint32_t s_default_reeval_scan_retry_ms[] = {1000, 5000, 10000, 20000, 30000};
 static const char *TAG = "WIFI_SEL";
 
 static char *wifi_selector_strdup(const char *s)
@@ -110,6 +117,53 @@ static void wifi_selector_free_policy_urls(wifi_selector_ctx_t *selector)
     selector->policy.probe.url = NULL;
     heap_caps_free((void *)selector->policy.throughput.url);
     selector->policy.throughput.url = NULL;
+}
+
+static void wifi_selector_free_retry_policy(wifi_selector_ctx_t *selector)
+{
+    if (!selector) {
+        return;
+    }
+    heap_caps_free(selector->reeval_scan_retry_ms);
+    selector->reeval_scan_retry_ms = NULL;
+    selector->reeval_scan_retry_num = 0;
+    selector->policy.retry.scan_retry_ms = NULL;
+    selector->policy.retry.scan_retry_num = 0;
+}
+
+static esp_err_t wifi_selector_copy_retry_policy(wifi_selector_ctx_t *selector,
+                                                 const esp_wifi_service_selector_retry_cfg_t *retry)
+{
+    ESP_RETURN_ON_FALSE(selector && retry, ESP_ERR_INVALID_ARG, TAG, "Retry policy copy failed: invalid argument");
+
+    const uint32_t *scan_retry_ms = retry->scan_retry_ms;
+    uint8_t scan_retry_num = retry->scan_retry_num;
+    if (!scan_retry_ms && scan_retry_num == 0) {
+        scan_retry_ms = s_default_reeval_scan_retry_ms;
+        scan_retry_num = (uint8_t)(sizeof(s_default_reeval_scan_retry_ms) / sizeof(s_default_reeval_scan_retry_ms[0]));
+    } else if (!scan_retry_ms || scan_retry_num == 0) {
+        ESP_LOGE(TAG, "Retry policy copy failed: scan retry table and count must be set together");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    for (uint8_t i = 0; i < scan_retry_num; ++i) {
+        if (scan_retry_ms[i] == 0) {
+            ESP_LOGE(TAG, "Retry policy copy failed: scan retry interval must be non-zero");
+            return ESP_ERR_INVALID_ARG;
+        }
+    }
+
+    uint32_t *copy = heap_caps_malloc_prefer(sizeof(uint32_t) * scan_retry_num, 2,
+                                             MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_DEFAULT);
+    if (!copy) {
+        return ESP_ERR_NO_MEM;
+    }
+    memcpy(copy, scan_retry_ms, sizeof(uint32_t) * scan_retry_num);
+    selector->reeval_scan_retry_ms = copy;
+    selector->reeval_scan_retry_num = scan_retry_num;
+    selector->policy.retry.scan_retry_ms = selector->reeval_scan_retry_ms;
+    selector->policy.retry.scan_retry_num = selector->reeval_scan_retry_num;
+    return ESP_OK;
 }
 
 #if CONFIG_WIFI_SERVICE_SELECTOR_PROBE_ENABLE || CONFIG_WIFI_SERVICE_SELECTOR_THROUGHPUT_ENABLE
@@ -155,6 +209,8 @@ static void wifi_selector_fire(wifi_selector_ctx_t *selector, esp_wifi_service_s
         selector->cb(evt, evt_data, selector->cb_ctx);
     }
 }
+
+static void wifi_selector_stop_rssi_check(wifi_selector_ctx_t *selector);
 
 static void wifi_selector_ap_ssid_to_cstr(const uint8_t *ssid, size_t ssid_len, char ssid_out[33])
 {
@@ -282,6 +338,93 @@ static void wifi_selector_emit_switch_failed(wifi_selector_ctx_t *selector)
     wifi_selector_fire(selector, ESP_WIFI_SERVICE_SELECTOR_EVT_SWITCH_FAILED, NULL);
 }
 
+static void wifi_selector_reset_connect_retry(wifi_selector_ctx_t *selector)
+{
+    if (!selector || !selector->lock) {
+        return;
+    }
+    xSemaphoreTake(selector->lock, portMAX_DELAY);
+    selector->connect_retry_count = 0;
+    selector->connect_attempt_pending = false;
+    xSemaphoreGive(selector->lock);
+}
+
+static void wifi_selector_mark_connect_attempt(wifi_selector_ctx_t *selector)
+{
+    if (!selector || !selector->lock) {
+        return;
+    }
+    xSemaphoreTake(selector->lock, portMAX_DELAY);
+    selector->connect_attempt_pending = true;
+    xSemaphoreGive(selector->lock);
+}
+
+static bool wifi_selector_connect_attempt_pending(wifi_selector_ctx_t *selector)
+{
+    if (!selector || !selector->lock) {
+        return false;
+    }
+    bool pending = false;
+    xSemaphoreTake(selector->lock, portMAX_DELAY);
+    pending = selector->connect_attempt_pending || selector->direct_connecting || selector->direct_disconnect_pending;
+    xSemaphoreGive(selector->lock);
+    return pending;
+}
+
+static bool wifi_selector_note_connect_failure(wifi_selector_ctx_t *selector)
+{
+    if (!selector || !selector->lock) {
+        return false;
+    }
+
+    uint8_t retry_count = 0;
+    uint8_t max_retry = 0;
+    bool exhausted = false;
+    xSemaphoreTake(selector->lock, portMAX_DELAY);
+    if (selector->connect_retry_count < UINT8_MAX) {
+        selector->connect_retry_count++;
+    }
+    retry_count = selector->connect_retry_count;
+    max_retry = selector->policy.retry.max_connect_retry;
+    exhausted = (max_retry != 0 && retry_count >= max_retry);
+    xSemaphoreGive(selector->lock);
+
+    if (exhausted) {
+        ESP_LOGW(TAG, "Connect: retry exhausted (%u/%u), stopping automatic reeval",
+                 (unsigned)retry_count, (unsigned)max_retry);
+        wifi_selector_emit_switch_failed(selector);
+    }
+    return exhausted;
+}
+
+static bool wifi_selector_connect_retry_exhausted(wifi_selector_ctx_t *selector)
+{
+    if (!selector || !selector->lock) {
+        return false;
+    }
+
+    bool had_pending_attempt = false;
+    xSemaphoreTake(selector->lock, portMAX_DELAY);
+    if (selector->connect_attempt_pending) {
+        selector->connect_attempt_pending = false;
+        had_pending_attempt = true;
+    }
+    xSemaphoreGive(selector->lock);
+    return had_pending_attempt ? wifi_selector_note_connect_failure(selector) : false;
+}
+
+static void wifi_selector_finish_reeval_stopped(wifi_selector_ctx_t *selector)
+{
+    if (!selector || !selector->lock) {
+        return;
+    }
+    xSemaphoreTake(selector->lock, portMAX_DELAY);
+    selector->reeval_inflight = false;
+    selector->reeval_pending = false;
+    selector->reeval_scan_retry_idx = 0;
+    xSemaphoreGive(selector->lock);
+}
+
 static void wifi_selector_emit_switching(wifi_selector_ctx_t *selector, const uint8_t from_bssid[6],
                                          const uint8_t to_bssid[6])
 {
@@ -295,7 +438,33 @@ static void wifi_selector_emit_switching(wifi_selector_ctx_t *selector, const ui
     wifi_selector_fire(selector, ESP_WIFI_SERVICE_SELECTOR_EVT_SWITCHING, &evt);
 }
 
-static esp_err_t wifi_selector_apply_connect(const esp_wifi_service_profile_t *profile, const wifi_ap_record_t *ap, bool pin_bssid)
+static inline esp_err_t wifi_selector_dispatch_sta_config(wifi_selector_ctx_t *selector, wifi_config_t *config)
+{
+    ESP_RETURN_ON_FALSE(selector && config, ESP_ERR_INVALID_ARG, TAG, "STA config event failed: invalid argument");
+    esp_wifi_service_sta_config_event_t event = {
+        .config = config,
+    };
+    wifi_selector_fire(selector, ESP_WIFI_SERVICE_SELECTOR_EVT_STA_CONFIG, &event);
+    return ESP_OK;
+}
+
+static void wifi_selector_stop_health_monitors(wifi_selector_ctx_t *selector)
+{
+    wifi_selector_stop_rssi_check(selector);
+#if CONFIG_WIFI_SERVICE_SELECTOR_PROBE_ENABLE
+    if (selector->probe) {
+        wifi_sel_probe_stop(selector->probe);
+    }
+#endif  /* CONFIG_WIFI_SERVICE_SELECTOR_PROBE_ENABLE */
+#if CONFIG_WIFI_SERVICE_SELECTOR_THROUGHPUT_ENABLE
+    if (selector->throughput) {
+        wifi_sel_throughput_stop(selector->throughput);
+    }
+#endif  /* CONFIG_WIFI_SERVICE_SELECTOR_THROUGHPUT_ENABLE */
+}
+
+static esp_err_t wifi_selector_apply_connect(wifi_selector_ctx_t *selector, const esp_wifi_service_profile_t *profile,
+                                             const wifi_ap_record_t *ap, bool pin_bssid)
 {
     wifi_config_t cfg = {0};
     strlcpy((char *)cfg.sta.ssid, profile->ssid, sizeof(cfg.sta.ssid));
@@ -312,21 +481,66 @@ static esp_err_t wifi_selector_apply_connect(const esp_wifi_service_profile_t *p
     strlcpy((char *)cfg.sta.password, profile->password, sizeof(cfg.sta.password));
     cfg.sta.threshold.authmode = ap->authmode;
 
+    ESP_RETURN_ON_ERROR(wifi_selector_dispatch_sta_config(selector, &cfg),
+                        TAG, "Apply connect failed: STA config event failed");
     ESP_RETURN_ON_ERROR(esp_wifi_set_config(WIFI_IF_STA, &cfg), TAG, "Apply connect failed: set config failed");
     ESP_RETURN_ON_ERROR(esp_wifi_connect(), TAG, "Apply connect failed: connect failed");
+    wifi_selector_mark_connect_attempt(selector);
     return ESP_OK;
 }
 
+static esp_err_t wifi_selector_apply_direct_connect(wifi_selector_ctx_t *selector,
+                                                    const esp_wifi_service_profile_t *profile, bool connected)
+{
+    wifi_config_t cfg = {0};
+    strlcpy((char *)cfg.sta.ssid, profile->ssid, sizeof(cfg.sta.ssid));
+    strlcpy((char *)cfg.sta.password, profile->password, sizeof(cfg.sta.password));
+
+    ESP_RETURN_ON_ERROR(wifi_selector_dispatch_sta_config(selector, &cfg),
+                        TAG, "Direct connect failed: STA config event failed");
+    ESP_RETURN_ON_ERROR(esp_wifi_set_config(WIFI_IF_STA, &cfg), TAG, "Direct connect failed: set config failed");
+
+    xSemaphoreTake(selector->lock, portMAX_DELAY);
+    selector->direct_connecting = true;
+    selector->direct_disconnect_pending = connected;
+    xSemaphoreGive(selector->lock);
+
+    if (connected) {
+        esp_err_t err = esp_wifi_disconnect();
+        if (err != ESP_OK && err != ESP_ERR_WIFI_NOT_CONNECT) {
+            xSemaphoreTake(selector->lock, portMAX_DELAY);
+            selector->direct_connecting = false;
+            selector->direct_disconnect_pending = false;
+            xSemaphoreGive(selector->lock);
+            ESP_LOGW(TAG, "Direct connect failed: disconnect current AP failed (%s)", esp_err_to_name(err));
+            return err;
+        }
+    }
+
+    esp_err_t err = esp_wifi_connect();
+    if (err != ESP_OK) {
+        xSemaphoreTake(selector->lock, portMAX_DELAY);
+        selector->direct_connecting = false;
+        selector->direct_disconnect_pending = false;
+        xSemaphoreGive(selector->lock);
+        ESP_LOGW(TAG, "Direct connect failed: connect ssid='%s' failed (%s)", profile->ssid, esp_err_to_name(err));
+        return err;
+    }
+    return ESP_OK;
+}
+
+static void wifi_selector_handle_scan_done(esp_err_t scan_err, uint16_t ap_count, const wifi_ap_record_t *aps, void *ctx);
+
 static esp_err_t wifi_selector_begin_scan(wifi_selector_ctx_t *selector)
 {
-    if (!selector->started) {
+    if (!selector->started || !selector->scan_agent) {
         return ESP_ERR_INVALID_STATE;
     }
     if (!wifi_selector_has_enabled_profile(selector)) {
         return ESP_ERR_NOT_FOUND;
     }
     ESP_LOGI(TAG, "Reeval: starting active scan");
-    return esp_wifi_scan_start(NULL, false);
+    return esp_wifi_service_scan_request(selector->scan_agent, NULL, wifi_selector_handle_scan_done, selector);
 }
 
 static void wifi_selector_stop_check_timer(wifi_selector_ctx_t *selector)
@@ -420,13 +634,75 @@ static void wifi_selector_start_next_check(wifi_selector_ctx_t *selector)
         wifi_selector_stop_check_timer(selector);
         return;
     }
+    if (wifi_selector_connect_attempt_pending(selector)) {
+        ESP_LOGI(TAG, "Reeval: connect attempt pending, waiting for Wi-Fi event");
+        wifi_selector_stop_check_timer(selector);
+        return;
+    }
 
-    const uint32_t interval_ms = s_reeval_scan_retry_ms[0];
+    const uint32_t interval_ms = selector->reeval_scan_retry_ms[0];
     ESP_LOGI(TAG, "Reeval: no connected AP, scheduling scan in %" PRIu32 " ms", interval_ms);
     esp_err_t err = wifi_selector_start_check_timer(selector, WIFI_SELECTOR_CHECK_TIMER_REEVAL_SCAN, interval_ms, false);
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Reeval: schedule disconnected scan failed (%s)", esp_err_to_name(err));
     }
+}
+
+static esp_err_t wifi_selector_request_reeval(wifi_selector_ctx_t *selector, bool reset_connect_retry)
+{
+    ESP_RETURN_ON_FALSE(selector && selector->lock, ESP_ERR_INVALID_ARG, TAG, "Reeval failed: invalid handle");
+
+    xSemaphoreTake(selector->lock, portMAX_DELAY);
+    if (!selector->started) {
+        xSemaphoreGive(selector->lock);
+        ESP_LOGW(TAG, "Reeval failed: selector not started");
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (selector->reeval_inflight) {
+        selector->reeval_pending = true;
+        xSemaphoreGive(selector->lock);
+        ESP_LOGW(TAG, "Reeval: scan already in flight, marked pending");
+        return ESP_OK;
+    }
+    if (!reset_connect_retry &&
+        (selector->connect_attempt_pending || selector->direct_connecting || selector->direct_disconnect_pending)) {
+        xSemaphoreGive(selector->lock);
+        ESP_LOGI(TAG, "Reeval: connect attempt pending, waiting for Wi-Fi event");
+        return ESP_OK;
+    }
+
+    selector->reeval_inflight = true;
+    selector->reeval_scan_retry_idx = 0;
+    if (reset_connect_retry) {
+        selector->connect_retry_count = 0;
+        selector->connect_attempt_pending = false;
+    }
+    xSemaphoreGive(selector->lock);
+
+    wifi_selector_stop_check_timer(selector);
+    const esp_err_t err = wifi_selector_begin_scan(selector);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Reeval: scan start failed (%s)", esp_err_to_name(err));
+
+        bool rerun = false;
+        xSemaphoreTake(selector->lock, portMAX_DELAY);
+        selector->reeval_inflight = false;
+        selector->reeval_scan_retry_idx = 0;
+        if (selector->reeval_pending) {
+            selector->reeval_pending = false;
+            rerun = true;
+        }
+        xSemaphoreGive(selector->lock);
+
+        if (rerun) {
+            ESP_LOGI(TAG, "Reeval: pending request found, starting another scan");
+            wifi_selector_request_reeval(selector, false);
+        } else {
+            wifi_selector_start_next_check(selector);
+        }
+        return ESP_OK;
+    }
+    return ESP_OK;
 }
 
 static void wifi_selector_complete_reeval(wifi_selector_ctx_t *selector)
@@ -442,7 +718,7 @@ static void wifi_selector_complete_reeval(wifi_selector_ctx_t *selector)
     xSemaphoreGive(selector->lock);
     if (rerun) {
         ESP_LOGI(TAG, "Reeval: pending request found, starting another scan");
-        esp_wifi_service_selector_request_reeval(selector);
+        wifi_selector_request_reeval(selector, false);
     } else {
         wifi_selector_start_next_check(selector);
     }
@@ -456,7 +732,7 @@ static void wifi_selector_schedule_reeval_scan_retry(wifi_selector_ctx_t *select
 
     xSemaphoreTake(selector->lock, portMAX_DELAY);
     uint8_t retry_idx = selector->reeval_scan_retry_idx;
-    const uint8_t max_idx = (uint8_t)(sizeof(s_reeval_scan_retry_ms) / sizeof(s_reeval_scan_retry_ms[0]) - 1);
+    const uint8_t max_idx = selector->reeval_scan_retry_num - 1;
     if (retry_idx > max_idx) {
         retry_idx = max_idx;
     }
@@ -465,7 +741,7 @@ static void wifi_selector_schedule_reeval_scan_retry(wifi_selector_ctx_t *select
     }
     xSemaphoreGive(selector->lock);
 
-    const uint32_t interval_ms = s_reeval_scan_retry_ms[retry_idx];
+    const uint32_t interval_ms = selector->reeval_scan_retry_ms[retry_idx];
     ESP_LOGW(TAG, "Reeval: no profile AP found, retry scan in %" PRIu32 " ms", interval_ms);
     esp_err_t err = wifi_selector_start_check_timer(selector, WIFI_SELECTOR_CHECK_TIMER_REEVAL_SCAN, interval_ms, false);
     if (err != ESP_OK) {
@@ -619,8 +895,9 @@ static bool wifi_selector_reeval_inflight(wifi_selector_ctx_t *selector)
     return inflight;
 }
 
-static void wifi_selector_handle_scan_done(wifi_selector_ctx_t *selector)
+static void wifi_selector_handle_scan_done(esp_err_t scan_err, uint16_t ap_count, const wifi_ap_record_t *aps, void *ctx)
 {
+    wifi_selector_ctx_t *selector = (wifi_selector_ctx_t *)ctx;
     if (!selector || !selector->started) {
         return;
     }
@@ -629,30 +906,19 @@ static void wifi_selector_handle_scan_done(wifi_selector_ctx_t *selector)
         return;
     }
 
-    uint16_t ap_count = 0;
-    esp_err_t ret = esp_wifi_scan_get_ap_num(&ap_count);
-    if (ret == ESP_OK && ap_count == 0) {
+    if (scan_err == ESP_OK && ap_count == 0) {
         ESP_LOGW(TAG, "Scan done: no AP found");
         wifi_selector_schedule_reeval_scan_retry(selector);
         return;
     }
-    if (ret != ESP_OK) {
-        ESP_LOGW(TAG, "Scan done: get AP count failed (%s); staying on current AP", esp_err_to_name(ret));
+    if (scan_err != ESP_OK) {
+        ESP_LOGW(TAG, "Scan done: scan failed (%s); staying on current AP", esp_err_to_name(scan_err));
         wifi_selector_complete_reeval(selector);
         return;
     }
-
-    wifi_ap_record_t *aps = heap_caps_calloc_prefer(ap_count, sizeof(wifi_ap_record_t), 2,
-                                                    MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_DEFAULT);
     if (!aps) {
-        ESP_LOGE(TAG, "Scan done: out of memory for %u AP records", (unsigned)ap_count);
-        wifi_selector_complete_reeval(selector);
-        return;
-    }
-    if (esp_wifi_scan_get_ap_records(&ap_count, aps) != ESP_OK) {
-        ESP_LOGE(TAG, "Scan done: failed to get AP records");
-        heap_caps_free(aps);
-        wifi_selector_complete_reeval(selector);
+        ESP_LOGW(TAG, "Scan done: AP list is empty");
+        wifi_selector_schedule_reeval_scan_retry(selector);
         return;
     }
 
@@ -676,7 +942,6 @@ static void wifi_selector_handle_scan_done(wifi_selector_ctx_t *selector)
         } else {
             ESP_LOGW(TAG, "Scan done: no usable candidate among %u AP(s) and not connected", (unsigned)ap_count);
         }
-        heap_caps_free(aps);
         wifi_selector_schedule_reeval_scan_retry(selector);
         return;
     }
@@ -696,7 +961,6 @@ static void wifi_selector_handle_scan_done(wifi_selector_ctx_t *selector)
     }
     if (action == WIFI_SELECTOR_ACTION_STAY) {
         ESP_LOGI(TAG, "Reeval: staying on current AP");
-        heap_caps_free(aps);
         wifi_selector_complete_reeval(selector);
         return;
     }
@@ -705,12 +969,15 @@ static void wifi_selector_handle_scan_done(wifi_selector_ctx_t *selector)
     if (action == WIFI_SELECTOR_ACTION_CONNECT) {
         ESP_LOGI(TAG, "Connect: applying ssid='%s' to bssid=" WIFI_SELECTOR_LOG_BSSID_FMT, candidate.ssid,
                  WIFI_SELECTOR_LOG_BSSID_ARG(candidate.bssid));
-        const esp_err_t err = wifi_selector_apply_connect(&best_profile, &best_ap, true);
+        const esp_err_t err = wifi_selector_apply_connect(selector, &best_profile, &best_ap, true);
         if (err != ESP_OK) {
             ESP_LOGW(TAG, "Connect: failed to apply candidate (%s)", esp_err_to_name(err));
+            if (wifi_selector_note_connect_failure(selector)) {
+                wifi_selector_finish_reeval_stopped(selector);
+                return;
+            }
             wifi_selector_emit_switch_failed(selector);
         }
-        heap_caps_free(aps);
         wifi_selector_complete_reeval(selector);
         return;
     }
@@ -725,7 +992,6 @@ static void wifi_selector_handle_scan_done(wifi_selector_ctx_t *selector)
         wifi_selector_emit_switch_failed(selector);
     }
 
-    heap_caps_free(aps);
     wifi_selector_complete_reeval(selector);
 }
 
@@ -738,13 +1004,24 @@ static bool wifi_selector_handle_disconnected(wifi_selector_ctx_t *selector)
 
     ESP_LOGI(TAG, "Switch: applying pending config after disconnect to " WIFI_SELECTOR_LOG_BSSID_FMT,
              WIFI_SELECTOR_LOG_BSSID_ARG(selector->pending_cfg.sta.bssid));
-    esp_err_t err = esp_wifi_set_config(WIFI_IF_STA, &selector->pending_cfg);
+    esp_err_t err = wifi_selector_dispatch_sta_config(selector, &selector->pending_cfg);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Switch: STA config event failed (%s)", esp_err_to_name(err));
+        wifi_selector_emit_switch_failed(selector);
+        return true;
+    }
+    err = esp_wifi_set_config(WIFI_IF_STA, &selector->pending_cfg);
     if (err == ESP_OK) {
         err = esp_wifi_connect();
+        if (err == ESP_OK) {
+            wifi_selector_mark_connect_attempt(selector);
+        }
     }
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Switch: connect pending candidate failed (%s)", esp_err_to_name(err));
-        wifi_selector_emit_switch_failed(selector);
+        if (!wifi_selector_note_connect_failure(selector)) {
+            wifi_selector_emit_switch_failed(selector);
+        }
     }
     return true;
 }
@@ -777,7 +1054,7 @@ static void wifi_selector_check_rssi(wifi_selector_ctx_t *selector)
     wifi_selector_fire(selector, ESP_WIFI_SERVICE_SELECTOR_EVT_RSSI_LOW, &rssi_low_evt);
     if ((selector->policy.triggers_mask & ESP_WIFI_SERVICE_SELECTOR_TRIGGER_RSSI_LOW) != 0) {
         ESP_LOGI(TAG, "Trigger: RSSI low (%d < %d), requesting reeval", (int)ap.rssi, (int)rssi_low_dbm);
-        esp_wifi_service_selector_request_reeval(selector);
+        wifi_selector_request_reeval(selector, false);
     } else {
         ESP_LOGI(TAG, "Trigger: RSSI low (%d < %d), reeval disabled by mask", (int)ap.rssi, (int)rssi_low_dbm);
     }
@@ -815,7 +1092,7 @@ static void wifi_selector_check_tick(void *arg)
                     break;
                 }
                 ESP_LOGI(TAG, "Reeval: disconnected scan timer fired, requesting reeval");
-                esp_wifi_service_selector_request_reeval(selector);
+                wifi_selector_request_reeval(selector, false);
                 break;
             }
             const esp_err_t err = wifi_selector_begin_scan(selector);
@@ -854,7 +1131,7 @@ static void wifi_selector_probe_event_handler(wifi_sel_probe_event_t evt, void *
                 ESP_LOGI(TAG, "Trigger: probe failed err=%s status=%" PRIi32 ", requesting reeval",
                          esp_err_to_name(access_failed.probe_err), access_failed.status_code);
                 wifi_selector_blacklist_current(selector, selector->policy.probe.blocked_seconds);
-                esp_wifi_service_selector_request_reeval(selector);
+                wifi_selector_request_reeval(selector, false);
             } else {
                 ESP_LOGI(TAG, "Trigger: probe failed err=%s status=%" PRIi32 ", reeval disabled by mask",
                          esp_err_to_name(access_failed.probe_err), access_failed.status_code);
@@ -873,7 +1150,7 @@ static void wifi_selector_probe_event_handler(wifi_sel_probe_event_t evt, void *
                 ESP_LOGI(TAG, "Trigger: latency degraded latency=%ums rssi=%d, requesting reeval",
                          (unsigned)latency_degraded.latency_ms, (int)latency_degraded.rssi_dbm);
                 wifi_selector_blacklist_current(selector, selector->policy.probe.blocked_seconds);
-                esp_wifi_service_selector_request_reeval(selector);
+                wifi_selector_request_reeval(selector, false);
             } else {
                 ESP_LOGI(TAG, "Trigger: latency degraded latency=%ums rssi=%d, reeval disabled by mask",
                          (unsigned)latency_degraded.latency_ms, (int)latency_degraded.rssi_dbm);
@@ -905,7 +1182,7 @@ static void wifi_selector_throughput_event_handler(wifi_sel_throughput_event_t e
                 ESP_LOGI(TAG, "Trigger: throughput degraded kbps=%" PRIi32 " rssi=%d, requesting reeval",
                          throughput_evt.throughput_kbps, (int)throughput_evt.rssi_dbm);
                 wifi_selector_blacklist_current(selector, selector->policy.throughput.blocked_seconds);
-                esp_wifi_service_selector_request_reeval(selector);
+                wifi_selector_request_reeval(selector, false);
             } else {
                 ESP_LOGI(TAG, "Trigger: throughput degraded kbps=%" PRIi32 " rssi=%d, reeval disabled by mask",
                          throughput_evt.throughput_kbps, (int)throughput_evt.rssi_dbm);
@@ -926,28 +1203,31 @@ static void wifi_selector_wifi_event_handler(void *arg, esp_event_base_t event_b
     }
 
     switch (event_id) {
-        case WIFI_EVENT_SCAN_DONE:
-            wifi_selector_handle_scan_done(selector);
-            break;
         case WIFI_EVENT_STA_DISCONNECTED: {
             ESP_LOGI(TAG, "Wi-Fi event: STA disconnected");
-            wifi_selector_stop_rssi_check(selector);
-#if CONFIG_WIFI_SERVICE_SELECTOR_PROBE_ENABLE
-            if (selector->probe) {
-                wifi_sel_probe_stop(selector->probe);
-            }
-#endif  /* CONFIG_WIFI_SERVICE_SELECTOR_PROBE_ENABLE */
-#if CONFIG_WIFI_SERVICE_SELECTOR_THROUGHPUT_ENABLE
-            if (selector->throughput) {
-                wifi_sel_throughput_stop(selector->throughput);
-            }
-#endif  /* CONFIG_WIFI_SERVICE_SELECTOR_THROUGHPUT_ENABLE */
+            wifi_selector_stop_health_monitors(selector);
             if (wifi_selector_handle_disconnected(selector)) {
                 break;
             }
+            xSemaphoreTake(selector->lock, portMAX_DELAY);
+            const bool direct_disconnect_pending = selector->direct_disconnect_pending;
+            const bool direct_connecting = selector->direct_connecting;
+            if (selector->direct_disconnect_pending) {
+                selector->direct_disconnect_pending = false;
+            } else if (selector->direct_connecting) {
+                selector->direct_connecting = false;
+            }
+            xSemaphoreGive(selector->lock);
+            if (direct_disconnect_pending || direct_connecting) {
+                ESP_LOGI(TAG, "Direct connect: disconnected event consumed");
+                break;
+            }
             if (wifi_selector_has_enabled_profile(selector)) {
+                if (wifi_selector_connect_retry_exhausted(selector)) {
+                    break;
+                }
                 ESP_LOGI(TAG, "Trigger: STA connect lost, requesting reeval");
-                esp_wifi_service_selector_request_reeval(selector);
+                wifi_selector_request_reeval(selector, false);
             } else {
                 ESP_LOGI(TAG, "Trigger: STA connect lost, no enabled profile for reeval");
             }
@@ -969,6 +1249,11 @@ static void wifi_selector_ip_event_handler(void *arg, esp_event_base_t event_bas
     switch (event_id) {
         case IP_EVENT_STA_GOT_IP:
             ESP_LOGI(TAG, "IP event: got IP");
+            xSemaphoreTake(selector->lock, portMAX_DELAY);
+            selector->direct_connecting = false;
+            selector->direct_disconnect_pending = false;
+            xSemaphoreGive(selector->lock);
+            wifi_selector_reset_connect_retry(selector);
             wifi_selector_mark_current_profile_working(selector);
 #if CONFIG_WIFI_SERVICE_SELECTOR_PROBE_ENABLE
             if (selector->probe) {
@@ -984,17 +1269,7 @@ static void wifi_selector_ip_event_handler(void *arg, esp_event_base_t event_bas
             break;
         case IP_EVENT_STA_LOST_IP:
             ESP_LOGI(TAG, "IP event: lost IP, stopping health monitors");
-            wifi_selector_stop_rssi_check(selector);
-#if CONFIG_WIFI_SERVICE_SELECTOR_PROBE_ENABLE
-            if (selector->probe) {
-                wifi_sel_probe_stop(selector->probe);
-            }
-#endif  /* CONFIG_WIFI_SERVICE_SELECTOR_PROBE_ENABLE */
-#if CONFIG_WIFI_SERVICE_SELECTOR_THROUGHPUT_ENABLE
-            if (selector->throughput) {
-                wifi_sel_throughput_stop(selector->throughput);
-            }
-#endif  /* CONFIG_WIFI_SERVICE_SELECTOR_THROUGHPUT_ENABLE */
+            wifi_selector_stop_health_monitors(selector);
             break;
         default:
             break;
@@ -1003,15 +1278,16 @@ static void wifi_selector_ip_event_handler(void *arg, esp_event_base_t event_bas
 
 static esp_err_t wifi_selector_register_event_handlers(wifi_selector_ctx_t *selector)
 {
-    esp_err_t err = esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_selector_wifi_event_handler,
-                                                        selector, &selector->wifi_ev_inst);
+    esp_err_t err = esp_event_handler_instance_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED,
+                                                        wifi_selector_wifi_event_handler, selector,
+                                                        &selector->wifi_ev_inst);
     if (err != ESP_OK) {
         return err;
     }
     err = esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, wifi_selector_ip_event_handler, selector,
                                               &selector->ip_ev_inst);
     if (err != ESP_OK) {
-        esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, selector->wifi_ev_inst);
+        esp_event_handler_instance_unregister(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, selector->wifi_ev_inst);
         selector->wifi_ev_inst = NULL;
     }
     return err;
@@ -1024,7 +1300,7 @@ static void wifi_selector_unregister_event_handlers(wifi_selector_ctx_t *selecto
         selector->ip_ev_inst = NULL;
     }
     if (selector->wifi_ev_inst) {
-        esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, selector->wifi_ev_inst);
+        esp_event_handler_instance_unregister(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, selector->wifi_ev_inst);
         selector->wifi_ev_inst = NULL;
     }
 }
@@ -1076,6 +1352,11 @@ static void wifi_selector_cfg_fill_defaults(esp_wifi_service_selector_cfg_t *out
                 .task_ext_stack = false,
             },
         },
+        .retry = {
+            .scan_retry_ms = NULL,
+            .scan_retry_num = 0,
+            .max_connect_retry = 0,
+        },
     };
 }
 
@@ -1096,16 +1377,24 @@ esp_err_t esp_wifi_service_selector_init(const esp_wifi_service_selector_config_
     ESP_RETURN_ON_FALSE(selector, ESP_ERR_NO_MEM, TAG, "Init failed: out of memory");
 
     selector->profile_manager = cfg->profile_manager;
+    selector->scan_agent = cfg->scan_agent;
     selector->cb = cfg->event_cb;
     selector->cb_ctx = cfg->user_data;
     selector->policy = *policy_src;
+    esp_err_t err = wifi_selector_copy_retry_policy(selector, &policy_src->retry);
+    if (err != ESP_OK) {
+        heap_caps_free(selector);
+        return err;
+    }
     selector->policy.probe.url = wifi_selector_strdup(policy_src->probe.url);
     if (policy_src->probe.url && !selector->policy.probe.url) {
+        wifi_selector_free_retry_policy(selector);
         heap_caps_free(selector);
         return ESP_ERR_NO_MEM;
     }
     selector->policy.throughput.url = wifi_selector_strdup(policy_src->throughput.url);
     if (policy_src->throughput.url && !selector->policy.throughput.url) {
+        wifi_selector_free_retry_policy(selector);
         wifi_selector_free_policy_urls(selector);
         heap_caps_free(selector);
         return ESP_ERR_NO_MEM;
@@ -1113,20 +1402,35 @@ esp_err_t esp_wifi_service_selector_init(const esp_wifi_service_selector_config_
 
     selector->lock = xSemaphoreCreateMutexWithCaps(ESP_WIFI_SERVICE_CAPS);
     if (!selector->lock) {
+        wifi_selector_free_retry_policy(selector);
         wifi_selector_free_policy_urls(selector);
         heap_caps_free(selector);
         return ESP_ERR_NO_MEM;
     }
 
-    esp_err_t err = wifi_sel_blacklist_init(&selector->blacklist);
+    err = wifi_sel_blacklist_init(&selector->blacklist);
     if (err != ESP_OK) {
         vSemaphoreDeleteWithCaps(selector->lock);
+        wifi_selector_free_retry_policy(selector);
         wifi_selector_free_policy_urls(selector);
         heap_caps_free(selector);
         return err;
     }
 
     *out_handle = selector;
+    return ESP_OK;
+}
+
+esp_err_t esp_wifi_service_selector_set_scan_agent(esp_wifi_service_selector_handle_t handle,
+                                                   esp_wifi_service_scan_handle_t scan_agent)
+{
+    wifi_selector_ctx_t *selector = (wifi_selector_ctx_t *)handle;
+    ESP_RETURN_ON_FALSE(selector && selector->lock, ESP_ERR_INVALID_ARG, TAG,
+                        "Set scan agent failed: invalid argument");
+
+    xSemaphoreTake(selector->lock, portMAX_DELAY);
+    selector->scan_agent = scan_agent;
+    xSemaphoreGive(selector->lock);
     return ESP_OK;
 }
 
@@ -1143,6 +1447,7 @@ void esp_wifi_service_selector_deinit(esp_wifi_service_selector_handle_t handle)
     if (selector->lock) {
         vSemaphoreDeleteWithCaps(selector->lock);
     }
+    wifi_selector_free_retry_policy(selector);
     wifi_selector_free_policy_urls(selector);
     heap_caps_free(selector);
 }
@@ -1237,7 +1542,7 @@ esp_err_t esp_wifi_service_selector_start(esp_wifi_service_selector_handle_t han
 
     if (wifi_selector_has_enabled_profile(selector)) {
         ESP_LOGI(TAG, "Selector start: enabled profile found, requesting initial reeval");
-        esp_wifi_service_selector_request_reeval(selector);
+        wifi_selector_request_reeval(selector, false);
     }
     ESP_LOGI(TAG, "Selector start: completed");
     return ESP_OK;
@@ -1247,6 +1552,10 @@ error:
     selector->started = false;
     selector->reeval_pending = false;
     selector->reeval_inflight = false;
+    selector->direct_connecting = false;
+    selector->direct_disconnect_pending = false;
+    selector->connect_retry_count = 0;
+    selector->connect_attempt_pending = false;
     xSemaphoreGive(selector->lock);
 #if CONFIG_WIFI_SERVICE_SELECTOR_THROUGHPUT_ENABLE
     if (selector->throughput) {
@@ -1299,7 +1608,12 @@ void esp_wifi_service_selector_stop(esp_wifi_service_selector_handle_t handle)
     selector->reeval_scan_retry_idx = 0;
     selector->check_timer_mode = WIFI_SELECTOR_CHECK_TIMER_IDLE;
     selector->pending_switch = false;
+    selector->direct_connecting = false;
+    selector->direct_disconnect_pending = false;
+    selector->connect_retry_count = 0;
+    selector->connect_attempt_pending = false;
     xSemaphoreGive(selector->lock);
+    esp_wifi_service_scan_remove_cb(selector->scan_agent, wifi_selector_handle_scan_done);
 
     if (selector->t_check) {
         esp_timer_stop(selector->t_check);
@@ -1321,34 +1635,54 @@ void esp_wifi_service_selector_stop(esp_wifi_service_selector_handle_t handle)
     wifi_selector_unregister_event_handlers(selector);
 }
 
-esp_err_t esp_wifi_service_selector_request_reeval(esp_wifi_service_selector_handle_t handle)
+esp_err_t esp_wifi_service_selector_request_connect(esp_wifi_service_selector_handle_t handle, const char *ssid)
 {
     wifi_selector_ctx_t *selector = (wifi_selector_ctx_t *)handle;
-    ESP_RETURN_ON_FALSE(selector && selector->lock, ESP_ERR_INVALID_ARG, TAG, "Reeval failed: invalid handle");
+    ESP_RETURN_ON_FALSE(selector && selector->lock && ssid, ESP_ERR_INVALID_ARG, TAG,
+                        "Direct connect failed: invalid argument");
+
+    esp_wifi_service_profile_t profile = {0};
+    esp_err_t ret = esp_wifi_service_profile_mgr_get(selector->profile_manager, ssid, &profile);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "Direct connect failed: profile ssid='%s' not found (%s)", ssid, esp_err_to_name(ret));
+        return ret;
+    }
+    ESP_RETURN_ON_FALSE((profile.flags & ESP_WIFI_SERVICE_PROFILE_FLAG_ENABLED) != 0, ESP_ERR_INVALID_STATE, TAG,
+                        "Direct connect failed: profile ssid='%s' is disabled", ssid);
 
     xSemaphoreTake(selector->lock, portMAX_DELAY);
     if (!selector->started) {
         xSemaphoreGive(selector->lock);
-        ESP_LOGW(TAG, "Reeval failed: selector not started");
+        ESP_LOGW(TAG, "Direct connect failed: selector not started");
         return ESP_ERR_INVALID_STATE;
     }
-    if (selector->reeval_inflight) {
-        selector->reeval_pending = true;
-        xSemaphoreGive(selector->lock);
-        ESP_LOGW(TAG, "Reeval: scan already in flight, marked pending");
-        return ESP_OK;
-    }
-
-    selector->reeval_inflight = true;
+    selector->reeval_pending = false;
+    selector->reeval_inflight = false;
     selector->reeval_scan_retry_idx = 0;
+    selector->connect_retry_count = 0;
+    selector->connect_attempt_pending = false;
+    selector->pending_switch = false;
     xSemaphoreGive(selector->lock);
 
     wifi_selector_stop_check_timer(selector);
-    const esp_err_t err = wifi_selector_begin_scan(selector);
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Reeval: scan start failed (%s)", esp_err_to_name(err));
-        wifi_selector_complete_reeval(selector);
-        return ESP_OK;
+    wifi_selector_stop_health_monitors(selector);
+
+    esp_wifi_service_scan_cancel_all(selector->scan_agent);
+
+    wifi_ap_record_t current_ap = {0};
+    const bool connected = (esp_wifi_sta_get_ap_info(&current_ap) == ESP_OK);
+    wifi_selector_emit_switching(selector, connected ? current_ap.bssid : NULL, NULL);
+
+    ESP_LOGI(TAG, "Direct connect: applying ssid='%s'", profile.ssid);
+    ret = wifi_selector_apply_direct_connect(selector, &profile, connected);
+    if (ret != ESP_OK) {
+        wifi_selector_emit_switch_failed(selector);
+        return ret;
     }
     return ESP_OK;
+}
+
+esp_err_t esp_wifi_service_selector_request_reeval(esp_wifi_service_selector_handle_t handle)
+{
+    return wifi_selector_request_reeval((wifi_selector_ctx_t *)handle, true);
 }

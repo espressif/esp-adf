@@ -27,6 +27,7 @@
 #endif  /* CONFIG_ESP_MCP_TRANSPORT_UART */
 #endif  /* CONFIG_WIFI_SERVICE_MCP_ENABLE */
 #include "esp_wifi.h"
+#include "esp_wifi_service.h"
 #if CONFIG_WIFI_SERVICE_PROV_BLUFI_ENABLE
 #include "esp_blufi.h"
 #include "esp_bt.h"
@@ -56,8 +57,8 @@ static const char *TAG = "WIFI_SVC_EXAMPLE";
 
 #if CONFIG_WIFI_SERVICE_MCP_ENABLE && CONFIG_ESP_MCP_TRANSPORT_UART
 #define WIFI_SVC_EX_MCP_UART_PORT   UART_NUM_1
-#define WIFI_SVC_EX_MCP_UART_TX_IO  25
-#define WIFI_SVC_EX_MCP_UART_RX_IO  26
+#define WIFI_SVC_EX_MCP_UART_TX_IO  17
+#define WIFI_SVC_EX_MCP_UART_RX_IO  18
 #define WIFI_SVC_EX_MCP_UART_BAUD   115200
 #endif  /* CONFIG_WIFI_SERVICE_MCP_ENABLE && CONFIG_ESP_MCP_TRANSPORT_UART */
 
@@ -69,10 +70,11 @@ static esp_config_storage_nvs_t s_wifi_profile_store = {
 
 static esp_config_storage_t s_wifi_profile_storage = NULL;
 
-#define WIFI_SVC_EX_AES_KEY_LEN_BYTES  (16u)
-#define WIFI_SVC_EX_AES_BLOCK_SIZE     (16u)
-#define WIFI_SVC_EX_AES_BLOB_OVERHEAD  (WIFI_SVC_EX_AES_BLOCK_SIZE * 2u)  // IV + worst-case PKCS7 padding
-#define WIFI_SVC_EX_PROFILE_MAX_NUM    (8u)
+#define WIFI_SVC_EX_AES_KEY_LEN_BYTES    (16u)
+#define WIFI_SVC_EX_AES_BLOCK_SIZE       (16u)
+#define WIFI_SVC_EX_AES_BLOB_OVERHEAD    (WIFI_SVC_EX_AES_BLOCK_SIZE * 2u)  // IV + worst-case PKCS7 padding
+#define WIFI_SVC_EX_PROFILE_MAX_NUM      (8u)
+#define WIFI_SVC_EX_STA_LISTEN_INTERVAL  (3u)
 
 static esp_err_t wifi_svc_ex_profile_encrypt(void *ctx, const uint8_t *in, size_t in_len, uint8_t *out, size_t out_size, size_t *out_len)
 {
@@ -469,6 +471,20 @@ static void wifi_event_handler(const adf_event_t *event, void *ctx)
             ESP_LOGI(TAG, "Payload: ip=" IPSTR " netmask=" IPSTR " gw=" IPSTR " ip_changed=%u",
                      IP2STR(&info->ip_info.ip), IP2STR(&info->ip_info.netmask), IP2STR(&info->ip_info.gw),
                      (unsigned)info->ip_changed);
+            break;
+        }
+        case ESP_WIFI_SERVICE_EVENT_STA_CONFIG: {
+            if (event->payload_len < sizeof(esp_wifi_service_sta_config_event_t)) {
+                ESP_LOGW(TAG, "Payload too short: STA_CONFIG len=%u", (unsigned)event->payload_len);
+                break;
+            }
+            const esp_wifi_service_sta_config_event_t *info =
+                (const esp_wifi_service_sta_config_event_t *)event->payload;
+            if (!info->config) {
+                break;
+            }
+            info->config->sta.listen_interval = WIFI_SVC_EX_STA_LISTEN_INTERVAL;
+            ESP_LOGI(TAG, "Payload: STA listen_interval=%u", (unsigned)info->config->sta.listen_interval);
             break;
         }
         case ESP_WIFI_SERVICE_EVENT_SELECTOR_CANDIDATE: {

@@ -10,6 +10,8 @@
 #include <stdint.h>
 
 #include "esp_err.h"
+#include "esp_wifi_service_scan.h"
+#include "esp_wifi_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +28,7 @@ typedef enum {
     ESP_WIFI_SERVICE_PROV_EVT_CREDENTIAL_RECEIVED,   /*!< Credential submitted by peer */
     ESP_WIFI_SERVICE_PROV_EVT_ERROR,                 /*!< Transport/runtime error */
     ESP_WIFI_SERVICE_PROV_EVT_CUSTOM_DATA_RECEIVED,  /*!< Custom data submitted by peer */
+    ESP_WIFI_SERVICE_PROV_EVT_STA_CONFIG,            /*!< Station config is about to be applied */
 } esp_wifi_service_prov_event_id_t;
 
 /**
@@ -72,6 +75,16 @@ typedef struct {
 } esp_wifi_service_prov_custom_data_t;
 
 /**
+ * @brief  Payload for station config adjustment events
+ *
+ * @note  The config pointer is valid only during synchronous callback delivery.
+ *        Callback-mode subscribers may update @c config before it is applied.
+ */
+typedef struct {
+    wifi_config_t *config;  /*!< Mutable STA config that will be passed to esp_wifi_set_config() */
+} esp_wifi_service_sta_config_event_t;
+
+/**
  * @brief  Common payload for provisioning service events
  */
 typedef struct {
@@ -80,6 +93,7 @@ typedef struct {
         esp_wifi_service_prov_credential_t   credential;   /*!< Data for credential submission event: ESP_WIFI_SERVICE_PROV_EVT_CREDENTIAL_RECEIVED*/
         esp_wifi_service_prov_error_t        error;        /*!< Data for provisioning error event: ESP_WIFI_SERVICE_PROV_EVT_ERROR */
         esp_wifi_service_prov_custom_data_t  custom_data;  /*!< Data for custom data event: ESP_WIFI_SERVICE_PROV_EVT_CUSTOM_DATA_RECEIVED */
+        esp_wifi_service_sta_config_event_t  sta_config;   /*!< Data for STA config event: ESP_WIFI_SERVICE_PROV_EVT_STA_CONFIG */
     } data;                                                /*!< Event-specific data selected by event id */
 } esp_wifi_service_prov_event_t;
 
@@ -127,6 +141,7 @@ struct esp_wifi_service_prov_base {
     void                              *event_ctx;         /*!< Callback context */
     const esp_wifi_service_prov_ops_t *ops;               /*!< Provisioning operations vtable */
     uint8_t                            default_priority;  /*!< Optional shared default priority */
+    esp_wifi_service_scan_handle_t     scan_agent;        /*!< Wi-Fi service scan agent */
 };
 
 /**
@@ -144,9 +159,11 @@ esp_err_t esp_wifi_service_prov_init(esp_wifi_service_prov_t prov, const esp_wif
 /**
  * @brief  Deinitialize a provisioning base object
  *
- * @note  After this call @p prov is invalid and must not be used.
+ * @note  This clears only the common base fields. Owners of derived
+ *        provisioning objects remain responsible for releasing their own
+ *        storage after this call.
  *
- * @param[in]  prov  Provisioning handle returned by esp_wifi_service_prov_init()
+ * @param[in]  prov  Provisioning object initialized by esp_wifi_service_prov_init()
  *
  * @return
  *       - ESP_OK               On success
@@ -166,6 +183,19 @@ esp_err_t esp_wifi_service_prov_deinit(esp_wifi_service_prov_t prov);
  *       - ESP_ERR_INVALID_ARG  If @p prov is NULL
  */
 esp_err_t esp_wifi_service_prov_set_cb(esp_wifi_service_prov_t prov, esp_wifi_service_prov_event_cb_t cb, void *event_ctx);
+
+/**
+ * @brief  Set scan agent handle
+ *
+ * @param[in]  prov        Provisioning object
+ * @param[in]  scan_agent  Scan agent handle, NULL to clear
+ *
+ * @return
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  If @p prov is NULL
+ */
+esp_err_t esp_wifi_service_prov_set_scan_agent(esp_wifi_service_prov_t prov,
+                                               esp_wifi_service_scan_handle_t scan_agent);
 
 /**
  * @brief  Start the provisioning instance

@@ -2,6 +2,7 @@ set(srcs
     "src/esp_wifi_service.c"
     "src/provisioning/esp_wifi_service_prov.c"
     "src/profile/esp_wifi_service_profile_mgr.c"
+    "src/scan/esp_wifi_service_scan.c"
     "src/selector/esp_wifi_service_selector.c"
     "src/selector/esp_wifi_service_sel_blacklist.c"
 )

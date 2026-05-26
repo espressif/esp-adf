@@ -10,6 +10,7 @@
  *   wifi profile del <ssid>
  *   wifi profile del_idx <index>     (0 .. count-1)
  *   wifi profile clear               (remove all profiles)
+ *   wifi connect <ssid> <password|- for open AP> [priority 0..20] [wait_sec]
  *   wifi prov start|stop
  *   wifi reeval
  *   reboot                       (restart device)
@@ -169,15 +170,55 @@ static int cmd_wifi_prov(int argc, char **argv)
     return 1;
 }
 
+static int cmd_wifi_connect(int argc, char **argv)
+{
+    if (argc < 4) {
+        printf("Usage: wifi connect <ssid> <password|- for open AP> [priority 0..20] [wait_sec]\n");
+        return 1;
+    }
+
+    char *ssid = argv[2];
+    char *password = argv[3];
+    char empty_password[] = "";
+    if (strcmp(password, "-") == 0) {
+        password = empty_password;
+    }
+
+    unsigned pri = 10;
+    if (argc >= 5) {
+        pri = (unsigned)strtoul(argv[4], NULL, 0);
+        if (pri > ESP_WIFI_SERVICE_PROFILE_PRIORITY_MAX) {
+            pri = ESP_WIFI_SERVICE_PROFILE_PRIORITY_MAX;
+        }
+    }
+
+    uint32_t wait_sec = 30;
+    if (argc >= 6) {
+        wait_sec = (uint32_t)strtoul(argv[5], NULL, 0);
+    }
+
+    esp_err_t ret = esp_wifi_service_request_connect(s_service, ssid, password, (uint8_t)pri, wait_sec);
+    if (ret != ESP_OK) {
+        printf("connect request failed: %s\n", esp_err_to_name(ret));
+        return 1;
+    }
+
+    printf("ok: connect requested for \"%s\" priority=%u wait_sec=%u\n", ssid, pri, (unsigned)wait_sec);
+    return 0;
+}
+
 static int cmd_wifi(int argc, char **argv)
 {
     if (argc < 2) {
-        printf("Usage: wifi profile ... | prov start|stop | reeval\n");
+        printf("Usage: wifi profile ... | connect ... | prov start|stop | reeval\n");
         return 1;
     }
 
     if (strcmp(argv[1], "profile") == 0) {
         return cmd_wifi_profile(argc, argv);
+    }
+    if (strcmp(argv[1], "connect") == 0) {
+        return cmd_wifi_connect(argc, argv);
     }
     if (strcmp(argv[1], "prov") == 0) {
         return cmd_wifi_prov(argc, argv);
@@ -193,7 +234,7 @@ static int cmd_wifi(int argc, char **argv)
     }
 
     printf("unknown group \"%s\"\n", argv[1]);
-    printf("Usage: wifi profile ... | prov start|stop | reeval\n");
+    printf("Usage: wifi profile ... | connect ... | prov start|stop | reeval\n");
     return 1;
 }
 
@@ -210,7 +251,8 @@ void wifi_service_console_start(esp_wifi_service_profile_mgr_t profile, esp_wifi
 
     const esp_console_cmd_t cmd = {
         .command = "wifi",
-        .help = "profile [list|add|del|del_idx|clear] | prov [start|stop] | reeval",
+        .help = "profile [list|add|del|del_idx|clear] | connect <ssid> <password|- for open AP> "
+                "[priority] [wait_sec] | prov [start|stop] | reeval",
         .hint = NULL,
         .func = &cmd_wifi};
     ESP_ERROR_CHECK(esp_cli_service_register_static_command(s_cli, &cmd));

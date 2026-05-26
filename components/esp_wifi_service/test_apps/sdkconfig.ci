@@ -1,0 +1,4 @@
+# SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO., LTD
+# SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
+
+CONFIG_WIFI_SERVICE_TEST_WITH_SSID=n

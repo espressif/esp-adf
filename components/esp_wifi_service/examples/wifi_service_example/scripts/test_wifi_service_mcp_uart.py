@@ -41,6 +41,7 @@ WIFI_TOOLS = {
     'esp_wifi_service_prov_start',
     'esp_wifi_service_prov_stop',
     'esp_wifi_service_request_reeval',
+    'esp_wifi_service_request_connect',
 }
 
 

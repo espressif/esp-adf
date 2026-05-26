@@ -11,6 +11,8 @@
 
 #include "esp_err.h"
 #include "esp_wifi_service_profile_mgr.h"
+#include "esp_wifi_service_prov.h"
+#include "esp_wifi_service_scan.h"
 #include "esp_wifi_service_selector.h"
 
 #ifdef __cplusplus
@@ -34,6 +36,7 @@ typedef enum {
     ESP_WIFI_SERVICE_SELECTOR_EVT_ACCESS_FAILED,        /*!< Access check failed */
     ESP_WIFI_SERVICE_SELECTOR_EVT_LATENCY_DEGRADED,     /*!< Latency degraded */
     ESP_WIFI_SERVICE_SELECTOR_EVT_THROUGHPUT_DEGRADED,  /*!< Throughput degraded */
+    ESP_WIFI_SERVICE_SELECTOR_EVT_STA_CONFIG,           /*!< Station config is about to be applied */
 } esp_wifi_service_selector_event_t;
 
 /**
@@ -54,6 +57,7 @@ typedef void (*esp_wifi_service_selector_event_cb_t)(esp_wifi_service_selector_e
 typedef struct {
     esp_wifi_service_profile_mgr_t         profile_manager;  /*!< Profile manager from ::esp_wifi_service_profile_mgr_init */
     const esp_wifi_service_selector_cfg_t *selector_cfg;     /*!< Selector configuration; NULL uses built-in defaults */
+    esp_wifi_service_scan_handle_t         scan_agent;       /*!< Shared Wi-Fi scan agent */
     esp_wifi_service_selector_event_cb_t   event_cb;         /*!< Selector event callback */
     void                                  *user_data;        /*!< User data passed to @c event_cb */
 } esp_wifi_service_selector_config_t;
@@ -70,6 +74,9 @@ typedef struct {
  */
 esp_err_t esp_wifi_service_selector_init(const esp_wifi_service_selector_config_t *cfg,
                                          esp_wifi_service_selector_handle_t *out_handle);
+
+esp_err_t esp_wifi_service_selector_set_scan_agent(esp_wifi_service_selector_handle_t handle,
+                                                   esp_wifi_service_scan_handle_t scan_agent);
 
 /**
  * @brief  Stop selector if started, unregister handlers, free controller
@@ -107,6 +114,21 @@ void esp_wifi_service_selector_stop(esp_wifi_service_selector_handle_t handle);
  *       - ESP_ERR_INVALID_ARG  Invalid argument
  */
 esp_err_t esp_wifi_service_selector_is_started(esp_wifi_service_selector_handle_t handle, bool *started_out);
+
+/**
+ * @brief  Connect directly to one saved profile by SSID without running selector re-evaluation
+ *
+ * @param[in]  handle  Selector handle
+ * @param[in]  ssid    Saved SSID to connect
+ *
+ * @return
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_ARG    Invalid argument
+ *       - ESP_ERR_INVALID_STATE  Selector is not started or profile is disabled
+ *       - ESP_ERR_NOT_FOUND      SSID is not saved
+ *       - Others                 Wi-Fi driver error
+ */
+esp_err_t esp_wifi_service_selector_request_connect(esp_wifi_service_selector_handle_t handle, const char *ssid);
 
 /**
  * @brief  Request one scan + selection cycle

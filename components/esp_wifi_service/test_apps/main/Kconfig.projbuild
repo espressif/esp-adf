@@ -1,0 +1,30 @@
+menu "ESP Wi-Fi Service Test App"
+
+    config WIFI_SERVICE_TEST_WITH_SSID
+        bool "Run request_connect tests with configured SSIDs"
+        default n
+        help
+            Enable unattended request_connect tests that use configured local
+            Wi-Fi SSIDs and passwords.
+
+    config WIFI_SERVICE_TEST_PRIMARY_SSID
+        string "Primary Wi-Fi SSID for request_connect tests"
+        default ""
+        depends on WIFI_SERVICE_TEST_WITH_SSID
+
+    config WIFI_SERVICE_TEST_SECONDARY_SSID
+        string "Secondary Wi-Fi SSID for switch request_connect tests"
+        default ""
+        depends on WIFI_SERVICE_TEST_WITH_SSID
+
+    config WIFI_SERVICE_TEST_PRIMARY_PASSWORD
+        string "Primary Wi-Fi password for request_connect tests"
+        default ""
+        depends on WIFI_SERVICE_TEST_WITH_SSID
+
+    config WIFI_SERVICE_TEST_SECONDARY_PASSWORD
+        string "Secondary Wi-Fi password for switch request_connect tests"
+        default ""
+        depends on WIFI_SERVICE_TEST_WITH_SSID
+
+endmenu
