@@ -41,6 +41,12 @@ EXAMPLES:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_playlist/examples/playlist_benchmark
+    board:
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
 
 TEST_APPS:
   - app_dir: components/esp_codec_dev/test_apps/codec_dev_test
@@ -63,3 +69,9 @@ TEST_APPS:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_playlist/test_apps
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}

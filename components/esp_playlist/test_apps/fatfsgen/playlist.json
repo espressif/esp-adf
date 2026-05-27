@@ -1,0 +1,17 @@
+{
+	"playlist_name": "sample_playlist",
+	"items": [
+	  {
+		"name": "sample_track_01",
+		"url": "file://sdcard/music/sample_track_01.mp3"
+	  },
+	  {
+		"name": "sample_track_02",
+		"url": "file://sdcard/music/sample_track_02.wav"
+	  },
+	  {
+		"name": "sample_track_03",
+		"url": "file://sdcard/music/sample_track_03.aac"
+	  }
+	]
+}

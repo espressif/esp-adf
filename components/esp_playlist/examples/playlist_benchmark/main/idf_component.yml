@@ -5,8 +5,6 @@ dependencies:
     version: ">=5.4.0"
   espressif/cjson:
     version: "^1.7.19"
-    rules:
-      - if: "idf_version >=6.0.0"
   esp_playlist:
     version: "*"
     override_path: "../../../"

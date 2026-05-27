@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-
 from pytest_embedded import Dut
+from pytest_embedded_idf.utils import idf_parametrize
 
-@pytest.mark.esp32s3
-@pytest.mark.esp32p4
-def test_playlist_benchmark_detect(dut: Dut)-> None:
+
+@pytest.mark.generic
+@idf_parametrize('target', ['esp32s3', 'esp32p4'], indirect=['target'])
+def test_playlist_benchmark_detect(dut: Dut) -> None:
     dut.expect(r'PLAYLIST_BENCH: Playlist benchmark done', timeout=30)
