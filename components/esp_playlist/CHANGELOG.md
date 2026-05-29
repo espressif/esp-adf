@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.1
+
+### Bugfix
+
+- Fixed build failure caused by missing `cJSON.h` include path when building `esp_playlist`
+- Fixed `esp_playlist` example and test app build issues in CI
+
 ## v0.5.0
 
 ### Features

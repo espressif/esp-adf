@@ -56,7 +56,7 @@ esp_err_t media_db_bench_scan_rebuild(esp_media_db_handle_t media_db, int *out_c
     esp_media_db_scan_cfg_t scan_cfg = {
         .skip_duplicate = true,
         .path = playlist_bench_scan_dir(),
-        .scan_depth = 0,
+        .scan_depth = 1,
         .file_extensions = exts,
         .file_extension_count = sizeof(exts) / sizeof(exts[0]),
     };

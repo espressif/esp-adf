@@ -58,7 +58,6 @@ components/esp_playlist/
 `file_extensions` 由应用配置，可为 `.mp3`、`.mp4` 等常见后缀。`/sdcard/music` 仅为示例路径。
 
 ```c
-#include "esp_media_db.h"
 #include "esp_playlist.h"
 
 esp_media_db_handle_t media_db = NULL;

@@ -58,7 +58,6 @@ Use `ESP_DB_STORAGE_FS` on SD card to persist the catalog, scan a directory, imp
 `file_extensions` is configured by the application (e.g. `.mp3`, `.mp4`). `/sdcard/music` is only an example path.
 
 ```c
-#include "esp_media_db.h"
 #include "esp_playlist.h"
 
 esp_media_db_handle_t media_db = NULL;

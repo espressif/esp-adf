@@ -14,7 +14,7 @@
 #define PLAYLIST_TEST_STORAGE_BASE    "/spiflash"
 #define PLAYLIST_TEST_JSON_PATH       PLAYLIST_TEST_STORAGE_BASE "/playlist.json"
 #define PLAYLIST_TEST_MEDIA_COUNT     3
-#define PLAYLIST_TEST_LEAK_THRESHOLD  1024
+#define PLAYLIST_TEST_LEAK_THRESHOLD  500
 
 typedef struct {
     esp_media_db_handle_t  media_db;

@@ -18,4 +18,4 @@ idf_component_register(
     PRIV_REQUIRES esp_timer freertos
 )
 
-idf_component_optional_requires(PRIVATE json cjson)
+idf_component_optional_requires(PUBLIC json)

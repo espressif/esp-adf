@@ -17,3 +17,5 @@ idf_component_register(
         heap
     WHOLE_ARCHIVE
 )
+
+fatfs_create_spiflash_image(storage ../fatfsgen FLASH_IN_PROJECT)
