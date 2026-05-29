@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+### Features
+
+- Added USB Serial and USB CDC support for `esp_cli_service`
+
 ## v0.5.0~1
 
 ### Changes
