@@ -199,58 +199,64 @@ static esp_err_t cli_on_start(esp_service_t *base)
 #if CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM
     esp_console_dev_uart_config_t uart_cfg = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
     ret = esp_console_new_repl_uart(&uart_cfg, &repl_cfg, &repl);
+#elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+    esp_console_dev_usb_serial_jtag_config_t usbjtag_cfg =
+        ESP_CONSOLE_DEV_USB_SERIAL_JTAG_CONFIG_DEFAULT();
+    ret = esp_console_new_repl_usb_serial_jtag(&usbjtag_cfg, &repl_cfg, &repl);
+#elif CONFIG_ESP_CONSOLE_USB_CDC
+    esp_console_dev_usb_cdc_config_t cdc_cfg = ESP_CONSOLE_DEV_CDC_CONFIG_DEFAULT();
+    ret = esp_console_new_repl_usb_cdc(&cdc_cfg, &repl_cfg, &repl);
+#else
+    (void)cli_set_repl_state(svc, NULL, false);
+    ESP_LOGE(TAG, "Start failed: no supported REPL backend enabled in sdkconfig");
+    return ESP_ERR_NOT_SUPPORTED;
+#endif  /* CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM */
+
     if (ret != ESP_OK) {
         (void)cli_set_repl_state(svc, NULL, false);
         ESP_LOGE(TAG, "Start failed: %s", esp_err_to_name(ret));
         return ret;
     }
-#else
-    (void)cli_set_repl_state(svc, NULL, false);
-    ESP_LOGE(TAG, "Start failed: UART REPL backend disabled in sdkconfig");
-    return ESP_ERR_NOT_SUPPORTED;
-#endif  /* CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_CUSTOM */
+
+    const char *fail_op = NULL;
 
     ret = cli_register_core_commands(svc);
     if (ret != ESP_OK) {
-        (void)esp_console_stop_repl(repl);
-        (void)cli_set_repl_state(svc, NULL, false);
-        cli_mark_static_commands_registered(svc, false);
-        ESP_LOGE(TAG, "Start failed: register core commands, %s", esp_err_to_name(ret));
-        return ret;
+        fail_op = "register core commands";
+        goto cleanup;
     }
 
     ret = cli_register_static_commands(svc);
     if (ret != ESP_OK) {
-        (void)esp_console_stop_repl(repl);
-        (void)cli_set_repl_state(svc, NULL, false);
-        cli_mark_static_commands_registered(svc, false);
-        ESP_LOGE(TAG, "Start failed: register static commands, %s", esp_err_to_name(ret));
-        return ret;
+        fail_op = "register static commands";
+        goto cleanup;
     }
 
     ret = esp_console_start_repl(repl);
     if (ret != ESP_OK) {
-        (void)esp_console_stop_repl(repl);
-        (void)cli_set_repl_state(svc, NULL, false);
-        cli_mark_static_commands_registered(svc, false);
-        ESP_LOGE(TAG, "Start failed: start REPL, %s", esp_err_to_name(ret));
-        return ret;
+        fail_op = "start REPL";
+        goto cleanup;
     }
 
-    /* Publish the running REPL pointer and clear "starting" flag first, then
-     * do one more registration pass to pick up commands added during startup. */
     (void)cli_set_repl_state(svc, repl, false);
+
     ret = cli_register_static_commands(svc);
     if (ret != ESP_OK) {
-        (void)esp_console_stop_repl(repl);
-        (void)cli_set_repl_state(svc, NULL, false);
-        cli_mark_static_commands_registered(svc, false);
-        ESP_LOGE(TAG, "Start failed: register pending static commands, %s", esp_err_to_name(ret));
-        return ret;
+        fail_op = "register pending static commands";
+        goto cleanup;
     }
 
     ESP_LOGI(TAG, "Start 'esp_cli_service': REPL running");
     return ESP_OK;
+
+cleanup:
+    if (repl != NULL) {
+        (void)esp_console_stop_repl(repl);
+    }
+    (void)cli_set_repl_state(svc, NULL, false);
+    cli_mark_static_commands_registered(svc, false);
+    ESP_LOGE(TAG, "Start failed: %s, %s", fail_op, esp_err_to_name(ret));
+    return ret;
 }
 
 static esp_err_t cli_on_stop(esp_service_t *base)
