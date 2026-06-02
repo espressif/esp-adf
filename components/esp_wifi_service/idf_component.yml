@@ -1,4 +1,4 @@
-version: "0.5.1"
+version: "0.5.2"
 description: Wi-Fi service with profile management, provisioning agents, and automatic AP selection
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_wifi_service
 issues: https://github.com/espressif/esp-adf/issues

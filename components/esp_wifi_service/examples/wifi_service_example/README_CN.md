@@ -129,6 +129,7 @@ wifi profile list
 wifi profile add <ssid> <password> [priority 0..20]
 wifi profile del <ssid>
 wifi profile clear
+wifi connect <ssid> <password|- 表示开放 AP> [priority 0..20] [wait_sec]
 wifi prov start
 wifi prov stop
 wifi reeval
@@ -142,6 +143,14 @@ reboot
 3. 打开 captive portal 页面；如果系统没有自动弹出页面，可手动访问设备网关地址。
 4. 选择或输入目标 AP 的 SSID，填写密码并提交。
 5. 设备会尝试连接，连接成功后保存 profile，并在串口日志中上报 service 事件。
+
+如需直接演示 `esp_wifi_service_request_connect()`，可执行：
+
+```
+wifi connect <ssid> <password> [priority 0..20] [wait_sec]
+```
+
+开放 AP 的密码参数传 `-`。该命令会保存或更新 profile，请求 selector 驱动连接，并等待最多 `wait_sec` 秒直到 STA 获取 IP。默认 priority 为 `10`，默认等待时间为 `30` 秒。将 `wait_sec` 设置为 `0` 时，命令在连接请求被接受后立即返回。
 
 也可以通过 CLI 执行 `wifi profile add <ssid> <password> [priority]` 添加 profile，然后根据测试需要重启设备或重新触发配网/选择流程。
 

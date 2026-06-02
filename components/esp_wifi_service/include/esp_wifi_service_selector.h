@@ -83,6 +83,27 @@ typedef struct {
 } esp_wifi_service_selector_throughput_cfg_t;
 
 /**
+ * @brief  Retry policy for selector scans and connection attempts
+ *
+ *         If @c scan_retry_ms is NULL and @c scan_retry_num is 0, the selector uses
+ *         its built-in scan retry backoff table. If a custom table is provided, both
+ *         @c scan_retry_ms and @c scan_retry_num must be set, and every interval must
+ *         be non-zero. The table is copied during selector initialization, so the
+ *         caller-provided table only needs to remain valid for the init call. When
+ *         retries exceed the table length, the selector keeps using the last interval.
+ *
+ *         @c max_connect_retry limits consecutive selector-driven connection failures.
+ *         A value of 0 keeps retrying indefinitely. The counter is cleared after
+ *         @c IP_EVENT_STA_GOT_IP, explicit @c request_connect, explicit re-evaluation,
+ *         or selector stop.
+ */
+typedef struct {
+    const uint32_t *scan_retry_ms;      /*!< Scan retry backoff table copied during init; NULL with scan_retry_num 0 uses defaults */
+    uint8_t         scan_retry_num;     /*!< Number of scan_retry_ms entries; 0 uses defaults */
+    uint8_t         max_connect_retry;  /*!< Max consecutive connect failures; 0 retries forever */
+} esp_wifi_service_selector_retry_cfg_t;
+
+/**
  * @brief  Roam / selection policy (triggers, ranking, and optional HTTP checks)
  */
 typedef struct {
@@ -91,6 +112,7 @@ typedef struct {
     esp_wifi_service_selector_rssi_cfg_t        rssi;                                                   /*!< RSSI policy */
     esp_wifi_service_selector_probe_cfg_t       probe;                                                  /*!< Probe policy */
     esp_wifi_service_selector_throughput_cfg_t  throughput;                                             /*!< Throughput policy */
+    esp_wifi_service_selector_retry_cfg_t       retry;                                                  /*!< Retry policy */
 } esp_wifi_service_selector_cfg_t;
 
 /**

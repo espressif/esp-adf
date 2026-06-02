@@ -29,6 +29,7 @@
 #include "esp_wifi_service_comm.h"
 #include "esp_wifi_service_prov.h"
 #include "esp_wifi_service_prov_http.h"
+#include "esp_wifi_service_scan.h"
 #include "esp_wifi_service_prov_softap.h"
 
 #define HTTP_STA_WAIT_CONNECTED_BIT  BIT0
@@ -74,6 +75,56 @@ extern const uint8_t esp_wifi_service_prov_default_webui_start[] asm("_binary_es
 extern const uint8_t esp_wifi_service_prov_default_webui_end[] asm("_binary_esp_wifi_service_prov_default_webui_html_end");
 #endif  /* CONFIG_WIFI_SERVICE_PROV_HTTP_DEFAULT_WEBUI_ENABLE */
 
+static inline esp_err_t http_dispatch_sta_config(wifi_prov_http_t *prov, wifi_config_t *config)
+{
+    if (!prov || !config) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    esp_wifi_service_prov_event_t event = {
+        .data.sta_config = {
+            .config = config,
+        },
+    };
+    return esp_wifi_service_prov_dispatch_event(&prov->base, ESP_WIFI_SERVICE_PROV_EVT_STA_CONFIG, &event);
+}
+
+static void wifi_prov_http_scan_done(esp_err_t scan_err, uint16_t ap_count, const wifi_ap_record_t *ap_records, void *ctx)
+{
+    wifi_prov_http_t *prov = (wifi_prov_http_t *)ctx;
+    if (!prov || !prov->started) {
+        return;
+    }
+    if (scan_err != ESP_OK) {
+        ESP_LOGW(TAG, "HTTP scan failed: %s", esp_err_to_name(scan_err));
+        return;
+    }
+
+    wifi_ap_record_t *records = NULL;
+    if (ap_count > 0) {
+        if (!ap_records) {
+            ESP_LOGW(TAG, "HTTP scan done: AP list is missing");
+            return;
+        }
+        records = heap_caps_calloc_prefer(ap_count, sizeof(wifi_ap_record_t), 2,
+                                          MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_DEFAULT);
+        if (!records) {
+            ESP_LOGW(TAG, "HTTP scan done: allocate AP cache failed");
+            return;
+        }
+        memcpy(records, ap_records, sizeof(wifi_ap_record_t) * ap_count);
+    }
+
+    if (!prov->scan_lock || xSemaphoreTake(prov->scan_lock, pdMS_TO_TICKS(100)) != pdTRUE) {
+        ESP_LOGW(TAG, "HTTP scan done: acquire scan cache lock failed");
+        heap_caps_free(records);
+        return;
+    }
+    heap_caps_free(prov->ap_records);
+    prov->ap_records = records;
+    prov->ap_count = ap_count;
+    xSemaphoreGive(prov->scan_lock);
+}
+
 static void *cjson_malloc(size_t size)
 {
     return heap_caps_malloc_prefer(size, 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_DEFAULT);
@@ -101,9 +152,9 @@ static void wifi_prov_http_periodic_scan_timer_cb(void *arg)
     if (!prov || !prov->started) {
         return;
     }
-    esp_err_t err = esp_wifi_scan_start(NULL, false);
-    if (err != ESP_OK && err != ESP_ERR_WIFI_STATE) {
-        ESP_LOGW(TAG, "Start periodic scan failed: %s", esp_err_to_name(err));
+    esp_err_t err = esp_wifi_service_scan_request(prov->base.scan_agent, NULL, wifi_prov_http_scan_done, prov);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Request periodic scan failed: %s", esp_err_to_name(err));
     }
 }
 
@@ -115,8 +166,8 @@ static esp_err_t wifi_prov_http_start_periodic_scan(wifi_prov_http_t *prov)
     if (prov->scan_started) {
         return ESP_OK;
     }
-    esp_err_t ret = esp_wifi_scan_start(NULL, false);
-    if (ret != ESP_OK && ret != ESP_ERR_WIFI_STATE) {
+    esp_err_t ret = esp_wifi_service_scan_request(prov->base.scan_agent, NULL, wifi_prov_http_scan_done, prov);
+    if (ret != ESP_OK) {
         ESP_LOGW(TAG, "Kick periodic scan failed: %s", esp_err_to_name(ret));
     }
     ret = esp_timer_start_periodic(prov->scan_timer, (uint64_t)HTTP_SCAN_PERIOD_MS * 1000ULL);
@@ -140,10 +191,7 @@ static void wifp_prov_http_stop_periodic_scan(wifi_prov_http_t *prov)
         prov->scan_started = false;
     }
 
-    esp_err_t scan_ret = esp_wifi_scan_stop();
-    if (scan_ret != ESP_OK && scan_ret != ESP_ERR_WIFI_STATE) {
-        ESP_LOGW(TAG, "Stop running scan failed: %s", esp_err_to_name(scan_ret));
-    }
+    esp_wifi_service_scan_remove_cb(prov->base.scan_agent, wifi_prov_http_scan_done);
 }
 
 static esp_err_t http_send_json(httpd_req_t *req, const char *json)
@@ -219,6 +267,11 @@ static esp_err_t http_connect_sta_and_wait(wifi_prov_http_t *prov, const char *s
     wifi_config_t sta_cfg = {0};
     strlcpy((char *)sta_cfg.sta.ssid, ssid, sizeof(sta_cfg.sta.ssid));
     strlcpy((char *)sta_cfg.sta.password, password ? password : "", sizeof(sta_cfg.sta.password));
+    ret = http_dispatch_sta_config(prov, &sta_cfg);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "HTTP station connect failed: STA config event err=%s", esp_err_to_name(ret));
+        return ret;
+    }
     ret = esp_wifi_set_config(WIFI_IF_STA, &sta_cfg);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "HTTP station connect failed: set STA config err=%s", esp_err_to_name(ret));
@@ -844,45 +897,6 @@ static void http_on_wifi_event(void *arg, esp_event_base_t base, int32_t id, voi
         return;
     }
     switch (id) {
-        case WIFI_EVENT_SCAN_DONE: {
-            uint16_t ap_count = 0;
-            esp_err_t ret = esp_wifi_scan_get_ap_num(&ap_count);
-            if (ret != ESP_OK) {
-                ESP_LOGW(TAG, "Get scan AP number failed: %s", esp_err_to_name(ret));
-                return;
-            }
-            if (ap_count == 0) {
-                if (prov->scan_lock && xSemaphoreTake(prov->scan_lock, pdMS_TO_TICKS(100)) == pdTRUE) {
-                    heap_caps_free(prov->ap_records);
-                    prov->ap_records = NULL;
-                    prov->ap_count = 0;
-                    xSemaphoreGive(prov->scan_lock);
-                }
-                return;
-            }
-            wifi_ap_record_t *records = heap_caps_calloc_prefer(
-                ap_count, sizeof(wifi_ap_record_t), 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_DEFAULT);
-            if (!records) {
-                ESP_LOGW(TAG, "Scan done: allocate AP records failed");
-                return;
-            }
-            ret = esp_wifi_scan_get_ap_records(&ap_count, records);
-            if (ret != ESP_OK) {
-                ESP_LOGW(TAG, "Get scan AP records failed: %s", esp_err_to_name(ret));
-                heap_caps_free(records);
-                return;
-            }
-            if (!prov->scan_lock || xSemaphoreTake(prov->scan_lock, pdMS_TO_TICKS(100)) != pdTRUE) {
-                ESP_LOGW(TAG, "Scan done: acquire scan cache lock failed");
-                heap_caps_free(records);
-                return;
-            }
-            heap_caps_free(prov->ap_records);
-            prov->ap_records = records;
-            prov->ap_count = ap_count;
-            xSemaphoreGive(prov->scan_lock);
-            return;
-        }
         case WIFI_EVENT_AP_STACONNECTED: {
             uint32_t prev = prov->ap_sta_count++;
             if (prev == 0) {

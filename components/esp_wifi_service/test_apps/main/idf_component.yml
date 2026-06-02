@@ -1,0 +1,3 @@
+dependencies:
+  espressif/esp_wifi_service:
+    override_path: ../../

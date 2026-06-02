@@ -103,5 +103,31 @@
       "type": "object",
       "properties": {}
     }
+  },
+  {
+    "name": "esp_wifi_service_request_connect",
+    "description": "Save or update one Wi-Fi profile and request an immediate selector-driven connection to that SSID",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ssid": {
+          "type": "string",
+          "description": "Target Wi-Fi SSID"
+        },
+        "password": {
+          "type": "string",
+          "description": "Wi-Fi password; omit or use an empty string for open networks"
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Profile priority from 0 to 20; higher is preferred"
+        },
+        "wait_sec": {
+          "type": "integer",
+          "description": "Seconds to wait for STA got IP; 0 returns after the request is accepted"
+        }
+      },
+      "required": ["ssid"]
+    }
   }
 ]

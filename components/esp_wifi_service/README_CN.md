@@ -11,8 +11,9 @@
 - **多通道配网**：支持 HTTP SoftAP/Web UI、DNS captive portal、BluFi，以及应用自定义配网流程，所有通道都可以写入共享 profile
 - **自动启动策略**：服务启动时会根据是否存在已启用配置，自动进入连接选择流程或启动已配置的配网流程
 - **智能选择与切换**：根据用户优先级、RSSI、历史连通性、临时黑名单等因素选择更合适的 SSID/BSSID，并在断线或链路退化后重新评估
+- **直接连接请求**：保存或更新指定 profile 后请求 selector 立即连接该 SSID，并可选择等待 STA 获取 IP
 - **网络质量探测**：支持连通性、延迟和吞吐退化判断，处理“已连接 Wi-Fi 但业务不可用”的场景
-- **服务化事件与 API**：通过统一的服务生命周期和事件机制上报连接、配网、凭据和错误状态，便于应用层统一订阅和控制
+- **服务化事件与 API**：通过统一的服务生命周期和事件机制上报连接、配网、凭据、STA 配置和错误状态，便于应用层统一订阅和控制
 
 ## MCP Tool 支持
 
@@ -29,6 +30,7 @@
 - `esp_wifi_service_prov_start`：启动已配置的配网实例
 - `esp_wifi_service_prov_stop`：停止正在运行的配网实例
 - `esp_wifi_service_request_reeval`：请求 selector 执行一次扫描和重新评估
+- `esp_wifi_service_request_connect`：保存或更新一个 profile，并请求立即连接该 SSID；参数包括 `ssid`，以及可选的 `password`、`priority` 和 `wait_sec`
 
 MCP 工具响应不会暴露已保存密码。如果应用将 MCP transport 暴露到可信调试通道之外，应自行增加鉴权和传输安全策略。
 
@@ -149,7 +151,7 @@ JSON 是通用响应格式。凭据提交当前仅接受 JSON。
 
 说明：
 
-- 为避免阻塞 `httpd` 任务，HTTP 配网通道使用非阻塞 Wi-Fi 扫描和 `WIFI_EVENT_SCAN_DONE` 维护扫描结果
+- 为避免阻塞 `httpd` 任务并防止多个模块竞争消费扫描结果，Wi-Fi service scan agent 统一负责非阻塞 driver 扫描。HTTP 配网会在 scan callback 中拷贝结果到自己的 AP 记录缓存，再用于响应 `GET /prov/scan_result`
 - 默认启用 captive portal 友好行为：常见系统连通性检测 URL 会重定向到入口页面，SoftAP DNS 响应会指向设备自身
 
 #### 自定义 API
@@ -252,6 +254,7 @@ esp_wifi_service_prov_http_config_t http_cfg = {
 
 - `esp_wifi_service_start_provisioning()` / `esp_wifi_service_stop_provisioning()`
 - `esp_wifi_service_is_provisioning_running()`
+- `esp_wifi_service_request_connect()` 会保存或更新指定 profile，按需停止配网、启动 selector，并请求立即连接该 SSID。`wait_sec` 设为 `0` 时在请求被接受后返回，设为非零值时会等待 STA 获取 IP 直到超时。
 - 可以通过 `esp_wifi_service_profile_mgr_add()`、`esp_wifi_service_profile_mgr_delete()` 及相关 profile manager API 直接写入配置
 
 ## WiFi 选择与切换
@@ -283,6 +286,18 @@ WiFi 选择与切换用于解决设备在多网络环境中的自动连接问题
 - 如果当前连接已经是最佳候选，则保持当前连接
 - 如果发现更合适的 AP，则先断开当前连接，再连接新候选
 - 如果候选网络没有明显优势，则保持当前连接，避免频繁切换
+
+应用也可以调用 `esp_wifi_service_request_connect()` 跳过一次扫描和重新评估流程。该直接连接请求仍然使用共享 profile manager 和 selector 状态，但会立即应用指定的已保存 SSID。它适用于命令行工具、配置流程，或远程管理侧已经明确目标 AP 的场景。
+
+### 重试行为
+
+当没有找到可用候选网络时，selector 会按照退避表重试扫描。内置退避表为 `1000, 5000, 10000, 20000, 30000` ms。应用可以通过 `selector_policy.retry.scan_retry_ms` 和 `scan_retry_num` 覆盖该表；配置会在服务创建时被拷贝，每个间隔必须非 0，重试次数超过表长度后会继续使用最后一个间隔。
+
+`selector_policy.retry.max_connect_retry` 用于限制 selector 已选中候选网络后的连续连接失败次数。`0` 保持原有行为，即持续重试。非 0 值表示连续失败达到该次数后停止自动重新评估；计数会在 STA 获取 IP、显式调用 `esp_wifi_service_request_connect()`、显式调用 `esp_wifi_service_request_reeval()` 或 selector 停止时清零。
+
+### STA 配置事件
+
+在配网通道或 selector 调用 `esp_wifi_set_config()` 前，服务会发布 `ESP_WIFI_SERVICE_EVENT_STA_CONFIG`，payload 为 `esp_wifi_service_sta_config_event_t`。使用 callback 方式订阅的应用可以在同步事件分发期间修改其中的 `wifi_config_t`。该事件适合统一设置应用侧持有的 STA 参数，例如 `listen_interval`、PMF 策略，或其他需要同时作用于 HTTP 配网、BluFi 配网、selector 切换和直接连接请求的字段。
 
 ### 网络质量探测
 
@@ -352,6 +367,12 @@ static void on_wifi_service_event(const adf_event_t *event, void *ctx)
     (void)ctx;
     if (event->event_id == ESP_WIFI_SERVICE_EVENT_STA_GOT_IP) {
         // Network is ready.
+    } else if (event->event_id == ESP_WIFI_SERVICE_EVENT_STA_CONFIG) {
+        const esp_wifi_service_sta_config_event_t *info =
+            (const esp_wifi_service_sta_config_event_t *)event->payload;
+        if (info && info->config) {
+            info->config->sta.listen_interval = 3;
+        }
     }
 }
 
@@ -383,6 +404,7 @@ void wifi_service_startup(void)
     ESP_ERROR_CHECK(esp_wifi_service_prov_http_create(&http_cfg, &http_agent));
 
     // 以下配置演示自定义 selector 策略；实际使用时可将 selector_policy 设为 NULL 使用内置默认策略。
+    static const uint32_t scan_retry_ms[] = {1000, 5000, 10000, 30000};
     esp_wifi_service_selector_cfg_t selector_cfg = {
         .triggers_mask = ESP_WIFI_SERVICE_SELECTOR_TRIGGER_RSSI_LOW |
                          ESP_WIFI_SERVICE_SELECTOR_TRIGGER_PROBE_FAILED,
@@ -402,6 +424,11 @@ void wifi_service_startup(void)
             .expected_status = 204,
             .blocked_seconds = 15,
         },
+        .retry = {
+            .scan_retry_ms = scan_retry_ms,
+            .scan_retry_num = sizeof(scan_retry_ms) / sizeof(scan_retry_ms[0]),
+            .max_connect_retry = 0,    // 0 表示持续重试，直到 profile 被禁用或移除
+        },
     };
 
     esp_wifi_service_config_t cfg = {
@@ -410,6 +437,7 @@ void wifi_service_startup(void)
         .prov_list = &http_agent,
         .prov_num = 1,
         .selector_policy = &selector_cfg,         /* 设为 NULL 时使用内置策略：低 RSSI 时重新评估网络，
+                                                   * 使用默认扫描重试退避，连接失败时持续重试，
                                                    * 并按探测可信度、信号质量和 profile 优先级选择候选网络。
                                                    */
 

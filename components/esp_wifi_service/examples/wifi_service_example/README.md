@@ -129,6 +129,7 @@ wifi profile list
 wifi profile add <ssid> <password> [priority 0..20]
 wifi profile del <ssid>
 wifi profile clear
+wifi connect <ssid> <password|- for open AP> [priority 0..20] [wait_sec]
 wifi prov start
 wifi prov stop
 wifi reeval
@@ -142,6 +143,14 @@ To test HTTP provisioning:
 3. Open the captive portal page, or browse to the device gateway address if the portal is not opened automatically.
 4. Select or enter the target AP SSID, enter the password, and submit.
 5. The device attempts to connect, saves the profile after success, and reports service events in the serial log.
+
+To directly demonstrate `esp_wifi_service_request_connect()`, use:
+
+```
+wifi connect <ssid> <password> [priority 0..20] [wait_sec]
+```
+
+For an open AP, pass `-` as the password. The command saves or updates the profile, requests selector-driven connection, and waits up to `wait_sec` seconds for STA got IP. The default priority is `10`, and the default wait time is `30` seconds. Set `wait_sec` to `0` to return immediately after the connect request is accepted.
 
 You can also add a profile from the CLI with `wifi profile add <ssid> <password> [priority]`, then reboot or restart provisioning/selection logic as needed.
 

@@ -34,16 +34,17 @@ typedef enum {
     ESP_WIFI_SERVICE_EVENT_PROV_CREDENTIAL_RECEIVED     = 107,  /*!< Provisioning credential received */
     ESP_WIFI_SERVICE_EVENT_PROV_CUSTOM_DATA_RECEIVED    = 108,  /*!< Provisioning custom data received */
     ESP_WIFI_SERVICE_EVENT_PROV_ERROR                   = 109,  /*!< Provisioning runtime error */
-    ESP_WIFI_SERVICE_EVENT_STA_GOT_IP                   = 110,  /*!< Wi-Fi service reports station got IP */
-    ESP_WIFI_SERVICE_EVENT_STA_LOST_IP                  = 111,  /*!< Wi-Fi service reports station lost IP */
-    ESP_WIFI_SERVICE_EVENT_SELECTOR_CANDIDATE           = 112,  /*!< Selector candidate chosen from scan result */
-    ESP_WIFI_SERVICE_EVENT_SELECTOR_SWITCHING           = 113,  /*!< Selector decided to switch/connect */
-    ESP_WIFI_SERVICE_EVENT_SELECTOR_SWITCH_FAILED       = 114,  /*!< Selector switch/connect failed */
-    ESP_WIFI_SERVICE_EVENT_SELECTOR_BLACKLISTED         = 115,  /*!< Selector blacklisted one BSSID */
-    ESP_WIFI_SERVICE_EVENT_SELECTOR_ACCESS_FAILED       = 116,  /*!< Selector probe access check failed */
-    ESP_WIFI_SERVICE_EVENT_SELECTOR_LATENCY_DEGRADED    = 117,  /*!< Selector latency check degraded */
-    ESP_WIFI_SERVICE_EVENT_SELECTOR_THROUGHPUT_DEGRADED = 118,  /*!< Selector throughput check degraded */
-    ESP_WIFI_SERVICE_EVENT_SELECTOR_RSSI_LOW            = 119,  /*!< Selector RSSI check is below threshold */
+    ESP_WIFI_SERVICE_EVENT_STA_CONFIG                   = 110,  /*!< STA config can be adjusted before connect */
+    ESP_WIFI_SERVICE_EVENT_STA_GOT_IP                   = 111,  /*!< Wi-Fi service reports station got IP */
+    ESP_WIFI_SERVICE_EVENT_STA_LOST_IP                  = 112,  /*!< Wi-Fi service reports station lost IP */
+    ESP_WIFI_SERVICE_EVENT_SELECTOR_CANDIDATE           = 113,  /*!< Selector candidate chosen from scan result */
+    ESP_WIFI_SERVICE_EVENT_SELECTOR_SWITCHING           = 114,  /*!< Selector decided to switch/connect */
+    ESP_WIFI_SERVICE_EVENT_SELECTOR_SWITCH_FAILED       = 115,  /*!< Selector switch/connect failed */
+    ESP_WIFI_SERVICE_EVENT_SELECTOR_BLACKLISTED         = 116,  /*!< Selector blacklisted one BSSID */
+    ESP_WIFI_SERVICE_EVENT_SELECTOR_ACCESS_FAILED       = 117,  /*!< Selector probe access check failed */
+    ESP_WIFI_SERVICE_EVENT_SELECTOR_LATENCY_DEGRADED    = 118,  /*!< Selector latency check degraded */
+    ESP_WIFI_SERVICE_EVENT_SELECTOR_THROUGHPUT_DEGRADED = 119,  /*!< Selector throughput check degraded */
+    ESP_WIFI_SERVICE_EVENT_SELECTOR_RSSI_LOW            = 120,  /*!< Selector RSSI check is below threshold */
 } esp_wifi_service_event_t;
 
 /**
@@ -137,6 +138,28 @@ esp_err_t esp_wifi_service_stop_provisioning(esp_wifi_service_t *service);
  *       - ESP_ERR_INVALID_ARG  Invalid argument
  */
 esp_err_t esp_wifi_service_is_provisioning_running(esp_wifi_service_t *service, bool *running_out);
+
+/**
+ * @brief  Save a Wi-Fi profile and request connection to the specified SSID
+ *
+ * @note  This API stores or updates the profile as enabled, stops provisioning, starts
+ *        the selector if needed, and asks the selector to connect to the specified saved
+ *        profile directly without running a scan/re-evaluation cycle.
+ *
+ * @param[in]  service   Service handle
+ * @param[in]  ssid      NUL-terminated SSID
+ * @param[in]  password  NUL-terminated password; NULL is treated as an empty password
+ * @param[in]  prio      Profile priority, 0 to ::ESP_WIFI_SERVICE_PROFILE_PRIORITY_MAX
+ * @param[in]  wait_sec  Seconds to wait for STA got IP; 0 returns after the request is accepted
+ *
+ * @return
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  Invalid argument
+ *       - ESP_ERR_TIMEOUT      @p wait_sec is non-zero and STA did not get IP in time
+ *       - Others               From profile manager or selector
+ */
+esp_err_t esp_wifi_service_request_connect(esp_wifi_service_t *service, char *ssid, char *password, uint8_t prio,
+                                           uint32_t wait_sec);
 
 /**
  * @brief  Request one Wi-Fi selector re-evaluation cycle

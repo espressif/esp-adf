@@ -6,7 +6,6 @@
  */
 
 #include "esp_check.h"
-#include "esp_heap_caps.h"
 
 #include "esp_wifi_service_prov.h"
 
@@ -34,6 +33,14 @@ esp_err_t esp_wifi_service_prov_set_cb(esp_wifi_service_prov_t prov, esp_wifi_se
     return ESP_OK;
 }
 
+esp_err_t esp_wifi_service_prov_set_scan_agent(esp_wifi_service_prov_t prov,
+                                               esp_wifi_service_scan_handle_t scan_agent)
+{
+    ESP_RETURN_ON_FALSE(prov, ESP_ERR_INVALID_ARG, TAG, "Provisioning set scan agent failed: invalid arguments");
+    prov->scan_agent = scan_agent;
+    return ESP_OK;
+}
+
 esp_err_t esp_wifi_service_prov_start(esp_wifi_service_prov_t prov)
 {
     ESP_RETURN_ON_FALSE(prov && prov->ops && prov->ops->start, ESP_ERR_INVALID_ARG, TAG,
@@ -58,7 +65,7 @@ esp_err_t esp_wifi_service_prov_send(esp_wifi_service_prov_t prov, const uint8_t
 esp_err_t esp_wifi_service_prov_deinit(esp_wifi_service_prov_t prov)
 {
     ESP_RETURN_ON_FALSE(prov, ESP_ERR_INVALID_ARG, TAG, "Provisioning deinit failed: invalid arguments");
-    heap_caps_free(prov);
+    *prov = (struct esp_wifi_service_prov_base) {0};
     return ESP_OK;
 }
 

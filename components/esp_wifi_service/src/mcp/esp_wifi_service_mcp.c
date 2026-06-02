@@ -121,6 +121,33 @@ static bool json_get_optional_uint8(const cJSON *root, const char *name, uint8_t
     return json_get_uint8(root, name, out_value);
 }
 
+static bool json_get_uint32(const cJSON *root, const char *name, uint32_t *out_value)
+{
+    const cJSON *item = cJSON_GetObjectItemCaseSensitive(root, name);
+    if (!item || !cJSON_IsNumber(item) || !out_value) {
+        return false;
+    }
+    if (item->valuedouble < 0 || item->valuedouble > UINT32_MAX ||
+        (double)(uint32_t)item->valuedouble != item->valuedouble) {
+        return false;
+    }
+
+    *out_value = (uint32_t)item->valuedouble;
+    return true;
+}
+
+static bool json_get_optional_uint32(const cJSON *root, const char *name, uint32_t default_value, uint32_t *out_value)
+{
+    const cJSON *item = cJSON_GetObjectItemCaseSensitive(root, name);
+    if (!item) {
+        if (out_value) {
+            *out_value = default_value;
+        }
+        return true;
+    }
+    return json_get_uint32(root, name, out_value);
+}
+
 static const char *state_to_str_safe(esp_service_state_t state)
 {
     const char *state_name = "UNKNOWN";
@@ -428,6 +455,69 @@ static esp_err_t tool_request_reeval(esp_wifi_service_t *wifi, char *result, siz
     return (ret == ESP_OK) ? json_ret : ret;
 }
 
+static esp_err_t tool_request_connect(esp_wifi_service_t *wifi, const char *args, char *result, size_t result_size)
+{
+    cJSON *root = NULL;
+    esp_err_t ret = parse_args_object(args, &root);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+
+    const cJSON *ssid_item = cJSON_GetObjectItemCaseSensitive(root, "ssid");
+    if (!cJSON_IsString(ssid_item) || !ssid_item->valuestring || ssid_item->valuestring[0] == '\0') {
+        cJSON_Delete(root);
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    const cJSON *password_item = cJSON_GetObjectItemCaseSensitive(root, "password");
+    const char *password = "";
+    if (password_item) {
+        if (!cJSON_IsString(password_item) || !password_item->valuestring) {
+            cJSON_Delete(root);
+            return ESP_ERR_INVALID_ARG;
+        }
+        password = password_item->valuestring;
+    }
+
+    uint8_t priority = 0;
+    if (!json_get_optional_uint8(root, "priority", 0, &priority) ||
+        priority > ESP_WIFI_SERVICE_PROFILE_PRIORITY_MAX) {
+        cJSON_Delete(root);
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    uint32_t wait_sec = 0;
+    if (!json_get_optional_uint32(root, "wait_sec", 0, &wait_sec)) {
+        cJSON_Delete(root);
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    ret = esp_wifi_service_request_connect(wifi, ssid_item->valuestring, (char *)password, priority, wait_sec);
+
+    cJSON *out = cJSON_CreateObject();
+    if (!out) {
+        cJSON_Delete(root);
+        return ESP_ERR_NO_MEM;
+    }
+
+    esp_err_t json_ret = ESP_OK;
+    if (!cJSON_AddStringToObject(out, "operation", "request_connect") ||
+        !cJSON_AddBoolToObject(out, "ok", ret == ESP_OK) ||
+        !cJSON_AddNumberToObject(out, "error", ret) ||
+        !cJSON_AddStringToObject(out, "error_name", esp_err_to_name(ret)) ||
+        !cJSON_AddStringToObject(out, "ssid", ssid_item->valuestring) ||
+        !cJSON_AddNumberToObject(out, "priority", priority) ||
+        !cJSON_AddNumberToObject(out, "wait_sec", wait_sec)) {
+        json_ret = ESP_ERR_NO_MEM;
+    } else {
+        json_ret = write_json_result(out, result, result_size);
+    }
+
+    cJSON_Delete(out);
+    cJSON_Delete(root);
+    return (ret == ESP_OK) ? json_ret : ret;
+}
+
 esp_err_t esp_wifi_service_tool_invoke(esp_service_t *service, const esp_service_tool_t *tool, const char *args,
                                        char *result, size_t result_size)
 {
@@ -465,6 +555,9 @@ esp_err_t esp_wifi_service_tool_invoke(esp_service_t *service, const esp_service
     }
     if (strcmp(tool->name, "esp_wifi_service_request_reeval") == 0) {
         return tool_request_reeval(wifi, result, result_size);
+    }
+    if (strcmp(tool->name, "esp_wifi_service_request_connect") == 0) {
+        return tool_request_connect(wifi, args, result, result_size);
     }
 
     ESP_LOGE(TAG, "Tool invoke failed: unknown tool '%s'", tool->name);
