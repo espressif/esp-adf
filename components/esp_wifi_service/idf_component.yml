@@ -1,4 +1,4 @@
-version: "0.5.2"
+version: "0.5.2~1"
 description: Wi-Fi service with profile management, provisioning agents, and automatic AP selection
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_wifi_service
 issues: https://github.com/espressif/esp-adf/issues
@@ -21,9 +21,11 @@ dependencies:
   espressif/esp_service:
     require: public
     version: "^0.5"
+    override_path: "../esp_service"
   espressif/adf_event_hub:
     require: public
     version: "^0.5"
+    override_path: "../adf_event_hub"
 
 examples:
   - path: "./examples/wifi_service_example"

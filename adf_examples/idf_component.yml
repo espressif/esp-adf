@@ -1,4 +1,4 @@
-version: "0.2.0"
+version: "0.2.1"
 description: ESP-ADF Examples
 url: https://github.com/espressif/esp-adf/tree/master/adf_examples
 documentation: "https://github.com/espressif/esp-adf/blob/master/adf_examples/README.md"
@@ -17,3 +17,7 @@ examples:
    - path: "./ai_agent/baidu_rtc/solutions/voice_assistant_app"
    - path: "./checks/esp_audio_analyzer_app"
    - path: "./services_hub"
+   - path: "./recorder/av_record_live_display"
+   - path: "./player/play_music_control"
+   - path: "./system/audio_power_save"
+   - path: "./player/music_player"

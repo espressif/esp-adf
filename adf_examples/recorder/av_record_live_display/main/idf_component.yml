@@ -1,0 +1,21 @@
+dependencies:
+  espressif/gmf_core:
+    version: "^0.8"
+  espressif/gmf_audio:
+    version: "^0.8"
+  espressif/gmf_video:
+    version: "^0.8"
+  espressif/esp_capture:
+    version: "^0.8"
+  espressif/esp_video:
+    version: "^2.0"
+    rules:
+      - if: "target in [esp32p4]"
+  espressif/esp_video_codec:
+    version: "~0.5"
+  espressif/esp_board_manager:
+    version: "*"
+  espressif/gmf_app_utils:
+    version: "^0.8"
+  espressif/media_lib_sal:
+    version: "^0.9.0"

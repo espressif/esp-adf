@@ -1,0 +1,11 @@
+dependencies:
+  espressif/esp_board_manager: "*"
+  espressif/esp_audio_simple_player:
+    version: "^0.9.6"
+  espressif/esp_lvgl_adapter:
+    version: "^0.5"
+  espressif/esp_mmap_assets:
+    version: "^2.0"
+  espressif/esp_playlist:
+    version: "^0.5"
+    override_path: ../../../../components/esp_playlist

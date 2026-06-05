@@ -52,7 +52,7 @@ static esp_err_t playlist_bench_build_paths(const char *mount_point)
     if (ret < 0 || ret >= (int)sizeof(s_mount_point)) {
         return ESP_ERR_INVALID_SIZE;
     }
-    ret = snprintf(s_scan_dir, sizeof(s_scan_dir), "%s/music", mount_point);
+    ret = snprintf(s_scan_dir, sizeof(s_scan_dir), "%s", mount_point);
     if (ret < 0 || ret >= (int)sizeof(s_scan_dir)) {
         return ESP_ERR_INVALID_SIZE;
     }
