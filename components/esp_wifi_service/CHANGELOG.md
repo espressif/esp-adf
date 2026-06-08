@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2~1
+
+### Bugfix
+
+- Fixed duplicate managed component resolution for `adf_event_hub` by using the local component override consistently with `esp_service`
+
 ## v0.5.2
 
 ### Features

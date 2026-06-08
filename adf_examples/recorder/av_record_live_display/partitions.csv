@@ -1,0 +1,3 @@
+# Name,   Type, SubType, Offset,  Size
+nvs,      data, nvs,     0xB000,  0x4000,
+factory,  app,  factory,       ,  3M

@@ -1,0 +1,26 @@
+dependencies:
+  espressif/esp_audio_simple_player:
+    version: ^0.9.6
+  espressif/esp_board_manager:
+    version: "*"
+  espressif/esp_playlist:
+    version: ^0.5
+    override_path: ../../../../components/esp_playlist
+  espressif/esp_service:
+    version: ^0.5
+    override_path: ../../../../components/esp_service
+  espressif/esp_cli_service:
+    version: ^0.5
+    override_path: ../../../../components/esp_cli_service
+  espressif/esp_wifi_service:
+    version: ^0.5
+    override_path: ../../../../components/esp_wifi_service
+  espressif/esp_hosted:
+    version: ^2.4.2
+    rules:
+    - if: target in [esp32p4]
+  espressif/esp_wifi_remote:
+    version: ^1.0.0
+    rules:
+    - if: target in [esp32p4]
+  joltwallet/littlefs: ^1.22.1

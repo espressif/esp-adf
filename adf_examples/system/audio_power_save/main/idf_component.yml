@@ -1,0 +1,25 @@
+dependencies:
+  espressif/esp_config_manager:
+    version: "^0.5"
+    override_path: ../../../../components/esp_config_manager
+  espressif/esp_service:
+    version: "^0.5"
+    override_path: ../../../../components/esp_service
+  espressif/adf_event_hub:
+    version: "^0.5"
+    override_path: ../../../../components/adf_event_hub
+  espressif/esp_wifi_service:
+    version: "^0.5"
+    override_path: ../../../../components/esp_wifi_service
+  espressif/gmf_core:
+    version: "^0.8"
+  espressif/gmf_io:
+    version: "^0.8"
+  espressif/gmf_audio:
+    version: "^0.8"
+  espressif/esp_audio_simple_player:
+    version: "^0.9.6"
+  espressif/esp_board_manager:
+    version: "*"
+  joltwallet/littlefs:
+    version: "~=1.20.0"

@@ -1,0 +1,135 @@
+menu "Example Configuration"
+
+    menu "Wi-Fi Configuration"
+
+        config EXAMPLE_WIFI_SSID
+            string "WiFi SSID"
+            default "WIFI_SSID"
+            help
+                SSID (network name) for the example to connect to.
+
+        config EXAMPLE_WIFI_PASSWORD
+            string "WiFi Password"
+            default "WIFI_PWD"
+            help
+                WiFi password (WPA or WPA2) for the example to use.
+
+    endmenu
+
+    menu "MQTT Configuration"
+
+        config EXAMPLE_MQTT_BROKER_URI
+            string "MQTT broker URI"
+            default "mqtt://broker.emqx.io"
+            help
+                MQTT broker URI used for keepalive and remote wakeup demonstration.
+
+        config EXAMPLE_MQTT_WAKE_TOPIC
+            string "MQTT wakeup topic"
+            default "/gmf/audio_power_save/wakeup"
+            help
+                Messages received on this topic are treated as MQTT wakeup events.
+
+        config EXAMPLE_MQTT_STATUS_TOPIC
+            string "MQTT status topic"
+            default "/gmf/audio_power_save/status"
+            help
+                Topic used by this example to publish status messages.
+
+        config EXAMPLE_MQTT_KEEPALIVE
+            int "MQTT keepalive interval in seconds"
+            default 30
+            range 10 120
+            help
+                MQTT keepalive interval used by the client after Wi-Fi is connected.
+
+    endmenu
+
+    menu "Power Management Configuration"
+
+        config EXAMPLE_MAX_CPU_FREQ_MHZ
+            int "Maximum CPU frequency in MHz"
+            default 240
+            range 80 240
+            help
+                Maximum CPU frequency used by power management.
+
+        config EXAMPLE_MIN_CPU_FREQ_MHZ
+            int "Minimum CPU frequency in MHz"
+            default 40
+            range 40 80
+            help
+                Minimum CPU frequency used by power management.
+                Keep this value less than or equal to the maximum CPU frequency.
+
+    endmenu
+
+    menu "Wakeup Source Configuration"
+
+        config EXAMPLE_TIMER_WAKEUP_MS
+            int "Timer wakeup delay in milliseconds"
+            default 30000 if EXAMPLE_ENABLE_PROMPT_PLAYBACK
+            default 120000 if !EXAMPLE_ENABLE_PROMPT_PLAYBACK
+            range 1000 120000
+            help
+                Timer wakeup delay used as the fallback wakeup source.
+
+        config EXAMPLE_WAKEUP_WAIT_MS
+            int "Maximum wakeup wait time in milliseconds"
+            default 70000 if EXAMPLE_ENABLE_PROMPT_PLAYBACK
+            default 130000 if !EXAMPLE_ENABLE_PROMPT_PLAYBACK
+            range 2000 180000
+            help
+                Maximum time to wait for any enabled wakeup source.
+
+        config EXAMPLE_ENABLE_GPIO_WAKEUP
+            bool "Enable GPIO wakeup source"
+            default y
+            help
+                Enable GPIO level wakeup during idle low-power wait.
+
+        if EXAMPLE_ENABLE_GPIO_WAKEUP
+
+            config EXAMPLE_GPIO_WAKEUP_NUM
+                int "GPIO wakeup number"
+                default 0
+                range 0 48
+                help
+                    GPIO number used as the GPIO wakeup source.
+                    The default GPIO0 is usually connected to the BOOT button.
+                    Keep it inactive while wakeup sources are being configured,
+                    or select another input-capable GPIO.
+
+            choice EXAMPLE_GPIO_WAKEUP_LEVEL
+                prompt "GPIO wakeup active level"
+                default EXAMPLE_GPIO_WAKEUP_LEVEL_LOW
+                help
+                    Select the active level for GPIO wakeup.
+
+                config EXAMPLE_GPIO_WAKEUP_LEVEL_LOW
+                    bool "Low level"
+
+                config EXAMPLE_GPIO_WAKEUP_LEVEL_HIGH
+                    bool "High level"
+
+            endchoice
+
+        endif
+
+        config EXAMPLE_ENABLE_UART_WAKEUP
+            bool "Enable UART wakeup source"
+            default y
+            help
+                Enable console UART wakeup during idle low-power wait.
+
+    endmenu
+
+    config EXAMPLE_ENABLE_PROMPT_PLAYBACK
+    bool "Enable prompt tone playback"
+    default y
+    help
+        Play MP3 prompts from LittleFS before sleep and after wakeup.
+        Disable to skip audio codec and simple player initialization
+        for low-power and wakeup testing without a speaker.
+
+endmenu
