@@ -59,7 +59,6 @@ variables:
     IDF_FIND_APP_PATH_ARG: "-p"
     IDF_PATH: "/root/.espressif/esp-idf"
     SDKCFG_DEFAULTS: "sdkconfig.defaults.$IDF_TARGET"
-    LATEST_IDF_VERSION: "v5.5.1"
     IDF_CCACHE_ENABLE: "1"
     BATCH_BUILD: "1"
     V: "0"

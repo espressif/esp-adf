@@ -388,6 +388,29 @@ I (23050) APP_WS: Playback stopped
 I (23050) APP_AUDIO: Playback stopped
 ```
 
+## 本地调试
+
+本工程提供了一个基于 Python 的本地调试工具 `esp_audio_analyzer_client.py`，用于调试 WebSocket 连接和音频数据传输。
+
+该调试工具支持单独录制、单独播放以及同时录放等多种模式，并兼容多种存储介质：
+
+- 录制：支持将音频录制并保存至本地或设备 SD 卡。
+- 播放：支持播放来自设备内置 Flash、SD 卡以及本地的音频文件。
+
+```bash
+# 设置服务器地址（请填入设备日志中打印出的 WebSocket 地址）
+export WS_SERVER=YOUR_SERVER_ADDRESS
+
+# 录制 10 秒音频并保存至本地
+python3 esp_audio_analyzer_client.py --server $WS_SERVER --test record --duration 10 --record-file ./recording_output.wav
+
+# 查看全部参数及更多使用示例
+python3 esp_audio_analyzer_client.py --help
+```
+
+> [!TIP]
+> 此工具支持在无路由器的环境下进行测试。您可以将设备配置为 AP 模式，使用测试电脑直接连接设备的热点。此时，设备的 `WS_SERVER` 地址通常为 `192.168.4.1`。
+
 ## 故障排查
 
 ### 设备经常断开连接

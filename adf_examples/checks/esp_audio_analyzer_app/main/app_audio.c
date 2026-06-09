@@ -975,14 +975,14 @@ esp_err_t app_audio_playback_start(app_audio_playback_config_t *config)
     esp_gmf_pipeline_loading_jobs(g_playback.pipe);
     esp_gmf_pipeline_set_event(g_playback.pipe, audio_pipeline_event_cb, &g_playback);
 
+    g_playback.state = AUDIO_STATE_RUNNING;
     ret = esp_gmf_pipeline_run(g_playback.pipe);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to run playback pipeline");
+        g_playback.state = AUDIO_STATE_IDLE;
         goto cleanup;
     }
     esp_codec_dev_set_out_mute(g_audio_manager.play_dev, false);
-
-    g_playback.state = AUDIO_STATE_RUNNING;
 
     if (config->event_callback) {
         config->event_callback(APP_AUDIO_EVENT_PLAY_START, config->user_ctx);

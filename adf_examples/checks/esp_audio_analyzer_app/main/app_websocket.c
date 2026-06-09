@@ -971,42 +971,56 @@ static esp_err_t handle_reset_cmd(void)
     return ESP_OK;
 }
 
+static esp_err_t send_ready_status(httpd_req_t *req)
+{
+    ESP_LOGI(TAG, "New WebSocket connection on fd %d", httpd_req_to_sockfd(req));
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "status", "ready");
+    cJSON_AddStringToObject(root, "device_id", CONFIG_AUDIO_ANALYZER_HARDWARE_NAME);
+    cJSON *afe_mode = cJSON_CreateObject();
+#ifdef CONFIG_GMF_AI_AUDIO_INIT_AFE
+    const char *ch_allocation = CONFIG_GMF_AI_AUDIO_AFE_CH_ALLOCATION;
+    cJSON_AddNumberToObject(afe_mode, "sample_rate", 16000);
+    cJSON_AddNumberToObject(afe_mode, "bits_per_sample", 16);
+    cJSON_AddNumberToObject(afe_mode, "channels", strlen(ch_allocation));
+    cJSON_AddStringToObject(afe_mode, "channel_type", ch_allocation);
+#else
+    cJSON_AddNumberToObject(afe_mode, "sample_rate", 16000);
+    cJSON_AddNumberToObject(afe_mode, "bits_per_sample", 16);
+    cJSON_AddNumberToObject(afe_mode, "channels", 1);
+    cJSON_AddStringToObject(afe_mode, "channel_type", "M");
+#endif  /* CONFIG_GMF_AI_AUDIO_INIT_AFE */
+    cJSON_AddItemToObject(root, "afe_mode", afe_mode);
+
+    char *json_str = cJSON_PrintUnformatted(root);
+    if (json_str) {
+        httpd_ws_frame_t ws_pkt = {
+            .type = HTTPD_WS_TYPE_TEXT,
+            .payload = (uint8_t *)json_str,
+            .len = strlen(json_str),
+        };
+        httpd_ws_send_frame_async(g_ws_ctx.server_handle, httpd_req_to_sockfd(req), &ws_pkt);
+        free(json_str);
+    }
+    cJSON_Delete(root);
+
+    return ESP_OK;
+}
+
+#ifdef CONFIG_HTTPD_WS_POST_HANDSHAKE_CB_SUPPORT
+static esp_err_t websocket_post_handshake_handler(httpd_req_t *req)
+{
+    return send_ready_status(req);
+}
+#endif  /* CONFIG_HTTPD_WS_POST_HANDSHAKE_CB_SUPPORT */
+
 static esp_err_t websocket_handler(httpd_req_t *req)
 {
+#ifndef CONFIG_HTTPD_WS_POST_HANDSHAKE_CB_SUPPORT
     if (req->method == HTTP_GET) {
-        ESP_LOGI(TAG, "New WebSocket connection on fd %d", httpd_req_to_sockfd(req));
-        cJSON *root = cJSON_CreateObject();
-        cJSON_AddStringToObject(root, "status", "ready");
-        cJSON_AddStringToObject(root, "device_id", CONFIG_AUDIO_ANALYZER_HARDWARE_NAME);
-        cJSON *afe_mode = cJSON_CreateObject();
-#ifdef CONFIG_GMF_AI_AUDIO_INIT_AFE
-        const char *ch_allocation = CONFIG_GMF_AI_AUDIO_AFE_CH_ALLOCATION;
-        cJSON_AddNumberToObject(afe_mode, "sample_rate", 16000);
-        cJSON_AddNumberToObject(afe_mode, "bits_per_sample", 16);
-        cJSON_AddNumberToObject(afe_mode, "channels", strlen(ch_allocation));
-        cJSON_AddStringToObject(afe_mode, "channel_type", ch_allocation);
-#else
-        cJSON_AddNumberToObject(afe_mode, "sample_rate", 16000);
-        cJSON_AddNumberToObject(afe_mode, "bits_per_sample", 16);
-        cJSON_AddNumberToObject(afe_mode, "channels", 1);
-        cJSON_AddStringToObject(afe_mode, "channel_type", "M");
-#endif  /* CONFIG_GMF_AI_AUDIO_INIT_AFE */
-        cJSON_AddItemToObject(root, "afe_mode", afe_mode);
-
-        char *json_str = cJSON_PrintUnformatted(root);
-        if (json_str) {
-            httpd_ws_frame_t ws_pkt = {
-                .type = HTTPD_WS_TYPE_TEXT,
-                .payload = (uint8_t *)json_str,
-                .len = strlen(json_str),
-            };
-            httpd_ws_send_frame_async(g_ws_ctx.server_handle, httpd_req_to_sockfd(req), &ws_pkt);
-            free(json_str);
-        }
-        cJSON_Delete(root);
-
-        return ESP_OK;
+        return send_ready_status(req);
     }
+#endif  /* CONFIG_HTTPD_WS_POST_HANDSHAKE_CB_SUPPORT */
 
     httpd_ws_frame_t ws_pkt;
     memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
@@ -1237,6 +1251,9 @@ esp_err_t app_websocket_init(app_websocket_config_t *config)
         .user_ctx = NULL,
         .is_websocket = true,
         .handle_ws_control_frames = false,
+#ifdef CONFIG_HTTPD_WS_POST_HANDSHAKE_CB_SUPPORT
+        .ws_post_handshake_cb = websocket_post_handshake_handler,
+#endif  /* CONFIG_HTTPD_WS_POST_HANDSHAKE_CB_SUPPORT */
     };
 
     ret = httpd_register_uri_handler(g_ws_ctx.server_handle, &ws_uri);

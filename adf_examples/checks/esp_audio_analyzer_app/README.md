@@ -388,6 +388,29 @@ I (23050) APP_WS: Playback stopped
 I (23050) APP_AUDIO: Playback stopped
 ```
 
+## Local Testing
+
+This project provides a Python-based local testing tool, `esp_audio_analyzer_client.py`, for testing WebSocket connections and audio data transmission.
+
+The testing tool supports various modes such as standalone recording, standalone playback, and simultaneous recording and playback, and is compatible with multiple storage media:
+
+- Recording: Supports recording audio and saving it locally or to the device SD card.
+- Playback: Supports playing audio files from the device's embedded Flash, SD card, or locally.
+
+```bash
+# Set the server address (fill in the WebSocket address printed in the device logs)
+export WS_SERVER=YOUR_SERVER_ADDRESS
+
+# Record audio for 10 seconds and save locally
+python3 esp_audio_analyzer_client.py --server $WS_SERVER --test record --duration 10 --record-file ./recording_output.wav
+
+# View all parameters and more usage examples
+python3 esp_audio_analyzer_client.py --help
+```
+
+> [!TIP]
+> This tool supports testing in a router-less environment. You can configure the device in AP mode and connect your testing computer directly to the device's hotspot. In this case, the `WS_SERVER` address of the device is typically `192.168.4.1`.
+
 ## Troubleshooting
 
 ### Device Frequently Disconnects

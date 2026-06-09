@@ -50,7 +50,9 @@ example_test_esp32p4:
   tags: [ esp32p4, generic ]
 
 .example_test_pytest_esp32_audio_loopback:
-  image: "$ADF_DOCKER_REGISTRY/target_test_env_v5.3:2"
+  # Must NOT use ${TEST_IMAGE}; regular target-test images lack alsa-utils (arecord).
+  # Per-IDF-version image/path from ci-config.yml via generated_triggers.
+  image: "$AUDIO_LOOPBACK_TEST_IMAGE"
   extends:
     - .rules:build:example_test_audio_loopback
     - .pytest_example_template
@@ -62,6 +64,6 @@ example_test_esp32p4:
       optional: true
   tags: [ AUDIO_LOOPBACK_ENV ]
   script:
-    - export PYTHONPATH="/usr/local/lib/python3.9/dist-packages:$PYTHONPATH"
+    - export PYTHONPATH="$AUDIO_LOOPBACK_PYTHONPATH:$PYTHONPATH"
     - arecord -l
     - pytest_apps example

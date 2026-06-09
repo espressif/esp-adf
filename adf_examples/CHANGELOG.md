@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.2
+
+### Features
+
+- Updated `esp_audio_analyzer_app` example with debug script and support for IDF v6
+
 ## v0.2.1
 
 ### Features
