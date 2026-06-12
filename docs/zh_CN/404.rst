@@ -2,6 +2,7 @@
 
 无法找到该网页
 ==============
+
 :link_to_translation:`en:[English]`
 
 .. note::
@@ -14,5 +15,5 @@
     :align: center
     :alt: 抱歉，无法找到您想访问的页面。
     :figclass: align-center
-   
+
 * :ref:`genindex`

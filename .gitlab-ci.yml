@@ -8,8 +8,10 @@ include:
 stages:
   - pre_check
   - trigger_build
+  - build_docs
   - test_deploy
   - deploy
+  - post_deploy
 
 before_script:
   - source $PROJECT_ROOT/tools/ci/utils.sh

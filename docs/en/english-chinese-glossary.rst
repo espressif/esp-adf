@@ -1,6 +1,8 @@
 English-Chinese Glossary
 ========================
 
+:link_to_translation:`zh_CN:[中文]`
+
 This document lists terms that are used in Espressif Advanced Development Framework Guide and other audio related documentation. Each term is followed by its Chinese equivalents and some have definitions.
 
 .. glossary::
@@ -47,7 +49,7 @@ This document lists terms that are used in Espressif Advanced Development Framew
     AFE
       Chinese equivalent: AFE
 
-      Abbreviation for audio front end. `Espressif audio front-end algorithm framework <https://github.com/espressif/esp-sr/blob/master/docs/audio_front_end/README.md>`_ is developed by Espressif AI Lab to provide high-quality and stable audio data to the host.
+      Abbreviation for audio front end. `Espressif audio front-end algorithm framework <https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/audio_front_end/README.html>`_ is developed by Espressif AI Lab to provide high-quality and stable audio data to the host.
 
     AirKiss
       Chinese equivalent: AirKiss
@@ -167,7 +169,7 @@ This document lists terms that are used in Espressif Advanced Development Framew
     BCLK
       Chinese equivalent: BCLK
 
-      Abbreviation for base clock.
+      Abbreviation for bit clock.
 
     BluFi
       Chinese equivalent: BluFi
@@ -236,7 +238,7 @@ This document lists terms that are used in Espressif Advanced Development Framew
       Abbreviation for digital media renderer.
 
     downmix
-      Chinese equivalent: 向下混叠
+      Chinese equivalent: 向下混音
 
       An audio processing technique that mixes more audio streams to less output audio streams.
 
@@ -264,9 +266,9 @@ This document lists terms that are used in Espressif Advanced Development Framew
       Abbreviation for electret condenser microphone.
 
     element
-      Chinese equivalent: 元素
+      Chinese equivalent: 处理单元
 
-      Also known as audio element. It is the basic building block for the application programmer developing with ADF. Every decoder, encoder, filter, input stream, or output stream is in fact an audio element.
+      A processing unit on a GMF pipeline. Legacy ADF called it an audio element.
 
     encoder
       Chinese equivalent: 编码器
@@ -443,7 +445,7 @@ This document lists terms that are used in Espressif Advanced Development Framew
     M4A
       Chinese equivalent: M4A
 
-      An audio encoding format for lossless compression of digital audio.
+      An MPEG-4 audio container. The common payload is AAC (lossy); lossless cases use ALAC.
 
     mass production
       Chinese equivalent: 量产
@@ -475,7 +477,7 @@ This document lists terms that are used in Espressif Advanced Development Framew
       Informal form for microphone.
 
     micro-electro-mechanical systems microphone
-      Chinese equivalent: 微型机型系统麦克风
+      Chinese equivalent: 微型机电系统麦克风
 
       Spelled-out form of MEMS mic.
 
@@ -502,7 +504,7 @@ This document lists terms that are used in Espressif Advanced Development Framew
     MultiNet
       Chinese equivalent: MultiNet
 
-      `MultiNet <https://github.com/espressif/esp-sr/blob/master/docs/speech_command_recognition/README.md>`_ is a lightweight model specially designed based on `CRNN <https://arxiv.org/pdf/1703.05390.pdf>`_ and `CTC <https://github.com/espressif/esp-sr/blob/master/docs/speech_command_recognition/README.md>`_ for the implementation of multi-command recognition.
+      `MultiNet <https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/speech_command_recognition/README.html>`_ is a lightweight model specially designed based on `CRNN <https://arxiv.org/pdf/1703.05390.pdf>`_ and CTC for the implementation of multi-command recognition.
 
     multi-room
       Chinese equivalent: 多房间
@@ -787,7 +789,7 @@ This document lists terms that are used in Espressif Advanced Development Framew
     WakeNet
       Chinese equivalent: WakeNet
 
-      `WakeNet <https://github.com/espressif/esp-sr/blob/master/docs/wake_word_engine/README.md>`_ is a wake word engine built upon neural network for low-power embedded MCUs.
+      `WakeNet <https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/wake_word_engine/README.html>`_ is a wake word engine built upon neural network for low-power embedded MCUs.
 
     wake-up
       Chinese equivalent: 唤醒

@@ -1,1 +1,0 @@
-.. include:: ../../../en/api-reference/codecs/amr_codecs.rst

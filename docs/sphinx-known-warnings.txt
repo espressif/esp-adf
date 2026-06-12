@@ -1,8 +1,65 @@
-# File contains known/allowed Sphinx warnings.
-#
-# Build will fail if sphinx-warning-log.txt contains any lines
-# which are not in this file. Lines are pre-sanitized by
-# check_doc_warnings.sh to remove formatting, paths, line numbers.
-#
-# Warnings in this file must be in the same overall order as the log file.
-#
+index.rst:line: WARNING: IDF path /components/playlist/include/sdcard_scan.h does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/components/playlist/include/sdcard_scan.h)
+index.rst:line: WARNING: IDF path /examples/player/pipeline_sdcard_mp3_control does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples/player/pipeline_sdcard_mp3_control)
+index.rst:line: WARNING: IDF path /examples/cli does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples/cli)
+index.rst:line: CRITICAL: Problems with "include-build-file" directive path:
+InputError: [Errno 2] No such file or directory: 'inc/sdcard_scan.inc'.
+index.rst:line: WARNING: IDF path /examples/player/pipeline_sdcard_mp3_control does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples/player/pipeline_sdcard_mp3_control)
+index.rst:line: WARNING: IDF path /examples/cli does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples/cli)
+index.rst:line: CRITICAL: Problems with "include-build-file" directive path:
+InputError: [Errno 2] No such file or directory: 'inc/sdcard_list.inc'.
+index.rst:line: CRITICAL: Problems with "include-build-file" directive path:
+InputError: [Errno 2] No such file or directory: 'inc/dram_list.inc'.
+index.rst:line: CRITICAL: Problems with "include-build-file" directive path:
+InputError: [Errno 2] No such file or directory: 'inc/flash_list.inc'.
+index.rst:line: CRITICAL: Problems with "include-build-file" directive path:
+InputError: [Errno 2] No such file or directory: 'inc/partition_list.inc'.
+index.rst:line: CRITICAL: Problems with "include-build-file" directive path:
+InputError: [Errno 2] No such file or directory: 'inc/playlist.inc'.
+index.rst:line: WARNING: IDF path /examples/get-started/play_mp3_control does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples/get-started/play_mp3_control)
+index.rst:line: WARNING: IDF path /examples does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples)
+index.rst:line: WARNING: IDF path /examples does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples)
+index.rst:line: WARNING: IDF path /examples does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples)
+index.rst:line: WARNING: IDF path /examples does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples)
+index.rst:line: WARNING: IDF path /examples/get-started/play_mp3_control/Makefile does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples/get-started/play_mp3_control/Makefile)
+design-considerations.rst:line: WARNING: IDF path /components/audio_board/lyrat_v4_3/board_def.h does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/components/audio_board/lyrat_v4_3/board_def.h)
+design-considerations.rst:line: WARNING: IDF path /components/audio_stream/include/i2s_stream.h does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/components/audio_stream/include/i2s_stream.h)
+design-considerations.rst:line: WARNING: IDF path /components/audio_stream/i2s_stream.c does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/components/audio_stream/i2s_stream.c)
+design-considerations.rst:line: WARNING: IDF path /components/audio_pipeline/include/audio_pipeline.h does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/components/audio_pipeline/include/audio_pipeline.h)
+user-guide-esp32-c3-lyra.rst:line: WARNING: IDF path /examples does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples)
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: IDF path /examples does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples)
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: IDF path /examples does not appear to exist (absolute path /home/linxu/esp_adf_master/esp-adf-internal/examples)
+board-esp32-lyrat-mini-v1.2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+board-esp32-lyrat-mini-v1.2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+board-esp32-lyrat-mini-v1.2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+board-esp32-lyrat-mini-v1.2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+board-esp32-lyrat-mini-v1.2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+get-started-esp32-korvo-du1906.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+get-started-esp32-korvo-du1906.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+get-started-esp32-korvo-du1906.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+get-started-esp32-lyrat-mini.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-c3-lyra.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-c3-lyra.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-lcd.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-lcd.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.
+user-guide-esp32-s3-korvo-2-v3.0.rst:line: WARNING: Could not obtain image size. :scale: option is ignored.

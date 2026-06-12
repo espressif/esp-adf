@@ -1,1 +1,0 @@
-.. include:: ../../en/design-guide/design-considerations.rst

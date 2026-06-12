@@ -4,11 +4,11 @@ Knowledge Center
 
 :link_to_translation:`zh_CN:[中文]`
 
-This section is designed for developers working with Espressif multimedia SDKs, providing essential resources and insights. It covers basic libraries, audio, image, and video encoders and decoders, as well as audio and image effects. It also includes frameworks such as ESP-GMF Core, usage of ESP-GMF elements, and ADF components, offering guidance on their implementation and best practices.
-
+Project design covers inputs, outputs, and chip selection. Development notes cover how to inspect memory and CPU usage, the task watchdog, and common menuconfig options. Insight Star Map organizes multimedia topics.
 
 .. toctree::
    :maxdepth: 2
 
+   Project Design <project-design>
+   Development Notes <design-considerations>
    Insight Star Map <insight-star-map/index>
-   Application Notes <application-notes/index>
