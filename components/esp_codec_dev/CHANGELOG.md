@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.11
+
+### Bug Fixed
+
+- Fixed dependencies of ADC codec header file
+
 ## v1.5.10
 
 ### Bug Fixed
