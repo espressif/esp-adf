@@ -11,6 +11,7 @@
 
 #include "esp_idf_version.h"
 #include "soc/soc_caps.h"
+#include "audio_codec_data_if.h"
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0) && SOC_ADC_SUPPORTED
 #include "hal/adc_types.h"
 

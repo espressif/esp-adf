@@ -11,6 +11,9 @@
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #include "driver/i2s_std.h"
 #include "driver/i2s_tdm.h"
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+#include "hal/i2s_ll.h"
+#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0) */
 #include "soc/soc_caps.h"
 #if SOC_I2S_SUPPORTS_PDM_TX
 #include "driver/i2s_pdm.h"
@@ -50,7 +53,11 @@ typedef struct {
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 
+#ifdef SOC_I2S_NUM
 #define I2S_MAX_KEEP  SOC_I2S_NUM
+#else
+#define I2S_MAX_KEEP  I2S_LL_GET(INST_NUM)
+#endif  /* SOC_I2S_NUM */
 
 typedef struct {
     i2s_chan_handle_t  tx_handle;
