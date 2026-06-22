@@ -22,7 +22,6 @@
  * compatibility code on older branches.
  */
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 5, 2)
-
 #include "hal/adc_ll.h"
 
 #ifdef ADC_LL_UNIT2_CHANNEL_SUBSTRATION
@@ -35,6 +34,8 @@
 #endif  /* CONFIG_IDF_TARGET_ESP32P4 */
 #endif  /* ADC_LL_UNIT2_CHANNEL_SUBSTRATION */
 
+#elif !defined(SOC_ADC_SAMPLE_FREQ_THRES_LOW) || !defined(SOC_ADC_SAMPLE_FREQ_THRES_HIGH)
+#include "hal/adc_ll.h"
 #endif  /* ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 5, 2) */
 
 /**
@@ -45,6 +46,26 @@
 #ifndef ADC_DATA_READ_FILTER_ENABLE
 #define ADC_DATA_READ_FILTER_ENABLE  0
 #endif  /* ADC_DATA_READ_FILTER_ENABLE */
+
+#ifdef SOC_ADC_MAX_CHANNEL_NUM
+#define CODEC_ADC_MAX_CHANNEL_NUM  SOC_ADC_MAX_CHANNEL_NUM
+#elif SOC_ADC_PERIPH_NUM > 1
+#define CODEC_ADC_MAX_CHANNEL_NUM  ((SOC_ADC_CHANNEL_NUM(0) > SOC_ADC_CHANNEL_NUM(1)) ? SOC_ADC_CHANNEL_NUM(0) : SOC_ADC_CHANNEL_NUM(1))
+#else
+#define CODEC_ADC_MAX_CHANNEL_NUM  SOC_ADC_CHANNEL_NUM(0)
+#endif  /* SOC_ADC_MAX_CHANNEL_NUM */
+
+#ifdef SOC_ADC_SAMPLE_FREQ_THRES_LOW
+#define CODEC_ADC_SAMPLE_FREQ_THRES_LOW  SOC_ADC_SAMPLE_FREQ_THRES_LOW
+#else
+#define CODEC_ADC_SAMPLE_FREQ_THRES_LOW  ADC_LL_SAMPLE_FREQ_THRES_LOW
+#endif  /* SOC_ADC_SAMPLE_FREQ_THRES_LOW */
+
+#ifdef SOC_ADC_SAMPLE_FREQ_THRES_HIGH
+#define CODEC_ADC_SAMPLE_FREQ_THRES_HIGH  SOC_ADC_SAMPLE_FREQ_THRES_HIGH
+#else
+#define CODEC_ADC_SAMPLE_FREQ_THRES_HIGH  ADC_LL_SAMPLE_FREQ_THRES_HIGH
+#endif  /* SOC_ADC_SAMPLE_FREQ_THRES_HIGH */
 
 typedef struct {
     adc_unit_t     unit;
@@ -72,8 +93,8 @@ typedef struct {
     size_t                            raw_read_buf_size;
     codec_adc_parsed_data_t          *parsed_buf;
     uint32_t                          current_sample_rate_hz;
-    uint8_t                           base_pattern_bits[SOC_ADC_PERIPH_NUM][SOC_ADC_MAX_CHANNEL_NUM];
-    uint8_t                           active_pattern_bits[SOC_ADC_PERIPH_NUM][SOC_ADC_MAX_CHANNEL_NUM];
+    uint8_t                           base_pattern_bits[SOC_ADC_PERIPH_NUM][CODEC_ADC_MAX_CHANNEL_NUM];
+    uint8_t                           active_pattern_bits[SOC_ADC_PERIPH_NUM][CODEC_ADC_MAX_CHANNEL_NUM];
 } adc_data_t;
 
 static inline bool adc_data_bit_width_valid(uint8_t bit_width)
@@ -103,10 +124,10 @@ static inline int32_t adc_centered_to_pcm(int32_t centered, uint8_t out_bits, ui
 
 static inline bool adc_unit_channel_in_range(adc_unit_t unit, adc_channel_t channel)
 {
-    return unit < SOC_ADC_PERIPH_NUM && channel < SOC_ADC_MAX_CHANNEL_NUM;
+    return unit < SOC_ADC_PERIPH_NUM && channel < SOC_ADC_CHANNEL_NUM(unit);
 }
 
-static inline void adc_store_pattern_bits(uint8_t pattern_bits[SOC_ADC_PERIPH_NUM][SOC_ADC_MAX_CHANNEL_NUM],
+static inline void adc_store_pattern_bits(uint8_t pattern_bits[SOC_ADC_PERIPH_NUM][CODEC_ADC_MAX_CHANNEL_NUM],
                                           adc_unit_t unit, adc_channel_t channel, uint8_t sample_bits)
 {
     if (adc_unit_channel_in_range(unit, channel) && pattern_bits[unit][channel] == 0) {
@@ -242,15 +263,15 @@ static adc_digi_convert_mode_t adc_calc_conv_mode(const adc_digi_pattern_config_
 static esp_err_t adc_apply_patterns(adc_data_t *adc_data, const uint8_t *pattern_idx, uint8_t pattern_num, uint32_t sample_rate_hz)
 {
     ESP_RETURN_ON_FALSE(pattern_num > 0, ESP_ERR_INVALID_ARG, TAG, "Pattern number should be > 0");
-    ESP_RETURN_ON_FALSE(sample_rate_hz >= (SOC_ADC_SAMPLE_FREQ_THRES_LOW + pattern_num - 1) / pattern_num,
+    ESP_RETURN_ON_FALSE(sample_rate_hz >= (CODEC_ADC_SAMPLE_FREQ_THRES_LOW + pattern_num - 1) / pattern_num,
                         ESP_ERR_INVALID_ARG, TAG,
-                        "Sample rate should be >= %lu", (unsigned long)((SOC_ADC_SAMPLE_FREQ_THRES_LOW + pattern_num - 1) / pattern_num));
-    ESP_RETURN_ON_FALSE(sample_rate_hz <= (SOC_ADC_SAMPLE_FREQ_THRES_HIGH / pattern_num), ESP_ERR_INVALID_ARG, TAG,
+                        "Sample rate should be >= %lu", (unsigned long)((CODEC_ADC_SAMPLE_FREQ_THRES_LOW + pattern_num - 1) / pattern_num));
+    ESP_RETURN_ON_FALSE(sample_rate_hz <= (CODEC_ADC_SAMPLE_FREQ_THRES_HIGH / pattern_num), ESP_ERR_INVALID_ARG, TAG,
                         "Sample rate out of range: %lu * %u", (unsigned long)sample_rate_hz, pattern_num);
 
     /* Build a temporary hardware pattern list from selected base indices. */
     adc_digi_pattern_config_t adc_pattern[SOC_ADC_PATT_LEN_MAX] = {0};
-    uint8_t active_pattern_bits[SOC_ADC_PERIPH_NUM][SOC_ADC_MAX_CHANNEL_NUM] = {0};
+    uint8_t active_pattern_bits[SOC_ADC_PERIPH_NUM][CODEC_ADC_MAX_CHANNEL_NUM] = {0};
     for (int i = 0; i < pattern_num; i++) {
         adc_pattern[i] = adc_data->base_patterns[pattern_idx[i]];
         adc_store_pattern_bits(active_pattern_bits,
