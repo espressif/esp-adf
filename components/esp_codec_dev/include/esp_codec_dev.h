@@ -96,6 +96,54 @@ int esp_codec_dev_dump_reg(esp_codec_dev_handle_t codec);
 int esp_codec_dev_read(esp_codec_dev_handle_t codec, void *data, int len);
 
 /**
+ * @brief         Configure input mirror for codec input data
+ *
+ *                Input mirror copies data returned by esp_codec_dev_read() into an internal
+ *                ring buffer. It is single consumer only, not ISR-safe, and older data may
+ *                be overwritten if it is not read in time.
+ *
+ * @note          If input mirror has already been configured, this API returns
+ *                ESP_CODEC_DEV_OK without resizing or recreating the buffer.
+ *                esp_codec_dev_close() automatically frees mirror resources.
+ *
+ * @param         handle: Codec device handle
+ * @param         size: Input mirror ringbuffer capacity in bytes
+ * @return        ESP_CODEC_DEV_OK: Configure input mirror success
+ *                ESP_CODEC_DEV_INVALID_ARG: Invalid arguments
+ *                ESP_CODEC_DEV_NOT_SUPPORT: Codec not support input mode
+ *                ESP_CODEC_DEV_NO_MEM: Not enough memory for input mirror
+ */
+int esp_codec_dev_mirror_cfg(esp_codec_dev_handle_t handle, int size);
+
+/**
+ * @brief         Read data from input mirror
+ *
+ *                This API blocks until the requested size is filled or the timeout
+ *                expires. It may allocate no user-visible resources and is single
+ *                consumer only.
+ *
+ * @note          Do not call esp_codec_dev_close() or esp_codec_dev_delete() while
+ *                this API is blocking. Stop the mirror read task before closing
+ *                or deleting the codec device.
+ *
+ * @param         handle: Codec device handle
+ * @param         buffer: Data buffer to fill
+ * @param         size: Data length to read
+ * @param         timeout_ms: Timeout in milliseconds, 0 no wait, negative wait forever
+ * @param[out]    bytes_read: Actual bytes copied to buffer
+ * @return        ESP_CODEC_DEV_OK: Read requested data success
+ *                ESP_CODEC_DEV_INVALID_ARG: Invalid arguments
+ *                ESP_CODEC_DEV_NOT_SUPPORT: Codec not support input mode
+ *                ESP_CODEC_DEV_TIMEOUT: Timeout before requested data is filled
+ *                ESP_CODEC_DEV_WRONG_STATE: Input mirror is not enabled
+ */
+int esp_codec_dev_mirror_read(esp_codec_dev_handle_t handle,
+                              uint8_t *buffer,
+                              int size,
+                              int timeout_ms,
+                              int *bytes_read);
+
+/**
  * @brief         Write data to codec
  *                Notes: when enable software volume, it will change input data level directly without copy
  *                Make sure that input data is writable

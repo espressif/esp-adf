@@ -27,6 +27,7 @@ static int _gpio_cfg(int16_t gpio, audio_gpio_dir_t dir, audio_gpio_mode_t mode)
     ret |= gpio_config(&io_conf);
     return ret == 0 ? ESP_CODEC_DEV_OK : ESP_CODEC_DEV_DRV_ERR;
 }
+
 static int _gpio_set(int16_t gpio, bool high)
 {
     if (gpio == -1) {
