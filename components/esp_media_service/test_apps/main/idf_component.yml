@@ -1,0 +1,5 @@
+dependencies:
+  espressif/esp_media_service:
+    require: public
+    version: "^0.5"
+    override_path: "../.."

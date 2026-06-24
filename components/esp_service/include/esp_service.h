@@ -54,6 +54,11 @@ typedef struct esp_service esp_service_t;
 #define ESP_SERVICE_EVENT_STATE_CHANGED  (UINT16_MAX - 1)  /*!< State transition; payload: esp_service_state_changed_payload_t */
 
 /**
+ * @brief  Get base service
+ */
+#define ESP_SERVICE_BASE(service)  ((esp_service_t *)(service))
+
+/**
  * @brief  Service state enumeration
  */
 typedef enum {

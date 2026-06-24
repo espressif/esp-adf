@@ -2,6 +2,7 @@
 set(srcs
     "service/esp_service.c"
     "service/esp_service_manager.c"
+    "service/esp_service_scheduler.c"
 )
 set(requires freertos esp_timer log adf_event_hub esp_http_server esp_driver_uart)
 set(priv_requires)

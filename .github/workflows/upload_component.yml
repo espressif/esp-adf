@@ -27,6 +27,7 @@ jobs:
             components/esp_config_manager;
             components/esp_wifi_service;
             components/esp_playlist;
+            components/esp_media_service;
             adf_examples;
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}
