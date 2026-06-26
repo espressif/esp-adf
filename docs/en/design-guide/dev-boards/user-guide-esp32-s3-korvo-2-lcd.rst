@@ -124,5 +124,6 @@ Related Documents
 - :doc:`ESP32-S3-Korvo-2 V3.0 <user-guide-esp32-s3-korvo-2>`
 - `ESP32-S3-Korvo-2-LCD Schematic <https://dl.espressif.com/dl/schematics/SCH_ESP32-S3-KORVO-2-LCD_V1.0_20210918.pdf>`_ (PDF)
 - `ESP32-S3-Korvo-2-LCD PCB layout <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-KORVO-2-LCD_V1.0_20210918.pdf>`_ (PDF)
+- `ESP32-S3-Korvo-2 V3.1 Reference Guide <https://documentation.espressif.com/ESP32-S3-Korvo-2_Reference_Design.zip>`_ (ZIP)
 
 For further design documentation for the board, please contact us at `sales@espressif.com <sales@espressif.com>`_.

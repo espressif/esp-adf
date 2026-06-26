@@ -856,6 +856,7 @@ ESP32-S3-Korvo-2 V3.0
 - `ESP32-S3-WROOM-1/1U 技术规格书 <https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_cn.pdf>`_ (PDF)
 - `ESP32-S3-Korvo-2 V3.1 原理图`_ (PDF)
 - `ESP32-S3-Korvo-2 V3.1 PCB 布局图 <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-Korvo-2_V3.1_20221104.pdf>`_ (PDF)
+- `ESP32-S3-Korvo-2 V3.1 参考设计 <https://documentation.espressif.com/ESP32-S3-Korvo-2_Reference_Design.zip>`_ (ZIP)
 
 有关本开发板的更多设计文档，请联系我们的商务部门 `sales@espressif.com <sales@espressif.com>`_。
 
