@@ -124,5 +124,6 @@ ESP32-S3-Korvo-2-LCD 的主要组件和连接方式如下图所示。
 - :doc:`ESP32-S3-Korvo-2 V3.0 用户指南 <user-guide-esp32-s3-korvo-2>`
 - `ESP32-S3-Korvo-2-LCD 原理图 <https://dl.espressif.com/dl/schematics/SCH_ESP32-S3-KORVO-2-LCD_V1.0_20210918.pdf>`_ (PDF)
 - `ESP32-S3-Korvo-2-LCD PCB 布局图 <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-KORVO-2-LCD_V1.0_20210918.pdf>`_ (PDF)
+- `ESP32-S3-Korvo-2 V3.1 参考设计 <https://documentation.espressif.com/ESP32-S3-Korvo-2_Reference_Design.zip>`_ (ZIP)
 
 有关本开发板的更多设计文档，请联系我们的商务部门 `sales@espressif.com <sales@espressif.com>`_。

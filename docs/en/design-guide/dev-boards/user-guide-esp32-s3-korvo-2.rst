@@ -856,6 +856,7 @@ Related Documents
 - `ESP32-S3-WROOM-1/1U Datasheet <https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf>`_ (PDF)
 - `ESP32-S3-Korvo-2 V3.1 Schematic`_ (PDF)
 - `ESP32-S3-Korvo-2 V3.1 PCB Layout <https://dl.espressif.com/dl/schematics/PCB_ESP32-S3-Korvo-2_V3.1_20221104.pdf>`_ (PDF)
+- `ESP32-S3-Korvo-2 V3.1 Reference Guide <https://documentation.espressif.com/ESP32-S3-Korvo-2_Reference_Design.zip>`_ (ZIP)
 
 For further design documentation for the board, please contact us at `sales@espressif.com <sales@espressif.com>`_.
 
