@@ -34,23 +34,58 @@
 
 #include "audio_idf_version.h"
 
-#define CONSOLE_MAX_ARGUMENTS (5)
+#if defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
+#include "driver/usb_serial_jtag.h"
+#define CONSOLE_USE_USB_SERIAL_JTAG  (1)
+#else
+#define CONSOLE_USE_USB_SERIAL_JTAG  (0)
+#endif  /* defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) */
+
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
+#define CONSOLE_UART_PORT_NUM  CONFIG_ESP_CONSOLE_UART_NUM
+#else
+#define CONSOLE_UART_PORT_NUM  CONFIG_CONSOLE_UART_NUM
+#endif  /* (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)) */
+
+#define CONSOLE_MAX_ARGUMENTS  (5)
 static const char *TAG = "PERIPH_CONSOLE";
 static const int STOPPED_BIT = BIT1;
+
+/* Read/write the console byte stream from either a hardware UART or the
+ * USB-Serial/JTAG controller, depending on which one is selected as the
+ * primary console. periph_console talks to the driver directly (instead of
+ * going through stdin/stdout) so the console backend must be selected here. */
+static int console_stream_read(void *buf, uint32_t length, TickType_t time_to_wait)
+{
+#if CONSOLE_USE_USB_SERIAL_JTAG
+    return usb_serial_jtag_read_bytes(buf, length, time_to_wait);
+#else
+    return uart_read_bytes(CONSOLE_UART_PORT_NUM, (uint8_t *)buf, length, time_to_wait);
+#endif  /* CONSOLE_USE_USB_SERIAL_JTAG */
+}
+
+static void console_stream_write(const char *buf, size_t length)
+{
+#if CONSOLE_USE_USB_SERIAL_JTAG
+    usb_serial_jtag_write_bytes(buf, length, portMAX_DELAY);
+#else
+    uart_write_bytes(CONSOLE_UART_PORT_NUM, buf, length);
+#endif  /* CONSOLE_USE_USB_SERIAL_JTAG */
+}
 
 typedef struct periph_console *periph_console_handle_t;
 
 typedef struct periph_console {
-    char                        *buffer;
+    char                       *buffer;
     int                         total_bytes;
     bool                        run;
-    const periph_console_cmd_t  *commands;
+    const periph_console_cmd_t *commands;
     int                         command_num;
     EventGroupHandle_t          state_event_bits;
     int                         task_stack;
     int                         task_prio;
     int                         buffer_size;
-    char                        *prompt_string;
+    char                       *prompt_string;
 } periph_console_t;
 
 static char *conslole_parse_arguments(char *str, char **saveptr)
@@ -91,41 +126,25 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
     char c;
     char tx[3];
     int nread = 0;
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
-    nread = uart_read_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (uint8_t *)&c, 1, time_to_wait);
-#else
-    nread = uart_read_bytes(CONFIG_CONSOLE_UART_NUM, (uint8_t *)&c, 1, time_to_wait);
-#endif
+    nread = console_stream_read(&c, 1, time_to_wait);
 
     if (nread <= 0) {
         return false;
     }
     if ((c == 8) || (c == 127)) {  // backspace or del
         if (console->total_bytes > 0) {
-            console->total_bytes --;
+            console->total_bytes--;
             tx[0] = c;
             tx[1] = 0x20;
             tx[2] = c;
-
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
-            uart_write_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (const char *)tx, 3);
-#else
-            uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 3);
-#endif
-
+            console_stream_write((const char *)tx, 3);
         }
         return false;
     }
     if (c == '\n' || c == '\r') {
         tx[0] = '\r';
         tx[1] = '\n';
-
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
-        uart_write_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (const char *)tx, 2);
-#else
-        uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)tx, 2);
-#endif
-
+        console_stream_write((const char *)tx, 2);
         console->buffer[console->total_bytes] = 0;
         return true;
     }
@@ -133,13 +152,7 @@ bool console_get_line(periph_console_handle_t console, unsigned max_size, TickTy
     if (c < 0x20) {
         return false;
     }
-
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
-    uart_write_bytes(CONFIG_ESP_CONSOLE_UART_NUM, (const char *)&c, 1);
-#else
-    uart_write_bytes(CONFIG_CONSOLE_UART_NUM, (const char *)&c, 1);
-#endif
-
+    console_stream_write((const char *)&c, 1);
     console->buffer[console->total_bytes++] = (char)c;
     if (console->total_bytes > max_size) {
         console->total_bytes = 0;
@@ -233,7 +246,6 @@ static void _console_task(void *pv)
             }
             printf("%s ", prompt_string);
         }
-
     }
     xEventGroupSetBits(console->state_event_bits, STOPPED_BIT);
     vTaskDelete(NULL);
@@ -246,36 +258,50 @@ static esp_err_t _console_init(esp_periph_handle_t self)
     setvbuf(stdin, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
 
-
+#if CONSOLE_USE_USB_SERIAL_JTAG
+    /* Console input/output is routed through the USB-Serial/JTAG controller.
+     * Install its driver so console_stream_read()/write() can talk to it. */
+    usb_serial_jtag_driver_config_t usb_serial_jtag_cfg = {
+        .tx_buffer_size = console->buffer_size * 2,
+        .rx_buffer_size = console->buffer_size * 2,
+    };
+    esp_err_t usj_ret = usb_serial_jtag_driver_install(&usb_serial_jtag_cfg);
+    if (usj_ret != ESP_OK && usj_ret != ESP_ERR_INVALID_STATE) {
+        ESP_LOGE(TAG, "Error install USB-Serial-JTAG driver, ret:%d", usj_ret);
+        return ESP_FAIL;
+    } else if (usj_ret == ESP_ERR_INVALID_STATE) {
+        ESP_LOGD(TAG, "USB-Serial-JTAG driver already installed");
+    }
+#else
     /* Minicom, screen, idf_monitor send CR when ENTER key is pressed */
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
     esp_vfs_dev_uart_port_set_rx_line_endings(CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CR);
 #else
     esp_vfs_dev_uart_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
-#endif
+#endif  /* (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) */
     /* Move the caret to the beginning of the next line on '\n' */
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
     esp_vfs_dev_uart_port_set_tx_line_endings(CONFIG_ESP_CONSOLE_UART_NUM, ESP_LINE_ENDINGS_CRLF);
 #else
     esp_vfs_dev_uart_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
-#endif
+#endif  /* (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) */
 
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, console->buffer_size * 2, 0, 0, NULL, 0);
 #else
     uart_driver_install(CONFIG_CONSOLE_UART_NUM, console->buffer_size * 2, 0, 0, NULL, 0);
-#endif
+#endif  /* (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)) */
 
     /* Tell VFS to use UART driver */
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0))
     esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
 #else
     esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART_NUM);
-#endif
+#endif  /* (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 0, 0)) */
+#endif  /* CONSOLE_USE_USB_SERIAL_JTAG */
 
-    console->buffer = (char *) audio_malloc(console->buffer_size);
-    AUDIO_MEM_CHECK(TAG, console->buffer, {
-        return ESP_ERR_NO_MEM;
+    console->buffer = (char *)audio_malloc(console->buffer_size);
+    AUDIO_MEM_CHECK(TAG, console->buffer, {return ESP_ERR_NO_MEM;
     });
 
     if (xTaskCreate(_console_task, "console_task", console->task_stack, self, console->task_prio, NULL) != pdTRUE) {
@@ -284,7 +310,6 @@ static esp_err_t _console_init(esp_periph_handle_t self)
     }
     return ESP_OK;
 }
-
 
 esp_periph_handle_t periph_console_init(periph_console_cfg_t *config)
 {
@@ -300,7 +325,7 @@ esp_periph_handle_t periph_console_init(periph_console_cfg_t *config)
     console->task_stack = CONSOLE_DEFAULT_TASK_STACK;
     console->task_prio = CONSOLE_DEFAULT_TASK_PRIO;
     console->buffer_size = CONSOLE_DEFAULT_BUFFER_SIZE;
-     if (config->buffer_size > 0) {
+    if (config->buffer_size > 0) {
         console->buffer_size = config->buffer_size;
     }
     if (config->task_stack > 0) {

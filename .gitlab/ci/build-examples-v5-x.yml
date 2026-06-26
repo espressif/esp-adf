@@ -83,6 +83,13 @@
       - IDF_VERSION_TAG: ['v5.4.3', 'v5.5.3']
         parallel: [1/2, 2/2]
 
+# P4 lab board is rev v3.2; IDF v5.4.3 cannot target P4 v3.x (no SELECTS_REV_LESS_V3).
+.matrix_template_p4: &matrix_template_p4
+  parallel:
+    matrix:
+      - IDF_VERSION_TAG: ['v5.5.3']
+        parallel: [1/2, 2/2]
+
 .build_examples_esp32_lyrat_v4_3:
   extends:
     - .build_cmake_template
@@ -140,7 +147,7 @@ build_examples_esp32c6_devkit:
 build_examples_esp32p4_function_ev_board:
   extends:
     - .build_cmake_template
-    - .matrix_template_c6_p4
+    - .matrix_template_p4
     - .rules:build:regular-board-idf-ver-tag
   variables:
     IDF_TARGET: esp32p4

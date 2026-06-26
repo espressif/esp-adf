@@ -30,7 +30,7 @@ APPS:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
       esp32p4:
-        - ESP32_P4_FUNCTION_EV: v5.4-${LATEST_IDF_VERSION}
+        - ESP32_P4_FUNCTION_EV
   - app_dir: examples/advanced_examples/aec
     board:
       esp32:
@@ -469,8 +469,8 @@ APPS:
         - ESP_LYRAT_MINI_V1_1: v5.4-${LATEST_IDF_VERSION}
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.4-${LATEST_IDF_VERSION}
-      esp32p4:
-        - ESP32_P4_FUNCTION_EV: v5.4-${LATEST_IDF_VERSION}
+      # esp32p4: disabled(P4 v3 lib split)
+      #   - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
   - app_dir: examples/speech_recognition/vad
     board:
       esp32:
