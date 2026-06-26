@@ -37,6 +37,11 @@
     expire_in: 1 week
   script:
     - pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
+    # ESP32-P4 (rev v3.2) needs esptool>=4.12.dev2;
+    - |
+      if [ "${IDF_TARGET}" = "esp32p4" ]; then
+        pip install esptool==4.12.dev2
+      fi
     - job_tags=$(python $ADF_PATH/tools/ci/gitlab_api.py get_job_tags $CI_PROJECT_ID --job_id $CI_JOB_ID)
     - markers=$(echo $job_tags | sed -e "s/,/ and /g")
     - eval $(python $ADF_PATH/tools/ci/apps_filter.py --target ${IDF_TARGET} --board ${AUDIO_BOARD} --idf_ver ${IDF_VERSION_TAG} --pytest-export)
@@ -193,17 +198,7 @@ example_test_pytest_esp32s3_v5.4:
     - 'build_examples_esp32s3_korvo_v2: [v5.4.3, 2/2]'
   tags: [ esp32s3, ADF_EXAMPLE_GENERIC ]
 
-example_test_pytest_esp32p4_v5.4:
-  extends:
-    - .pytest_examples_dir_template
-  variables:
-    IDF_TARGET: esp32p4
-    IDF_VERSION_TAG: v5.4.3
-    AUDIO_BOARD: ESP32_P4_FUNCTION_EV
-  needs:
-    - 'build_examples_esp32p4_function_ev_board: [v5.4.3, 1/2]'
-    - 'build_examples_esp32p4_function_ev_board: [v5.4.3, 2/2]'
-  tags: [ esp32p4, ADF_EXAMPLE_GENERIC ]
+# P4 v3.2 lab board requires IDF >= v5.5; v5.4.3 target-test removed (see build matrix).
 
 example_test_pytest_esp32_v5.5.3:
   extends:

@@ -34,21 +34,20 @@
 
 static const char *TAG = "AUDIO_SYS";
 
-#define ARRAY_SIZE_OFFSET                   8   // Increase this if audio_sys_get_real_time_stats returns ESP_ERR_INVALID_SIZE
-#define AUDIO_SYS_TASKS_ELAPSED_TIME_MS  1000   // Period of stats measurement
+#define ARRAY_SIZE_OFFSET                8     // Increase this if audio_sys_get_real_time_stats returns ESP_ERR_INVALID_SIZE
+#define AUDIO_SYS_TASKS_ELAPSED_TIME_MS  1000  // Period of stats measurement
 
-const char *task_state[] = {
+static const char *task_state[] = {
     "Running",
     "Ready",
     "Blocked",
     "Suspended",
-    "Deleted"
-};
+    "Deleted"};
 
 /** @brief
- * "Extr": Allocated task stack from psram, "Intr": Allocated task stack from internel
+ * "Extr": Allocated task stack from psram, "Intr": Allocated task stack from internal
  */
-const char *task_stack[] = {"Extr", "Intr"};
+static const char *task_stack[] = {"Extr", "Intr"};
 
 int audio_sys_get_tick_by_time_ms(int ms)
 {
@@ -57,9 +56,9 @@ int audio_sys_get_tick_by_time_ms(int ms)
 
 int64_t audio_sys_get_time_ms(void)
 {
-    struct timeval te;
-    gettimeofday(&te, NULL);
-    int64_t milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    int64_t milliseconds = time.tv_sec * 1000LL + time.tv_usec / 1000;
     return milliseconds;
 }
 
@@ -123,9 +122,9 @@ esp_err_t audio_sys_get_real_time_stats(void)
                 task_elapsed_time = end_array[j].ulRunTimeCounter - start_array[i].ulRunTimeCounter;
                 percentage_time = (task_elapsed_time * 100UL) / (total_elapsed_time * portNUM_PROCESSORS);
                 ESP_LOGI(TAG, "| %-17s | %-11d |%2d%%  | %-4u | %-9u | %-7s | %-8x | %s",
-                                start_array[i].pcTaskName, (int)task_elapsed_time, (int)percentage_time, start_array[i].uxCurrentPriority,
-                                (int)start_array[i].usStackHighWaterMark, task_state[(start_array[i].eCurrentState)],
-                                start_array[i].xCoreID, task_stack[esp_ptr_internal(pxTaskGetStackStart(start_array[i].xHandle))]);
+                         start_array[i].pcTaskName, (int)task_elapsed_time, (int)percentage_time, start_array[i].uxCurrentPriority,
+                         (int)start_array[i].usStackHighWaterMark, task_state[(start_array[i].eCurrentState)],
+                         start_array[i].xCoreID, task_stack[esp_ptr_internal(pxTaskGetStackStart(start_array[i].xHandle))]);
 
                 // Mark that task have been matched by overwriting their handles
                 start_array[i].xHandle = NULL;
@@ -149,7 +148,7 @@ esp_err_t audio_sys_get_real_time_stats(void)
     printf("\n");
     ret = ESP_OK;
 
-exit:    // Common return path
+exit:  // Common return path
     if (start_array) {
         audio_free(start_array);
         start_array = NULL;
@@ -160,7 +159,7 @@ exit:    // Common return path
     }
     return ret;
 #else
-    ESP_LOGW(TAG, "Please enbale `CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID` and `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS` in menuconfig");
+    ESP_LOGW(TAG, "Please enable `CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID` and `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS` in menuconfig");
     return ESP_FAIL;
-#endif
+#endif  /* (CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID && CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS) */
 }
