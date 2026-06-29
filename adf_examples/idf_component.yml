@@ -1,4 +1,4 @@
-version: "0.2.2"
+version: "0.2.3"
 description: ESP-ADF Examples
 url: https://github.com/espressif/esp-adf/tree/master/adf_examples
 documentation: "https://github.com/espressif/esp-adf/blob/master/adf_examples/README.md"

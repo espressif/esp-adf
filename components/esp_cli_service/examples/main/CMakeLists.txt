@@ -4,6 +4,5 @@ idf_component_register(
     REQUIRES
         esp_cli_service
         nvs_flash
-        json
 )
 

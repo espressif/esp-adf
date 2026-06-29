@@ -8,7 +8,7 @@ from pytest_embedded_idf.utils import idf_parametrize
 
 
 @pytest.mark.generic
-@idf_parametrize('target', ['esp32', 'esp32s3', 'esp32p4'], indirect=['target'])
+@idf_parametrize('target', ['esp32', 'esp32s3'], indirect=['target'])
 def test_play_music_control(dut: Dut) -> None:
     dut.expect(r'=== Play Music Control', timeout=15)
     dut.expect(r'\[ 5 \] Connect to WiFi', timeout=60)

@@ -39,6 +39,6 @@ idf_component_register(
                     ota_service
                     player_service
                     wifi_service
-                    json esp_wifi nvs_flash
+                    esp_wifi nvs_flash
     PRIV_REQUIRES   unity
 )

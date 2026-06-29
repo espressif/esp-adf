@@ -1,4 +1,4 @@
-version: "0.5.1"
+version: "0.5.2"
 description: ADF CLI service backed by esp_console UART REPL with static and dynamic service/tool commands
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_cli_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_cli_service/README.md"
@@ -16,3 +16,5 @@ dependencies:
     require: public
     version: "^0.5"
     override_path: "../esp_service"
+  espressif/cjson:
+    version: '^1.7'

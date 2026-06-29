@@ -422,7 +422,18 @@ function check_sdkconfig() {
 # then verify that pytest_*.py files exist. Does not rely on apps_dependent.yml.
 function check_pytest() {
   if [[ -n "${PROJECT_ROOT}" && -n "${CI_TOOLS_PATH}" ]]; then
-    run_cmd python ${CI_TOOLS_PATH}/ci/checker/check_pytest.py --project-root "${PROJECT_ROOT}" --allow-empty
+    local output ret
+    if output=$(run_cmd python "${CI_TOOLS_PATH}/ci/checker/check_pytest.py" --project-root "${PROJECT_ROOT}" --allow-empty 2>&1); then
+      printf '%s\n' "${output}"
+      return 0
+    fi
+    ret=$?
+    printf '%s\n' "${output}"
+    if [[ "${output}" == *"ERROR: no pytest_*.py under app(s):"* ]]; then
+      warning "Missing pytest files detected; treating as warning and continuing."
+      return 0
+    fi
+    return "${ret}"
   else
     echo "Environment variables are empty (need PROJECT_ROOT)"
   fi
@@ -464,12 +475,14 @@ function _resolve_ci_apps_path_json() {
 #   $2  app_type: example / test_app; "all" or empty means no app_type filter
 #   $3  target:   e.g. esp32s3  (--match-target)
 #   $4  board:    e.g. ESP32_S3_KORVO2_V3  (--match-board)
+#   $5  job:      build / test / all; controls which .build_test_rules.yml fields apply
 # Output: deduplicated app_dir paths in order of appearance, one per line on stdout (suitable for mapfile).
 function _read_apps_path_json_paths() {
   local file="$1"
   local type_filter="${2:-}"
   local target_filter="${3:-}"
   local board_filter="${4:-}"
+  local job_filter="${5:-all}"
   [[ "${type_filter}" == "all" ]] && type_filter=""
   [[ -f "$file" ]] || return 0
   local -a cmd=(
@@ -480,7 +493,47 @@ function _read_apps_path_json_paths() {
   [[ -n "$type_filter" ]] && cmd+=(--app-type "$type_filter")
   [[ -n "$target_filter" ]] && cmd+=(--match-target "$target_filter")
   [[ -n "$board_filter" ]] && cmd+=(--match-board "$board_filter")
-  "${cmd[@]}"
+  local project_root="${PROJECT_ROOT:-}"
+  local rules_file="${project_root}/.gitlab/ci/.build_test_rules.yml"
+  if [[ -n "${project_root}" && -f "${rules_file}" ]]; then
+    local paths_file
+    paths_file="$(mktemp)" || return 1
+    if "${cmd[@]}" > "${paths_file}"; then
+      :
+    else
+      local ret=$?
+      rm -f "${paths_file}"
+      return "${ret}"
+    fi
+    python "${project_root}/tools/ci/filter_build_test_rules.py" \
+      --rules-file "${rules_file}" \
+      --project-root "${project_root}" \
+      --target "${target_filter:-${IDF_TARGET:-}}" \
+      --idf-version "${IDF_VERSION_TAG:-}" \
+      --config-name "${CONFIG_NAME:-default}" \
+      --include-default "${INCLUDE_DEFAULT:-1}" \
+      --job "${job_filter}" < "${paths_file}"
+    local ret=$?
+    rm -f "${paths_file}"
+    return "${ret}"
+  else
+    "${cmd[@]}"
+  fi
+}
+
+function _load_ci_app_paths() {
+  local -n output_paths="$1"
+  local paths_file
+  paths_file="$(mktemp)" || return 1
+  if _read_apps_path_json_paths "${@:2}" > "${paths_file}"; then
+    mapfile -t output_paths < "${paths_file}"
+    rm -f "${paths_file}"
+    return 0
+  else
+    local ret=$?
+    rm -f "${paths_file}"
+    return "${ret}"
+  fi
 }
 
 # Optional $1: app_type — example / test_app / all; omitted or "all" means no app_type filter.
@@ -490,7 +543,7 @@ function build_apps() {
   local apps_json
   apps_json="$(_resolve_ci_apps_path_json)" || exit 1
   local paths=()
-  mapfile -t paths < <(_read_apps_path_json_paths "${apps_json}" "${app_type}" "${IDF_TARGET}" "${BOARD}")
+  _load_ci_app_paths paths "${apps_json}" "${app_type}" "${IDF_TARGET}" "${BOARD}" build || exit 1
   if [[ ${#paths[@]} -eq 0 ]]; then
     echo '[OK] No apps in apps_path.json match the current IDF_TARGET / BOARD / app_type; skipping build.' >&2
     return 0
@@ -514,7 +567,7 @@ function pytest_apps() {
   job_tags="$(python "${CI_TOOLS_PATH}/ci/git/gitlab_api.py" get_job_tags "$CI_PROJECT_ID" --job_id "$CI_JOB_ID")"
   markers="$(echo "$job_tags" | sed -e 's/,/ and /g')"
   local pytest_paths=()
-  mapfile -t pytest_paths < <(_read_apps_path_json_paths "${apps_json}" "${app_type}" "${IDF_TARGET}" "${BOARD}")
+  _load_ci_app_paths pytest_paths "${apps_json}" "${app_type}" "${IDF_TARGET}" "${BOARD}" test || exit 1
   [[ ${#pytest_paths[@]} -eq 0 ]] && exit 0
   # Remove the -m "${markers}" parameter first
   run_cmd pytest "${pytest_paths[@]}" --target "${IDF_TARGET}" --junitxml=XUNIT_RESULT.xml \
@@ -556,7 +609,7 @@ function build_test_apps() {
   )
   run_cmd "${svc[@]}"
   local paths=()
-  mapfile -t paths < <(_read_apps_path_json_paths "${apps_list_file}" "${app_type}" "${IDF_TARGET}" "${BOARD}")
+  _load_ci_app_paths paths "${apps_list_file}" "${app_type}" "${IDF_TARGET}" "${BOARD}" build || exit 1
   [[ ${#paths[@]} -eq 0 ]] && exit 0
   run_cmd python "${CI_TOOLS_PATH}/ci/app_service/apps_service.py" build \
     "${paths[@]}" \

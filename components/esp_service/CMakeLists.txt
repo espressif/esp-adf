@@ -44,5 +44,3 @@ idf_component_register(
     REQUIRES     ${requires}
     PRIV_REQUIRES ${priv_requires}
 )
-
-idf_component_optional_requires(PUBLIC json)

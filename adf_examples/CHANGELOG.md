@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.3
+
+- Fixed build error on CI for IDFv6
+
 ## v0.2.2
 
 ### Features

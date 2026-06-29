@@ -1,2 +1,4 @@
 dependencies:
   idf: ">=5.0"
+  espressif/cjson:
+    version: '^1.7'

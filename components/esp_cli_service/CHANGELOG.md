@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2
+
+### Features
+
+- Use `cJSON` from component registry instead of IDF component
+
 ## v0.5.1
 
 ### Features

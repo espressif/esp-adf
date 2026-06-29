@@ -16,7 +16,7 @@ variables:
         # alsa-capable image for audio loopback; v5.3 image (py3.9) works for v5.5.x
         AUDIO_LOOPBACK_TEST_IMAGE: "$CI_DOCKER_REGISTRY/target_test_env_v5.3:2"
         AUDIO_LOOPBACK_PYTHONPATH: "/usr/local/lib/python3.9/dist-packages"
-    - v6.0:
+    - v6.0.1:
         BUILD_IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v6.0:3"
         TEST_IMAGE: "$CI_DOCKER_REGISTRY/target-test-env-v6.0:2"
         AUDIO_LOOPBACK_TEST_IMAGE: "$CI_DOCKER_REGISTRY/target_test_env_v6.0:1"
@@ -24,7 +24,7 @@ variables:
 
   # Latest version (required): ``${LATEST_IDF_VERSION}``
   # Scanners and generated_triggers in tools/ci/apps.yaml all depend on this field
-  LATEST_IDF_VERSION: v6.0
+  LATEST_IDF_VERSION: v6.0.1
 
   ADF_PATH: "$CI_PROJECT_DIR"
   PROJECT_ROOT: "$CI_PROJECT_DIR"
