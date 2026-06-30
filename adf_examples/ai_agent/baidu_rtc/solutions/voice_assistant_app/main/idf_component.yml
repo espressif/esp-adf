@@ -21,4 +21,4 @@ dependencies:
     rules:
       - if: "target in [esp32p4]"
 
-  espressif/esp_board_manager: ^0.3.0
+  espressif/esp_board_manager: ~0.5

@@ -1,12 +1,12 @@
 dependencies:
   espressif/gmf_core:
-    version: "^0.8"
+    version: "^1.0"
   espressif/gmf_audio:
-    version: "^0.8"
+    version: "^1.0"
   espressif/gmf_video:
-    version: "^0.8"
+    version: "^1.0"
   espressif/esp_capture:
-    version: "^0.8"
+    version: "^1.0"
   espressif/esp_video:
     version: "^2.0"
     rules:
@@ -16,6 +16,6 @@ dependencies:
   espressif/esp_board_manager:
     version: "*"
   espressif/gmf_app_utils:
-    version: "^0.8"
+    version: "^1.0"
   espressif/media_lib_sal:
     version: "^0.9.0"

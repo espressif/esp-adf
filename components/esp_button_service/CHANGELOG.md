@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+### Changes
+
+- Remove unnecessary sdkconfig for board manager
+
 ## v0.5.0~1
 
 ### Changes

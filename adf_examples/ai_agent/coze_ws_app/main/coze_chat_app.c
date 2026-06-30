@@ -61,7 +61,7 @@ struct coze_chat_t {
 
 static struct coze_chat_t coze_chat;
 
-static void audio_event_callback(esp_coze_chat_event_t event, char *data, void *ctx)
+static void audio_event_callback(esp_coze_chat_event_t event, void *data, void *ctx)
 {
     if (event == ESP_COZE_CHAT_EVENT_CHAT_SPEECH_STARTED) {
         ESP_LOGI(TAG, "chat start");
@@ -69,13 +69,13 @@ static void audio_event_callback(esp_coze_chat_event_t event, char *data, void *
         ESP_LOGI(TAG, "chat stop");
     } else if (event == ESP_COZE_CHAT_EVENT_CHAT_CUSTOMER_DATA) {
         // cjson format data
-        ESP_LOGI(TAG, "Customer data: %s", data);
+        ESP_LOGI(TAG, "Customer data: %s", (const char *)data);
     } else if (event == ESP_COZE_CHAT_EVENT_CHAT_SUBTITLE_EVENT) {
-        ESP_LOGI(TAG, "Subtitle data: %s", data);
+        ESP_LOGI(TAG, "Subtitle data: %s", (const char *)data);
     }
 }
 
-static void audio_data_callback(char *data, int len, void *ctx)
+static void audio_data_callback(const uint8_t *data, int len, void *ctx)
 {
     audio_playback_feed_data((uint8_t *)data, len);
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2
+
+### Changes
+
+- Bump `gmf_io` dependency version to v1.0
+
 ## v0.5.1
 
 ### Changes

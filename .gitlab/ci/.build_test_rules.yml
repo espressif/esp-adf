@@ -1,29 +1,85 @@
-# The file mainly marks apps with special rules, while other apps are enabled by default
+# The file mainly marks apps with special rules, while other apps are enabled by default.
+#
+# Notes for esp_bool_parser used by idf-build-apps:
+#   - Boolean operators must be lower-case: 'and', 'or', 'not'.
+#   - Only built-in variables are recognised in expressions: IDF_TARGET,
+#     IDF_VERSION_MAJOR/MINOR/PATCH, INCLUDE_DEFAULT, CONFIG_NAME.
+#     'TARGET_DIR_TYPE' is *not* recognised - express the example/test_apps
+#     distinction via the path key instead.
+#
+# A path key may point to one app or to a parent directory. Parent rules apply to
+# all apps below that directory.
+#
+# Rule fields:
+#   - disable:       skip build and test
+#   - disable_build: skip build and test, because tests depend on build artifacts
+#   - disable_test:  keep build enabled, but skip target pytest
+#
+# Examples:
+#
+# adf_examples/player/music_player:
+#   disable:
+#     - *if_esp32s3
+#
+# components/esp_playlist/test_apps:
+#   disable_test:
+#     - *if_esp32p4
+#
+# Build on IDF v5.5, but skip build/test on IDF v6.0:
+#
+# adf_examples/player/play_music_control:
+#   disable_build:
+#     - *if_idf_v6_0
+#
+# If an app must build only on IDF v5.5 and skip every other IDF version:
+#
+# adf_examples/player/play_music_control:
+#   disable_build:
+#     - *if_not_idf_v5_5
+#
+# Skip one example for all targets and all IDF versions:
+#
+# adf_examples/player/pipeline_http_mp3:
+#   disable:
+#     - *if_all
+#
+# Build one example, but skip its target test for all targets and all IDF versions:
+#
+# adf_examples/player/pipeline_http_mp3:
+#   disable_test:
+#     - *if_all
 
-.disable_test_apps: &disable_test_apps
-  disable:
-    - if: TARGET_DIR_TYPE == "test_apps"
+# Common if-condition anchors (re-used by individual app rules below).
+.if_all: &if_all {if: 'IDF_VERSION_MAJOR >= 0'}
 
-.disable_example: &disable_example
-  disable:
-    - if: TARGET_DIR_TYPE == "example"
+# Per-target if-condition anchors.
+.if_esp32:   &if_esp32   {if: 'IDF_TARGET == "esp32"'}
+.if_esp32s2: &if_esp32s2 {if: 'IDF_TARGET == "esp32s2"'}
+.if_esp32s3: &if_esp32s3 {if: 'IDF_TARGET == "esp32s3"'}
+.if_esp32c3: &if_esp32c3 {if: 'IDF_TARGET == "esp32c3"'}
+.if_esp32c6: &if_esp32c6 {if: 'IDF_TARGET == "esp32c6"'}
+.if_esp32p4: &if_esp32p4 {if: 'IDF_TARGET == "esp32p4"'}
 
-.disable_test_apps_esp32: &disable_test_apps_esp32
-  disable:
-    - if: TARGET_DIR_TYPE == "test_apps" AND IDF_TARGET == "esp32"
+# Per-IDF-version if-condition anchors.
+.if_idf_v6_0:     &if_idf_v6_0     {if: 'IDF_VERSION_MAJOR == 6 and IDF_VERSION_MINOR == 0'}
+.if_not_idf_v5_5: &if_not_idf_v5_5 {if: 'not (IDF_VERSION_MAJOR == 5 and IDF_VERSION_MINOR == 5)'}
 
-.disable_example_esp32s3: &disable_example_esp32s3
-  disable:
-    - if: TARGET_DIR_TYPE == "example" AND IDF_TARGET == "esp32s3"
+# ---------------------------------------------------------------------------
+# Per-app rules
+# ---------------------------------------------------------------------------
+adf_examples/player/play_music_control:
+  disable_test:
+    - *if_idf_v6_0
 
-.disable_example_esp32c3: &disable_example_esp32c3
-  disable:
-    - if: TARGET_DIR_TYPE == "example" AND IDF_TARGET == "esp32c3"
+adf_examples/ai_agent/baidu_rtc/solutions/voice_assistant_app:
+  disable_build:
+    - *if_idf_v6_0
+    - *if_esp32p4
+  disable_test:
+    - *if_all
 
-.disable_example_esp32c5: &disable_example_esp32c5
-  disable:
-    - if: TARGET_DIR_TYPE == "example" AND IDF_TARGET == "esp32c5"
-
-.disable_example_esp32p4: &disable_example_esp32p4
-  disable:
-    - if: TARGET_DIR_TYPE == "example" AND IDF_TARGET == "esp32p4"
+adf_examples/ai_agent/coze_ws_app:
+  disable_build:
+    - *if_idf_v6_0
+  disable_test:
+    - *if_all

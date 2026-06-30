@@ -17,5 +17,3 @@ idf_component_register(
     PRIV_INCLUDE_DIRS "${COMPONENT_PRIV_INCLUDEDIRS}"
     PRIV_REQUIRES esp_timer freertos
 )
-
-idf_component_optional_requires(PUBLIC json)
