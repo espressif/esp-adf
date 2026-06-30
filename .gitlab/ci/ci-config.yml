@@ -57,7 +57,7 @@ SUPPORT_BOARDS:
       idf_version: ""
   - ESP_LYRAT_MINI_V1_1:
       chip: "esp32"
-      board_name: "lyrat_mini_v1_1"
+      board_name: "esp32_lyrat_mini_1_1"
       idf_version: ">=3.3,<=${LATEST_IDF_VERSION}"
   - ESP32_KORVO_DU1906:
       chip: "esp32"
@@ -69,7 +69,7 @@ SUPPORT_BOARDS:
       idf_version: ">=4.2,<=${LATEST_IDF_VERSION}"
   - ESP32_S3_KORVO2_V3:
       chip: "esp32s3"
-      board_name: "esp32_s3_korvo2_v3"
+      board_name: "esp32_s3_korvo_2_3"
       idf_version: ">=4.4,<=${LATEST_IDF_VERSION}"
   - ESP32_C3_LYRA_V2:
       chip: "esp32c3"
@@ -81,7 +81,7 @@ SUPPORT_BOARDS:
       idf_version: ">=5.4,<=${LATEST_IDF_VERSION}"
   - ESP32_P4_FUNCTION_EV:
       chip: "esp32p4"
-      board_name: "esp32_p4_function_ev"
+      board_name: "esp32_p4_function_ev_board"
       idf_version: ">=5.4,<=${LATEST_IDF_VERSION}"
 
 

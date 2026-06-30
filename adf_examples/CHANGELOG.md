@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.3~1
+
+### Docs
+
+- Updated example README files to use the latest ESP Board Manager board selection commands and board names
+
 ## v0.2.3
 
 - Fixed build error on CI for IDFv6

@@ -1,4 +1,4 @@
-version: "0.5.1"
+version: "0.5.1~1"
 description: Media catalog and playlist management component for Espressif multimedia applications
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_playlist
 repository: https://github.com/espressif/esp-adf.git

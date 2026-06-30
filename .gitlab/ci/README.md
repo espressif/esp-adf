@@ -37,7 +37,7 @@ Registers all board names used in `apps.yaml`.
 SUPPORT_BOARDS:
   - ESP32_S3_KORVO2_V3:
       chip: "esp32s3"
-      board_name: "esp32_s3_korvo2_v3"
+      board_name: "esp32_s3_korvo_2_3"
       idf_version: ">=4.4,<=${LATEST_IDF_VERSION}"
 ```
 

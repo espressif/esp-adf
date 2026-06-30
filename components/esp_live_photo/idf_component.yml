@@ -1,4 +1,4 @@
-version: "1.0.0"
+version: "1.0.0~1"
 description: Espressif Live Photo Generator
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_live_photo
 repository: https://github.com/espressif/esp-adf.git

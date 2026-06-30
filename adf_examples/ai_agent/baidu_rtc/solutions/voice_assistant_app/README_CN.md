@@ -24,7 +24,7 @@
 
 ### 硬件准备
 
-- 本例程默认的是 `esp32-s3-korvo-2` 开发板，硬件参考相关[文档](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html)。当前的代码中使用的是 [esp_board_manager](https://components.espressif.com/components/espressif/esp_board_manager/versions/0.3.0/readme) 组件，如何切换 board 和 添加 board 可以参加 esp_board_manager 文档
+- 本例程默认使用 `esp32_s3_korvo_2_3` 开发板，硬件参考相关[文档](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html)。
 
 ### 软件准备
 
@@ -56,17 +56,69 @@
 . ./export.sh
 ```
 
-- 选择编译芯片，以 esp32s3 为例：
+进入本例程目录：
 
 ```bash
-idf.py set-target esp32s3
+cd adf_examples/ai_agent/baidu_rtc/solutions/voice_assistant_app
 ```
 
-- 使用 esp_board_manager 选择 `esp32-s3-korvo-2` 开发板
+本示例使用 [ESP Board Manager](https://github.com/espressif/esp-board-manager) 管理板级资源。推荐安装辅助工具 [`esp-bmgr-assist`](https://pypi.org/project/esp-bmgr-assist/) 作为默认入口。
+
+在已激活的 ESP-IDF Python 环境下安装（同一环境只需安装一次）：
+
 ```bash
-export IDF_EXTRA_ACTIONS_PATH=./managed_components/espressif__esp_board_manager
-idf.py gen-bmgr-config -b esp32_s3_korvo2_v3
+pip install esp-bmgr-assist
+pip install --upgrade esp-bmgr-assist  # 当提示需要更新时执行此命令
 ```
+
+列出当前可见的开发板：
+
+```bash
+idf.py bmgr -l
+```
+
+输出示例：
+
+```text
+ℹ️  Board Components:
+  espressif/esp_boards:
+    [1] esp32_c3_lyra
+    [2] esp32_lyrat_4_3
+    [3] esp32_lyrat_mini_1_1
+    [4] esp32_p4_eye
+    [5] esp32_p4_function_ev_board
+    [6] esp32_s31_function_coreboard_1
+    [7] esp32_s31_korvo_1
+    [8] esp32_s3_box_3
+    [9] esp32_s3_box_lite
+    [10] esp32_s3_korvo_2_3
+    [11] esp32_s3_lcd_ev_board
+    [12] esp_vocat_1_0
+    [13] esp_vocat_1_2
+```
+
+以上输出示例基于 `esp_boards` 0.5.2 的开发板列表和排序。不同 `esp_boards` 版本或自定义开发板依赖可能会使列表和序号变化，使用时以 `idf.py bmgr -l` 的实际输出为准。
+
+选择开发板：
+
+```bash
+idf.py bmgr -b <board_index|board_name>
+```
+
+例如选择 `esp32_s3_korvo_2_3`：
+
+```bash
+idf.py bmgr -b 10
+# 或
+idf.py bmgr -b esp32_s3_korvo_2_3
+```
+
+首次执行 `idf.py bmgr` 时，组件会根据本工程 `main/idf_component.yml` 中声明的 `espressif/esp_board_manager` 依赖自动下载。
+
+> [!NOTE]
+> 如果切换为其他 `esp_board_manager` 支持的开发板，请按相同步骤执行并替换板型名称/索引。
+> 自定义开发板请参考 [创建开发板指南](https://docs.espressif.com/projects/esp-board-manager/zh_CN/latest/create-board/index.html)。
+> `esp_board_manager` 更多信息请参考 [ESP_BOARD_MANAGER 入门指南](https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/README_CN.md)
 
 - 编译程序
 

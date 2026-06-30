@@ -92,11 +92,63 @@ Before building this example, ensure that the ESP-IDF environment is configured.
     .\prebuild.ps1
     ```
 
-- Use `esp_board_manager` to select supported board and custom board, be sure to see [ESP Board Manager](https://components.espressif.com/components/espressif/esp_board_manager), taking ESP32-S3-Korvo2 V3.1 as an example:
+This example uses [ESP Board Manager](https://github.com/espressif/esp-board-manager) to manage board-level resources. The [`esp-bmgr-assist`](https://pypi.org/project/esp-bmgr-assist/) helper tool is recommended as the default entry point.
+
+Install once in your activated ESP-IDF Python environment:
 
 ```bash
-idf.py gen-bmgr-config -b esp32_s3_korvo2_v3
+pip install esp-bmgr-assist
+pip install --upgrade esp-bmgr-assist  # run this command when an update is requested
 ```
+
+List the currently visible boards:
+
+```bash
+idf.py bmgr -l
+```
+
+Example output:
+
+```text
+ℹ️  Board Components:
+  espressif/esp_boards:
+    [1] esp32_c3_lyra
+    [2] esp32_lyrat_4_3
+    [3] esp32_lyrat_mini_1_1
+    [4] esp32_p4_eye
+    [5] esp32_p4_function_ev_board
+    [6] esp32_s31_function_coreboard_1
+    [7] esp32_s31_korvo_1
+    [8] esp32_s3_box_3
+    [9] esp32_s3_box_lite
+    [10] esp32_s3_korvo_2_3
+    [11] esp32_s3_lcd_ev_board
+    [12] esp_vocat_1_0
+    [13] esp_vocat_1_2
+```
+
+The example output above is based on the board list and ordering from `esp_boards` 0.5.2. Different `esp_boards` versions or custom board dependencies may change the list and indexes. Use the actual output of `idf.py bmgr -l` when selecting a board.
+
+Select a board:
+
+```bash
+idf.py bmgr -b <board_index|board_name>
+```
+
+For example, to select `esp32_s3_korvo_2_3`:
+
+```bash
+idf.py bmgr -b 10
+# or
+idf.py bmgr -b esp32_s3_korvo_2_3
+```
+
+On first invocation of `idf.py bmgr`, the component is downloaded automatically based on the `espressif/esp_board_manager` dependency declared in `main/idf_component.yml`.
+
+> [!NOTE]
+> To use another board, run `idf.py bmgr -b <board_name|index>` with the same steps.
+> For a custom board, see [Creating a Board Guide](https://docs.espressif.com/projects/esp-board-manager/en/latest/create-board/index.html).
+> For more information about `esp_board_manager`, see the [ESP Board Manager Getting Started Guide](https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/README.md).
 
 - Configure the project using menuconfig, refer to the [Configuration](#configuration) section to modify configuration items
 
@@ -153,7 +205,7 @@ I (1176) DEV_AUDIO_CODEC: Create esp_codec_dev success, dev:0x3fcecfbc, chip:es7
 I (1183) BOARD_MANAGER: Board manager initialized
 I (1188) BOARD_MANAGER: Board Information:
 I (1191) BOARD_MANAGER: =================
-I (1195) BOARD_MANAGER: Name: esp32_s3_korvo2_v3
+I (1195) BOARD_MANAGER: Name: esp32_s3_korvo_2_3
 I (1199) BOARD_MANAGER: Chip: esp32s3
 I (1203) BOARD_MANAGER: Version: 1.3.0
 I (1206) BOARD_MANAGER: Description: ESP32-S3 Korvo2 V3 Development Board
