@@ -106,14 +106,14 @@ int esp_codec_dev_read(esp_codec_dev_handle_t codec, void *data, int len);
  *                ESP_CODEC_DEV_OK without resizing or recreating the buffer.
  *                esp_codec_dev_close() automatically frees mirror resources.
  *
- * @param         handle: Codec device handle
+ * @param         codec: Codec device handle
  * @param         size: Input mirror ringbuffer capacity in bytes
  * @return        ESP_CODEC_DEV_OK: Configure input mirror success
  *                ESP_CODEC_DEV_INVALID_ARG: Invalid arguments
  *                ESP_CODEC_DEV_NOT_SUPPORT: Codec not support input mode
  *                ESP_CODEC_DEV_NO_MEM: Not enough memory for input mirror
  */
-int esp_codec_dev_mirror_cfg(esp_codec_dev_handle_t handle, int size);
+int esp_codec_dev_mirror_cfg(esp_codec_dev_handle_t codec, int size);
 
 /**
  * @brief         Read data from input mirror
@@ -126,7 +126,7 @@ int esp_codec_dev_mirror_cfg(esp_codec_dev_handle_t handle, int size);
  *                this API is blocking. Stop the mirror read task before closing
  *                or deleting the codec device.
  *
- * @param         handle: Codec device handle
+ * @param         codec: Codec device handle
  * @param         buffer: Data buffer to fill
  * @param         size: Data length to read
  * @param         timeout_ms: Timeout in milliseconds, 0 no wait, negative wait forever
@@ -137,7 +137,7 @@ int esp_codec_dev_mirror_cfg(esp_codec_dev_handle_t handle, int size);
  *                ESP_CODEC_DEV_TIMEOUT: Timeout before requested data is filled
  *                ESP_CODEC_DEV_WRONG_STATE: Input mirror is not enabled
  */
-int esp_codec_dev_mirror_read(esp_codec_dev_handle_t handle,
+int esp_codec_dev_mirror_read(esp_codec_dev_handle_t codec,
                               uint8_t *buffer,
                               int size,
                               int timeout_ms,

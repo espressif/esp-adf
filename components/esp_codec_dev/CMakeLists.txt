@@ -12,7 +12,7 @@ set(COMPONENT_SRCS
   audio_codec_sw_vol.c
 )
 
-set(priv_requires freertos esp_ringbuf)
+set(priv_requires freertos esp_ringbuf esp_hw_support)
 if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.3")
   list(APPEND priv_requires esp_driver_gpio esp_driver_i2c esp_driver_i2s esp_driver_spi)
 else()
@@ -34,6 +34,7 @@ list(APPEND COMPONENT_SRCS
   platform/audio_codec_data_i2s.c
   platform/audio_codec_ctrl_spi.c
   platform/esp_codec_dev_os.c
+  device/common/codec_ref_mgr.c
 )
 
 if(CONFIG_CODEC_DATA_ADC_SUPPORT AND "${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.0")

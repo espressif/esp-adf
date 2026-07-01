@@ -8,6 +8,7 @@
 #include "es8311_reg.h"
 #include "esp_log.h"
 #include "es_common.h"
+#include "codec_ref_mgr.h"
 
 #define TAG          "ES8311"
 
@@ -18,11 +19,6 @@ typedef struct {
     bool               enabled;
     float              hw_gain;
 } audio_codec_es8311_t;
-
-typedef struct {
-    audio_codec_es8311_t *adc;
-    audio_codec_es8311_t *dac;
-} paired_8311_codec_t;
 
 /*
  * Clock coefficient structure
@@ -159,48 +155,6 @@ static const esp_codec_dev_vol_range_t vol_range = {
     },
 };
 
-static paired_8311_codec_t paired_8311;
-
-static inline bool es8311_is_used(void)
-{
-    if (paired_8311.adc || paired_8311.dac) {
-        return true;
-    }
-    return false;
-}
-
-static inline void es8311_add_pair(audio_codec_es8311_t *codec)
-{
-    if (codec->cfg.codec_mode & ESP_CODEC_DEV_WORK_MODE_ADC) {
-        if (paired_8311.adc == NULL) {
-            paired_8311.adc = codec;
-            return;
-        }
-    }
-    if (codec->cfg.codec_mode & ESP_CODEC_DEV_WORK_MODE_DAC) {
-        if (paired_8311.dac == NULL) {
-            paired_8311.dac = codec;
-            return;
-        }
-    }
-}
-
-static void es8311_remove_pair(audio_codec_es8311_t *codec)
-{
-    if (codec->cfg.codec_mode & ESP_CODEC_DEV_WORK_MODE_ADC) {
-        if (paired_8311.adc == codec) {
-            paired_8311.adc = NULL;
-            return;
-        }
-    }
-    if (codec->cfg.codec_mode & ESP_CODEC_DEV_WORK_MODE_DAC) {
-        if (paired_8311.dac == codec) {
-            paired_8311.dac = NULL;
-            return;
-        }
-    }
-}
-
 static int es8311_write_reg(audio_codec_es8311_t *codec, int reg, int value)
 {
     return codec->cfg.ctrl_if->write_reg(codec->cfg.ctrl_if, reg, 1, &value, 1);
@@ -279,18 +233,15 @@ static int es8311_set_bits_per_sample(audio_codec_es8311_t *codec, int bits)
 static int get_coeff(uint32_t mclk, uint32_t rate)
 {
     for (int i = 0; i < (sizeof(coeff_div) / sizeof(coeff_div[0])); i++) {
-        if (coeff_div[i].rate == rate && coeff_div[i].mclk == mclk)
+        if (coeff_div[i].rate == rate && coeff_div[i].mclk == mclk) {
             return i;
+        }
     }
-    return ESP_CODEC_DEV_NOT_FOUND;
+    return -1;
 }
 
 static int es8311_suspend(audio_codec_es8311_t *codec)
 {
-    es8311_remove_pair(codec);
-    if (es8311_is_used()) {
-        return ESP_CODEC_DEV_OK;
-    }
     int ret = es8311_write_reg(codec, ES8311_DAC_REG32, 0x00);
     ret |= es8311_write_reg(codec, ES8311_ADC_REG17, 0x00);
     ret |= es8311_write_reg(codec, ES8311_SYSTEM_REG0E, 0xFF);
@@ -376,7 +327,6 @@ static int es8311_start(audio_codec_es8311_t *codec)
     ret |= es8311_write_reg(codec, ES8311_ADC_REG15, 0x40);
     ret |= es8311_write_reg(codec, ES8311_DAC_REG37, 0x08);
     ret |= es8311_write_reg(codec, ES8311_GP_REG45, 0x00);
-    es8311_add_pair(codec);
     return ret;
 }
 
@@ -445,7 +395,10 @@ static int es8311_set_mic_gain(const audio_codec_if_t *h, float db)
 static void es8311_pa_power(audio_codec_es8311_t *codec, es_pa_setting_t pa_setting)
 {
     int16_t pa_pin = codec->cfg.pa_pin;
-    if (pa_pin == -1 || codec->cfg.gpio_if == NULL) {
+    if (pa_pin == -1 || codec->cfg.gpio_if == NULL ||
+        (codec->cfg.codec_mode & ESP_CODEC_DEV_WORK_MODE_DAC) == 0) {
+        ESP_LOGD(TAG, "Skip PA control: pa_pin:%d, gpio_if:%p, codec_mode:%d",
+                 pa_pin, codec->cfg.gpio_if, codec->cfg.codec_mode);
         return;
     }
     if (pa_setting & ES_PA_SETUP) {
@@ -536,6 +489,14 @@ static int es8311_config_sample(audio_codec_es8311_t *codec, int sample_rate)
     return ret == 0 ? ESP_CODEC_DEV_OK : ESP_CODEC_DEV_WRITE_FAIL;
 }
 
+static inline void es8311_apply_cfg(audio_codec_es8311_t *codec, const es8311_codec_cfg_t *codec_cfg)
+{
+    memcpy(&codec->cfg, codec_cfg, sizeof(es8311_codec_cfg_t));
+    if (codec->cfg.mclk_div == 0) {
+        codec->cfg.mclk_div = MCLK_DEFAULT_DIV;
+    }
+}
+
 static int es8311_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
 {
     audio_codec_es8311_t *codec = (audio_codec_es8311_t *) h;
@@ -543,14 +504,8 @@ static int es8311_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
     if (codec == NULL || codec_cfg == NULL || codec_cfg->ctrl_if == NULL || cfg_size != sizeof(es8311_codec_cfg_t)) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
-    memcpy(&codec->cfg, cfg, sizeof(es8311_codec_cfg_t));
-    if (codec->cfg.mclk_div == 0) {
-        codec->cfg.mclk_div = MCLK_DEFAULT_DIV;
-    }
     int regv;
     int ret = ESP_CODEC_DEV_OK;
-
-    es8311_pa_power(codec, ES_PA_SETUP | ES_PA_DISABLE);
 
     ret = es8311_read_reg(codec, ES8311_SYSTEM_REG0D, &regv);
     if (regv != 0xFA) {
@@ -630,9 +585,21 @@ static int es8311_close(const audio_codec_if_t *h)
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     if (codec->is_open) {
-        es8311_set_mute(h, true);
-        es8311_pa_power(codec, ES_PA_DISABLE);
-        es8311_suspend(codec);
+        audio_codec_ctrl_info_t ctrl_info = {0};
+        codec->cfg.ctrl_if->get_info(codec->cfg.ctrl_if, &ctrl_info);
+        int open_cnt = codec_ref_release(&ctrl_info, CODEC_REF_STAGE_OPEN);
+        if (open_cnt < 0) {
+            ESP_LOGE(TAG, "Failed to release codec device open reference");
+            return ESP_CODEC_DEV_WRITE_FAIL;
+        }
+        if (open_cnt == 0) {
+            es8311_set_mute(h, true);
+            es8311_pa_power(codec, ES_PA_DISABLE);
+            es8311_suspend(codec);
+            ESP_LOGI(TAG, "Codec hardware closed");
+        } else {
+            ESP_LOGI(TAG, "Codec still in use (open_count=%d), skip hardware close", open_cnt);
+        }
         codec->is_open = false;
     }
     return ESP_CODEC_DEV_OK;
@@ -664,7 +631,13 @@ static int es8311_enable(const audio_codec_if_t *h, bool enable)
         return ESP_CODEC_DEV_OK;
     }
     int codec_mode = codec->cfg.codec_mode;
+    audio_codec_ctrl_info_t ctrl_info = {0};
+    codec->cfg.ctrl_if->get_info(codec->cfg.ctrl_if, &ctrl_info);
     if (enable) {
+        if (codec_ref_acquire(&ctrl_info, CODEC_REF_STAGE_ENABLE) < 0) {
+            ESP_LOGE(TAG, "Failed to acquire codec device enable reference");
+            return ESP_CODEC_DEV_WRITE_FAIL;
+        }
         ret = es8311_start(codec);
         if (codec_mode == ESP_CODEC_DEV_WORK_MODE_DAC || codec_mode == ESP_CODEC_DEV_WORK_MODE_BOTH) {
             es8311_pa_power(codec, ES_PA_ENABLE);
@@ -675,7 +648,16 @@ static int es8311_enable(const audio_codec_if_t *h, bool enable)
             es8311_set_mute(h, true);
             es8311_pa_power(codec, ES_PA_DISABLE);
         }
-        ret = es8311_suspend(codec);
+        int en_cnt = codec_ref_release(&ctrl_info, CODEC_REF_STAGE_ENABLE);
+        if (en_cnt < 0) {
+            ESP_LOGE(TAG, "Failed to release codec device enable reference");
+            return ESP_CODEC_DEV_WRITE_FAIL;
+        }
+        if (en_cnt == 0) {
+            ret = es8311_suspend(codec);
+        } else {
+            ESP_LOGI(TAG, "Codec still enabled (enable_count=%d), skip hardware stop", en_cnt);
+        }
     }
     if (ret == ESP_CODEC_DEV_OK) {
         codec->enabled = enable;
@@ -734,7 +716,17 @@ const audio_codec_if_t *es8311_codec_new(es8311_codec_cfg_t *codec_cfg)
         ESP_LOGE(TAG, "Control interface not open yet");
         return NULL;
     }
-    audio_codec_es8311_t *codec = (audio_codec_es8311_t *) calloc(1, sizeof(audio_codec_es8311_t));
+    if (codec_cfg->ctrl_if->get_info == NULL) {
+        ESP_LOGE(TAG, "Control interface missing get_info");
+        return NULL;
+    }
+    audio_codec_ctrl_info_t ctrl_info = {0};
+    if (codec_cfg->ctrl_if->get_info(codec_cfg->ctrl_if, &ctrl_info) != ESP_CODEC_DEV_OK) {
+        ESP_LOGE(TAG, "Failed to get control interface info");
+        return NULL;
+    }
+
+    audio_codec_es8311_t *codec = (audio_codec_es8311_t *)calloc(1, sizeof(audio_codec_es8311_t));
     if (codec == NULL) {
         CODEC_MEM_CHECK(codec);
         return NULL;
@@ -751,10 +743,23 @@ const audio_codec_if_t *es8311_codec_new(es8311_codec_cfg_t *codec_cfg)
     codec->base.close = es8311_close;
     codec->hw_gain = esp_codec_dev_col_calc_hw_gain(&codec_cfg->hw_gain);
     do {
-        int ret = codec->base.open(&codec->base, codec_cfg, sizeof(es8311_codec_cfg_t));
-        if (ret != 0) {
-            ESP_LOGE(TAG, "Open fail");
+        int open_cnt = codec_ref_acquire(&ctrl_info, CODEC_REF_STAGE_OPEN);
+        if (open_cnt < 0) {
+            ESP_LOGE(TAG, "Failed to acquire codec device open reference");
             break;
+        }
+        es8311_apply_cfg(codec, codec_cfg);
+        es8311_pa_power(codec, ES_PA_SETUP | ES_PA_DISABLE);
+        if (open_cnt == 1) {
+            int ret = codec->base.open(&codec->base, codec_cfg, sizeof(es8311_codec_cfg_t));
+            if (ret != 0) {
+                ESP_LOGE(TAG, "Open fail");
+                codec_ref_release(&ctrl_info, CODEC_REF_STAGE_OPEN);
+                break;
+            }
+        } else {
+            codec->is_open = true;
+            ESP_LOGI(TAG, "Codec already opened, reusing (open_count=%d)", open_cnt);
         }
         return &codec->base;
     } while (0);
