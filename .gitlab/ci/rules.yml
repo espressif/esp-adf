@@ -108,24 +108,28 @@
     - if: '$ESP32C3_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
     - if: '$ESP32C6_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
     - if: '$ESP32P4_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
 
 .rules:build:enable-unit-test-esp32:
   rules:
     - <<: *if-dev-push
       when: never
     - if: '$ESP32_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
 
 .rules:build:enable-unit-test-esp32s3:
   rules:
     - <<: *if-dev-push
       when: never
     - if: '$ESP32S3_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
 
 .rules:build:enable-unit-test-esp32p4:
   rules:
     - <<: *if-dev-push
       when: never
     - if: '$ESP32P4_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
 
 .rules:build:adf-idfs-example-test:
   rules:

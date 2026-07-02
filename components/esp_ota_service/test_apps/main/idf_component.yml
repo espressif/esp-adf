@@ -1,2 +1,2 @@
 dependencies:
-  espressif/esp_board_manager: "^0.5"
+  espressif/esp_board_manager: ">=0.6.0"

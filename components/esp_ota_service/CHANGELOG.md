@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2~1
+
+### Bug Fixes
+
+- Updated the `esp-board-manager` dependency version for the test app.
+
 ## v0.5.2
 
 ### Changes
