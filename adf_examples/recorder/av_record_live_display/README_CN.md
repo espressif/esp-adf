@@ -99,54 +99,71 @@ av_record_live_display/
 cd adf_examples/recorder/av_record_live_display
 ```
 
-本示例使用 [ESP Board Manager](https://github.com/espressif/esp-board-manager) 管理板级资源。辅助工具 [`esp-bmgr-assist`](https://pypi.org/project/esp-bmgr-assist/) 提供下文使用的板型选择命令。
+本示例使用 [ESP Board Manager](https://github.com/espressif/esp-board-manager) 管理板级资源。推荐安装辅助工具 [`esp-bmgr-assist`](https://pypi.org/project/esp-bmgr-assist/) 作为默认入口。
 
 - 在已激活的 ESP-IDF Python 环境下安装（同一环境只需安装一次）：
 
 ```bash
 pip install esp-bmgr-assist
-pip install --upgrade esp-bmgr-assist
+pip install --upgrade esp-bmgr-assist  # 当提示需要更新时执行此命令
 ```
 
-- 查看支持的板子：
+- 列出当前可见的开发板：
 
 ```bash
 idf.py bmgr -l
 ```
 
-  输出示例：
+输出示例：
 
 ```text
-ℹ️  Main Boards:
-  [1] dual_eyes_board_v1_0
-  [2] esp32_c3_lyra
-  [3] esp32_c5_spot
-  [4] esp32_p4_function_ev
-  [5] esp32_s3_korvo2_v3
-  [6] esp32_s3_korvo2l
-  [7] esp_box_3
-  [8] esp_box_lite
-  [9] esp_hi
+ℹ️  Board Components:
+  espressif/esp_boards:
+    [1] esp32_c3_lyra
+    [2] esp32_lyrat_4_3
+    [3] esp32_lyrat_mini_1_1
+    [4] esp32_p4_eye
+    [5] esp32_p4_function_ev_board
+    [6] esp32_s31_function_coreboard_1
+    [7] esp32_s31_korvo_1
+    [8] esp32_s3_box_3
+    [9] esp32_s3_box_lite
+    [10] esp32_s3_korvo_2_3
+    [11] esp32_s3_lcd_ev_board
+    [12] esp_vocat_1_0
+    [13] esp_vocat_1_2
 ```
 
-- 选择开发板（须与硬件一致）。所选开发板会决定目标芯片：
+以上输出示例基于 `esp_boards` 0.5.2 的开发板列表和排序。不同 `esp_boards` 版本或自定义开发板依赖可能会使列表和序号变化，使用时以 `idf.py bmgr -l` 的实际输出为准。
+
+- 选择开发板：
 
 ```bash
-# ESP32-S3 + Korvo2 V3
-idf.py bmgr -b esp32_s3_korvo2_v3
-
-# ESP32-P4 + Function EV
-idf.py bmgr -b esp32_p4_function_ev
+idf.py bmgr -b <board_index|board_name>
 ```
 
-  也可使用板型索引，例如 `idf.py bmgr -b 5` 选择 `esp32_s3_korvo2_v3`。
+例如选择 `esp32_s3_korvo_2_3`：
 
-  首次执行 `idf.py bmgr` 时，组件会根据本工程 `main/idf_component.yml` 中声明的 `espressif/esp_board_manager` 依赖自动下载，并在 `components/gen_bmgr_codes/` 下生成板级代码。
+```bash
+idf.py bmgr -b 10
+# 或
+idf.py bmgr -b esp32_s3_korvo_2_3
+```
+
+例如选择 `esp32_p4_function_ev_board`：
+
+```bash
+idf.py bmgr -b 5
+# 或
+idf.py bmgr -b esp32_p4_function_ev_board
+```
+
+首次执行 `idf.py bmgr` 时，组件会根据本工程 `main/idf_component.yml` 中声明的 `espressif/esp_board_manager` 依赖自动下载，并在 `components/gen_bmgr_codes/` 下生成板级代码。
 
 > [!NOTE]
-> 如果切换开发板，请重新执行 `idf.py bmgr -b <board_name>`，必要时 `idf.py fullclean` 后再编译。
+> 如果切换开发板，请重新执行 `idf.py bmgr -b <board_name|index>`，必要时 `idf.py fullclean` 后再编译。
 > 所选板型须包含 `camera`、`audio_adc`、`display_lcd`、`fs_sdcard` 等设备，否则例程无法正常运行。
-> 自定义开发板请参考 [自定义开发板指南](https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/docs/how_to_customize_board_cn.md)。
+> 自定义开发板请参考 [创建开发板指南](https://docs.espressif.com/projects/esp-board-manager/zh_CN/latest/create-board/index.html)。
 > `esp_board_manager` 更多信息请参考 [ESP_BOARD_MANAGER 入门指南](https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/README_CN.md)。
 
 ### 项目配置
@@ -401,7 +418,7 @@ I (17641) main_task: Returned from app_main()
 
 ### LCD 无实时显示画面
 
-- 确认执行 `idf.py bmgr -b` 时选择的板型包含 `display_lcd`（如 `esp32_s3_korvo2_v3`、`esp32_p4_function_ev`）。
+- 确认执行 `idf.py bmgr -b` 时选择的板型包含 `display_lcd`（如 `esp32_s3_korvo_2_3`、`esp32_p4_function_ev_board`）。
 - 确认开发板的 LCD 屏幕与摄像头可同时正常初始化。
 
 ### 未生成 MP4 文件
@@ -418,8 +435,8 @@ I (17641) main_task: Returned from app_main()
 ### 视频采集启动失败
 
 - 确认摄像头已正确连接并与所选开发板匹配。
-- 对 `ESP32-S3`，建议使用仓库中已验证的 `esp32_s3_korvo2_v3` 板级配置。
-- 对 `ESP32-P4`，建议使用 `esp32_p4_function_ev` 并确保 MIPI 相关硬件连接正常。
+- 对 `ESP32-S3`，建议使用仓库中已验证的 `esp32_s3_korvo_2_3` 板级配置。
+- 对 `ESP32-P4`，建议使用 `esp32_p4_function_ev_board` 并确保 MIPI 相关硬件连接正常。
 
 ## 技术支持
 

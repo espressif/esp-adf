@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1~1
+
+### Docs
+
+- Updated example README files to use the latest ESP Board Manager board selection commands and board names
+
 ## v0.5.1
 
 ### Bugfix

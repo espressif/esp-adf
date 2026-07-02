@@ -17,18 +17,77 @@ This example exercises `esp_service` with a production-style multi-service setup
 
 ## Build and Flash
 
-Board selection is owned by `esp_board_manager`. On first checkout, generate
-the `components/gen_bmgr_codes/` component for your board, then build:
+This example uses [ESP Board Manager](https://github.com/espressif/esp-board-manager) to manage board-level resources. The [`esp-bmgr-assist`](https://pypi.org/project/esp-bmgr-assist/) helper tool is recommended as the default entry point.
+
+Install once in your activated ESP-IDF Python environment:
+
+```bash
+pip install esp-bmgr-assist
+pip install --upgrade esp-bmgr-assist  # run this command when an update is requested
+```
+
+Enter the example directory:
 
 ```bash
 cd adf_examples/services_hub
-idf.py bmgr -b esp32_s3_korvo2_v3   # selects target + generates board code
+```
+
+List the currently visible boards:
+
+```bash
+idf.py bmgr -l
+```
+
+Example output:
+
+```text
+ℹ️  Board Components:
+  espressif/esp_boards:
+    [1] esp32_c3_lyra
+    [2] esp32_lyrat_4_3
+    [3] esp32_lyrat_mini_1_1
+    [4] esp32_p4_eye
+    [5] esp32_p4_function_ev_board
+    [6] esp32_s31_function_coreboard_1
+    [7] esp32_s31_korvo_1
+    [8] esp32_s3_box_3
+    [9] esp32_s3_box_lite
+    [10] esp32_s3_korvo_2_3
+    [11] esp32_s3_lcd_ev_board
+    [12] esp_vocat_1_0
+    [13] esp_vocat_1_2
+```
+
+The example output above is based on the board list and ordering from `esp_boards` 0.5.2. Different `esp_boards` versions or custom board dependencies may change the list and indexes. Use the actual output of `idf.py bmgr -l` when selecting a board.
+
+Select a board:
+
+```bash
+idf.py bmgr -b <board_index|board_name>
+```
+
+For example, to select `esp32_s3_korvo_2_3`:
+
+```bash
+idf.py bmgr -b 10
+# or
+idf.py bmgr -b esp32_s3_korvo_2_3
+```
+
+On first invocation of `idf.py bmgr`, the component is downloaded automatically based on the `espressif/esp_board_manager` dependency declared in `main/idf_component.yml`.
+
+> [!NOTE]
+> To use another board, run `idf.py bmgr -b <board_name|index>` with the same steps.
+> For a custom board, see [Creating a Board Guide](https://docs.espressif.com/projects/esp-board-manager/en/latest/create-board/index.html).
+> For more information about `esp_board_manager`, see the [ESP Board Manager Getting Started Guide](https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/README.md).
+> Do not run `idf.py set-target` alone before bmgr, or the target chip may not match the board profile.
+
+Then configure, build, flash, and monitor:
+
+```bash
 idf.py menuconfig                   # Wi-Fi SSID/password + OTA URL (see below)
 idf.py build flash monitor
 ```
-
-Replace `esp32_s3_korvo2_v3` with any board you have YAML for; the `bmgr`
-assistant also picks the IDF target (do **not** run `idf.py set-target`).
 
 ## HTTP OTA Server
 

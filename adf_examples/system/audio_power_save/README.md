@@ -55,35 +55,42 @@ Short steps:
 cd adf_examples/system/audio_power_save
 ```
 
-This example uses [ESP Board Manager](https://github.com/espressif/esp-board-manager) to manage board-level resources. Install [`esp-bmgr-assist`](https://pypi.org/project/esp-bmgr-assist/) to select the development board with the commands below.
+This example uses [ESP Board Manager](https://github.com/espressif/esp-board-manager) to manage board-level resources. The [`esp-bmgr-assist`](https://pypi.org/project/esp-bmgr-assist/) helper tool is recommended as the default entry point.
 
 - Install once in your activated ESP-IDF Python environment:
 
 ```bash
 pip install esp-bmgr-assist
-pip install --upgrade esp-bmgr-assist
+pip install --upgrade esp-bmgr-assist  # run this command when an update is requested
 ```
 
-- List supported boards:
+- List the currently visible boards:
 
 ```bash
 idf.py bmgr -l
 ```
 
-  Example output:
+Example output:
 
 ```text
-ℹ️  Main Boards:
-  [1] dual_eyes_board_v1_0
-  [2] esp32_c3_lyra
-  [3] esp32_c5_spot
-  [4] esp32_p4_function_ev
-  [5] esp32_s3_korvo2_v3
-  [6] esp32_s3_korvo2l
-  [7] esp_box_3
-  [8] esp_box_lite
-  [9] esp_hi
+ℹ️  Board Components:
+  espressif/esp_boards:
+    [1] esp32_c3_lyra
+    [2] esp32_lyrat_4_3
+    [3] esp32_lyrat_mini_1_1
+    [4] esp32_p4_eye
+    [5] esp32_p4_function_ev_board
+    [6] esp32_s31_function_coreboard_1
+    [7] esp32_s31_korvo_1
+    [8] esp32_s3_box_3
+    [9] esp32_s3_box_lite
+    [10] esp32_s3_korvo_2_3
+    [11] esp32_s3_lcd_ev_board
+    [12] esp_vocat_1_0
+    [13] esp_vocat_1_2
 ```
+
+The example output above is based on the board list and ordering from `esp_boards` 0.5.2. Different `esp_boards` versions or custom board dependencies may change the list and indexes. Use the actual output of `idf.py bmgr -l` when selecting a board.
 
 - Select a board:
 
@@ -91,19 +98,19 @@ idf.py bmgr -l
 idf.py bmgr -b <board_index|board_name>
 ```
 
-  This example uses `esp32_s3_korvo2_v3`:
+For example, to select `esp32_s3_korvo_2_3`:
 
 ```bash
-idf.py bmgr -b 5
+idf.py bmgr -b 10
 # or
-idf.py bmgr -b esp32_s3_korvo2_v3
+idf.py bmgr -b esp32_s3_korvo_2_3
 ```
 
-  On first invocation, the component is downloaded automatically based on the `espressif/esp_board_manager` dependency declared in `main/idf_component.yml`.
+On first invocation, the component is downloaded automatically based on the `espressif/esp_board_manager` dependency declared in `main/idf_component.yml`.
 
 > [!NOTE]
 > To switch to a different board supported by `esp_board_manager`, repeat the same steps with the new board name or index.
-> For a custom board, see [How to customize board](https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/docs/how_to_customize_board.md).
+> For a custom board, see [Creating a Board Guide](https://docs.espressif.com/projects/esp-board-manager/en/latest/create-board/index.html).
 > For more information about `esp_board_manager`, see the [ESP Board Manager Getting Started Guide](https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/README.md).
 
 ### Project Configuration
