@@ -43,6 +43,10 @@
   script:
     - *check_labels_script
 
+check_labels:
+  extends:
+    - .check_labels
+
 check_commit_format:
   image: "$ADF_DOCKER_REGISTRY/pre_commit:1"
   stage: pre_check
