@@ -6,12 +6,13 @@ set(COMPONENT_ADD_INCLUDEDIRS include interface device/include)
 # set conversion sources
 set(COMPONENT_SRCS
   esp_codec_dev.c
+  codec_dev_mirror.c
   esp_codec_dev_vol.c
   esp_codec_dev_if.c
   audio_codec_sw_vol.c
 )
 
-set(priv_requires freertos)
+set(priv_requires freertos esp_ringbuf)
 if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.3")
   list(APPEND priv_requires esp_driver_gpio esp_driver_i2c esp_driver_i2s esp_driver_spi)
 else()

@@ -22,8 +22,10 @@ def test_esp_codec_dev(dut: Dut) -> None:
     case_list = ['esp codec dev test using S3 board',
                  'Record play overlap test',
                  'Playing while recording use TDM mode',
+                 'Play and record use separate data_if with 2ch 32bits',
                  'esp codec dev test using S3 board with XTAL',
                  'esp codec dev API test',
                  'esp codec dev wrong argument test',
-                 'esp codec dev feature should not support']
+                 'esp codec dev feature should not support',
+                 'input mirror - fake input keeps latest data']
     dut.run_all_single_board_cases(name=case_list, timeout=3600)

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Feature
+
+- Added `esp_codec_dev_mirror_cfg()` and `esp_codec_dev_mirror_read()` for bypass reading during `esp_codec_dev_read()`.
+
 ## v1.5.11
 
 ### Bug Fixed

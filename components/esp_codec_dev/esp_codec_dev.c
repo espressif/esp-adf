@@ -9,6 +9,7 @@
 #include "audio_codec_if.h"
 #include "audio_codec_data_if.h"
 #include "audio_codec_sw_vol.h"
+#include "codec_dev_mirror.h"
 #include "esp_log.h"
 
 #define TAG                 "Adev_Codec"
@@ -29,6 +30,7 @@ typedef struct {
     bool                         sw_vol_alloced;
     esp_codec_dev_vol_curve_t    vol_curve;
     bool                         disable_when_closed;
+    codec_dev_mirror_handle_t    mirror;
 } codec_dev_t;
 
 static bool _verify_codec_ready(codec_dev_t *dev)
@@ -146,7 +148,7 @@ esp_codec_dev_handle_t esp_codec_dev_new(esp_codec_dev_cfg_t *cfg)
 
 int esp_codec_dev_open(esp_codec_dev_handle_t handle, esp_codec_dev_sample_info_t *fs)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL || fs == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -214,7 +216,7 @@ int esp_codec_dev_open(esp_codec_dev_handle_t handle, esp_codec_dev_sample_info_
 
 int esp_codec_dev_read_reg(esp_codec_dev_handle_t handle, int reg, int *val)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL || val == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -226,7 +228,7 @@ int esp_codec_dev_read_reg(esp_codec_dev_handle_t handle, int reg, int *val)
 
 int esp_codec_dev_write_reg(esp_codec_dev_handle_t handle, int reg, int val)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -238,7 +240,7 @@ int esp_codec_dev_write_reg(esp_codec_dev_handle_t handle, int reg, int val)
 
 int esp_codec_dev_dump_reg(esp_codec_dev_handle_t handle)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -251,8 +253,8 @@ int esp_codec_dev_dump_reg(esp_codec_dev_handle_t handle)
 
 int esp_codec_dev_read(esp_codec_dev_handle_t handle, void *data, int len)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
-    if (dev == NULL || data == NULL) {
+    codec_dev_t *dev = (codec_dev_t *)handle;
+    if (dev == NULL || data == NULL || len <= 0) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     if (dev->input_opened == false) {
@@ -260,14 +262,61 @@ int esp_codec_dev_read(esp_codec_dev_handle_t handle, void *data, int len)
     }
     const audio_codec_data_if_t *data_if = dev->data_if;
     if (data_if->read) {
-        return data_if->read(data_if, (uint8_t *) data, len);
+        int ret = data_if->read(data_if, (uint8_t *)data, len);
+        if (ret != ESP_CODEC_DEV_OK) {
+            return ret;
+        }
+        if (dev->mirror) {
+            (void)codec_dev_mirror_write(dev->mirror, (const uint8_t *)data, len);
+        }
+        return ESP_CODEC_DEV_OK;
     }
     return ESP_CODEC_DEV_NOT_SUPPORT;
 }
 
+int esp_codec_dev_mirror_cfg(esp_codec_dev_handle_t handle, int size)
+{
+    codec_dev_t *dev = (codec_dev_t *)handle;
+    if (dev == NULL || size <= 0) {
+        ESP_LOGE(TAG, "Failed to config mirror with invalid arguments");
+        return ESP_CODEC_DEV_INVALID_ARG;
+    }
+    if ((dev->dev_caps & ESP_CODEC_DEV_TYPE_IN) == 0) {
+        ESP_LOGW(TAG, "Failed to config mirror because device does not support input mode");
+        return ESP_CODEC_DEV_NOT_SUPPORT;
+    }
+    if (dev->mirror) {
+        return ESP_CODEC_DEV_OK;
+    }
+    return codec_dev_mirror_init(size, &dev->mirror);
+}
+
+int esp_codec_dev_mirror_read(esp_codec_dev_handle_t handle,
+                              uint8_t *buffer,
+                              int size,
+                              int timeout_ms,
+                              int *bytes_read)
+{
+    codec_dev_t *dev = (codec_dev_t *)handle;
+    if (dev == NULL || buffer == NULL || size <= 0 || bytes_read == NULL) {
+        ESP_LOGE(TAG, "Failed to read mirror with invalid arguments");
+        return ESP_CODEC_DEV_INVALID_ARG;
+    }
+    *bytes_read = 0;
+    if ((dev->dev_caps & ESP_CODEC_DEV_TYPE_IN) == 0) {
+        ESP_LOGW(TAG, "Failed to read mirror because device does not support input mode");
+        return ESP_CODEC_DEV_NOT_SUPPORT;
+    }
+    if (dev->mirror == NULL) {
+        ESP_LOGW(TAG, "Failed to read mirror because mirror is not initialized");
+        return ESP_CODEC_DEV_WRONG_STATE;
+    }
+    return codec_dev_mirror_read(dev->mirror, buffer, size, timeout_ms, bytes_read);
+}
+
 int esp_codec_dev_write(esp_codec_dev_handle_t handle, void *data, int len)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL || data == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -287,7 +336,7 @@ int esp_codec_dev_write(esp_codec_dev_handle_t handle, void *data, int len)
 
 int esp_codec_dev_set_vol_curve(esp_codec_dev_handle_t handle, esp_codec_dev_vol_curve_t *curve)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL || curve == NULL || curve->vol_map == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -308,7 +357,7 @@ int esp_codec_dev_set_vol_curve(esp_codec_dev_handle_t handle, esp_codec_dev_vol
 
 int esp_codec_dev_set_out_vol(esp_codec_dev_handle_t handle, int volume)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -333,7 +382,7 @@ int esp_codec_dev_set_out_vol(esp_codec_dev_handle_t handle, int volume)
 
 int esp_codec_dev_set_vol_handler(esp_codec_dev_handle_t handle, const audio_codec_vol_if_t *vol_handler)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL || vol_handler == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -356,7 +405,7 @@ int esp_codec_dev_set_vol_handler(esp_codec_dev_handle_t handle, const audio_cod
 
 int esp_codec_dev_get_out_vol(esp_codec_dev_handle_t handle, int *volume)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -370,7 +419,7 @@ int esp_codec_dev_get_out_vol(esp_codec_dev_handle_t handle, int *volume)
 
 int esp_codec_dev_set_out_mute(esp_codec_dev_handle_t handle, bool mute)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -394,7 +443,7 @@ int esp_codec_dev_set_out_mute(esp_codec_dev_handle_t handle, bool mute)
 
 int esp_codec_dev_get_out_mute(esp_codec_dev_handle_t handle, bool *muted)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -408,7 +457,7 @@ int esp_codec_dev_get_out_mute(esp_codec_dev_handle_t handle, bool *muted)
 
 int esp_codec_dev_set_in_gain(esp_codec_dev_handle_t handle, float db)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -427,7 +476,7 @@ int esp_codec_dev_set_in_gain(esp_codec_dev_handle_t handle, float db)
 
 int esp_codec_dev_set_in_channel_gain(esp_codec_dev_handle_t handle, uint16_t channel_mask, float db)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL || channel_mask == 0) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -445,7 +494,7 @@ int esp_codec_dev_set_in_channel_gain(esp_codec_dev_handle_t handle, uint16_t ch
 
 int esp_codec_dev_get_in_gain(esp_codec_dev_handle_t handle, float *db_value)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -459,7 +508,7 @@ int esp_codec_dev_get_in_gain(esp_codec_dev_handle_t handle, float *db_value)
 
 int esp_codec_dev_set_in_mute(esp_codec_dev_handle_t handle, bool mute)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -478,7 +527,7 @@ int esp_codec_dev_set_in_mute(esp_codec_dev_handle_t handle, bool mute)
 
 int esp_codec_dev_get_in_mute(esp_codec_dev_handle_t handle, bool *muted)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -492,7 +541,7 @@ int esp_codec_dev_get_in_mute(esp_codec_dev_handle_t handle, bool *muted)
 
 int esp_codec_set_disable_when_closed(esp_codec_dev_handle_t handle, bool disable)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -502,12 +551,12 @@ int esp_codec_set_disable_when_closed(esp_codec_dev_handle_t handle, bool disabl
 
 int esp_codec_dev_close(esp_codec_dev_handle_t handle)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     if (dev->output_opened == false && dev->input_opened == false) {
-        return ESP_CODEC_DEV_OK;
+        goto cleanup;
     }
     const audio_codec_if_t *codec = dev->codec_if;
     if (dev->disable_when_closed && codec) {
@@ -523,12 +572,17 @@ int esp_codec_dev_close(esp_codec_dev_handle_t handle)
         dev->sw_vol->close(dev->sw_vol);
     }
     dev->output_opened = dev->input_opened = false;
+cleanup:
+    if (dev->mirror) {
+        codec_dev_mirror_deinit(dev->mirror);
+        dev->mirror = NULL;
+    }
     return ESP_CODEC_DEV_OK;
 }
 
 void esp_codec_dev_delete(esp_codec_dev_handle_t handle)
 {
-    codec_dev_t *dev = (codec_dev_t *) handle;
+    codec_dev_t *dev = (codec_dev_t *)handle;
     if (dev) {
         esp_codec_dev_close(handle);
         if (dev->vol_curve.vol_map) {

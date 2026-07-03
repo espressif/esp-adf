@@ -181,6 +181,93 @@ TEST_CASE("esp codec dev API test", "[esp_codec_dev]")
     audio_codec_delete_gpio_if(gpio_if);
 }
 
+TEST_CASE("input mirror - fake input keeps latest data", "[esp_codec_dev]")
+{
+    const audio_codec_ctrl_if_t *ctrl_if = my_codec_ctrl_new();
+    TEST_ASSERT_NOT_NULL(ctrl_if);
+    const audio_codec_data_if_t *data_if = my_codec_data_new();
+    TEST_ASSERT_NOT_NULL(data_if);
+    const audio_codec_gpio_if_t *gpio_if = audio_codec_new_gpio();
+    TEST_ASSERT_NOT_NULL(gpio_if);
+    my_codec_cfg_t codec_cfg = {
+        .ctrl_if = ctrl_if,
+        .gpio_if = gpio_if,
+    };
+    const audio_codec_if_t *codec_if = my_codec_new(&codec_cfg);
+    TEST_ASSERT_NOT_NULL(codec_if);
+    esp_codec_dev_cfg_t dev_cfg = {
+        .dev_type = ESP_CODEC_DEV_TYPE_IN_OUT,
+        .codec_if = codec_if,
+        .data_if = data_if,
+    };
+    esp_codec_dev_handle_t dev = esp_codec_dev_new(&dev_cfg);
+    TEST_ASSERT_NOT_NULL(dev);
+
+    uint8_t read_data[600];
+    uint8_t cache_data[600];
+    int bytes_read = -1;
+    int ret = esp_codec_dev_mirror_cfg(dev, 512);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_mirror_read(dev, cache_data, sizeof(cache_data), 0, &bytes_read);
+    TEST_ASSERT_EQUAL(ESP_CODEC_DEV_TIMEOUT, ret);
+    TEST_ASSERT_EQUAL(0, bytes_read);
+
+    esp_codec_dev_sample_info_t fs = {
+        .bits_per_sample = 8,
+        .sample_rate = 1000,
+        .channel = 1,
+    };
+    ret = esp_codec_dev_open(dev, &fs);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_mirror_cfg(dev, 0);
+    TEST_ASSERT_EQUAL(ESP_CODEC_DEV_INVALID_ARG, ret);
+    /* Repeated cfg should be idempotent. */
+    ret = esp_codec_dev_mirror_cfg(dev, 512);
+    TEST_ESP_OK(ret);
+
+    ret = esp_codec_dev_mirror_read(dev, NULL, sizeof(cache_data), 0, &bytes_read);
+    TEST_ASSERT_EQUAL(ESP_CODEC_DEV_INVALID_ARG, ret);
+    ret = esp_codec_dev_mirror_read(dev, cache_data, 0, 0, &bytes_read);
+    TEST_ASSERT_EQUAL(ESP_CODEC_DEV_INVALID_ARG, ret);
+    ret = esp_codec_dev_mirror_read(dev, cache_data, sizeof(cache_data), 0, NULL);
+    TEST_ASSERT_EQUAL(ESP_CODEC_DEV_INVALID_ARG, ret);
+
+    ret = esp_codec_dev_read(dev, read_data, sizeof(read_data));
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_mirror_read(dev, cache_data, 512, 0, &bytes_read);
+    TEST_ESP_OK(ret);
+    TEST_ASSERT_EQUAL(512, bytes_read);
+    for (int i = 0; i < bytes_read; i++) {
+        TEST_ASSERT_EQUAL_UINT8(read_data[i + 88], cache_data[i]);
+    }
+
+    ret = esp_codec_dev_mirror_read(dev, cache_data, 16, 0, &bytes_read);
+    TEST_ASSERT_EQUAL(ESP_CODEC_DEV_TIMEOUT, ret);
+    TEST_ASSERT_EQUAL(0, bytes_read);
+    ret = esp_codec_dev_close(dev);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_mirror_read(dev, cache_data, 16, 0, &bytes_read);
+    TEST_ASSERT_EQUAL(ESP_CODEC_DEV_WRONG_STATE, ret);
+    TEST_ASSERT_EQUAL(0, bytes_read);
+
+    fs.bits_per_sample = 16;
+    fs.sample_rate = 16000;
+    ret = esp_codec_dev_open(dev, &fs);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_mirror_cfg(dev, 512);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_close(dev);
+    TEST_ESP_OK(ret);
+    ret = esp_codec_dev_mirror_read(dev, cache_data, 16, 0, &bytes_read);
+    TEST_ASSERT_EQUAL(ESP_CODEC_DEV_WRONG_STATE, ret);
+
+    esp_codec_dev_delete(dev);
+    audio_codec_delete_codec_if(codec_if);
+    audio_codec_delete_ctrl_if(ctrl_if);
+    audio_codec_delete_data_if(data_if);
+    audio_codec_delete_gpio_if(gpio_if);
+}
+
 TEST_CASE("esp codec dev wrong argument test", "[esp_codec_dev]")
 {
     const audio_codec_ctrl_if_t *ctrl_if = my_codec_ctrl_new();
@@ -335,6 +422,11 @@ TEST_CASE("esp codec dev feature should not support", "[esp_codec_dev]")
         // Test for write data
         ret = esp_codec_dev_read(dev, data, sizeof(data));
         TEST_ASSERT(ret != ESP_CODEC_DEV_OK);
+        ret = esp_codec_dev_mirror_cfg(dev, sizeof(data));
+        TEST_ASSERT_EQUAL(ESP_CODEC_DEV_NOT_SUPPORT, ret);
+        int bytes_read = 0;
+        ret = esp_codec_dev_mirror_read(dev, data, sizeof(data), 0, &bytes_read);
+        TEST_ASSERT_EQUAL(ESP_CODEC_DEV_NOT_SUPPORT, ret);
         esp_codec_dev_close(dev);
         // Delete codec dev handle
         esp_codec_dev_delete(dev);

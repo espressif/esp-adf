@@ -14,21 +14,22 @@
 extern "C" {
 #endif
 
-#define ESP_CODEC_DEV_VERSION  "1.3.1"
+#define ESP_CODEC_DEV_VERSION  "1.6.0"
 
 /**
- * @brief Define error number of codec device module
- *        Inherit from `esp_err_t`
+ * @brief  Define error number of codec device module
+ *         Inherit from `esp_err_t`
  */
-#define ESP_CODEC_DEV_OK          (0)
-#define ESP_CODEC_DEV_DRV_ERR     (ESP_FAIL)
-#define ESP_CODEC_DEV_INVALID_ARG (ESP_ERR_INVALID_ARG)
-#define ESP_CODEC_DEV_NO_MEM      (ESP_ERR_NO_MEM)
-#define ESP_CODEC_DEV_NOT_SUPPORT (ESP_ERR_NOT_SUPPORTED)
-#define ESP_CODEC_DEV_NOT_FOUND   (ESP_ERR_NOT_FOUND)
-#define ESP_CODEC_DEV_WRONG_STATE (ESP_ERR_INVALID_STATE)
-#define ESP_CODEC_DEV_WRITE_FAIL  (0x10D)
-#define ESP_CODEC_DEV_READ_FAIL   (0x10E)
+#define ESP_CODEC_DEV_OK           (0)
+#define ESP_CODEC_DEV_DRV_ERR      (ESP_FAIL)
+#define ESP_CODEC_DEV_INVALID_ARG  (ESP_ERR_INVALID_ARG)
+#define ESP_CODEC_DEV_NO_MEM       (ESP_ERR_NO_MEM)
+#define ESP_CODEC_DEV_NOT_SUPPORT  (ESP_ERR_NOT_SUPPORTED)
+#define ESP_CODEC_DEV_NOT_FOUND    (ESP_ERR_NOT_FOUND)
+#define ESP_CODEC_DEV_WRONG_STATE  (ESP_ERR_INVALID_STATE)
+#define ESP_CODEC_DEV_TIMEOUT      (ESP_ERR_TIMEOUT)
+#define ESP_CODEC_DEV_WRITE_FAIL   (0x10D)
+#define ESP_CODEC_DEV_READ_FAIL    (0x10E)
 
 #define ESP_CODEC_DEV_MAKE_CHANNEL_MASK(channel) ((uint16_t)1 << (channel))
 
