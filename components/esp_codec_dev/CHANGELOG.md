@@ -1,10 +1,18 @@
 # Changelog
 
-## Unreleased
+## v1.6.0
 
 ### Feature
 
 - Added `esp_codec_dev_mirror_cfg()` and `esp_codec_dev_mirror_read()` for bypass reading during `esp_codec_dev_read()`.
+- Added reference counting so multiple `esp_codec_dev` instances can share one physical ES8311/ES8388/ES8389 codec; hardware open/enable runs for the first user and close/disable for the last.
+- Added `get_info` to the codec control interface to expose I2C address/port and SPI CS pin for identifying the same physical device.
+
+### Bug Fixed
+
+- Fixed reused codec instance missing configuration normalization (`mclk_div` default, and `use_mclk`/`no_dac_ref` on ES8389), which produced an invalid clock coefficient and all-zero ADC data.
+- Fixed `get_coeff` failure handling so an unsupported MCLK/sample-rate combination reports an error instead of using an out-of-range coefficient index.
+- Fixed PA control to skip when the codec has no output capability or no PA pin, and to set up the PA pin for shared output instances created on the reuse path.
 
 ## v1.5.11
 

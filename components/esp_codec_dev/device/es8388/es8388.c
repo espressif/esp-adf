@@ -9,6 +9,7 @@
 #include "es8388_codec.h"
 #include "es_common.h"
 #include "esp_codec_dev_vol.h"
+#include "codec_ref_mgr.h"
 
 #define TAG "ES8388"
 
@@ -200,11 +201,23 @@ static int es8388_set_bits_per_sample(audio_codec_es8388_t *codec, esp_codec_dec
 static void es8388_pa_power(audio_codec_es8388_t *codec, bool enable)
 {
     int16_t pa_pin = codec->pa_pin;
-    if (pa_pin == -1 || codec->gpio_if == NULL) {
+    if (pa_pin == -1 || codec->gpio_if == NULL ||
+        (codec->codec_mode & ESP_CODEC_DEV_WORK_MODE_DAC) == 0) {
+        ESP_LOGD(TAG, "Skip PA control: pa_pin:%d, gpio_if:%p, codec_mode:%d",
+                 pa_pin, codec->gpio_if, codec->codec_mode);
         return;
     }
     codec->gpio_if->setup(pa_pin, AUDIO_GPIO_DIR_OUT, AUDIO_GPIO_MODE_FLOAT);
     codec->gpio_if->set(pa_pin, codec->pa_reverted ? !enable : enable);
+}
+
+static inline void es8388_apply_cfg(audio_codec_es8388_t *codec, const es8388_codec_cfg_t *codec_cfg)
+{
+    codec->ctrl_if = codec_cfg->ctrl_if;
+    codec->gpio_if = codec_cfg->gpio_if;
+    codec->pa_pin = codec_cfg->pa_pin;
+    codec->pa_reverted = codec_cfg->pa_reverted;
+    codec->codec_mode = codec_cfg->codec_mode;
 }
 
 static int es8388_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
@@ -215,13 +228,6 @@ static int es8388_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     int res = ESP_CODEC_DEV_OK;
-    codec->ctrl_if = codec_cfg->ctrl_if;
-    codec->gpio_if = codec_cfg->gpio_if;
-    codec->pa_pin = codec_cfg->pa_pin;
-    codec->pa_reverted = codec_cfg->pa_reverted;
-    codec->codec_mode = codec_cfg->codec_mode;
-
-    es8388_pa_power(codec, false);
 
     // 0x04 mute/0x00 unmute&ramp;
     res |= es8388_write_reg(codec, ES8388_DACCONTROL3, 0x04);
@@ -281,7 +287,7 @@ static int es8388_open(const audio_codec_if_t *h, void *cfg, int cfg_size)
 
 static int es8388_enable(const audio_codec_if_t *h, bool enable)
 {
-    audio_codec_es8388_t *codec = (audio_codec_es8388_t *) h;
+    audio_codec_es8388_t *codec = (audio_codec_es8388_t *)h;
     if (codec == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
@@ -292,10 +298,26 @@ static int es8388_enable(const audio_codec_if_t *h, bool enable)
         return ESP_CODEC_DEV_OK;
     }
     int res;
+    audio_codec_ctrl_info_t ctrl_info = {0};
+    codec->ctrl_if->get_info(codec->ctrl_if, &ctrl_info);
     if (enable == false) {
         es8388_pa_power(codec, false);
-        res = es8388_stop(codec, codec->codec_mode);
+        int en_cnt = codec_ref_release(&ctrl_info, CODEC_REF_STAGE_ENABLE);
+        if (en_cnt < 0) {
+            ESP_LOGE(TAG, "Failed to release codec device enable reference");
+            return ESP_CODEC_DEV_WRITE_FAIL;
+        }
+        if (en_cnt == 0) {
+            res = es8388_stop(codec, codec->codec_mode);
+        } else {
+            ESP_LOGI(TAG, "Codec still enabled (enable_count=%d), skip hardware stop", en_cnt);
+            res = ESP_CODEC_DEV_OK;
+        }
     } else {
+        if (codec_ref_acquire(&ctrl_info, CODEC_REF_STAGE_ENABLE) < 0) {
+            ESP_LOGE(TAG, "Failed to acquire codec device enable reference");
+            return ESP_CODEC_DEV_WRITE_FAIL;
+        }
         res = es8388_start(codec, codec->codec_mode);
         es8388_pa_power(codec, true);
     }
@@ -364,12 +386,24 @@ static int es8388_set_gain(const audio_codec_if_t *h, float db)
 
 static int es8388_close(const audio_codec_if_t *h)
 {
-    audio_codec_es8388_t *codec = (audio_codec_es8388_t *) h;
+    audio_codec_es8388_t *codec = (audio_codec_es8388_t *)h;
     if (codec == NULL) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     if (codec->is_open) {
-        es8388_pa_power(codec, false);
+        audio_codec_ctrl_info_t ctrl_info = {0};
+        codec->ctrl_if->get_info(codec->ctrl_if, &ctrl_info);
+        int open_cnt = codec_ref_release(&ctrl_info, CODEC_REF_STAGE_OPEN);
+        if (open_cnt < 0) {
+            ESP_LOGE(TAG, "Failed to release codec device open reference");
+            return ESP_CODEC_DEV_WRITE_FAIL;
+        }
+        if (open_cnt == 0) {
+            es8388_pa_power(codec, false);
+            ESP_LOGI(TAG, "Codec hardware closed");
+        } else {
+            ESP_LOGI(TAG, "Codec still in use (open_count=%d), skip hardware close", open_cnt);
+        }
         codec->is_open = false;
     }
     return ESP_CODEC_DEV_OK;
@@ -402,12 +436,21 @@ const audio_codec_if_t *es8388_codec_new(es8388_codec_cfg_t *codec_cfg)
         ESP_LOGE(TAG, "Control interface not open yet");
         return NULL;
     }
-    audio_codec_es8388_t *codec = (audio_codec_es8388_t *) calloc(1, sizeof(audio_codec_es8388_t));
+    if (codec_cfg->ctrl_if->get_info == NULL) {
+        ESP_LOGE(TAG, "Control interface missing get_info");
+        return NULL;
+    }
+    audio_codec_ctrl_info_t ctrl_info = {0};
+    if (codec_cfg->ctrl_if->get_info(codec_cfg->ctrl_if, &ctrl_info) != ESP_CODEC_DEV_OK) {
+        ESP_LOGE(TAG, "Failed to get control interface info");
+        return NULL;
+    }
+
+    audio_codec_es8388_t *codec = (audio_codec_es8388_t *)calloc(1, sizeof(audio_codec_es8388_t));
     if (codec == NULL) {
         CODEC_MEM_CHECK(codec);
         return NULL;
     }
-    codec->ctrl_if = codec_cfg->ctrl_if;
     codec->base.open = es8388_open;
     codec->base.enable = es8388_enable;
     codec->base.set_fs = es8388_set_fs;
@@ -418,10 +461,23 @@ const audio_codec_if_t *es8388_codec_new(es8388_codec_cfg_t *codec_cfg)
     codec->base.close = es8388_close;
     codec->hw_gain = esp_codec_dev_col_calc_hw_gain(&codec_cfg->hw_gain);
     do {
-        int ret = codec->base.open(&codec->base, codec_cfg, sizeof(es8388_codec_cfg_t));
-        if (ret != 0) {
-            ESP_LOGE(TAG, "Fail to open");
+        int open_cnt = codec_ref_acquire(&ctrl_info, CODEC_REF_STAGE_OPEN);
+        if (open_cnt < 0) {
+            ESP_LOGE(TAG, "Failed to acquire codec device open reference");
             break;
+        }
+        es8388_apply_cfg(codec, codec_cfg);
+        es8388_pa_power(codec, false);
+        if (open_cnt == 1) {
+            int ret = codec->base.open(&codec->base, codec_cfg, sizeof(es8388_codec_cfg_t));
+            if (ret != 0) {
+                ESP_LOGE(TAG, "Fail to open");
+                codec_ref_release(&ctrl_info, CODEC_REF_STAGE_OPEN);
+                break;
+            }
+        } else {
+            codec->is_open = true;
+            ESP_LOGI(TAG, "Codec already opened, reusing (open_count=%d)", open_cnt);
         }
         return &codec->base;
     } while (0);

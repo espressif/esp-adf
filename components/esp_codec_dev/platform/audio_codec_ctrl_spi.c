@@ -15,10 +15,11 @@
 #define TAG "SPI_If"
 
 typedef struct {
-    audio_codec_ctrl_if_t base;
-    bool                  is_open;
-    uint8_t               port;
-    spi_device_handle_t   spi_handle;
+    audio_codec_ctrl_if_t  base;
+    bool                   is_open;
+    uint8_t                port;
+    int16_t                cs_pin;
+    spi_device_handle_t    spi_handle;
 } spi_ctrl_t;
 
 int _spi_ctrl_open(const audio_codec_ctrl_if_t *ctrl, void *cfg, int cfg_size)
@@ -29,13 +30,13 @@ int _spi_ctrl_open(const audio_codec_ctrl_if_t *ctrl, void *cfg, int cfg_size)
     if (cfg_size != sizeof(audio_codec_spi_cfg_t)) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
-    spi_ctrl_t *spi_ctrl = (spi_ctrl_t *) ctrl;
-    audio_codec_spi_cfg_t *spi_cfg = (audio_codec_spi_cfg_t *) cfg;
+    spi_ctrl_t *spi_ctrl = (spi_ctrl_t *)ctrl;
+    audio_codec_spi_cfg_t *spi_cfg = (audio_codec_spi_cfg_t *)cfg;
     int speed = spi_cfg->clock_speed ? spi_cfg->clock_speed : 1000000;
     spi_device_interface_config_t dev_cfg = {
-        .clock_speed_hz = speed, // Clock out at 10 MHz
-        .mode = 0,               // SPI mode 0
-        .queue_size = 6,         // queue 7 transactions at a time
+        .clock_speed_hz = speed,  // Clock out at 10 MHz
+        .mode = 0,                // SPI mode 0
+        .queue_size = 6,          // queue 7 transactions at a time
     };
     dev_cfg.spics_io_num = spi_cfg->cs_pin;
 #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 4))
@@ -44,10 +45,11 @@ int _spi_ctrl_open(const audio_codec_ctrl_if_t *ctrl, void *cfg, int cfg_size)
     spi_host_device_t host_id = SPI3_HOST;
 #else
     spi_host_device_t host_id = HSPI_HOST;
-#endif
+#endif  /* (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 4)) */
     int ret = spi_bus_add_device(host_id, &dev_cfg, &spi_ctrl->spi_handle);
     if (ret == 0) {
         gpio_set_pull_mode(spi_cfg->cs_pin, GPIO_FLOATING);
+        spi_ctrl->cs_pin = spi_cfg->cs_pin;
         spi_ctrl->is_open = true;
     }
     return ret == 0 ? ESP_CODEC_DEV_OK : ESP_CODEC_DEV_DRV_ERR;
@@ -123,6 +125,17 @@ static int _spi_ctrl_write_reg(const audio_codec_ctrl_if_t *ctrl, int addr, int 
     return ret == ESP_OK ? ESP_CODEC_DEV_OK : ESP_CODEC_DEV_DRV_ERR;
 }
 
+static int _spi_ctrl_get_info(const audio_codec_ctrl_if_t *ctrl, audio_codec_ctrl_info_t *info)
+{
+    if (ctrl == NULL || info == NULL) {
+        return ESP_CODEC_DEV_INVALID_ARG;
+    }
+    spi_ctrl_t *spi_ctrl = (spi_ctrl_t *)ctrl;
+    info->type = AUDIO_CODEC_CTRL_SPI;
+    info->spi.cs_pin = spi_ctrl->cs_pin;
+    return ESP_CODEC_DEV_OK;
+}
+
 int _spi_ctrl_close(const audio_codec_ctrl_if_t *ctrl)
 {
     spi_ctrl_t *spi_ctrl = (spi_ctrl_t *) ctrl;
@@ -148,6 +161,7 @@ const audio_codec_ctrl_if_t *audio_codec_new_spi_ctrl(audio_codec_spi_cfg_t *spi
     ctrl->base.is_open = _spi_ctrl_is_open;
     ctrl->base.read_reg = _spi_ctrl_read_reg;
     ctrl->base.write_reg = _spi_ctrl_write_reg;
+    ctrl->base.get_info = _spi_ctrl_get_info;
     ctrl->base.close = _spi_ctrl_close;
     int ret = _spi_ctrl_open(&ctrl->base, spi_cfg, sizeof(audio_codec_spi_cfg_t));
     if (ret != 0) {
