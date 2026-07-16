@@ -15,6 +15,7 @@
 #include "esp_service.h"
 #include "esp_wifi_service_profile_mgr.h"
 #include "esp_wifi_service_prov.h"
+#include "esp_wifi_service_scan.h"
 #include "esp_wifi_service_selector.h"
 
 #ifdef __cplusplus
@@ -102,6 +103,23 @@ esp_err_t esp_wifi_service_destroy(esp_wifi_service_t *service);
  *       - ESP_ERR_INVALID_ARG  NULL argument
  */
 esp_err_t esp_wifi_service_get_profile_manager(esp_wifi_service_t *service, esp_wifi_service_profile_mgr_t *manager_out);
+
+/**
+ * @brief  Get the shared scan handle owned by service
+ *
+ * @note  Selector, provisioning transports, and application code should share
+ *        this agent so scan requests can be coalesced and receive the same
+ *        driver scan records.
+ *
+ * @param[in]   service          Service handle
+ * @param[out]  scan_handle_out  Scan handle owned by service
+ *
+ * @return
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  NULL argument
+ */
+esp_err_t esp_wifi_service_get_scan_handle(esp_wifi_service_t *service,
+                                          esp_wifi_service_scan_handle_t *scan_handle_out);
 
 /**
  * @brief  Start all provisioning instances
