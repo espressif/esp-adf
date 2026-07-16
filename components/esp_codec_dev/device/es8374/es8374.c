@@ -648,14 +648,14 @@ static int es8374_close(const audio_codec_if_t *h)
 
 static int es8374_set_fs(const audio_codec_if_t *h, esp_codec_dev_sample_info_t *fs)
 {
-    audio_codec_es8374_t *codec = (audio_codec_es8374_t *) h;
+    audio_codec_es8374_t *codec = (audio_codec_es8374_t *)h;
     if (codec == NULL || codec->is_open == false) {
         return ESP_CODEC_DEV_INVALID_ARG;
     }
     int ret = 0;
     ret |= es8374_config_fmt(codec, ES_I2S_NORMAL);
     ret |= es8374_set_bits_per_sample(codec, fs->bits_per_sample);
-    return ESP_CODEC_DEV_OK;
+    return (ret == ESP_CODEC_DEV_OK) ? ESP_CODEC_DEV_OK : ESP_CODEC_DEV_WRITE_FAIL;
 }
 
 static int es8374_enable(const audio_codec_if_t *h, bool enable)

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.1
+
+### Bug Fixed
+
+- Fixed the ES8374 sample format configuration result handling to propagate errors and avoid an `unused-but-set-variable` build failure.
+
 ## v1.6.0
 
 ### Feature
