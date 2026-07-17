@@ -1,0 +1,20 @@
+version: "0.5.0"
+description: ESP Media Service provides media stream abstractions and provider infrastructure
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_media_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_media_service/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "media_service"
+  - "esp_service"
+  - "gmf"
+  - "adf"
+
+dependencies:
+  espressif/esp_service:
+    require: public
+    version: "^0.5"
+    override_path: "../esp_service"
+  espressif/gmf_core:
+    require: public
+    version: "^1.0"

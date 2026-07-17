@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2
+
+### Features
+
+- Added scheduler support for all services
+
 ## v0.5.1
 
 ### Changes

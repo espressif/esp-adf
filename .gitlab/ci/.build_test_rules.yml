@@ -70,6 +70,8 @@
 adf_examples/player/play_music_control:
   disable_test:
     - *if_idf_v6_0
+  disable_test:
+    - *if_esp32p4
 
 adf_examples/ai_agent/baidu_rtc/solutions/voice_assistant_app:
   disable_build:
