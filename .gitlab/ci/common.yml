@@ -28,8 +28,7 @@ variables:
   stage: build
   image: ${BUILD_IMAGE}
   tags:
-    - build
-    - audio_server
+    - multimedia_build
   parallel: 1
   interruptible: true
   dependencies: # set dependencies to null to avoid missing artifacts issue

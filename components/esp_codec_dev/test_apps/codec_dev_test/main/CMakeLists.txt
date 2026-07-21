@@ -13,3 +13,5 @@ idf_component_register(SRC_DIRS .
                        PRIV_REQUIRES ${priv_requires}
                        WHOLE_ARCHIVE TRUE
                        )
+
+target_compile_options(${COMPONENT_LIB} PRIVATE -Werror=unused-but-set-variable)

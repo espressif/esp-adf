@@ -63,7 +63,7 @@ pytest_components_esp32s3:
     - .pytest_components_template
   needs:
     - 'component_test_esp32s3'
-  tags: [ esp32s3, generic ]
+  tags: [ esp32s3, ESP_GMF_COMPONENT ]
   variables:
     TEST_ENV: "esp32s3"
 
@@ -73,7 +73,7 @@ pytest_components_esp32p4:
     - .pytest_components_template
   needs:
     - 'component_test_esp32p4'
-  tags: [ esp32p4, generic ]
+  tags: [ esp32p4, ESP_GMF_COMPONENT ]
   variables:
     TEST_ENV: "esp32p4"
     IDF_TARGET: esp32p4
