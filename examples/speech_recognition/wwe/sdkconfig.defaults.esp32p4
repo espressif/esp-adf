@@ -64,3 +64,9 @@ CONFIG_SR_WN_WN9_HILEXIN=y
 CONFIG_SR_MN_CN_MULTINET7_QUANT=y
 CONFIG_SR_MN_EN_NONE=y
 # end of ESP Speech Recognition
+
+#
+# Console: ESP32-P4-Function-EV is driven over USB-Serial/JTAG in CI (/dev/ttyACM*),
+# so route the console there instead of the UART bridge (/dev/ttyUSB*).
+#
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
