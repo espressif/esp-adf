@@ -1,0 +1,11 @@
+idf_component_register(
+    SRCS
+        "app_main.c"
+        "audio_record_cases.c"
+        "audio_record_mcp.c"
+        "audio_record_player.c"
+        "audio_record_scheduler.c"
+        "simple_record.c"
+    EMBED_FILES
+        "../assets/music.aac"
+)

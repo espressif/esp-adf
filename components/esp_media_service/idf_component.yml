@@ -1,4 +1,4 @@
-version: "0.5.0"
+version: "0.5.1"
 description: ESP Media Service provides media stream abstractions and provider infrastructure
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_media_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_media_service/README.md"
@@ -18,3 +18,6 @@ dependencies:
   espressif/gmf_core:
     require: public
     version: "^1.0"
+  espressif/cjson:
+    require: private
+    version: "*"

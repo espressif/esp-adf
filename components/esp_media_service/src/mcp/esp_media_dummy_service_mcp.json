@@ -1,0 +1,31 @@
+[
+  {
+    "name": "esp_media_dummy_service_start",
+    "description": "Start the media_dummy_sink service so it can consume linked providers",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_media_dummy_service_stop",
+    "description": "Stop the media_dummy_sink service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_media_dummy_service_get_stats",
+    "description": "Get per-stream audio/video frame and byte counts consumed by a media_dummy_sink",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Sink stream ID; defaults to 0"
+        }
+      }
+    }
+  }
+]

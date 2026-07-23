@@ -1,0 +1,9 @@
+idf_component_register(
+    SRCS
+        "app_main.c"
+        "simple_capture.c"
+        "dummy_capture.c"
+        "video_capture_cases.c"
+        "video_capture_mcp.c"
+        "video_capture_scheduler.c"
+)

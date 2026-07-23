@@ -1,0 +1,15 @@
+dependencies:
+  espressif/esp_audio_capture_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../"
+  espressif/esp_extractor:
+    require: public
+    version: "~1.0"
+  espressif/esp_board_manager:
+    require: public
+    version: "~0.7"
+  esp_cli_service:
+    require: public
+    override_path: "../../../../esp_cli_service"
+    version: "~0.5"

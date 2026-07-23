@@ -1,0 +1,14 @@
+dependencies:
+  espressif/esp_audio_capture_service:
+    require: public
+    version: "~0.5"
+    override_path: "../.."
+  espressif/esp_capture:
+    require: public
+    version: "~1.0"
+  espressif/esp_muxer:
+    require: public
+    version: "~1.2"
+  espressif/esp_audio_codec:
+    require: public
+    version: "*"

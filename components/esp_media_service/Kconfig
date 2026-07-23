@@ -1,0 +1,30 @@
+menu "ESP Media Service"
+
+    config ESP_MEDIA_SERVICE_MCP_ENABLE
+        bool "Enable media service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Build media service MCP tool handlers for link/unlink and dummy-sink
+            get_stats, plus the embedded tool schemas. Depends on the global ESP
+            Service MCP support.
+
+    menu "ESP Media Dummy Service"
+
+        config ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT
+            bool "Enable dummy media source service"
+            default n
+            help
+                Build the debug-only dummy source that generates audio/video pattern frames.
+                Encoded pattern assets are embedded only when this option is enabled.
+
+        config ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT
+            bool "Enable dummy media sink service"
+            default n
+            help
+                Build the debug-only dummy sink that consumes linked providers and keeps
+                per-stream audio/video statistics.
+
+    endmenu
+
+endmenu

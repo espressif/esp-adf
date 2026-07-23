@@ -1,10 +1,16 @@
 # Changelog
 
-## v0.5.2
+## v0.5.3
 
 ### Features
 
 - Added scheduler support for all services
+
+## v0.5.2
+
+### Bugfix
+
+- Fixed build errors across IDFv5.x and IDFv6.x
 
 ## v0.5.1
 

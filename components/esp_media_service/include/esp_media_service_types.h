@@ -81,8 +81,8 @@ typedef struct {
     esp_media_track_type_t  type;       /*!< Frame media type */
     void                   *data;       /*!< Frame payload */
     size_t                  size;       /*!< Payload size in bytes */
-    int64_t                 pts;        /*!< Presentation timestamp in us */
-    int64_t                 dts;        /*!< Decode timestamp in us, or pts when not separate */
+    int64_t                 pts;        /*!< Presentation timestamp in ms */
+    int64_t                 dts;        /*!< Decode timestamp in ms, or pts when not separate */
     uint32_t                flags;      /*!< Codec/container-specific frame flags, check ESP_MEDIA_FRAME_FLAG_XXX for details */
     void                   *user_data;  /*!< Optional owner-specific metadata */
 } esp_media_frame_t;

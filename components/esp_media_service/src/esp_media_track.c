@@ -47,7 +47,8 @@ esp_err_t esp_media_track_acquire_frame(esp_media_track_mngr_t *mngr, esp_media_
         RET_FOR(ESP_ERR_NOT_FOUND, "Track not found mngr:%p type:%d", mngr, out_frame->type);
     }
     if (track_cache_type(mngr, track) != ESP_MEDIA_TRACK_CACHE_INTERNAL) {
-        RET_FOR(ESP_ERR_NOT_SUPPORTED, "Track cache type not supported mngr:%p type:%d", mngr, out_frame->type);
+        /* USER-cache tracks only support write_frame; callers may probe this. */
+        return ESP_ERR_NOT_SUPPORTED;
     }
     if (track->write_node != NULL) {
         RET_FOR(ESP_ERR_INVALID_STATE, "Track write node not null mngr:%p", mngr);

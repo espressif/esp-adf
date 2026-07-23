@@ -1,0 +1,62 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO., LTD
+ * SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
+ *
+ * See LICENSE file for details.
+ */
+
+#pragma once
+
+#include <sdkconfig.h>
+#include "esp_capture_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
+#if CONFIG_IDF_TARGET_ESP32P4
+#define VIDEO_CAPTURE_STREAM0_WIDTH   1280
+#define VIDEO_CAPTURE_STREAM0_HEIGHT  720
+#define VIDEO_CAPTURE_STREAM0_FPS     15
+#define VIDEO_CAPTURE_STREAM0_CODEC   ESP_CAPTURE_FMT_ID_H264
+#else
+#define VIDEO_CAPTURE_STREAM0_WIDTH   640
+#define VIDEO_CAPTURE_STREAM0_HEIGHT  480
+#define VIDEO_CAPTURE_STREAM0_FPS     10
+#define VIDEO_CAPTURE_STREAM0_CODEC   ESP_CAPTURE_FMT_ID_MJPEG
+#endif  /* CONFIG_IDF_TARGET_ESP32P4 */
+
+#define VIDEO_CAPTURE_STREAM1_WIDTH   (VIDEO_CAPTURE_STREAM0_WIDTH / 2)
+#define VIDEO_CAPTURE_STREAM1_HEIGHT  (VIDEO_CAPTURE_STREAM0_HEIGHT / 2)
+#define VIDEO_CAPTURE_STREAM1_FPS     5
+#define VIDEO_CAPTURE_STREAM1_CODEC   ESP_CAPTURE_FMT_ID_RGB565
+
+#define VIDEO_CAPTURE_AUDIO_CODEC            ESP_CAPTURE_FMT_ID_AAC
+#define VIDEO_CAPTURE_AUDIO_SAMPLE_RATE      16000
+#define VIDEO_CAPTURE_AUDIO_BITS_PER_SAMPLE  16
+#define VIDEO_CAPTURE_AUDIO_CHANNELS         1
+#define VIDEO_CAPTURE_AAC_BITRATE            64000
+
+#define VIDEO_CAPTURE_DEFAULT_DURATION  10000
+#define VIDEO_CAPTURE_FRAME_TIMEOUT_MS  100
+
+#define VIDEO_CAPTURE_STORAGE_DIR                  "/sdcard/video_capture"
+#define VIDEO_CAPTURE_SIMPLE_AV_MP4                VIDEO_CAPTURE_STORAGE_DIR "/simple_av.mp4"
+#define VIDEO_CAPTURE_SIMPLE_AV_DUMMY_RAW_MP4      VIDEO_CAPTURE_STORAGE_DIR "/simple_av_dummy_raw.mp4"
+#define VIDEO_CAPTURE_SIMPLE_AV_DUMMY_ENCODED_MP4  VIDEO_CAPTURE_STORAGE_DIR "/simple_av_dummy_encoded.mp4"
+#define VIDEO_CAPTURE_CASE_AV_STORAGE_MP4          VIDEO_CAPTURE_STORAGE_DIR "/av_storage.mp4"
+#define VIDEO_CAPTURE_CASE_AV_STREAM_MP4           VIDEO_CAPTURE_STORAGE_DIR "/av_stream_storage.mp4"
+#define VIDEO_CAPTURE_CASE_AV_AUTO_MP4_DIR         VIDEO_CAPTURE_STORAGE_DIR
+#define VIDEO_CAPTURE_CASE_V_DUAL_MP4              VIDEO_CAPTURE_STORAGE_DIR "/v_dual.mp4"
+#define VIDEO_CAPTURE_CASE_AV_DUAL_MP4             VIDEO_CAPTURE_STORAGE_DIR "/av_dual.mp4"
+#define VIDEO_CAPTURE_CASE_AV_DUAL_OVL_MP4         VIDEO_CAPTURE_STORAGE_DIR "/av_dual_overlay.mp4"
+#define VIDEO_CAPTURE_CASE_AV_AI_MP4               VIDEO_CAPTURE_STORAGE_DIR "/av_ai_aec_vad.mp4"
+#define VIDEO_CAPTURE_CASE_AV_DUAL_MIX_MP4         VIDEO_CAPTURE_STORAGE_DIR "/av_dual_mixed.mp4"
+#define VIDEO_CAPTURE_SIMPLE_FULLSPEED_MP4         VIDEO_CAPTURE_STORAGE_DIR "/simple_fullspeed_uvc.mp4"
+#define VIDEO_CAPTURE_UVC_ROTATE_MP4               VIDEO_CAPTURE_STORAGE_DIR "/uvc_rotate.mp4"
+
+#define DEFAULT_MIC_GAIN  32.0f
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */

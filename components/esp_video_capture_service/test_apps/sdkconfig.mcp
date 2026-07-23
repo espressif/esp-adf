@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO., LTD
+# SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
+
+CONFIG_ESP_MCP_ENABLE=y
+CONFIG_ESP_VIDEO_CAPTURE_SERVICE_MCP_ENABLE=y
+CONFIG_ESP_MEDIA_SERVICE_MCP_ENABLE=y

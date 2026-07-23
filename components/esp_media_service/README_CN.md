@@ -156,6 +156,37 @@ while (!sink->stop) {
 - 如果 track manager 通过链接共享，取消链接后再 reset 或 destroy。
 - 当其他任务仍可能持有已获取帧或阻塞在队列上时，不要 reset 或 destroy track manager。
 
+## 调试提示
+
+使用 `esp_media_dummy_service` 可在没有真实硬件时模拟摄像头/音源或显示/消费端，加快联调。通过 Kconfig 启用：
+
+- `CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT` — 虚拟源（输出测试图案）
+- `CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT` — 虚拟接收端（消费帧并统计）
+
+常见用法：
+
+- **虚拟源**：在调试采集、编码、封装或服务链接时，替代摄像头/麦克风。
+- **虚拟接收端**：替代显示/渲染，并通过 `esp_media_dummy_service_get_stats()` 确认帧是否正常流动。
+
+支持的图案编解码：
+
+| 类型 | 编解码 |
+| --- | --- |
+| 音频 | PCM、AAC、OPUS、MP3 |
+| 视频 | H264、MJPEG、RGB565、RGB888、YUV420 |
+
+编码轨在 `add_track()` 时通常只需填写 codec；原始 PCM / 原始视频需要提供完整 track 元数据。
+
+## 实现
+
+基于 `esp_media_service` 的上层服务。典型应用优先使用板级录音/录像封装；需要自定义源或流水线控制时，可直接调用更底层服务。
+
+| 服务 | 定位 | 特性 | 板级 / 说明 |
+| --- | --- | --- | --- |
+| [`esp_audio_capture_service`](../esp_audio_capture_service/README_CN.md) | 音频录音 | 多流、AI（AEC/VAD/WakeNet）、封装/存储 | 通过 board manager 接入 ADC |
+| [`esp_video_capture_service`](../esp_video_capture_service/README_CN.md) | 音视频录像 | 多流、音画同步、封装/存储 | 通过 board manager 接入摄像头；音频由 `esp_audio_capture_service` 初始化 |
+| [`esp_capture_service`](../esp_capture_service/README_CN.md) | 采集基础层 | 通用采集 API（音频/视频），无板级绑定 | 高级用法：自定义源、叠加层等，直接调用 |
+
 ## 技术支持
 
 如需技术支持，请使用以下链接：
