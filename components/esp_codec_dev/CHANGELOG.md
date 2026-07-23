@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.2
+
+### Feature
+
+- Added I2C clock setting for codec devices through `clock_speed_hz`.
+
 ## v1.6.1
 
 ### Bug Fixed

@@ -421,6 +421,7 @@ static void test_codec_dev_using_s3_board(bool use_xtal)
     audio_codec_i2c_cfg_t i2c_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR};
 #ifdef USE_IDF_I2C_MASTER
     i2c_cfg.bus_handle = i2c_bus_handle;
+    i2c_cfg.clock_speed_hz = 400000;
 #endif  /* USE_IDF_I2C_MASTER */
     const audio_codec_ctrl_if_t *out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
     TEST_ASSERT_NOT_NULL(out_ctrl_if);
