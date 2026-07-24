@@ -19,3 +19,9 @@ CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
 # Audio HAL
 #
 CONFIG_ESP32_P4_FUNCTION_EV_BOARD=y
+
+#
+# Console: ESP32-P4-Function-EV is driven over USB-Serial/JTAG in CI (/dev/ttyACM*),
+# so route the console there instead of the UART bridge (/dev/ttyUSB*).
+#
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y

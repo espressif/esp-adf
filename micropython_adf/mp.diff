@@ -80,6 +80,20 @@ index 92c6e6469..ea86ddb77 100644
          // Stronger external pull-ups are still needed but apparently
          // it is a good idea to set the internal pull-ups anyway.
          // slot_config.flags = SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
+
+diff --git a/ports/esp32/main_esp32s3/idf_component.yml b/ports/esp32/main_esp32s3/idf_component.yml
+index 05ab2f29a..ecce5070a 100644
+--- a/ports/esp32/main_esp32s3/idf_component.yml
++++ b/ports/esp32/main_esp32s3/idf_component.yml
+@@ -2,5 +2,7 @@
+ dependencies:
+   espressif/mdns: "~1.1.0"
+   espressif/esp_tinyusb: "~1.0.0"
++  # Pin tinyusb <0.21: 0.21 removed default CFG_TUD_CDC_EP_BUFSIZE that esp_tinyusb 1.0.x still uses.
++  espressif/tinyusb: ">=0.14.2,<0.21.0"
+   idf:
+     version: ">=5.0.4"
+
 diff --git a/ports/esp32/modules/_boot.py b/ports/esp32/modules/_boot.py
 index 96af581f3..a9976970a 100644
 --- a/ports/esp32/modules/_boot.py
