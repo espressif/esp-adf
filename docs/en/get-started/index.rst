@@ -477,11 +477,11 @@ VS Code Extension
 
 2. To install the ESP-ADF extension, open ``Command Palette`` and enter ``install adf``. Then, a progress bar shows up in the lower right corner.
 
-  If you have cloned the ESP-ADF repository before, please enter ``open settings(ui)`` in  ``Command Palette``. Go to ``User > Extensions > ESP_IDF`` and manually set the ESP-ADF path in ``idf.espAdfPath`` or ``idf.espAdfPathWin`` (for Windows). You can also set the ESP-ADF path in ``.vscode/settings.json``.
+  If you have cloned the ESP-ADF repository before, please enter ``open settings(ui)`` in  ``Command Palette``. Go to ``User > Extensions > ESP_IDF`` and manually set the ESP-ADF path in ``idf.customExtraVars`` key-value setting by adding ``ADF_PATH`` as key and the ESP-ADF path as value. You can also set the ESP-ADF path in ``.vscode/settings.json``.
 
-3. In ``Command Palette``, enter ``show examples project``, and then a window will be opened with a list of example projects.
+3. In ``Command Palette``, enter ``new project``, select the ``ESP-IDF: New Project`` option and choose the ESP-IDF version to use. A window will appear with ESP-IDF and ESP-ADF (if you configured using install adf command or adding ADF_PATH in idf.customExtraVars setting) sections. Expand ESP-ADF and choose desired example from the list of example projects.
 
-4. Select an example, click ``Create project using example XX``, and select the directory to save the current example.
+4. Select an example, click ``Create project using example XX``, and later configure the new project to be created such as the directory to save, the project name, and other settings.
 
 5. On the toolbar at the bottom of VS Code, click the gear symbol ``menuconfig`` to configure the example and click the column symbol ``Build`` to build the example. See available `shortcut keys <https://github.com/espressif/vscode-esp-idf-extension#available-commands>`_ for VS code extensions.
 
