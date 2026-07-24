@@ -1,10 +1,14 @@
 # Changelog
 
-## v0.2.3~1
+## v0.2.4
 
 ### Docs
 
 - Updated example README files to use the latest ESP Board Manager board selection commands and board names
+
+### Features
+
+- Added interactive tap-to-record UI with live timer and FPS overlay to `av_record_live_display` example
 
 ## v0.2.3
 

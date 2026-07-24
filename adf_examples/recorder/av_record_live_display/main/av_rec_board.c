@@ -6,54 +6,15 @@
 
 #include <inttypes.h>
 #include "esp_log.h"
-#include "esp_lcd_panel_ops.h"
-#if CONFIG_IDF_TARGET_ESP32P4
-#include "esp_lcd_mipi_dsi.h"
-#else
-#include "esp_lcd_panel_io.h"
-#endif  /* CONFIG_IDF_TARGET_ESP32P4 */
 #include "esp_board_manager_includes.h"
 #include "esp_gmf_err.h"
 #include "av_rec_config.h"
 
 static const char *TAG = "AV_REC_BOARD";
 
-#if CONFIG_IDF_TARGET_ESP32P4
-static bool IRAM_ATTR display_color_trans_done_cb(esp_lcd_panel_handle_t panel,
-                                                  esp_lcd_dpi_panel_event_data_t *edata,
-                                                  void *user_ctx)
-{
-    (void)panel;
-    (void)edata;
-    SemaphoreHandle_t sem = (SemaphoreHandle_t)user_ctx;
-    BaseType_t high_task_woken = pdFALSE;
-
-    if (sem) {
-        xSemaphoreGiveFromISR(sem, &high_task_woken);
-    }
-    return high_task_woken == pdTRUE;
-}
-
-static esp_err_t register_display_done_callback(av_record_live_display_sys_t *sys)
-{
-    sys->display_done_sem = xSemaphoreCreateBinary();
-    ESP_GMF_CHECK(TAG, sys->display_done_sem != NULL, return ESP_ERR_NO_MEM, "Failed to create display done semaphore");
-    esp_lcd_dpi_panel_event_callbacks_t cbs = {
-        .on_color_trans_done = display_color_trans_done_cb,
-    };
-    esp_err_t err = esp_lcd_dpi_panel_register_event_callbacks(sys->lcd_handles->panel_handle, &cbs, sys->display_done_sem);
-    ESP_GMF_RET_ON_NOT_OK(TAG, err, {
-        vSemaphoreDelete(sys->display_done_sem);
-        sys->display_done_sem = NULL;
-        return err;
-    }, "Failed to register display done callback");
-    return ESP_OK;
-}
-#endif  /* CONFIG_IDF_TARGET_ESP32P4 */
-
 static esp_capture_format_id_t get_display_format(const dev_display_lcd_config_t *lcd_cfg)
 {
-#if CONFIG_IDF_TARGET_ESP32P4
+#if CONFIG_IDF_TARGET_ESP32P4 || CONFIG_IDF_TARGET_ESP32S31
     /* CSI outputs o_uyy_e_vyy; PPA can convert to RGB565 but cannot use byte_swap on YUV input
      * (see ppa_srm: in.srm_cm does not support byte_swap). Always use LE RGB565 for display. */
     (void)lcd_cfg;
@@ -106,6 +67,12 @@ esp_err_t av_rec_init_devices(av_record_live_display_sys_t *sys)
 
     ret = esp_board_manager_init_device_by_name(ESP_BOARD_DEVICE_NAME_DISPLAY_LCD);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, return ret, "Failed to init LCD display");
+#if CONFIG_ESP_BOARD_DEV_LCD_TOUCH_SUPPORT
+    ret = esp_board_manager_init_device_by_name(ESP_BOARD_DEVICE_NAME_LCD_TOUCH);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "LCD touch not available, ret=%d", ret);
+    }
+#endif  /* CONFIG_ESP_BOARD_DEV_LCD_TOUCH_SUPPORT */
     ret = esp_board_manager_init_device_by_name(ESP_BOARD_DEVICE_NAME_FS_SDCARD);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, return ret, "Failed to init SD card");
     ret = esp_board_manager_init_device_by_name(ESP_BOARD_DEVICE_NAME_CAMERA);
@@ -124,14 +91,20 @@ esp_err_t av_rec_init_devices(av_record_live_display_sys_t *sys)
     ret = esp_board_manager_get_device_handle(ESP_BOARD_DEVICE_NAME_DISPLAY_LCD, (void **)&sys->lcd_handles);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, return ESP_FAIL, "Failed to get LCD panel handle");
     ESP_GMF_CHECK(TAG, sys->lcd_handles != NULL && sys->lcd_handles->panel_handle != NULL, return ESP_FAIL, "LCD panel handle invalid");
-#if CONFIG_IDF_TARGET_ESP32P4
-    ret = register_display_done_callback(sys);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, return ret, "Failed to register display done callback");
-    ESP_LOGI(TAG, "Display done callback registered");
-#endif  /* CONFIG_IDF_TARGET_ESP32P4 */
     ret = esp_board_manager_get_device_config(ESP_BOARD_DEVICE_NAME_DISPLAY_LCD, (void **)&sys->lcd_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, return ESP_FAIL, "Failed to get LCD config");
     ESP_GMF_CHECK(TAG, sys->lcd_cfg != NULL, return ESP_FAIL, "LCD config is NULL");
+#if CONFIG_ESP_BOARD_DEV_LCD_TOUCH_SUPPORT
+    dev_lcd_touch_handles_t *touch_handles = NULL;
+    ret = esp_board_manager_get_device_handle(ESP_BOARD_DEVICE_NAME_LCD_TOUCH, (void **)&touch_handles);
+    if (ret == ESP_OK && touch_handles != NULL && touch_handles->touch_handle != NULL) {
+        sys->touch_handle = touch_handles->touch_handle;
+        ESP_LOGI(TAG, "LCD touch ready");
+    } else {
+        sys->touch_handle = NULL;
+        ESP_LOGW(TAG, "LCD touch handle unavailable, ret=%d", ret);
+    }
+#endif  /* CONFIG_ESP_BOARD_DEV_LCD_TOUCH_SUPPORT */
 
     set_default_display_resolution(&sys->display_info, sys->lcd_cfg);
     ESP_LOGI(TAG, "Display sink format=0x%08" PRIx32 " size=%ux%u fps=%u",
@@ -148,6 +121,10 @@ esp_err_t av_rec_deinit_devices(void)
     update_deinit_result(err, &ret, ESP_BOARD_DEVICE_NAME_CAMERA);
     err = esp_board_manager_deinit_device_by_name(ESP_BOARD_DEVICE_NAME_FS_SDCARD);
     update_deinit_result(err, &ret, ESP_BOARD_DEVICE_NAME_FS_SDCARD);
+#if CONFIG_ESP_BOARD_DEV_LCD_TOUCH_SUPPORT
+    err = esp_board_manager_deinit_device_by_name(ESP_BOARD_DEVICE_NAME_LCD_TOUCH);
+    update_deinit_result(err, &ret, ESP_BOARD_DEVICE_NAME_LCD_TOUCH);
+#endif  /* CONFIG_ESP_BOARD_DEV_LCD_TOUCH_SUPPORT */
     err = esp_board_manager_deinit_device_by_name(ESP_BOARD_DEVICE_NAME_DISPLAY_LCD);
     update_deinit_result(err, &ret, ESP_BOARD_DEVICE_NAME_DISPLAY_LCD);
 #if CONFIG_IDF_TARGET_ESP32S3

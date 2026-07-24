@@ -1,0 +1,6 @@
+# display_lcd_num_fbs.yaml
+devices:
+  - name: display_lcd
+    config:
+      dpi_config:
+        num_fbs: 2

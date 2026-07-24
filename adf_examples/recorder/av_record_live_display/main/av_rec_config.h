@@ -6,18 +6,19 @@
 
 #pragma once
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
+#include <stdbool.h>
+#include <stdint.h>
 #include "esp_err.h"
 #include "esp_capture.h"
 #include "esp_capture_sink.h"
+#include "esp_capture_overlay_if.h"
+#include "esp_lcd_touch.h"
 #include "dev_display_lcd.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
 
-#define DEFAULT_RECORD_DURATION_MS  15000
 #define DEFAULT_SLICE_DURATION_MS   60000
 
 #define RECORD_CORE_ID         (0)
@@ -26,20 +27,28 @@ extern "C" {
 #define REC_AUDIO_SAMPLE_RATE  (48000)
 #define REC_AUDIO_CHANNEL      (2)
 #define REC_AUDIO_BITS         (16)
+#define FILE_RAM_CACHE_SIZE    (8 * 1024)
 
 #if CONFIG_IDF_TARGET_ESP32P4
-#define RECORD_FORMAT_ID  (ESP_CAPTURE_FMT_ID_MJPEG)
+#define RECORD_FORMAT_ID  (ESP_CAPTURE_FMT_ID_H264)
 #define RECORD_WIDTH      (1024)
 #define RECORD_HEIGHT     (600)
 #define RECORD_FPS        (30)
 #define DISPLAY_FPS       (30)
 #define RECORD_BITRATE    (4 * 1000 * 1000)
-#else
+#elif CONFIG_IDF_TARGET_ESP32S31
 #define RECORD_FORMAT_ID  (ESP_CAPTURE_FMT_ID_MJPEG)
 #define RECORD_WIDTH      (640)
 #define RECORD_HEIGHT     (480)
-#define RECORD_FPS        (5)
-#define DISPLAY_FPS       (5)
+#define RECORD_FPS        (25)
+#define DISPLAY_FPS       (25)
+#define RECORD_BITRATE    (1500 * 1000)
+#else
+#define RECORD_FORMAT_ID  (ESP_CAPTURE_FMT_ID_MJPEG)
+#define RECORD_WIDTH      (320)
+#define RECORD_HEIGHT     (240)
+#define RECORD_FPS        (25)
+#define DISPLAY_FPS       (25)
 #define RECORD_BITRATE    (1500 * 1000)
 #endif  /* CONFIG_IDF_TARGET_ESP32P4 */
 
@@ -54,8 +63,17 @@ typedef struct {
     esp_capture_sink_handle_t   display_sink;      /*!< Sink used for live LCD display */
     dev_display_lcd_handles_t  *lcd_handles;       /*!< Board LCD device handles */
     dev_display_lcd_config_t   *lcd_cfg;           /*!< Board LCD configuration */
+    esp_lcd_touch_handle_t      touch_handle;      /*!< Optional LCD touch device handle */
     esp_capture_video_info_t    display_info;      /*!< Video information for display frames */
-    SemaphoreHandle_t           display_done_sem;  /*!< P4 display completion semaphore */
+    esp_capture_overlay_if_t   *timer_overlay;     /*!< Timer badge canvas, blended by video_render only */
+    esp_capture_overlay_if_t   *fps_overlay;       /*!< FPS badge canvas, blended by video_render only */
+    uint32_t                    next_record_id;    /*!< Next recording session identifier */
+    uint32_t                    active_record_id;  /*!< Recording session identifier in progress */
+    uint32_t                    last_timer_sec;    /*!< Last rendered recording duration in seconds */
+    uint32_t                    last_fps;          /*!< Last rendered FPS value */
+    int64_t                     record_start_ms;   /*!< Recording start time in milliseconds */
+    bool                        recording;         /*!< True when record sink is actively writing slices */
+    bool                        last_recording;    /*!< Last rendered record state */
 } av_record_live_display_sys_t;
 
 /**
@@ -120,42 +138,71 @@ esp_err_t av_rec_setup_display_sink(av_record_live_display_sys_t *sys);
 void av_rec_release_capture(av_record_live_display_sys_t *sys);
 
 /**
- * @brief  Run capture, live display, and recording for the specified duration
+ * @brief  Run capture and the interactive live display session
  *
- * @param[in,out]  sys          Shared runtime resource context
- * @param[in]      duration_ms  Session duration, in milliseconds
+ * @param[in,out]  sys  Shared runtime resource context
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  Invalid display duration
- *       - ESP_FAIL             Failed to start or stop capture, or display task failed
+ *       - ESP_OK    On success
+ *       - ESP_FAIL  Failed to start or stop capture, or display task failed
  */
-esp_err_t av_rec_run_live_session(av_record_live_display_sys_t *sys, int duration_ms);
+esp_err_t av_rec_run_live_session(av_record_live_display_sys_t *sys);
 
 /**
- * @brief  Pull frames from the display sink and draw them to the LCD
+ * @brief  Pull frames from the display sink, draw UI, and refresh the LCD
  *
- * @param[in,out]  sys          Shared runtime resource context
- * @param[in]      duration_ms  Display duration, in milliseconds
+ * @param[in,out]  sys  Shared runtime resource context
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  Invalid display duration
- *       - ESP_FAIL             Failed to create the display task or display frames
+ *       - ESP_OK    On success
+ *       - ESP_FAIL  Failed to create the display task or display frames
  */
-esp_err_t av_rec_run_display(av_record_live_display_sys_t *sys, int duration_ms);
+esp_err_t av_rec_run_display(av_record_live_display_sys_t *sys);
 
 /**
- * @brief  Check whether the first generated MP4 file exists and has a valid size
+ * @brief  Create the timer and FPS badge canvases used by the live preview
  *
- * @param[out]  file_size  File size in bytes on success, or -1 if record file was not found
+ * @note  The canvases are never attached to a capture sink, which keeps their pixels out of the
+ *        recorded stream. Badge content is drawn once the video render widgets are created.
+ *
+ * @param[in,out]  sys  Shared runtime resource context
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  If file_size is NULL
- *       - ESP_ERR_NOT_FOUND    If storage mount point or record file was not found
+ *       - ESP_OK    On success
+ *       - ESP_FAIL  Failed to create one of the badge canvases
  */
-esp_err_t av_rec_check_record_file(int *file_size);
+esp_err_t av_rec_display_create_overlays(av_record_live_display_sys_t *sys);
+
+/**
+ * @brief  Destroy the badge canvases created by av_rec_display_create_overlays()
+ *
+ * @note  Must be called after the video render widgets referencing the canvases are destroyed
+ *
+ * @param[in,out]  sys  Shared runtime resource context
+ */
+void av_rec_display_destroy_overlays(av_record_live_display_sys_t *sys);
+
+/**
+ * @brief  Start writing MP4 slices for the next recording session
+ *
+ * @param[in,out]  sys  Shared runtime resource context
+ *
+ * @return
+ *       - ESP_OK    On success
+ *       - ESP_FAIL  Failed to enable recording
+ */
+esp_err_t av_rec_start_record(av_record_live_display_sys_t *sys);
+
+/**
+ * @brief  Stop writing MP4 slices for the current recording session
+ *
+ * @param[in,out]  sys  Shared runtime resource context
+ *
+ * @return
+ *       - ESP_OK    On success
+ *       - ESP_FAIL  Failed to disable recording
+ */
+esp_err_t av_rec_stop_record(av_record_live_display_sys_t *sys);
 
 #ifdef __cplusplus
 }

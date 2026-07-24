@@ -1,0 +1,5 @@
+version: "1.0"
+description: "Custom Configuration for ESP32-S3-Korvo-2-3"
+
+apply:
+  - sdkconfig.defaults.board
