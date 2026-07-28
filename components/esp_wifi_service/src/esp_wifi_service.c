@@ -858,6 +858,15 @@ esp_err_t esp_wifi_service_get_profile_manager(esp_wifi_service_t *service, esp_
     return ESP_OK;
 }
 
+esp_err_t esp_wifi_service_get_scan_handle(esp_wifi_service_t *service,
+                                          esp_wifi_service_scan_handle_t *scan_handle_out)
+{
+    ESP_RETURN_ON_FALSE(service && scan_handle_out, ESP_ERR_INVALID_ARG, TAG,
+                        "Get scan handle failed: invalid arguments");
+    *scan_handle_out = service->scan_agent;
+    return ESP_OK;
+}
+
 esp_err_t esp_wifi_service_start_provisioning(esp_wifi_service_t *service)
 {
     ESP_RETURN_ON_FALSE(service, ESP_ERR_INVALID_ARG, TAG, "Start provisioning failed: service is NULL");

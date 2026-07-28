@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.3
+
+### Features
+
+- Added `esp_wifi_service_get_scan_handle` for getting scan handle
+
 ## v0.5.2~1
 
 ### Bugfix
