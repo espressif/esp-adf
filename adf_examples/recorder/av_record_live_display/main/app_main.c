@@ -8,6 +8,7 @@
 #include "esp_log.h"
 #include "esp_audio_enc_default.h"
 #include "esp_video_enc_default.h"
+#include "esp_video_dec_default.h"
 #include "mp4_muxer.h"
 #include "esp_gmf_app_sys.h"
 #include "media_lib_adapter.h"
@@ -33,6 +34,7 @@ void app_main(void)
         ESP_LOGI(TAG, "[ 2 ] Register audio/video encoders and MP4 muxer");
         esp_audio_enc_register_default();
         esp_video_enc_register_default();
+        esp_video_dec_register_default();
         mp4_muxer_register();
 
         ESP_LOGI(TAG, "[ 3 ] Build capture system and dual sinks");
@@ -43,21 +45,13 @@ void app_main(void)
         ret = av_rec_setup_display_sink(&sys);
         ESP_GMF_RET_ON_ERROR(TAG, ret, break, "Failed to setup display sink");
 
-        ESP_LOGI(TAG, "[ 4 ] Start capture, live display and recording");
-        ret = av_rec_run_live_session(&sys, DEFAULT_RECORD_DURATION_MS);
+        ESP_LOGI(TAG, "[ 4 ] Start capture and interactive live display");
+        ret = av_rec_run_live_session(&sys);
         ESP_GMF_RET_ON_ERROR(TAG, ret, break, "Failed to run live session");
-
-        ESP_LOGI(TAG, "[ 5 ] Check recorded MP4 file");
-        int file_size = -1;
-        ret = av_rec_check_record_file(&file_size);
-        ESP_GMF_RET_ON_ERROR(TAG, ret, break, "Failed to check record file");
-        ESP_GMF_CHECK(TAG, file_size > 0, { ret = ESP_FAIL; break;}, "Invalid record file size");
-        ESP_LOGI(TAG, "[ 6 ] Example finished");
     } while (0);
 
-    /* Deinit devices (LCD panel) first so the DPI panel ISR stops,
-     * then release capture resources (including display_done_sem)
-     * to prevent use-after-free in the ISR. */
+    /* Deinit devices (LCD panel) first so any LCD ISR stops,
+     * then release capture resources. */
     esp_err_t deinit_ret = av_rec_deinit_devices();
     av_rec_release_capture(&sys);
     if (ret == ESP_OK && deinit_ret != ESP_OK) {
@@ -67,5 +61,5 @@ void app_main(void)
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Example failed, ret=%d", ret);
     }
-    ESP_LOGI(TAG, "[ 7 ] All resources released");
+    ESP_LOGI(TAG, "[ 5 ] All resources released");
 }

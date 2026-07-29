@@ -8,10 +8,9 @@ from pytest_embedded import Dut
 from pytest_embedded_idf.utils import idf_parametrize
 
 @pytest.mark.generic
-@idf_parametrize('target', ['esp32s3', 'esp32p4'], indirect=['target'])
+@idf_parametrize('target', ['esp32s3', 'esp32s31', 'esp32p4'], indirect=['target'])
 def test_av_record_live_display(dut: Dut) -> None:
+    dut.expect(r'\[ 4 \] Start capture and interactive live display', timeout=60)
+    dut.expect(r'Interactive UI ready, touch=(yes|no), offset=\([0-9]+,[0-9]+\)', timeout=30)
+    dut.expect(r'Live display loop started', timeout=30)
     dut.expect(r'Display fps=', timeout=60)
-    dut.expect(r'Display loop finished, frames=[1-9][0-9]*, bad_frames=0', timeout=30)
-    dut.expect(r'Record file size: .+ -> [1-9][0-9]* bytes', timeout=30)
-    dut.expect(r'Example finished', timeout=60)
-    dut.expect(r'All resources released', timeout=30)

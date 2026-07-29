@@ -1,0 +1,6 @@
+version: "1.0"
+description: "Custom Configuration for ESP32-P4-Function-EV-Board"
+
+apply:
+  - board_custom.yaml
+  - sdkconfig.defaults.board

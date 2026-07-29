@@ -1,0 +1,6 @@
+version: "1.0"
+description: "Custom Configuration for ESP32-S31-Korvo-1"
+
+apply:
+  - board_custom.yaml
+  - sdkconfig.defaults.board

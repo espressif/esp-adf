@@ -18,4 +18,6 @@ dependencies:
   espressif/gmf_app_utils:
     version: "^1.0"
   espressif/media_lib_sal:
-    version: "^0.9.0"
+    version: "^1.0.0"
+  espressif/esp_video_render:
+    version: "^1.0"
