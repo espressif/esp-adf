@@ -11,8 +11,7 @@
 
 #include "esp_gmf_err.h"
 #include "esp_log.h"
-#include "music/lv_demo_music.h"
-#include "music/lv_demo_music_main.h"
+#include "lvgl.h"
 #include "esp_lv_adapter.h"
 #include "music_player_display.h"
 #include "music_player_playback.h"
@@ -20,24 +19,44 @@
 
 static const char *TAG = "MUSIC_PLAYER_UI";
 
-#define MUSIC_PLAYER_PLAYLIST_DIALOG_WIDTH   720
-#define MUSIC_PLAYER_PLAYLIST_DIALOG_HEIGHT  420
 #define MUSIC_PLAYER_PLAYLIST_MAX_ITEMS      128
-#define MUSIC_PLAYER_COLOR_TEXT              0xF0F0F0
-#define MUSIC_PLAYER_COLOR_TEXT_DIM          0xB0B0B0
-#define MUSIC_PLAYER_COLOR_ACCENT            0xFFD166
+
+#define MUSIC_PLAYER_COLOR_BG           0x0E0E14
+#define MUSIC_PLAYER_COLOR_PANEL        0x181824
+#define MUSIC_PLAYER_COLOR_BTN          0x2A2A36
+#define MUSIC_PLAYER_COLOR_ART          0x1A1A26
+#define MUSIC_PLAYER_COLOR_TEXT         0xF2F2F5
+#define MUSIC_PLAYER_COLOR_TEXT_DIM     0xA8A8B8
+#define MUSIC_PLAYER_COLOR_TIME         0x8E8E9E
+#define MUSIC_PLAYER_COLOR_ACCENT       0xFFD166
+#define MUSIC_PLAYER_COLOR_PROGRESS_BG  0x2A2A36
+
+#define UI_CLAMP(v, lo, hi)  ((v) < (lo) ? (lo) : ((v) > (hi) ? (hi) : (v)))
 
 typedef struct {
-    lv_obj_t        *title_label;
-    lv_obj_t        *mode_label;
-    lv_obj_t        *volume_label;
-    lv_obj_t        *play_btn;
-    lv_obj_t        *playlist_panel;
-    const lv_font_t *title_font;
+    int  pad_x, pad_y_top, pad_y_bottom;
+    int  btn_side, btn_nav, btn_play, art_size;
+    int  dialog_w, dialog_h, ctrl_pad, ctrl_radius, font_size;
+} music_player_ui_metrics_t;
+
+typedef struct {
+    lv_obj_t                  *screen;
+    lv_obj_t                  *title_label;
+    lv_obj_t                  *meta_label;
+    lv_obj_t                  *progress_bar;
+    lv_obj_t                  *elapsed_label;
+    lv_obj_t                  *duration_label;
+    lv_obj_t                  *play_btn;
+    lv_obj_t                  *playlist_panel;
+    lv_timer_t                *progress_timer;
+    music_player_ui_metrics_t  metrics;
+    const lv_font_t           *title_font;
 #if CONFIG_ESP_LVGL_ADAPTER_ENABLE_FREETYPE
     esp_lv_adapter_ft_font_handle_t  ft_font_handle;
 #endif  /* CONFIG_ESP_LVGL_ADAPTER_ENABLE_FREETYPE */
     bool  playing;
+    int   volume;
+    char  mode_text[32];
 } music_player_ui_ctx_t;
 
 typedef struct {
@@ -58,6 +77,32 @@ typedef enum {
     MUSIC_PLAYER_UI_BTN_VOLUME_DOWN,
     MUSIC_PLAYER_UI_BTN_VOLUME_UP,
 } music_player_ui_btn_id_t;
+
+static void ui_metrics_init(music_player_ui_metrics_t *m)
+{
+    int w = lv_display_get_horizontal_resolution(NULL);
+    int h = lv_display_get_vertical_resolution(NULL);
+    if (w <= 0) {
+        w = 800;
+    }
+    if (h <= 0) {
+        h = 480;
+    }
+    bool large = (w >= 960 && h >= 560);
+    bool mid = (!large && (w >= 700 || h >= 460));
+    m->pad_x = large ? 56 : (mid ? 32 : 12);
+    m->pad_y_top = large ? 28 : (mid ? 18 : 10);
+    m->pad_y_bottom = large ? 26 : (mid ? 16 : 10);
+    m->btn_side = large ? 56 : (mid ? 48 : 36);
+    m->btn_nav = large ? 60 : (mid ? 52 : 40);
+    m->btn_play = large ? 78 : (mid ? 64 : 48);
+    m->art_size = large ? 120 : (mid ? 96 : 72);
+    m->ctrl_pad = large ? 16 : (mid ? 12 : 8);
+    m->ctrl_radius = large ? 24 : (mid ? 20 : 16);
+    m->font_size = large ? MUSIC_PLAYER_FONT_SIZE : (mid ? 22 : 16);
+    m->dialog_w = UI_CLAMP(large ? 720 : (mid ? 640 : 280), 200, w - m->pad_x * 2);
+    m->dialog_h = UI_CLAMP(large ? 420 : (mid ? 360 : 220), 160, h - 24);
+}
 
 static inline void post_cmd(music_player_cmd_t cmd)
 {
@@ -86,8 +131,76 @@ static inline void post_play_index_cmd(int index)
     }
 }
 
+static void format_time_ms(int ms, char *buf, size_t buf_size)
+{
+    if (buf == NULL || buf_size == 0) {
+        return;
+    }
+    if (ms < 0) {
+        ms = 0;
+    }
+    int total_sec = ms / 1000;
+    int min = total_sec / 60;
+    int sec = total_sec % 60;
+    snprintf(buf, buf_size, "%d:%02d", min, sec);
+}
+
+static void refresh_meta_label(void)
+{
+    if (s_ui.meta_label == NULL) {
+        return;
+    }
+    const char *mode = (s_ui.mode_text[0] != '\0') ? s_ui.mode_text : "";
+    lv_label_set_text_fmt(s_ui.meta_label, "%s · 音量 %d%%", mode, s_ui.volume);
+}
+
+static void update_progress_widgets(int elapsed_ms, int duration_ms)
+{
+    char elapsed_text[16] = {0};
+    char duration_text[16] = {0};
+
+    if (duration_ms > 0) {
+        int value = (int)(((int64_t)elapsed_ms * 1000) / duration_ms);
+        if (value < 0) {
+            value = 0;
+        } else if (value > 1000) {
+            value = 1000;
+        }
+        if (s_ui.progress_bar != NULL) {
+            lv_bar_set_value(s_ui.progress_bar, value, LV_ANIM_OFF);
+        }
+        format_time_ms(elapsed_ms, elapsed_text, sizeof(elapsed_text));
+        format_time_ms(duration_ms, duration_text, sizeof(duration_text));
+    } else {
+        if (s_ui.progress_bar != NULL) {
+            lv_bar_set_value(s_ui.progress_bar, 0, LV_ANIM_OFF);
+        }
+        format_time_ms(elapsed_ms, elapsed_text, sizeof(elapsed_text));
+        snprintf(duration_text, sizeof(duration_text), "--:--");
+    }
+
+    if (s_ui.elapsed_label != NULL) {
+        lv_label_set_text(s_ui.elapsed_label, elapsed_text);
+    }
+    if (s_ui.duration_label != NULL) {
+        lv_label_set_text(s_ui.duration_label, duration_text);
+    }
+}
+
+static void progress_timer_cb(lv_timer_t *timer)
+{
+    (void)timer;
+    int elapsed_ms = 0;
+    int duration_ms = 0;
+    if (music_player_playback_get_progress(&elapsed_ms, &duration_ms) != ESP_OK) {
+        return;
+    }
+    update_progress_widgets(elapsed_ms, duration_ms);
+}
+
 static void close_playlist_event_cb(lv_event_t *e)
 {
+    (void)e;
     if (s_ui.playlist_panel != NULL) {
         lv_obj_delete(s_ui.playlist_panel);
         s_ui.playlist_panel = NULL;
@@ -109,18 +222,33 @@ static void create_playlist_dialog(void)
         return;
     }
 
-    s_ui.playlist_panel = lv_obj_create(lv_screen_active());
-    lv_obj_set_size(s_ui.playlist_panel, MUSIC_PLAYER_PLAYLIST_DIALOG_WIDTH, MUSIC_PLAYER_PLAYLIST_DIALOG_HEIGHT);
-    lv_obj_center(s_ui.playlist_panel);
-    lv_obj_set_style_bg_opa(s_ui.playlist_panel, LV_OPA_90, 0);
-    lv_obj_set_style_bg_color(s_ui.playlist_panel, lv_color_hex(0x101018), 0);
-    lv_obj_set_style_text_color(s_ui.playlist_panel, lv_color_hex(MUSIC_PLAYER_COLOR_TEXT), 0);
-    lv_obj_set_style_radius(s_ui.playlist_panel, 16, 0);
-    lv_obj_set_style_pad_all(s_ui.playlist_panel, 12, 0);
-    lv_obj_set_flex_flow(s_ui.playlist_panel, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_row(s_ui.playlist_panel, 8, 0);
+    lv_obj_t *parent = (s_ui.screen != NULL) ? s_ui.screen : lv_screen_active();
 
-    lv_obj_t *header = lv_obj_create(s_ui.playlist_panel);
+    s_ui.playlist_panel = lv_obj_create(parent);
+    lv_obj_remove_style_all(s_ui.playlist_panel);
+    lv_obj_set_size(s_ui.playlist_panel, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_color(s_ui.playlist_panel, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_opa(s_ui.playlist_panel, LV_OPA_50, 0);
+    lv_obj_add_flag(s_ui.playlist_panel, LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(s_ui.playlist_panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_event_cb(s_ui.playlist_panel, close_playlist_event_cb, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *dialog = lv_obj_create(s_ui.playlist_panel);
+    lv_obj_set_size(dialog, s_ui.metrics.dialog_w, s_ui.metrics.dialog_h);
+    lv_obj_center(dialog);
+    lv_obj_set_style_bg_opa(dialog, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(dialog, lv_color_hex(MUSIC_PLAYER_COLOR_PANEL), 0);
+    lv_obj_set_style_text_color(dialog, lv_color_hex(MUSIC_PLAYER_COLOR_TEXT), 0);
+    lv_obj_set_style_border_width(dialog, 1, 0);
+    lv_obj_set_style_border_color(dialog, lv_color_hex(0x2A2A36), 0);
+    lv_obj_set_style_radius(dialog, 16, 0);
+    lv_obj_set_style_pad_all(dialog, 12, 0);
+    lv_obj_set_flex_flow(dialog, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_row(dialog, 8, 0);
+    lv_obj_clear_flag(dialog, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_flag(dialog, LV_OBJ_FLAG_CLICKABLE);
+
+    lv_obj_t *header = lv_obj_create(dialog);
     lv_obj_remove_style_all(header);
     lv_obj_set_width(header, lv_pct(100));
     lv_obj_set_height(header, LV_SIZE_CONTENT);
@@ -133,19 +261,25 @@ static void create_playlist_dialog(void)
     lv_label_set_text(title, "播放列表");
 
     lv_obj_t *close_btn = lv_button_create(header);
+    lv_obj_set_style_bg_color(close_btn, lv_color_hex(MUSIC_PLAYER_COLOR_BTN), 0);
+    lv_obj_set_style_shadow_width(close_btn, 0, 0);
     lv_obj_add_event_cb(close_btn, close_playlist_event_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t *close_label = lv_label_create(close_btn);
     lv_label_set_text(close_label, LV_SYMBOL_CLOSE);
+    lv_obj_set_style_text_color(close_label, lv_color_hex(MUSIC_PLAYER_COLOR_TEXT), 0);
 
-    lv_obj_t *list = lv_obj_create(s_ui.playlist_panel);
+    lv_obj_t *list = lv_obj_create(dialog);
     lv_obj_set_width(list, lv_pct(100));
     lv_obj_set_flex_grow(list, 1);
     lv_obj_set_style_bg_opa(list, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_bg_color(list, lv_color_hex(MUSIC_PLAYER_COLOR_PANEL), 0);
     lv_obj_set_style_border_width(list, 0, 0);
     lv_obj_set_style_pad_all(list, 4, 0);
+    lv_obj_set_style_radius(list, 0, 0);
     lv_obj_set_style_text_color(list, lv_color_hex(MUSIC_PLAYER_COLOR_TEXT), 0);
     lv_obj_set_flex_flow(list, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_scroll_dir(list, LV_DIR_VER);
+    lv_obj_add_flag(list, LV_OBJ_FLAG_SCROLLABLE);
 
     int count = 0;
     int current = -1;
@@ -251,60 +385,12 @@ static void btn_event_cb(lv_event_t *e)
     }
 }
 
-static bool is_demo_music_title_box(lv_obj_t *obj)
-{
-    if (obj == NULL) {
-        return false;
-    }
-    if (lv_obj_get_style_flex_flow(obj, LV_PART_MAIN) != LV_FLEX_FLOW_COLUMN) {
-        return false;
-    }
-    uint32_t cnt = lv_obj_get_child_cnt(obj);
-    if (cnt != 3) {
-        return false;
-    }
-    for (uint32_t i = 0; i < cnt; i++) {
-        if (!lv_obj_check_type(lv_obj_get_child(obj, i), &lv_label_class)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static bool hide_demo_title_box_in_tree(lv_obj_t *root)
-{
-    if (root == NULL) {
-        return false;
-    }
-    uint32_t cnt = lv_obj_get_child_cnt(root);
-    for (uint32_t i = 0; i < cnt; i++) {
-        lv_obj_t *child = lv_obj_get_child(root, i);
-        if (is_demo_music_title_box(child)) {
-            lv_obj_add_flag(child, LV_OBJ_FLAG_HIDDEN);
-            return true;
-        }
-        if (hide_demo_title_box_in_tree(child)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-static inline void hide_lv_demo_music_title_box(void)
-{
-    if (hide_demo_title_box_in_tree(lv_screen_active())) {
-        ESP_LOGI(TAG, "Hidden lv_demo_music title box");
-        return;
-    }
-    ESP_LOGW(TAG, "lv_demo_music title box not found");
-}
-
 static const lv_font_t *load_title_font(void)
 {
 #if CONFIG_ESP_LVGL_ADAPTER_ENABLE_FREETYPE
     esp_lv_adapter_ft_font_config_t font_cfg = {
         .name = MUSIC_PLAYER_FONT_PATH,
-        .size = MUSIC_PLAYER_FONT_SIZE,
+        .size = s_ui.metrics.font_size > 0 ? s_ui.metrics.font_size : MUSIC_PLAYER_FONT_SIZE,
         .style = ESP_LV_ADAPTER_FT_FONT_STYLE_NORMAL,
     };
     if (esp_lv_adapter_ft_font_init(&font_cfg, &s_ui.ft_font_handle) == ESP_OK) {
@@ -325,94 +411,171 @@ static const lv_font_t *load_title_font(void)
 #endif  /* LV_FONT_SOURCE_HAN_SANS_SC_16_CJK */
 }
 
-static void create_overlay_controls(lv_obj_t *parent, const lv_font_t *title_font)
+static lv_obj_t *create_icon_button(lv_obj_t *parent, int size, const char *symbol,
+                                    music_player_ui_btn_id_t id, bool accent)
 {
-    lv_obj_t *panel = lv_obj_create(parent);
-    lv_obj_remove_style_all(panel);
-    lv_obj_set_size(panel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_align(panel, LV_ALIGN_TOP_MID, 0, 8);
-    lv_obj_set_style_bg_opa(panel, LV_OPA_TRANSP, 0);
-    lv_obj_set_flex_flow(panel, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(panel, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(panel, 6, 0);
+    lv_obj_t *btn = lv_button_create(parent);
+    lv_obj_set_size(btn, size, size);
+    lv_obj_set_style_radius(btn, accent ? LV_RADIUS_CIRCLE : 16, 0);
+    lv_obj_set_style_shadow_width(btn, 0, 0);
+    lv_obj_set_style_bg_color(btn, lv_color_hex(accent ? MUSIC_PLAYER_COLOR_ACCENT : MUSIC_PLAYER_COLOR_BTN), 0);
+    lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
+    if (id == 0) {
+        lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_CLICKED, NULL);
+    } else {
+        lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_CLICKED, (void *)(intptr_t)id);
+    }
 
-    s_ui.title_label = lv_label_create(panel);
-    lv_obj_set_width(s_ui.title_label, lv_pct(90));
+    lv_obj_t *label = lv_label_create(btn);
+    lv_label_set_text(label, symbol);
+    lv_obj_set_style_text_color(label, lv_color_hex(accent ? 0x16161C : MUSIC_PLAYER_COLOR_TEXT), 0);
+    lv_obj_center(label);
+    return btn;
+}
+
+static void create_player_screen(const lv_font_t *title_font)
+{
+    const music_player_ui_metrics_t *m = &s_ui.metrics;
+
+    s_ui.screen = lv_obj_create(NULL);
+    lv_obj_remove_style_all(s_ui.screen);
+    lv_obj_set_size(s_ui.screen, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_color(s_ui.screen, lv_color_hex(MUSIC_PLAYER_COLOR_BG), 0);
+    lv_obj_set_style_bg_opa(s_ui.screen, LV_OPA_COVER, 0);
+    lv_obj_set_style_pad_top(s_ui.screen, m->pad_y_top, 0);
+    lv_obj_set_style_pad_bottom(s_ui.screen, m->pad_y_bottom, 0);
+    lv_obj_set_style_pad_left(s_ui.screen, m->pad_x, 0);
+    lv_obj_set_style_pad_right(s_ui.screen, m->pad_x, 0);
+    lv_obj_set_flex_flow(s_ui.screen, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(s_ui.screen, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_clear_flag(s_ui.screen, LV_OBJ_FLAG_SCROLLABLE);
+
+    /* Title block */
+    lv_obj_t *title_block = lv_obj_create(s_ui.screen);
+    lv_obj_remove_style_all(title_block);
+    lv_obj_set_width(title_block, lv_pct(100));
+    lv_obj_set_height(title_block, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(title_block, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(title_block, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_top(title_block, 8, 0);
+    lv_obj_set_style_pad_row(title_block, 8, 0);
+
+    s_ui.title_label = lv_label_create(title_block);
+    lv_obj_set_width(s_ui.title_label, lv_pct(100));
     lv_label_set_long_mode(s_ui.title_label, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(s_ui.title_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_font(s_ui.title_label, title_font, 0);
+    lv_obj_set_style_text_color(s_ui.title_label, lv_color_hex(MUSIC_PLAYER_COLOR_TEXT), 0);
     lv_label_set_text(s_ui.title_label, "准备播放");
 
-    s_ui.mode_label = lv_label_create(panel);
-    lv_obj_set_style_text_font(s_ui.mode_label, title_font, 0);
-    lv_label_set_text(s_ui.mode_label, "列表循环");
-
-    s_ui.volume_label = lv_label_create(panel);
-    lv_obj_set_style_text_font(s_ui.volume_label, title_font, 0);
-    int volume = MUSIC_PLAYER_DEFAULT_VOLUME;
-    if (music_player_playback_get_volume(&volume) != ESP_OK) {
+    s_ui.meta_label = lv_label_create(title_block);
+    lv_obj_set_style_text_font(s_ui.meta_label, title_font, 0);
+    lv_obj_set_style_text_color(s_ui.meta_label, lv_color_hex(MUSIC_PLAYER_COLOR_TEXT_DIM), 0);
+    s_ui.volume = MUSIC_PLAYER_DEFAULT_VOLUME;
+    if (music_player_playback_get_volume(&s_ui.volume) != ESP_OK) {
         ESP_LOGW(TAG, "Use default playback volume");
     }
-    lv_label_set_text_fmt(s_ui.volume_label, "音量 %d%%", volume);
+    snprintf(s_ui.mode_text, sizeof(s_ui.mode_text), "%s", "列表循环");
+    refresh_meta_label();
 
-    lv_obj_t *ctrl = lv_obj_create(parent);
+    /* Center art */
+    lv_obj_t *art_wrap = lv_obj_create(s_ui.screen);
+    lv_obj_remove_style_all(art_wrap);
+    lv_obj_set_width(art_wrap, lv_pct(100));
+    lv_obj_set_flex_grow(art_wrap, 1);
+    lv_obj_set_flex_flow(art_wrap, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(art_wrap, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_clear_flag(art_wrap, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *art = lv_obj_create(art_wrap);
+    lv_obj_set_size(art, m->art_size, m->art_size);
+    lv_obj_set_style_radius(art, 22, 0);
+    lv_obj_set_style_bg_color(art, lv_color_hex(MUSIC_PLAYER_COLOR_ART), 0);
+    lv_obj_set_style_bg_opa(art, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(art, 1, 0);
+    lv_obj_set_style_border_color(art, lv_color_hex(0x2A2A36), 0);
+    lv_obj_set_style_pad_all(art, 0, 0);
+    lv_obj_clear_flag(art, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *art_label = lv_label_create(art);
+    lv_label_set_text(art_label, LV_SYMBOL_AUDIO);
+    lv_obj_set_style_text_color(art_label, lv_color_hex(MUSIC_PLAYER_COLOR_ACCENT), 0);
+#if LV_FONT_MONTSERRAT_28
+    lv_obj_set_style_text_font(art_label, &lv_font_montserrat_28, 0);
+#endif  /* LV_FONT_MONTSERRAT_28 */
+    lv_obj_center(art_label);
+
+    /* Progress */
+    lv_obj_t *progress_block = lv_obj_create(s_ui.screen);
+    lv_obj_remove_style_all(progress_block);
+    lv_obj_set_width(progress_block, lv_pct(100));
+    lv_obj_set_height(progress_block, LV_SIZE_CONTENT);
+    lv_obj_set_style_pad_bottom(progress_block, 14, 0);
+    lv_obj_set_flex_flow(progress_block, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_row(progress_block, 8, 0);
+
+    s_ui.progress_bar = lv_bar_create(progress_block);
+    lv_obj_set_size(s_ui.progress_bar, lv_pct(100), 8);
+    lv_bar_set_range(s_ui.progress_bar, 0, 1000);
+    lv_bar_set_value(s_ui.progress_bar, 0, LV_ANIM_OFF);
+    lv_obj_set_style_bg_color(s_ui.progress_bar, lv_color_hex(MUSIC_PLAYER_COLOR_PROGRESS_BG), LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(s_ui.progress_bar, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_radius(s_ui.progress_bar, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(s_ui.progress_bar, lv_color_hex(MUSIC_PLAYER_COLOR_ACCENT), LV_PART_INDICATOR);
+    lv_obj_set_style_bg_opa(s_ui.progress_bar, LV_OPA_COVER, LV_PART_INDICATOR);
+    lv_obj_set_style_radius(s_ui.progress_bar, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
+
+    lv_obj_t *time_row = lv_obj_create(progress_block);
+    lv_obj_remove_style_all(time_row);
+    lv_obj_set_width(time_row, lv_pct(100));
+    lv_obj_set_height(time_row, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(time_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(time_row, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    s_ui.elapsed_label = lv_label_create(time_row);
+    lv_obj_set_style_text_color(s_ui.elapsed_label, lv_color_hex(MUSIC_PLAYER_COLOR_TIME), 0);
+    lv_label_set_text(s_ui.elapsed_label, "0:00");
+
+    s_ui.duration_label = lv_label_create(time_row);
+    lv_obj_set_style_text_color(s_ui.duration_label, lv_color_hex(MUSIC_PLAYER_COLOR_TIME), 0);
+    lv_label_set_text(s_ui.duration_label, "--:--");
+
+    /* Control bar */
+    lv_obj_t *ctrl = lv_obj_create(s_ui.screen);
     lv_obj_remove_style_all(ctrl);
-    lv_obj_set_size(ctrl, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_align(ctrl, LV_ALIGN_BOTTOM_MID, 0, -12);
-    lv_obj_set_style_bg_opa(ctrl, LV_OPA_50, 0);
-    lv_obj_set_style_bg_color(ctrl, lv_color_hex(0x202030), 0);
-    lv_obj_set_style_radius(ctrl, 16, 0);
-    lv_obj_set_style_pad_all(ctrl, 10, 0);
+    lv_obj_set_width(ctrl, lv_pct(100));
+    lv_obj_set_height(ctrl, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_color(ctrl, lv_color_hex(MUSIC_PLAYER_COLOR_PANEL), 0);
+    lv_obj_set_style_bg_opa(ctrl, LV_OPA_80, 0);
+    lv_obj_set_style_radius(ctrl, m->ctrl_radius, 0);
+    lv_obj_set_style_border_width(ctrl, 1, 0);
+    lv_obj_set_style_border_color(ctrl, lv_color_hex(0x2A2A36), 0);
+    lv_obj_set_style_pad_all(ctrl, m->ctrl_pad, 0);
     lv_obj_set_flex_flow(ctrl, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(ctrl, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_flex_align(ctrl, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    lv_obj_t *list_btn = lv_button_create(ctrl);
-    lv_obj_add_event_cb(list_btn, btn_event_cb, LV_EVENT_CLICKED, (void *)MUSIC_PLAYER_UI_BTN_LIST);
-    lv_obj_t *list_label = lv_label_create(list_btn);
-    lv_label_set_text(list_label, LV_SYMBOL_LIST);
+    create_icon_button(ctrl, m->btn_side, LV_SYMBOL_LIST, MUSIC_PLAYER_UI_BTN_LIST, false);
+    create_icon_button(ctrl, m->btn_nav, LV_SYMBOL_PREV, MUSIC_PLAYER_UI_BTN_PREV, false);
+    s_ui.play_btn = create_icon_button(ctrl, m->btn_play, LV_SYMBOL_PLAY, 0, true);
+    create_icon_button(ctrl, m->btn_nav, LV_SYMBOL_NEXT, MUSIC_PLAYER_UI_BTN_NEXT, false);
+    create_icon_button(ctrl, m->btn_side, LV_SYMBOL_MINUS, MUSIC_PLAYER_UI_BTN_VOLUME_DOWN, false);
+    create_icon_button(ctrl, m->btn_side, LV_SYMBOL_PLUS, MUSIC_PLAYER_UI_BTN_VOLUME_UP, false);
+    create_icon_button(ctrl, m->btn_side, LV_SYMBOL_LOOP, MUSIC_PLAYER_UI_BTN_MODE, false);
 
-    lv_obj_t *prev_btn = lv_button_create(ctrl);
-    lv_obj_add_event_cb(prev_btn, btn_event_cb, LV_EVENT_CLICKED, (void *)MUSIC_PLAYER_UI_BTN_PREV);
-    lv_obj_t *prev_label = lv_label_create(prev_btn);
-    lv_label_set_text(prev_label, LV_SYMBOL_PREV);
+    lv_screen_load(s_ui.screen);
 
-    s_ui.play_btn = lv_button_create(ctrl);
-    lv_obj_add_event_cb(s_ui.play_btn, btn_event_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *play_label = lv_label_create(s_ui.play_btn);
-    lv_label_set_text(play_label, LV_SYMBOL_PLAY);
-
-    lv_obj_t *next_btn = lv_button_create(ctrl);
-    lv_obj_add_event_cb(next_btn, btn_event_cb, LV_EVENT_CLICKED, (void *)MUSIC_PLAYER_UI_BTN_NEXT);
-    lv_obj_t *next_label = lv_label_create(next_btn);
-    lv_label_set_text(next_label, LV_SYMBOL_NEXT);
-
-    lv_obj_t *vol_down_btn = lv_button_create(ctrl);
-    lv_obj_add_event_cb(vol_down_btn, btn_event_cb, LV_EVENT_CLICKED, (void *)MUSIC_PLAYER_UI_BTN_VOLUME_DOWN);
-    lv_obj_t *vol_down_label = lv_label_create(vol_down_btn);
-    lv_label_set_text(vol_down_label, LV_SYMBOL_MINUS);
-
-    lv_obj_t *vol_up_btn = lv_button_create(ctrl);
-    lv_obj_add_event_cb(vol_up_btn, btn_event_cb, LV_EVENT_CLICKED, (void *)MUSIC_PLAYER_UI_BTN_VOLUME_UP);
-    lv_obj_t *vol_up_label = lv_label_create(vol_up_btn);
-    lv_label_set_text(vol_up_label, LV_SYMBOL_PLUS);
-
-    lv_obj_t *mode_btn = lv_button_create(ctrl);
-    lv_obj_add_event_cb(mode_btn, btn_event_cb, LV_EVENT_CLICKED, (void *)MUSIC_PLAYER_UI_BTN_MODE);
-    lv_obj_t *mode_btn_label = lv_label_create(mode_btn);
-    lv_label_set_text(mode_btn_label, LV_SYMBOL_LOOP);
+    s_ui.progress_timer = lv_timer_create(progress_timer_cb, MUSIC_PLAYER_PROGRESS_POLL_MS, NULL);
 }
 
 static void ui_init_cb(void *ctx)
 {
     (void)ctx;
     s_ui.playing = false;
-
-    lv_demo_music();
-    hide_lv_demo_music_title_box();
+    ui_metrics_init(&s_ui.metrics);
 
     const lv_font_t *title_font = load_title_font();
     s_ui.title_font = title_font;
-    create_overlay_controls(lv_screen_active(), title_font);
+    create_player_screen(title_font);
 }
 
 static void ui_deinit_cb(void *ctx);
@@ -425,8 +588,6 @@ esp_err_t music_player_ui_init(QueueHandle_t cmd_queue)
                          "Failed to init music UI");
     esp_err_t ret = music_player_display_start();
     if (ret != ESP_OK) {
-        /* Clean up resources allocated by ui_init_cb (e.g. FreeType font)
-         * to prevent resource leak when display_start fails */
         ui_deinit_cb(NULL);
         return ret;
     }
@@ -440,29 +601,24 @@ static void ui_update_cb(void *ctx)
     if (s_ui.title_label != NULL) {
         lv_label_set_text(s_ui.title_label, args->title != NULL ? args->title : "");
     }
-    if (s_ui.mode_label != NULL) {
-        lv_label_set_text(s_ui.mode_label, args->mode_text != NULL ? args->mode_text : "");
+    if (args->mode_text != NULL) {
+        snprintf(s_ui.mode_text, sizeof(s_ui.mode_text), "%s", args->mode_text);
     }
-    if (s_ui.volume_label != NULL) {
-        lv_label_set_text_fmt(s_ui.volume_label, "音量 %d%%", args->volume);
-    }
+    s_ui.volume = args->volume;
+    refresh_meta_label();
+
     s_ui.playing = args->playing;
-    if (args->playing) {
-        lv_demo_music_resume();
-        if (s_ui.play_btn != NULL) {
-            lv_obj_t *label = lv_obj_get_child(s_ui.play_btn, 0);
-            if (label != NULL) {
-                lv_label_set_text(label, LV_SYMBOL_PAUSE);
-            }
+    if (s_ui.play_btn != NULL) {
+        lv_obj_t *label = lv_obj_get_child(s_ui.play_btn, 0);
+        if (label != NULL) {
+            lv_label_set_text(label, args->playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
         }
-    } else {
-        lv_demo_music_pause();
-        if (s_ui.play_btn != NULL) {
-            lv_obj_t *label = lv_obj_get_child(s_ui.play_btn, 0);
-            if (label != NULL) {
-                lv_label_set_text(label, LV_SYMBOL_PLAY);
-            }
-        }
+    }
+
+    int elapsed_ms = 0;
+    int duration_ms = 0;
+    if (music_player_playback_get_progress(&elapsed_ms, &duration_ms) == ESP_OK) {
+        update_progress_widgets(elapsed_ms, duration_ms);
     }
 }
 
@@ -483,27 +639,23 @@ void music_player_ui_update(const char *title, const char *mode_text, int volume
 static void ui_deinit_cb(void *ctx)
 {
     (void)ctx;
-    /* Delete LVGL objects that reference the font BEFORE freeing the font
-     * to prevent use-after-free in the LVGL render task */
-    if (s_ui.title_label != NULL) {
-        lv_obj_delete(s_ui.title_label);
-        s_ui.title_label = NULL;
-    }
-    if (s_ui.mode_label != NULL) {
-        lv_obj_delete(s_ui.mode_label);
-        s_ui.mode_label = NULL;
-    }
-    if (s_ui.volume_label != NULL) {
-        lv_obj_delete(s_ui.volume_label);
-        s_ui.volume_label = NULL;
-    }
-    if (s_ui.play_btn != NULL) {
-        lv_obj_delete(s_ui.play_btn);
-        s_ui.play_btn = NULL;
+    if (s_ui.progress_timer != NULL) {
+        lv_timer_delete(s_ui.progress_timer);
+        s_ui.progress_timer = NULL;
     }
     if (s_ui.playlist_panel != NULL) {
         lv_obj_delete(s_ui.playlist_panel);
         s_ui.playlist_panel = NULL;
+    }
+    if (s_ui.screen != NULL) {
+        lv_obj_delete(s_ui.screen);
+        s_ui.screen = NULL;
+        s_ui.title_label = NULL;
+        s_ui.meta_label = NULL;
+        s_ui.progress_bar = NULL;
+        s_ui.elapsed_label = NULL;
+        s_ui.duration_label = NULL;
+        s_ui.play_btn = NULL;
     }
 #if CONFIG_ESP_LVGL_ADAPTER_ENABLE_FREETYPE
     if (s_ui.ft_font_handle != NULL) {
@@ -520,9 +672,6 @@ void music_player_ui_deinit(void)
     }
     esp_err_t ret = music_player_display_lock_run(ui_deinit_cb, NULL);
     if (ret != ESP_OK) {
-        /* Fallback: free resources directly if display lock fails,
-         * otherwise ft_font_handle and playlist_panel would be zeroed
-         * without being freed (resource leak). */
         ui_deinit_cb(NULL);
     }
     memset(&s_ui, 0, sizeof(s_ui));

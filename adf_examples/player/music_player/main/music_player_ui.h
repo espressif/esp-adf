@@ -17,7 +17,7 @@ extern "C" {
 #endif  /* __cplusplus */
 
 /**
- * @brief  Create LVGL music demo UI and bind touch controls to playback queue.
+ * @brief  Create the custom music-player UI and bind touch controls.
  *
  * @param[in]  cmd_queue  Queue used to send playback commands from UI events
  *
@@ -30,7 +30,7 @@ extern "C" {
 esp_err_t music_player_ui_init(QueueHandle_t cmd_queue);
 
 /**
- * @brief  Update song title and mode label on screen.
+ * @brief  Update song title, mode, volume, and play/pause state on screen.
  *
  * @param[in]  title      Track title to display, or NULL for an empty title
  * @param[in]  mode_text  Playback mode text to display, or NULL for an empty mode label

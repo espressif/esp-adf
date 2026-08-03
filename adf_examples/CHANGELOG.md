@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.5
+
+### Features
+
+- Updated `music_player` example with a dark touch UI, playlist dialog, playback progress, and multi-board display scaling
+
 ## v0.2.4
 
 ### Docs

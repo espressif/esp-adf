@@ -140,6 +140,22 @@ esp_err_t music_player_playback_get_current_index(int *index);
  */
 esp_err_t music_player_playback_get_track_title(int index, char *title, size_t title_size);
 
+/**
+ * @brief  Get estimated playback progress for the current track.
+ *
+ *         Elapsed time uses a pause-aware wall clock.
+ *         Duration comes from an esp_extractor probe before playback starts.
+ *         Either value may be 0 until ready.
+ *
+ * @param[out]  elapsed_ms   Elapsed playback time in milliseconds
+ * @param[out]  duration_ms  Estimated track duration in milliseconds
+ *
+ * @return
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  If elapsed_ms or duration_ms is NULL
+ */
+esp_err_t music_player_playback_get_progress(int *elapsed_ms, int *duration_ms);
+
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

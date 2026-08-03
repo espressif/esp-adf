@@ -19,7 +19,7 @@ This example demonstrates an SD card music player with a touch-screen UI. It sca
 2. `esp_media_db` scans `/sdcard` for `.mp3`, `.aac`, and `.wav` files (scan depth is 1)
 3. `esp_playlist` imports scan results and manages repeat modes (one / all / shuffle)
 4. `esp_audio_simple_player` decodes asynchronously; PCM is written directly to the codec with `esp_codec_dev_write()`
-5. `esp_lvgl_adapter` runs the LVGL task, shows `lv_demo_music`, and overlays song title plus touch controls
+5. `esp_lvgl_adapter` runs the LVGL task and shows a dark player page
 
 ### File Structure
 
@@ -32,11 +32,13 @@ music_player/
 │   ├── music_player_board.c/h   Board peripheral init
 │   ├── music_player_display.c/h LVGL adapter and display registration
 │   ├── music_player_playback.c/h Playlist and simple player control
-│   ├── music_player_ui.c/h       LVGL music demo and touch controls
+│   ├── music_player_ui.c/h       Player UI and touch controls
 │   └── idf_component.yml
 ├── partitions.csv
 ├── sdkconfig.defaults
 ├── sdkconfig.defaults.esp32p4
+├── sdkconfig.defaults.esp32s3
+├── sdkconfig.defaults.esp32s31
 ├── pytest_music_player.py
 ├── README.md
 └── README_CN.md
@@ -141,7 +143,7 @@ On first invocation of `idf.py bmgr`, the component is downloaded automatically 
 Default behavior is defined in `main/music_player_config.h` and `sdkconfig.defaults`; extra menuconfig is usually unnecessary. Common tunables:
 
 - `MUSIC_PLAYER_DEFAULT_VOLUME`: default playback volume (currently 70)
-- `MUSIC_PLAYER_FONT_PATH` / `MUSIC_PLAYER_FONT_SIZE`: FreeType font path and size (default `F:font.ttf`, 24)
+- `MUSIC_PLAYER_FONT_PATH` / `MUSIC_PLAYER_FONT_SIZE`: FreeType font path and size (default `F:font.ttf`, 28)
 - `MUSIC_PLAYER_SCAN_DEPTH`: media DB scan depth (currently 1, scanning `/sdcard`)
 
 For FreeType, built-in CJK font, and other LVGL options, use `idf.py menuconfig` under `Component config` → `ESP LVGL Adapter` and `LVGL configuration`.
@@ -169,10 +171,10 @@ idf.py -p PORT flash monitor
 1. Copy music files into the `/sdcard` mount point or one of its first-level subdirectories (see `scan dir: /sdcard` in the log below)
 2. After boot, the example scans the folder; if tracks are found it plays the first one, otherwise the UI shows no music available
 3. Use the bottom touch control bar:
-   - Previous / play or pause / next
+   - Playlist / previous / play or pause / next / volume − / volume + / loop mode
    - Loop mode button cycles one-track repeat, list repeat, and shuffle
-4. The top overlay shows the current song title (ellipsis mode, Chinese supported) and repeat mode
-5. The background uses the LVGL built-in `lv_demo_music` UI; the progress bar is demo animation only
+4. The top area shows the current song title (ellipsis mode, Chinese supported), repeat mode, and volume
+5. The progress bar and time labels show playback progress
 6. When the current track finishes, the next track starts automatically according to the selected mode
 
 ### Log Output
@@ -240,7 +242,6 @@ I (1476) lv_fs: Drive 'F' successfully created, version: 1.0.1
 I (1476) esp_lvgl:adapter: File system mounted successfully
 I (1476) MUSIC_PLAYER_DISPLAY: LVGL assets FS mounted as F:
 I (1476) MUSIC_PLAYER_DISPLAY: Display initialized: 1024x600 (dsi)
-I (1532) MUSIC_PLAYER_UI: Hidden lv_demo_music title box
 I (1536) MUSIC_PLAYER_UI: Use FreeType font: F:font.ttf
 I (1540) esp_lvgl:adapter: LVGL task started successfully
 I (1540) MUSIC_PLAYER: [ 3 ] Scan SD card playlist from /sdcard

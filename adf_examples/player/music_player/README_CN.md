@@ -19,7 +19,7 @@
 2. `esp_media_db` 扫描 SD 卡挂载点 `/sdcard` 下的 `.mp3`、`.aac`、`.wav` 文件（扫描深度为 1）
 3. `esp_playlist` 导入扫描结果并管理播放模式（单曲循环 / 列表循环 / 随机播放）
 4. `esp_audio_simple_player` 异步解码，PCM 通过 `esp_codec_dev_write()` 直接写入 codec 输出
-5. `esp_lvgl_adapter` 运行 LVGL 任务，显示 `lv_demo_music` 界面并叠加中文歌名与控制按钮
+5. `esp_lvgl_adapter` 运行 LVGL 任务，显示深色播放页
 
 ### 文件结构
 
@@ -32,11 +32,13 @@ music_player/
 │   ├── music_player_board.c/h   板级设备初始化
 │   ├── music_player_display.c/h LVGL adapter 与显示注册
 │   ├── music_player_playback.c/h 播放列表与 simple player 控制
-│   ├── music_player_ui.c/h       LVGL music demo 与触摸控制
+│   ├── music_player_ui.c/h       播放页 UI 与触摸控制
 │   └── idf_component.yml
 ├── partitions.csv
 ├── sdkconfig.defaults
 ├── sdkconfig.defaults.esp32p4
+├── sdkconfig.defaults.esp32s3
+├── sdkconfig.defaults.esp32s31
 ├── pytest_music_player.py
 ├── README.md
 └── README_CN.md
@@ -141,7 +143,7 @@ idf.py bmgr -b esp32_p4_function_ev_board
 本例程默认行为由 `main/music_player_config.h` 与 `sdkconfig.defaults` 决定，通常无需额外 menuconfig。常用可调项如下：
 
 - `MUSIC_PLAYER_DEFAULT_VOLUME`：默认播放音量（当前为 70）
-- `MUSIC_PLAYER_FONT_PATH` / `MUSIC_PLAYER_FONT_SIZE`：FreeType 字体路径与字号（默认 `F:font.ttf`、24）
+- `MUSIC_PLAYER_FONT_PATH` / `MUSIC_PLAYER_FONT_SIZE`：FreeType 字体路径与字号（默认 `F:font.ttf`、28）
 - `MUSIC_PLAYER_SCAN_DEPTH`：媒体库扫描深度（当前为 1，对应挂载点 `/sdcard`）
 
 如需启用或关闭 FreeType、CJK 内置字体等 LVGL 相关选项，可在 `idf.py menuconfig` 中查看 `Component config` → `ESP LVGL Adapter` 与 `LVGL configuration`。
@@ -169,10 +171,10 @@ idf.py -p PORT flash monitor
 1. 将音乐文件放入 microSD 卡挂载点 `/sdcard` 或其一层子目录（见下文 log 中的 `scan dir: /sdcard`）
 2. 上电后例程自动扫描；若找到音乐则播放第一首，否则 UI 显示“未找到音乐”
 3. 触摸屏底部控制栏：
-   - 上一首 / 播放或暂停 / 下一首
+   - 播放列表 / 上一首 / 播放或暂停 / 下一首 / 音量 − / 音量 + / 循环模式
    - 循环模式按钮：依次切换单曲循环、列表循环、随机播放
-4. 顶部显示当前歌名（固定宽度省略显示，支持中文）和播放模式
-5. 背景使用 LVGL 自带 `lv_demo_music` 界面，进度条为 demo 动效，不绑定真实播放进度
+4. 顶部显示当前歌名（固定宽度省略显示，支持中文）、播放模式与音量
+5. 进度条与时间显示播放进度
 6. 当前曲目播放结束后自动播放下一首（按当前模式）
 
 ### 日志输出
@@ -240,7 +242,6 @@ I (1476) lv_fs: Drive 'F' successfully created, version: 1.0.1
 I (1476) esp_lvgl:adapter: File system mounted successfully
 I (1476) MUSIC_PLAYER_DISPLAY: LVGL assets FS mounted as F:
 I (1476) MUSIC_PLAYER_DISPLAY: Display initialized: 1024x600 (dsi)
-I (1532) MUSIC_PLAYER_UI: Hidden lv_demo_music title box
 I (1536) MUSIC_PLAYER_UI: Use FreeType font: F:font.ttf
 I (1540) esp_lvgl:adapter: LVGL task started successfully
 I (1540) MUSIC_PLAYER: [ 3 ] Scan SD card playlist from /sdcard
