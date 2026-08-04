@@ -1,7 +1,9 @@
 dependencies:
   espressif/esp_board_manager: "*"
   espressif/esp_audio_simple_player:
-    version: "^0.9.6"
+    version: "^1.0"
+  espressif/esp_extractor:
+    version: "^1.0"
   espressif/esp_lvgl_adapter:
     version: "^0.5"
   espressif/esp_mmap_assets:

@@ -6,18 +6,28 @@
 
 #include <stdio.h>
 #include <string.h>
-
+#include <stdint.h>
+#include <inttypes.h>
+#include <sys/lock.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_gmf_err.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "esp_codec_dev.h"
 #include "esp_audio_simple_player.h"
+#include "esp_extractor.h"
+#include "esp_audio_es_extractor.h"
+#include "esp_wav_extractor.h"
 #include "esp_playlist.h"
+#include "sdkconfig.h"
 #include "music_player_playback.h"
 #include "music_player_ui.h"
 #include "music_player_config.h"
+
+#define MUSIC_PLAYER_CTRL_IDLE_MS      50
+#define MUSIC_PLAYER_PROBE_TIMEOUT_US  (1500 * 1000)
 
 static const char *TAG = "MUSIC_PLAYER_PLAYBACK";
 
@@ -27,6 +37,20 @@ typedef enum {
     MUSIC_PLAYER_MODE_SHUFFLE,
 } music_player_mode_t;
 
+typedef struct {
+    FILE    *fp;
+    int64_t  deadline_us;
+} extractor_io_t;
+
+typedef struct {
+    _lock_t   lock;
+    int       duration_ms;
+    int       elapsed_acc_ms;
+    int64_t   elapsed_base_us;
+    bool      elapsed_running;
+    uint32_t  track_gen;
+} music_player_progress_t;
+
 static QueueHandle_t s_cmd_queue = NULL;
 static TaskHandle_t s_ctrl_task = NULL;
 static esp_asp_handle_t s_player = NULL;
@@ -34,14 +58,20 @@ static esp_playlist_handle_t s_playlist = NULL;
 static esp_media_db_handle_t s_media_db = NULL;
 static esp_codec_dev_handle_t s_codec = NULL;
 static bool s_is_playing = false;
+static bool s_extractors_ready = false;
 static volatile bool s_ctrl_running = false;
+static volatile bool s_ui_refresh_pending = false;
 static music_player_mode_t s_mode = MUSIC_PLAYER_MODE_REPEAT_ALL;
+static music_player_progress_t s_progress = {0};
+static int s_invalid_tracks = 0;
 
 static const char *s_mode_text[] = {
     "单曲循环",
     "列表循环",
     "随机播放",
 };
+
+static void update_ui_from_current(bool playing);
 
 static inline esp_playlist_repeat_mode_t mode_to_playlist(music_player_mode_t mode)
 {
@@ -61,34 +91,39 @@ static inline int clamp_volume(int volume)
     if (volume < MUSIC_PLAYER_VOLUME_MIN) {
         return MUSIC_PLAYER_VOLUME_MIN;
     }
-    if (volume > MUSIC_PLAYER_VOLUME_MAX) {
-        return MUSIC_PLAYER_VOLUME_MAX;
-    }
-    return volume;
+    return (volume > MUSIC_PLAYER_VOLUME_MAX) ? MUSIC_PLAYER_VOLUME_MAX : volume;
 }
 
 static int get_playback_volume_or_default(void)
 {
     int volume = MUSIC_PLAYER_DEFAULT_VOLUME;
-    if (s_codec == NULL) {
-        return volume;
+    if (s_codec != NULL && esp_codec_dev_get_out_vol(s_codec, &volume) == ESP_OK) {
+        return clamp_volume(volume);
     }
-    if (esp_codec_dev_get_out_vol(s_codec, &volume) != ESP_OK) {
-        return MUSIC_PLAYER_DEFAULT_VOLUME;
-    }
-    return clamp_volume(volume);
+    return MUSIC_PLAYER_DEFAULT_VOLUME;
 }
 
 static esp_err_t post_message(const music_player_msg_t *msg, TickType_t timeout)
 {
     ESP_GMF_CHECK(TAG, s_cmd_queue != NULL && msg != NULL, return ESP_ERR_INVALID_STATE, "Queue or message is NULL");
-    ESP_GMF_CHECK(TAG, xQueueSend(s_cmd_queue, msg, timeout) == pdTRUE, return ESP_ERR_TIMEOUT,
-                  "Failed to post playback message");
+    if (xQueueSend(s_cmd_queue, msg, timeout) != pdTRUE) {
+        return ESP_ERR_TIMEOUT;
+    }
     return ESP_OK;
+}
+
+static bool is_track_switch_cmd(music_player_cmd_t cmd)
+{
+    return cmd == MUSIC_PLAYER_CMD_NEXT || cmd == MUSIC_PLAYER_CMD_PREV || cmd == MUSIC_PLAYER_CMD_PLAY_INDEX;
 }
 
 static inline esp_err_t post_cmd_internal(music_player_cmd_t cmd, int index, TickType_t timeout)
 {
+    if (is_track_switch_cmd(cmd)) {
+        ESP_GMF_CHECK(TAG, s_ctrl_task != NULL, return ESP_ERR_INVALID_STATE, "Control task is NULL");
+        uint32_t value = ((uint32_t)cmd << 24) | ((uint32_t)(index + 1) & 0x00FFFFFF);
+        return xTaskNotify(s_ctrl_task, value, eSetValueWithOverwrite) == pdPASS ? ESP_OK : ESP_FAIL;
+    }
     music_player_msg_t msg = {
         .cmd = cmd,
         .index = index,
@@ -101,15 +136,166 @@ static void playlist_url_to_player_uri(const char *url, char *out, size_t out_si
     if (url == NULL || out == NULL || out_size == 0) {
         return;
     }
+    const char *path = url;
     if (strncmp(url, "file:", 5) == 0) {
-        const char *path = url + 5;
+        path = url + 5;
         while (path[0] == '/' && path[1] == '/') {
             path++;
         }
-        snprintf(out, out_size, "%s", path);
-    } else {
-        snprintf(out, out_size, "%s", url);
     }
+    snprintf(out, out_size, "%s", path);
+}
+
+static void progress_elapsed_pause(void)
+{
+    _lock_acquire(&s_progress.lock);
+    if (s_progress.elapsed_running) {
+        int64_t now = esp_timer_get_time();
+        s_progress.elapsed_acc_ms += (int)((now - s_progress.elapsed_base_us) / 1000);
+        if (s_progress.elapsed_acc_ms < 0) {
+            s_progress.elapsed_acc_ms = 0;
+        }
+        s_progress.elapsed_running = false;
+    }
+    _lock_release(&s_progress.lock);
+}
+
+static void progress_elapsed_resume(void)
+{
+    _lock_acquire(&s_progress.lock);
+    s_progress.elapsed_base_us = esp_timer_get_time();
+    s_progress.elapsed_running = true;
+    _lock_release(&s_progress.lock);
+}
+
+static int progress_get_elapsed_ms_unlocked(void)
+{
+    int elapsed = s_progress.elapsed_acc_ms;
+    if (s_progress.elapsed_running) {
+        elapsed += (int)((esp_timer_get_time() - s_progress.elapsed_base_us) / 1000);
+    }
+    if (elapsed < 0) {
+        elapsed = 0;
+    }
+    if (s_progress.duration_ms > 0 && elapsed > s_progress.duration_ms) {
+        elapsed = s_progress.duration_ms;
+    }
+    return elapsed;
+}
+
+static esp_err_t register_extractors(void)
+{
+    if (s_extractors_ready) {
+        return ESP_OK;
+    }
+    if (esp_audio_es_extractor_register() != ESP_EXTRACTOR_ERR_OK) {
+        return ESP_FAIL;
+    }
+    if (esp_wav_extractor_register() != ESP_EXTRACTOR_ERR_OK) {
+        esp_audio_es_extractor_unregister();
+        return ESP_FAIL;
+    }
+    s_extractors_ready = true;
+    return ESP_OK;
+}
+
+static void unregister_extractors(void)
+{
+    if (!s_extractors_ready) {
+        return;
+    }
+    esp_wav_extractor_unregister();
+    esp_audio_es_extractor_unregister();
+    s_extractors_ready = false;
+}
+
+static int extractor_read(void *buffer, uint32_t size, void *ctx)
+{
+    extractor_io_t *io = (extractor_io_t *)ctx;
+    return esp_timer_get_time() >= io->deadline_us ? -1 : (int)fread(buffer, 1, size, io->fp);
+}
+
+static int extractor_seek(uint32_t position, void *ctx)
+{
+    extractor_io_t *io = (extractor_io_t *)ctx;
+    return esp_timer_get_time() >= io->deadline_us ? -1 : fseek(io->fp, position, SEEK_SET);
+}
+
+static uint32_t extractor_size(void *ctx)
+{
+    extractor_io_t *io = (extractor_io_t *)ctx;
+    if (esp_timer_get_time() >= io->deadline_us) {
+        return 0;
+    }
+    FILE *fp = io->fp;
+    long current = ftell(fp);
+    if (current < 0 || fseek(fp, 0, SEEK_END) != 0) {
+        return 0;
+    }
+    long size = ftell(fp);
+    fseek(fp, current, SEEK_SET);
+    return (size > 0) ? (uint32_t)size : 0;
+}
+
+static int get_duration_ms(const char *path)
+{
+    if (!s_extractors_ready) {
+        return -1;
+    }
+    FILE *fp = fopen(path, "rb");
+    if (fp == NULL) {
+        return -1;
+    }
+    int duration = -1;
+    extractor_io_t io = {
+        .fp = fp,
+        .deadline_us = esp_timer_get_time() + MUSIC_PLAYER_PROBE_TIMEOUT_US,
+    };
+    esp_extractor_handle_t extractor = NULL;
+    esp_extractor_config_t cfg = {
+        .extract_mask = ESP_EXTRACT_MASK_AUDIO,
+        .in_read_cb = extractor_read,
+        .in_seek_cb = extractor_seek,
+        .in_size_cb = extractor_size,
+        .in_ctx = &io,
+    };
+    if (esp_extractor_open(&cfg, &extractor) == ESP_EXTRACTOR_ERR_OK &&
+        esp_extractor_parse_stream(extractor) == ESP_EXTRACTOR_ERR_OK) {
+        esp_extractor_stream_info_t info = {0};
+        if (esp_extractor_get_stream_info(extractor, ESP_EXTRACTOR_STREAM_TYPE_AUDIO, 0, &info) ==
+            ESP_EXTRACTOR_ERR_OK) {
+            duration = info.duration;
+        }
+    }
+    if (extractor != NULL) {
+        esp_extractor_close(extractor);
+    }
+    fclose(fp);
+    return duration;
+}
+
+static void reset_progress_state(int duration_ms)
+{
+    _lock_acquire(&s_progress.lock);
+    s_progress.duration_ms = (duration_ms > 0) ? duration_ms : 0;
+    s_progress.elapsed_acc_ms = 0;
+    s_progress.elapsed_base_us = esp_timer_get_time();
+    s_progress.elapsed_running = true;
+    _lock_release(&s_progress.lock);
+}
+
+static void request_ui_refresh(void)
+{
+    s_ui_refresh_pending = true;
+}
+
+static void flush_pending_ui_refresh(void)
+{
+    if (!s_ui_refresh_pending) {
+        return;
+    }
+    s_ui_refresh_pending = false;
+    update_ui_from_current(s_is_playing);
 }
 
 static int out_data_callback(uint8_t *data, int data_size, void *ctx)
@@ -129,22 +315,27 @@ static int out_data_callback(uint8_t *data, int data_size, void *ctx)
 static int player_event_callback(esp_asp_event_pkt_t *event, void *ctx)
 {
     (void)ctx;
-    if (event == NULL || event->type != ESP_ASP_EVENT_TYPE_STATE || event->payload == NULL) {
+    if (event == NULL || event->payload == NULL) {
         return 0;
     }
-    if (event->payload_size < sizeof(esp_asp_state_t)) {
-        ESP_LOGW(TAG, "Ignore state event with invalid payload size: %u", (unsigned)event->payload_size);
+
+    if (event->type != ESP_ASP_EVENT_TYPE_STATE || event->payload_size < sizeof(esp_asp_state_t)) {
         return 0;
     }
 
     esp_asp_state_t state = ESP_ASP_STATE_NONE;
     memcpy(&state, event->payload, sizeof(state));
-    if (state == ESP_ASP_STATE_FINISHED) {
-        post_cmd_internal(MUSIC_PLAYER_CMD_TRACK_FINISHED, -1, 0);
-    } else if (state == ESP_ASP_STATE_ERROR) {
-        post_cmd_internal(MUSIC_PLAYER_CMD_TRACK_ERROR, -1, 0);
+    if (state == ESP_ASP_STATE_FINISHED || state == ESP_ASP_STATE_ERROR) {
+        uint32_t gen = 0;
+        _lock_acquire(&s_progress.lock);
+        gen = s_progress.track_gen;
+        _lock_release(&s_progress.lock);
+        music_player_cmd_t cmd = (state == ESP_ASP_STATE_FINISHED) ? MUSIC_PLAYER_CMD_TRACK_FINISHED : MUSIC_PLAYER_CMD_TRACK_ERROR;
+        if (post_cmd_internal(cmd, (int)gen, 0) != ESP_OK) {
+            ESP_LOGW(TAG, "Drop end-of-track cmd, queue full");
+        }
     } else if (state == ESP_ASP_STATE_RUNNING || state == ESP_ASP_STATE_PAUSED || state == ESP_ASP_STATE_STOPPED) {
-        post_cmd_internal(MUSIC_PLAYER_CMD_UPDATE_UI, -1, 0);
+        request_ui_refresh();
     }
     return 0;
 }
@@ -188,9 +379,27 @@ static esp_err_t play_current_track(void)
     ESP_LOGI(TAG, "Play file: %s", uri);
 
     esp_audio_simple_player_stop(s_player);
+    _lock_acquire(&s_progress.lock);
+    s_progress.track_gen++;
+    uint32_t track_gen = s_progress.track_gen;
+    _lock_release(&s_progress.lock);
+    int duration_ms = get_duration_ms(uri);
+    if (duration_ms < 0) {
+        reset_progress_state(0);
+        s_is_playing = false;
+        ESP_LOGW(TAG, "Skip invalid audio: %s", uri);
+        if (post_cmd_internal(MUSIC_PLAYER_CMD_TRACK_ERROR, (int)track_gen, 0) != ESP_OK) {
+            ESP_LOGW(TAG, "Failed to queue invalid track skip");
+        }
+        return ESP_ERR_INVALID_RESPONSE;
+    }
+    reset_progress_state(duration_ms);
+    ESP_LOGI(TAG, "Track init: duration=%d ms gen=%" PRIu32, duration_ms, track_gen);
+
     esp_gmf_err_t err = esp_audio_simple_player_run(s_player, uri, NULL);
     ESP_GMF_RET_ON_NOT_OK(TAG, err, {
         s_is_playing = false;
+        progress_elapsed_pause();
         update_ui_from_current(false);
         return ESP_FAIL;
     }, "Failed to run player");
@@ -199,8 +408,15 @@ static esp_err_t play_current_track(void)
     return ESP_OK;
 }
 
+static esp_err_t start_track_playback(void)
+{
+    s_invalid_tracks = 0;
+    return play_current_track();
+}
+
 static esp_err_t navigate_track(bool next)
 {
+    s_invalid_tracks = 0;
     esp_playlist_info_t info = {0};
     esp_err_t ret = next ? esp_playlist_next(s_playlist, &info) : esp_playlist_prev(s_playlist, &info);
     if (ret != ESP_OK) {
@@ -211,22 +427,39 @@ static esp_err_t navigate_track(bool next)
 
 static esp_err_t play_track_by_index(int index)
 {
+    s_invalid_tracks = 0;
     esp_err_t ret = esp_playlist_set_curr_index(s_playlist, index);
     ESP_GMF_RET_ON_ERROR(TAG, ret, return err_rc_, "Play index failed: index=%d", index);
     ESP_LOGI(TAG, "Play index: %d", index);
     return play_current_track();
 }
 
-static void handle_track_end_or_error(bool is_error)
+static void handle_track_end_or_error(bool is_error, uint32_t event_gen)
 {
-    if (is_error) {
-        ESP_LOGW(TAG, "Playback error, try next track");
+    _lock_acquire(&s_progress.lock);
+    uint32_t cur_gen = s_progress.track_gen;
+    _lock_release(&s_progress.lock);
+    if (event_gen != cur_gen) {
+        ESP_LOGD(TAG, "Ignore stale %s event: gen=%" PRIu32 " current=%" PRIu32,
+                 is_error ? "TRACK_ERROR" : "TRACK_FINISHED", event_gen, cur_gen);
+        return;
     }
-    /**
-     * In REPEAT_ONE mode, esp_playlist_next() returns the same track without advancing.
-     * On error, this causes an infinite retry loop of the failed track.
-     * Temporarily switch to REPEAT_ALL to advance past the failed track.
-     */
+
+    if (is_error) {
+        int count = 0;
+        music_player_playback_get_track_count(&count);
+        if (count > 0 && ++s_invalid_tracks >= count) {
+            s_is_playing = false;
+            progress_elapsed_pause();
+            ESP_LOGE(TAG, "No playable audio found");
+            update_ui_from_current(false);
+            return;
+        }
+    } else {
+        s_invalid_tracks = 0;
+    }
+
+    /* REPEAT_ONE + error would retry forever; advance with REPEAT_ALL temporarily. */
     if (is_error && s_mode == MUSIC_PLAYER_MODE_REPEAT_ONE) {
         esp_playlist_set_repeat_mode(s_playlist, ESP_PLAYLIST_REPEAT_ALL);
     }
@@ -235,6 +468,7 @@ static void handle_track_end_or_error(bool is_error)
         play_current_track();
     } else {
         s_is_playing = false;
+        progress_elapsed_pause();
         update_ui_from_current(false);
     }
     if (is_error && s_mode == MUSIC_PLAYER_MODE_REPEAT_ONE) {
@@ -249,21 +483,23 @@ static void handle_command(const music_player_msg_t *msg)
     }
     switch (msg->cmd) {
         case MUSIC_PLAYER_CMD_PLAY:
-            play_current_track();
+            start_track_playback();
             break;
         case MUSIC_PLAYER_CMD_PAUSE:
             if (s_player != NULL) {
                 esp_audio_simple_player_pause(s_player);
+                progress_elapsed_pause();
                 s_is_playing = false;
                 update_ui_from_current(false);
             }
             break;
         case MUSIC_PLAYER_CMD_RESUME:
             if (s_player != NULL && esp_audio_simple_player_resume(s_player) == ESP_GMF_ERR_OK) {
+                progress_elapsed_resume();
                 s_is_playing = true;
                 update_ui_from_current(true);
             } else {
-                play_current_track();
+                start_track_playback();
             }
             break;
         case MUSIC_PLAYER_CMD_NEXT:
@@ -288,10 +524,10 @@ static void handle_command(const music_player_msg_t *msg)
             play_track_by_index(msg->index);
             break;
         case MUSIC_PLAYER_CMD_TRACK_FINISHED:
-            handle_track_end_or_error(false);
+            handle_track_end_or_error(false, (uint32_t)msg->index);
             break;
         case MUSIC_PLAYER_CMD_TRACK_ERROR:
-            handle_track_end_or_error(true);
+            handle_track_end_or_error(true, (uint32_t)msg->index);
             break;
         case MUSIC_PLAYER_CMD_UPDATE_UI:
             update_ui_from_current(s_is_playing);
@@ -303,18 +539,35 @@ static void handle_command(const music_player_msg_t *msg)
     }
 }
 
+static bool take_track_switch_command(music_player_msg_t *msg)
+{
+    uint32_t value = 0;
+    if (msg == NULL || xTaskNotifyWait(0, UINT32_MAX, &value, 0) != pdTRUE) {
+        return false;
+    }
+    msg->cmd = (music_player_cmd_t)(value >> 24);
+    msg->index = (int)(value & 0x00FFFFFF) - 1;
+    return is_track_switch_cmd(msg->cmd);
+}
+
 static void control_task(void *arg)
 {
     (void)arg;
     music_player_msg_t msg = {0};
     while (s_ctrl_running) {
-        if (xQueueReceive(s_cmd_queue, &msg, portMAX_DELAY) != pdTRUE) {
+        if (take_track_switch_command(&msg)) {
+            handle_command(&msg);
+            flush_pending_ui_refresh();
             continue;
         }
-        if (msg.cmd == MUSIC_PLAYER_CMD_SHUTDOWN) {
-            break;
+        BaseType_t got = xQueueReceive(s_cmd_queue, &msg, pdMS_TO_TICKS(MUSIC_PLAYER_CTRL_IDLE_MS));
+        if (got == pdTRUE) {
+            if (msg.cmd == MUSIC_PLAYER_CMD_SHUTDOWN) {
+                break;
+            }
+            handle_command(&msg);
         }
-        handle_command(&msg);
+        flush_pending_ui_refresh();
     }
     s_ctrl_task = NULL;
     vTaskDelete(NULL);
@@ -391,6 +644,9 @@ esp_err_t music_player_playback_start(QueueHandle_t cmd_queue, esp_codec_dev_han
     s_cmd_queue = cmd_queue;
     s_codec = codec;
 
+    ESP_GMF_RET_ON_ERROR(TAG, register_extractors(), { ret = ESP_FAIL; goto err_cleanup;},
+                         "Failed to register extractors");
+
     esp_asp_cfg_t cfg = {
         .out.cb = out_data_callback,
         .out.user_ctx = s_codec,
@@ -418,6 +674,7 @@ err_cleanup:
         esp_audio_simple_player_destroy(s_player);
         s_player = NULL;
     }
+    unregister_extractors();
     s_cmd_queue = NULL;
     s_codec = NULL;
     return ret;
@@ -425,12 +682,20 @@ err_cleanup:
 
 esp_err_t music_player_playback_post(music_player_cmd_t cmd)
 {
-    return post_cmd_internal(cmd, -1, pdMS_TO_TICKS(1000));
+    esp_err_t ret = post_cmd_internal(cmd, -1, 0);
+    if (ret == ESP_ERR_TIMEOUT) {
+        ESP_LOGW(TAG, "Failed to post playback command: %d (queue full/timeout)", cmd);
+    }
+    return ret;
 }
 
 esp_err_t music_player_playback_post_index(music_player_cmd_t cmd, int index)
 {
-    return post_cmd_internal(cmd, index, pdMS_TO_TICKS(1000));
+    esp_err_t ret = post_cmd_internal(cmd, index, 0);
+    if (ret == ESP_ERR_TIMEOUT) {
+        ESP_LOGW(TAG, "Failed to post play index: cmd=%d index=%d (queue full/timeout)", cmd, index);
+    }
+    return ret;
 }
 
 esp_err_t music_player_playback_has_playlist(bool *has_playlist)
@@ -482,6 +747,18 @@ esp_err_t music_player_playback_get_track_title(int index, char *title, size_t t
     return ESP_OK;
 }
 
+esp_err_t music_player_playback_get_progress(int *elapsed_ms, int *duration_ms)
+{
+    ESP_GMF_CHECK(TAG, elapsed_ms != NULL && duration_ms != NULL, return ESP_ERR_INVALID_ARG,
+                  "Invalid progress buffers");
+
+    _lock_acquire(&s_progress.lock);
+    *elapsed_ms = progress_get_elapsed_ms_unlocked();
+    *duration_ms = s_progress.duration_ms;
+    _lock_release(&s_progress.lock);
+    return ESP_OK;
+}
+
 void music_player_playback_stop(void)
 {
     if (s_player == NULL && s_ctrl_task == NULL && s_playlist == NULL && s_media_db == NULL) {
@@ -497,11 +774,8 @@ void music_player_playback_stop(void)
         if (s_ctrl_task != NULL) {
             ESP_LOGW(TAG, "Control task did not exit in time");
         }
-        /* Drain stale messages (e.g. SHUTDOWN if task already exited) to prevent
-         * immediate exit on restart */
         music_player_msg_t dummy;
         while (xQueueReceive(s_cmd_queue, &dummy, 0) == pdTRUE) {
-            /* discard */
         }
     }
 
@@ -522,4 +796,8 @@ void music_player_playback_stop(void)
     s_codec = NULL;
     s_cmd_queue = NULL;
     s_is_playing = false;
+    s_invalid_tracks = 0;
+    reset_progress_state(0);
+    progress_elapsed_pause();
+    unregister_extractors();
 }

@@ -15,7 +15,7 @@ This directory contains multimedia example projects for ESP platforms, including
 | AV Record Live Display | [recorder/av_record_live_display](./recorder/av_record_live_display) | AV capture with MP4 recording to microSD and live LCD preview via `esp_capture`, encoders, and `mp4_muxer` on ESP32S3, ESP32S31 and ESP32P4. |
 | Play Music Control | [player/play_music_control](./player/play_music_control) | CLI music player with SD card, HTTP/HTTPS, and embedded Flash sources; playlist control via `esp_cli_service` and `esp_audio_simple_player`. |
 | Audio Power Save | [system/audio_power_save](./system/audio_power_save) | Idle low-power example with MQTT keepalive, automatic light sleep, and UART/MQTT/GPIO/timer wakeup with LittleFS sleep/wakeup prompt tones. |
-| SD Card Music Player | [player/music_player](./player/music_player) | Local SD card music player based on `esp_audio_simple_player`, `esp_playlist`, and the LVGL music demo, with touch controls and repeat modes. |
+| SD Card Music Player | [player/music_player](./player/music_player) | Local SD card music player based on `esp_audio_simple_player`, `esp_playlist`, and `esp_extractor`, with a dark LVGL touch UI, progress bar, and repeat modes. |
 
 ## Usage
 

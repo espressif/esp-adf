@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "freertos/FreeRTOS.h"
 #include "esp_gmf_err.h"
 #include "esp_log.h"
 #include "esp_board_manager_includes.h"
@@ -73,7 +74,10 @@ esp_err_t music_player_display_lock_run(void (*cb)(void *ctx), void *ctx)
 {
     ESP_GMF_CHECK(TAG, cb != NULL, return ESP_ERR_INVALID_ARG, "Callback is NULL");
     ESP_GMF_CHECK(TAG, s_adapter_inited, return ESP_ERR_INVALID_STATE, "Display adapter not initialized");
-    ESP_GMF_RET_ON_ERROR(TAG, esp_lv_adapter_lock(-1), return err_rc_, "Failed to lock LVGL adapter");
+    esp_err_t ret = esp_lv_adapter_lock(pdMS_TO_TICKS(100));
+    if (ret != ESP_OK) {
+        return ret;
+    }
     cb(ctx);
     esp_lv_adapter_unlock();
     return ESP_OK;
@@ -155,11 +159,14 @@ esp_err_t music_player_display_init(void)
 
     esp_lv_adapter_config_t adapter_cfg = ESP_LV_ADAPTER_DEFAULT_CONFIG();
     adapter_cfg.task_core_id = 0;
+#ifdef CONFIG_SPIRAM
     adapter_cfg.stack_in_psram = true;
+#endif  /* CONFIG_SPIRAM */
     ret = esp_lv_adapter_init(&adapter_cfg);
     ESP_GMF_RET_ON_ERROR(TAG, ret, goto err_cleanup, "Failed to init LVGL adapter");
     s_adapter_inited = true;
 
+    /* Single-FB RGB/DSI panels: avoid TRIPLE_PARTIAL (draw_fb NULL crash). */
     esp_lv_adapter_display_config_t disp_cfg;
     if (strcmp(lcd_cfg->sub_type, ESP_BOARD_DEVICE_LCD_SUB_TYPE_DSI) == 0) {
         disp_cfg = ESP_LV_ADAPTER_DISPLAY_MIPI_DEFAULT_CONFIG(lcd_handles->panel_handle,
@@ -168,13 +175,20 @@ esp_err_t music_player_display_init(void)
                                                               lcd_cfg->lcd_height,
                                                               ESP_LV_ADAPTER_ROTATE_0);
         disp_cfg.tear_avoid_mode = ESP_LV_ADAPTER_TEAR_AVOID_MODE_NONE;
+#ifdef CONFIG_SPIRAM
         disp_cfg.profile.use_psram = true;
-    } else if (strcmp(lcd_cfg->sub_type, ESP_BOARD_DEVICE_LCD_SUB_TYPE_RGB) == 0) {
+#endif  /* CONFIG_SPIRAM */
+    } else if (strcmp(lcd_cfg->sub_type, ESP_BOARD_DEVICE_LCD_SUB_TYPE_RGB) == 0 ||
+               strcmp(lcd_cfg->sub_type, ESP_BOARD_DEVICE_LCD_SUB_TYPE_RGB_3WIRE_SPI) == 0) {
         disp_cfg = ESP_LV_ADAPTER_DISPLAY_RGB_DEFAULT_CONFIG(lcd_handles->panel_handle,
                                                              lcd_handles->io_handle,
                                                              lcd_cfg->lcd_width,
                                                              lcd_cfg->lcd_height,
                                                              ESP_LV_ADAPTER_ROTATE_0);
+        disp_cfg.tear_avoid_mode = ESP_LV_ADAPTER_TEAR_AVOID_MODE_NONE;
+#ifdef CONFIG_SPIRAM
+        disp_cfg.profile.use_psram = true;
+#endif  /* CONFIG_SPIRAM */
     } else {
         disp_cfg = ESP_LV_ADAPTER_DISPLAY_SPI_WITH_PSRAM_DEFAULT_CONFIG(lcd_handles->panel_handle,
                                                                         lcd_handles->io_handle,

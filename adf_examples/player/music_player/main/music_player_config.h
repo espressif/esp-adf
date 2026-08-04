@@ -6,7 +6,7 @@
 
 #pragma once
 
-#define MUSIC_PLAYER_QUEUE_LEN           8
+#define MUSIC_PLAYER_QUEUE_LEN           16
 #define MUSIC_PLAYER_TITLE_MAX           CONFIG_ESP_PLAYLIST_MEDIA_NAME_MAX
 #define MUSIC_PLAYER_SCAN_DEPTH          1
 #define MUSIC_PLAYER_DEFAULT_VOLUME      70
@@ -18,7 +18,8 @@
 #define MUSIC_PLAYER_ASP_TASK_STACK      6144
 #define MUSIC_PLAYER_ASP_TASK_PRIO       10
 #define MUSIC_PLAYER_FONT_PATH           "F:font.ttf"
-#define MUSIC_PLAYER_FONT_SIZE           24
+#define MUSIC_PLAYER_FONT_SIZE           28
+#define MUSIC_PLAYER_PROGRESS_POLL_MS    500
 
 typedef enum {
     MUSIC_PLAYER_CMD_PLAY = 0,        /*!< Play current track */
