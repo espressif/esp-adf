@@ -24,7 +24,7 @@
 
 ### 配置
 
-准备一张 microSD 卡，将 [音频样例](https://docs.espressif.com/projects/esp-adf/zh_CN/latest/design-guide/audio-samples.html#short-samples) 立体声音源下载至该 microSD 卡中。用户也可以选择自备音源。
+准备一张 microSD 卡，将 [音频样例](https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/design-guide/audio-samples.html#short-samples) 立体声音源下载至该 microSD 卡中。用户也可以选择自备音源。
 
 > 本例程默认使用固定名称为 `test` 的音频文件，即 `test.mp3`。请注意修改文件名称为`test`。
 

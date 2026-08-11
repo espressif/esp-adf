@@ -141,7 +141,7 @@ LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列�
 │   │   ├── pixel.c
 │   │   ├── CMakeLists.txt
 │   │   └── component.mk
-│   ├── utilis
+│   ├── utilise
 │   │   ├── CMakeLists.txt
 │   │   ├── esp_color.c
 │   │   └── esp_color.h                    <!-- 色彩相关，例如：RGB -> HSV / HSV -> RGB -->
@@ -171,7 +171,7 @@ LED 矩阵有多种排列方式，下方列举三种 6 X 7 的 LED 矩阵排列�
 
 ### LED 接线方式
 
-若您选择 ESP32-C3-Lyra + WS2812 进行开发：点击 [ESP32-C3-Lyra 用户指南](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-c3-lyra-v2.0.html) 了解更多。
+若您选择 ESP32-C3-Lyra + WS2812 进行开发：点击 [ESP32-C3-Lyra 用户指南](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/user-guide-esp32-c3-lyra-v2.0.html) 了解更多。
 
 | ESP32-C3-Lyra | WS2812 LED |
 | ------------- | ---------- |

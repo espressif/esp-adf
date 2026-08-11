@@ -25,7 +25,7 @@ This example runs on the boards that are marked with a green checkbox in the [ta
 
 ### Setup Software Environment
 
-Please refer to [Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html#get-started).
+Please refer to [Get Started](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/get-started/index.html#get-started).
 
 ### Authentication Code
 
@@ -119,7 +119,7 @@ After download firmware, click `[RST]` button, and then there will be some logs 
 
 #### Network Configuration
 
-- **Step 1:** Download and install BluFi app on cell phone, [App for Andriod](https://github.com/EspressifApp/EspBlufiForAndroid/releases)/[App for iOS](https://github.com/EspressifApp/EspBlufiForiOS/releases).
+- **Step 1:** Download and install BluFi app on cell phone, [App for Android](https://github.com/EspressifApp/EspBlufiForAndroid/releases)/[App for iOS](https://github.com/EspressifApp/EspBlufiForiOS/releases).
 - **Step 2:** Open Bluetooth and open BluFi app on the cell phone, then scan the device.
 - **Step 3:** Press `[FUNC]` button on device for 4 s, the device will enter Wi-Fi setting mode, and play a tone music "Click Confirm to Start Provisioning".
 - **Step 4:** Fresh the scan list, there will be a device named "BLUFI_DEVICE", click it and choose `[Connect]` on the phone.
@@ -225,14 +225,14 @@ To edit the version of firmware like below:
 - App bin: Change "version.txt" in the project directory and recompile.
 - Tone bin: Use this script to assign version `python $ADF_PATH/tools/audio_tone/mk_audio_tone.py -r tone/ -f components/audio_flash_tone -v v1.1.1`.
 
-The bin files version checking after every booting, exculde profile.bin.
+The bin files version checking after every booting, exclude profile.bin.
 User copy the profile.bin to microSD card root folder and inserted to ESP32-Korvo-DU1906 microSD card slot could be execute the profile.bin upgrade.
 
 The app will wait 15 s for Wi-Fi connection. If the connection succeeds, the OTA process will start; if not, skip it.
 
 ##### Strategy 2
 
-To use OTA strategy 2, some patchs should be applied first.
+To use OTA strategy 2, some patches should be applied first.
 ```bash
 cd $ADF_PATH; git apply $ADF_PATH/examples/korvo_du1906/patches/adf_ota_patch.patch
 ```
@@ -245,7 +245,7 @@ Use ``` python mk_ota_bin.py -h ``` to get more information about the script.
 
 After the script is executed, there will be a combined firmware named "combine_ota_default.bin" generated under the directory. Put the firmware on your website and update the URL.
 
-Press button `[VOL +]` to excute OTA process.
+Press button `[VOL +]` to execute OTA process.
 
 ### Example Log
 
@@ -330,7 +330,7 @@ I (2718) system_api: Base MAC address is not set, read default base MAC address 
 I (2723) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
 I (2747) wifi: wifi firmware version: 0df1a2a
 I (2747) wifi: config NVS flash: enabled
-I (2747) wifi: config nano formating: disabled
+I (2747) wifi: config nano formatting: disabled
 I (2748) wifi: Init dynamic tx buffer num: 32
 I (2752) wifi: Init data frame dynamic rx buffer num: 512
 I (2757) wifi: Init management frame dynamic rx buffer num: 512
@@ -367,7 +367,7 @@ I (9900) flashPartition: 146: label:flash_tone
 I (9900) TONE_STREAM: header tag 2053, format 1
 I (9905) TONE_STREAM: audio tone's tail is DFAC
 I (9911) APP_OTA_UPGRADE: format 1 : 1
-I (9913) APP_OTA_UPGRADE: imcoming magic_word F55F9876, project_name ESP_TONE_BIN
+I (9913) APP_OTA_UPGRADE: incoming magic_word F55F9876, project_name ESP_TONE_BIN
 I (9921) APP_OTA_UPGRADE: current version v1.2.0, incoming version v1.0.9
 W (9929) APP_OTA_UPGRADE: The incoming version is same as or lower than the running version
 E (9938) OTA_SERVICE: No need to upgrade
@@ -673,7 +673,7 @@ I (2712) system_api: Base MAC address is not set, read default base MAC address 
 I (2718) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
 I (2743) wifi: wifi firmware version: 0df1a2a
 I (2743) wifi: config NVS flash: enabled
-I (2743) wifi: config nano formating: disabled
+I (2743) wifi: config nano formatting: disabled
 I (2744) wifi: Init dynamic tx buffer num: 32
 I (2748) wifi: Init data frame dynamic rx buffer num: 512
 I (2753) wifi: Init management frame dynamic rx buffer num: 512

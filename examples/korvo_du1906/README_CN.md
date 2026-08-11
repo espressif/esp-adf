@@ -25,7 +25,7 @@
 
 ### 软件环境配置
 
-请参阅 [快速入门](https://docs.espressif.com/projects/esp-adf/zh_CN/latest/get-started/index.html#get-started)，获取详细信息。
+请参阅 [快速入门](https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/get-started/index.html#get-started)，获取详细信息。
 
 ### 认证代码
 
@@ -330,7 +330,7 @@ I (2718) system_api: Base MAC address is not set, read default base MAC address 
 I (2723) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
 I (2747) wifi: wifi firmware version: 0df1a2a
 I (2747) wifi: config NVS flash: enabled
-I (2747) wifi: config nano formating: disabled
+I (2747) wifi: config nano formatting: disabled
 I (2748) wifi: Init dynamic tx buffer num: 32
 I (2752) wifi: Init data frame dynamic rx buffer num: 512
 I (2757) wifi: Init management frame dynamic rx buffer num: 512
@@ -367,7 +367,7 @@ I (9900) flashPartition: 146: label:flash_tone
 I (9900) TONE_STREAM: header tag 2053, format 1
 I (9905) TONE_STREAM: audio tone's tail is DFAC
 I (9911) APP_OTA_UPGRADE: format 1 : 1
-I (9913) APP_OTA_UPGRADE: imcoming magic_word F55F9876, project_name ESP_TONE_BIN
+I (9913) APP_OTA_UPGRADE: incoming magic_word F55F9876, project_name ESP_TONE_BIN
 I (9921) APP_OTA_UPGRADE: current version v1.2.0, incoming version v1.0.9
 W (9929) APP_OTA_UPGRADE: The incoming version is same as or lower than the running version
 E (9938) OTA_SERVICE: No need to upgrade
@@ -673,7 +673,7 @@ I (2712) system_api: Base MAC address is not set, read default base MAC address 
 I (2718) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
 I (2743) wifi: wifi firmware version: 0df1a2a
 I (2743) wifi: config NVS flash: enabled
-I (2743) wifi: config nano formating: disabled
+I (2743) wifi: config nano formatting: disabled
 I (2744) wifi: Init dynamic tx buffer num: 32
 I (2748) wifi: Init data frame dynamic rx buffer num: 512
 I (2753) wifi: Init management frame dynamic rx buffer num: 512

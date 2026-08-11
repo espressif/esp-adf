@@ -24,7 +24,7 @@ This example is built on the [ESP-GMF](https://github.com/espressif/esp-gmf) fra
 
 ### Hardware Preparation
 
-- This example defaults to the `esp32-s3-korvo-2` development board. For hardware reference, please see the related [documentation](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html). Other versions can be selected in `menuconfig->GMF APP Configuration → Target Board`.
+- This example defaults to the `esp32-s3-korvo-2` development board. For hardware reference, please see the related [documentation](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html). Other versions can be selected in `menuconfig->GMF APP Configuration → Target Board`.
 
 > If you are using a custom development board, you need to perform the following four steps:
 

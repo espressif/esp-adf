@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Espressif Audio Development Framework Guide
-    url: https://docs.espressif.com/projects/esp-adf/en/latest/index.html
+    url: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/index.html
     about: This is the documentation for Espressif Audio Development Framework (ADF)
   - name: ESP-IDF Programming Guide
     url: https://docs.espressif.com/projects/esp-idf/en/latest/

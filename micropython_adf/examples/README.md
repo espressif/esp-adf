@@ -18,7 +18,7 @@ Supported audio boards:
 
 | ESP32-LyraT | ESP32-LyraT-Mini | ESP32-S3-Korvo2-V3 |
 |:-----------:|:---------------:|:---------------:|
-| [![alt text](../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html) | [![alt text](../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html) | [![alt text](../../docs/_static/esp32-s3-korvo-2-v3.0-small.png "ESP32-S3-Korvo2-v3")](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html) |
+| [![alt text](../../docs/_static/esp32-lyrat-v4.3-side-small.jpg "ESP32-LyraT")](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/get-started/get-started-esp32-lyrat.html) | [![alt text](../../docs/_static/esp32-lyrat-mini-v1.2-small.jpg "ESP32-LyraT-Mini")](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/get-started/get-started-esp32-lyrat-mini.html) | [![alt text](../../docs/_static/esp32-s3-korvo-2-v3.0-small.png "ESP32-S3-Korvo2-v3")](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html) |
 | ![alt text](../../docs/_static/yes-button.png "Compatible") | ![alt text](../../docs/_static/yes-button.png "Compatible") | ![alt text](../../docs/_static/yes-button.png "Compatible") |
 
 SDCard is needed to store the scripts and libs.

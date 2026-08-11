@@ -10,7 +10,7 @@ This example uses the fatfs element to read the music file from microSD card, th
 
 This example supports MP3, OPUS, OGG, FLAC, AAC, M4A, TS, MP4, AMRNB and AMRWB audio formats, MP3 format is selected by default.
 
-The audio source referenced in the example can be obtained through [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) and downloaded to the microSD card.
+The audio source referenced in the example can be obtained through [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/audio-samples.html#short-samples) and downloaded to the microSD card.
 
 The following table lists the music formats supported by this example:
 
@@ -40,7 +40,7 @@ This example supports IDF release/v5.3 and later branches. By default, it runs o
 
 ### Configuration
 
-Prepare a microSD card, and download [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) audio music to the microSD card. Of course it can also be user-supplied music.
+Prepare a microSD card, and download [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/audio-samples.html#short-samples) audio music to the microSD card. Of course it can also be user-supplied music.
 
 > In this example, the file name to be played is fixed, starting with `test` and ending with the format name suffix, such as `test.mp3`.
 

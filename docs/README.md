@@ -1,6 +1,6 @@
 # Documentation Source Folder
 
-This folder contains source files of **ESP-ADF documentation** available in [English](https://docs.espressif.com/projects/esp-adf/en/latest/) and [中文](https://docs.espressif.com/projects/esp-adf/zh_CN/latest/).
+This folder contains source files of **ESP-ADF documentation** available in [English](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/) and [中文](https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/).
 
 The sources do not render well in GitHub and some information is not visible at all.
 
@@ -8,10 +8,10 @@ Use actual documentation generated within about 20 minutes on each commit:
 
 # Hosted Documentation
 
-* English: https://docs.espressif.com/projects/esp-adf/en/latest/
-* 中文: https://docs.espressif.com/projects/esp-adf/zh_CN/latest/
+* English: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/
+* 中文: https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/
 
-The above URLs are all for the master branch latest version. Click on the link in the bottom right corner to download the PDF version.
+The above URLs are for the ESP-ADF release/v2.x documentation. Click on the link in the bottom right corner to download the PDF version.
 
 
 # Building Documentation

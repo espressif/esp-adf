@@ -8,7 +8,7 @@
 
 ADF defines a series of common [display patterns](https://github.com/espressif/esp-adf/blob/master/components/display_service/include/display_service.h) from a functional point of view. In different hardware environments, you can use the interface `display_service_set_pattern` to set display patterns. Currently, ADF allows you to drive LEDs with [PWM](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_indicator/led_indicator.c), [AW2013](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_aw2013.c), [IS3x](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_is31x.c), and [WS2812](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_ws2812.c).
 
-This example demonstrates how to set LED mode and checks whether all LEDs are working properly. For more information, please refer to [ADF Get Started](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html).
+This example demonstrates how to set LED mode and checks whether all LEDs are working properly. For more information, please refer to [ADF Get Started](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/get-started/index.html).
 
 
 ## Environment Setup

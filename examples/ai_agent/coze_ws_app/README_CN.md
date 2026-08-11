@@ -24,7 +24,7 @@
 
 ### 硬件准备
 
-- 本例程默认的是 `esp32-s3-korvo-2` 开发板，硬件参考相关[文档](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html)，其他的版本可以在 `menuconfig->GMF APP Configuration → Target Board` 中选择。
+- 本例程默认的是 `esp32-s3-korvo-2` 开发板，硬件参考相关[文档](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html)，其他的版本可以在 `menuconfig->GMF APP Configuration → Target Board` 中选择。
 
 > 如果您使用的是自定义开发板， 则需要执行以下四步：
 

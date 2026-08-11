@@ -8,7 +8,7 @@
 
 ADF 从功能角度为定义了一系列常见的 [显示模式](https://github.com/espressif/esp-adf/blob/master/components/display_service/include/display_service.h)，在不同硬件环境下，用户可使用统一接口 `display_service_set_pattern` 设置显示模式。目前已添加的驱动 LED 方式有 [PWM](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_indicator/led_indicator.c)、[AW2013](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_aw2013.c)、[IS3x](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_is31x.c)、[WS2812](https://github.com/espressif/esp-adf/blob/master/components/display_service/led_bar/led_bar_ws2812.c)。
 
-本例程主要演示如何操作 LED 模式，以及验证所有 LED 是否正常工作，更多信息请参考 [ADF 入门指南](https://docs.espressif.com/projects/esp-adf/zh_CN/latest/get-started/index.html)。
+本例程主要演示如何操作 LED 模式，以及验证所有 LED 是否正常工作，更多信息请参考 [ADF 入门指南](https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/get-started/index.html)。
 
 
 ## 环境配置
