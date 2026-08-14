@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2~2
+
+### Bug Fixes
+
+- Fixed examples and test app to depend on the local component via `override_path` instead of the whole `components/` tree
+
 ## v0.5.2~1
 
 ### Bug Fixes

@@ -86,7 +86,8 @@ variables:
     - common_script
     - cd $PROJECT_ROOT
     - pip install idf_build_apps
-    - build_apps example
+    - build_test_apps example
+    - mkdir -p "${IDF_VERSION_TAG}" && if [ -f "${PROJECT_ROOT}/apps_path.json" ]; then mv "${PROJECT_ROOT}/apps_path.json" "${IDF_VERSION_TAG}/apps_path.json"; fi
 
 
 .build_component_test_template: 
@@ -115,7 +116,8 @@ variables:
     - common_script
     - cd $PROJECT_ROOT
     - git log -1
-    - build_apps test_app
+    - build_test_apps test_app
+    - mkdir -p "${IDF_VERSION_TAG}" && if [ -f "${PROJECT_ROOT}/apps_path.json" ]; then mv "${PROJECT_ROOT}/apps_path.json" "${IDF_VERSION_TAG}/apps_path.json"; fi
 
 
 .target_test_template:

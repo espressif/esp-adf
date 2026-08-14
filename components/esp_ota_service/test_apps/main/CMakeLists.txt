@@ -10,6 +10,5 @@ idf_component_register(
                   esp_ota_service mbedtls
                   nvs_flash
                   fatfs vfs
-                  espressif__esp_board_manager
     WHOLE_ARCHIVE
 )

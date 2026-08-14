@@ -78,6 +78,9 @@
 .if-esp32p4-env: &if-esp32p4-env
   if: '$ESP32P4_ENV != ""'
 
+.if-idf-version-lt-v6: &if-idf-version-lt-v6
+  if: '$IDF_VERSION_TAG =~ /^v5\./'
+
 .if-label-example: &if-label-example
   if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example(?:,[^,\n\r]+)*$/i'
 
@@ -127,6 +130,15 @@
 .rules:build:enable-unit-test-esp32p4:
   rules:
     - <<: *if-dev-push
+      when: never
+    - if: '$ESP32P4_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
+    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
+
+.rules:test:enable-unit-test-esp32p4:
+  rules:
+    - <<: *if-dev-push
+      when: never
+    - <<: *if-idf-version-lt-v6
       when: never
     - if: '$ESP32P4_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
     - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
@@ -203,6 +215,14 @@
 .rules:build:enable-example-test-esp32p4:
   rules:
     - <<: *if-open-merge-request
+      when: never
+    - if: '$ESP32P4_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
+
+.rules:test:enable-example-test-esp32p4:
+  rules:
+    - <<: *if-open-merge-request
+      when: never
+    - <<: *if-idf-version-lt-v6
       when: never
     - if: '$ESP32P4_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
 

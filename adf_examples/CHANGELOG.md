@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.5~1
+
+### Bug Fixes
+
+- Fixed `services_hub` to depend on local ADF services via `override_path` instead of the whole `components/` tree
+
 ## v0.2.5
 
 ### Features

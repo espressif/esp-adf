@@ -69,7 +69,7 @@ pytest_components_esp32s3:
 
 pytest_components_esp32p4:
   extends:
-    - .rules:build:enable-unit-test-esp32p4
+    - .rules:test:enable-unit-test-esp32p4
     - .pytest_components_template
   needs:
     - 'component_test_esp32p4'
