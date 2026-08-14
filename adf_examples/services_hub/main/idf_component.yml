@@ -4,3 +4,13 @@
 # .cursor/rules/esp-board-manager.mdc).
 dependencies:
   espressif/esp_board_manager: "*"
+  espressif/esp_service:
+    override_path: "../../../components/esp_service"
+  espressif/adf_event_hub:
+    override_path: "../../../components/adf_event_hub"
+  espressif/esp_button_service:
+    override_path: "../../../components/esp_button_service"
+  espressif/esp_cli_service:
+    override_path: "../../../components/esp_cli_service"
+  espressif/esp_ota_service:
+    override_path: "../../../components/esp_ota_service"

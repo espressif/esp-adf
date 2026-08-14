@@ -1,5 +1,7 @@
 dependencies:
   espressif/esp_board_manager: "*"
+  espressif/esp_ota_service:
+    override_path: "../../../"
   # USB Host Mass Storage Class driver — consumed by ota_fs_example_usb.c
   # when CONFIG_OTA_FS_EXAMPLE_STORAGE_USB_MSC=y. Fetched unconditionally
   # because the component manager resolves deps before Kconfig runs; it

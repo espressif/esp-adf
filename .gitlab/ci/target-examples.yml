@@ -39,7 +39,7 @@ example_test_esp32s3:
 
 example_test_esp32p4:
   extends:
-    - .rules:build:enable-example-test-esp32p4
+    - .rules:test:enable-example-test-esp32p4
     - .pytest_example_template
   variables:
     IDF_TARGET: esp32p4
