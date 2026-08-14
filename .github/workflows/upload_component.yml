@@ -31,6 +31,9 @@ jobs:
             components/esp_capture_service;
             components/esp_audio_capture_service;
             components/esp_video_capture_service;
+            components/esp_player_service;
+            components/esp_audio_player_service;
+            components/esp_video_player_service;
             adf_examples;
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}

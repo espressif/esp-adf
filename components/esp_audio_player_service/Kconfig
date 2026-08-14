@@ -1,0 +1,12 @@
+menu "ESP Audio Player Service"
+
+    config AUDIO_PLAYER_SERVICE_MCP_ENABLE
+        bool "Enable audio player MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Compile the audio player MCP handler and a complete flash-resident
+            schema (playback tools plus ID3). Tool names use the
+            esp_audio_player_service_ prefix.
+
+endmenu

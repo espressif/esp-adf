@@ -1,0 +1,50 @@
+version: "0.5.0"
+description: >-
+  Multi-stream playback SINK service on esp_media_service: mixer, stream,
+  URL / feed / link, playlist, ID3, optional video output via subclass attach
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_player_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_player_service/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "player_service"
+  - "esp_service"
+  - "gmf"
+  - "adf"
+
+dependencies:
+  espressif/esp_media_service:
+    require: public
+    version: "~0.5"
+    override_path: "../esp_media_service"
+  espressif/esp_service:
+    require: public
+    version: "~0.5"
+    override_path: "../esp_service"
+  espressif/esp_playlist:
+    require: public
+    version: "~0.5"
+  espressif/esp_player:
+    require: public
+    version: "~1.0"
+  espressif/esp_extractor:
+    require: public
+    version: "~1.0"
+  espressif/esp_audio_render:
+    matches:
+    - if: $CONFIG{ESP_PLAYER_ENABLE_AUDIO} == True
+    require: private
+    version: "~1.0"
+  espressif/esp_codec_dev:
+    matches:
+    - if: $CONFIG{ESP_PLAYER_ENABLE_AUDIO} == True
+    require: private
+    version: "~2.0.0-beta1"
+  espressif/gmf_audio:
+    matches:
+    - if: $CONFIG{ESP_PLAYER_ENABLE_AUDIO} == True
+    require: private
+    version: "~1.0"
+  espressif/gmf_core:
+    require: private
+    version: "~1.0"

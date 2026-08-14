@@ -1,0 +1,8 @@
+dependencies:
+  espressif/esp_player_service:
+    require: public
+    version: "~0.5"
+    override_path: "../.."
+  espressif/esp_audio_codec:
+    require: public
+    version: "*"

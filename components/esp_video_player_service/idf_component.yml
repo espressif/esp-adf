@@ -1,0 +1,41 @@
+version: "0.5.0"
+description: >-
+  Board-aware video player subclass: attaches LCD render and audio DAC to
+  one esp_player_service handle, plus container track APIs
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_video_player_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_video_player_service/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "video_player_service"
+  - "esp_service"
+  - "gmf"
+  - "adf"
+
+dependencies:
+  espressif/esp_player_service:
+    require: public
+    version: "~0.5"
+    override_path: "../esp_player_service"
+  espressif/esp_audio_player_service:
+    require: public
+    version: "~0.5"
+    override_path: "../esp_audio_player_service"
+  espressif/esp_video_render:
+    require: public
+    version: "~1.0"
+  espressif/esp_board_manager:
+    require: public
+    version: "~0.7"
+  espressif/gmf_core:
+    require: private
+    version: "~1.0"
+  espressif/gmf_video:
+    require: private
+    version: "~1.0"
+  espressif/cjson:
+    require: private
+    version: "*"
+
+examples:
+  - path: "./examples/video_player_mix_cli_example"

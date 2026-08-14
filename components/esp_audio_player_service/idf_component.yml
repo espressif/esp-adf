@@ -1,0 +1,31 @@
+version: "0.5.0"
+description: >-
+  Board-aware audio player subclass: attaches DAC lookup to esp_player_service
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_audio_player_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_audio_player_service/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "audio_player_service"
+  - "esp_service"
+  - "gmf"
+  - "adf"
+
+dependencies:
+  espressif/esp_player_service:
+    require: public
+    version: "~0.5"
+    override_path: "../esp_player_service"
+  espressif/esp_codec_dev:
+    require: public
+    version: "~2.0.0-beta1"
+  espressif/esp_board_manager:
+    require: public
+    version: "~0.7"
+  espressif/cjson:
+    require: private
+    version: "*"
+
+examples:
+  - path: "./examples/audio_player_mix_cli_example"
+  - path: "./examples/audio_player_mcp_example"

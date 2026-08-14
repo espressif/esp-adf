@@ -1,0 +1,14 @@
+dependencies:
+  espressif/esp_video_player_service:
+    require: public
+    version: "~0.5"
+    override_path: "../.."
+  espressif/esp_audio_codec:
+    require: public
+    version: "*"
+  espressif/esp_video_codec:
+    require: public
+    version: "~0.5"
+  espressif/esp_board_manager:
+    require: public
+    version: "~0.7"

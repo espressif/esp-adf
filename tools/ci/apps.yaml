@@ -83,6 +83,24 @@ EXAMPLES:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_audio_player_service/examples/audio_player_mix_cli_example
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_audio_player_service/examples/audio_player_mcp_example
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_video_player_service/examples/video_player_mix_cli_example
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
 
 TEST_APPS:
   - app_dir: components/esp_codec_dev/test_apps/codec_dev_test
@@ -125,6 +143,12 @@ TEST_APPS:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_player_service/test_apps
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
   - app_dir: components/esp_audio_capture_service/test_apps
     board:
       esp32s3:
@@ -133,3 +157,15 @@ TEST_APPS:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_audio_player_service/test_apps
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_video_player_service/test_apps
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
