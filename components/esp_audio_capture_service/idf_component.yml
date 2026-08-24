@@ -1,0 +1,30 @@
+version: "0.5.0"
+description: Audio capture service with encoding and storage support
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_audio_capture_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_audio_capture_service/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "audio_capture"
+  - "esp_service"
+  - "adf"
+  - "gmf"
+
+dependencies:
+  espressif/esp-sr:
+    version: "~2.4"
+  espressif/gmf_ai_audio:
+    version: "~1.0"
+  espressif/esp_capture_service:
+    version: "~0.5"
+    override_path: "../esp_capture_service"
+    require: public
+  espressif/esp_board_manager:
+    version: "~0.7"
+    require: public
+  espressif/esp_muxer:
+    require: public
+    version: "~1.2"
+  espressif/cjson:
+    require: private
+    version: "*"

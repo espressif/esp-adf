@@ -77,7 +77,9 @@ esp_err_t esp_media_provider_acquire_frame(const esp_media_provider_t *provider,
         RET_FOR(ESP_ERR_NOT_SUPPORTED, "Provider no op for acquire frame");
     }
     esp_err_t ret = provider->ops->acquire_frame(provider->ctx, out_frame, timeout_ms);
-    if (ret != ESP_OK && ret != ESP_ERR_TIMEOUT) {
+    /* TIMEOUT / NOT_FOUND / INVALID_STATE: empty queue, no track, or provider aborted. */
+    if (ret != ESP_OK && ret != ESP_ERR_TIMEOUT && ret != ESP_ERR_NOT_FOUND &&
+        ret != ESP_ERR_INVALID_STATE) {
         RET_FOR(ret, "Failed to acquire frame ret:%d", ret);
     }
     return ret;
@@ -93,9 +95,13 @@ esp_err_t esp_media_provider_read_frame(const esp_media_provider_t *provider, es
     if (provider->ops->read_frame == NULL) {
         RET_FOR(ESP_ERR_NOT_SUPPORTED, "Provider no op for read frame");
     }
-    RET_CHK(provider->ops->read_frame(provider->ctx, out_frame, timeout_ms),
-            "Failed to read provider frame timeout:%u", timeout_ms);
-    return ESP_OK;
+    esp_err_t ret = provider->ops->read_frame(provider->ctx, out_frame, timeout_ms);
+    /* TIMEOUT / NOT_FOUND / INVALID_STATE: empty queue, no track, or provider aborted. */
+    if (ret != ESP_OK && ret != ESP_ERR_TIMEOUT && ret != ESP_ERR_NOT_FOUND &&
+        ret != ESP_ERR_INVALID_STATE) {
+        RET_FOR(ret, "Failed to read frame ret:%d timeout:%u", ret, timeout_ms);
+    }
+    return ret;
 }
 
 esp_err_t esp_media_provider_release_frame(const esp_media_provider_t *provider, esp_media_frame_t *frame)

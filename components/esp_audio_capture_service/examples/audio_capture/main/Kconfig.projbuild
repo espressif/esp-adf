@@ -1,0 +1,45 @@
+menu "Audio record example"
+
+    config AUDIO_RECORD_ENABLE_VERIFY
+        bool "Enable recorded-file playback verification"
+        default y
+        help
+            Build the extractor, decoder, and player path used when the optional
+            "verify" command argument is supplied.
+
+    if ESP_AUDIO_CAPTURE_SERVICE_MCP_ENABLE && ESP_MCP_TRANSPORT_UART
+
+    menu "MCP UART pins"
+
+        config AUDIO_RECORD_MCP_UART_PORT
+            int "MCP UART port number"
+            range 0 2
+            default 1
+            help
+                UART port used by the MCP transport. Keep this off the console UART.
+
+        config AUDIO_RECORD_MCP_UART_TX_IO
+            int "MCP UART TX GPIO"
+            range 0 48
+            default 21
+            help
+                Device TX pin. Connect to the USB-UART adapter RX.
+
+        config AUDIO_RECORD_MCP_UART_RX_IO
+            int "MCP UART RX GPIO"
+            range 0 48
+            default 22
+            help
+                Device RX pin. Connect to the USB-UART adapter TX.
+
+        config AUDIO_RECORD_MCP_UART_BAUD
+            int "MCP UART baud rate"
+            default 115200
+            help
+                Baud rate for the MCP UART transport.
+
+    endmenu
+
+    endif  # ESP_AUDIO_CAPTURE_SERVICE_MCP_ENABLE && ESP_MCP_TRANSPORT_UART
+
+endmenu

@@ -1,0 +1,45 @@
+menu "ESP Audio Capture Service"
+
+    config ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_ENABLED
+        bool "Enable AI audio source"
+        default y
+        help
+            Compile the AI audio source implementation.
+
+    if ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_ENABLED
+
+    config ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_AFE_SUPPORT
+        bool "Enable AI source AFE support"
+        default y
+
+    config ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_AEC_SUPPORT
+        bool "Enable AI source AEC support"
+        default y
+
+    config ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_VAD_SUPPORT
+        bool "Enable AI source VAD support"
+        default y
+
+    config ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_NS_SUPPORT
+        bool "Enable AI source NS support"
+        default y
+
+    config ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_WN_SUPPORT
+        bool "Enable AI source WakeNet support"
+        default y
+
+    config ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_DOA_SUPPORT
+        bool "Enable AI source DOA support"
+        default y
+
+    endif  # ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_ENABLED
+
+    config ESP_AUDIO_CAPTURE_SERVICE_MCP_ENABLE
+        bool "Enable audio capture service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Build the audio capture service MCP tool handler and embedded tool schema.
+            This option depends on the global ESP Service MCP support.
+
+endmenu

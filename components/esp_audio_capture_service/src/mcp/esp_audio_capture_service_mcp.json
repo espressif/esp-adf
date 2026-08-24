@@ -1,0 +1,181 @@
+[
+  {
+    "name": "esp_audio_capture_service_apply_setup",
+    "description": "Configure audio capture streams, codecs, and optional muxer settings before start",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "fixed_src_sample_rate": {
+          "type": "integer",
+          "description": "Optional source sample-rate pin in Hz; 0 leaves unset"
+        },
+        "streams": {
+          "type": "array",
+          "description": "One or two output stream configurations",
+          "items": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether the stream is enabled after setup; defaults to true"
+              },
+              "codec": {
+                "type": "string",
+                "description": "Audio codec FourCC string such as 'AAC ', 'PCM ', 'ALAW', 'OPUS'"
+              },
+              "sample_rate": {
+                "type": "integer",
+                "description": "Stream sample rate in Hz"
+              },
+              "bits_per_sample": {
+                "type": "integer",
+                "description": "Bits per sample"
+              },
+              "channel": {
+                "type": "integer",
+                "description": "Channel count"
+              },
+              "bitrate": {
+                "type": "integer",
+                "description": "Encoded bitrate in bit/s; 0 if unused"
+              },
+              "muxer_type": {
+                "type": "string",
+                "description": "Optional muxer FourCC such as 'MP4 ', 'WAV '; omit for none"
+              },
+              "auto_record": {
+                "type": "boolean",
+                "description": "Enable muxer automatically after capture starts"
+              },
+              "streaming": {
+                "type": "boolean",
+                "description": "Keep muxed output available for streaming"
+              },
+              "storage_dir": {
+                "type": "string",
+                "description": "Storage directory for auto/manual recording"
+              }
+            },
+            "required": ["codec"]
+          }
+        }
+      },
+      "required": ["streams"]
+    }
+  },
+  {
+    "name": "esp_audio_capture_service_start",
+    "description": "Start the audio capture service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_audio_capture_service_stop",
+    "description": "Stop the audio capture service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_audio_capture_service_enable_stream",
+    "description": "Enable or disable one output stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream ID"
+        },
+        "enable": {
+          "type": "boolean",
+          "description": "true to enable, false to disable"
+        }
+      },
+      "required": ["stream", "enable"]
+    }
+  },
+  {
+    "name": "esp_audio_capture_service_start_record",
+    "description": "Start recording on a stream with a preconfigured storage muxer",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream ID; defaults to 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_capture_service_stop_record",
+    "description": "Stop recording on a stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream ID; defaults to 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_capture_service_set_storage_url",
+    "description": "Set or clear the manual storage URL for a stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream ID; defaults to 0"
+        },
+        "url": {
+          "type": "string",
+          "description": "Storage URL; omit or empty to clear"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_capture_service_get_last_storage_url",
+    "description": "Get the most recently generated recording URL for a stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream ID; defaults to 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_capture_service_get_storage_file_info",
+    "description": "Stat a recorded storage file and return size, mtime, and ctime. Omit url to use the stream last storage URL.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream ID used when resolving the last storage URL; defaults to 0"
+        },
+        "url": {
+          "type": "string",
+          "description": "Absolute file path to query; omit to use last storage URL"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_capture_service_get_status",
+    "description": "Get the audio capture service state and name",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

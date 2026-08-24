@@ -156,6 +156,47 @@ The media interfaces are designed so stop order is not fragile:
 - Unlink services before resetting or destroying a track manager that was shared through a link.
 - Do not reset or destroy a track manager while another task may still hold an acquired frame or block on its queue.
 
+## Debug Tips
+
+Use `esp_media_dummy_service` to simulate a camera/source or a display/consumer without real hardware. Enable it with:
+
+- `CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT` — dummy source (pattern producer)
+- `CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT` — dummy sink (frame consumer + stats)
+
+Typical uses:
+
+- **Dummy source**: replace a camera/mic while bringing up capture, encode, mux, or link pipelines.
+- **Dummy sink**: replace a display/renderer and verify frame flow with `esp_media_dummy_service_get_stats()`.
+
+Supported pattern codecs:
+
+| Kind | Codecs |
+| --- | --- |
+| Audio | PCM, AAC, OPUS, MP3 |
+| Video | H264, MJPEG, RGB565, RGB888, YUV420 |
+
+Encoded tracks only need the codec field in `add_track()`; raw PCM / raw video need full track metadata.
+
+## MCP Tools
+
+When `CONFIG_ESP_MEDIA_SERVICE_MCP_ENABLE=y` (depends on `CONFIG_ESP_MCP_ENABLE`):
+
+- Global tools `esp_media_service_link` / `esp_media_service_unlink` resolve services by name from a persistent table filled on `esp_media_service_init()`.
+- Call `esp_media_service_mcp_register(mgr)` once to bind those tools to a service manager (idempotent, not unbound on service destroy).
+- Dummy sink tools include `esp_media_dummy_service_start` / `stop` / `get_stats` for PC verification of linked capture flows.
+
+Capture examples under `esp_audio_capture_service` and `esp_video_capture_service` show UART MCP wiring.
+
+## Implement
+
+Built-on services that use `esp_media_service`. Start with the board-aware recorders for typical apps; call lower layers directly when you need custom sources or pipeline control.
+
+| Service | Role | Features | Board / notes |
+| --- | --- | --- | --- |
+| [`esp_audio_capture_service`](../esp_audio_capture_service/README.md) | Audio recorder | Multi-stream, AI (AEC/VAD/WakeNet), muxer/storage | ADC via board manager |
+| [`esp_video_capture_service`](../esp_video_capture_service/README.md) | A/V recorder | Multi-stream, A/V sync, muxer/storage | Camera via board manager; audio via `esp_audio_capture_service` |
+| [`esp_capture_service`](../esp_capture_service/README.md) | Capture base | Common capture API (audio/video), no board binding | Advanced usage: call directly with your own sources, overlay etc |
+
 ## Technical Support
 
 For technical support, use the links below:

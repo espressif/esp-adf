@@ -1,0 +1,54 @@
+[
+  {
+    "name": "esp_media_service_link",
+    "description": "Link a media source stream to a media sink stream so frames flow in C without MCP data transfer",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "src_name": {
+          "type": "string",
+          "description": "Source media service name"
+        },
+        "src_stream": {
+          "type": "integer",
+          "description": "Source stream ID; defaults to 0"
+        },
+        "sink_name": {
+          "type": "string",
+          "description": "Sink media service name"
+        },
+        "sink_stream": {
+          "type": "integer",
+          "description": "Sink stream ID; defaults to 0"
+        }
+      },
+      "required": ["src_name", "sink_name"]
+    }
+  },
+  {
+    "name": "esp_media_service_unlink",
+    "description": "Unlink a media source stream from a media sink stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "src_name": {
+          "type": "string",
+          "description": "Source media service name"
+        },
+        "src_stream": {
+          "type": "integer",
+          "description": "Source stream ID; defaults to 0"
+        },
+        "sink_name": {
+          "type": "string",
+          "description": "Sink media service name"
+        },
+        "sink_stream": {
+          "type": "integer",
+          "description": "Sink stream ID; defaults to 0"
+        }
+      },
+      "required": ["src_name", "sink_name"]
+    }
+  }
+]

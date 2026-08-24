@@ -1,0 +1,163 @@
+[
+  {
+    "name": "esp_video_capture_service_apply_setup",
+    "description": "Configure video capture streams, optional audio tracks, overlay, and muxer settings before start",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "fixed_src_sample_rate": {
+          "type": "integer",
+          "description": "Optional source audio sample-rate pin in Hz; 0 leaves unset"
+        },
+        "fb_num": {
+          "type": "integer",
+          "description": "V4L2 frame buffer count; 0 uses Kconfig default"
+        },
+        "share_overlay": {
+          "type": "boolean",
+          "description": "Share one overlay mixer across sinks"
+        },
+        "full_speed_decode": {
+          "type": "boolean",
+          "description": "Decode before re-encode on the source path"
+        },
+        "overlay": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "show_camera_type": { "type": "boolean" },
+            "show_datetime": { "type": "boolean" },
+            "camera_type": { "type": "string" }
+          }
+        },
+        "streams": {
+          "type": "array",
+          "description": "One or two output stream configurations",
+          "items": {
+            "type": "object",
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "audio_codec": {
+                "type": "string",
+                "description": "Optional audio FourCC such as 'AAC '; omit or empty for no audio track"
+              },
+              "sample_rate": { "type": "integer" },
+              "bits_per_sample": { "type": "integer" },
+              "channel": { "type": "integer" },
+              "audio_bitrate": { "type": "integer" },
+              "video_codec": {
+                "type": "string",
+                "description": "Optional video FourCC such as 'H264' or 'MJPG'"
+              },
+              "width": { "type": "integer" },
+              "height": { "type": "integer" },
+              "fps": { "type": "integer" },
+              "video_bitrate": { "type": "integer" },
+              "muxer_type": { "type": "string" },
+              "auto_record": { "type": "boolean" },
+              "streaming": { "type": "boolean" },
+              "storage_dir": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["streams"]
+    }
+  },
+  {
+    "name": "esp_video_capture_service_start",
+    "description": "Start the video capture service",
+    "inputSchema": { "type": "object", "properties": {} }
+  },
+  {
+    "name": "esp_video_capture_service_stop",
+    "description": "Stop the video capture service",
+    "inputSchema": { "type": "object", "properties": {} }
+  },
+  {
+    "name": "esp_video_capture_service_enable_stream",
+    "description": "Enable or disable one output stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": { "type": "integer" },
+        "enable": { "type": "boolean" }
+      },
+      "required": ["stream", "enable"]
+    }
+  },
+  {
+    "name": "esp_video_capture_service_start_record",
+    "description": "Start recording on a stream with a preconfigured storage muxer",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": { "type": "integer" }
+      }
+    }
+  },
+  {
+    "name": "esp_video_capture_service_stop_record",
+    "description": "Stop recording on a stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": { "type": "integer" }
+      }
+    }
+  },
+  {
+    "name": "esp_video_capture_service_set_storage_url",
+    "description": "Set or clear the manual storage URL for a stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": { "type": "integer" },
+        "url": { "type": "string" }
+      }
+    }
+  },
+  {
+    "name": "esp_video_capture_service_get_last_storage_url",
+    "description": "Get the most recently generated recording URL for a stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": { "type": "integer" }
+      }
+    }
+  },
+  {
+    "name": "esp_video_capture_service_get_storage_file_info",
+    "description": "Stat a recorded storage file and return size, mtime, and ctime. Omit url to use the stream last storage URL.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream ID used when resolving the last storage URL; defaults to 0"
+        },
+        "url": {
+          "type": "string",
+          "description": "Absolute file path to query; omit to use last storage URL"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_video_capture_service_overlay_enable_redraw",
+    "description": "Enable or disable periodic overlay redraw",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "enable": { "type": "boolean" }
+      },
+      "required": ["enable"]
+    }
+  },
+  {
+    "name": "esp_video_capture_service_get_status",
+    "description": "Get the video capture service state and name",
+    "inputSchema": { "type": "object", "properties": {} }
+  }
+]

@@ -1,0 +1,11 @@
+menu "ESP Video Capture Service"
+
+    config ESP_VIDEO_CAPTURE_SERVICE_MCP_ENABLE
+        bool "Enable video capture service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Build the video capture service MCP tool handler and embedded tool schema.
+            This option depends on the global ESP Service MCP support.
+
+endmenu
