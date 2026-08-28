@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include "esp_gmf_data_queue.h"
+#include "esp_media_track.h"
 #include "esp_media_track_mngr.h"
 #include "media_track_mngr.h"
 #include "media_service_err.h"
@@ -30,6 +31,30 @@ static inline esp_err_t io_err_to_esp(int ret)
 static inline size_t normalize_align_size(size_t align_size)
 {
     return align_size == 0 ? sizeof(void *) : align_size;
+}
+
+static bool track_info_same(const esp_media_track_info_t *a, const esp_media_track_info_t *b)
+{
+    if (a == NULL || b == NULL) {
+        return a == b;
+    }
+    if (a->id != b->id || a->type != b->type) {
+        return false;
+    }
+    switch (a->type) {
+    case ESP_MEDIA_TRACK_TYPE_AUDIO:
+        return a->info.audio.codec == b->info.audio.codec &&
+               a->info.audio.sample_rate == b->info.audio.sample_rate &&
+               a->info.audio.bits_per_sample == b->info.audio.bits_per_sample &&
+               a->info.audio.channel == b->info.audio.channel;
+    case ESP_MEDIA_TRACK_TYPE_VIDEO:
+        return a->info.video.codec == b->info.video.codec &&
+               a->info.video.width == b->info.video.width &&
+               a->info.video.height == b->info.video.height &&
+               a->info.video.fps == b->info.video.fps;
+    default:
+        return true;
+    }
 }
 
 static size_t track_queue_size(esp_media_track_mngr_t *mngr, const esp_media_track_mngr_cache_cfg_t *cfg)
@@ -56,13 +81,25 @@ static inline bool queue_have_data(esp_gmf_data_queue_t *queue)
 static media_track_t *find_read_track_by_frame(esp_media_track_mngr_t *mngr, const esp_media_frame_t *frame)
 {
     media_track_t *track = find_track_by_frame(mngr, frame);
-    if (track == NULL || track->read_node == NULL) {
-        return NULL;
+    if (track != NULL && track->read_node != NULL) {
+        if (frame->data == NULL ||
+            track->read_node->frame.data == frame->data ||
+            node_payload(track->read_node) == frame->data) {
+            return track;
+        }
     }
-    if (frame->data != NULL && track->read_node->frame.data != frame->data) {
-        return NULL;
+    if (mngr->use_global_cache && frame->data != NULL) {
+        for (uint16_t i = 0; i < mngr->track_num; i++) {
+            media_track_t *t = &mngr->tracks[i];
+            if (t->read_node == NULL) {
+                continue;
+            }
+            if (t->read_node->frame.data == frame->data || node_payload(t->read_node) == frame->data) {
+                return t;
+            }
+        }
     }
-    return track;
+    return NULL;
 }
 
 static media_track_t *select_read_track(esp_media_track_mngr_t *mngr, const esp_media_frame_t *request)
@@ -243,6 +280,9 @@ static esp_err_t provider_acquire_frame(void *ctx, esp_media_frame_t *out_frame,
         media_track_t *node_track = find_track_by_frame(mngr, &node->frame);
         if (node_track != NULL) {
             track = node_track;
+        } else if (node->frame.type != ESP_MEDIA_TRACK_TYPE_UNKNOWN && !node->has_track_info) {
+            esp_gmf_data_queue_release_read(queue);
+            return ESP_ERR_NOT_FOUND;
         }
     }
     if (track->read_node != NULL) {
@@ -269,6 +309,8 @@ static esp_err_t provider_acquire_frame(void *ctx, esp_media_frame_t *out_frame,
     *out_frame = node->frame;
     if (track_cache_type(mngr, track) == ESP_MEDIA_TRACK_CACHE_INTERNAL && !node->has_track_info) {
         out_frame->data = node_payload(node);
+        /* Keep node metadata aligned with the pointer returned to the caller. */
+        node->frame.data = out_frame->data;
     }
     return ESP_OK;
 }
@@ -390,28 +432,70 @@ esp_err_t esp_media_track_mngr_reset(esp_media_track_mngr_t *mngr)
     return ESP_OK;
 }
 
+static void track_mngr_destroy_track_queues(esp_media_track_mngr_t *mngr)
+{
+    for (uint16_t i = 0; i < mngr->track_num; i++) {
+        media_track_t *track = &mngr->tracks[i];
+        if (track->queue != NULL) {
+            esp_gmf_data_queue_destroy(track->queue);
+            track->queue = NULL;
+        }
+    }
+}
+
+static inline void track_mngr_destroy_global_queue(esp_media_track_mngr_t *mngr)
+{
+    if (mngr->global_queue != NULL) {
+        esp_gmf_data_queue_destroy(mngr->global_queue);
+        mngr->global_queue = NULL;
+    }
+}
+
+static inline esp_err_t track_mngr_fail_queue_alloc(esp_media_track_mngr_t *mngr, const char *msg)
+{
+    mngr->aborted = true;
+    wakeup_tracks(mngr);
+    RET_FOR(ESP_ERR_NO_MEM, "%s", msg);
+}
+
 esp_err_t esp_media_track_mngr_set_global_cache(esp_media_track_mngr_t *mngr, bool enable, size_t cache_size)
 {
     if (mngr == NULL) {
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid args mngr:%p", mngr);
     }
-    if (mngr->track_num != 0) {
-        RET_FOR(ESP_ERR_INVALID_STATE, "Cannot set global cache after tracks added track_num:%u",
-                mngr->track_num);
+
+    size_t new_cache_size = global_queue_size(cache_size);
+    bool mode_change = (mngr->use_global_cache != enable);
+    bool size_change = enable && mngr->use_global_cache && (mngr->global_cache_size != new_cache_size);
+
+    /* Relink with unchanged mode/size: drain queues, clear abort, drop in-flight nodes. */
+    if (!mode_change && !size_change) {
+        return esp_media_track_clear_abort(mngr);
     }
-    if (mngr->global_queue != NULL) {
-        esp_gmf_data_queue_wakeup(mngr->global_queue);
-        esp_gmf_data_queue_destroy(mngr->global_queue);
-        mngr->global_queue = NULL;
-    }
-    mngr->use_global_cache = enable;
-    mngr->global_cache_size = global_queue_size(cache_size);
+
+    (void)esp_media_track_clear_abort(mngr);
+
+    /* Destroy before recreate to avoid peak usage of two large caches at once. */
     if (enable) {
-        mngr->global_queue = esp_gmf_data_queue_create((int)mngr->global_cache_size);
+        track_mngr_destroy_track_queues(mngr);
+        track_mngr_destroy_global_queue(mngr);
+        mngr->global_cache_size = new_cache_size;
+        mngr->use_global_cache = true;
+        mngr->global_queue = esp_gmf_data_queue_create((int)new_cache_size);
         if (mngr->global_queue == NULL) {
-            mngr->use_global_cache = false;
-            RET_FOR(ESP_ERR_NO_MEM, "Failed to allocate global queue size:%u",
-                    (unsigned)mngr->global_cache_size);
+            return track_mngr_fail_queue_alloc(mngr, "Failed to allocate global queue");
+        }
+    } else {
+        track_mngr_destroy_global_queue(mngr);
+        mngr->use_global_cache = false;
+        for (uint16_t i = 0; i < mngr->track_num; i++) {
+            media_track_t *track = &mngr->tracks[i];
+            if (track->queue == NULL && track->cache_size > 0) {
+                track->queue = esp_gmf_data_queue_create((int)track->cache_size);
+                if (track->queue == NULL) {
+                    return track_mngr_fail_queue_alloc(mngr, "Failed to allocate track queue");
+                }
+            }
         }
     }
     return ESP_OK;
@@ -428,6 +512,7 @@ esp_err_t esp_media_track_mngr_add_track(esp_media_track_mngr_t *mngr, const esp
     }
 
     media_track_t *track = &mngr->tracks[mngr->track_num];
+    track->cache_size = track_queue_size(mngr, &cfg->cache_cfg);
     if (mngr->use_global_cache) {
         if (mngr->global_queue == NULL) {
             mngr->global_queue = esp_gmf_data_queue_create((int)mngr->global_cache_size);
@@ -437,7 +522,7 @@ esp_err_t esp_media_track_mngr_add_track(esp_media_track_mngr_t *mngr, const esp
             }
         }
     } else {
-        track->queue = esp_gmf_data_queue_create((int)track_queue_size(mngr, &cfg->cache_cfg));
+        track->queue = esp_gmf_data_queue_create((int)track->cache_size);
         if (track->queue == NULL) {
             RET_FOR(ESP_ERR_NO_MEM, "Failed to allocate track queue index:%u",
                     mngr->track_num);
@@ -472,6 +557,9 @@ esp_err_t esp_media_track_mngr_update_track(esp_media_track_mngr_t *mngr, uint16
                 index, mngr->track_num);
     }
     media_track_t *track = &mngr->tracks[index];
+    if (track_info_same(&track->info, info)) {
+        return ESP_OK;
+    }
     esp_gmf_data_queue_t *queue = track_queue(mngr, track);
     if (queue == NULL) {
         RET_FOR(ESP_ERR_NO_MEM, "Track queue unavailable index:%u", index);

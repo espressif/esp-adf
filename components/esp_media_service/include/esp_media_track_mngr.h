@@ -116,16 +116,21 @@ esp_err_t esp_media_track_mngr_destroy(esp_media_track_mngr_t *mngr);
 esp_err_t esp_media_track_mngr_reset(esp_media_track_mngr_t *mngr);
 
 /**
- * @brief  Configure global cache mode before tracks are added
+ * @brief  Configure global cache mode (may be called after tracks exist, e.g. on re-link)
+ *
+ *         When mode and cache size are unchanged, queues are drained, abort is cleared,
+ *         and in-flight read/write nodes are dropped so a stopped manager can restart.
+ *         When mode or global cache size changes, old queues are destroyed first
+ *         then recreated (avoids holding two large caches at peak). If recreate
+ *         fails, abort is set so blocked readers/writers wake with invalid state.
  *
  * @param[in]  mngr        Track manager handle
  * @param[in]  enable      true to use one arrival-order cache shared by all tracks
- * @param[in]  cache_size  Shared queue byte size, 0 uses default
+ * @param[in]  cache_size  Shared queue byte size when enable is true; 0 uses default
  *
  * @return
  *       - ESP_OK                 On success
  *       - ESP_ERR_INVALID_ARG    Track manager is NULL
- *       - ESP_ERR_INVALID_STATE  Tracks have already been added
  *       - ESP_ERR_NO_MEM         Allocation failed
  */
 esp_err_t esp_media_track_mngr_set_global_cache(esp_media_track_mngr_t *mngr, bool enable, size_t cache_size);
@@ -148,7 +153,9 @@ esp_err_t esp_media_track_mngr_add_track(esp_media_track_mngr_t *mngr, const esp
  *
  *         The update is committed when provider acquire/read reaches the queued
  *         zero-size frame with ESP_MEDIA_FRAME_FLAG_TRACK_CHANGED. The provider
- *         event callback is invoked synchronously at that point
+ *         event callback is invoked synchronously at that point.
+ *         If typical metadata (codec, layout) matches the existing track, this
+ *         is a no-op. Bitrate and unused union padding are ignored.
  *
  * @param[in]  mngr   Track manager handle
  * @param[in]  index  Track index to update

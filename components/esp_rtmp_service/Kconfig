@@ -1,0 +1,29 @@
+menu "ESP-RTMP Service"
+
+    config ESP_RTMP_SERVICE_SRC_SUPPORT
+        bool "Enable RTMP source role"
+        default y
+        help
+            Build RTMP puller/source support.
+
+    config ESP_RTMP_SERVICE_SINK_SUPPORT
+        bool "Enable RTMP sink role"
+        default y
+        help
+            Build RTMP pusher/sink support.
+
+    config ESP_RTMP_SERVICE_SERVER_SUPPORT
+        bool "Enable RTMP server role"
+        default y
+        help
+            Build RTMP server/listener support.
+
+    config ESP_RTMP_SERVICE_MCP_ENABLE
+        bool "Enable RTMP service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Build the RTMP service MCP tool handler and embedded tool schema.
+            This option depends on the global ESP Service MCP support.
+
+endmenu

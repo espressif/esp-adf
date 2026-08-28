@@ -1,0 +1,59 @@
+menu "RTMP service example"
+
+    config RTMP_EXAMPLE_WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+
+    config RTMP_EXAMPLE_WIFI_PASSWORD
+        string "WiFi password"
+        default "mypassword"
+
+    config RTMP_EXAMPLE_WIFI_WAIT_SEC
+        int "WiFi connect wait (seconds)"
+        default 10
+        range 5 120
+
+    config RTMP_EXAMPLE_PUSH_URL
+        string "Pusher RTMP URL"
+        default "rtmp://192.168.1.10/live/stream0"
+
+    config RTMP_EXAMPLE_PULL_URL
+        string "Puller RTMP URL"
+        default "rtmp://192.168.1.10/live/stream0"
+
+    config RTMP_EXAMPLE_SERVER_URL
+        string "Local server listen URL"
+        default "rtmp://0.0.0.0:1935/live"
+
+    config RTMP_EXAMPLE_SERVER_STREAM
+        string "Server stream name used in ffmpeg examples"
+        default "stream0"
+
+    if ESP_RTMP_SERVICE_MCP_ENABLE && ESP_MCP_TRANSPORT_UART
+
+    menu "MCP UART pins"
+
+        config RTMP_MCP_UART_PORT
+            int "MCP UART port number"
+            range 0 2
+            default 1
+
+        config RTMP_MCP_UART_TX_IO
+            int "MCP UART TX GPIO"
+            range 0 48
+            default 21
+
+        config RTMP_MCP_UART_RX_IO
+            int "MCP UART RX GPIO"
+            range 0 48
+            default 22
+
+        config RTMP_MCP_UART_BAUD
+            int "MCP UART baud rate"
+            default 115200
+
+    endmenu
+
+    endif  # ESP_RTMP_SERVICE_MCP_ENABLE && ESP_MCP_TRANSPORT_UART
+
+endmenu

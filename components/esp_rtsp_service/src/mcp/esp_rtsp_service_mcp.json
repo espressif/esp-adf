@@ -1,0 +1,86 @@
+[
+  {
+    "name": "esp_rtsp_service_setup",
+    "description": "Apply optional RTSP stream/session setup before start",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "local_port": {
+          "type": "integer",
+          "description": "SERVER listen port; 0 uses default 554"
+        },
+        "transport": {
+          "type": "string",
+          "description": "udp or tcp"
+        },
+        "audio_enable": {
+          "type": "boolean",
+          "description": "SRC: request audio; defaults to true"
+        },
+        "video_enable": {
+          "type": "boolean",
+          "description": "SRC: request video; defaults to true"
+        },
+        "audio_cache_size": {
+          "type": "integer",
+          "description": "SRC per-audio cache size"
+        },
+        "video_cache_size": {
+          "type": "integer",
+          "description": "SRC per-video cache size"
+        },
+        "aud_frame_size": {
+          "type": "integer",
+          "description": "Audio RTP frame buffer; 0 uses default"
+        },
+        "vid_frame_size": {
+          "type": "integer",
+          "description": "Video max frame size; 0 uses default"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_rtsp_service_set_url",
+    "description": "Set the RTSP URL while stopped, for example rtsp://host:554/live",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "RTSP URL"
+        }
+      },
+      "required": ["url"]
+    }
+  },
+  {
+    "name": "esp_rtsp_service_set_ip",
+    "description": "Set local IP while stopped (before start). Not taken from URL; omit or empty to use 0.0.0.0",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ip": {
+          "type": "string",
+          "description": "IPv4 address advertised/bound by the RTSP stack"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_rtsp_service_start",
+    "description": "Start the RTSP service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_rtsp_service_stop",
+    "description": "Stop the RTSP service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

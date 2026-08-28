@@ -1,0 +1,77 @@
+[
+  {
+    "name": "esp_rtmp_service_setup",
+    "description": "Apply optional RTMP role setup before start. Unused fields for the current role are ignored",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "chunk_size": {
+          "type": "integer",
+          "description": "RTMP chunk size; 0 keeps previous/default"
+        },
+        "port": {
+          "type": "integer",
+          "description": "SERVER listen port; 0 keeps previous/default"
+        },
+        "app_name": {
+          "type": "string",
+          "description": "SERVER application name"
+        },
+        "max_clients": {
+          "type": "integer",
+          "description": "SERVER max clients; 0 keeps previous/default"
+        },
+        "cache_size": {
+          "type": "integer",
+          "description": "SRC global interleaved cache size"
+        },
+        "audio_cache_size": {
+          "type": "integer",
+          "description": "SRC per-audio cache size"
+        },
+        "video_cache_size": {
+          "type": "integer",
+          "description": "SRC per-video cache size"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_rtmp_service_set_url",
+    "description": "Set the RTMP URL while stopped. Server: rtmp://host:port/app. Src/Sink: rtmp://host:port/app/stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "RTMP URL"
+        }
+      },
+      "required": ["url"]
+    }
+  },
+  {
+    "name": "esp_rtmp_service_start",
+    "description": "Start the RTMP service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_rtmp_service_stop",
+    "description": "Stop the RTMP service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_rtmp_service_query",
+    "description": "Print server client/session debug information. Server role only",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

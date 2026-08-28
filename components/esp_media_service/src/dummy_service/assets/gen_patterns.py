@@ -92,27 +92,41 @@ def split_opus_ogg(data: bytes):
     return packets
 
 
+def _normalize_annexb_4byte(nal: bytes) -> bytes:
+    """Force a single 4-byte start code (00 00 00 01).
+
+    libx264 Annex-B mixes 3- and 4-byte start codes. Prefer uniform
+    4-byte start codes — the common Annex-B form used by most tools.
+    """
+    if len(nal) >= 4 and nal[:4] == b'\x00\x00\x00\x01':
+        return nal
+    if len(nal) >= 3 and nal[:3] == b'\x00\x00\x01':
+        return b'\x00\x00\x00\x01' + nal[3:]
+    return b'\x00\x00\x00\x01' + nal
+
+
 def split_h264(data: bytes):
+    # Prefer 4-byte start codes so 00 00 00 01 is not split as 00 00 01.
     starts, i = [], 0
     while i + 3 < len(data):
-        if data[i] == 0 and data[i + 1] == 0 and data[i + 2] == 1:
-            starts.append(i)
-            i += 3
-            continue
-        if i + 4 < len(data) and data[i] == 0 and data[i + 1] == 0 and data[i + 2] == 0 and data[i + 3] == 1:
+        if i + 4 <= len(data) and data[i : i + 4] == b'\x00\x00\x00\x01':
             starts.append(i)
             i += 4
+            continue
+        if data[i : i + 3] == b'\x00\x00\x01':
+            starts.append(i)
+            i += 3
             continue
         i += 1
 
     def nal_type(nal):
-        off = 4 if len(nal) > 3 and nal[2] == 0 and nal[3] == 1 else 3
+        off = 4 if len(nal) >= 4 and nal[:4] == b'\x00\x00\x00\x01' else 3
         return nal[off] & 0x1F if off < len(nal) else 0
 
     frames, cur, has_vcl = [], bytearray(), False
     for si, st in enumerate(starts):
         end = starts[si + 1] if si + 1 < len(starts) else len(data)
-        nal = data[st:end]
+        nal = _normalize_annexb_4byte(data[st:end])
         is_vcl = 1 <= nal_type(nal) <= 5
         if is_vcl and has_vcl:
             frames.append(bytes(cur))
