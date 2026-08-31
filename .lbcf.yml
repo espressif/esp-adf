@@ -37,7 +37,7 @@ documents:
       revision_date: 2025-12-24
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/index.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/index.html
       document_summary: This is documentation of Espressif Advanced Development Framework (ESP-ADF, previously known as Espressif Audio Development Framework).
       notify_subscribers: false
       visibility_on_website: show
@@ -69,7 +69,7 @@ documents:
       revision_date: 2025-12-24
       language: cn
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/latest/index.html
+      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/index.html
       document_summary: 本指南为乐鑫高级开发框架 ESP-ADF 的配套文档，该框架原名为“乐鑫音频开发框架”。
       notify_subscribers: false
       visibility_on_website: show
@@ -92,7 +92,7 @@ documents:
       revision_date: 2024-12-24
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-c3-lyra.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/user-guide-esp32-c3-lyra.html
       document_summary: This user guide will help you get started with ESP32-C3-Lyra V2.0 and will also provide more in-depth information.
       notify_subscribers: false
       visibility_on_website: show
@@ -115,7 +115,7 @@ documents:
       revision_date: 2024-12-24
       language: cn
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/latest/design-guide/dev-boards/user-guide-esp32-c3-lyra.html
+      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/design-guide/dev-boards/user-guide-esp32-c3-lyra.html
       document_summary: 本指南将帮助您快速上手 ESP32-C3-Lyra V2.0，并提供该款开发板的详细信息。
       notify_subscribers: false
       visibility_on_website: show
@@ -138,7 +138,7 @@ documents:
       revision_date: 2024-08-19
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/get-started-esp32-lyrat-v4.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/get-started-esp32-lyrat-v4.html
       document_summary: This guide provide users with functional descriptions, configuration options for ESP32-LyraT V4 audio development board, as well as how to get started with ESP32-LyraT board.
       notify_subscribers: false
       visibility_on_website: show
@@ -161,7 +161,7 @@ documents:
       revision_date: 2024-08-19
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/get-started-esp32-lyrat-v4.2.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/get-started-esp32-lyrat-v4.2.html
       document_summary: This guide provides users with functional descriptions, configuration options for ESP32-LyraT V4.2 audio development board, as well as how to get started with the ESP32-LyraT board.
       notify_subscribers: false
       visibility_on_website: show
@@ -184,7 +184,7 @@ documents:
       revision_date: 2024-12-23
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/get-started/get-started-esp32-lyrat.html
       document_summary: This guide provides users with functional descriptions, configuration options for ESP32-LyraT V4.3 audio development board, as well as how to get started with the ESP32-LyraT board.
       notify_subscribers: false
       visibility_on_website: show
@@ -207,7 +207,7 @@ documents:
       revision_date: 2024-12-23
       language: cn
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/latest/get-started/get-started-esp32-lyrat.html
+      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/get-started/get-started-esp32-lyrat.html
       document_summary: 本指南旨在向用户介绍 ESP32-LyraT V4.3 音频开发版的功能、配置选项以及如何快速入门。
       notify_subscribers: false
       visibility_on_website: show
@@ -230,7 +230,7 @@ documents:
       revision_date: 2022-01-26
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/board-esp32-lyrat-v4.3.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/board-esp32-lyrat-v4.3.html
       document_summary: This guide provides functional descriptions, configuration options for ESP32-LyraT V4.3 audio development board.
       notify_subscribers: false
       visibility_on_website: show
@@ -253,7 +253,7 @@ documents:
       revision_date: 2024-01-16
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyrat-mini.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/get-started/get-started-esp32-lyrat-mini.html
       document_summary: This guide shows how to get started with the ESP32-LyraT-Mini V1.2 development board and also provides information about its functionality and configuration options.
       notify_subscribers: false
       visibility_on_website: show
@@ -276,7 +276,7 @@ documents:
       revision_date: 2024-01-16
       language: cn
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/latest/get-started/get-started-esp32-lyrat-mini.html
+      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/get-started/get-started-esp32-lyrat-mini.html
       document_summary: 本指南介绍了如何使用 ESP32-LyraT-Mini V1.2 开发板以及配置相关功能。
       notify_subscribers: false
       visibility_on_website: show
@@ -299,7 +299,7 @@ documents:
       revision_date: 2022-05-20
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/board-esp32-lyrat-mini-v1.2.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/board-esp32-lyrat-mini-v1.2.html
       document_summary: This guide provides functional descriptions and configuration options for ESP32-LyraT-Mini V1.2 audio development board.
       notify_subscribers: true
       visibility_on_website: show
@@ -322,7 +322,7 @@ documents:
       revision_date: 2024-01-16
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/get-started/get-started-esp32-lyratd-msc.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/get-started/get-started-esp32-lyratd-msc.html
       document_summary: This guide provides users with functional descriptions, configuration options for ESP32-LyraTD-MSC V2.2 audio development board, as well as how to get started with the ESP32-LyraTD-MSC board.
       notify_subscribers: false
       visibility_on_website: show
@@ -345,7 +345,7 @@ documents:
       revision_date: 2022-01-26
       language: cn
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/latest/get-started/get-started-esp32-lyratd-msc.html
+      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/get-started/get-started-esp32-lyratd-msc.html
       document_summary: 本指南旨在向用户介绍 ESP32-LyraTD-MSC V2.2 音频开发板的功能、配置选项以及如何快速入门。
       notify_subscribers: false
       visibility_on_website: show
@@ -368,7 +368,7 @@ documents:
       revision_date: 2025-03-12
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2-v3.0.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/user-guide-esp32-s3-korvo-2-v3.0.html
       document_summary: This user guide will help you get started with ESP32-S3-Korvo-2 V3.0 and will also provide more in-depth information.
       notify_subscribers: false
       visibility_on_website: show
@@ -391,7 +391,7 @@ documents:
       revision_date: 2025-03-12
       language: cn
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2-v3.0.html
+      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/design-guide/dev-boards/user-guide-esp32-s3-korvo-2-v3.0.html
       document_summary: 本指南将帮助您快速上手 ESP32-S3-Korvo-2 V3.0，并提供该款开发板的详细信息。
       notify_subscribers: false
       visibility_on_website: show
@@ -414,7 +414,7 @@ documents:
       revision_date: 2025-03-12
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/get-started/user-guide-esp32-s3-korvo-2.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/get-started/user-guide-esp32-s3-korvo-2.html
       document_summary: This user guide will help you get started with ESP32-S3-Korvo-2 V3.1 and will also provide more in-depth information.
       notify_subscribers: false
       visibility_on_website: show
@@ -437,7 +437,7 @@ documents:
       revision_date: 2025-03-12
       language: cn
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html
+      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/design-guide/dev-boards/user-guide-esp32-s3-korvo-2.html
       document_summary: 本指南将帮助您快速上手 ESP32-S3-Korvo-2 V3.1，并提供该款开发板的详细信息。
       notify_subscribers: false
       visibility_on_website: show
@@ -460,7 +460,7 @@ documents:
       revision_date: 2022-04-27
       language: en
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2-lcd.html
+      document_link: https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/dev-boards/user-guide-esp32-s3-korvo-2-lcd.html
       document_summary: This user guide will help you get started with ESP32-S3-Korvo-2-LCD V1.0 and will also provide more in-depth information.
       notify_subscribers: false
       visibility_on_website: show
@@ -483,7 +483,7 @@ documents:
       revision_date: 2022-04-27
       language: cn
       document_storage: docs
-      document_link: https://docs.espressif.com/projects/esp-adf/zh-cn/latest/design-guide/dev-boards/user-guide-esp32-s3-korvo-2-lcd.html
+      document_link: https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/design-guide/dev-boards/user-guide-esp32-s3-korvo-2-lcd.html
       document_summary: 本指南将帮助您快速上手 ESP32-S3-Korvo-2-LCD V1.0，并提供该款开发板的详细信息。
       notify_subscribers: false
       visibility_on_website: show

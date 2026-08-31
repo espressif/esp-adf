@@ -126,7 +126,7 @@
         > 注意: 工程软件务必烧录 Profile，否则会无法连接百度云进行语音交互。
 
 3. 工程软件准备
-    - 根据[ADF-Getting](https://docs.espressif.com/projects/esp-adf/en/latest/get-started/index.html)搭建软件开发环境，并按步骤编译 Korvo-DU1906 方案工程。
+    - 根据[ADF-Getting](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/get-started/index.html)搭建软件开发环境，并按步骤编译 Korvo-DU1906 方案工程。
 
 ### 2. 工具准备
 

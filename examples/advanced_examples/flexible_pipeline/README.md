@@ -36,7 +36,7 @@ This example supports IDF release/v5.0 and later branches. By default, it runs o
 
 ### Configuration
 
-Prepare a microSD card. Go to [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) page to download the audio files `ff-16b-2c-44100hz.aac` and `ff-16b-2c-44100hz.mp3`, rename them `test.aac` and `test.mp3`, and copy them to the microSD card. Of course, you can use your own audio sources, if they are renamed according to the above rules.
+Prepare a microSD card. Go to [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/audio-samples.html#short-samples) page to download the audio files `ff-16b-2c-44100hz.aac` and `ff-16b-2c-44100hz.mp3`, rename them `test.aac` and `test.mp3`, and copy them to the microSD card. Of course, you can use your own audio sources, if they are renamed according to the above rules.
 
 The default board for this example is `ESP32-Lyrat V4.3`, if you need to run this example on other development boards, select the board in menuconfig, such as `ESP32-Lyrat-Mini V1.1`.
 

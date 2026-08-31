@@ -35,7 +35,7 @@
 
 ### 配置
 
-本例程需要准备一张 microSD 卡，在 [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/audio-samples.html#short-samples) 页面下载 `ff-16b-2c-44100hz.aac` 和 `ff-16b-2c-44100hz.mp3` 音频文件，分别重命名为 `test.aac` 和 `test.mp3`拷贝音源文件到 microSD 卡中。当然用户也可以自备音源，只需按照上述规则重命名即可。
+本例程需要准备一张 microSD 卡，在 [Audio Samples/Short Samples](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/design-guide/audio-samples.html#short-samples) 页面下载 `ff-16b-2c-44100hz.aac` 和 `ff-16b-2c-44100hz.mp3` 音频文件，分别重命名为 `test.aac` 和 `test.mp3`拷贝音源文件到 microSD 卡中。当然用户也可以自备音源，只需按照上述规则重命名即可。
 
 本例程默认选择的开发板是 `ESP32-Lyrat V4.3`，如果需要在其他的开发板上运行此例程，则需要在 menuconfig 中选择开发板的配置，例如选择 `ESP32-Lyrat-Mini V1.1`。
 

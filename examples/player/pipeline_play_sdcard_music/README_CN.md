@@ -10,7 +10,7 @@
 
 本例支持 MP3、OPUS、OGG、FLAC、AAC、M4A、TS、MP4、AMRNB、AMRWB 音频格式，默认选择 MP3 音乐格式。
 
-例程中引用的音源可以通过 [音频样例或短样例](https://docs.espressif.com/projects/esp-adf/zh-CN/latest/design-guide/audio-samples.html#short-samples) 来获取并下载到 microSD 卡中。
+例程中引用的音源可以通过 [音频样例或短样例](https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/design-guide/audio-samples.html#short-samples) 来获取并下载到 microSD 卡中。
 
 下表列出本例程支持的音乐格式：
 
@@ -43,7 +43,7 @@
 
 ### 配置
 
-本例程需要准备一张 microSD 卡，下载 [音频样例或短样例](https://docs.espressif.com/projects/esp-adf/zh-CN/latest/design-guide/audio-samples.html#short-samples) 立体声音源到 microSD 卡中，当然也可以是用户自备的音源。
+本例程需要准备一张 microSD 卡，下载 [音频样例或短样例](https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/design-guide/audio-samples.html#short-samples) 立体声音源到 microSD 卡中，当然也可以是用户自备的音源。
 
 > 本例中需要播放的文件名是固定的，以 `test` 开头，以格式名后缀结尾。例如 `test.mp3` 这样的文件命名。
 
