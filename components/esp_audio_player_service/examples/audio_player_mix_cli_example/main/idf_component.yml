@@ -1,0 +1,11 @@
+dependencies:
+  idf:
+    version: ">=5.4.0"
+  espressif/esp_audio_player_service:
+    version: "~0.5"
+    override_path: "../../../"
+  espressif/esp_audio_codec: "*"
+  espressif/esp_cli_service:
+    version: "~0.5"
+    override_path: "../../../../esp_cli_service"
+  espressif/esp_board_manager: "~0.7"

@@ -1,0 +1,42 @@
+menu "Audio Player MCP Example"
+
+    choice EXAMPLE_WIFI_MODE
+        prompt "Wi-Fi mode for MCP HTTP"
+        default EXAMPLE_WIFI_MODE_SOFTAP
+        help
+            SoftAP needs no router credentials: connect the PC to the board AP,
+            then POST to http://192.168.4.1:8080/mcp.
+            STA joins an existing AP; set SSID/password below.
+
+        config EXAMPLE_WIFI_MODE_SOFTAP
+            bool "SoftAP (recommended for smoke test)"
+
+        config EXAMPLE_WIFI_MODE_STA
+            bool "Station (join existing Wi-Fi)"
+    endchoice
+
+    config EXAMPLE_WIFI_SSID
+        string "Wi-Fi SSID"
+        default "esp-audio-mcp" if EXAMPLE_WIFI_MODE_SOFTAP
+        default "myssid" if EXAMPLE_WIFI_MODE_STA
+        help
+            SoftAP SSID advertised by the board, or STA target SSID.
+
+    config EXAMPLE_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default "" if EXAMPLE_WIFI_MODE_SOFTAP
+        default "mypassword" if EXAMPLE_WIFI_MODE_STA
+        help
+            SoftAP: leave empty for open AP. STA: WPA2 password.
+            Do not commit real credentials into sdkconfig.defaults.
+
+    config EXAMPLE_MCP_HTTP_PORT
+        int "MCP HTTP listen port"
+        default 8080
+        range 1 65535
+
+    config EXAMPLE_MCP_HTTP_URI
+        string "MCP HTTP URI path"
+        default "/mcp"
+
+endmenu

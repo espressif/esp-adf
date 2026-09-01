@@ -1,0 +1,12 @@
+menu "ESP Video Player Service"
+
+    config VIDEO_PLAYER_SERVICE_MCP_ENABLE
+        bool "Enable video player MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Compile the video player MCP handler and a complete flash-resident
+            schema (playback tools plus video_info / tracks). Tool names use the
+            esp_video_player_service_ prefix.
+
+endmenu

@@ -1,0 +1,337 @@
+[
+  {
+    "name": "esp_audio_player_service_get_status",
+    "description": "Get playback state, position, duration, and volume for one stream (default stream 0)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_set_output_volume",
+    "description": "Set service-wide DAC/output volume (0-100)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "volume": {
+          "type": "integer",
+          "description": "Output volume 0-100",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "volume"
+      ]
+    }
+  },
+  {
+    "name": "esp_audio_player_service_get_output_volume",
+    "description": "Get service-wide DAC/output volume (0-100)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_audio_player_service_set_volume",
+    "description": "Set per-stream playback volume via ALC (0-100)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        },
+        "volume": {
+          "type": "integer",
+          "description": "Stream volume 0-100",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "volume"
+      ]
+    }
+  },
+  {
+    "name": "esp_audio_player_service_get_volume",
+    "description": "Get per-stream playback volume (0-100)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_set_url",
+    "description": "Set the URL/source for a stream (file:/// http(s):// or HLS). Does not start playback by itself",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        },
+        "url": {
+          "type": "string",
+          "description": "Media URI"
+        }
+      },
+      "required": [
+        "url"
+      ]
+    }
+  },
+  {
+    "name": "esp_audio_player_service_play",
+    "description": "Start or restart playback on a stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_pause",
+    "description": "Pause playback on a stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_resume",
+    "description": "Resume a paused stream",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_stop",
+    "description": "Stop playback on a stream (source is kept)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_seek",
+    "description": "Seek a URL-path stream to an absolute position in milliseconds",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        },
+        "time_ms": {
+          "type": "integer",
+          "description": "Target position in milliseconds"
+        }
+      },
+      "required": [
+        "time_ms"
+      ]
+    }
+  },
+  {
+    "name": "esp_audio_player_service_set_speed",
+    "description": "Set playback speed multiplier (1.0 is normal)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        },
+        "speed": {
+          "type": "number",
+          "description": "Speed multiplier; must be > 0"
+        }
+      },
+      "required": [
+        "speed"
+      ]
+    }
+  },
+  {
+    "name": "esp_audio_player_service_playlist_next",
+    "description": "Play the next playlist item on a stream (requires an attached playlist)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_playlist_prev",
+    "description": "Play the previous playlist item on a stream (requires an attached playlist)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_playlist_play_index",
+    "description": "Play the playlist item at the given zero-based index",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Zero-based playlist index"
+        }
+      },
+      "required": [
+        "index"
+      ]
+    }
+  },
+  {
+    "name": "esp_audio_player_service_set_repeat_mode",
+    "description": "Set playlist repeat mode: none, one, or all",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        },
+        "repeat_mode": {
+          "type": "string",
+          "description": "Repeat mode: none | one | all"
+        }
+      },
+      "required": [
+        "repeat_mode"
+      ]
+    }
+  },
+  {
+    "name": "esp_audio_player_service_set_mix_cfg",
+    "description": "Set per-stream mix priority and preemption policy (before first play). Same priority streams coexist; higher priority can duck (coexist) or exclusive-preempt",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        },
+        "priority": {
+          "type": "string",
+          "description": "background | notify | urgent"
+        },
+        "preempt_mode": {
+          "type": "string",
+          "description": "coexist (duck lower) | exclusive (force make-way)"
+        },
+        "on_preempt": {
+          "type": "string",
+          "description": "pause (URL only) | drop (feed/link only)"
+        },
+        "active_gain": {
+          "type": "number",
+          "description": "Linear mixer gain when not suppressed; default 1.0"
+        },
+        "duck_gain": {
+          "type": "number",
+          "description": "Linear mixer gain when ducked; default 0.2"
+        },
+        "transition_ms": {
+          "type": "integer",
+          "description": "Fade time between gains in ms; default 200"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_get_preempt_state",
+    "description": "Query whether a stream is currently EXCLUSIVE-preempted",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_audio_player_service_enable_id3_parse",
+    "description": "Enable or disable ID3 parsing for bare .mp3 sources on a stream (call before play)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        },
+        "enable": {
+          "type": "boolean",
+          "description": "true to parse ID3 tags"
+        }
+      },
+      "required": [
+        "enable"
+      ]
+    }
+  },
+  {
+    "name": "esp_audio_player_service_get_id3_info",
+    "description": "Get ID3 title/author/album for the current MP3 on a stream (after TRACK_INFO_PARSED)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stream": {
+          "type": "integer",
+          "description": "Stream id; default 0"
+        }
+      }
+    }
+  }
+]
