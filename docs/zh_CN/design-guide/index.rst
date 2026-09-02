@@ -1,1 +1,0 @@
-.. include:: ../../en/design-guide/index.rst

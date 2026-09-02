@@ -1,10 +1,12 @@
 Copyrights and Licenses
 ***********************
 
+:link_to_translation:`zh_CN:[中文]`
+
 Software Copyrights
 ===================
 
-All original source code in this repository is Copyright (C) 2015-2018
+All original source code in this repository is Copyright (C) 2015-2026
 Espressif Systems. This source code is licensed under the ESPRESSIF MIT
 License as described in the file LICENSE.
 

@@ -2,564 +2,279 @@
 Get Started
 ***********
 
-This document is intended to help users set up the software environment for the development of audio applications using hardware based on the ESP32 family of chips by Espressif. After that, a simple example will show you how to use ESP-ADF (Espressif Advanced Development Framework).
+:link_to_translation:`zh_CN:[中文]`
 
-Development Board Overview
-==========================
+This document helps developers set up a multimedia application development environment based on Espressif ESP32 series chips and demonstrates how to use ESP-ADF (Espressif Advanced Development Framework) through a complete example project.
 
-For easier start with ESP-ADF, Espressif designed ESP32, ESP32-S2, and ESP32-S3 based development boards intended for audio applications. Click the links below to learn more about the available boards.
+After reading this document, you will be able to:
 
-- :doc:`ESP32-LyraT <../design-guide/dev-boards/get-started-esp32-lyrat>`
-- :doc:`ESP32-LyraT-Mini <../design-guide/dev-boards/get-started-esp32-lyrat-mini>`
-- :doc:`ESP32-LyraTD-MSC <../design-guide/dev-boards/get-started-esp32-lyratd-msc>`
-- `ESP32-S2-Kaluga-1 <https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html>`_
-- :doc:`ESP32-Korvo-DU1906 <../design-guide/dev-boards/get-started-esp32-korvo-du1906>`
-- :doc:`ESP32-S3-Korvo-2 <../design-guide/dev-boards/user-guide-esp32-s3-korvo-2>`
-- :doc:`ESP32-C3-Lyra <../design-guide/dev-boards/user-guide-esp32-c3-lyra>`
-
-If you do not have any of the above boards, you can still use ESP-ADF for the ESP32 and ESP32-S2 based audio applications. For this, your board needs to have a compatible audio codec or DSP chip; alternatively, you can develop a driver to support communication with your specific chip.
-
-.. _get-started-about-esp-adf:
+- Install and configure a supported version of ESP-IDF
+- Obtain an ESP-ADF example project
+- Build and flash the project, and monitor its output via serial port
 
 About ESP-ADF
-=============
+--------------------------------------
 
-The ESP-ADF is available as a set of :project:`components` to extend the functionality already delivered by the `ESP-IDF <https://github.com/espressif/esp-idf>`_ (Espressif IoT Development Framework).
+`ESP-ADF <https://github.com/espressif/esp-adf>`__ is Espressif's multimedia development framework built on ESP-IDF and `ESP-GMF <https://github.com/espressif/esp-gmf>`__. It provides product-oriented components for audio/video capture and playback, AI voice, Bluetooth audio, multimedia transport, and more. These application components are published to the `IDF Component Manager <https://components.espressif.com/>`__ and can be fetched automatically after you declare them as dependencies in your project.
 
-To use ESP-ADF you need set up the ESP-IDF first, and this is described in the next section.
-
-.. note::
-
-    ESP-ADF provides support for specific `ESP-IDF versions <https://github.com/espressif/esp-adf/blob/master/README.md#idf-version>`_. If your have already set up another version, please switch to a supported ESP-IDF version, or you may not be able to compile ESP-ADF applications. In addition, the python version needs to be between 3.7 and 3.11.
-
-.. _get-started-quick-start:
-
-Quick Start
-===========
-
-This section provides quick steps to run a simple ADF sample project on an ESP device for experienced users. For beginners, please go through the complete steps from :ref:`get-started-setup-esp-idf` to :ref:`get-started-build-monitor` to build a project.
+Developers typically only need to declare dependencies in the project's ``idf_component.yml``. The component manager fetches them automatically at build time without any additional environment variables. This document provides two methods to obtain an example project: cloning the repository or using the component manager.
 
 .. note::
-    - If you want to install using an IED, please refer to Section :ref:`vs-code-extension` VS Code or Section :ref:`idf-eclipse-plugin-esp-ide`.
-    - If you encounter issues in the following steps, you could refer to the complete steps from :ref:`get-started-setup-esp-idf` to :ref:`get-started-build-monitor` or describe them in `GitHub Issues <https://github.com/espressif/esp-adf/issues>`_ or `ESP Forum <https://esp32.com/viewforum.php?f=20>`_.
 
-
-Linux and macOS
-~~~~~~~~~~~~~~~
-
-The operating environment below is on Linux Ubuntu 18.04 and above.
-
-1. Download the full ESP-ADF repository from `GitHub <https://github.com/espressif/esp-adf>`_ by running::
-
-    git clone --recursive https://github.com/espressif/esp-adf.git
-
-   For users located in China, it is faster to download from `Gitee <https://gitee.com/EspressifSystems/esp-adf>`_::
-
-    git clone --recursive https://gitee.com/EspressifSystems/esp-adf.git
-
-2. Configure the ``$ESP-IDF`` and ``$ESP-ADF`` compilation environment by running::
-
-    cd esp-adf
-    ./install.sh
-    . ./export.sh
-
-3. After completing the above environment variable configuration, you can compile the ADF sample project ``$ADF_PATH/examples/get-started/play_mp3_control``. Switch to the project's directory, compile, and flash it onto your ESP device by running the following command. Then, you will see the serial port of the routine is printed.
-
-  ::
-
-    cd $ADF_PATH/examples/get-started/play_mp3_control
-    idf.py build flash monitor
-
-
-Windows
-~~~~~~~
-
-1. Download the full ESP-ADF repository from `GitHub <https://github.com/espressif/esp-adf>`_ by running::
-
-    git clone --recursive https://github.com/espressif/esp-adf.git
-
-   For users located in China, it is faster to download from `Gitee <https://gitee.com/EspressifSystems/esp-adf>`_::
-
-    git clone --recursive https://gitee.com/EspressifSystems/esp-adf.git
-
-
-2. Install the ``$ESP-IDF`` compilation environment in the command prompt window:
-
-   **Using Command Prompt (cmd.exe):**
-
-   .. code-block:: batch
-
-        cd esp-adf
-        .\install.bat
-
-    **Using PowerShell:**
-
-   .. code-block:: powershell
-
-        cd esp-adf
-        .\install.ps1
-
-   Or first download the full ESP-IDF Windows Installer from `ESP-IDF Windows Installer <https://dl.espressif.com/dl/esp-idf>`_ (Please download the `ESP-IDF versions <https://github.com/espressif/esp-adf/blob/master/README.md#idf-version>`_ supported by ESP-ADF). And then turn off the antivirus software (Because it may prevent the installation as the software writes the Windows system regedit) and install the downloaded file. After the installation is complete, open the ESP-IDF CMD shortcut icon on the desktop, the script will automatically help you download submodules, and set environment variables such as ``IDF_PATH``.
-
-3. Set the ``ADF_PATH`` by running the following commands:
-
-   **Using Command Prompt (cmd.exe):**
-
-   .. code-block:: batch
-
-       .\export.bat
-       echo %ADF_PATH%
-
-   **Using PowerShell:**
-
-   .. code-block:: powershell
-
-       .\export.ps1
-       echo $ADF_PATH
-       // or
-       echo $env:ADF_PATH
-
-4. If your ``ADF_PATH`` variable prints correctly, it's time to compile the ADF routines:
-
-   **Using Command Prompt (cmd.exe):**
-
-   .. code-block:: batch
-
-       cd %ADF_PATH%\examples\get-started\play_mp3_control
-       idf.py build flash monitor
-
-   **Using PowerShell:**
-
-   .. code-block:: powershell
-
-       cd $ADF_PATH\examples\get-started\play_mp3_control
-       idf.py build flash monitor
-
-
+   For currently supported ESP-IDF versions, see the `README <https://github.com/espressif/esp-adf/blob/master/README.md#idf-version>`__.
 
 .. _get-started-step-by-step:
-
-Installation Step by Step
-=========================
-
-This is a detailed roadmap to walk you through the installation process.
-
-Setting up Development Environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* :ref:`get-started-setup-esp-idf` for Windows, Linux or Mac OS
-* :ref:`get-started-get-esp-adf`
-* :ref:`get-started-set-up-env`
-
-Creating Your First Project
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* :ref:`get-started-start-project`
-* :ref:`get-started-connect`
-* :ref:`get-started-configure`
-* :ref:`get-started-build`
-* :ref:`get-started-flash`
-* :ref:`get-started-build-monitor`
-
-
 .. _get-started-setup-esp-idf:
+.. _get-started-setup-idf:
 
-Step 1. Set up ESP-IDF
-======================
+Step 1. Install ESP-IDF
+--------------------------------------
 
-Configure your PC according to **Getting Started** section of **ESP-IDF Programming Guide**. Windows, Linux and Mac OS operating systems are supported. Please select and follow the guide specific to `ESP32 <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html>`_ or `ESP32-S2 <https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/get-started/index.html>`_ chip. The chip name is provided in the board name.
+Follow the "Get Started" section in the `ESP-IDF Programming Guide <https://docs.espressif.com/projects/esp-idf/en/latest/index.html>`__ for your operating system (Windows, Linux, or macOS) to install the ESP-IDF toolchain and dependencies.
+
+After installation and environment activation, confirm that the following command runs successfully in the terminal:
+
+.. code-block:: bash
+
+   idf.py --version
+
+and outputs a supported version number (see the version note in `About ESP-ADF`_).
 
 .. note::
 
-    This guide uses the directory ``~/esp`` on Linux and macOS or ``%userprofile%\esp`` on Windows as an installation folder for ESP-ADF. You can use any directory, but you will need to adjust paths for the commands accordingly. Keep in mind that ESP-ADF does not support spaces in paths.
-
-To make the installation easier and less prone to errors, use the ``~/esp`` default directory for the installation.
-
-If this is your first exposure to the `ESP-IDF <https://github.com/espressif/esp-idf>`_, then it is recommended to get familiar with **hello_world** or **blink** example first.
-
-After getting familiar with ESP-IDF, decide on which ESP-IDF version to use for your application depending on the Espressif chip that you have and your project type. For this, consult `Versions <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/versions.html>`_ section of ESP-IDF Programming Guide.
-
-Once you successfully build, upload, and run examples for your version of ESP-IDF, you can proceed to the next step.
-
+   If ESP-IDF is already installed but the version is not in the supported range, see `ESP-IDF Versions <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/versions.html>`__ to switch branches.
 
 .. _get-started-get-esp-adf:
-
-Step 2. Get ESP-ADF
-===================
-
-.. highlight:: bash
-
-Now you can start installing audio-specific API / libraries provided in `ESP-ADF repository <https://github.com/espressif/esp-adf>`_.
-
-Windows
-~~~~~~~
-
-Open Command Prompt and run the following commands::
-
-    cd %userprofile%\esp
-    git clone --recursive https://github.com/espressif/esp-adf.git
-
-Linux and macOS
-~~~~~~~~~~~~~~~
-
-Open Terminal, and run the following commands::
-
-    cd ~/esp
-    git clone --recursive https://github.com/espressif/esp-adf.git
-
-
 .. _get-started-set-up-env:
+.. _get-started-get-adf:
 
-Step 3. Set up the environment
-========================================
+Step 2. Get an ESP-ADF Example Project
+--------------------------------------
 
-Before being able to compile ESP-ADF projects, on each new session, ESP-IDF tools should be added to the PATH environment variable. To make the tools usable from the command line, some environment variables must be set. ESP-ADF provides a script which does that.
+ADF example projects are stored in the ``adf_examples`` directory of the repository. This document uses ``music_player`` to demonstrate the complete build and run workflow: the example scans local music files on a microSD card, shows a player UI with song information and playback controls on the display, and plays music through the audio output device.
 
-Windows
-~~~~~~~
+Either of the following two methods can be used to obtain the example project.
 
-`ESP-IDF Tools Installer`_ for Windows creates an "ESP-IDF Command Prompt" shortcut in the Start Menu. This shortcut opens the Command Prompt and sets up all the required environment variables. You can open this shortcut and proceed to the next step.
+- Method A (Clone Repository): Download the complete ESP-ADF source code and all examples. Suitable for in-depth framework study, comparing examples, or contributing to ESP-ADF.
+- Method B (Component Manager): Download only one example project; required components are fetched automatically by the component manager at build time. This approach matches real product project development and is suitable for quick evaluation or integration.
 
-Alternatively, if you want to use ESP-IDF in an existing Command Prompt window, you can run:
+**Method A (Clone Repository):**
 
-.. code-block:: batch
-
-    %userprofile%\esp\esp-adf\export.bat
-
-Linux and macOS
-~~~~~~~~~~~~~~~
-
-In the terminal where you have installed ESP-IDF, run:
+Run the following command in the terminal to clone the complete ESP-ADF source repository:
 
 .. code-block:: bash
 
-    . $HOME/esp/esp-adf/export.sh
+   git clone --recursive https://github.com/espressif/esp-adf.git
 
-Note the space between the leading dot and the path!
+.. note::
 
-You can also create an alias for the export script to your ``.profile`` or ``.bash_profile`` script. This way you can set up the environment in a new terminal window by typing ``get_idf``:
+   ``$ADF_PATH`` used below is a placeholder for documentation purposes only, representing the root directory of the cloned ``esp-adf`` repository. Replace it with the actual local clone path when running commands.
+
+For users in China, downloading from `Gitee <https://gitee.com/EspressifSystems/esp-adf>`__ is usually faster:
 
 .. code-block:: bash
 
-    alias get_idf='. $HOME/esp/esp-adf/export.sh'
+   git clone --recursive https://gitee.com/EspressifSystems/esp-adf.git
 
-Note that it is not recommended to source ``export.sh`` from the profile script directly. Doing so activates IDF virtual environment in every terminal session (even in those where IDF is not needed), defeating the purpose of the virtual environment and likely affecting other software.
+**Method B (Download Example via IDF Component Manager):**
 
+Run the following command in the target directory to fetch the example project directly via the IDF Component Manager:
+
+.. code-block:: bash
+
+   idf.py create-project-from-example "espressif/adf_examples:music_player"
+
+After execution, a ``music_player`` project folder is created in the current directory without cloning the entire ESP-ADF repository.
 
 .. _get-started-start-project:
 
-Step 4. Start a Project
-=======================
+Step 3. Open the Example Project
+--------------------------------------
 
-After initial preparation you are ready to build the first audio application. The process has already been described in ESP-IDF documentation. Now we would like to discuss remaining key steps and show how the toolchain is able to access the ESP-ADF :project:`components` by using the ``ADF_PATH`` variable.
+Navigate to the example project directory:
 
-To demonstrate how to build an application, we will use :example:`get-started/play_mp3_control` project from :project:`examples` directory in the ADF.
-
-Windows
-~~~~~~~
-
-.. code-block:: batch
-
-    cd %userprofile%\esp
-    xcopy /e /i %ADF_PATH%\examples\get-started\play_mp3_control play_mp3_control
-
-Linux and macOS
-~~~~~~~~~~~~~~~
+**Method A (Clone Repository): Linux / macOS**
 
 .. code-block:: bash
 
-    cd ~/esp
-    cp -r $ADF_PATH/examples/get-started/play_mp3_control .
+   cd $ADF_PATH/adf_examples/player/music_player
 
+**Method A (Clone Repository): Windows**
 
-There is a range of example projects in the :project:`examples` directory in ESP-ADF. You can copy any project in the same way as presented above and run it.
+.. code-block:: batch
 
-It is also possible to build examples in-place, without copying them first.
+   cd %ADF_PATH%\adf_examples\player\music_player
 
-.. important::
+**Method B (Component Manager):**
 
-    The ESP-IDF build system does not support spaces in the paths to either ESP-IDF or to projects.
+.. code-block:: bash
 
+   cd music_player
+
+.. note::
+
+   The ESP-IDF build system does not support spaces in paths. Ensure that the full paths to both ESP-IDF and the project contain no spaces.
 
 .. _get-started-connect:
 
-Step 5. Connect Your Device
-===========================
+Step 4. Connect the Development Board
+--------------------------------------
 
-Connect the audio board to the PC, check under what serial port the board is visible and verify, if serial communication works as described in `ESP-IDF documentation <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/establish-serial-connection.html>`_.
+``music_player`` requires a development board with microSD, LCD, and touch. Connect it to the PC via USB cable, and identify the serial port using `ESP-IDF: Establish Serial Connection <https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/establish-serial-connection.html>`__:
+
+- On Linux, typically ``/dev/ttyUSB0`` or ``/dev/ttyACM0``
+- On macOS, typically ``/dev/cu.usbserial-*`` or ``/dev/cu.SLAB_USBtoUART``
+- On Windows, typically ``COM3``, ``COM4``, etc.
+
+Place ``.mp3``, ``.aac``, or ``.wav`` test files on a microSD card (FAT filesystem) under the ``/sdcard`` mount point or one level of subdirectory. For Espressif-supported audio development boards, see :doc:`../multimedia-boards/index`.
 
 .. note::
 
-    Keep the port name handy as you will need it in the next steps.
+   Note the serial port for the board; it is needed in the :ref:`get-started-flash` and :ref:`get-started-monitor` steps.
 
+.. _get-started-board-manager:
 
-.. _get-started-configure:
+Step 5. Configure Hardware
+--------------------------------------
 
-Step 6. Configure
-=================
+ESP-ADF example projects use `ESP Board Manager <https://github.com/espressif/esp-board-manager>`__ to manage peripheral descriptions and board-level initialization code. Installing the helper tool ``esp-bmgr-assist`` as the default tool is recommended.
 
-Navigate to your ``play_mp3_control`` directory from :ref:`get-started-start-project` and configure the project:
-
-Windows
-~~~~~~~
-
-.. code-block:: batch
-
-    cd %userprofile%\esp\play_mp3_control
-    idf.py set-target esp32
-    idf.py menuconfig
-
-Linux and macOS
-~~~~~~~~~~~~~~~
+Install in the activated ESP-IDF Python environment (only needed once per environment):
 
 .. code-block:: bash
 
-    cd ~/esp/play_mp3_control
-    idf.py set-target esp32
-    idf.py menuconfig
+   pip install esp-bmgr-assist
+
+To upgrade to the latest version:
+
+.. code-block:: bash
+
+   pip install --upgrade esp-bmgr-assist
+
+List supported development boards:
+
+.. code-block:: bash
+
+   idf.py bmgr -l
+
+Select a development board:
+
+.. code-block:: bash
+
+   idf.py bmgr -b <board_index|board_name>
+
+For example, to select ``esp32_s3_korvo_2_3``:
+
+.. code-block:: bash
+
+   idf.py bmgr -b esp32_s3_korvo_2_3
+
+On the first run of ``idf.py bmgr``, the tool automatically downloads the ``espressif/esp_board_manager`` component based on the project dependencies.
 
 .. note::
 
-    If you are using an ESP32-S2 based board, then the second command above should be ``idf.py set-target esp32s2``.
+   - To switch to another board supported by ``esp_board_manager``, follow the same steps with a different board name or index.
+   - To use a custom board not in the list, see the `Create Board Guide <https://docs.espressif.com/projects/esp-board-manager/en/latest/create-board/index.html>`__.
+   - For more information on ``esp_board_manager``, see the `ESP Board Manager Getting Started Guide <https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/README.md>`__.
 
-Setting the target with ``idf.py set-target <target>`` should be done once, after opening a new project. If the project contains some existing builds and configuration, they will be cleared and initialized. The target may be saved in environment variable to skip this step at all. See `Selecting the Target <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html#step-7-configure>`__ in ESP-IDF Programming Guide for additional information.
+.. _get-started-configure:
 
-If the previous steps have been done correctly, the following menu appears:
+Step 6. Configure the Project
+--------------------------------------
 
-.. figure:: ../../_static/project-configuration-home.png
-    :align: center
-    :alt: Project configuration - Home window
-    :figclass: align-center
+Open the project configuration menu:
 
-    Project configuration - Home window
+.. code-block:: bash
 
-You are using this menu to set up your board type and other project specific variables, e.g. Wi-Fi network name and password, the processor speed, etc.
+   idf.py menuconfig
 
-.. figure:: ../../_static/project-configuration-board-selection.png
-    :align: center
-    :alt: Project configuration - Board selection
+For the ``music_player`` example, the default configuration can usually be built and run directly. To adjust LVGL, fonts, or other display-related options, see the ``README`` in the example project directory.
 
-    Project configuration - Board selection
-
-Select your board from the menu, press ``S`` to save configuration and then ``Q`` to exit.
-
-.. note::
-
-    The colors of the menu could be different in your terminal. You can change the appearance with the option
-    ``--style``. Please run ``idf.py menuconfig --help`` for further information.
-
+After making changes, press ``S`` to save and ``Q`` to exit the menu.
 
 .. _get-started-build:
 
 Step 7. Build the Project
-=========================
+--------------------------------------
 
-Build the project by running:
-
-.. code-block:: batch
-
-    idf.py build
-
-This command will compile the application and all ESP-IDF and ESP-ADF components, then it will generate the bootloader, partition table, and application binaries.
-
-.. code-block:: none
-
-   $ idf.py build
-    Executing action: all (aliases: build)
-    Running ninja in directory /path/to/esp/play_mp3_control/build
-    Executing "ninja all"...
-    [0/1] Re-running CMake...
-
-   ... (more lines of build system output)
-
-    [1064/1064] Generating binary image from built executable
-    esptool.py v3.0-dev
-    Generated /path/to/esp/play_mp3_control/build/play_mp3_control.bin
-
-    Project build complete. To flash it, run this command:
-    /path/to/.espressif/python_env/idf4.2_py2.7_env/bin/python ../esp-idf/components/esptool_py/esptool/esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32  write_flash --flash_mode dio --flash_size detect --flash_freq 40m 0x1000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/play_mp3_control.bin
-    or run 'idf.py -p (PORT) flash'
-
-If there are no errors, the build will finish by generating the firmware binary .bin file.
-
-
-.. _get-started-flash:
-
-Step 8. Flash onto the Device
-=============================
-
-Flash the binaries that you just built onto your board by running:
+Run the following command to start building:
 
 .. code-block:: bash
 
-    idf.py -p PORT [-b BAUD] flash monitor
+   idf.py build
 
-Replace PORT with your board's serial port name from :ref:`get-started-connect`.
+This command builds all components involved in ESP-IDF and ESP-ADF in dependency order, generating the bootloader, partition table, and application binary files. The first build takes longer; subsequent incremental builds are significantly faster.
 
-You can also change the flasher baud rate by replacing BAUD with the baud rate you need. The default baud rate is ``460800``.
+After a successful build, the terminal outputs a message similar to the following and shows the corresponding flash command:
 
-For more information on idf.py arguments, see `Using the Build System <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html#idf-py>`__ in ESP-IDF Programming Guide.
+.. code-block:: none
+
+   Project build complete. To flash, run:
+    idf.py flash
+   or
+    idf.py -p PORT flash
+
+If build errors occur, check the ESP-IDF version, whether the board configuration in :ref:`get-started-board-manager` was completed, and whether dependencies were fetched correctly.
+
+.. _get-started-flash:
+
+Step 8. Flash the Firmware
+--------------------------------------
+
+Replace ``PORT`` with the serial port noted in :ref:`get-started-connect`, then run the following command to flash and open the serial monitor:
+
+.. code-block:: bash
+
+   idf.py -p PORT flash monitor
 
 .. note::
 
-    The option ``flash`` automatically builds and flashes the project, so running ``idf.py build`` is not necessary.
-
-.. highlight:: none
-
-To upload the binaries, the board should be put into upload mode. To do so, hold down **Boot** button, momentarily press **Reset** button and release the **Boot** button. The upload mode may be initiated anytime during the application build, but no later than "Connecting" message is being displayed::
-
-    ...
-
-    esptool.py v3.0-dev
-    Serial port /dev/ttyUSB0
-    Connecting........_____....
-
-Without the upload mode enabled, after showing several ``....._____``, the connection will eventually time out.
-
-Once build and upload is complete, you should see the following::
-
-    ...
-
-    Leaving...
-    Hard resetting via RTS pin...
-    Executing action: monitor
-    Running idf_monitor in directory /path/to/esp/play_mp3_control
-    Executing "/path/to/.espressif/python_env/idf4.2_py2.7_env/bin/python /path/to/esp/esp-idf/tools/idf_monitor.py -p /dev/ttyUSB0 -b 115200 --toolchain-prefix xtensa-esp32-elf- /path/to/esp/play_mp3_control/build/play_mp3_control.elf -m '/path/to/.espressif/python_env/idf4.2_py2.7_env/bin/python' '/path/to/esp/esp-idf/tools/idf.py'"...
-    --- idf_monitor on /dev/ttyUSB0 115200 ---
-    --- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
-
-If there are no issues by the end of the flash process, the board will reboot and start up the “play_mp3_control” application.
-
-
-.. _get-started-build-monitor:
-
-Step 9. Monitor
-================
-
-At this point press the **Reset** button to start the application. Following several lines of start up log, the ``play_mp3_control`` application specific messages should be displayed::
-
-    ...
-
-    I (397) PLAY_FLASH_MP3_CONTROL: [ 1 ] Start audio codec chip
-    I (427) PLAY_FLASH_MP3_CONTROL: [ 2 ] Create audio pipeline, add all elements to pipeline, and subscribe pipeline event
-    I (427) PLAY_FLASH_MP3_CONTROL: [2.1] Create mp3 decoder to decode mp3 file and set custom read callback
-    I (437) PLAY_FLASH_MP3_CONTROL: [2.2] Create i2s stream to write data to codec chip
-    I (467) PLAY_FLASH_MP3_CONTROL: [2.3] Register all elements to audio pipeline
-    I (467) PLAY_FLASH_MP3_CONTROL: [2.4] Link it together [mp3_music_read_cb]-->mp3_decoder-->i2s_stream-->[codec_chip]
-    I (477) PLAY_FLASH_MP3_CONTROL: [ 3 ] Set up  event listener
-    I (477) PLAY_FLASH_MP3_CONTROL: [3.1] Listening event from all elements of pipeline
-    I (487) PLAY_FLASH_MP3_CONTROL: [ 4 ] Start audio_pipeline
-    I (507) PLAY_FLASH_MP3_CONTROL: [ * ] Receive music info from mp3 decoder, sample_rates=44100, bits=16, ch=2
-    I (7277) PLAY_FLASH_MP3_CONTROL: [ 5 ] Stop audio_pipeline
-
-If there are no issues, besides the above log, you should hear a sound played for about 7 seconds by the speakers or headphones connected to your audio board. Reset the board to hear it again if required.
-
-Now you are ready to try some other :project:`examples`, or go right to developing your own applications. Check how the :project:`examples` are made aware of location of the ESP-ADF. Open the :example_file:`get-started/play_mp3_control/Makefile` and you should see ::
-
-    include($ENV{ADF_PATH}/CMakeLists.txt)
-    include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-
-The first line contains ``ADF_PATH`` to point the toolchain to another file in ESP-ADF directory that provides configuration variables and path to ESP-ADF :project:`components` reacquired by the toolchain. You need similar ``Makefile`` in your own applications developed with the ESP-ADF.
-
-.. _vs-code-extension:
-
-VS Code Extension
-=================
-
-1. Follow `VS Code Extension Quick Installation Guide <https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/tutorial/install.md>`_ to install ESP-IDF Visual Studio Code Extension. If the previous steps have been done correctly, the following toolbar appears:
-
-.. figure:: ../../_static/vscode-extension-toolbar.png
-    :align: center
-    :alt: VS Code Extension Toolbar
-    :figclass: align-center
-
-    VS Code Extension Toolbar
-
-2. To install the ESP-ADF extension, open ``Command Palette`` and enter ``install adf``. Then, a progress bar shows up in the lower right corner.
-
-  If you have cloned the ESP-ADF repository before, please enter ``open settings(ui)`` in  ``Command Palette``. Go to ``User > Extensions > ESP_IDF`` and manually set the ESP-ADF path in ``idf.espAdfPath`` or ``idf.espAdfPathWin`` (for Windows). You can also set the ESP-ADF path in ``.vscode/settings.json``.
-
-3. In ``Command Palette``, enter ``show examples project``, and then a window will be opened with a list of example projects.
-
-4. Select an example, click ``Create project using example XX``, and select the directory to save the current example.
-
-5. On the toolbar at the bottom of VS Code, click the gear symbol ``menuconfig`` to configure the example and click the column symbol ``Build`` to build the example. See available `shortcut keys <https://github.com/espressif/vscode-esp-idf-extension#available-commands>`_ for VS code extensions.
-
-6. On the toolbar at the bottom of VS Code, click the plug-in symbol ``Select Port`` to configure the serial port and click the lightning symbol ``Flash Device`` to flash firmware. After the firmware is flashed successfully, click ``Monitor Device`` to start the monitor function. Or, you can also use the flame symbol to build, flash, and monitor the example at the same time.
-
-
-.. _idf-eclipse-plugin-esp-ide:
-
-IDF Eclipse Plugin and Espressif IDE
-====================================
-
-Install and Set up Environment Variables
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-1. Follow `IDF Eclipse Plugin Quick Installation Guide <https://github.com/espressif/idf-eclipse-plugin/blob/master/README.md>`_ to install IDF Eclipse Plugin or download and install Espressif IDE from `Espressif IDE Download Link <https://github.com/espressif/idf-eclipse-plugin/releases>`_. If the previous steps have been done correctly, you can create, build and flash IDF project in the Eclipse environment.
-
-.. figure:: ../../_static/espressif-ide-reskinned-eclipse.png
-    :align: center
-    :alt: Espressif IDE (Reskinned Eclipse)
-    :figclass: align-center
-
-    Espressif IDE (Reskinned Eclipse)
-
-2. To install ESP-ADF, follow section :ref:`get-started-get-esp-adf`.
-
-3. To set ``ADF_PATH`` environment variable, open ``Window`` > ``Preferences`` > ``C/C++`` > ``Build`` > ``Environment`` panel, click **Add** button and fill in ``ADF_PATH``. After you complete the above steps, select ``ADF_PATH`` in ``Environment variables`` table and click **Edit** and **OK** button without changing any value (There is a bug in Eclipse CDT that is appending a null value before the path hence we need to click on edit and save it.).
-
-  If this step does not work, you can delete ``ADF_PATH`` set in Eclipse and set ``ADF_PATH`` as system environment variable. For Windows, set environment variable in ``Advanced System Setting`` panel. For Linux and macOS, add ``export ADF_PATH=your adf path`` in file ``/etc/profile``. However, it is not recommended. Doing so activates ADF virtual environment in every terminal session (including those where ADF is not needed), defeating the purpose of the virtual environment and likely affecting other software.
-
-Create a New Project
-~~~~~~~~~~~~~~~~~~~~
-
-1. To create new project, go to ``File`` > ``New`` > ``Espressif IDF Project`` and provide a project name.
-
-2. Click **Finish** to create an empty project. Or click **Next** and check ``Create a project using one of the templates`` to create a project using ESP-IDF templates.
-
-After creating a new project, you can use ESP-IDF and ESP-ADF to develop the project.
-
-Import Existing Project
-~~~~~~~~~~~~~~~~~~~~~~~
-
-To import existing ESP-ADF examples, go to ``File`` > ``Import`` > ``Espressif`` > ``Existing IDF Project`` and select an ESP-ADF example (Opening an existing project directly may not be able to set the ESP target).
-
-Quick Start
-~~~~~~~~~~~~~
-
-1. Select a project from ``Project Explorer``.
-
-2. In the **Launch Mode** drop-down menu, select ``Run``.
-
-3. In the **Launch Configuration** (auto-detected) drop-down menu, select your application.
-
-4. Select ESP target from the third drop-down, which is called **Launch Target**. Click gear symbol **Edit** button of **Launch Target** to set ``Serial Port``.
-
-5. Double click ``sdkconfig`` file to launch the ``SDK Configuration Editor``.
-
-6. Click **Build** button to build the project.
-
-7. Click **Launch** button to flash the project.
-
-8. Click **Open a Terminal** button and select **ESP-IDF Serial Monitor** to view serial output.
-
-For more information about IDF Eclipse Plugin and Espressif IDE, please refer to `ESP-IDF Eclipse Plugin <https://github.com/espressif/idf-eclipse-plugin>`_.
-
-
-Update ESP-ADF
-==============
-
-After some time of using ESP-ADF, you may want to update it to take advantage of new features or bug fixes. The simplest way to do so is by deleting existing ``esp-adf`` folder and cloning it again, which is same as when doing initial installation described in sections :ref:`get-started-get-esp-adf`.
-
-Another solution is to update only what has changed. This method is useful if you have a slow connection to the GitHub. To do the update run the following commands::
-
-    cd ~/esp/esp-adf
-    git pull
-    git submodule update --init --recursive
-
-The ``git pull`` command is fetching and merging changes from ESP-ADF repository on GitHub. Then ``git submodule update --init --recursive`` is updating existing submodules or getting a fresh copy of new ones. On GitHub the submodules are represented as links to other repositories and require this additional command to get them onto your PC.
-
-
-.. _ESP-IDF Tools Installer: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html#get-started-windows-tools-installer
-
+   - ``idf.py flash`` automatically rebuilds before flashing, so running ``idf.py build`` separately is not necessary.
+   - The default baud rate is ``460800``; adjust it with the ``-b BAUD`` parameter.
+   - If the board has no auto-reset circuit, hold the **Boot** button, press and release the **Reset** button once, then release the **Boot** button to enter download mode before flashing.
+   - If the board uses USB Serial JTAG and the serial port is not found, try entering download mode manually as described above and then check for the serial port.
+
+.. _get-started-monitor:
+
+Step 9. Monitor the Output
+--------------------------------------
+
+After flashing, the board resets automatically and runs the example program. The serial monitor outputs a log similar to the following (key steps shown):
+
+.. code-block:: none
+
+   I (1435) main_task: Calling app_main()
+   I (1438) MUSIC_PLAYER: [ 1 ] Initialize board peripherals
+   I (1517) BOARD_MANAGER: Device fs_sdcard initialized
+   I (1578) BOARD_MANAGER: Device audio_dac initialized
+   I (1621) MUSIC_PLAYER: [ 2 ] Initialize display and LVGL music UI
+   I (1839) BOARD_MANAGER: Device display_lcd initialized
+   I (1884) BOARD_MANAGER: Device lcd_touch initialized
+   I (1999) MUSIC_PLAYER: [ 3 ] Scan SD card playlist from /sdcard
+   I (2114) MUSIC_PLAYER: [ 4 ] Start playback controller
+   I (2121) MUSIC_PLAYER: [ 5 ] Music player ready
+
+If everything works, the display shows the player UI. When music files are present on the SD card, the example starts playing the first track automatically. Use the touch controls at the bottom of the screen to play, pause, skip tracks, and adjust volume.
+
+Press ``Ctrl+]`` to exit the serial monitor.
+
+Next Steps
+--------------------------------------
+
+Having completed this example, you now understand the basic workflow for an ESP-ADF project. Suggested next steps:
+
+- Browse :doc:`../basic-components/index` for audio codecs, effects, media protocols, GMF, and other foundational components provided by ESP-ADF.
+- Browse :doc:`../multimedia-services/index` for service infrastructure, media services, peripheral services, and AI integrations.
+- Explore other projects under ``adf_examples``, including recording, AI agents, video, and more.
+
+Related Documents
+--------------------------------------
+
+- `ESP-IDF Programming Guide <https://docs.espressif.com/projects/esp-idf/en/latest/index.html>`__
+- `ESP Component Manager <https://components.espressif.com/>`__
+- `ESP Component Manager Documentation <https://docs.espressif.com/projects/idf-component-manager/en/latest/>`__
+- `ESP Board Manager Getting Started Guide <https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/README.md>`__
+- `ESP Board Manager Troubleshooting <https://github.com/espressif/esp-board-manager/blob/main/esp_board_manager/README.md#troubleshooting>`__
+- `ESP-ADF GitHub Repository <https://github.com/espressif/esp-adf>`__
+- `ESP-ADF Example Collection <https://github.com/espressif/esp-adf/tree/master/adf_examples>`__
+- `ESP-GMF GitHub Repository <https://github.com/espressif/esp-gmf>`__

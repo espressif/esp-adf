@@ -42,14 +42,14 @@ The `master` branch contains the new features for **ADF v3.0**, which are active
 ## Branch Strategy
 
 - [`release/v2.x`](https://github.com/espressif/esp-adf/tree/release/v2.x): Legacy ADF implementation (v2). Receives only bug fixes and minor enhancements.
-  See [ADF v2.x Documentation](https://docs.espressif.com/projects/esp-adf/en/latest/index.html) for reference.
+  See [ADF v2.x Documentation](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/index.html) for reference.
 
 - `master`: Development branch for **ADF v3.0**. Not compatible with v2.x APIs or behavior.
 
 ## Documentation
 
-- ADF v3.0 documentation: Coming soon.
-- ADF v2.x documentation: Available at [docs.espressif.com](https://docs.espressif.com/projects/esp-adf/en/latest/)
+- ADF v3.0 documentation: Available at [docs.espressif.com](https://docs.espressif.com/projects/esp-adf/en/latest/)
+- ADF v2.x documentation: Available at [docs.espressif.com](https://docs.espressif.com/projects/esp-adf/en/release-v2.x/)
 
 ## Roadmap
 

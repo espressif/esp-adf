@@ -1,0 +1,17 @@
+/* sphinxcontrib-mermaid defaults SVG height to 500px; keep diagrams at content size.
+   This file has a unique name so esp_docs' theme_overrides.css does not overwrite it. */
+pre.mermaid,
+.mermaid-container > pre.mermaid {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0.6em 0 1em;
+  overflow: visible;
+}
+
+pre.mermaid > svg,
+.mermaid-container > pre > svg {
+  height: auto !important;
+  max-height: none !important;
+}

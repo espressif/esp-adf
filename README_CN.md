@@ -42,14 +42,14 @@
 ## 分支策略
 
 - [`release/v2.x`](https://github.com/espressif/esp-adf/tree/release/v2.x)：旧版 ADF 实现分支 (v2)，仅接收 bug 修复和小幅增强。
-  参考 [ADF v2.x 文档](https://docs.espressif.com/projects/esp-adf/en/latest/index.html)。
+  参考 [ADF v2.x 文档](https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/index.html)。
 
 - `master`：**ADF v3.0** 的开发分支，与 v2.x API 和行为不兼容。
 
 ## 文档
 
-- ADF v3.0 文档：即将推出
-- ADF v2.x 文档：访问 [docs.espressif.com](https://docs.espressif.com/projects/esp-adf/en/latest/)
+- ADF v3.0 文档：访问 [docs.espressif.com](https://docs.espressif.com/projects/esp-adf/zh_CN/latest/)
+- ADF v2.x 文档：访问 [docs.espressif.com](https://docs.espressif.com/projects/esp-adf/zh_CN/release-v2.x/)
 
 ## 路线图
 
