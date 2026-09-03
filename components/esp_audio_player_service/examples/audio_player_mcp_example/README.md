@@ -73,10 +73,9 @@ idf.py menuconfig
 On chips without native Wi-Fi, the matching `sdkconfig.defaults.<target>` may
 enable `esp_hosted` / `esp_wifi_remote`.
 
-### Build and Flash Commands
+### Build and Flash
 
 ```bash
-idf.py set-target esp32s3
 idf.py build
 idf.py -p PORT flash monitor
 ```

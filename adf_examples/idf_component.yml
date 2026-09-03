@@ -1,4 +1,4 @@
-version: "0.2.5~1"
+version: "0.2.6"
 description: ESP-ADF Examples
 url: https://github.com/espressif/esp-adf/tree/master/adf_examples
 documentation: "https://github.com/espressif/esp-adf/blob/master/adf_examples/README.md"
@@ -21,3 +21,6 @@ examples:
    - path: "./player/play_music_control"
    - path: "./system/audio_power_save"
    - path: "./player/music_player"
+   - path: "./protocols/rtsp_push"
+   - path: "./protocols/rtsp_cli"
+   - path: "./protocols/rtmp_cli"

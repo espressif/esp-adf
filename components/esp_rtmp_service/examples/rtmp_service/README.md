@@ -133,8 +133,7 @@ ESP Media Service → ESP Media Dummy Service → Enable dummy media source
 Default MCP UART (see `RTMP service example → MCP UART pins`):
 
 - UART port: `1`
-- TX GPIO: `21` (connect to USB-UART adapter RX)
-- RX GPIO: `22` (connect to USB-UART adapter TX)
+- TX / RX: GPIO `21` / `22` on ESP32 and ESP32-P4; GPIO `17` / `18` on ESP32-S3 (S3 has no GPIO 22)
 - Baud: `115200`
 
 Keep MCP UART off the console UART. Flash and leave the board running, then from a PC:

@@ -1,4 +1,4 @@
-version: "0.5.0"
+version: "0.5.1"
 description: ESP RTSP service for RTSP server, client play and client push
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_rtsp_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_rtsp_service/README.md"
@@ -32,3 +32,6 @@ dependencies:
   espressif/cjson:
     require: private
     version: "*"
+
+examples:
+  - path: "./examples/rtsp_service"

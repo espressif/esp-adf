@@ -32,7 +32,7 @@
 
 typedef struct {
     char      case_name[16];
-    char      url[160];
+    char      url[512];
     uint32_t  duration_ms;
     bool      has_url;
     int       stream_mask;
@@ -309,7 +309,9 @@ void app_main(void)
     media_lib_add_default_adapter();
     (void)init_wifi();
     ESP_ERROR_CHECK(rtsp_scheduler_install());
-    ESP_ERROR_CHECK(rtsp_mcp_start());
+    if (rtsp_mcp_start() != ESP_OK) {
+        ESP_LOGW(TAG, "MCP UART did not start; CLI is still available");
+    }
     ESP_ERROR_CHECK(start_console());
     ESP_LOGI(TAG, "RTSP service example is ready");
     ESP_LOGI(TAG, "RTSP_SERVICE_EXAMPLE_READY");

@@ -574,6 +574,10 @@ static esp_err_t capture_stream_restore_after_abort(capture_stream_t *stream)
     }
     esp_err_t ret = capture_err_to_esp(
         esp_capture_sink_enable(stream->sink, ESP_CAPTURE_RUN_MODE_ALWAYS));
+    if (ret == ESP_ERR_NOT_SUPPORTED) {
+        /* Workaround remove when capture fixed for it */
+        ret = ESP_OK;
+    }
     if (ret == ESP_OK) {
         stream->provider_aborted = false;
     }
@@ -640,7 +644,7 @@ static esp_err_t provider_read_frame(void *ctx, esp_media_frame_t *out_frame, ui
 static esp_err_t capture_service_on_start(esp_service_t *base)
 {
     esp_capture_service_t *service = (esp_capture_service_t *)base;
-    if (!service->configured || !service->enabled || service->capture == NULL) {
+    if (!service->configured || service->capture == NULL) {
         return ESP_OK;
     }
     return capture_service_start_writers(service);
@@ -649,7 +653,7 @@ static esp_err_t capture_service_on_start(esp_service_t *base)
 static esp_err_t capture_service_on_stop(esp_service_t *base)
 {
     esp_capture_service_t *service = (esp_capture_service_t *)base;
-    if (!service->configured || !service->enabled || service->capture == NULL) {
+    if (!service->configured || service->capture == NULL) {
         return ESP_OK;
     }
     if (service->streams != NULL) {
@@ -718,7 +722,6 @@ static void destroy_capture(esp_capture_service_t *service)
         service->capture = NULL;
     }
     service->configured = false;
-    service->enabled = false;
     service->use_global_cache = false;
     service->stream_num = 0;
     service->audio_src = NULL;

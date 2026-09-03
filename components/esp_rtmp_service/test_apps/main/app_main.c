@@ -137,7 +137,9 @@ void app_main(void)
     trace_for_leak(true);
     unity_run_tests_by_tag("[esp_rtmp_service]", false);
     trace_for_leak(false);
-#endif
+#endif  /* CONFIG_HEAP_TRACING_STANDALONE */
     UNITY_END();
+    printf("ESP_RTMP_SERVICE_UT_DONE\n");
+    fflush(stdout);
     deinit_softap();
 }

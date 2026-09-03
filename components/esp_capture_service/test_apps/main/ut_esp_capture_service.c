@@ -397,6 +397,50 @@ TEST_CASE("capture service streams audio/video frames", "[esp_capture_service]")
     destroy_fake_sources(audio, video);
 }
 
+TEST_CASE("capture service restarts after stop and late provider abort", "[esp_capture_service]")
+{
+    esp_capture_audio_src_if_t *audio = NULL;
+    esp_capture_video_src_if_t *video = NULL;
+    esp_capture_service_t *service = create_service(&audio, &video);
+
+    esp_capture_service_cfg_t setup_cfg = {.max_stream_num = 1};
+    esp_capture_service_setup_t *setup = esp_capture_service_setup_create(&setup_cfg);
+    TEST_ASSERT_NOT_NULL(setup);
+    esp_capture_service_src_cfg_t src_cfg = {
+        .audio_src = audio,
+        .video_src = video,
+    };
+    esp_media_track_info_t audio_track = make_audio_track(1, TEST_AUDIO_RATE);
+    esp_media_track_info_t video_track = make_video_track(2, TEST_VIDEO_W, TEST_VIDEO_H);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_setup_src(setup, &src_cfg));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_setup_add_track(setup, ESP_MEDIA_DEFAULT_STREAM, &audio_track));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_setup_add_track(setup, ESP_MEDIA_DEFAULT_STREAM, &video_track));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_setup_apply(service, setup));
+
+    esp_media_provider_t provider = {0};
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_get_provider(service, ESP_MEDIA_DEFAULT_STREAM, &provider));
+
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start(ESP_SERVICE_BASE(service)));
+    TEST_ASSERT_GREATER_THAN(0, acquire_and_release(&provider, ESP_MEDIA_TRACK_TYPE_VIDEO, true));
+    TEST_ASSERT_GREATER_THAN(0, acquire_and_release(&provider, ESP_MEDIA_TRACK_TYPE_AUDIO, true));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_stop(ESP_SERVICE_BASE(service)));
+
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start(ESP_SERVICE_BASE(service)));
+    TEST_ASSERT_GREATER_THAN(0, acquire_and_release(&provider, ESP_MEDIA_TRACK_TYPE_VIDEO, true));
+    TEST_ASSERT_GREATER_THAN(0, acquire_and_release(&provider, ESP_MEDIA_TRACK_TYPE_AUDIO, true));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_stop(ESP_SERVICE_BASE(service)));
+
+    /* A linked sink can abort the provider after the source service has already stopped. */
+    TEST_ASSERT_EQUAL(ESP_OK, esp_media_provider_abort(&provider));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start(ESP_SERVICE_BASE(service)));
+    TEST_ASSERT_GREATER_THAN(0, acquire_and_release(&provider, ESP_MEDIA_TRACK_TYPE_VIDEO, true));
+    TEST_ASSERT_GREATER_THAN(0, acquire_and_release(&provider, ESP_MEDIA_TRACK_TYPE_AUDIO, true));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_stop(ESP_SERVICE_BASE(service)));
+
+    destroy_test_objects(service, setup);
+    destroy_fake_sources(audio, video);
+}
+
 TEST_CASE("capture service can re-apply setup before start", "[esp_capture_service]")
 {
     esp_capture_audio_src_if_t *audio = NULL;

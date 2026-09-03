@@ -107,6 +107,7 @@ typedef struct player_stream_slot {
     bool                          feed_track_set[ESP_PLAYER_SERVICE_FEED_TRACK_MAX];  /*!< Track set flags */
     bool                          feed_session;                                       /*!< fill:// or block:// currently running */
     bool                          feed_session_block;                                 /*!< True when the feed URL uses block:// */
+    uint8_t                       feed_session_mask;                                  /*!< av_mask last applied to the running feed session */
     bool                          feed_decl_reset;                                    /*!< Next set_track starts a new track set */
     SemaphoreHandle_t             feed_lock;                                          /*!< Serializes feed session start */
     esp_player_sync_mode_t        sync_mode;                                          /*!< A/V clock for this slot's player */

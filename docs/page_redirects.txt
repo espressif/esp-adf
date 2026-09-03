@@ -28,7 +28,7 @@ design-guide/dev-boards/get-started-esp32-lyrat             multimedia-boards/de
 design-guide/dev-boards/get-started-esp32-lyratd-msc        multimedia-boards/dev-boards/get-started-esp32-lyratd-msc
 design-guide/dev-boards/user-guide-esp32-s3-korvo-2-lcd     multimedia-boards/dev-boards/user-guide-esp32-s3-korvo-2-lcd
 design-guide/dev-boards/user-guide-esp32-s3-korvo-2         multimedia-boards/dev-boards/user-guide-esp32-s3-korvo-2
-design-guide/dev-boards/user-guide-esp32-s3-korvo-2-v3.0         multimedia-boards/dev-boards/user-guide-esp32-s3-korvo-2-v3.0
+design-guide/dev-boards/user-guide-esp32-s3-korvo-2-v3.0    multimedia-boards/dev-boards/user-guide-esp32-s3-korvo-2-v3.0
 design-guide/dev-boards/user-guide-esp32-c3-lyra            multimedia-boards/dev-boards/user-guide-esp32-c3-lyra
 design-guide/dev-boards/board-esp32-lyrat-mini-v1.2         multimedia-boards/dev-boards/board-esp32-lyrat-mini-v1.2
 design-guide/dev-boards/board-esp32-lyrat-v4.3              multimedia-boards/dev-boards/board-esp32-lyrat-v4.3

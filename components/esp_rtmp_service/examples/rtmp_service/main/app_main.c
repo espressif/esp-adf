@@ -116,10 +116,10 @@ static void parse_simple_args(int argc, char **argv, uint32_t default_ms,
 }
 
 typedef struct {
-    char case_name[16];
-    char url[160];
-    uint32_t duration_ms;
-    bool has_url;
+    char      case_name[16];
+    char      url[512];
+    uint32_t  duration_ms;
+    bool      has_url;
 } simple_job_t;
 
 static void simple_task(void *arg)
@@ -238,7 +238,9 @@ void app_main(void)
     media_lib_add_default_adapter();
     (void)init_wifi();
     ESP_ERROR_CHECK(rtmp_scheduler_install());
-    ESP_ERROR_CHECK(rtmp_mcp_start());
+    if (rtmp_mcp_start() != ESP_OK) {
+        ESP_LOGW(TAG, "MCP UART did not start; CLI is still available");
+    }
     ESP_ERROR_CHECK(start_console());
     ESP_LOGI(TAG, "RTMP service example is ready");
     ESP_LOGI(TAG, "RTMP_SERVICE_EXAMPLE_READY");

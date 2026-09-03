@@ -1,4 +1,4 @@
-version: "0.5.0"
+version: "0.5.1"
 description: >-
   Multi-stream playback SINK service on esp_media_service: mixer, stream,
   URL / feed / link, playlist, ID3, optional video output via subclass attach

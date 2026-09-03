@@ -94,10 +94,9 @@ idf.py bmgr -l
 idf.py bmgr -b <board_index|board_name>
 ```
 
-### Build and Flash Commands
+### Build and Flash
 
 ```bash
-idf.py set-target esp32s3
 idf.py build
 idf.py -p PORT flash monitor
 ```

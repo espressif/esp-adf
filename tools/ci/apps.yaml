@@ -27,6 +27,24 @@ EXAMPLES:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: adf_examples/protocols/rtsp_push
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: adf_examples/protocols/rtsp_cli
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: adf_examples/protocols/rtmp_cli
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
   - app_dir: adf_examples/player/play_music_control
     board:
       esp32:

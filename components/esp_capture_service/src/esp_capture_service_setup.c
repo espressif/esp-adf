@@ -442,7 +442,6 @@ esp_err_t esp_capture_service_setup_apply(esp_capture_service_t *service,
         }
     }
     service->configured = true;
-    service->enabled = true;
     service->audio_src = audio_src;
     service->video_src = video_src;
     return ESP_OK;

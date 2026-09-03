@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+### Bug Fixes
+
+- Accept a late audio or video track on a running feed/link stream so sources that announce A/V in separate messages can still start the second decoder
+
 ## v0.5.0
 
 ### Features

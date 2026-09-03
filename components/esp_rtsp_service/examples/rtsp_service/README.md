@@ -117,7 +117,7 @@ ESP Media Service → Enable media service MCP tools
 ESP Media Service → ESP Media Dummy Service → Enable dummy media source
 ```
 
-Default MCP UART: port 1, TX GPIO 21, RX GPIO 22, 115200 baud. Keep it separate from the console UART.
+Default MCP UART: port 1, 115200 baud. TX / RX are GPIO 21 / 22 on ESP32 and ESP32-P4, and GPIO 17 / 18 on ESP32-S3 (S3 has no GPIO 22). Keep it separate from the console UART.
 
 ```bash
 idf.py -p /dev/ttyACM0 flash monitor

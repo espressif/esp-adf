@@ -9,15 +9,21 @@
 #include <stdlib.h>
 #include "adf_mem.h"
 #include <string.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #include "esp_console.h"
 #include "esp_log.h"
 
 #include "esp_cli_service_internal.h"
 
-#define CLI_LOCK_TIMEOUT_MS  1000
+#define CLI_LOCK_TIMEOUT_MS          1000
+#define CLI_STDIN_DRAIN_SETTLE_MS    100
+#define CLI_STDIN_DRAIN_CHUNK_BYTES  32
 
 /* After zero-init defaults are applied in esp_cli_service_create. */
 #define ESP_CLI_SERVICE_MAX_CMDLINE_LENGTH_MIN  32U
@@ -28,6 +34,7 @@
 
 static const char *TAG = "esp_cli_service";
 
+static void cli_drain_console_input(void);
 static esp_err_t cli_on_start(esp_service_t *base);
 static esp_err_t cli_on_stop(esp_service_t *base);
 static esp_err_t cli_on_deinit(esp_service_t *base);
@@ -137,6 +144,28 @@ esp_err_t cli_vec_err_to_esp_err(int vec_err)
     }
 }
 
+static void cli_drain_console_input(void)
+{
+    int fd = fileno(stdin);
+    if (fd < 0) {
+        return;
+    }
+
+    int flags = fcntl(fd, F_GETFL);
+    if (flags < 0) {
+        return;
+    }
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) != 0) {
+        return;
+    }
+
+    char buf[CLI_STDIN_DRAIN_CHUNK_BYTES];
+    while (read(fd, buf, sizeof(buf)) > 0) {
+    }
+
+    (void)fcntl(fd, F_SETFL, flags);
+}
+
 static esp_err_t cli_set_repl_state(esp_cli_service_t *svc, esp_console_repl_t *repl, bool repl_starting)
 {
     if (svc == NULL || svc->lock == NULL) {
@@ -218,6 +247,9 @@ static esp_err_t cli_on_start(esp_service_t *base)
         return ret;
     }
 
+    vTaskDelay(pdMS_TO_TICKS(CLI_STDIN_DRAIN_SETTLE_MS));
+    cli_drain_console_input();
+
     const char *fail_op = NULL;
 
     ret = cli_register_core_commands(svc);
@@ -232,6 +264,7 @@ static esp_err_t cli_on_start(esp_service_t *base)
         goto cleanup;
     }
 
+    cli_drain_console_input();
     ret = esp_console_start_repl(repl);
     if (ret != ESP_OK) {
         fail_op = "start REPL";

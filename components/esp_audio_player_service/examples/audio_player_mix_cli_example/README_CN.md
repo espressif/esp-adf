@@ -92,10 +92,9 @@ idf.py bmgr -l
 idf.py bmgr -b <board_index|board_name>
 ```
 
-### 编译烧录命令
+### 编译与烧录
 
 ```bash
-idf.py set-target esp32s3
 idf.py build
 idf.py -p PORT flash monitor
 ```

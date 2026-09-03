@@ -107,9 +107,17 @@ ffplay -fflags nobuffer -flags low_delay rtsp://<device-ip>:554/live
 
 MCP UART 控制预创建的 dummy 源（`media_dummy_src`）与 RTSP 服务器（`esp_rtsp_service`）。媒体帧通过 `esp_media_service_link()` 在 C 侧传递。
 
-`sdkconfig.defaults` 已启用所需的 MCP、RTSP MCP、媒体服务 MCP 与 dummy source 选项。
+请启用以下选项（`sdkconfig.defaults` 已启用）：
 
-默认 MCP UART 为端口 1、TX GPIO 21、RX GPIO 22、115200 波特率。请勿与控制台 UART 共用。
+```text
+Component config → ESP-Service: ESP Service Base → Enable MCP support
+Component config → ESP-Service: ESP Service Base → MCP Transports → UART transport
+ESP-RTSP Service → Enable RTSP service MCP tools
+ESP Media Service → Enable media service MCP tools
+ESP Media Service → ESP Media Dummy Service → Enable dummy media source
+```
+
+默认 MCP UART 为端口 1、115200 波特率。ESP32 / ESP32-P4 的 TX / RX 为 GPIO 21 / 22，ESP32-S3 为 GPIO 17 / 18（S3 没有 GPIO 22）。请勿与控制台 UART 共用。
 
 ```bash
 idf.py -p /dev/ttyACM0 flash monitor

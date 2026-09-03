@@ -8,11 +8,6 @@ menu "RTMP service example"
         string "WiFi password"
         default "mypassword"
 
-    config RTMP_EXAMPLE_WIFI_WAIT_SEC
-        int "WiFi connect wait (seconds)"
-        default 10
-        range 5 120
-
     config RTMP_EXAMPLE_PUSH_URL
         string "Pusher RTMP URL"
         default "rtmp://192.168.1.10/live/stream0"

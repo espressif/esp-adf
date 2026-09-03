@@ -72,10 +72,9 @@ idf.py menuconfig
 无原生 Wi-Fi 的芯片上，对应的 `sdkconfig.defaults.<target>` 可能启用
 `esp_hosted` / `esp_wifi_remote`。
 
-### 编译烧录命令
+### 编译与烧录
 
 ```bash
-idf.py set-target esp32s3
 idf.py build
 idf.py -p PORT flash monitor
 ```

@@ -61,7 +61,6 @@ struct esp_capture_service {
     esp_media_service_t              media;             /*!< Base media service; must stay first */
     uint16_t                         max_stream_num;    /*!< Maximum supported output streams */
     bool                             configured;        /*!< True after a successful setup apply */
-    bool                             enabled;           /*!< Service enable latch used by start/stop */
     esp_capture_handle_t             capture;           /*!< Native esp_capture handle */
     bool                             use_global_cache;  /*!< Share one arrival-order cache across tracks */
     capture_stream_t                *streams;           /*!< Stream state array */

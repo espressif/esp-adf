@@ -16,6 +16,9 @@
 | CLI 多源音乐播放 | [player/play_music_control](./player/play_music_control) | 基于 `esp_audio_simple_player` 与 `esp_cli_service` 的 CLI 音乐播放器，支持 SD 卡、HTTP/HTTPS 与 Flash 内嵌音源及播放列表控制。 |
 | 音频低功耗 | [system/audio_power_save](./system/audio_power_save) | 空闲低功耗示例：MQTT keepalive 保活、自动 light sleep，支持 UART/MQTT/GPIO/定时器唤醒，含 LittleFS 分区存储的休眠/唤醒提示音。 |
 | SD 卡音乐播放器 | [player/music_player](./player/music_player) | 基于 `esp_audio_simple_player`、`esp_playlist` 与 `esp_extractor` 的 SD 卡本地音乐播放器，含深色 LVGL 触摸 UI、进度条与多种循环模式。 |
+| RTSP 推流 | [protocols/rtsp_push](./protocols/rtsp_push) | 基础示例，将摄像头和麦克风采集连接到 `esp_rtsp_service` SINK，并推送到可配置的 RTSP 服务器。 |
+| RTSP CLI 综合示例 | [protocols/rtsp_cli](./protocols/rtsp_cli) | 一份固件覆盖 RTSP server、客户端推流与客户端拉流三种角色，通过 CLI 运行时切换；基于 `esp_rtsp_service` 推送摄像头与麦克风音视频，或把远端流播放到 LCD 与扬声器。 |
+| RTMP CLI 综合示例 | [protocols/rtmp_cli](./protocols/rtmp_cli) | 一份固件覆盖 RTMP 推流、拉流与中继服务器，通过 CLI 运行时切换；基于 `esp_rtmp_service` 把摄像头推到接入服务器或直接对外提供，把远端流播放到 LCD 与扬声器，也可让整条链路只在开发板上运行。 |
 
 ## 使用说明
 

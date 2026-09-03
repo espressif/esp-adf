@@ -1,4 +1,4 @@
-version: "0.5.0"
+version: "0.5.1"
 description: ADF capture service with video and audio capture support
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_capture_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_capture_service/README.md"

@@ -4,7 +4,7 @@ dependencies:
   espressif/esp_audio_player_service:
     version: "~0.5"
     override_path: "../../../"
-  espressif/esp_audio_codec: "*"
+  espressif/esp_audio_codec: "~2.5"
   espressif/esp_board_manager: "~0.7"
   espressif/esp_hosted:
     version: "~2.12"

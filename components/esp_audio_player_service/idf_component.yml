@@ -1,4 +1,4 @@
-version: "0.5.0"
+version: "0.5.0~1"
 description: >-
   Board-aware audio player subclass: attaches DAC lookup to esp_player_service
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_audio_player_service
