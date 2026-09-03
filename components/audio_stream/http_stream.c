@@ -58,7 +58,6 @@
 
 static const char *TAG = "HTTP_STREAM";
 #define MAX_PLAYLIST_LINE_SIZE (512)
-#define HTTP_STREAM_BUFFER_SIZE (2048)
 #define HTTP_MAX_CONNECT_TIMES  (5)
 
 #define HLS_PREFER_BITRATE      (200*1024)
@@ -102,6 +101,10 @@ typedef struct http_stream {
     int64_t                         request_range_end;
     bool                            is_last_range;
     const char                      *user_agent;
+    int                             buffer_size;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
+    int                             buffer_size_tx;
+#endif
 } http_stream_t;
 
 static esp_err_t http_stream_auto_connect_next_track(audio_element_handle_t el);
@@ -571,9 +574,9 @@ _stream_open_begin:
             .event_handler = _http_event_handle,
             .user_data = self,
             .timeout_ms = 30 * 1000,
-            .buffer_size = HTTP_STREAM_BUFFER_SIZE,
+            .buffer_size = http->buffer_size,
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
-            .buffer_size_tx = 1024,
+            .buffer_size_tx = http->buffer_size_tx,
 #endif
             .cert_pem = http->cert_pem,
 #if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)) && defined CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
@@ -906,6 +909,10 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     http->cert_pem = config->cert_pem;
     http->user_agent = config->user_agent;
     http->url_index = config->url_index;
+    http->buffer_size = config->buffer_size;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
+    http->buffer_size_tx = config->buffer_size_tx;
+#endif
 
     if (config->crt_bundle_attach) {
 #if  (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0))
