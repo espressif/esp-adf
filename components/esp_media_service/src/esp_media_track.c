@@ -28,11 +28,6 @@ static size_t node_alloc_size_for(esp_media_track_cache_type_t cache_type, size_
     return sizeof(track_frame_node_t) + payload_size + align_size - 1;
 }
 
-static void reset_data_queue(esp_media_track_mngr_t *mngr)
-{
-    track_mngr_reset_data_queue(mngr);
-}
-
 esp_err_t esp_media_track_acquire_frame(esp_media_track_mngr_t *mngr, esp_media_frame_t *out_frame, size_t size,
                                         uint32_t timeout_ms)
 {
@@ -181,7 +176,11 @@ esp_err_t esp_media_track_clear_abort(esp_media_track_mngr_t *mngr)
         return ESP_OK;
     }
     mngr->aborted = false;
-    reset_data_queue(mngr);
+    track_mngr_reset_data_queue(mngr);
+    for (uint16_t i = 0; i < mngr->track_num; i++) {
+        mngr->tracks[i].read_node = NULL;
+        mngr->tracks[i].write_node = NULL;
+    }
     return ESP_OK;
 }
 

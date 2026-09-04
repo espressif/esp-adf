@@ -1,0 +1,13 @@
+dependencies:
+  espressif/esp_rtsp_service:
+    require: public
+    version: "~0.5"
+    override_path: "../.."
+  espressif/esp_media_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../esp_media_service"
+  espressif/esp_wifi_remote:
+    version: "*"
+    rules:
+      - if: "target in [esp32p4]"

@@ -1,0 +1,32 @@
+dependencies:
+  espressif/esp_rtsp_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../"
+  espressif/esp_media_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../esp_media_service"
+  espressif/esp_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../esp_service"
+  espressif/esp_wifi_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../esp_wifi_service"
+  espressif/esp_config_manager:
+    require: public
+    version: "*"
+    override_path: "../../../../esp_config_manager"
+  espressif/media_lib_sal:
+    require: public
+    version: "~1.0"
+  espressif/esp_wifi_remote:
+    version: "~0.14.3"
+    rules:
+      - if: "target in [esp32p4]"
+  esp_cli_service:
+    require: public
+    override_path: "../../../../esp_cli_service"
+    version: "~0.5"

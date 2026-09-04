@@ -1,0 +1,34 @@
+version: "0.5.0"
+description: ESP RTSP service for RTSP server, client play and client push
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_rtsp_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_rtsp_service/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "RTSP"
+  - "rtsp_service"
+  - "esp_service"
+  - "gmf"
+  - "adf"
+
+dependencies:
+  espressif/esp_service:
+    require: public
+    version: "~0.5"
+    override_path: "../esp_service"
+  espressif/esp_media_service:
+    require: public
+    version: "~0.5"
+    override_path: "../esp_media_service"
+  espressif/esp_media_protocols:
+    require: public
+    version: "~1.0"
+  espressif/media_lib_sal:
+    require: public
+    version: "~1.0"
+  espressif/gmf_core:
+    require: public
+    version: "~1.0"
+  espressif/cjson:
+    require: private
+    version: "*"

@@ -828,7 +828,6 @@ esp_err_t media_dummy_src_on_start(esp_media_dummy_service_t *svc)
             continue;
         }
         ESP_RETURN_ON_ERROR(esp_media_track_clear_abort(st->mngr), TAG, "clear abort");
-        track_mngr_reset_data_queue(st->mngr);
         st->start_time_us = 0;
         for (uint16_t t = 0; t < st->track_num; t++) {
             reset_track_timeline(&st->tracks[t]);
@@ -892,8 +891,8 @@ esp_err_t media_dummy_src_set_request(esp_media_dummy_service_t *svc, esp_media_
     if (st->mngr == NULL) {
         return ESP_OK;
     }
+    size_t cache = 0;
     if (request->need_global_cache) {
-        size_t cache = 0;
         for (uint16_t i = 0; i < st->track_num; i++) {
             if (st->tracks[i].max_frame_size > cache) {
                 cache = st->tracks[i].max_frame_size;
@@ -903,12 +902,10 @@ esp_err_t media_dummy_src_set_request(esp_media_dummy_service_t *svc, esp_media_
         if (cache == 0) {
             cache = DUMMY_SRC_DEFAULT_CACHE;
         }
-        esp_err_t ret = esp_media_track_mngr_set_global_cache(st->mngr, true, cache);
-        if (ret == ESP_ERR_INVALID_STATE) {
-            return ESP_ERR_NOT_SUPPORTED;
-        }
-        st->use_global_cache = true;
-        return ret;
     }
-    return ESP_OK;
+    esp_err_t ret = esp_media_track_mngr_set_global_cache(st->mngr, request->need_global_cache, cache);
+    if (ret == ESP_OK) {
+        st->use_global_cache = request->need_global_cache;
+    }
+    return ret;
 }

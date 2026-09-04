@@ -111,12 +111,12 @@ Cache modes (`cache_cfg.cache_type`):
 - `ESP_MEDIA_TRACK_CACHE_INTERNAL` — manager owns payload bytes; `esp_media_track_acquire_frame()` is supported
 - `ESP_MEDIA_TRACK_CACHE_USER` — manager queues metadata only; payload returned via `frame_release`
 
-Global cache: enable with `cfg.use_global_cache` or `esp_media_track_mngr_set_global_cache()` before adding tracks. Useful for RTMP-like interleaved transports.
+Global cache: enable with `cfg.use_global_cache` or `esp_media_track_mngr_set_global_cache()` (allowed after tracks exist; reconfig drains queues and clears abort). Useful for RTMP-like interleaved transports.
 
 State helpers:
 
 - `esp_media_track_mngr_query()` — queued block count and byte size
-- `esp_media_track_clear_abort()` — clear abort and reset queues, keep tracks
+- `esp_media_track_clear_abort()` — clear abort and reset queues, keep tracks (no wakeup; start src before sink)
 - `esp_media_track_mngr_reset()` — remove tracks and reset queues
 - `esp_media_track_mngr_destroy()` — reset and free all storage
 

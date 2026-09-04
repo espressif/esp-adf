@@ -31,6 +31,7 @@ typedef struct {
     esp_media_track_cache_type_t  cache_type;     /*!< Cache type */
     uint16_t                      addr_align;     /*!< Frame address alignment */
     uint16_t                      size_align;     /*!< Frame size alignment */
+    uint32_t                      cache_size;     /*!< Cache size */
     esp_media_frame_release_cb_t  frame_release;  /*!< User frame release callback */
     void                         *release_ctx;    /*!< User frame release context */
 } media_track_t;

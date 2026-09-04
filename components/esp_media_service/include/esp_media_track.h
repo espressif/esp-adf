@@ -83,10 +83,13 @@ esp_err_t esp_media_track_write_frame(esp_media_track_mngr_t *mngr, const esp_me
 esp_err_t esp_media_track_write_abort(esp_media_track_mngr_t *mngr);
 
 /**
- * @brief  Clear track manager abort state
+ * @brief  Clear abort and drain queued data, keeping added tracks
  *
- *         If the manager was aborted, queued data is reset before new reads or
- *         writes can proceed. Typical use cases: stop and replay loops
+ *         Clears abort and resets data queues. Does not wake blocked waiters;
+ *         start the source before the sink so consumers are not waiting.
+ *         Track metadata is kept so callers do not need to re-add tracks.
+ *         Use on re-link or start when the manager already exists.
+ *         Use esp_media_track_mngr_reset() when tracks must be removed.
  *
  * @param[in]  mngr  Track manager handle
  *

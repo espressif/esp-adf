@@ -1,0 +1,29 @@
+menu "ESP-RTSP Service"
+
+    config ESP_RTSP_SERVICE_SRC_SUPPORT
+        bool "Enable RTSP source role"
+        default y
+        help
+            Build RTSP client play/source support.
+
+    config ESP_RTSP_SERVICE_SINK_SUPPORT
+        bool "Enable RTSP sink role"
+        default y
+        help
+            Build RTSP client push/sink support.
+
+    config ESP_RTSP_SERVICE_SERVER_SUPPORT
+        bool "Enable RTSP server role"
+        default y
+        help
+            Build RTSP server support for locally pushed frames.
+
+    config ESP_RTSP_SERVICE_MCP_ENABLE
+        bool "Enable RTSP service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Build the RTSP service MCP tool handler and embedded tool schema.
+            This option depends on the global ESP Service MCP support.
+
+endmenu
