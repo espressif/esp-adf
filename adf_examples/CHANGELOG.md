@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.7
+
+### Features
+
+- Added `protocols/sip_cli`, a full-duplex SIP endpoint with PBX registration,
+  P2P calling, audio/video media, DTMF, SIP MESSAGE and SRTP controls
+
 ## v0.2.6
 
 ### Features

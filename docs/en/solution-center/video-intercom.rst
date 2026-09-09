@@ -46,12 +46,15 @@ Hardware and software
 
 Pick the SoC by resolution and codec: H.264 calling uses ESP32-P4; MJPEG up to 480×800 can use ESP32-S3, and higher resolutions can use ESP32-S31. The camera interface can be USB, DVP, or MIPI.
 
-Real-time calling is in :doc:`esp-webrtc-solution`. H.264 and JPEG are in :doc:`../basic-components/video-codec/esp-h264` and :doc:`../basic-components/video-codec/esp-new-jpeg`. The audio front end is in `ESP-SR <https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/audio_front_end/README.html>`__. A doorbell example is `doorbell_demo <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/doorbell_demo>`__.
+Real-time calling is in :doc:`esp-webrtc-solution`. H.264 and JPEG are in :doc:`../basic-components/video-codec/esp-h264` and :doc:`../basic-components/video-codec/esp-new-jpeg`. The audio front end is in `ESP-SR <https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/audio_front_end/README.html>`__. A WebRTC doorbell example is `doorbell_demo <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/doorbell_demo>`__. For SIP / RTSP / RTMP, use the media service examples `sip_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__, `rtsp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_cli>`__, and `rtmp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtmp_cli>`__: the application links capture and playback and does not forward frames. ``rtsp_demo`` / ``rtmp_demo`` in ``esp-webrtc-solution`` call the protocol stack directly.
 
 References
 ----------
 
 - :doc:`esp-webrtc-solution`
 - `doorbell_demo <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/doorbell_demo>`__
+- `sip_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__
+- `rtsp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_cli>`__
+- `rtmp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtmp_cli>`__
 - :doc:`../basic-components/video-codec/esp-h264`
 - :doc:`../basic-components/video-codec/esp-new-jpeg`

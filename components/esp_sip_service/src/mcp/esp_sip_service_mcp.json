@@ -1,0 +1,315 @@
+[
+  {
+    "name": "esp_sip_service_setup",
+    "description": "Apply the SIP session setup before start: codecs and P2P mode",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p2p_mode": {
+          "type": "boolean",
+          "description": "Skip registration and invite the peer directly"
+        },
+        "audio_codec": {
+          "type": "string",
+          "description": "Audio FourCC when no uplink audio track is linked: g711a, g711u or opus; omit to leave audio out"
+        },
+        "video_codec": {
+          "type": "string",
+          "description": "Video FourCC when no uplink video track is linked: h264 or mjpeg; omit to leave video out"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_local_port",
+    "description": "Bind signaling to a fixed local port while stopped; P2P mode ignores it",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "integer",
+          "description": "Local SIP port; 0 uses an ephemeral port"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_timeout",
+    "description": "Set the signaling transport timeouts while stopped",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "connect_timeout_ms": {
+          "type": "integer",
+          "description": "Connect timeout in ms, up to 65535; 0 uses default (3000)"
+        },
+        "rw_timeout_ms": {
+          "type": "integer",
+          "description": "Read/write timeout in ms, up to 65535; 0 uses default (3000)"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_nat_traversal",
+    "description": "Set how the NAT mapping is kept open and discovered, while stopped",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "keepalive_sec": {
+          "type": "integer",
+          "description": "Keep-alive interval in seconds, up to 65535; 0 uses default (30)"
+        },
+        "send_options": {
+          "type": "boolean",
+          "description": "Send OPTIONS instead of a keep-alive packet"
+        },
+        "use_public_addr": {
+          "type": "boolean",
+          "description": "Use the address the server reports back (RFC3581)"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_register_refresh",
+    "description": "Set how the registration is refreshed, while stopped; unused in P2P mode",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "interval_sec": {
+          "type": "integer",
+          "description": "Refresh interval in seconds, up to 65535; 0 uses default (3600)"
+        },
+        "suspend_on_call": {
+          "type": "boolean",
+          "description": "Hold the refresh back while a call is up"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_srtp_mode",
+    "description": "Set the SDES-SRTP negotiation mode while stopped",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "description": "off, prefer or required; omit to keep off"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_identity",
+    "description": "Set how this endpoint names itself in outgoing requests, while stopped",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "user_agent": {
+          "type": "string",
+          "description": "User-Agent header; omit to keep the stack default"
+        },
+        "domain": {
+          "type": "string",
+          "description": "SIP URI host override; omit to use the uri host"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_frame_size",
+    "description": "Set the RTP frame buffers handed to the protocol stack, while stopped",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "audio_max_bytes": {
+          "type": "integer",
+          "description": "Audio RTP frame buffer; 0 uses default (4096)"
+        },
+        "video_max_bytes": {
+          "type": "integer",
+          "description": "Video max frame length; 0 uses default (65536)"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_cache_size",
+    "description": "Set the downlink track cache sizes while stopped",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "audio_bytes": {
+          "type": "integer",
+          "description": "Per-audio-track cache; 0 uses default (8192)"
+        },
+        "video_bytes": {
+          "type": "integer",
+          "description": "Per-video-track cache; 0 uses default (102400)"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_video_payload_type",
+    "description": "Set the SDP payload type advertised for video, while stopped",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "payload_type": {
+          "type": "integer",
+          "description": "SDP payload type, up to 255; 0 uses the stack default"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_set_uri",
+    "description": "Set the full SIP URI while stopped; does not change setup",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string",
+          "description": "SIP URI as transport://user:password@server:port; empty password is user:@host"
+        }
+      },
+      "required": ["uri"]
+    }
+  },
+  {
+    "name": "esp_sip_service_set_account",
+    "description": "Build and set the SIP URI from account parts while stopped; does not change setup",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transport": {
+          "type": "string",
+          "description": "udp, tcp or tls; omit to use udp"
+        },
+        "user": {
+          "type": "string",
+          "description": "SIP user or extension"
+        },
+        "password": {
+          "type": "string",
+          "description": "SIP password; omit or empty becomes user:@host"
+        },
+        "server": {
+          "type": "string",
+          "description": "Server host or IPv4 address"
+        },
+        "port": {
+          "type": "integer",
+          "description": "Server port; 0 uses 5060"
+        }
+      },
+      "required": ["user", "server"]
+    }
+  },
+  {
+    "name": "esp_sip_service_set_local_addr",
+    "description": "Set local IP while stopped; omit or empty lets the stack choose",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ip": {
+          "type": "string",
+          "description": "IPv4 address bound and advertised by the SIP stack"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_sip_service_start",
+    "description": "Start the SIP service, which registers with the server unless p2p_mode is set",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_sip_service_stop",
+    "description": "Stop the SIP service, hanging up any active call first",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_sip_service_call",
+    "description": "Place an outgoing call to a remote user or URI",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "remote_user": {
+          "type": "string",
+          "description": "Remote user, extension or full URI to call"
+        }
+      },
+      "required": ["remote_user"]
+    }
+  },
+  {
+    "name": "esp_sip_service_answer",
+    "description": "Answer the ringing incoming call",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_sip_service_bye",
+    "description": "Hang up the active call or cancel the call being placed",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_sip_service_send_dtmf",
+    "description": "Send an out-of-band DTMF digit (RFC2833)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "dtmf_event": {
+          "type": "integer",
+          "description": "DTMF event ID from 0 to 15"
+        },
+        "volume": {
+          "type": "integer",
+          "description": "Tone volume; 0 uses 10"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "description": "Tone duration in milliseconds; 0 uses 200"
+        }
+      },
+      "required": ["dtmf_event"]
+    }
+  },
+  {
+    "name": "esp_sip_service_send_message",
+    "description": "Send an out-of-dialog SIP MESSAGE request",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string",
+          "description": "Message body content"
+        },
+        "content_type": {
+          "type": "string",
+          "description": "Content-Type header; omit to use text/plain"
+        },
+        "peer_uri": {
+          "type": "string",
+          "description": "Target URI; omit to send through the configured server"
+        }
+      },
+      "required": ["body"]
+    }
+  }
+]

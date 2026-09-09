@@ -43,11 +43,11 @@
 硬件与软件
 ----------------
 
-常用 ESP32-S3；需要经典蓝牙时选用 ESP32-S31。语音前端见 `ESP-SR <https://docs.espressif.com/projects/esp-sr/zh_CN/latest/esp32s3/audio_front_end/README.html>`__。SIP 等协议见 :doc:`../basic-components/media-protocol/esp-media-protocols`。示例见 `adf_examples/protocols/voip <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/voip>`__。
+常用 ESP32-S3；需要经典蓝牙时选用 ESP32-S31。语音前端见 `ESP-SR <https://docs.espressif.com/projects/esp-sr/zh_CN/latest/esp32s3/audio_front_end/README.html>`__。SIP 等协议见 :doc:`../basic-components/media-protocol/esp-media-protocols`。示例见 `adf_examples/protocols/sip_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__。
 
 参考资料
 ----------
 
 - `ESP-SR 声学前端 <https://docs.espressif.com/projects/esp-sr/zh_CN/latest/esp32s3/audio_front_end/README.html>`__
 - :doc:`../basic-components/media-protocol/esp-media-protocols`
-- `VoIP 示例 <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/voip>`__
+- `SIP CLI 示例 <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__

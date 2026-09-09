@@ -88,7 +88,7 @@ Track Manager 的缓存模式
 应用示例
 ----------
 
-源/接收端的完整示例见 `esp_media_service 组件仓库 <https://components.espressif.com/components/espressif/esp_media_service>`__ 的 examples 目录。服务基类用法见 :doc:`/multimedia-services/service-infra/esp-service`。
+源/接收端的完整示例见 `esp_media_service 组件仓库 <https://components.espressif.com/components/espressif/esp_media_service>`__ 的 examples 目录。服务基类用法见 :doc:`/multimedia-services/service-infra/esp-service`。SIP / RTSP / RTMP 服务例程见 :doc:`/multimedia-examples/index` 中的 ``sip_cli``、``rtsp_cli``、``rtsp_push``、``rtmp_cli``：应用程序 ``link`` 采集、协议与播放，不搬运帧。
 
 FAQ
 ------

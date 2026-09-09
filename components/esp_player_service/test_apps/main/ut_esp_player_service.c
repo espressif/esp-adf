@@ -688,6 +688,49 @@ TEST_CASE("player service link feeds frames from provider to render", "[esp_play
     deinit_source(&source);
 }
 
+TEST_CASE("player service takes a new track set after the source aborts", "[esp_player_service]")
+{
+    /* A source that ends one session and opens another leaves esp_player active.
+       The next declaration must still be taken, or it would keep the old track. */
+    esp_media_track_info_t track = make_audio_track(1);
+    mock_source_t source;
+    init_source(&source, &track, 1);
+
+    audio_ut_capture_ctx_t cap = {0};
+    esp_player_service_cfg_t cfg = ESP_PLAYER_SERVICE_CFG_DEFAULT();
+    cfg.max_stream_num = 1;
+    esp_player_service_t *sink = NULL;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_player_service_create(&cfg, &sink));
+
+    esp_player_service_pcm_fmt_t fixed_info = {
+        .sample_rate = 48000,
+        .bits_per_sample = 16,
+        .channel = 2,
+    };
+    TEST_ASSERT_EQUAL(ESP_OK, audio_ut_setup_custom(sink, &fixed_info, audio_ut_writer, &cap));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_media_service_link(ESP_SERVICE_BASE(&source.service),
+                                                     ESP_MEDIA_DEFAULT_STREAM,
+                                                     ESP_SERVICE_BASE(sink),
+                                                     ESP_MEDIA_DEFAULT_STREAM));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start(ESP_SERVICE_BASE(sink)));
+
+    TEST_ASSERT_GREATER_THAN(0, audio_ut_push_link_pcm(source.mngr, 10, 0x11, 1));
+    TEST_ASSERT_TRUE(audio_ut_wait_pcm_above(&cap, 0, 1000));
+
+    /* End the first session the way a source announces it. */
+    TEST_ASSERT_EQUAL(ESP_OK, esp_media_track_write_abort(source.mngr));
+    vTaskDelay(pdMS_TO_TICKS(200));
+
+    esp_media_track_info_t next = make_audio_track(2);
+    next.info.audio.sample_rate = 8000;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_player_service_set_track(sink, ESP_MEDIA_DEFAULT_STREAM, &next));
+
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_stop(ESP_SERVICE_BASE(sink)));
+    vTaskDelay(pdMS_TO_TICKS(200));
+    audio_ut_destroy_service(sink);
+    deinit_source(&source);
+}
+
 TEST_CASE("player service two linked sources on separate streams", "[esp_player_service]")
 {
     esp_media_track_info_t track0 = make_audio_track(1);

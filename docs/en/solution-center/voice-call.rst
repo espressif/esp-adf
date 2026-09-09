@@ -43,11 +43,11 @@ Features
 Hardware and software
 ---------------------
 
-A common SoC is ESP32-S3; use ESP32-S31 when classic Bluetooth is required. The audio front end is in `ESP-SR <https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/audio_front_end/README.html>`__. SIP and related protocols are in :doc:`../basic-components/media-protocol/esp-media-protocols`. An example is `adf_examples/protocols/voip <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/voip>`__.
+A common SoC is ESP32-S3; use ESP32-S31 when classic Bluetooth is required. The audio front end is in `ESP-SR <https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/audio_front_end/README.html>`__. SIP and related protocols are in :doc:`../basic-components/media-protocol/esp-media-protocols`. An example is `adf_examples/protocols/sip_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__.
 
 References
 ----------
 
 - `ESP-SR audio front end <https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/audio_front_end/README.html>`__
 - :doc:`../basic-components/media-protocol/esp-media-protocols`
-- `VoIP example <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/voip>`__
+- `SIP CLI example <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__

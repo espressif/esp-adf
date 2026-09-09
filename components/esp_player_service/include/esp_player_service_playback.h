@@ -133,7 +133,8 @@ typedef esp_err_t (*esp_player_service_event_cb_t)(const esp_player_service_even
  *         A type the stream has not declared yet is accepted even while it runs, so
  *         that a source announcing audio and video in separate messages does not
  *         starve the second decoder. Playback restarts once for the new `av_mask`.
- *         Redeclaring a type already in the set needs a `stop` first.
+ *         Redeclaring a type already in the set needs a `stop` first, or a linked
+ *         source aborting its tracks, which also ends the session.
  *
  *         Returns ESP_ERR_NOT_SUPPORTED if the service has no matching output
  *         (video tracks need a video render).

@@ -215,7 +215,40 @@
 传输协议例程
 ------------------------------------------------------------
 
-传输协议例程演示媒体在网络上的传输，包括 HTTP 下载，以及基于 WebRTC、RTSP、RTMP 的实时推流与通话。
+传输协议例程演示媒体在网络上的传输。RTSP、RTMP、SIP 有两套入口，差别在应用程序是否使用 :doc:`/multimedia-services/media/esp-media-service`：
+
+- **媒体服务**：``esp_rtsp_service`` / ``esp_rtmp_service`` / ``esp_sip_service``。应用程序 ``create``、``setup``、``link``、``start``，采集、协议与播放之间自动传帧。
+- **协议栈方案**：``rtsp_demo`` / ``rtmp_demo`` 在 ``esp-webrtc-solution`` 中直接调用 ``esp_media_protocols``。WebRTC 门铃与推流方案也列在下面。
+
+媒体服务例程
+^^^^^^^^^^^^^^^^^^
+
+新的 RTSP / RTMP / SIP 应用使用这一组例程。服务模型见 :doc:`/multimedia-services/media/esp-media-service`。
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 52 20
+
+   * - 例程名称
+     - 简介
+     - 例程组件链接
+   * - rtsp_push
+     - 基于 ``esp_rtsp_service``：``link`` 采集服务后推到 RTSP 服务器。
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_push>`__
+   * - rtsp_cli
+     - 基于 ``esp_rtsp_service``：一份固件覆盖服务端、推流与拉流，CLI 切换角色；拉流 ``link`` 到播放服务。
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_cli>`__
+   * - rtmp_cli
+     - 基于 ``esp_rtmp_service``：一份固件覆盖推流、拉流与中继，CLI 切换；也可在板上 ``link`` 回环。
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtmp_cli>`__
+   * - sip_cli
+     - 基于 ``esp_sip_service``：全双工终端，上行 ``link`` 采集、下行 ``link`` 播放；支持 PBX 或点对点、DTMF、MESSAGE、SRTP。
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__
+
+协议栈与 WebRTC 方案例程
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+下列例程直接使用协议栈或 WebRTC 编排，不经过 ``esp_*_service`` ``link``。``rtsp_demo`` / ``rtmp_demo`` 用于对照 ``esp_media_protocols`` 本身。
 
 .. list-table::
    :header-rows: 1
@@ -261,10 +294,10 @@
      - 设备自建 HTTPS 信令，将摄像头 JPEG 经 WebRTC 数据通道推送到浏览器，并支持双向音频。
      - `esp-webrtc-solution <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/local_jpeg_stream>`__
    * - rtsp_demo
-     - 连接 Wi-Fi 后在设备上启动 RTSP 服务端或推流端，供局域网拉流。
+     - 直接调用 ``esp_media_protocols`` 启动 RTSP 服务端或推流，不经过 media service。
      - `esp-webrtc-solution <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/rtsp_demo>`__
    * - rtmp_demo
-     - 采集设备音视频，经 ``esp_media_protocols`` 推流到 RTMP 服务器。
+     - 直接调用 ``esp_media_protocols`` 推 RTMP，不经过 media service。
      - `esp-webrtc-solution <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/rtmp_demo>`__
 
 检测与压测例程

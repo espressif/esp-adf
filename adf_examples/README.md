@@ -19,6 +19,7 @@ This directory contains multimedia example projects for ESP platforms, including
 | RTSP Push | [protocols/rtsp_push](./protocols/rtsp_push) | Basic example that links camera and microphone capture to an `esp_rtsp_service` SINK and publishes to a configurable RTSP server. |
 | RTSP CLI | [protocols/rtsp_cli](./protocols/rtsp_cli) | RTSP server, client push, and client play in one firmware, switched from the CLI; camera and microphone stream out over `esp_rtsp_service`, and a remote stream plays on the LCD and speaker. |
 | RTMP CLI | [protocols/rtmp_cli](./protocols/rtmp_cli) | RTMP publish, play, and relay server in one firmware, switched from the CLI; `esp_rtmp_service` sends the camera to an ingest server or serves it locally, plays a remote stream on the LCD and speaker, and runs the whole chain on the board alone. |
+| SIP CLI | [protocols/sip_cli](./protocols/sip_cli) | Full-duplex SIP endpoint driven from the CLI; `esp_sip_service` registers with a PBX or calls a peer directly, carries microphone and camera media in both directions at once, and covers DTMF, SIP MESSAGE and SRTP. |
 
 ## Usage
 

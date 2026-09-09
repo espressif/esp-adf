@@ -1,0 +1,41 @@
+version: "0.5.0"
+description: ESP SIP service for VoIP registration, calls and full-duplex audio/video
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_sip_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_sip_service/README.md"
+issues: "https://github.com/espressif/esp-adf/issues"
+
+tags:
+  - "SIP"
+  - "VoIP"
+  - "sip_service"
+  - "esp_service"
+  - "gmf"
+  - "adf"
+
+dependencies:
+  espressif/esp_service:
+    require: public
+    version: "~0.5"
+    override_path: "../esp_service"
+  espressif/esp_media_service:
+    require: public
+    version: "~0.5"
+    override_path: "../esp_media_service"
+  espressif/esp_media_protocols:
+    require: public
+    version: "~1.0"
+  espressif/esp_libsrtp:
+    require: public
+    version: "^1.0.0"
+  espressif/media_lib_sal:
+    require: public
+    version: "~1.0"
+  espressif/gmf_core:
+    require: public
+    version: "~1.0"
+  espressif/cjson:
+    require: private
+    version: "*"
+
+examples:
+  - path: "./examples/sip_service"
