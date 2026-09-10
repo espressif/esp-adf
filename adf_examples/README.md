@@ -16,6 +16,9 @@ This directory contains multimedia example projects for ESP platforms, including
 | Play Music Control | [player/play_music_control](./player/play_music_control) | CLI music player with SD card, HTTP/HTTPS, and embedded Flash sources; playlist control via `esp_cli_service` and `esp_audio_simple_player`. |
 | Audio Power Save | [system/audio_power_save](./system/audio_power_save) | Idle low-power example with MQTT keepalive, automatic light sleep, and UART/MQTT/GPIO/timer wakeup with LittleFS sleep/wakeup prompt tones. |
 | SD Card Music Player | [player/music_player](./player/music_player) | Local SD card music player based on `esp_audio_simple_player`, `esp_playlist`, and `esp_extractor`, with a dark LVGL touch UI, progress bar, and repeat modes. |
+| RTSP Push | [protocols/rtsp_push](./protocols/rtsp_push) | Basic example that links camera and microphone capture to an `esp_rtsp_service` SINK and publishes to a configurable RTSP server. |
+| RTSP CLI | [protocols/rtsp_cli](./protocols/rtsp_cli) | RTSP server, client push, and client play in one firmware, switched from the CLI; camera and microphone stream out over `esp_rtsp_service`, and a remote stream plays on the LCD and speaker. |
+| RTMP CLI | [protocols/rtmp_cli](./protocols/rtmp_cli) | RTMP publish, play, and relay server in one firmware, switched from the CLI; `esp_rtmp_service` sends the camera to an ingest server or serves it locally, plays a remote stream on the LCD and speaker, and runs the whole chain on the board alone. |
 
 ## Usage
 

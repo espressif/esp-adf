@@ -17,7 +17,7 @@ dependencies:
     override_path: "../../../../esp_wifi_service"
   espressif/esp_config_manager:
     require: public
-    version: "*"
+    version: "~0.5"
     override_path: "../../../../esp_config_manager"
   espressif/media_lib_sal:
     require: public

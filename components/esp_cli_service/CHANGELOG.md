@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.3
+
+### Bug Fixes
+
+- Drain leftover console stdin before starting the REPL so boot logs do not become the first command
+
 ## v0.5.2
 
 ### Features

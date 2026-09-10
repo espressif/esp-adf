@@ -8,6 +8,6 @@ dependencies:
     version: "~0.5"
     override_path: "../../../esp_media_service"
   espressif/esp_wifi_remote:
-    version: "*"
+    version: "~1.6"
     rules:
       - if: "target in [esp32p4]"

@@ -1,4 +1,4 @@
-version: "0.5.0"
+version: "0.5.0~1"
 description: >-
   Board-aware video player subclass: attaches LCD render and audio DAC to
   one esp_player_service handle, plus container track APIs

@@ -74,7 +74,7 @@ void app_main(void)
     ESP_ERROR_CHECK(mix_cli_register_commands(cli));
     ESP_ERROR_CHECK(esp_service_start((esp_service_t *)cli));
 
-    ESP_LOGI(TAG, "CLI ready");
     int cmd_ret = 0;
     (void)esp_console_run("help", &cmd_ret);
+    ESP_LOGI(TAG, "CLI ready");
 }

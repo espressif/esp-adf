@@ -271,12 +271,18 @@ static esp_err_t configure_track(esp_player_service_t *service, esp_media_stream
     if (track->type == ESP_MEDIA_TRACK_TYPE_VIDEO && service->video_render == NULL) {
         return ESP_ERR_NOT_SUPPORTED;
     }
-    /* Busy only in active states; idle/finished player can be reconfigured. */
+    /* Busy only in active states; idle/finished player can be reconfigured. A type
+       the slot has not declared yet is the exception: a live source may announce
+       audio and video in separate messages, and refusing the second one would
+       starve that decoder for the rest of the session. The next write rebuilds
+       when the declared mask no longer matches the running feed session. */
+    int track_slot = (track->type == ESP_MEDIA_TRACK_TYPE_AUDIO)
+                         ? ESP_PLAYER_SERVICE_FEED_TRACK_AUDIO
+                         : ESP_PLAYER_SERVICE_FEED_TRACK_VIDEO;
     esp_player_state_t st = ps_slot_get_play_state(slot);
-    if (slot->player != NULL &&
-        (st == ESP_PLAYER_STATE_PREPARING ||
-         st == ESP_PLAYER_STATE_PLAYING ||
-         st == ESP_PLAYER_STATE_PAUSED)) {
+    bool active = (st == ESP_PLAYER_STATE_PREPARING || st == ESP_PLAYER_STATE_PLAYING || st == ESP_PLAYER_STATE_PAUSED);
+    bool late = active && !slot->feed_track_set[track_slot];
+    if (slot->player != NULL && active && !late) {
         ESP_LOGW(TAG, "Configure track: stream %u busy (state=%d)", (unsigned)stream, (int)st);
         return ESP_ERR_INVALID_STATE;
     }
@@ -321,6 +327,11 @@ static esp_err_t configure_track(esp_player_service_t *service, esp_media_stream
         slot->feed_track_set[ESP_PLAYER_SERVICE_FEED_TRACK_VIDEO] = true;
     }
     slot->feed_session = false;
+    if (late) {
+        ESP_LOGI(TAG, "Stream %u took a late %s track, restarting the feed session",
+                 (unsigned)stream,
+                 track->type == ESP_MEDIA_TRACK_TYPE_AUDIO ? "audio" : "video");
+    }
     return ESP_OK;
 }
 
@@ -581,9 +592,17 @@ static esp_err_t ensure_av_feed_session(esp_player_service_t *service,
         return ESP_ERR_INVALID_STATE;
     }
     bool want_block = ps_slot_linked(slot);
+    uint8_t mask = ps_feed_session_mask(slot);
+    if (mask == 0) {
+        return ESP_ERR_NOT_FOUND;
+    }
     esp_player_state_t st = ps_slot_get_play_state(slot);
     bool active = (st == ESP_PLAYER_STATE_PLAYING || st == ESP_PLAYER_STATE_PREPARING || st == ESP_PLAYER_STATE_PAUSED);
-    if (active && slot->feed_session && slot->feed_session_block == want_block) {
+    /* feed_session alone is not enough: an in-flight session start can set it
+       true again after a late track cleared it. Rebuild when the declared
+       tracks no longer match the running player, either order. */
+    if (active && slot->feed_session && slot->feed_session_block == want_block &&
+        slot->feed_session_mask == mask) {
         return ESP_OK;
     }
     esp_err_t ret = ps_ensure_player(service, slot, stream);
@@ -592,10 +611,6 @@ static esp_err_t ensure_av_feed_session(esp_player_service_t *service,
     }
     if (ps_state_needs_stop(st)) {
         esp_player_stop(slot->player);
-    }
-    uint8_t mask = ps_feed_session_mask(slot);
-    if (mask == 0) {
-        return ESP_ERR_NOT_FOUND;
     }
     ret = ps_apply_player_av_mask(slot, mask);
     if (ret != ESP_OK) {
@@ -629,6 +644,7 @@ static esp_err_t ensure_av_feed_session(esp_player_service_t *service,
     }
     slot->feed_session = true;
     slot->feed_session_block = want_block;
+    slot->feed_session_mask = mask;
     return ESP_OK;
 }
 
@@ -842,8 +858,7 @@ static esp_err_t start_one_provider_task(esp_player_service_t *service, player_s
     if (type == ESP_MEDIA_TRACK_TYPE_VIDEO && !slot->feed_track_set[ESP_PLAYER_SERVICE_FEED_TRACK_VIDEO]) {
         return ESP_OK;
     }
-    if (type == ESP_MEDIA_TRACK_TYPE_AUDIO && !slot->configured &&
-        !slot->feed_track_set[ESP_PLAYER_SERVICE_FEED_TRACK_AUDIO]) {
+    if (type == ESP_MEDIA_TRACK_TYPE_AUDIO && !slot->feed_track_set[ESP_PLAYER_SERVICE_FEED_TRACK_AUDIO]) {
         return ESP_OK;
     }
     player_provider_ctx_t *ctx = calloc(1, sizeof(*ctx));

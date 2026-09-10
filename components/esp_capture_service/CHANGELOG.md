@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+### Bug Fixes
+
+- Fixed capture service failing to restart after stop when used through a linked media provider
+
 ## v0.5.0
 
 ### Features

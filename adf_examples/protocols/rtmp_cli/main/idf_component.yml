@@ -1,0 +1,69 @@
+dependencies:
+  idf:
+    version: ">=5.4.0"
+
+  # Pulls in esp_capture_service and esp_audio_capture_service as public dependencies
+  espressif/esp_video_capture_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../components/esp_video_capture_service"
+
+  # Pulls in esp_player_service and esp_audio_player_service as public dependencies
+  espressif/esp_video_player_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../components/esp_video_player_service"
+
+  espressif/esp_rtmp_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../components/esp_rtmp_service"
+
+  espressif/esp_media_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../components/esp_media_service"
+
+  espressif/esp_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../components/esp_service"
+
+  espressif/esp_cli_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../components/esp_cli_service"
+
+  espressif/esp_wifi_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../components/esp_wifi_service"
+
+  espressif/esp_config_manager:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../components/esp_config_manager"
+
+  espressif/media_lib_sal:
+    require: public
+    version: "~1.0"
+
+  espressif/esp_audio_codec:
+    version: "~2.5"
+
+  espressif/esp_video_codec:
+    version: "~0.5"
+
+  espressif/esp_board_manager:
+    require: public
+    version: "~0.7"
+
+  espressif/esp_hosted:
+    version: "^2.4.2"
+    rules:
+      - if: "target in [esp32p4]"
+
+  espressif/esp_wifi_remote:
+    version: "^1.0.0"
+    rules:
+      - if: "target in [esp32p4]"

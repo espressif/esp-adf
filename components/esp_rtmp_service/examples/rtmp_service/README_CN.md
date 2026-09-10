@@ -133,8 +133,7 @@ ESP Media Service → ESP Media Dummy Service → Enable dummy media source
 默认 MCP UART（见 `RTMP service example → MCP UART pins`）：
 
 - UART 口：`1`
-- TX GPIO：`21`（接到 USB-UART 适配器 RX）
-- RX GPIO：`22`（接到 USB-UART 适配器 TX）
+- TX / RX：ESP32 / ESP32-P4 为 GPIO `21` / `22`；ESP32-S3 为 GPIO `17` / `18`（S3 没有 GPIO 22）
 - 波特率：`115200`
 
 MCP UART 不要占用控制台串口。烧录后保持开发板运行，在 PC 上执行：

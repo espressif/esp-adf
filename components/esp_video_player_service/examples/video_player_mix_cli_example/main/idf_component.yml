@@ -4,7 +4,7 @@ dependencies:
   espressif/esp_video_player_service:
     version: "~0.5"
     override_path: "../../../"
-  espressif/esp_audio_codec: "*"
+  espressif/esp_audio_codec: "~2.5"
   espressif/esp_video_codec: "~0.5"
   espressif/esp_cli_service:
     version: "~0.5"

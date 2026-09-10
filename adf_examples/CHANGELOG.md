@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.6
+
+### Features
+
+- Added a basic `protocols/rtsp_push` example that publishes camera and microphone media to a configurable RTSP server
+- Added `protocols/rtsp_cli` example covering the RTSP server, client push, and client play roles in one firmware, with runtime role switching from the CLI
+- Added `protocols/rtmp_cli` example covering the RTMP publisher, player and relay server roles in one firmware, with runtime role switching from the CLI and combined local-live and on-board loopback modes
+
 ## v0.2.5~1
 
 ### Bug Fixes

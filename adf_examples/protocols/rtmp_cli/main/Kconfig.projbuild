@@ -1,0 +1,28 @@
+menu "RTMP CLI Example Configuration"
+
+    config RTMP_EXAMPLE_WIFI_SSID
+        string "WiFi SSID"
+        default "SSID"
+        help
+            SSID (network name) for the example to connect to.
+
+    config RTMP_EXAMPLE_WIFI_PASSWORD
+        string "WiFi Password"
+        default "PASSWORD"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    config RTMP_EXAMPLE_PUSH_URL
+        string "Default push URL"
+        default "rtmp://192.168.1.10:1935/live/stream"
+        help
+            Destination used by 'rtmp push' when no URL argument is given. RTMP
+            client URLs carry the stream name: rtmp[s]://host:port/app/stream.
+
+    config RTMP_EXAMPLE_PULL_URL
+        string "Default pull URL"
+        default "rtmp://192.168.1.10:1935/live/stream"
+        help
+            Source used by 'rtmp pull' when no URL argument is given.
+
+endmenu

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.0~1
+
+### Changes
+
+- Updated `video_player_mix_cli_example` build instructions to use the target selected by ESP Board Manager
+
 ## v0.5.0
 
 ### Features

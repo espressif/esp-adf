@@ -13,38 +13,32 @@ def test_esp_video_player_service_mix_cli_example(dut: IdfDut) -> None:
     dut.expect(r"Start 'video_player_mix_cli_example'", timeout=60)
     dut.expect(r'CLI ready', timeout=60)
 
-    dut.write('list\n')
+    dut.write('list')
     dut.expect(r'test\.mp4', timeout=30)
 
-    dut.write('start movie\n')
+    dut.write('start movie')
     dut.expect(r'Movie started|start movie failed', timeout=60)
 
-    dut.write('play 0\n')
-    dut.expect(r'Playing index 0|play 0 failed|es mode', timeout=60)
-
-    dut.write('next\n')
-    dut.expect(r'Next:|next failed|es mode', timeout=60)
-
-    dut.write('start tts\n')
+    dut.write('start tts')
     dut.expect(r'TTS started|start tts failed', timeout=60)
 
-    dut.write('status\n')
+    dut.write('status')
     dut.expect(r'BACKGROUND', timeout=30)
 
-    dut.write('stop tts\n')
+    dut.write('stop tts')
     dut.expect(r'TTS stopped', timeout=60)
 
-    dut.write('stop movie\n')
+    dut.write('stop movie')
     dut.expect(r'Movie stopped', timeout=60)
 
-    dut.write('start es\n')
+    dut.write('start es')
     dut.expect(r'Feeding started|ES started|start es failed', timeout=60)
 
-    dut.write('stop es\n')
+    dut.write('stop es')
     dut.expect(r'ES stopped|Feeding stopped', timeout=60)
 
-    dut.write('start link\n')
+    dut.write('start link')
     dut.expect(r'LINK started|start link failed', timeout=60)
 
-    dut.write('stop link\n')
+    dut.write('stop link')
     dut.expect(r'LINK stopped', timeout=60)

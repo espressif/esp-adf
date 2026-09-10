@@ -1,0 +1,22 @@
+menu "RTSP Push Example Configuration"
+
+    config RTSP_PUSH_EXAMPLE_WIFI_SSID
+        string "WiFi SSID"
+        default "SSID"
+        help
+            SSID (network name) for the example to connect to.
+
+    config RTSP_PUSH_EXAMPLE_WIFI_PASSWORD
+        string "WiFi Password"
+        default "PASSWORD"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    config RTSP_PUSH_EXAMPLE_URL
+        string "RTSP push URL"
+        default "rtsp://192.168.1.10:8554/live"
+        help
+            Destination RTSP URL. The remote server must accept ANNOUNCE,
+            SETUP and RECORD.
+
+endmenu

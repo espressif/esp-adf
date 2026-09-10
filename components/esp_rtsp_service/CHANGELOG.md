@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+### Bug Fixes
+
+- Keep CLI available if MCP UART cannot start, and use valid UART pins in example
+
 ## v0.5.0
 
 ### Features

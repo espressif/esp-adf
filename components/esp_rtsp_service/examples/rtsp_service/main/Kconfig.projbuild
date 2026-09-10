@@ -8,11 +8,6 @@ menu "RTSP service example"
         string "WiFi password"
         default "mypassword"
 
-    config RTSP_EXAMPLE_WIFI_WAIT_SEC
-        int "WiFi connect wait (seconds)"
-        default 10
-        range 5 120
-
     config RTSP_EXAMPLE_PUSH_URL
         string "Pusher RTSP URL"
         default "rtsp://192.168.1.10:8554/live"
