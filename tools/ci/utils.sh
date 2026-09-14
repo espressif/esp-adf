@@ -24,6 +24,33 @@ function add_gitlab_ssh_keys() {
   fi
 }
 
+# Map gitlab.espressif.cn to a local DNS/IP so CI does not rely on slow public DNS.
+# Override with GITLAB_LOCAL_DNS_IP / GITLAB_LOCAL_DNS_HOST if needed.
+function add_gitlab_local_dns() {
+  local ip="${GITLAB_LOCAL_DNS_IP:-192.168.2.181}"
+  local host="${GITLAB_LOCAL_DNS_HOST:-gitlab.espressif.cn}"
+  local hosts_file="/etc/hosts"
+
+  if grep -qE "^[[:space:]]*${ip}[[:space:]]+${host}([[:space:]]|$)" "${hosts_file}" 2>/dev/null; then
+    info "hosts already has ${ip} ${host}"
+    return 0
+  fi
+
+  local tmp
+  tmp="$(mktemp)"
+  # Drop any prior mapping for this hostname, then append the local one.
+  grep -vE "(^|[[:space:]])${host}([[:space:]]|$)" "${hosts_file}" >"${tmp}" || true
+  printf "%s %s\n" "${ip}" "${host}" >>"${tmp}"
+
+  if [[ -w "${hosts_file}" ]]; then
+    cat "${tmp}" >"${hosts_file}"
+  else
+    sudo cp "${tmp}" "${hosts_file}"
+  fi
+  rm -f "${tmp}"
+  info "Updated ${hosts_file}: ${ip} ${host}"
+}
+
 function add_github_ssh_keys() {
   add_ssh_keys "${GH_PUSH_KEY}"
   echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >>~/.ssh/config
@@ -627,12 +654,14 @@ function git_clone_ci_tools() {
 }
 
 function before_script() {
+  add_gitlab_local_dns
   add_gitlab_ssh_keys
   update_submodule_remote
   update_submodule
 }
 
 function common_script() {
+  add_gitlab_local_dns
   git_clone_ci_tools
   fetch_idf_branch ${IDF_VERSION_TAG}
   configure_ci_env

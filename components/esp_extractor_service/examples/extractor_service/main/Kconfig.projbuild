@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO., LTD
+# SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
+
+menu "Extractor Service Example"
+
+    config EXTRACTOR_EXAMPLE_WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            STA SSID used by esp_wifi_service_request_connect().
+
+    config EXTRACTOR_EXAMPLE_WIFI_PASSWORD
+        string "WiFi password"
+        default "mypassword"
+        help
+            STA password used by esp_wifi_service_request_connect().
+
+    config EXTRACTOR_EXAMPLE_WIFI_WAIT_SEC
+        int "WiFi connect wait (seconds)"
+        default 30
+        range 5 120
+        help
+            Seconds to wait for STA got IP after request_connect.
+
+    if ESP_EXTRACTOR_SERVICE_MCP_ENABLE && ESP_MCP_TRANSPORT_UART
+
+    menu "MCP UART pins"
+
+        config EXTRACTOR_MCP_UART_PORT
+            int "MCP UART port number"
+            range 0 2
+            default 1
+
+        config EXTRACTOR_MCP_UART_TX_IO
+            int "MCP UART TX GPIO"
+            range 0 48
+            default 21
+
+        config EXTRACTOR_MCP_UART_RX_IO
+            int "MCP UART RX GPIO"
+            range 0 48
+            default 22
+
+        config EXTRACTOR_MCP_UART_BAUD
+            int "MCP UART baud rate"
+            default 115200
+
+    endmenu
+
+    endif
+
+endmenu

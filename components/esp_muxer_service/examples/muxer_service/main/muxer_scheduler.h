@@ -1,0 +1,19 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO., LTD
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#pragma once
+
+#include "esp_err.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
+esp_err_t muxer_scheduler_install(void);
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */

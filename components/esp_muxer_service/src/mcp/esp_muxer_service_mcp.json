@@ -1,0 +1,65 @@
+[
+  {
+    "name": "esp_muxer_service_setup",
+    "description": "Configure muxer container type, storage directory, cache, and storage/streaming mode before start",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "muxer_type": {
+          "type": "string",
+          "description": "Container type such as 'TS', 'MP4', 'FLV', 'WAV'"
+        },
+        "storage_dir": {
+          "type": "string",
+          "description": "Storage directory; omit for streaming-only"
+        },
+        "slice_duration": {
+          "type": "integer",
+          "description": "Slice duration in ms; 0 uses the muxer default"
+        },
+        "ram_cache_size": {
+          "type": "integer",
+          "description": "File-write RAM cache size in bytes; 0 uses default"
+        },
+        "streaming_cache_size": {
+          "type": "integer",
+          "description": "Streaming queue cache size in bytes; 0 uses default"
+        },
+        "mode": {
+          "type": "string",
+          "description": "storage_only, streaming_only, or both"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_muxer_service_set_storage_url",
+    "description": "Set the next storage file path while the muxer is stopped",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "Storage path such as /sdcard/muxer/clip.ts"
+        }
+      },
+      "required": ["url"]
+    }
+  },
+  {
+    "name": "esp_muxer_service_start",
+    "description": "Start the muxer sink service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_muxer_service_stop",
+    "description": "Stop the muxer sink service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

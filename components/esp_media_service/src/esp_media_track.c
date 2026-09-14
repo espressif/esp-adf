@@ -34,7 +34,7 @@ esp_err_t esp_media_track_acquire_frame(esp_media_track_mngr_t *mngr, esp_media_
     if (mngr == NULL || out_frame == NULL) {
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid arguments mngr:%p out_frame:%p", mngr, out_frame);
     }
-    if (mngr->aborted) {
+    if (track_mngr_aborted(mngr)) {
         RET_FOR(ESP_ERR_INVALID_STATE, "Track mngr aborted mngr:%p", mngr);
     }
     media_track_t *track = find_track_by_frame(mngr, out_frame);
@@ -45,7 +45,7 @@ esp_err_t esp_media_track_acquire_frame(esp_media_track_mngr_t *mngr, esp_media_
         /* USER-cache tracks only support write_frame; callers may probe this. */
         return ESP_ERR_NOT_SUPPORTED;
     }
-    if (track->write_node != NULL) {
+    if (track_node_load(&track->write_node) != NULL) {
         RET_FOR(ESP_ERR_INVALID_STATE, "Track write node not null mngr:%p", mngr);
     }
 
@@ -58,7 +58,7 @@ esp_err_t esp_media_track_acquire_frame(esp_media_track_mngr_t *mngr, esp_media_
     int ret = ESP_OK;
     track_frame_node_t *node = acquire_frame_node(queue, (int)alloc_size, timeout_ms, &ret);
     if (node == NULL) {
-        return mngr->aborted ? ESP_ERR_INVALID_STATE : ret;
+        return track_mngr_aborted(mngr) ? ESP_ERR_INVALID_STATE : ret;
     }
     memset(node, 0, sizeof(*node));
     node->payload_size = size;
@@ -68,7 +68,10 @@ esp_err_t esp_media_track_acquire_frame(esp_media_track_mngr_t *mngr, esp_media_
     node->frame.type = track->info.type;
     node->frame.data = node_payload(node);
     node->frame.size = size;
-    track->write_node = node;
+    if (!track_node_try_hold(&track->write_node, node)) {
+        (void)esp_gmf_data_queue_release_write(queue, 0);
+        RET_FOR(ESP_ERR_INVALID_STATE, "Track write node not null mngr:%p", mngr);
+    }
     *out_frame = node->frame;
     return ESP_OK;
 }
@@ -81,7 +84,7 @@ esp_err_t esp_media_track_write_frame(esp_media_track_mngr_t *mngr, const esp_me
     if (frame->size > 0 && frame->data == NULL) {
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid frame data or size");
     }
-    if (mngr->aborted) {
+    if (track_mngr_aborted(mngr)) {
         RET_FOR(ESP_ERR_INVALID_STATE, "Track mngr aborted mngr:%p", mngr);
     }
     media_track_t *track = find_track_by_frame(mngr, frame);
@@ -94,7 +97,7 @@ esp_err_t esp_media_track_write_frame(esp_media_track_mngr_t *mngr, const esp_me
     if (cache_type == ESP_MEDIA_TRACK_CACHE_USER) {
         track_frame_node_t *node = acquire_frame_node(queue, sizeof(*node), timeout_ms, &ret);
         if (node == NULL) {
-            return mngr->aborted ? ESP_ERR_INVALID_STATE : ret;
+            return track_mngr_aborted(mngr) ? ESP_ERR_INVALID_STATE : ret;
         }
         memset(node, 0, sizeof(*node));
         node->frame = *frame;
@@ -103,18 +106,22 @@ esp_err_t esp_media_track_write_frame(esp_media_track_mngr_t *mngr, const esp_me
         return esp_gmf_data_queue_release_write(queue, sizeof(*node)) == 0 ? ESP_OK : ESP_FAIL;
     }
 
-    if (track->write_node != NULL) {
-        if (frame->size > track->write_node->payload_size) {
+    track_frame_node_t *held = track_node_take(&track->write_node);
+    if (held != NULL) {
+        if (frame->size > held->payload_size) {
+            if (track_mngr_aborted(mngr)) {
+                (void)esp_gmf_data_queue_release_write(queue, 0);
+            } else {
+                track_node_store(&track->write_node, held);
+            }
             RET_FOR(ESP_ERR_INVALID_SIZE, "Frame size is too large for write node mngr:%p frame:%p", mngr, frame);
         }
-        void *payload = node_payload(track->write_node);
-        track->write_node->frame = *frame;
-        track->write_node->frame.data = payload;
-        track->write_node->payload_size = frame->size;
-        size_t alloc_size = track->write_node->alloc_size;
-        esp_err_t ret = esp_gmf_data_queue_release_write(queue, (int)alloc_size) == 0 ? ESP_OK : ESP_FAIL;
-        track->write_node = NULL;
-        return ret;
+        void *payload = node_payload(held);
+        held->frame = *frame;
+        held->frame.data = payload;
+        held->payload_size = frame->size;
+        size_t alloc_size = held->alloc_size;
+        return esp_gmf_data_queue_release_write(queue, (int)alloc_size) == 0 ? ESP_OK : ESP_FAIL;
     }
 
     size_t frame_size = frame->size;
@@ -125,7 +132,7 @@ esp_err_t esp_media_track_write_frame(esp_media_track_mngr_t *mngr, const esp_me
     size_t alloc_size = node_alloc_size_for(ESP_MEDIA_TRACK_CACHE_INTERNAL, align_size, frame_size);
     track_frame_node_t *node = acquire_frame_node(queue, (int)alloc_size, timeout_ms, &ret);
     if (node == NULL) {
-        return mngr->aborted ? ESP_ERR_INVALID_STATE : ret;
+        return track_mngr_aborted(mngr) ? ESP_ERR_INVALID_STATE : ret;
     }
     memset(node, 0, sizeof(*node));
     node->frame = *frame;
@@ -145,10 +152,10 @@ esp_err_t esp_media_track_release_frame(esp_media_track_mngr_t *mngr, esp_media_
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid arguments mngr:%p frame:%p", mngr, frame);
     }
     media_track_t *track = find_track_by_frame(mngr, frame);
-    if (track == NULL || track->write_node == NULL) {
-        RET_FOR(ESP_ERR_INVALID_STATE, "Invalid track or write node %p", track ? track->write_node : NULL);
+    track_frame_node_t *node = (track != NULL) ? track_node_take(&track->write_node) : NULL;
+    if (node == NULL) {
+        RET_FOR(ESP_ERR_INVALID_STATE, "Invalid track or write node");
     }
-    track->write_node = NULL;
     esp_gmf_data_queue_t *queue = track_queue(mngr, track);
     return queue != NULL && esp_gmf_data_queue_release_write(queue, 0) == 0 ? ESP_OK : ESP_FAIL;
 }
@@ -158,12 +165,15 @@ esp_err_t esp_media_track_write_abort(esp_media_track_mngr_t *mngr)
     if (mngr == NULL) {
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid write abort args mngr:%p", mngr);
     }
-    bool notify = !mngr->aborted;
-    mngr->aborted = true;
-    if (notify && mngr->event_cb != NULL) {
+    if (!track_mngr_claim_abort(mngr)) {
+        return ESP_OK;
+    }
+    if (mngr->event_cb != NULL) {
         mngr->event_cb(ESP_MEDIA_PROVIDER_EVENT_TRACKS_ABORT, NULL, mngr->event_ctx);
     }
-    RET_CHK(wakeup_tracks(mngr), "Failed to wake track for write abort");
+    /* Wait for any held read_node (consumer still using USER payload), drain
+     * pending when idle, then wakeup. See track_mngr_complete_abort(). */
+    RET_CHK(track_mngr_complete_abort(mngr), "Failed to complete write abort");
     return ESP_OK;
 }
 
@@ -172,15 +182,11 @@ esp_err_t esp_media_track_clear_abort(esp_media_track_mngr_t *mngr)
     if (mngr == NULL) {
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid args mngr:%p", mngr);
     }
-    if (!mngr->aborted) {
+    if (!track_mngr_aborted(mngr)) {
         return ESP_OK;
     }
-    mngr->aborted = false;
+    track_mngr_set_aborted(mngr, false);
     track_mngr_reset_data_queue(mngr);
-    for (uint16_t i = 0; i < mngr->track_num; i++) {
-        mngr->tracks[i].read_node = NULL;
-        mngr->tracks[i].write_node = NULL;
-    }
     return ESP_OK;
 }
 

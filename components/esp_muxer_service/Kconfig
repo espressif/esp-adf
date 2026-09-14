@@ -1,0 +1,11 @@
+menu "ESP-Muxer Service"
+
+    config ESP_MUXER_SERVICE_MCP_ENABLE
+        bool "Enable muxer service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Build the muxer service MCP tool handler and embedded tool schema.
+            This option depends on the global ESP Service MCP support.
+
+endmenu

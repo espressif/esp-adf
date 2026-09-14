@@ -62,6 +62,9 @@ esp_err_t esp_media_provider_set_event_cb(const esp_media_provider_t *provider, 
 /**
  * @brief  Abort provider-side blocking read operations
  *
+ *         Wakes blocked readers/writers. USER-cache payloads still held or queued
+ *         are returned via frame_release before waiters are woken.
+ *
  * @param[in]  provider  Provider handle
  *
  * @return
