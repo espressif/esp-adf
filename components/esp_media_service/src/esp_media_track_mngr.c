@@ -6,6 +6,8 @@
  */
 
 #include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 #include "esp_gmf_data_queue.h"
 #include "esp_media_track.h"
 #include "esp_media_track_mngr.h"
@@ -81,20 +83,21 @@ static inline bool queue_have_data(esp_gmf_data_queue_t *queue)
 static media_track_t *find_read_track_by_frame(esp_media_track_mngr_t *mngr, const esp_media_frame_t *frame)
 {
     media_track_t *track = find_track_by_frame(mngr, frame);
-    if (track != NULL && track->read_node != NULL) {
-        if (frame->data == NULL ||
-            track->read_node->frame.data == frame->data ||
-            node_payload(track->read_node) == frame->data) {
+    if (track != NULL) {
+        track_frame_node_t *node = track_node_load(&track->read_node);
+        if (node != NULL &&
+            (frame->data == NULL || node->frame.data == frame->data || node_payload(node) == frame->data)) {
             return track;
         }
     }
     if (mngr->use_global_cache && frame->data != NULL) {
         for (uint16_t i = 0; i < mngr->track_num; i++) {
             media_track_t *t = &mngr->tracks[i];
-            if (t->read_node == NULL) {
+            track_frame_node_t *node = track_node_load(&t->read_node);
+            if (node == NULL) {
                 continue;
             }
-            if (t->read_node->frame.data == frame->data || node_payload(t->read_node) == frame->data) {
+            if (node->frame.data == frame->data || node_payload(node) == frame->data) {
                 return t;
             }
         }
@@ -169,19 +172,125 @@ static void release_pending_global_user_frames(esp_media_track_mngr_t *mngr)
     }
 }
 
-void track_mngr_reset_data_queue(esp_media_track_mngr_t *mngr)
+static void finish_read_node(esp_media_track_mngr_t *mngr, media_track_t *track, track_frame_node_t *node)
+{
+    if (node == NULL) {
+        return;
+    }
+    if (track->cache_type == ESP_MEDIA_TRACK_CACHE_USER && track->frame_release != NULL &&
+        !node->has_track_info) {
+        track->frame_release(&node->frame, track->release_ctx);
+    }
+    esp_gmf_data_queue_t *queue = track_queue(mngr, track);
+    if (queue != NULL) {
+        (void)esp_gmf_data_queue_release_read(queue);
+    }
+}
+
+static void finish_write_node(esp_media_track_mngr_t *mngr, media_track_t *track, track_frame_node_t *node)
+{
+    if (node == NULL) {
+        return;
+    }
+    esp_gmf_data_queue_t *queue = track_queue(mngr, track);
+    if (queue != NULL) {
+        (void)esp_gmf_data_queue_release_write(queue, 0);
+    }
+}
+
+static bool track_has_held_read(const esp_media_track_mngr_t *mngr)
+{
+    for (uint16_t i = 0; i < mngr->track_num; i++) {
+        if (track_node_load(&mngr->tracks[i].read_node) != NULL) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void track_mngr_finish_write_nodes(esp_media_track_mngr_t *mngr)
 {
     for (uint16_t i = 0; i < mngr->track_num; i++) {
         media_track_t *track = &mngr->tracks[i];
+        finish_write_node(mngr, track, track_node_take(&track->write_node));
+    }
+}
+
+/** Drain USER payloads on tracks with no held read_node (safe vs consumer). */
+static void track_mngr_drain_pending_idle(esp_media_track_mngr_t *mngr)
+{
+    for (uint16_t i = 0; i < mngr->track_num; i++) {
+        media_track_t *track = &mngr->tracks[i];
+        if (track_node_load(&track->read_node) != NULL) {
+            continue;
+        }
         release_pending_user_frames(mngr, track);
-        track->write_node = NULL;
-        track->read_node = NULL;
+    }
+    if (!track_has_held_read(mngr)) {
+        release_pending_global_user_frames(mngr);
+    }
+}
+
+static void track_mngr_signal_held_done(esp_media_track_mngr_t *mngr)
+{
+    if (mngr->abort_eg != NULL) {
+        xEventGroupSetBits((EventGroupHandle_t)mngr->abort_eg, TRACK_MNGR_ABORT_HELD_DONE);
+    }
+}
+
+static void track_mngr_wait_held_done(esp_media_track_mngr_t *mngr)
+{
+    if (mngr->abort_eg == NULL) {
+        return;
+    }
+    int wait_count = 300;
+    while (track_has_held_read(mngr)) {
+        /* Short poll avoids lost-wakeup if the bit was set just before wait. */
+        xEventGroupWaitBits((EventGroupHandle_t)mngr->abort_eg, TRACK_MNGR_ABORT_HELD_DONE,
+                            pdTRUE, pdFALSE, pdMS_TO_TICKS(10));
+        if (wait_count-- == 0) {
+            ESP_LOGW(TAG, "Reader held frame too long and not released");
+        }
+    }
+}
+
+void track_mngr_release_user_frames(esp_media_track_mngr_t *mngr)
+{
+    if (mngr == NULL) {
+        return;
+    }
+    for (uint16_t i = 0; i < mngr->track_num; i++) {
+        media_track_t *track = &mngr->tracks[i];
+        finish_read_node(mngr, track, track_node_take(&track->read_node));
+        finish_write_node(mngr, track, track_node_take(&track->write_node));
+        release_pending_user_frames(mngr, track);
+    }
+    release_pending_global_user_frames(mngr);
+}
+
+esp_err_t track_mngr_complete_abort(esp_media_track_mngr_t *mngr)
+{
+    if (mngr == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    track_mngr_finish_write_nodes(mngr);
+    /* Held read_node is owned by the consumer — wait for release_frame. */
+    track_mngr_wait_held_done(mngr);
+    /* No held frame: drain pending here (or re-drain after consumer already did). */
+    track_mngr_drain_pending_idle(mngr);
+    return wakeup_tracks(mngr);
+}
+
+void track_mngr_reset_data_queue(esp_media_track_mngr_t *mngr)
+{
+    track_mngr_release_user_frames(mngr);
+    for (uint16_t i = 0; i < mngr->track_num; i++) {
+        media_track_t *track = &mngr->tracks[i];
         if (track->queue != NULL) {
             esp_gmf_data_queue_reset(track->queue);
         }
     }
     if (mngr->global_queue != NULL) {
-        release_pending_global_user_frames(mngr);
         esp_gmf_data_queue_reset(mngr->global_queue);
     }
 }
@@ -230,19 +339,19 @@ static esp_err_t provider_release_frame(void *ctx, esp_media_frame_t *frame)
     }
     esp_media_track_mngr_t *mngr = (esp_media_track_mngr_t *)ctx;
     media_track_t *track = find_read_track_by_frame(mngr, frame);
-    if (track == NULL || track->read_node == NULL) {
-        ESP_LOGE(TAG, "Failed to release frame type:%d size:%u track:%p read_node:%p",
-                 (int)frame->type, (unsigned)frame->size, (void *)track,
-                 track != NULL ? (void *)track->read_node : NULL);
+    track_frame_node_t *node = (track != NULL) ? track_node_take(&track->read_node) : NULL;
+    if (node == NULL) {
+        ESP_LOGE(TAG, "Failed to release frame type:%d size:%u track:%p",
+                 (int)frame->type, (unsigned)frame->size, (void *)track);
         return ESP_ERR_INVALID_STATE;
     }
-    if (track_cache_type(mngr, track) == ESP_MEDIA_TRACK_CACHE_USER && track->frame_release != NULL &&
-        !track->read_node->has_track_info) {
-        track->frame_release(&track->read_node->frame, track->release_ctx);
+    finish_read_node(mngr, track, node);
+    /* Under abort: drain remaining pending, then wake abort waiter for wakeup. */
+    if (track_mngr_aborted(mngr)) {
+        track_mngr_drain_pending_idle(mngr);
+        track_mngr_signal_held_done(mngr);
     }
-    track->read_node = NULL;
-    esp_gmf_data_queue_t *queue = track_queue(mngr, track);
-    return queue != NULL && esp_gmf_data_queue_release_read(queue) == 0 ? ESP_OK : ESP_FAIL;
+    return ESP_OK;
 }
 
 static esp_err_t provider_acquire_frame(void *ctx, esp_media_frame_t *out_frame, uint32_t timeout_ms)
@@ -251,7 +360,7 @@ static esp_err_t provider_acquire_frame(void *ctx, esp_media_frame_t *out_frame,
         return ESP_ERR_INVALID_ARG;
     }
     esp_media_track_mngr_t *mngr = (esp_media_track_mngr_t *)ctx;
-    if (mngr->aborted) {
+    if (track_mngr_aborted(mngr)) {
         return ESP_ERR_INVALID_STATE;
     }
     if (mngr->track_num == 0) {
@@ -285,21 +394,29 @@ static esp_err_t provider_acquire_frame(void *ctx, esp_media_frame_t *out_frame,
             return ESP_ERR_NOT_FOUND;
         }
     }
-    if (track->read_node != NULL) {
+    if (track_node_load(&track->read_node) != NULL) {
         esp_gmf_data_queue_release_read(queue);
         return ESP_ERR_INVALID_STATE;
     }
     ESP_LOGD(TAG, "Acquire frame, track:%p %d, read_node:%p", track, (int)track->info.type, node);
-    track->read_node = node;
+    if (!track_node_try_hold(&track->read_node, node)) {
+        esp_gmf_data_queue_release_read(queue);
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (track_mngr_aborted(mngr)) {
+        finish_read_node(mngr, track, track_node_take(&track->read_node));
+        return ESP_ERR_INVALID_STATE;
+    }
     if (node->has_track_info) {
         if ((node->frame.flags & ESP_MEDIA_FRAME_FLAG_TRACK_REMOVED) != 0) {
             esp_media_track_info_t removed = node->track_info[0];
-            track->read_node = NULL;
-            esp_gmf_data_queue_release_read(queue);
+            if (track_node_take(&track->read_node) != NULL) {
+                esp_gmf_data_queue_release_read(queue);
+            }
             if (mngr->event_cb != NULL) {
                 mngr->event_cb(ESP_MEDIA_PROVIDER_EVENT_TRACK_REMOVED, &removed, mngr->event_ctx);
             }
-            return mngr->aborted ? ESP_ERR_INVALID_STATE : ESP_ERR_NOT_FOUND;
+            return track_mngr_aborted(mngr) ? ESP_ERR_INVALID_STATE : ESP_ERR_NOT_FOUND;
         }
         track->info = node->track_info[0];
         if (mngr->event_cb != NULL) {
@@ -350,8 +467,10 @@ static esp_err_t provider_abort(void *ctx)
         return ESP_ERR_INVALID_ARG;
     }
     esp_media_track_mngr_t *mngr = (esp_media_track_mngr_t *)ctx;
-    mngr->aborted = true;
-    return wakeup_tracks(mngr);
+    if (!track_mngr_claim_abort(mngr)) {
+        return ESP_OK;
+    }
+    return track_mngr_complete_abort(mngr);
 }
 
 esp_err_t esp_media_track_mngr_create(const esp_media_track_mngr_cfg_t *cfg, esp_media_track_mngr_t **out_mngr)
@@ -373,10 +492,17 @@ esp_err_t esp_media_track_mngr_create(const esp_media_track_mngr_cfg_t *cfg, esp
     mngr->max_track_num = cfg->max_track_num;
     mngr->use_global_cache = cfg->use_global_cache;
     mngr->global_cache_size = global_queue_size(cfg->global_cache.cache_size);
+    mngr->abort_eg = xEventGroupCreate();
+    if (mngr->abort_eg == NULL) {
+        free(mngr->tracks);
+        free(mngr);
+        RET_FOR(ESP_ERR_NO_MEM, "Failed to allocate abort event group");
+    }
     if (mngr->use_global_cache) {
         mngr->global_queue = esp_gmf_data_queue_create((int)mngr->global_cache_size);
         if (mngr->global_queue == NULL) {
             size_t global_cache_size = mngr->global_cache_size;
+            vEventGroupDelete((EventGroupHandle_t)mngr->abort_eg);
             free(mngr->tracks);
             free(mngr);
             RET_FOR(ESP_ERR_NO_MEM, "Failed to allocate global queue size:%u",
@@ -399,6 +525,10 @@ esp_err_t esp_media_track_mngr_destroy(esp_media_track_mngr_t *mngr)
         esp_gmf_data_queue_destroy(mngr->global_queue);
         mngr->global_queue = NULL;
     }
+    if (mngr->abort_eg != NULL) {
+        vEventGroupDelete((EventGroupHandle_t)mngr->abort_eg);
+        mngr->abort_eg = NULL;
+    }
     if (mngr->tracks != NULL) {
         free(mngr->tracks);
         mngr->tracks = NULL;
@@ -412,13 +542,11 @@ esp_err_t esp_media_track_mngr_reset(esp_media_track_mngr_t *mngr)
     if (mngr == NULL) {
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid args mngr:%p", mngr);
     }
-    mngr->aborted = false;
-    release_pending_global_user_frames(mngr);
+    track_mngr_set_aborted(mngr, false);
+    track_mngr_release_user_frames(mngr);
     for (uint16_t i = 0; i < mngr->track_num; i++) {
         media_track_t *track = &mngr->tracks[i];
-        track->write_node = NULL;
         if (track->queue != NULL) {
-            release_pending_user_frames(mngr, track);
             esp_gmf_data_queue_wakeup(track->queue);
             esp_gmf_data_queue_destroy(track->queue);
         }
@@ -453,7 +581,7 @@ static inline void track_mngr_destroy_global_queue(esp_media_track_mngr_t *mngr)
 
 static inline esp_err_t track_mngr_fail_queue_alloc(esp_media_track_mngr_t *mngr, const char *msg)
 {
-    mngr->aborted = true;
+    track_mngr_set_aborted(mngr, true);
     wakeup_tracks(mngr);
     RET_FOR(ESP_ERR_NO_MEM, "%s", msg);
 }

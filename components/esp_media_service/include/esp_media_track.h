@@ -70,9 +70,12 @@ esp_err_t esp_media_track_write_frame(esp_media_track_mngr_t *mngr, const esp_me
 /**
  * @brief  Abort from the write side
  *
- *         Use when no more frames will be produced but consumers keep waiting.
- *         This abort wakes blocked consumers; further reads return an error.
- *         The queued data is kept until esp_media_track_clear_abort() is called
+ *         Sets abort, notifies TRACKS_ABORT, then waits if a consumer still
+ *         holds a read frame (USER payload stays valid until release). On
+ *         release under abort the consumer drains queued USER frames and
+ *         signals abort to continue. If no frame is held, pending USER frames
+ *         are drained here. Finally queues are woken (quit set). Further reads
+ *         fail until esp_media_track_clear_abort().
  *
  * @param[in]  mngr  Track manager handle
  *
@@ -83,13 +86,14 @@ esp_err_t esp_media_track_write_frame(esp_media_track_mngr_t *mngr, const esp_me
 esp_err_t esp_media_track_write_abort(esp_media_track_mngr_t *mngr);
 
 /**
- * @brief  Clear abort and drain queued data, keeping added tracks
+ * @brief  Clear abort and reset data queues, keeping added tracks
  *
- *         Clears abort and resets data queues. Does not wake blocked waiters;
- *         start the source before the sink so consumers are not waiting.
- *         Track metadata is kept so callers do not need to re-add tracks.
- *         Use on re-link or start when the manager already exists.
- *         Use esp_media_track_mngr_reset() when tracks must be removed.
+ *         Clears abort and resets data queues. USER-cache frames should already
+ *         have been released by esp_media_track_write_abort() or provider abort.
+ *         Does not wake blocked waiters; start the source before the sink so
+ *         consumers are not waiting. Track metadata is kept so callers do not
+ *         need to re-add tracks. Use on re-link or start when the manager already
+ *         exists. Use esp_media_track_mngr_reset() when tracks must be removed.
  *
  * @param[in]  mngr  Track manager handle
  *

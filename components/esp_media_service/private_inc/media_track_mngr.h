@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stdatomic.h>
+
 #include "esp_gmf_data_queue.h"
 #include "esp_media_track_mngr.h"
 
@@ -26,8 +29,8 @@ typedef struct {
 typedef struct {
     esp_media_track_info_t        info;           /*!< Media track information */
     esp_gmf_data_queue_t         *queue;          /*!< Data queue to store media data */
-    track_frame_node_t           *write_node;     /*!< Current write node */
-    track_frame_node_t           *read_node;      /*!< Current read node */
+    _Atomic(track_frame_node_t *) write_node;     /*!< Current write node */
+    _Atomic(track_frame_node_t *) read_node;      /*!< Current read node */
     esp_media_track_cache_type_t  cache_type;     /*!< Cache type */
     uint16_t                      addr_align;     /*!< Frame address alignment */
     uint16_t                      size_align;     /*!< Frame size alignment */
@@ -45,8 +48,49 @@ struct esp_media_track_mngr {
     size_t                         global_cache_size;  /*!< Global cache size */
     esp_media_provider_event_cb_t  event_cb;           /*!< Media provider event callback */
     void                          *event_ctx;          /*!< Media provider event context */
-    bool                           aborted;            /*!< Whether aborted or not */
+    _Atomic bool                   aborted;            /*!< Whether aborted or not */
+    void                          *abort_eg;           /*!< EventGroup: held-read released under abort */
 };
+
+#define TRACK_MNGR_ABORT_HELD_DONE  (1U << 0)
+
+static inline bool track_mngr_aborted(const esp_media_track_mngr_t *mngr)
+{
+    return atomic_load(&mngr->aborted);
+}
+
+static inline void track_mngr_set_aborted(esp_media_track_mngr_t *mngr, bool aborted)
+{
+    atomic_store(&mngr->aborted, aborted);
+}
+
+/** First caller returns true and must complete abort; later callers skip. */
+static inline bool track_mngr_claim_abort(esp_media_track_mngr_t *mngr)
+{
+    bool expected = false;
+    return atomic_compare_exchange_strong(&mngr->aborted, &expected, true);
+}
+
+static inline track_frame_node_t *track_node_load(const _Atomic(track_frame_node_t *) *slot)
+{
+    return atomic_load(slot);
+}
+
+static inline void track_node_store(_Atomic(track_frame_node_t *) *slot, track_frame_node_t *node)
+{
+    atomic_store(slot, node);
+}
+
+static inline track_frame_node_t *track_node_take(_Atomic(track_frame_node_t *) *slot)
+{
+    return atomic_exchange(slot, NULL);
+}
+
+static inline bool track_node_try_hold(_Atomic(track_frame_node_t *) *slot, track_frame_node_t *node)
+{
+    track_frame_node_t *expected = NULL;
+    return atomic_compare_exchange_strong(slot, &expected, node);
+}
 
 static inline uint32_t queue_timeout_ms(uint32_t timeout_ms)
 {
@@ -133,6 +177,23 @@ static inline esp_err_t wakeup_tracks(esp_media_track_mngr_t *mngr)
 }
 
 void track_mngr_reset_data_queue(esp_media_track_mngr_t *mngr);
+
+/**
+ * @brief  Force-release held and queued USER-cache frames (reset / destroy)
+ *
+ *         Steals in-flight read_node. Not for live abort — that must wait for
+ *         the consumer via track_mngr_complete_abort().
+ */
+void track_mngr_release_user_frames(esp_media_track_mngr_t *mngr);
+
+/**
+ * @brief  Finish abort after claim_abort: wait for held reads, drain pending, wakeup
+ *
+ *         If a consumer holds read_node, wait until provider_release clears it
+ *         (that path also drains pending). If none held, drain pending here.
+ *         Then wakeup queues (sets quit).
+ */
+esp_err_t track_mngr_complete_abort(esp_media_track_mngr_t *mngr);
 
 #ifdef __cplusplus
 }

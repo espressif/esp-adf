@@ -1,0 +1,12 @@
+dependencies:
+  espressif/esp_extractor_service:
+    require: public
+    version: "~0.5"
+    override_path: "../.."
+  espressif/esp_media_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../esp_media_service"
+  espressif/media_lib_sal:
+    require: public
+    version: "~1.0"

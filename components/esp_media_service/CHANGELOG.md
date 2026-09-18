@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.3
+
+### Bug Fixes
+
+- Return USER-cache frames on write abort and provider abort before wakeup, avoiding owner-pool leaks after queue reset
+- Claim in-flight read/write nodes with atomic take before release to avoid double-free when abort races with frame release
+- Abort waits for the consumer to release a held read frame; that release drains pending USER frames, then abort wakes queues
+- Make write/provider abort single-flight so concurrent stop and task exit do not double-free USER frames
 
 ## v0.5.2
 

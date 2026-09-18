@@ -36,6 +36,8 @@ jobs:
             components/esp_video_player_service;
             components/esp_rtmp_service;
             components/esp_rtsp_service;
+            components/esp_extractor_service;
+            components/esp_muxer_service;
             adf_examples;
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}

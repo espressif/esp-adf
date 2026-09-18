@@ -1,0 +1,29 @@
+menu "ESP-Extractor Service"
+
+    config ESP_EXTRACTOR_SERVICE_FILE_IO_SUPPORT
+        bool "Enable file GMF IO support"
+        default y
+        help
+            Register file reader IO in the internal GMF pool when no pool is provided.
+
+    config ESP_EXTRACTOR_SERVICE_HTTP_IO_SUPPORT
+        bool "Enable HTTP GMF IO support"
+        default y
+        help
+            Register HTTP/HTTPS reader IO in the internal GMF pool when no pool is provided.
+
+    config ESP_EXTRACTOR_SERVICE_HLS_SUPPORT
+        bool "Enable HLS extractor support"
+        default n
+        help
+            Compile the HLS extractor path from esp_hls_stream.
+
+    config ESP_EXTRACTOR_SERVICE_MCP_ENABLE
+        bool "Enable extractor service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Build the extractor service MCP tool handler and embedded tool schema.
+            This option depends on the global ESP Service MCP support.
+
+endmenu

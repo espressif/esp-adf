@@ -1,0 +1,60 @@
+[
+  {
+    "name": "esp_extractor_service_set_extract_mask",
+    "description": "Set which tracks to extract before start: audio, video, or av",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "mask": {
+          "type": "string",
+          "description": "audio, video, or av"
+        }
+      },
+      "required": ["mask"]
+    }
+  },
+  {
+    "name": "esp_extractor_service_set_out_pool_size",
+    "description": "Set extractor output pool size in bytes before start; 0 restores the default",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "out_pool_size": {
+          "type": "integer",
+          "description": "Pool size in bytes"
+        }
+      },
+      "required": ["out_pool_size"]
+    }
+  },
+  {
+    "name": "esp_extractor_service_set_url",
+    "description": "Set the input URL or file path while stopped",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "file://, http(s)://, path, or .m3u8 URI"
+        }
+      },
+      "required": ["url"]
+    }
+  },
+  {
+    "name": "esp_extractor_service_start",
+    "description": "Start the extractor source service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_extractor_service_stop",
+    "description": "Stop the extractor source service",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

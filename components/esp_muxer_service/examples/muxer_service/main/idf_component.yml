@@ -1,0 +1,23 @@
+dependencies:
+  espressif/esp_muxer_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../"
+  espressif/esp_media_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../esp_media_service"
+  espressif/esp_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../esp_service"
+  espressif/media_lib_sal:
+    require: public
+    version: "~1.0"
+  esp_cli_service:
+    require: public
+    version: "~0.5"
+    override_path: "../../../../esp_cli_service"
+  espressif/esp_board_manager:
+    require: public
+    version: "~0.7"
