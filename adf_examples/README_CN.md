@@ -19,6 +19,7 @@
 | RTSP 推流 | [protocols/rtsp_push](./protocols/rtsp_push) | 基础示例，将摄像头和麦克风采集连接到 `esp_rtsp_service` SINK，并推送到可配置的 RTSP 服务器。 |
 | RTSP CLI 综合示例 | [protocols/rtsp_cli](./protocols/rtsp_cli) | 一份固件覆盖 RTSP server、客户端推流与客户端拉流三种角色，通过 CLI 运行时切换；基于 `esp_rtsp_service` 推送摄像头与麦克风音视频，或把远端流播放到 LCD 与扬声器。 |
 | RTMP CLI 综合示例 | [protocols/rtmp_cli](./protocols/rtmp_cli) | 一份固件覆盖 RTMP 推流、拉流与中继服务器，通过 CLI 运行时切换；基于 `esp_rtmp_service` 把摄像头推到接入服务器或直接对外提供，把远端流播放到 LCD 与扬声器，也可让整条链路只在开发板上运行。 |
+| SIP CLI 综合示例 | [protocols/sip_cli](./protocols/sip_cli) | 由 CLI 驱动的全双工 SIP 终端；基于 `esp_sip_service` 注册到 PBX 或直接呼叫对端，同时双向传输麦克风与摄像头媒体，并覆盖 DTMF、SIP MESSAGE 与 SRTP。 |
 
 ## 使用说明
 

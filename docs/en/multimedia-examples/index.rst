@@ -215,7 +215,40 @@ Cloud agent examples demonstrate connecting a device to a cloud voice agent, cov
 Protocol Examples
 -----------------
 
-Protocol examples demonstrate media transport over the network, including HTTP download and real-time streaming or calls over WebRTC, RTSP, and RTMP.
+Protocol examples demonstrate media transport over the network. RTSP, RTMP, and SIP have two entry points. The difference is whether the application uses :doc:`/multimedia-services/media/esp-media-service`:
+
+- **Media services**: ``esp_rtsp_service`` / ``esp_rtmp_service`` / ``esp_sip_service``. The application calls ``create``, ``setup``, ``link``, and ``start``. Frames move between capture, protocol, and player services.
+- **Protocol-stack solutions**: ``rtsp_demo`` / ``rtmp_demo`` in ``esp-webrtc-solution`` call ``esp_media_protocols`` directly. WebRTC doorbell and streaming solutions are listed below.
+
+Media Service Examples
+^^^^^^^^^^^^^^^^^^^^^^
+
+Use this group for new RTSP / RTMP / SIP applications. The service model is in :doc:`/multimedia-services/media/esp-media-service`.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 52 20
+
+   * - Example
+     - Description
+     - Component Link
+   * - rtsp_push
+     - Built on ``esp_rtsp_service``: ``link`` the capture service and publish to an RTSP server.
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_push>`__
+   * - rtsp_cli
+     - Built on ``esp_rtsp_service``: one firmware covers server, push, and pull. Roles switch from the CLI. Pull links the stream to the player service.
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_cli>`__
+   * - rtmp_cli
+     - Built on ``esp_rtmp_service``: one firmware covers publish, play, and relay. Roles switch from the CLI. The board can also run a linked loopback.
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtmp_cli>`__
+   * - sip_cli
+     - Built on ``esp_sip_service``: a full-duplex endpoint. Uplink links capture and downlink links the player. Supports PBX or peer-to-peer, DTMF, MESSAGE, and SRTP.
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__
+
+Protocol-Stack and WebRTC Examples
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These examples call the protocol stack or WebRTC orchestration directly. They do not ``link`` ``esp_*_service``. ``rtsp_demo`` / ``rtmp_demo`` show ``esp_media_protocols`` itself.
 
 .. list-table::
    :header-rows: 1
@@ -261,10 +294,10 @@ Protocol examples demonstrate media transport over the network, including HTTP d
      - Hosts HTTPS signaling on the device and sends camera JPEG to a browser over a WebRTC data channel, with two-way audio.
      - `esp-webrtc-solution <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/local_jpeg_stream>`__
    * - rtsp_demo
-     - After Wi-Fi connects, starts an RTSP server or pusher on the device for LAN streaming.
+     - Calls ``esp_media_protocols`` directly to start an RTSP server or pusher. It does not use a media service.
      - `esp-webrtc-solution <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/rtsp_demo>`__
    * - rtmp_demo
-     - Captures device audio and video and pushes them to an RTMP server through ``esp_media_protocols``.
+     - Calls ``esp_media_protocols`` directly to publish RTMP. It does not use a media service.
      - `esp-webrtc-solution <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/rtmp_demo>`__
 
 Check and Benchmark Examples

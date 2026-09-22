@@ -88,7 +88,7 @@ The media interface is designed to tolerate the stop sequence: when the source s
 Application Examples
 ---------------------
 
-Complete source/sink examples are in the examples directory of the `esp_media_service component repository <https://components.espressif.com/components/espressif/esp_media_service>`__. See :doc:`/multimedia-services/service-infra/esp-service` for the service base class.
+Complete source/sink examples are in the examples directory of the `esp_media_service component repository <https://components.espressif.com/components/espressif/esp_media_service>`__. See :doc:`/multimedia-services/service-infra/esp-service` for the service base class. SIP / RTSP / RTMP service examples are ``sip_cli``, ``rtsp_cli``, ``rtsp_push``, and ``rtmp_cli`` in :doc:`/multimedia-examples/index`: the application links capture, protocol, and player services and does not forward frames.
 
 FAQ
 ------

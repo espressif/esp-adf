@@ -45,6 +45,12 @@ EXAMPLES:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
       esp32p4:
         - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: adf_examples/protocols/sip_cli
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
   - app_dir: adf_examples/player/play_music_control
     board:
       esp32:
@@ -135,6 +141,10 @@ EXAMPLES:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_sip_service/examples/sip_service
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
 
 TEST_APPS:
   - app_dir: components/esp_codec_dev/test_apps/codec_dev_test
@@ -216,6 +226,10 @@ TEST_APPS:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
   - app_dir: components/esp_muxer_service/test_apps
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_sip_service/test_apps
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}

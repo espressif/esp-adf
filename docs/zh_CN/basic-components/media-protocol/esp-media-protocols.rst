@@ -9,7 +9,13 @@ ESP Media Protocols 是乐鑫为 ESP 系列 SoC 提供的官方媒体协议组�
 
 ESP Media Protocols 针对嵌入式设备进行了优化，在保证稳定性和较低资源占用的同时，提供完善的协议栈实现和易于扩展的接口，适用于智能音箱、IPC、流媒体播放器、智能家居设备、多房间音频系统等各类联网多媒体产品。
 
+协议栈提供 SIP、RTSP、RTMP 实现。应用程序通过 ``esp_sip_service``、``esp_rtsp_service``、``esp_rtmp_service`` 使用这些协议，见下列媒体服务例程。``esp-webrtc-solution`` 中的 ``rtsp_demo`` / ``rtmp_demo`` 直接调用本组件 API。
+
 相关链接：
 
 - `组件管理器 <https://components.espressif.com/components/espressif/esp_media_protocols>`__
 - `GitHub 仓库 <https://github.com/espressif/esp-adf-libs/tree/master/esp_media_protocols>`__
+- `sip_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__
+- `rtsp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_cli>`__
+- `rtsp_push <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_push>`__
+- `rtmp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtmp_cli>`__

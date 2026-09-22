@@ -1,0 +1,29 @@
+menu "ESP-SIP Service"
+
+    config ESP_SIP_SERVICE_UPLINK_SUPPORT
+        bool "Enable SIP uplink (media sink) support"
+        default y
+        help
+            Build the uplink path that consumes frames from a linked media
+            provider and sends them to the SIP peer. Disable when this firmware
+            never sends media. Receive-only calls then take the codec from
+            setup.audio_codec / video_codec, which is also what enables the
+            stream at all.
+
+    config ESP_SIP_SERVICE_DOWNLINK_SUPPORT
+        bool "Enable SIP downlink (media source) support"
+        default y
+        help
+            Build the downlink path that caches frames received from the SIP
+            peer and exposes them as a media provider. Disable for send-only
+            devices such as an unattended camera.
+
+    config ESP_SIP_SERVICE_MCP_ENABLE
+        bool "Enable SIP service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Build the SIP service MCP tool handler and embedded tool schema.
+            This option depends on the global ESP Service MCP support.
+
+endmenu

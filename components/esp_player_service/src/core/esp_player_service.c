@@ -271,18 +271,18 @@ static esp_err_t configure_track(esp_player_service_t *service, esp_media_stream
     if (track->type == ESP_MEDIA_TRACK_TYPE_VIDEO && service->video_render == NULL) {
         return ESP_ERR_NOT_SUPPORTED;
     }
-    /* Busy only in active states; idle/finished player can be reconfigured. A type
-       the slot has not declared yet is the exception: a live source may announce
-       audio and video in separate messages, and refusing the second one would
-       starve that decoder for the rest of the session. The next write rebuilds
-       when the declared mask no longer matches the running feed session. */
+    /* Busy only in active states; idle/finished player can be reconfigured. Two
+       exceptions: a type the slot has not declared yet, since a live source may
+       announce audio and video separately, and a declaration the source already
+       ended (feed_decl_reset). The next write rebuilds when the declared mask no
+       longer matches the running feed session. */
     int track_slot = (track->type == ESP_MEDIA_TRACK_TYPE_AUDIO)
                          ? ESP_PLAYER_SERVICE_FEED_TRACK_AUDIO
                          : ESP_PLAYER_SERVICE_FEED_TRACK_VIDEO;
     esp_player_state_t st = ps_slot_get_play_state(slot);
     bool active = (st == ESP_PLAYER_STATE_PREPARING || st == ESP_PLAYER_STATE_PLAYING || st == ESP_PLAYER_STATE_PAUSED);
     bool late = active && !slot->feed_track_set[track_slot];
-    if (slot->player != NULL && active && !late) {
+    if (slot->player != NULL && active && !late && !slot->feed_decl_reset) {
         ESP_LOGW(TAG, "Configure track: stream %u busy (state=%d)", (unsigned)stream, (int)st);
         return ESP_ERR_INVALID_STATE;
     }
@@ -1000,6 +1000,13 @@ static void handle_provider_track_added(esp_player_service_t *service,
     }
 }
 
+static void mark_feed_session_ended(player_stream_slot_t *slot)
+{
+    slot->stop_task = true;
+    slot->feed_decl_reset = true;
+    slot->feed_session = false;
+}
+
 static void audio_provider_event_handler(esp_media_provider_event_t event,
                                          const esp_media_track_info_t *info, void *ctx)
 {
@@ -1008,13 +1015,13 @@ static void audio_provider_event_handler(esp_media_provider_event_t event,
         return;
     }
     if (event == ESP_MEDIA_PROVIDER_EVENT_TRACKS_ABORT) {
-        slot->stop_task = true;
+        mark_feed_session_ended(slot);
         return;
     }
     /* Stop only for this stream's track (or unknown id). */
     if (event == ESP_MEDIA_PROVIDER_EVENT_TRACK_REMOVED) {
         if (info == NULL || slot->track_id == 0 || info->id == slot->track_id) {
-            slot->stop_task = true;
+            mark_feed_session_ended(slot);
         }
         return;
     }

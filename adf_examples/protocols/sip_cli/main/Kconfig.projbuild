@@ -1,0 +1,80 @@
+menu "SIP CLI Example Configuration"
+
+    comment "Wi-Fi"
+
+    config SIP_EXAMPLE_WIFI_SSID
+        string "WiFi SSID"
+        default "SSID"
+        help
+            SSID (network name) for the example to connect to.
+
+    config SIP_EXAMPLE_WIFI_PASSWORD
+        string "WiFi Password"
+        default "PASSWORD"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    comment "SIP account and default peer"
+
+    config SIP_EXAMPLE_USER
+        string "SIP user"
+        default "1001"
+        help
+            SIP user name or extension registered on the server.
+
+    config SIP_EXAMPLE_PASSWORD
+        string "SIP password"
+        default ""
+        help
+            Password for the SIP account. Leave empty for a server that does
+            not authenticate, and for P2P mode where no registrar is involved.
+
+    config SIP_EXAMPLE_SERVER
+        string "SIP server"
+        default "192.168.1.10"
+        help
+            Registrar host name or IPv4 address. In P2P mode this is the IP
+            address of the peer device instead.
+
+    config SIP_EXAMPLE_PEER_USER
+        string "Default peer"
+        default "1002"
+        help
+            Callee used by 'sip call' when no argument is given. May be a user,
+            an extension or a full SIP URI.
+
+    comment "Advanced SIP defaults"
+
+    choice SIP_EXAMPLE_TRANSPORT_TYPE
+        bool "SIP signaling transport"
+        default SIP_EXAMPLE_TRANSPORT_UDP
+        help
+            Transport used for SIP signaling. TLS needs a registrar that
+            listens on the SIPS port and a certificate the device trusts.
+
+        config SIP_EXAMPLE_TRANSPORT_UDP
+            bool "UDP"
+
+        config SIP_EXAMPLE_TRANSPORT_TCP
+            bool "TCP"
+
+        config SIP_EXAMPLE_TRANSPORT_TLS
+            bool "TLS"
+
+    endchoice
+
+    config SIP_EXAMPLE_TRANSPORT
+        string
+        default "udp" if SIP_EXAMPLE_TRANSPORT_UDP
+        default "tcp" if SIP_EXAMPLE_TRANSPORT_TCP
+        default "tls" if SIP_EXAMPLE_TRANSPORT_TLS
+
+    config SIP_EXAMPLE_SERVER_PORT
+        int "SIP server port"
+        default 5060
+        range 1 65535
+        help
+            Port the registrar listens on. Use 5061 or the server-specific
+            port when TLS is selected.
+
+endmenu

@@ -46,12 +46,15 @@
 
 按分辨率和编码格式选择主控：H.264 对讲使用 ESP32-P4；MJPEG 在 480×800 及以下可用 ESP32-S3，更高分辨率可用 ESP32-S31。摄像头接口可以是 USB、DVP 或 MIPI。
 
-实时通话见 :doc:`esp-webrtc-solution`。H.264 与 JPEG 见 :doc:`../basic-components/video-codec/esp-h264` 与 :doc:`../basic-components/video-codec/esp-new-jpeg`。语音前端见 `ESP-SR <https://docs.espressif.com/projects/esp-sr/zh_CN/latest/esp32s3/audio_front_end/README.html>`__。门铃示例见 `doorbell_demo <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/doorbell_demo>`__。
+实时通话见 :doc:`esp-webrtc-solution`。H.264 与 JPEG 见 :doc:`../basic-components/video-codec/esp-h264` 与 :doc:`../basic-components/video-codec/esp-new-jpeg`。语音前端见 `ESP-SR <https://docs.espressif.com/projects/esp-sr/zh_CN/latest/esp32s3/audio_front_end/README.html>`__。WebRTC 门铃见 `doorbell_demo <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/doorbell_demo>`__。SIP / RTSP / RTMP 请使用媒体服务例程 `sip_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__、`rtsp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_cli>`__、`rtmp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtmp_cli>`__：应用程序 ``link`` 采集与播放，不搬运帧。``esp-webrtc-solution`` 中的 ``rtsp_demo`` / ``rtmp_demo`` 直接调用协议栈。
 
 参考资料
 ----------
 
 - :doc:`esp-webrtc-solution`
 - `doorbell_demo <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/doorbell_demo>`__
+- `sip_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/sip_cli>`__
+- `rtsp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtsp_cli>`__
+- `rtmp_cli <https://github.com/espressif/esp-adf/tree/master/adf_examples/protocols/rtmp_cli>`__
 - :doc:`../basic-components/video-codec/esp-h264`
 - :doc:`../basic-components/video-codec/esp-new-jpeg`

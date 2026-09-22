@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2
+
+### Bug Fixes
+
+- Accept a new track set after the linked source aborts or removes its tracks
+
 ## v0.5.1
 
 ### Bug Fixes
