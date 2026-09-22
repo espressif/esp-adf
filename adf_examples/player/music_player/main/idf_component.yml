@@ -5,7 +5,9 @@ dependencies:
   espressif/esp_extractor:
     version: "^1.0"
   espressif/esp_lvgl_adapter:
-    version: "^0.5"
+    version: "^0.6.1"
+  lvgl/lvgl:
+    version: ">=8,<9.6"
   espressif/esp_mmap_assets:
     version: "^2.0"
   espressif/esp_playlist:
