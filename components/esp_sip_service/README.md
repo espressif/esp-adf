@@ -22,6 +22,7 @@ A SIP call is full duplex, so unlike the RTSP and RTMP services this one has no 
 - Signaling-only start, receive-only via a setup codec, or send/receive from linked tracks
 - Custom INVITE headers, private headers and raw header inspection
 - Media-service links instead of application-managed frame callbacks
+- Thread resources overridable through `esp_service_scheduler`
 
 ## Data Flow
 
@@ -162,6 +163,17 @@ Codec resolution at start: SIP negotiates one codec per media type, and a stream
 
 `ESP_SIP_SERVICE_MCP_ENABLE` adds the MCP tools.
 
+## Scheduler
+
+The protocol stack creates four worker threads. `start` fills the matching `esp_rtc_config_t` fields from `esp_service_scheduler_get_thread_cfg()`. Match the create `name` and these thread names in `esp_service_scheduler_set_cb()`:
+
+| Thread name macro | Default name | Default stack / priority / core |
+| --- | --- | --- |
+| `ESP_SIP_SCHED_SESSION_TASK` | `sip_task` | 10K / 20 / 0 |
+| `ESP_SIP_SCHED_LISTEN_TASK` | `listen_task` | 2K / 20 / 0 |
+| `ESP_SIP_SCHED_AUDIO_RECV_TASK` | `_rtp_audio_recv` | 4K / 20 / 0 |
+| `ESP_SIP_SCHED_VIDEO_RECV_TASK` | `_rtp_video_recv` | 3K / 15 / 1 |
+
 ## Events
 
 Subscribe with `esp_service_event_subscribe()` on `ESP_SERVICE_BASE(sip)`. Native SIP events are published as `ESP_SIP_SERVICE_EVENT_REGISTERED` through `ESP_SIP_SERVICE_EVENT_KEEPALIVE`, plus `ESP_SIP_SERVICE_EVENT_DTMF_RECEIVED`. Base lifecycle transitions continue to use `ESP_SERVICE_EVENT_STATE_CHANGED`.
@@ -186,7 +198,7 @@ These come from the pre-compiled `esp_media_protocols` stack and are worked arou
 - An empty password is `user:@host`. `set_account()` writes that form when the password is omitted.
 - In P2P mode the stack replaces `fixed_local_port` with the port taken from the URI and binds `INADDR_ANY`, so the local port always equals the peer port and `esp_sip_service_set_local_port()` has no effect. Two instances on one device therefore cannot call each other, because they would share a socket.
 - `esp_rtc_call()` needs a `user@host:port` target in P2P mode, so `esp_sip_service_call()` completes a bare user name from the host and port of the configured URI.
-- `esp_rtc_config_t` exposes no stack size or priority, so `esp_sip_scheduler.h` is a placeholder and thread resources cannot be overridden yet. `esp_rtc_service_init()` spawns its own task and returns immediately, so `start` does not block until registration completes; wait for `ESP_SIP_SERVICE_EVENT_REGISTERED` instead.
+- `esp_rtc_service_init()` spawns its own task and returns immediately, so `start` does not block until registration completes; wait for `ESP_SIP_SERVICE_EVENT_REGISTERED` instead.
 
 ## Example
 

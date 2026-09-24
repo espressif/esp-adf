@@ -22,6 +22,7 @@ SIP 通话是全双工的，因此与 RTSP、RTMP 服务不同，本服务没有
 - 支持纯信令启动、只下行时用 setup 报编码，或从已链接的上行 track 取编码
 - 支持自定义 INVITE 头部、私有头部与原始头部读取
 - 使用媒体服务建链，而非由应用管理帧回调
+- 可通过 `esp_service_scheduler` 覆盖线程资源
 
 ## 数据流
 
@@ -159,6 +160,17 @@ start 时的编码决策：SIP 对每种媒体类型只协商一份编码，只�
 
 `ESP_SIP_SERVICE_MCP_ENABLE` 用于开启 MCP 工具。
 
+## 调度
+
+协议栈会创建四条工作线程。`start` 用 `esp_service_scheduler_get_thread_cfg()` 填写对应的 `esp_rtc_config_t` 字段。在 `esp_service_scheduler_set_cb()` 里按 create 时的 `name` 和下列线程名覆盖即可：
+
+| 线程名宏 | 默认名 | 默认栈 / 优先级 / 核 |
+| --- | --- | --- |
+| `ESP_SIP_SCHED_SESSION_TASK` | `sip_task` | 10K / 20 / 0 |
+| `ESP_SIP_SCHED_LISTEN_TASK` | `listen_task` | 2K / 20 / 0 |
+| `ESP_SIP_SCHED_AUDIO_RECV_TASK` | `_rtp_audio_recv` | 4K / 20 / 0 |
+| `ESP_SIP_SCHED_VIDEO_RECV_TASK` | `_rtp_video_recv` | 3K / 15 / 1 |
+
 ## 事件
 
 在 `ESP_SERVICE_BASE(sip)` 上使用 `esp_service_event_subscribe()` 订阅。原生 SIP 事件以 `ESP_SIP_SERVICE_EVENT_REGISTERED` 到 `ESP_SIP_SERVICE_EVENT_KEEPALIVE` 的形式发布，另有 `ESP_SIP_SERVICE_EVENT_DTMF_RECEIVED`。基类生命周期变化仍使用 `ESP_SERVICE_EVENT_STATE_CHANGED`。
@@ -183,7 +195,7 @@ start 时的编码决策：SIP 对每种媒体类型只协商一份编码，只�
 - 空密码写成 `user:@host`。`set_account()` 在未提供密码时用这种形式。
 - P2P 模式下协议栈会用 URI 中的端口覆盖 `fixed_local_port`，并绑定 `INADDR_ANY`，因此本地端口始终等于对端端口，`esp_sip_service_set_local_port()` 在这种模式下不起作用。也正因如此，同一设备上的两个实例无法互相呼叫，它们会被迫共用一个 socket。
 - P2P 模式下 `esp_rtc_call()` 需要 `user@host:port` 形式的目标，因此 `esp_sip_service_call()` 会用已配置 URI 中的主机与端口补全裸用户名。
-- `esp_rtc_config_t` 未提供栈大小与优先级参数，因此 `esp_sip_scheduler.h` 目前只是占位，线程资源暂不可覆盖。`esp_rtc_service_init()` 会自行创建任务并立即返回，因此 `start` 不会阻塞到注册完成，请改为等待 `ESP_SIP_SERVICE_EVENT_REGISTERED`。
+- `esp_rtc_service_init()` 会自行创建任务并立即返回，因此 `start` 不会阻塞到注册完成，请改为等待 `ESP_SIP_SERVICE_EVENT_REGISTERED`。
 
 ## 示例
 
