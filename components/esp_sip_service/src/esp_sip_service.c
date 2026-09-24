@@ -13,6 +13,8 @@
 #include "sdkconfig.h"
 #include "esp_check.h"
 #include "esp_log.h"
+#include "esp_service_scheduler.h"
+#include "esp_sip_scheduler.h"
 #include "esp_sip_service_err.h"
 #include "esp_sip_service_ops.h"
 #include "esp_sip_service_priv.h"
@@ -37,6 +39,42 @@ static esp_rtc_data_cb_t s_sip_data_cb = {
     .receive_dtmf  = sip_downlink_receive_dtmf,
 #endif  /* CONFIG_ESP_SIP_SERVICE_DOWNLINK_SUPPORT */
 };
+
+static void sip_fill_rtc_thread_cfg(const esp_sip_service_t *service, const char *thread_name,
+                                    uint32_t def_stack, int def_prio, int def_core,
+                                    esp_rtc_thread_cfg_t *out)
+{
+    esp_service_thread_cfg_t default_cfg = {
+        .stack_size = def_stack,
+        .priority = def_prio,
+        .core_id = def_core,
+    };
+    esp_service_thread_cfg_t cfg = default_cfg;
+    esp_service_thread_request_t request = {
+        .service_name = service->media.base.name ? service->media.base.name : ESP_SIP_SERVICE_NAME,
+        .thread_name = thread_name,
+    };
+    (void)esp_service_scheduler_get_thread_cfg(&request, &default_cfg, &cfg);
+    out->stack_size = (uint16_t)cfg.stack_size;
+    out->priority = cfg.priority;
+    out->core_id = (cfg.core_id < 0) ? def_core : cfg.core_id;
+}
+
+static void sip_fill_rtc_threads(const esp_sip_service_t *service, esp_rtc_config_t *cfg)
+{
+    sip_fill_rtc_thread_cfg(service, ESP_SIP_SCHED_SESSION_TASK,
+                            ESP_RTC_THREAD_SIP_STACK, ESP_RTC_THREAD_SIP_PRIO,
+                            ESP_RTC_THREAD_SIP_CORE, &cfg->sip_task);
+    sip_fill_rtc_thread_cfg(service, ESP_SIP_SCHED_LISTEN_TASK,
+                            ESP_RTC_THREAD_LISTEN_STACK, ESP_RTC_THREAD_LISTEN_PRIO,
+                            ESP_RTC_THREAD_LISTEN_CORE, &cfg->listen_task);
+    sip_fill_rtc_thread_cfg(service, ESP_SIP_SCHED_AUDIO_RECV_TASK,
+                            ESP_RTC_THREAD_AUDIO_RECV_STACK, ESP_RTC_THREAD_AUDIO_RECV_PRIO,
+                            ESP_RTC_THREAD_AUDIO_RECV_CORE, &cfg->audio_recv);
+    sip_fill_rtc_thread_cfg(service, ESP_SIP_SCHED_VIDEO_RECV_TASK,
+                            ESP_RTC_THREAD_VIDEO_RECV_STACK, ESP_RTC_THREAD_VIDEO_RECV_PRIO,
+                            ESP_RTC_THREAD_VIDEO_RECV_CORE, &cfg->video_recv);
+}
 
 static char *sip_strdup_or_null(const char *str)
 {
@@ -343,6 +381,7 @@ static esp_err_t sip_on_start(esp_service_t *base)
         .domain = opt->domain,
         .video_payload_type = opt->video_payload_type,
     };
+    sip_fill_rtc_threads(service, &cfg);
 
     service->handle = esp_rtc_service_init(&cfg);
     ESP_RETURN_ON_FALSE(service->handle != NULL, ESP_FAIL, TAG, "rtc init failed");
