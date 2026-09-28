@@ -193,7 +193,7 @@ Bluetooth audio examples demonstrate classic Bluetooth audio, covering A2DP play
 Cloud Agent Examples
 --------------------
 
-Cloud agent examples demonstrate connecting a device to a cloud voice agent, covering real-time voice interaction with Coze, Baidu RTC, and OpenAI Realtime.
+Cloud agent examples demonstrate connecting a device to a cloud voice agent. The ``esp_llm_service`` examples cover Baidu, Coze, Tongyi, and Volcengine. OpenAI Realtime still calls ``esp_webrtc`` directly.
 
 .. list-table::
    :header-rows: 1
@@ -202,12 +202,18 @@ Cloud agent examples demonstrate connecting a device to a cloud voice agent, cov
    * - Example
      - Description
      - Component Link
-   * - coze_ws_app
-     - Connects to the Coze WebSocket OpenAPI for two-way streaming voice, with direct talk, wake word, and button barge-in.
-     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/coze_ws_app>`__
-   * - voice_assistant_app
-     - Implements a Baidu RTC voice assistant: conversation, network music playback, and two-way audio mixing.
-     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/baidu_rtc/solutions/voice_assistant_app>`__
+   * - esp_llm_baidu_agent_app
+     - Baidu RTC agent on ``esp_llm_baidu``.
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_baidu_agent_app>`__
+   * - esp_llm_coze_agent_app
+     - Coze WebSocket voice chat on ``esp_llm_coze``.
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_coze_agent_app>`__
+   * - esp_llm_tongyi_agent_app
+     - Tongyi multimodal chat on ``esp_llm_tongyi``.
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_tongyi_agent_app>`__
+   * - esp_llm_volc_agent_app
+     - Volcengine RTC voice chat on ``esp_llm_volc``.
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_volc_agent_app>`__
    * - openai_demo
      - Connects to OpenAI Realtime with ``esp_webrtc`` for live voice conversation and demonstrates function-call device control.
      - `esp-webrtc-solution <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/openai_demo>`__

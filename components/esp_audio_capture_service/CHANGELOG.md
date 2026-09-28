@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.5.1
+
+### Features
+
+- Added `esp_capture_service_ai_audio_src_trigger_wakeup()`, `trigger_sleep()`, and `keep_awake()` for button and hold-to-talk control of the compact AFE wakeup state
+
+### Breaking Changes
+
+- `esp_capture_service_ai_audio_src_wn_cb_t` now reports wakeup start (`state=1`) and end (`state=0`) plus the wake-word index
+
 ## v0.5.0~1
 
 ### Changes

@@ -1,0 +1,27 @@
+version: "0.5.0"
+description: Coze adapter for esp_llm_service
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_llm_coze
+issues: https://github.com/espressif/esp-adf/issues
+license: "LicenseRef-Espressif-Modified-MIT"
+
+targets:
+  - esp32
+  - esp32s3
+  - esp32s31
+  - esp32p4
+  - esp32c3
+  - esp32c5
+  - esp32c6
+
+dependencies:
+  espressif/esp_llm_service:
+    require: public
+    version: "^0.5"
+    override_path: "../esp_llm_service"
+  espressif/esp_coze:
+    require: private
+    version: "^1.0"
+    override_path: "../esp_coze"
+
+examples:
+  - path: ../../adf_examples/ai_agent/esp_llm_coze_agent_app

@@ -1,0 +1,70 @@
+#
+# Common defaults. Chip-specific flash, PSRAM, and camera options live in
+# sdkconfig.defaults.esp32s3 / esp32s31 / esp32p4.
+# The target is set by `idf.py set-target`, not pinned here.
+# Account and Wi-Fi stay empty here; set them in menuconfig. CI injects
+# them from environment variables through sdkconfig.ci.
+#
+
+#
+# Serial flasher config
+#
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+
+#
+# Partition Table
+#
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_OFFSET=0xA000
+# CONFIG_ESP_BOARD_* comes from components/gen_bmgr_codes/board_manager.defaults,
+# which esp_board_manager regenerates for the selected board. Pinning those here
+# would force the esp32s3 board's peripherals onto every other target.
+
+#
+# Compiler options
+#
+CONFIG_COMPILER_DISABLE_DEFAULT_ERRORS=y
+
+#
+# ESP PSRAM
+#
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=0
+
+#
+# ESP System
+#
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+#
+# Capture / Player
+#
+CONFIG_ESP_CAPTURE_ENABLE_AUDIO=y
+CONFIG_ESP_CAPTURE_ENABLE_VIDEO=y
+CONFIG_ESP_CAPTURE_ENABLE_VIDEO_DECODER=y
+CONFIG_ESP_PLAYER_ENABLE_AUDIO=y
+CONFIG_ESP_PLAYER_ENABLE_VIDEO=y
+
+#
+# Audio codec
+#
+CONFIG_CODEC_ES7243_SUPPORT=n
+CONFIG_CODEC_ES7243E_SUPPORT=n
+CONFIG_CODEC_ES8156_SUPPORT=n
+CONFIG_CODEC_AW88298_SUPPORT=n
+CONFIG_CODEC_ES8389_SUPPORT=n
+CONFIG_CODEC_ES8388_SUPPORT=n
+CONFIG_CODEC_TAS5805M_SUPPORT=n
+CONFIG_CODEC_CJC8910_SUPPORT=n
+
+#
+# Baidu app
+#
+CONFIG_BAIDU_WIFI_SSID="myssid"
+CONFIG_BAIDU_WIFI_PASSWORD="mypasswd"
+# CONFIG_BAIDU_AUDIO_NS is not set
+
+#
+# Experimental features
+#
+CONFIG_IDF_EXPERIMENTAL_FEATURES=y

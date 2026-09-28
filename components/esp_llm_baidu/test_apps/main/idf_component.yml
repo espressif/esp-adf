@@ -1,0 +1,13 @@
+dependencies:
+  espressif/esp_llm_baidu:
+    require: public
+    version: "*"
+    override_path: "../.."
+  espressif/esp_board_manager:
+    require: public
+    version: "*"
+  espressif/cjson:
+    require: private
+    version: "^1.7.19"
+    rules:
+      - if: "idf_version >=6.0"

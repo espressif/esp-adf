@@ -164,6 +164,62 @@ esp_err_t esp_capture_service_ai_audio_src_set_alc_gain(esp_capture_service_t *c
     return ESP_OK;
 }
 
+static esp_err_t audio_capture_ai_require_started(esp_capture_service_t *capture,
+                                                  esp_audio_capture_service_ctx_t **out_rec)
+{
+    if (!audio_capture_service_is_running(capture)) {
+        RET_FOR(ESP_ERR_INVALID_STATE, "Capture is not running");
+    }
+    esp_audio_capture_service_ctx_t *rec = esp_audio_capture_service_ctx_find(capture);
+    if (rec == NULL || rec->ai_aud_src == NULL) {
+        RET_FOR(ESP_ERR_NOT_FOUND, "AI source not found");
+    }
+    *out_rec = rec;
+    return ESP_OK;
+}
+
+esp_err_t esp_capture_service_ai_audio_src_trigger_wakeup(esp_capture_service_t *capture)
+{
+    esp_audio_capture_service_ctx_t *rec = NULL;
+    esp_err_t ret = audio_capture_ai_require_started(capture, &rec);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    ret = capture_err_to_esp(esp_ai_audio_trigger_wakeup(rec->ai_aud_src));
+    if (ret != ESP_OK) {
+        RET_FOR(ret, "Trigger wakeup failed");
+    }
+    return ESP_OK;
+}
+
+esp_err_t esp_capture_service_ai_audio_src_trigger_sleep(esp_capture_service_t *capture)
+{
+    esp_audio_capture_service_ctx_t *rec = NULL;
+    esp_err_t ret = audio_capture_ai_require_started(capture, &rec);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    ret = capture_err_to_esp(esp_ai_audio_trigger_sleep(rec->ai_aud_src));
+    if (ret != ESP_OK) {
+        RET_FOR(ret, "Trigger sleep failed");
+    }
+    return ESP_OK;
+}
+
+esp_err_t esp_capture_service_ai_audio_src_keep_awake(esp_capture_service_t *capture, bool enable)
+{
+    esp_audio_capture_service_ctx_t *rec = NULL;
+    esp_err_t ret = audio_capture_ai_require_started(capture, &rec);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    ret = capture_err_to_esp(esp_ai_audio_keep_awake(rec->ai_aud_src, enable));
+    if (ret != ESP_OK) {
+        RET_FOR(ret, "Keep awake failed");
+    }
+    return ESP_OK;
+}
+
 #else  /* !CONFIG_ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_ENABLED */
 
 esp_err_t esp_capture_service_ai_audio_src_set_feature(esp_capture_service_t *capture,
@@ -231,6 +287,25 @@ esp_err_t esp_capture_service_ai_audio_src_set_alc_gain(esp_capture_service_t *c
     (void)capture;
     (void)channel;
     (void)gain;
+    RET_FOR(ESP_ERR_NOT_SUPPORTED, "AI source disabled");
+}
+
+esp_err_t esp_capture_service_ai_audio_src_trigger_wakeup(esp_capture_service_t *capture)
+{
+    (void)capture;
+    RET_FOR(ESP_ERR_NOT_SUPPORTED, "AI source disabled");
+}
+
+esp_err_t esp_capture_service_ai_audio_src_trigger_sleep(esp_capture_service_t *capture)
+{
+    (void)capture;
+    RET_FOR(ESP_ERR_NOT_SUPPORTED, "AI source disabled");
+}
+
+esp_err_t esp_capture_service_ai_audio_src_keep_awake(esp_capture_service_t *capture, bool enable)
+{
+    (void)capture;
+    (void)enable;
     RET_FOR(ESP_ERR_NOT_SUPPORTED, "AI source disabled");
 }
 

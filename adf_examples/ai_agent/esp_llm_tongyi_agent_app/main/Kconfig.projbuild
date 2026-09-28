@@ -1,0 +1,129 @@
+menu "Tongyi LLM agent application"
+
+    config TONGYI_API_KEY
+        string "DashScope API key"
+        default ""
+        help
+            DashScope API key for Tongyi multimodal dialog.
+
+    config TONGYI_WORKSPACE_ID
+        string "Tongyi workspace ID"
+        default ""
+        help
+            Tongyi workspace ID (llm-...).
+
+    config TONGYI_APP_ID
+        string "Tongyi application ID"
+        default ""
+        help
+            Dialog mode needs a voice-only DashScope app. A vision app ID
+            returns "images must not be empty" without a camera.
+
+    choice TONGYI_APP_MODE
+        prompt "Application mode"
+        default TONGYI_APP_MODE_DIALOG
+        help
+            Dialog is duplex voice only.
+            Vision: LCD camera preview plus a console command that captures
+            one JPEG and sends it with esp_llm_service_send_frame(). Tongyi
+            VIDEO_UP stays disabled; this is one-shot vision.
+
+        config TONGYI_APP_MODE_DIALOG
+            bool "Dialog (audio only)"
+
+        config TONGYI_APP_MODE_VISION
+            bool "Vision (LCD preview and console snapshot)"
+            select ESP_CAPTURE_ENABLE_VIDEO
+            select ESP_CAPTURE_ENABLE_VIDEO_DECODER
+            help
+                Requires a board with camera and LCD. Type 'snap' or
+                'snap <prompt>' in the UART CLI after the agent is ready.
+                JPEG camera plus RGB565 LCD preview. Snap still sends JPEG.
+
+    endchoice
+
+    config TONGYI_VISION_CAMERA_WIDTH
+        int "Camera JPEG width"
+        depends on TONGYI_APP_MODE_VISION
+        range 160 1920
+        default 320
+        help
+            JPEG capture width. It must match an esp-video JPEG sensor mode.
+
+    config TONGYI_VISION_CAMERA_HEIGHT
+        int "Camera JPEG height"
+        depends on TONGYI_APP_MODE_VISION
+        range 120 1080
+        default 240
+        help
+            JPEG capture height. It must match an esp-video JPEG sensor mode.
+
+    config TONGYI_VISION_CAMERA_FPS
+        int "Camera / LCD preview FPS"
+        depends on TONGYI_APP_MODE_VISION
+        range 1 30
+        default 15
+        help
+            Camera JPEG / RGB capture rate. LCD writes as fast as S3
+            SW JPEG decode plus SPI flush allow (often 12-15 at 320x240).
+            Do not treat this as a guaranteed LCD vsync.
+
+    config TONGYI_VISION_PROMPT
+        string "Default snapshot prompt"
+        depends on TONGYI_APP_MODE_VISION
+        default ""
+        help
+            Used when the snap command has no argument. Empty sends an
+            UpdateInfo image only. Non-empty sends RequestToRespond.
+
+    choice TONGYI_DIALOG_MODE
+        prompt "Dialog mode"
+        default TONGYI_DIALOG_MODE_DIRECT
+
+        config TONGYI_DIALOG_MODE_DIRECT
+            bool "Direct conversation (no wake word)"
+
+        config TONGYI_DIALOG_MODE_WAKEUP
+            bool "Wake word then conversation"
+
+    endchoice
+
+    menu "Audio front-end features"
+
+        config TONGYI_AUDIO_VAD
+            bool "Enable voice activity detection"
+            default y
+
+    endmenu
+
+    config TONGYI_OUTPUT_VOLUME
+        int "Audio output volume"
+        default 80
+        range 0 100
+
+    menu "Wi-Fi"
+
+        config TONGYI_WIFI_SSID
+            string "Wi-Fi SSID"
+            default "myssid"
+
+        config TONGYI_WIFI_PASSWORD
+            string "Wi-Fi password"
+            default "mypasswd"
+
+        config TONGYI_WIFI_CONNECT_TIMEOUT_MS
+            int "Wi-Fi connection timeout (ms)"
+            default 30000
+            range 5000 120000
+
+    endmenu
+
+    config TONGYI_RUN_TIME_SEC
+        int "Run time before clean shutdown (seconds, 0 runs forever)"
+        default 0
+        range 0 86400
+        help
+            Set a non-zero value to exercise the complete reverse stop,
+            unlink, and destroy path after the specified duration.
+
+endmenu

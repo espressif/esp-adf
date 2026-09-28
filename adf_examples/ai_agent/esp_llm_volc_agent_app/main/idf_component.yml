@@ -1,0 +1,32 @@
+dependencies:
+  idf:
+    version: ">=5.4.0"
+  esp_llm_volc:
+    version: "*"
+    override_path: "../../../../components/esp_llm_volc"
+  espressif/esp_audio_capture_service:
+    version: "~0.5"
+    override_path: "../../../../components/esp_audio_capture_service"
+  espressif/esp_audio_player_service:
+    version: "~0.5"
+    override_path: "../../../../components/esp_audio_player_service"
+  espressif/esp_config_manager:
+    version: "^0.5"
+    override_path: "../../../../components/esp_config_manager"
+  espressif/esp_service:
+    version: "^0.5"
+    override_path: "../../../../components/esp_service"
+  espressif/esp_wifi_service:
+    version: "^0.5.3"
+    override_path: "../../../../components/esp_wifi_service"
+  # esp32p4 has no radio of its own; Wi-Fi runs on the esp32c6 companion.
+  espressif/esp_hosted:
+    version: "^2.12"
+    rules:
+      - if: "target in [esp32p4]"
+  espressif/esp_wifi_remote:
+    matches:
+      - if: "idf_version <=5.4.0 && target in [esp32p4]"
+        version: "^0.4"
+      - if: "idf_version >5.4.0 && target in [esp32p4]"
+        version: "^1.6"

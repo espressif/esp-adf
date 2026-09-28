@@ -27,6 +27,7 @@ typedef struct esp_video_capture_service_ctx {
     esp_video_capture_service_cfg_t       cfg;             /*!< Create configuration copy */
     esp_capture_service_t                *capture;         /*!< Owning capture service handle */
     esp_capture_video_src_if_t           *v4l2_src;        /*!< Lazily created default V4L2 video source */
+    esp_capture_video_src_if_t           *video_src;       /*!< Source bound by apply_setup; NULL until then */
     bool                                  audio_attached;  /*!< True when audio capture context is attached */
     struct esp_video_capture_service_ctx *next;            /*!< Next context in the global list */
 } esp_video_capture_service_ctx_t;

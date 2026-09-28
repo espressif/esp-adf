@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
@@ -105,6 +106,7 @@ typedef struct {
     bool                                            models_owned;
     bool                                            afe_manager_owned;
     bool                                            afe_el_registered;
+    esp_gmf_element_handle_t                        afe_el;
     /* callbacks (set before start) */
     esp_capture_service_ai_audio_src_vad_cb_t       vad_cb;
     void                                           *vad_ctx;
@@ -351,6 +353,13 @@ static int read_input(ai_audio_src_t *s, uint8_t *buf, uint32_t size)
     return ret;
 }
 
+static void notify_wakeup(ai_audio_src_t *s, int state, int trigger_ch)
+{
+    if (s && s->wn_cb) {
+        s->wn_cb(state, trigger_ch, s->wn_ctx);
+    }
+}
+
 static void afe_event_cb(esp_gmf_element_handle_t el, esp_gmf_afe_evt_t *event, void *user_data)
 {
     (void)el;
@@ -366,23 +375,22 @@ static void afe_event_cb(esp_gmf_element_handle_t el, esp_gmf_afe_evt_t *event, 
         if (s->vad_cb) {
             s->vad_cb(0, s->vad_ctx);
         }
-    } else if (event->type == ESP_GMF_AFE_EVT_WAKEUP_START && s->wn_cb) {
+    } else if (event->type == ESP_GMF_AFE_EVT_WAKEUP_START) {
         int trigger_ch = 0;
         if (event->event_data && event->data_len >= sizeof(esp_gmf_afe_wakeup_info_t)) {
             esp_gmf_afe_wakeup_info_t *info = (esp_gmf_afe_wakeup_info_t *)event->event_data;
             trigger_ch = info->wake_word_index;
         }
-        s->wn_cb(trigger_ch, s->wn_ctx);
+        notify_wakeup(s, 1, trigger_ch);
+    } else if (event->type == ESP_GMF_AFE_EVT_WAKEUP_END) {
+        notify_wakeup(s, 0, 0);
     }
 }
 
 static void wn_detect_cb(esp_gmf_element_handle_t handle, int32_t trigger_ch, void *user_ctx)
 {
     (void)handle;
-    ai_audio_src_t *s = (ai_audio_src_t *)user_ctx;
-    if (s && s->wn_cb) {
-        s->wn_cb((int)trigger_ch, s->wn_ctx);
-    }
+    notify_wakeup((ai_audio_src_t *)user_ctx, 1, (int)trigger_ch);
 }
 
 static esp_gmf_err_io_t src_acquire(void *h, esp_gmf_payload_t *load, uint32_t want, int ticks)
@@ -952,6 +960,7 @@ static esp_err_t build_pipeline(ai_audio_src_t *s)
             config_wn(el, s);
         } else if (strstr(tag, "afe")) {
             config_afe(el, s);
+            s->afe_el = el;
         } else if (strstr(tag, "doa")) {
             config_doa(el, s);
         }
@@ -983,6 +992,7 @@ static esp_err_t build_pipeline(ai_audio_src_t *s)
     if (r) {
         esp_gmf_pipeline_destroy(s->pipeline);
         s->pipeline = NULL;
+        s->afe_el = NULL;
         return ESP_FAIL;
     }
 
@@ -994,6 +1004,7 @@ static esp_err_t build_pipeline(ai_audio_src_t *s)
         s->task = NULL;
         esp_gmf_pipeline_destroy(s->pipeline);
         s->pipeline = NULL;
+        s->afe_el = NULL;
         return ESP_FAIL;
     }
 
@@ -1303,6 +1314,7 @@ static esp_capture_err_t a_stop(esp_capture_audio_src_if_t *b)
         esp_gmf_pipeline_stop(s->pipeline);
         esp_gmf_pipeline_destroy(s->pipeline);
         s->pipeline = NULL;
+        s->afe_el = NULL;
     }
     if (s->task) {
         esp_gmf_task_deinit(s->task);
@@ -1444,6 +1456,65 @@ esp_capture_err_t esp_ai_audio_set_alc_gain(esp_capture_audio_src_if_t *src, int
         return ESP_CAPTURE_ERR_NO_MEM;
     }
     return (ret == ESP_OK) ? ESP_CAPTURE_ERR_OK : ESP_CAPTURE_ERR_INTERNAL;
+}
+
+static esp_capture_err_t gmf_err_to_capture(esp_gmf_err_t err)
+{
+    switch (err) {
+        case ESP_GMF_ERR_OK:
+            return ESP_CAPTURE_ERR_OK;
+        case ESP_GMF_ERR_INVALID_ARG:
+            return ESP_CAPTURE_ERR_INVALID_ARG;
+        case ESP_GMF_ERR_INVALID_STATE:
+            return ESP_CAPTURE_ERR_INVALID_STATE;
+        case ESP_GMF_ERR_TIMEOUT:
+            return ESP_CAPTURE_ERR_TIMEOUT;
+        case ESP_GMF_ERR_NOT_SUPPORT:
+            return ESP_CAPTURE_ERR_NOT_SUPPORTED;
+        default:
+            return ESP_CAPTURE_ERR_INTERNAL;
+    }
+}
+
+static esp_capture_err_t ai_audio_call_afe(esp_capture_audio_src_if_t *src,
+                                           esp_gmf_err_t (*fn)(esp_gmf_element_handle_t))
+{
+    ai_audio_src_t *s = (ai_audio_src_t *)src;
+    if (!s) {
+        return ESP_CAPTURE_ERR_INVALID_ARG;
+    }
+    if (!s->started) {
+        return ESP_CAPTURE_ERR_INVALID_STATE;
+    }
+    if (!s->afe_el) {
+        return ESP_CAPTURE_ERR_NOT_SUPPORTED;
+    }
+    return gmf_err_to_capture(fn(s->afe_el));
+}
+
+esp_capture_err_t esp_ai_audio_trigger_wakeup(esp_capture_audio_src_if_t *src)
+{
+    return ai_audio_call_afe(src, esp_gmf_afe_trigger_wakeup);
+}
+
+esp_capture_err_t esp_ai_audio_trigger_sleep(esp_capture_audio_src_if_t *src)
+{
+    return ai_audio_call_afe(src, esp_gmf_afe_trigger_sleep);
+}
+
+esp_capture_err_t esp_ai_audio_keep_awake(esp_capture_audio_src_if_t *src, bool enable)
+{
+    ai_audio_src_t *s = (ai_audio_src_t *)src;
+    if (!s) {
+        return ESP_CAPTURE_ERR_INVALID_ARG;
+    }
+    if (!s->started) {
+        return ESP_CAPTURE_ERR_INVALID_STATE;
+    }
+    if (!s->afe_el) {
+        return ESP_CAPTURE_ERR_NOT_SUPPORTED;
+    }
+    return gmf_err_to_capture(esp_gmf_afe_keep_awake(s->afe_el, enable));
 }
 
 esp_capture_err_t esp_ai_audio_set_feature(esp_capture_audio_src_if_t *src,

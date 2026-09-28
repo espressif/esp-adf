@@ -18,7 +18,7 @@ if(CONFIG_ESP_AUDIO_CAPTURE_SERVICE_MCP_ENABLE)
     list(APPEND embed_files "src/mcp/esp_audio_capture_service_mcp.json")
 endif()
 
-set(priv_requires freertos esp_ringbuf)
+set(priv_requires freertos esp_ringbuf esp_codec_dev)
 
 idf_component_register(
     SRCS ${srcs}

@@ -1,0 +1,18 @@
+dependencies:
+  espressif/esp_llm_service:
+    require: public
+    version: "^0.5"
+    override_path: "../.."
+  espressif/esp_llm_mock:
+    require: public
+    version: "^0.1"
+    override_path: "../mocks/esp_llm_mock"
+  espressif/esp_media_service:
+    require: public
+    version: "^0.5"
+    override_path: "../../../esp_media_service"
+  espressif/cjson:
+    require: private
+    version: "^1.7.19"
+    rules:
+      - if: "idf_version >=6.0"

@@ -39,6 +39,11 @@ jobs:
             components/esp_sip_service;
             components/esp_extractor_service;
             components/esp_muxer_service;
+            components/esp_llm_service;
+            components/esp_llm_baidu;
+            components/esp_llm_coze;
+            components/esp_llm_tongyi;
+            components/esp_llm_volc;
             adf_examples;
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}

@@ -8,8 +8,10 @@ This directory contains multimedia example projects for ESP platforms, including
 
 | Example | Path | Notes |
 |---|---|---|
-| COZE WebSocket Bidirectional Streaming Conversation | [ai_agent/coze_ws_app](./ai_agent/coze_ws_app) | ESP-GMF based voice dialog example (Coze WebSocket). |
-| Baidu RTC Voice Assistant Demo | [ai_agent/baidu_rtc/solutions/voice_assistant_app](./ai_agent/baidu_rtc/solutions/voice_assistant_app) | ESP-GMF based Baidu RTC real-time audio/video assistant demo. |
+| ESP LLM Baidu Agent | [ai_agent/esp_llm_baidu_agent_app](./ai_agent/esp_llm_baidu_agent_app) | Baidu RTC agent voice dialog with optional camera and image generation; supports ESP32-S3, ESP32-S31, and ESP32-P4. |
+| ESP LLM Coze Agent | [ai_agent/esp_llm_coze_agent](./ai_agent/esp_llm_coze_agent) | Coze WebSocket duplex voice chat via `esp_llm_coze`; audio-only. |
+| ESP LLM Volc Agent | [ai_agent/esp_llm_volc_agent](./ai_agent/esp_llm_volc_agent) | Volcengine conversational AI voice chat via `esp_llm_volc`; audio-only; supports ESP32-S3, ESP32-S31, and ESP32-P4. |
+| ESP LLM Tongyi Agent | [ai_agent/esp_llm_tongyi_agent](./ai_agent/esp_llm_tongyi_agent) | Tongyi (DashScope) WebSocket voice chat with optional vision mode via `esp_llm_tongyi`. |
 | ESP Audio Analyzer APP | [checks/esp_audio_analyzer_app](./checks/esp_audio_analyzer_app) | Example to comprehensively test microphone, speaker, and AEC functionality using ESP Audio Analyzer. |
 | Services Hub | [services_hub](./services_hub) | Multi-service orchestration example integrating Wi-Fi, OTA, CLI, and button services via `adf_event_hub` and `esp_service_manager`, with optional MCP integration. |
 | AV Record Live Display | [recorder/av_record_live_display](./recorder/av_record_live_display) | AV capture with MP4 recording to microSD and live LCD preview via `esp_capture`, encoders, and `mp4_muxer` on ESP32S3, ESP32S31 and ESP32P4. |
@@ -23,8 +25,8 @@ This directory contains multimedia example projects for ESP platforms, including
 
 ## Usage
 
-After activating the [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html) environment, run the following command to download an example project locally (e.g., `ai_agent/coze_ws_app`):
+After activating the [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html) environment, run the following command to download an example project locally (e.g., `ai_agent/esp_llm_coze_agent`):
 
 ```shell
-idf.py create-project-from-example "espressif/adf_examples:coze_ws_app"
+idf.py create-project-from-example "espressif/adf_examples:esp_llm_coze_agent"
 ```

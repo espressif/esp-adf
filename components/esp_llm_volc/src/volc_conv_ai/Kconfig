@@ -1,0 +1,8 @@
+# Enable RTC transport when this kit is nested in esp_volc_rtc_service.
+config VOLC_RTC_MODE
+    bool "Enable Volc RTC transport"
+    default y
+
+config VOLC_WS_MODE
+    bool "Enable Volc WebSocket transport"
+    default n

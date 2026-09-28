@@ -1,0 +1,38 @@
+version: "0.5.0"
+description: Unified AI Session / Agent service for application-owned media graphs
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_llm_service
+documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_llm_service/README.md"
+issues: https://github.com/espressif/esp-adf/issues
+license: "LicenseRef-Espressif-Modified-MIT"
+
+tags:
+  - "llm"
+  - "agent"
+  - "esp_service"
+  - "adf"
+
+dependencies:
+  espressif/esp_service:
+    require: public
+    version: "^0.5"
+    override_path: "../esp_service"
+  espressif/esp_media_service:
+    require: public
+    version: "^0.5"
+    override_path: "../esp_media_service"
+  espressif/esp_capture_service:
+    require: public
+    version: "^0.5"
+    override_path: "../esp_capture_service"
+  espressif/esp_audio_capture_service:
+    require: public
+    version: "^0.5"
+    override_path: "../esp_audio_capture_service"
+  espressif/gmf_core:
+    require: private
+    version: "^1.0"
+  espressif/cjson:
+    require: private
+    version: "^1.7.19"
+    rules:
+      - if: "idf_version >=6.0"

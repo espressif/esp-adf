@@ -21,4 +21,4 @@ targets:
   - esp32s31
 
 examples:
-  - path: ../../adf_examples/ai_agent/coze_ws_app
+  - path: ../../adf_examples/ai_agent/esp_llm_coze_agent_app

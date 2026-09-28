@@ -1,0 +1,55 @@
+menu "ESP LLM Volc"
+
+    config ESP_LLM_VOLC_ENABLE
+        bool "Enable ESP LLM Volc adapter"
+        default y
+        depends on ESP_LLM_SERVICE_ENABLE
+        help
+            Build the Volc adapter as a sibling component for esp_llm_service.
+
+    menu "Audio profile"
+
+        choice ESP_LLM_VOLC_AUDIO_CODEC
+            prompt "RTC audio codec"
+            default ESP_LLM_VOLC_AUDIO_CODEC_G711A
+
+            config ESP_LLM_VOLC_AUDIO_CODEC_OPUS
+                bool "OPUS (16 kHz)"
+                select AUDIO_ENCODER_OPUS_SUPPORT
+                select AUDIO_DECODER_OPUS_SUPPORT
+
+            config ESP_LLM_VOLC_AUDIO_CODEC_G711A
+                bool "G.711 A-law (8 kHz)"
+
+            config ESP_LLM_VOLC_AUDIO_CODEC_G711U
+                bool "G.711 mu-law (8 kHz)"
+
+        endchoice
+
+    endmenu
+
+    menu "Video RTC profile"
+
+        config ESP_LLM_VOLC_VIDEO_PUBLISH
+            bool "Publish RTC video track when video uplink is enabled"
+            default n
+
+        config ESP_LLM_VOLC_VIDEO_SUBSCRIBE
+            bool "Subscribe RTC remote video"
+            default n
+
+        choice ESP_LLM_VOLC_VIDEO_CODEC
+            prompt "RTC video codec"
+            default ESP_LLM_VOLC_VIDEO_CODEC_JPEG
+
+            config ESP_LLM_VOLC_VIDEO_CODEC_JPEG
+                bool "JPEG"
+
+            config ESP_LLM_VOLC_VIDEO_CODEC_H264
+                bool "H.264"
+
+        endchoice
+
+    endmenu
+
+endmenu

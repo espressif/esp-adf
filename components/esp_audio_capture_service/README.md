@@ -143,12 +143,12 @@ Feature mask bits (each feature also needs its matching Kconfig enabled, otherwi
 | `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_AEC` | `0x01` | Acoustic echo cancellation: removes loudspeaker / DAC reference echo from the mic signal | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_AEC_SUPPORT` |
 | `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_NS` | `0x02` | Noise suppression: reduces stationary / background noise on the processed PCM | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_NS_SUPPORT` |
 | `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_VAD` | `0x04` | Voice activity detection: reports speech / noise state changes through `set_vad_cb()` | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_VAD_SUPPORT` |
-| `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_WN` | `0x08` | WakeNet: detects a wake word and reports the trigger channel through `set_wn_cb()` | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_WN_SUPPORT` |
+| `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_WN` | `0x08` | WakeNet: detects a wake word and reports wakeup start/end plus trigger channel through `set_wn_cb()` | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_WN_SUPPORT` |
 | `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_DOA` | `0x10` | Direction of arrival: estimates talker angle (degrees) through `set_doa_cb()` | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_DOA_SUPPORT` |
 
 Also enable `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_ENABLED` to compile the AI source, and `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_AFE_SUPPORT` when using the compact AFE path (preferred when two or more of {AEC, NS, VAD, WN} are enabled together).
 
-Related APIs: `esp_capture_service_ai_audio_src_set_vad_cb()`, `_set_wn_cb()`, `_set_doa_cb()`, `_set_read_cb()`, `_enable_dump()`.
+Related APIs: `esp_capture_service_ai_audio_src_set_vad_cb()`, `_set_wn_cb()`, `_set_doa_cb()`, `_set_read_cb()`, `_enable_dump()`, `_trigger_wakeup()`, `_trigger_sleep()`, `_keep_awake()`. `set_wn_cb()` reports wakeup start (`state=1`) and end (`state=0`). Wakeup control APIs require capture to be running and the compact AFE element.
 
 #### Debug Tips
 

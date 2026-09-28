@@ -117,7 +117,7 @@ Each entry:
 
 ```yaml
 EXAMPLES:
-  - app_dir: adf_examples/ai_agent/coze_ws_app             # path from repo root
+  - app_dir: adf_examples/ai_agent/esp_llm_coze_agent_app  # path from repo root
     board:
       esp32:                                               # chip key — must exist in SUPPORT_BOARDS
         - ESP_LYRAT_MINI_V1_1: v5.5-${LATEST_IDF_VERSION}  # board: idf_range

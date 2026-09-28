@@ -1,0 +1,26 @@
+menu "ESP LLM Service"
+
+    config ESP_LLM_SERVICE_MCP_ENABLE
+        bool "Enable LLM service MCP tools"
+        depends on ESP_MCP_ENABLE
+        default n
+        help
+            Compile MCP session tools for esp_llm_service.
+
+    config ESP_LLM_SERVICE_UPLINK_FRAME_TIMEOUT_MS
+        int "Uplink acquire_frame timeout (ms)"
+        default 100
+
+    config ESP_LLM_SERVICE_UPLINK_STOP_TIMEOUT_MS
+        int "Uplink task stop wait timeout (ms)"
+        default 5000
+        help
+            Maximum time to wait for each media consume task to exit on stop.
+
+    config ESP_LLM_SERVICE_TEST_HOOKS
+        bool "Enable LLM service unit-test hooks"
+        default n
+        help
+            Injected faults for contract tests. Do not enable in product builds.
+
+endmenu

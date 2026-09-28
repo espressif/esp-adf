@@ -12,6 +12,7 @@
 
 #include "esp_capture_service.h"
 #include "esp_capture_service_ops.h"
+#include "esp_capture_types.h"
 #include "esp_err.h"
 #include "esp_video_capture_scheduler.h"
 
@@ -45,8 +46,8 @@ typedef struct {
  *
  *         Creates the underlying capture service, discovers the default board
  *         camera, prepares a V4L2 video source when available, and attaches an
- *         audio capture context to the same handle so audio AI APIs can be used
- *         directly. No capture setup is applied; call
+ *         audio capture context when the board audio ADC is present. Missing
+ *         audio ADC is not fatal (video-only). No capture setup is applied; call
  *         esp_video_capture_service_apply_setup() before streaming.
  *
  *         Recommended flow:
@@ -68,6 +69,30 @@ typedef struct {
  */
 esp_err_t esp_video_capture_service_create(const esp_video_capture_service_cfg_t *cfg,
                                            esp_capture_service_t **out_capture);
+
+/**
+ * @brief  Get the default video format of the camera source
+ *
+ *         Safe after create and before apply_setup. Before apply_setup, a
+ *         temporary V4L2 source is queried and released, so a later
+ *         apply_setup still uses its own fb_num. After apply_setup, queries
+ *         the source that was bound by that call.
+ *
+ * @note  Create/destroy/setup APIs are not thread-safe and must be serialized
+ *        by the application.
+ *
+ * @param[in]   capture      Handle from esp_video_capture_service_create()
+ * @param[out]  default_fmt  Filled on success
+ *
+ * @return
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_ARG    capture or default_fmt is NULL
+ *       - ESP_ERR_NOT_FOUND      No video capture context or camera source
+ *       - ESP_ERR_NOT_SUPPORTED  Source does not implement get_default_format()
+ *       - Others                 Error returned while creating or querying the source
+ */
+esp_err_t esp_video_capture_service_get_default_format(esp_capture_service_t *capture,
+                                                       esp_capture_video_info_t *default_fmt);
 
 #ifdef __cplusplus
 }

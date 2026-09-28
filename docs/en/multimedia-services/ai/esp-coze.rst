@@ -107,12 +107,12 @@ ASR only performs recognition: encoded audio frames are continuously streamed up
 Authentication
 ---------------
 
-The Chat, TTS, and ASR configuration structures all require an ``access_token``\ , i.e. a Coze PAT (Personal Access Token) or a bearer token generated via OAuth/JWT; see the `Coze authentication documentation <https://www.coze.cn/open/docs/developer_guides/authentication>`__ for details. When using the OAuth/JWT method, the component provides two helper APIs: ``esp_coze_jwt_create`` signs the JWT header and payload with RS256 and returns a token string ready to use; ``esp_coze_http_post`` issues a synchronous HTTP POST request, used to exchange credentials for the final access token via Coze's OAuth endpoint. Business credentials such as the PAT and Bot ID are outside the scope of the component's configuration and are recommended to be managed in the application's own Kconfig, following the approach used in the ``coze_ws_app`` example.
+The Chat, TTS, and ASR configuration structures all require an ``access_token``\ , i.e. a Coze PAT (Personal Access Token) or a bearer token generated via OAuth/JWT; see the `Coze authentication documentation <https://www.coze.cn/open/docs/developer_guides/authentication>`__ for details. When using the OAuth/JWT method, the component provides two helper APIs: ``esp_coze_jwt_create`` signs the JWT header and payload with RS256 and returns a token string ready to use; ``esp_coze_http_post`` issues a synchronous HTTP POST request, used to exchange credentials for the final access token via Coze's OAuth endpoint. Business credentials such as the PAT and Bot ID are outside the scope of the component's configuration and are recommended to be managed in the application's own Kconfig, following the approach used in ``esp_llm_coze_agent_app``.
 
 Application Examples
 ---------------------
 
-- `coze_ws_app <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/coze_ws_app>`__ demonstrates the complete Chat integration flow under two interaction modes—button press and wake word—and shows how to configure both the PAT and OAuth/JWT authentication methods
+- `esp_llm_coze_agent_app <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_coze_agent_app>`__ connects to Coze through ``esp_llm_coze`` and demonstrates direct talk, wake word, and barge-in. The access token and bot ID are set in the application Kconfig
 
 FAQ
 ----

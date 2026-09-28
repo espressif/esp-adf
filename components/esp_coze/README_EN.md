@@ -34,13 +34,13 @@ Component-wide settings live under **`menuconfig → ESP COZE Chat`** (see [`Kco
 | `ESP_COZE_WS_AUDIO_SEND_TIMEOUT_MS` | Timeout for `esp_websocket_client_send_text()` on uplink `input_audio_buffer.append` (default 20000 ms). |
 | `ESP_COZE_DEBUG_TRACE_DATA` | Log uplink/downlink JSON text at INFO; for audio-related events only byte lengths are logged to avoid huge base64 dumps. |
 
-Credentials, bot ID, and OAuth/PAT fields are **not** defined here; they belong to your application Kconfig (see the **`coze_ws_app`** example).
+Credentials, bot ID, and OAuth/PAT fields are **not** defined here; they belong to your application Kconfig (see **`esp_llm_coze_agent_app`**).
 
 ## Authentication
 
 Coze requires valid credentials for HTTP/WebSocket access; see [**Authentication**](https://www.coze.cn/open/docs/developer_guides/authentication). Pass the bearer token via `esp_coze_chat_config_t.access_token` when calling `esp_coze_chat_init()`.
 
-Helpers (`esp_coze_jwt.h`, `esp_coze_http.h`) support JWT signing and the OAuth token POST. For **PAT vs OAuth**, embedding `private_key.pem`, and **menuconfig** fields, see [`adf_examples/ai_agent/coze_ws_app/README.md`](../../adf_examples/ai_agent/coze_ws_app/README.md) and `main/Kconfig.projbuild` in that example.
+Helpers (`esp_coze_jwt.h`, `esp_coze_http.h`) support JWT signing and the OAuth token POST. See the Coze documentation for **PAT vs OAuth**. The device example [`esp_llm_coze_agent_app`](../../adf_examples/ai_agent/esp_llm_coze_agent_app/README.md) sets the access token and bot ID in menuconfig and connects through `esp_llm_coze`.
 
 ## Protocol
 
@@ -61,7 +61,7 @@ idf.py add-dependency "espressif/esp_coze=*"
 ## How to Use
 
 1. **Create a bot.** Create a bot on the Coze platform. After creation, you will receive a unique `BOT_ID` used to identify the session target (chat, TTS, or ASR, depending on the API you use).
-2. **Configure authorization.** Obtain a token per [Authentication](#authentication) and the **`coze_ws_app`** example / Coze docs (PAT or OAuth/JWT).
+2. **Configure authorization.** Obtain a token per [Authentication](#authentication) and the Coze docs (PAT or OAuth/JWT). The device example is **`esp_llm_coze_agent_app`**.
 3. **Pick one or more APIs.** For full conversation, follow the chat example below. For TTS-only or ASR-only flows, use `esp_coze_tts_init` / `esp_coze_asr_init` and their `start`/`send` APIs as documented in the respective headers—these can run **at the same time** as chat if your product needs separate Coze sessions.
 4. **Chat: configure downlink audio and event callbacks in the config (style aligned with esp_xiaozhi_chat), then initialize and start:**
 
@@ -116,7 +116,7 @@ void app_demo(void)
 - All string fields in `esp_coze_chat_config_t` are deep-copied during `esp_coze_chat_init`; the caller is free to modify or release the original buffers afterwards.
 - Callbacks run **synchronously on the WebSocket client task**. Avoid blocking; copy into a queue and process from another task if needed.
 - With `audio_callback` set, decoded downlink audio is delivered only through `(data, len)`. Without `audio_callback`, `event_callback` may receive `ESP_COZE_CHAT_EVENT_AUDIO_DATA` with `esp_coze_chat_audio_data_t *` valid until the callback returns.
-- See [`coze_ws_app`](https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/coze_ws_app) for a complete reference application that supports both button-trigger and wake-word interaction modes.
+- See [`esp_llm_coze_agent_app`](https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_coze_agent_app) for a complete reference application. It connects through `esp_llm_coze` and supports direct talk, wake word, and barge-in.
 
 ## TTS / ASR Minimal Examples
 

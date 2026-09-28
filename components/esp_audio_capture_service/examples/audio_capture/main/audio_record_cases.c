@@ -125,9 +125,10 @@ static void vad_cb(int state, void *ctx)
     ESP_LOGI(TAG, "VAD state: %d", state);
 }
 
-static void wn_cb(int trigger_ch, void *ctx)
+static void wn_cb(int state, int trigger_ch, void *ctx)
 {
-    ESP_LOGI(TAG, "WakeNet detected on channel %d", trigger_ch);
+    (void)ctx;
+    ESP_LOGI(TAG, "Wakeup state %d channel %d", state, trigger_ch);
 }
 
 static void doa_cb(float doa_result, void *ctx)

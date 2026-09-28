@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+### Features
+
+- Added `esp_video_capture_service_get_default_format()` to get default video format (width, height, fps etc) from video source
+
 ## v0.5.0
 
 ### Features

@@ -1,0 +1,6 @@
+# Name,   Type, SubType, Offset,  Size
+nvs,      data, nvs,     0xB000,  0x4000
+phy_init, data, phy,     0xF000,  0x1000
+factory,  app,  factory, 0x10000, 6M
+model,    data, spiffs,         , 512K
+spiffs_data, data, spiffs,      , 128K

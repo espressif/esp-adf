@@ -1,0 +1,122 @@
+[
+  {
+    "name": "esp_llm_service_list",
+    "description": "List this registered LLM session",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "esp_llm_service_get_session",
+    "description": "Get one session: backend, capability bitmask, and capability names",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Stable service instance name"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Must be 0 for this registered instance; used when name is omitted"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_llm_service_start",
+    "description": "Start one AI session. Debug-only: must not race the application control thread.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Stable service instance name"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Must be 0 for this registered instance; used when name is omitted"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_llm_service_stop",
+    "description": "Stop one AI session. Debug-only: must not race the application control thread.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Stable service instance name"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Must be 0 for this registered instance; used when name is omitted"
+        }
+      }
+    }
+  },
+  {
+    "name": "esp_llm_service_send_text",
+    "description": "Send text to a session (requires text_input). Debug-only: must not race the application control thread.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Stable service instance name"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Must be 0 for this registered instance; used when name is omitted"
+        },
+        "text": {
+          "type": "string",
+          "description": "UTF-8 text to send"
+        }
+      },
+      "required": ["text"]
+    }
+  },
+  {
+    "name": "esp_llm_service_send_custom_data",
+    "description": "Send a backend-native custom payload (requires custom_data). Debug-only: must not race the application control thread.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Stable service instance name"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Must be 0 for this registered instance; used when name is omitted"
+        },
+        "data": {
+          "type": "string",
+          "description": "Custom payload, usually JSON"
+        }
+      },
+      "required": ["data"]
+    }
+  },
+  {
+    "name": "esp_llm_service_cancel_response",
+    "description": "Cancel the current response while keeping the session. Debug-only: must not race the application control thread.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Stable service instance name"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Must be 0 for this registered instance; used when name is omitted"
+        }
+      }
+    }
+  }
+]

@@ -8,8 +8,10 @@
 
 | 示例 | 路径 | 说明 |
 |---|---|---|
-| 扣子 WebSocket 双向流式对话 | [ai_agent/coze_ws_app](./ai_agent/coze_ws_app) | 基于 ESP-GMF 的 Coze 语音对话示例。 |
-| 百度 RTC 语音助手演示 | [ai_agent/baidu_rtc/solutions/voice_assistant_app](./ai_agent/baidu_rtc/solutions/voice_assistant_app) | 基于 ESP-GMF 的百度 RTC 实时音视频助手示例。 |
+| ESP LLM 百度智能体 | [ai_agent/esp_llm_baidu_agent_app](./ai_agent/esp_llm_baidu_agent_app) | 基于 `esp_llm_baidu` 的百度 RTC 智能体语音对话，可选摄像头与图像生成；支持 ESP32-S3、ESP32-S31 和 ESP32-P4。 |
+| ESP LLM 扣子智能体 | [ai_agent/esp_llm_coze_agent](./ai_agent/esp_llm_coze_agent) | 基于 `esp_llm_coze` 的 Coze WebSocket 双向语音对话；仅音频。 |
+| ESP LLM 火山智能体 | [ai_agent/esp_llm_volc_agent](./ai_agent/esp_llm_volc_agent) | 基于 `esp_llm_volc` 的火山引擎对话式 AI 语音对话；仅音频；支持 ESP32-S3、ESP32-S31 和 ESP32-P4。 |
+| ESP LLM 通义智能体 | [ai_agent/esp_llm_tongyi_agent](./ai_agent/esp_llm_tongyi_agent) | 基于 `esp_llm_tongyi` 的通义（DashScope）WebSocket 语音对话，可选视觉模式。 |
 | ESP 音频分析工具示例 | [checks/esp_audio_analyzer_app](./checks/esp_audio_analyzer_app) | 基于 ESP 音频分析工具全面测试麦克风、扬声器及 AEC 功能的示例。 |
 | 服务中枢综合示例 | [services_hub](./services_hub) | 通过 `adf_event_hub` 与 `esp_service_manager` 集成 Wi-Fi、OTA、CLI 与按键服务的多服务编排示例，可选支持 MCP。 |
 | 音视频录制与实时显示 | [recorder/av_record_live_display](./recorder/av_record_live_display) | 基于 `esp_capture` 的音视频采集、MP4 录制与 LCD 实时显示示例，支持 ESP32S3、ESP32S31 和 ESP32P4。 |
@@ -23,8 +25,8 @@
 
 ## 使用说明
 
-激活 [ESP-IDF](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/get-started/index.html) 环境后，执行以下指令可以下载某个示例工程到本地，以 `ai_agent/coze_ws_app` 为例：
+激活 [ESP-IDF](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/get-started/index.html) 环境后，执行以下指令可以下载某个示例工程到本地，以 `ai_agent/esp_llm_coze_agent` 为例：
 
 ```shell
-idf.py create-project-from-example "espressif/adf_examples:coze_ws_app"
+
 ```

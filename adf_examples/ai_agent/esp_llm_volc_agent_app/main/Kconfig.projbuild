@@ -1,0 +1,69 @@
+menu "Volc LLM agent application"
+
+    config VOLC_IOT_INSTANCE_ID
+        string "Volc IoT instance ID"
+        default ""
+
+    config VOLC_IOT_PRODUCT_KEY
+        string "Volc IoT product key"
+        default ""
+
+    config VOLC_IOT_PRODUCT_SECRET
+        string "Volc IoT product secret"
+        default ""
+
+    config VOLC_IOT_DEVICE_NAME
+        string "Volc IoT device name"
+        default ""
+
+    config VOLC_BOT_ID
+        string "Volc bot ID"
+        default ""
+
+    menu "Audio front-end features"
+
+        config VOLC_AUDIO_VAD
+            bool "Enable voice activity detection"
+            default y
+
+        config VOLC_AUDIO_WN
+            bool "Enable WakeNet wake-up"
+            default n
+            help
+                Enable local wake-word detection. When wake-up is enabled, the
+                current response is cancelled. Audio uplink stays closed until
+                the wake word.
+
+    endmenu
+
+    config VOLC_OUTPUT_VOLUME
+        int "Audio output volume"
+        default 80
+        range 0 100
+
+    menu "Wi-Fi"
+
+        config VOLC_WIFI_SSID
+            string "Wi-Fi SSID"
+            default "myssid"
+
+        config VOLC_WIFI_PASSWORD
+            string "Wi-Fi password"
+            default "mypasswd"
+
+        config VOLC_WIFI_CONNECT_TIMEOUT_MS
+            int "Wi-Fi connection timeout (ms)"
+            default 30000
+            range 5000 120000
+
+    endmenu
+
+    config VOLC_RUN_TIME_SEC
+        int "Run time before clean shutdown (seconds, 0 runs forever)"
+        default 0
+        range 0 86400
+        help
+            Set a non-zero value to exercise the complete reverse stop,
+            unlink, and destroy path after the specified duration.
+
+endmenu
