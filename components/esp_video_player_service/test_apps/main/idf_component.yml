@@ -5,7 +5,7 @@ dependencies:
     override_path: "../.."
   espressif/esp_audio_codec:
     require: public
-    version: "~2.5"
+    version: "~2.6"
   espressif/esp_video_codec:
     require: public
     version: "~0.5"

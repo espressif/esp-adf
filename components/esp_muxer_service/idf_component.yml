@@ -1,4 +1,4 @@
-version: "0.5.0"
+version: "0.5.0~1"
 description: ESP muxer sink service for muxing audio and video into a container for storage/streaming
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_muxer_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_muxer_service/README.md"
@@ -25,7 +25,7 @@ dependencies:
     version: "~1.2"
   espressif/gmf_core:
     require: public
-    version: "~1.0"
+    version: "~1.1"
   espressif/media_lib_sal:
     require: public
     version: "~1.0"
