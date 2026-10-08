@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2~3
+
+### Changes
+
+- Updated depended components `gmf_io` to ~1.1
+
 ## v0.5.2~2
 
 ### Bug Fixes

@@ -5,10 +5,10 @@ dependencies:
     override_path: "../.."
   espressif/esp_capture:
     require: public
-    version: "~1.0"
+    version: "~1.1"
   espressif/esp_muxer:
     require: public
     version: "~1.2"
   espressif/esp_audio_codec:
     require: public
-    version: "*"
+    version: "~2.6"

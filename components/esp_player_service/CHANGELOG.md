@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2~1
+
+### Changes
+
+- Updated depended components `gmf_core` and `gmf_audio` to ~1.1, `esp_player` and `esp_audio_render` to ~1.1, `esp_audio_codec` to ~2.6
+
 ## v0.5.2
 
 ### Bug Fixes

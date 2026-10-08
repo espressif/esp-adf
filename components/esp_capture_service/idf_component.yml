@@ -1,4 +1,4 @@
-version: "0.5.1"
+version: "0.5.1~1"
 description: ADF capture service with video and audio capture support
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_capture_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_capture_service/README.md"
@@ -22,7 +22,7 @@ dependencies:
     override_path: "../esp_media_service"
   espressif/esp_capture:
     require: public
-    version: "^1.0"
+    version: "~1.1"
   espressif/esp_muxer:
     require: public
     version: "~1.2"

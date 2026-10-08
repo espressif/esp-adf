@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.0~2
+
+### Changes
+
+- Updated depended components `esp_audio_codec` to ~2.6
+
 ## v0.5.0~1
 
 ### Changes

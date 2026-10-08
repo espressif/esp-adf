@@ -1,4 +1,4 @@
-version: "0.5.2"
+version: "0.5.2~1"
 description: >-
   Multi-stream playback SINK service on esp_media_service: mixer, stream,
   URL / feed / link, playlist, ID3, optional video output via subclass attach
@@ -26,7 +26,7 @@ dependencies:
     version: "~0.5"
   espressif/esp_player:
     require: public
-    version: "~1.0"
+    version: "~1.1"
   espressif/esp_extractor:
     require: public
     version: "~1.0"
@@ -34,7 +34,7 @@ dependencies:
     matches:
     - if: $CONFIG{ESP_PLAYER_ENABLE_AUDIO} == True
     require: private
-    version: "~1.0"
+    version: "~1.1"
   espressif/esp_codec_dev:
     matches:
     - if: $CONFIG{ESP_PLAYER_ENABLE_AUDIO} == True
@@ -44,7 +44,7 @@ dependencies:
     matches:
     - if: $CONFIG{ESP_PLAYER_ENABLE_AUDIO} == True
     require: private
-    version: "~1.0"
+    version: "~1.1"
   espressif/gmf_core:
     require: private
-    version: "~1.0"
+    version: "~1.1"

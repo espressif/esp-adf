@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.0~1
+
+### Changes
+
+- Updated depended components `gmf_ai_audio` to ~1.1, `esp-sr` to ~2.5, `esp_audio_codec` to ~2.6
+
 ## v0.5.0
 
 ### Features

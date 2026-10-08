@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1~1
+
+### Changes
+
+- Updated depended components `esp_capture` to ~1.1
+
 ## v0.5.1
 
 ### Bug Fixes

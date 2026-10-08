@@ -1,4 +1,4 @@
-version: "0.5.0"
+version: "0.5.0~1"
 description: Audio capture service with encoding and storage support
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_audio_capture_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_audio_capture_service/README.md"
@@ -12,9 +12,9 @@ tags:
 
 dependencies:
   espressif/esp-sr:
-    version: "~2.4"
+    version: "~2.5"
   espressif/gmf_ai_audio:
-    version: "~1.0"
+    version: "~1.1"
   espressif/esp_capture_service:
     version: "~0.5"
     override_path: "../esp_capture_service"

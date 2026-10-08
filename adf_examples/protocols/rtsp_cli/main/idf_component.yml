@@ -49,7 +49,7 @@ dependencies:
     version: "~1.0"
 
   espressif/esp_audio_codec:
-    version: "~2.5"
+    version: "~2.6"
 
   espressif/esp_video_codec:
     version: "~0.5"

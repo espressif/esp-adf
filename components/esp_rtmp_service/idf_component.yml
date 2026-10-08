@@ -28,7 +28,7 @@ dependencies:
     version: "~1.0"
   espressif/gmf_core:
     require: public
-    version: "~1.0"
+    version: "~1.1"
   espressif/cjson:
     require: private
     version: "*"
