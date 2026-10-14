@@ -247,8 +247,9 @@ static bool frame_has_white_pixel(const esp_media_frame_t *frame)
 TEST_CASE("video rec service create validates board discovery path", "[esp_video_capture_service]")
 {
     esp_capture_service_t *capture = NULL;
-    TEST_ASSERT_EQUAL(ESP_ERR_NOT_FOUND, esp_video_capture_service_create(NULL, &capture));
-    TEST_ASSERT_NULL(capture);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_video_capture_service_create(NULL, &capture));
+    TEST_ASSERT_NOT_NULL(capture);
+    esp_capture_service_destroy(capture);
 }
 
 TEST_CASE("video rec setup streams dual streams", "[esp_video_capture_service]")

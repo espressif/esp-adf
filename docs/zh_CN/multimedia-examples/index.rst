@@ -193,7 +193,7 @@
 云端智能体例程
 ------------------------------------------------------------
 
-云端智能体例程演示设备与云端语音智能体的对接，覆盖扣子、百度 RTC 和 OpenAI Realtime 的实时语音交互。
+云端智能体例程演示设备与云端语音智能体的对接。``esp_llm_service`` 例程覆盖百度、扣子、通义和火山。OpenAI Realtime 仍直接对接 ``esp_webrtc``。
 
 .. list-table::
    :header-rows: 1
@@ -202,12 +202,18 @@
    * - 例程名称
      - 简介
      - 例程组件链接
-   * - coze_ws_app
-     - 对接扣子 WebSocket OpenAPI，支持直接对话、唤醒和按键打断的双向流式语音交互。
-     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/coze_ws_app>`__
-   * - voice_assistant_app
-     - 基于百度 RTC 实现语音助手：支持对话、播放网络音乐，并将两路音频混音输出。
-     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/baidu_rtc/solutions/voice_assistant_app>`__
+   * - esp_llm_baidu_agent_app
+     - 百度 RTC 智能体，基于 ``esp_llm_baidu``。
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_baidu_agent_app>`__
+   * - esp_llm_coze_agent_app
+     - 扣子 WebSocket 语音对话，基于 ``esp_llm_coze``。
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_coze_agent_app>`__
+   * - esp_llm_tongyi_agent_app
+     - 通义多模态对话，基于 ``esp_llm_tongyi``。
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_tongyi_agent_app>`__
+   * - esp_llm_volc_agent_app
+     - 火山 RTC 语音对话，基于 ``esp_llm_volc``。
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_volc_agent_app>`__
    * - openai_demo
      - 基于 ``esp_webrtc`` 连接 OpenAI Realtime，实现实时语音对话，并演示 function call 控制设备。
      - `esp-webrtc-solution <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/openai_demo>`__

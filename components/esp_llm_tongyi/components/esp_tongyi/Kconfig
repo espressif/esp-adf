@@ -1,0 +1,61 @@
+menu "ESP Tongyi"
+
+    config ESP_TONGYI_WS_BUFFER_SIZE
+        int "WebSocket RX/TX buffer size (bytes)"
+        range 1024 131072
+        default 20480
+        help
+            Passed to esp_websocket_client_config_t.buffer_size when
+            transport.buffer_size is 0.
+
+    config ESP_TONGYI_WS_CONNECT_TIMEOUT_MS
+        int "Wait for WebSocket connected / session Started (ms)"
+        range 1000 300000
+        default 5000
+        help
+            Timeout used by esp_tongyi_start() when waiting for connected
+            and server Started events.
+
+    config ESP_TONGYI_WS_RECONNECT_TIMEOUT_MS
+        int "WebSocket reconnect timeout (ms)"
+        range 100 300000
+        default 1000
+        help
+            reconnect_timeout_ms forwarded to esp_websocket_client_config_t.
+
+    config ESP_TONGYI_WS_SEND_TIMEOUT_MS
+        int "WebSocket send timeout (ms)"
+        range 100 120000
+        default 3000
+        help
+            Timeout used when sending text and binary frames.
+
+    config ESP_TONGYI_WS_NETWORK_TIMEOUT_MS
+        int "WebSocket network I/O timeout (ms)"
+        range 100 300000
+        default 5000
+        help
+            network_timeout_ms for esp_websocket_client_config_t.
+
+    config ESP_TONGYI_MAX_JSON_BYTES
+        int "Max assembled JSON message (bytes)"
+        range 1024 1048576
+        default 65536
+        help
+            Upper bound for WebSocket JSON reassembly.
+
+    config ESP_TONGYI_MAX_BINARY_BYTES
+        int "Max assembled binary message (bytes)"
+        range 1024 1048576
+        default 65536
+        help
+            Upper bound for WebSocket binary/audio reassembly.
+
+    config ESP_TONGYI_MAX_IMAGE_BYTES
+        int "Max image upload size (bytes)"
+        range 1024 2097152
+        default 262144
+        help
+            Maximum raw image accepted by esp_tongyi_send_image().
+
+endmenu

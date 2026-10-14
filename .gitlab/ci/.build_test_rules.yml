@@ -72,16 +72,3 @@ adf_examples/player/play_music_control:
     - *if_idf_v6_0
   disable_test:
     - *if_esp32p4
-
-adf_examples/ai_agent/baidu_rtc/solutions/voice_assistant_app:
-  disable_build:
-    - *if_idf_v6_0
-    - *if_esp32p4
-  disable_test:
-    - *if_all
-
-adf_examples/ai_agent/coze_ws_app:
-  disable_build:
-    - *if_idf_v6_0
-  disable_test:
-    - *if_all

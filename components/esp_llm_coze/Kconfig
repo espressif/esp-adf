@@ -1,0 +1,55 @@
+menu "ESP LLM Coze"
+
+    config ESP_LLM_COZE_ENABLE
+        bool "Enable ESP LLM Coze adapter"
+        default y
+        depends on ESP_LLM_SERVICE_ENABLE
+        help
+            Build the Coze adapter as a sibling component for esp_llm_service.
+
+    menu "Audio profile"
+
+        choice ESP_LLM_COZE_AUDIO_CODEC
+            prompt "Uplink/downlink audio codec"
+            default ESP_LLM_COZE_AUDIO_CODEC_OPUS
+
+            config ESP_LLM_COZE_AUDIO_CODEC_OPUS
+                bool "OPUS (16 kHz)"
+                select AUDIO_ENCODER_OPUS_SUPPORT
+                select AUDIO_DECODER_OPUS_SUPPORT
+
+            config ESP_LLM_COZE_AUDIO_CODEC_PCM
+                bool "PCM (16 kHz)"
+
+            config ESP_LLM_COZE_AUDIO_CODEC_G711A
+                bool "G.711 A-law (8 kHz)"
+
+            config ESP_LLM_COZE_AUDIO_CODEC_G711U
+                bool "G.711 mu-law (8 kHz)"
+
+        endchoice
+
+        config ESP_LLM_COZE_DOWNLINK_BITRATE
+            int "Opus downlink bitrate (bits/s)"
+            default 16000
+            depends on ESP_LLM_COZE_AUDIO_CODEC_OPUS
+
+        config ESP_LLM_COZE_DOWNLINK_FRAME_SIZE_MS
+            int "Downlink frame size (ms)"
+            default 60
+
+        choice ESP_LLM_COZE_VAD_MODE
+            prompt "Server VAD silence mode"
+            default ESP_LLM_COZE_VAD_SILENCE_FAST
+
+            config ESP_LLM_COZE_VAD_SILENCE_FAST
+                bool "Fast silence detection"
+
+            config ESP_LLM_COZE_VAD_SILENCE_NORMAL
+                bool "Normal silence detection"
+
+        endchoice
+
+    endmenu
+
+endmenu

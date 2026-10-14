@@ -87,14 +87,9 @@ static esp_err_t get_board_camera_dev_path(esp_video_capture_service_ctx_t *rec,
 #endif  /* CONFIG_ESP_BOARD_DEV_CAMERA_SUPPORT */
 }
 
-esp_err_t esp_video_capture_service_ensure_video_src(esp_video_capture_service_ctx_t *ctx, uint8_t fb_num)
+static esp_err_t new_board_v4l2_src(esp_video_capture_service_ctx_t *ctx, uint8_t fb_num,
+                                    esp_capture_video_src_if_t **out_src)
 {
-    if (ctx == NULL) {
-        return ESP_ERR_INVALID_ARG;
-    }
-    if (ctx->v4l2_src != NULL) {
-        return ESP_OK;
-    }
     const char *dev_path = NULL;
     esp_err_t ret = get_board_camera_dev_path(ctx, &dev_path);
     if (ret != ESP_OK) {
@@ -109,11 +104,22 @@ esp_err_t esp_video_capture_service_ensure_video_src(esp_video_capture_service_c
         .buf_count = buf_count,
     };
     copy_v4l2_dev_name(v4l2_cfg.dev_name, dev_path);
-    ctx->v4l2_src = esp_capture_new_video_v4l2_src(&v4l2_cfg);
-    if (ctx->v4l2_src == NULL) {
+    *out_src = esp_capture_new_video_v4l2_src(&v4l2_cfg);
+    if (*out_src == NULL) {
         return ESP_ERR_NO_MEM;
     }
     return ESP_OK;
+}
+
+esp_err_t esp_video_capture_service_ensure_video_src(esp_video_capture_service_ctx_t *ctx, uint8_t fb_num)
+{
+    if (ctx == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (ctx->v4l2_src != NULL) {
+        return ESP_OK;
+    }
+    return new_board_v4l2_src(ctx, fb_num, &ctx->v4l2_src);
 }
 
 static esp_err_t create_ctx(const esp_video_capture_service_cfg_t *cfg, esp_video_capture_service_ctx_t **out_ctx)
@@ -180,15 +186,21 @@ esp_err_t esp_video_capture_service_create(const esp_video_capture_service_cfg_t
         .max_stream_num = capture_cfg.max_stream_num,
     };
     ret = esp_audio_capture_service_attach(rec->capture, &audio_cfg, NULL);
-    if (ret != ESP_OK) {
+    if (ret == ESP_ERR_NOT_FOUND) {
+        ESP_LOGW(TAG, "No audio ADC; continue video-only");
+        rec->audio_attached = false;
+    } else if (ret != ESP_OK) {
         esp_capture_service_destroy(rec->capture);
         free(rec);
         RET_FOR(ret, "Failed to attach audio");
+    } else {
+        rec->audio_attached = true;
     }
-    rec->audio_attached = true;
     ret = esp_capture_service_set_deinit_cb(rec->capture, video_capture_service_deinit_cb, NULL);
     if (ret != ESP_OK) {
-        esp_audio_capture_service_detach(rec->capture);
+        if (rec->audio_attached) {
+            esp_audio_capture_service_detach(rec->capture);
+        }
         esp_capture_service_destroy(rec->capture);
         free(rec);
         RET_FOR(ret, "Failed to set deinit callback");
@@ -207,4 +219,40 @@ esp_capture_video_src_if_t *esp_video_capture_service_ctx_get_video_source(esp_v
 esp_video_capture_service_ctx_t *esp_video_capture_service_ctx_find(esp_capture_service_t *capture)
 {
     return ctx_list_find(capture);
+}
+
+esp_err_t esp_video_capture_service_get_default_format(esp_capture_service_t *capture,
+                                                       esp_capture_video_info_t *default_fmt)
+{
+    if (capture == NULL || default_fmt == NULL) {
+        RET_FOR(ESP_ERR_INVALID_ARG, "Invalid capture or format");
+    }
+
+    esp_video_capture_service_ctx_t *ctx = ctx_list_find(capture);
+    if (ctx == NULL) {
+        RET_FOR(ESP_ERR_NOT_FOUND, "Capture context not found");
+    }
+
+    /* Before apply_setup, query a throwaway source so setup still creates the
+       cached one with its own fb_num. */
+    esp_capture_video_src_if_t *src = ctx->video_src != NULL ? ctx->video_src : ctx->v4l2_src;
+    esp_capture_video_src_if_t *tmp_src = NULL;
+    if (src == NULL) {
+        esp_err_t ret = new_board_v4l2_src(ctx, 0, &tmp_src);
+        if (ret != ESP_OK) {
+            RET_FOR(ret, "Failed to create video source");
+        }
+        src = tmp_src;
+    }
+    if (src->get_default_format == NULL) {
+        free(tmp_src);
+        RET_FOR(ESP_ERR_NOT_SUPPORTED, "get_default_format is not implemented");
+    }
+
+    esp_err_t ret = capture_err_to_esp(src->get_default_format(src, default_fmt));
+    free(tmp_src);
+    if (ret != ESP_OK) {
+        RET_FOR(ret, "Get default format failed");
+    }
+    return ESP_OK;
 }

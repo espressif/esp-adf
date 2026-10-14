@@ -1,0 +1,32 @@
+menu "ESP LLM Tongyi"
+
+    config ESP_LLM_TONGYI_ENABLE
+        bool "Enable ESP LLM Tongyi adapter"
+        default y
+        depends on ESP_LLM_SERVICE_ENABLE
+        help
+            Build the Tongyi adapter as a sibling component for esp_llm_service.
+
+    menu "Audio profile"
+
+        config ESP_LLM_TONGYI_SAMPLE_RATE
+            int "Audio sample rate (Hz)"
+            default 16000
+
+        config ESP_LLM_TONGYI_FRAME_SIZE_MS
+            int "Downstream Opus frame size (ms)"
+            default 60
+
+        config ESP_LLM_TONGYI_BIT_RATE_KBPS
+            int "Downstream bit rate (kbps)"
+            default 32
+
+        config ESP_LLM_TONGYI_CAPTURE_UPLINK_BITRATE
+            int "Capture uplink Opus bitrate (bps)"
+            default 24000
+
+    endmenu
+
+    rsource "components/esp_tongyi/Kconfig"
+
+endmenu

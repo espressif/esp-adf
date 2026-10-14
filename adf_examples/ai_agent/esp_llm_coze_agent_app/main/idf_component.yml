@@ -1,0 +1,21 @@
+dependencies:
+  idf:
+    version: ">=5.4.0"
+  esp_llm_coze:
+    version: "*"
+    override_path: "../../../../components/esp_llm_coze"
+  espressif/esp_audio_capture_service:
+    version: "~0.5"
+    override_path: "../../../../components/esp_audio_capture_service"
+  espressif/esp_audio_player_service:
+    version: "~0.5"
+    override_path: "../../../../components/esp_audio_player_service"
+  espressif/esp_config_manager:
+    version: "^0.5"
+    override_path: "../../../../components/esp_config_manager"
+  espressif/esp_service:
+    version: "^0.5"
+    override_path: "../../../../components/esp_service"
+  espressif/esp_wifi_service:
+    version: "^0.5.3"
+    override_path: "../../../../components/esp_wifi_service"

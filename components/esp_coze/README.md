@@ -34,13 +34,13 @@ OAuth / JWT 相关辅助接口见 [`esp_coze_jwt.h`](./include/esp_coze_jwt.h)�
 | `ESP_COZE_WS_AUDIO_SEND_TIMEOUT_MS` | 上行 `input_audio_buffer.append` 调用 `esp_websocket_client_send_text()` 的超时时间（默认 20000 ms）。 |
 | `ESP_COZE_DEBUG_TRACE_DATA` | 以 INFO 级别打印上下行 JSON 文本；音频相关事件仅打印字节长度，避免大量 base64 日志。 |
 
-这里不包含凭证、Bot ID、OAuth/PAT 等业务配置，它们应放在应用侧 Kconfig 中（可参考 **`coze_ws_app`** 示例）。
+这里不包含凭证、Bot ID、OAuth/PAT 等业务配置，它们应放在应用侧 Kconfig 中（可参考 **`esp_llm_coze_agent_app`**）。
 
 ## 鉴权
 
 Coze 的 HTTP / WebSocket 访问都需要有效凭证，详见 [**Authentication**](https://www.coze.cn/open/docs/developer_guides/authentication)。调用 `esp_coze_chat_init()` 时，请通过 `esp_coze_chat_config_t.access_token` 传入 bearer token。
 
-辅助接口（`esp_coze_jwt.h`、`esp_coze_http.h`）支持 JWT 签名和 OAuth token POST。关于 **PAT 与 OAuth 的区别**、`private_key.pem` 的嵌入方式，以及 **menuconfig** 字段配置，可参考示例说明 [`adf_examples/ai_agent/coze_ws_app/README_CN.md`](../../adf_examples/ai_agent/coze_ws_app/README_CN.md) 和该示例中的 `main/Kconfig.projbuild`。
+辅助接口（`esp_coze_jwt.h`、`esp_coze_http.h`）支持 JWT 签名和 OAuth token POST。PAT、OAuth 的区别见 Coze 官方文档。设备侧例程 [`esp_llm_coze_agent_app`](../../adf_examples/ai_agent/esp_llm_coze_agent_app/README_CN.md) 在 menuconfig 中填写 access token 与 Bot ID，经 `esp_llm_coze` 接入。
 
 ## 协议
 
@@ -61,7 +61,7 @@ idf.py add-dependency "espressif/esp_coze=*"
 ## 使用方法
 
 1. **创建 Bot。** 在 Coze 平台创建一个 bot。创建完成后会获得唯一的 `BOT_ID`，用于标识会话目标（具体使用 Chat / TTS / ASR 中的哪一种 API）。
-2. **配置鉴权。** 按 [鉴权](#鉴权) 章节以及 **`coze_ws_app`** 示例 / Coze 官方文档准备 token（PAT 或 OAuth/JWT）。
+2. **配置鉴权。** 按 [鉴权](#鉴权) 章节以及 Coze 官方文档准备 token（PAT 或 OAuth/JWT）。设备例程见 **`esp_llm_coze_agent_app`**。
 3. **选择一种或多种 API。** 需要完整对话时，使用下面 Chat 示例；若只要 TTS 或只要 ASR，请按各自头文件使用 `esp_coze_tts_init` / `esp_coze_asr_init` 及对应的 `start`、`send` 等接口——在业务需要多个 Coze 会话时，可与 Chat **同时**运行。
 4. **Chat：在配置里设置下行音频与事件回调（风格对齐 esp_xiaozhi_chat），然后初始化并启动：**
 
@@ -116,7 +116,7 @@ void app_demo(void)
 - `esp_coze_chat_config_t` 中的所有字符串字段都会在 `esp_coze_chat_init()` 中进行深拷贝，初始化完成后，调用方可自由修改或释放原始缓冲区。
 - 回调在 **WebSocket 客户端任务** 上下文中同步触发；不要在回调里长时间阻塞，可把数据拷入队列再在其它任务里处理。
 - 若配置了 `audio_callback`，下行解码音频只通过 `(data, len)` 交给该回调。若未配置 `audio_callback` 但配置了 `event_callback`，则仍可通过 `ESP_COZE_CHAT_EVENT_AUDIO_DATA` 收到 `esp_coze_chat_audio_data_t *`（仅在回调返回前有效）。
-- 完整参考应用见 [`coze_ws_app`](https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/coze_ws_app)，支持按键触发和唤醒词等交互模式。
+- 完整参考应用见 [`esp_llm_coze_agent_app`](https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_coze_agent_app)，经 `esp_llm_coze` 接入，支持直接对话、唤醒和打断。
 
 ## TTS / ASR 最小示例
 

@@ -1,0 +1,24 @@
+version: "0.5.0"
+description: Baidu RTC adapter for esp_llm_service (agent + intercom)
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_llm_baidu
+issues: https://github.com/espressif/esp-adf/issues
+license: "LicenseRef-Espressif-Modified-MIT"
+
+targets:
+  - esp32s3
+  - esp32s31
+  - esp32p4
+
+dependencies:
+  espressif/esp_llm_service:
+    require: public
+    version: "^0.5"
+    override_path: "../esp_llm_service"
+  espressif/zlib: "^1.3.1"
+  espressif/cjson:
+    version: "^1.7.19"
+    rules:
+      - if: "idf_version >=6.0"
+
+examples:
+  - path: ../../adf_examples/ai_agent/esp_llm_baidu_agent_app

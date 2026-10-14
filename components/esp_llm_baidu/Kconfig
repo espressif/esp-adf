@@ -1,0 +1,71 @@
+menu "ESP LLM Baidu"
+
+    config ESP_LLM_BAIDU_ENABLE
+        bool "Enable ESP LLM Baidu adapter"
+        default y
+        depends on ESP_LLM_SERVICE_ENABLE
+        help
+            Build the Baidu RTC adapter as a sibling component for esp_llm_service.
+
+    menu "Agent audio profile"
+
+        choice ESP_LLM_BAIDU_AGENT_AUDIO_CODEC
+            prompt "Agent audio preset"
+            default ESP_LLM_BAIDU_AGENT_AUDIO_CODEC_OPUS
+            help
+                Same mapping as multimodal_assistant_app. AudioIncodecType is the
+                send_audio payload. rtc_ac / AudioOut names the wire codec.
+
+                OPUS — App encodes and decodes OPUS @ 16 kHz. The Baidu lib does
+                       not transcode OPUS, so send_audio / onAudioData carry OPUS
+                       frames and AudioIn / rtc_ac / AudioOut are opus.
+
+                PCM  — App sends and plays PCM @ 16 kHz. The Baidu lib encodes
+                       and decodes G.722 on the wire; AudioIn is pcm and
+                       rtc_ac / AudioOut are g722.
+
+            config ESP_LLM_BAIDU_AGENT_AUDIO_CODEC_OPUS
+                bool "OPUS (app encode/decode)"
+                select AUDIO_ENCODER_OPUS_SUPPORT
+                select AUDIO_DECODER_OPUS_SUPPORT
+
+            config ESP_LLM_BAIDU_AGENT_AUDIO_CODEC_PCM
+                bool "PCM app + G722 in Baidu SDK"
+
+        endchoice
+
+        config ESP_LLM_BAIDU_VOICE_INTERRUPT_ENABLE
+            bool "Enable server voice interrupt"
+            default y
+
+        config ESP_LLM_BAIDU_VOICE_INTERRUPT_LEVEL
+            int "Voice interrupt level (0-100)"
+            default 80
+            range 0 100
+            depends on ESP_LLM_BAIDU_VOICE_INTERRUPT_ENABLE
+
+    endmenu
+
+    menu "Video profile"
+
+        choice ESP_LLM_BAIDU_VIDEO_CODEC
+            prompt "RTC video codec"
+            default ESP_LLM_BAIDU_VIDEO_CODEC_JPEG
+            help
+                JPEG — MJPEG capture / MJPG player (typical for vision snapshots).
+                H.264 — H264 capture / player (intercom and stream uplink).
+
+                service.streams[] decide whether video is on; this choice
+                names the codec. Intercom maps it to brtc_set_videocodec().
+
+            config ESP_LLM_BAIDU_VIDEO_CODEC_JPEG
+                bool "JPEG"
+
+            config ESP_LLM_BAIDU_VIDEO_CODEC_H264
+                bool "H.264"
+
+        endchoice
+
+    endmenu
+
+endmenu

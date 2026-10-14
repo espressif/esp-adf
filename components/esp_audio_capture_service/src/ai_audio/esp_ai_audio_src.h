@@ -171,6 +171,52 @@ esp_capture_err_t esp_ai_audio_enable_dump(esp_capture_audio_src_if_t *src, cons
  */
 esp_capture_err_t esp_ai_audio_set_alc_gain(esp_capture_audio_src_if_t *src, int channel, float gain);
 
+/**
+ * @brief  Manually enter the AFE wakeup state
+ *
+ *         The source must already be started and must contain the compact AFE
+ *         element.
+ *
+ * @param[in]  src  AI audio source interface
+ *
+ * @return
+ *       - ESP_CAPTURE_ERR_OK             On success
+ *       - ESP_CAPTURE_ERR_INVALID_ARG    src is NULL or invalid
+ *       - ESP_CAPTURE_ERR_INVALID_STATE  Source is not started
+ *       - ESP_CAPTURE_ERR_NOT_SUPPORTED  AFE element is not present
+ *       - ESP_CAPTURE_ERR_TIMEOUT        AFE command timed out
+ */
+esp_capture_err_t esp_ai_audio_trigger_wakeup(esp_capture_audio_src_if_t *src);
+
+/**
+ * @brief  Manually leave the AFE wakeup state
+ *
+ * @param[in]  src  AI audio source interface
+ *
+ * @return
+ *       - ESP_CAPTURE_ERR_OK             On success
+ *       - ESP_CAPTURE_ERR_INVALID_ARG    src is NULL or invalid
+ *       - ESP_CAPTURE_ERR_INVALID_STATE  Source is not started
+ *       - ESP_CAPTURE_ERR_NOT_SUPPORTED  AFE element is not present
+ *       - ESP_CAPTURE_ERR_TIMEOUT        AFE command timed out
+ */
+esp_capture_err_t esp_ai_audio_trigger_sleep(esp_capture_audio_src_if_t *src);
+
+/**
+ * @brief  Keep the AFE in wakeup state without automatic timeout
+ *
+ * @param[in]  src     AI audio source interface
+ * @param[in]  enable  True to stay awake, false to allow wakeup timeout
+ *
+ * @return
+ *       - ESP_CAPTURE_ERR_OK             On success
+ *       - ESP_CAPTURE_ERR_INVALID_ARG    src is NULL or invalid
+ *       - ESP_CAPTURE_ERR_INVALID_STATE  Source is not started
+ *       - ESP_CAPTURE_ERR_NOT_SUPPORTED  AFE element is not present
+ *       - ESP_CAPTURE_ERR_TIMEOUT        AFE command timed out
+ */
+esp_capture_err_t esp_ai_audio_keep_awake(esp_capture_audio_src_if_t *src, bool enable);
+
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

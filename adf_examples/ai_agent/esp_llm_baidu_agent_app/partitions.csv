@@ -1,0 +1,8 @@
+# Name,   Type, SubType, Offset,  Size
+# Offsets assume CONFIG_PARTITION_TABLE_OFFSET=0xA000 (PT at 0xA000, first part at 0xB000).
+# factory is 6M so the image plus WakeNet still fits 8 MB flash on ESP32-P4.
+nvs,      data, nvs,     0xB000,  0x4000
+phy_init, data, phy,     0xF000,  0x1000
+factory,  app,  factory, 0x10000, 6M
+model,    data, spiffs,         , 512K
+spiffs_data, data, spiffs,      , 128K

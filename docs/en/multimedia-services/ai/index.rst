@@ -3,7 +3,7 @@ AI Integration
 
 :link_to_translation:`zh_CN:[中文]`
 
-AI integration components include Coze. Cloud voice examples are listed below and in :doc:`/multimedia-examples/index`.
+AI integration components include ``esp_llm_service`` and Coze. Cloud voice examples are listed below and in :doc:`/multimedia-examples/index`.
 
 .. toctree::
    :maxdepth: 1
@@ -17,12 +17,18 @@ AI integration components include Coze. Cloud voice examples are listed below an
    * - Example
      - Description
      - Link
-   * - coze_ws_app
-     - Connects to Coze over WebSocket and provides conversation, wake word, and button barge-in
-     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/coze_ws_app>`__
-   * - voice_assistant_app
-     - Baidu RTC voice assistant that provides conversation and mixed network music
-     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/baidu_rtc/solutions/voice_assistant_app>`__
+   * - esp_llm_baidu_agent_app
+     - Baidu RTC agent on ``esp_llm_baidu``
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_baidu_agent_app>`__
+   * - esp_llm_coze_agent_app
+     - Coze WebSocket voice chat on ``esp_llm_coze``
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_coze_agent_app>`__
+   * - esp_llm_tongyi_agent_app
+     - Tongyi multimodal chat on ``esp_llm_tongyi``
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_tongyi_agent_app>`__
+   * - esp_llm_volc_agent_app
+     - Volcengine RTC voice chat on ``esp_llm_volc``
+     - `adf_examples <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_volc_agent_app>`__
    * - openai_demo
      - Connects to OpenAI Realtime over WebRTC and demonstrates function calls
      - `esp-webrtc-solution <https://github.com/espressif/esp-webrtc-solution/tree/main/solutions/openai_demo>`__

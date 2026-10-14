@@ -1,10 +1,28 @@
 EXAMPLES:
-  - app_dir: adf_examples/ai_agent/coze_ws_app
+  - app_dir: adf_examples/ai_agent/esp_llm_baidu_agent_app
     board:
-      esp32:
-        - ESP_LYRAT_MINI_V1_1: v5.5-${LATEST_IDF_VERSION}
       esp32s3:
-        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+        - ESP32_S3_KORVO2_V3: ">=5.4.3,<=5.5.3"
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: ">=5.4.3,<=5.5.3"
+  - app_dir: adf_examples/ai_agent/esp_llm_coze_agent_app
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: ">=5.4.3,<=5.5.3"
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: ">=5.4.3,<=5.5.3"
+  - app_dir: adf_examples/ai_agent/esp_llm_tongyi_agent_app
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: ">=5.4.3,<=5.5.3"
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: ">=5.4.3,<=5.5.3"
+  - app_dir: adf_examples/ai_agent/esp_llm_volc_agent_app
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: ">=5.4.3,<=5.5.3"
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: ">=5.4.3,<=5.5.3"
   - app_dir: adf_examples/checks/esp_audio_analyzer_app
     board:
       esp32s3:

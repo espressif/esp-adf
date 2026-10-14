@@ -372,8 +372,9 @@ static void dummy_vad_cb(int state, void *ctx)
     (void)ctx;
 }
 
-static void dummy_wn_cb(int trigger_ch, void *ctx)
+static void dummy_wn_cb(int state, int trigger_ch, void *ctx)
 {
+    (void)state;
     (void)trigger_ch;
     (void)ctx;
 }
@@ -599,6 +600,19 @@ TEST_CASE("ai_audio_src setters reject after start", "[ai_audio]")
     TEST_ASSERT_EQUAL(ESP_CAPTURE_ERR_INVALID_STATE, esp_ai_audio_set_doa_cb(src, dummy_doa_cb, NULL));
 
     TEST_ASSERT_EQUAL(ESP_CAPTURE_ERR_OK, src->stop(src));
+    destroy_ai_src(src);
+}
+
+TEST_CASE("ai_audio_src rejects AFE wakeup control before start", "[ai_audio]")
+{
+    esp_ai_audio_src_cfg_t cfg = make_default_cfg();
+    esp_capture_audio_src_if_t *src = esp_ai_audio_new_src(&cfg);
+    TEST_ASSERT_NOT_NULL(src);
+    TEST_ASSERT_EQUAL(ESP_CAPTURE_ERR_INVALID_STATE, esp_ai_audio_trigger_wakeup(src));
+    TEST_ASSERT_EQUAL(ESP_CAPTURE_ERR_INVALID_STATE, esp_ai_audio_trigger_sleep(src));
+    TEST_ASSERT_EQUAL(ESP_CAPTURE_ERR_INVALID_STATE, esp_ai_audio_keep_awake(src, true));
+    TEST_ASSERT_EQUAL(ESP_CAPTURE_ERR_INVALID_ARG, esp_ai_audio_trigger_wakeup(NULL));
+    TEST_ASSERT_EQUAL(ESP_CAPTURE_ERR_INVALID_ARG, esp_ai_audio_keep_awake(NULL, false));
     destroy_ai_src(src);
 }
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.2.8
+
+### Features
+
+- Added `esp_llm_baidu_agent_app` example for Baidu RTC agent voice dialog via `esp_llm_baidu` and `esp_llm_service`
+- Added `esp_llm_coze_agent_app` example for Coze WebSocket duplex voice chat via `esp_llm_coze`
+- Added `esp_llm_volc_agent_app` example for Volcengine conversational AI voice chat via `esp_llm_volc`
+- Added `esp_llm_tongyi_agent_app` example for Tongyi (DashScope) WebSocket voice chat with optional vision via `esp_llm_tongyi`
+
 ## v0.2.7~1
 
 ### Changes

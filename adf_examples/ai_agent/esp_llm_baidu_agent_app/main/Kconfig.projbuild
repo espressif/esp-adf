@@ -1,0 +1,140 @@
+menu "Baidu LLM agent application"
+
+    config BAIDU_APP_ID
+        string "Baidu application ID"
+        default ""
+
+    config BAIDU_USER_ID
+        string "Baidu user ID"
+        default ""
+
+    config BAIDU_LICENSE_KEY
+        string "Baidu license key"
+        default ""
+
+    config BAIDU_SERVER_URL
+        string "Baidu agent platform URL"
+        default ""
+
+    config BAIDU_WORKFLOW
+        string "Baidu workflow"
+        default "VoiceChat"
+
+    config BAIDU_INSTANCE_ID
+        int "Baidu instance ID"
+        default 0
+        range 0 2147483647
+        help
+            Instance ID from the Baidu agent platform. 0 means unset.
+
+    choice BAIDU_APP_SCENE
+        prompt "Agent scene"
+        default BAIDU_APP_SCENE_VOICE_CHAT
+        help
+            Voice chat is audio only.
+            Image understanding links camera JPEG to VIDEO_UP.
+            Image generation links VIDEO_DN to the LCD player.
+            Multi-modal enables both; the LCD shows VIDEO_DN only.
+
+        config BAIDU_APP_SCENE_VOICE_CHAT
+            bool "Voice chat (audio only)"
+
+        config BAIDU_APP_SCENE_IMAGE_UNDERSTANDING
+            bool "Image understanding (camera uplink)"
+            select ESP_CAPTURE_ENABLE_VIDEO
+
+        config BAIDU_APP_SCENE_IMAGE_GENERATION
+            bool "Image generation (video downlink)"
+
+        config BAIDU_APP_SCENE_MULTI_MODAL
+            bool "Multi-modal (camera uplink and generated image)"
+            select ESP_CAPTURE_ENABLE_VIDEO
+    endchoice
+
+    choice BAIDU_VISION_MODE
+        prompt "Vision uplink mode"
+        default BAIDU_VISION_MODE_IMAGE
+        depends on BAIDU_APP_SCENE_IMAGE_UNDERSTANDING || BAIDU_APP_SCENE_MULTI_MODAL
+        help
+            Image: upload one JPEG when the cloud requests vision.
+            Stream: send every captured frame.
+
+        config BAIDU_VISION_MODE_IMAGE
+            bool "Image (snapshot on request)"
+
+        config BAIDU_VISION_MODE_STREAM
+            bool "Stream (continuous frames)"
+    endchoice
+
+    config BAIDU_CAMERA_WIDTH
+        int "Camera JPEG width"
+        depends on BAIDU_APP_SCENE_IMAGE_UNDERSTANDING || BAIDU_APP_SCENE_MULTI_MODAL
+        range 160 1920
+        default 320
+        help
+            Must match an esp-video JPEG sensor mode. Independent of LCD size.
+
+    config BAIDU_CAMERA_HEIGHT
+        int "Camera JPEG height"
+        depends on BAIDU_APP_SCENE_IMAGE_UNDERSTANDING || BAIDU_APP_SCENE_MULTI_MODAL
+        range 120 1080
+        default 240
+
+    config BAIDU_CAMERA_FPS
+        int "Camera capture FPS"
+        depends on BAIDU_APP_SCENE_IMAGE_UNDERSTANDING || BAIDU_APP_SCENE_MULTI_MODAL
+        range 1 30
+        default 10
+
+    menu "Audio front-end features"
+
+        config BAIDU_AUDIO_NS
+            bool "Enable WebRTC noise suppression"
+            default n
+            help
+                Off by default. On ESP32-S31 the NS FFT can starve afe_feed
+                (task watchdog) and AFE itself warns that NS reduces ASR
+                accuracy. AEC and VAD stay enabled.
+
+        config BAIDU_AUDIO_WN
+            bool "Enable WakeNet wake-up"
+            default n
+            help
+                Enable local wake-word detection. AEC and VAD are always on.
+                When wake-up is enabled, the local prompt is played and the
+                current response is cancelled. Audio uplink stays open.
+
+    endmenu
+
+    config BAIDU_OUTPUT_VOLUME
+        int "Audio output volume"
+        default 80
+        range 0 100
+
+    menu "Wi-Fi"
+
+        config BAIDU_WIFI_SSID
+            string "Wi-Fi SSID"
+            default "myssid"
+
+        config BAIDU_WIFI_PASSWORD
+            string "Wi-Fi password"
+            default "mypasswd"
+
+        config BAIDU_WIFI_CONNECT_TIMEOUT_MS
+            int "Wi-Fi connection timeout (ms)"
+            default 30000
+            range 5000 120000
+
+    endmenu
+
+    config BAIDU_RUN_TIME_SEC
+        int "Run time before clean shutdown (seconds, 0 runs forever)"
+        default 0
+        range 0 86400
+        help
+            0 returns from app_main after start and leaves the agent running.
+            A non-zero value waits that many seconds, then exercises the
+            complete reverse stop, unlink, and destroy path.
+
+endmenu

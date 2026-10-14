@@ -127,6 +127,9 @@ esp_err_t esp_video_capture_service_apply_setup(esp_capture_service_t *capture,
     if (video_src == NULL) {
         RET_FOR(ESP_ERR_NOT_FOUND, "Video source not found");
     }
+    if (rec != NULL) {
+        rec->video_src = video_src;
+    }
 
     if (audio_src == NULL && setup_uses_audio(cfg)) {
         audio_src = esp_audio_capture_service_select_src(capture);

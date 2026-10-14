@@ -31,12 +31,13 @@ extern "C" {
 typedef void (*esp_capture_service_ai_audio_src_vad_cb_t)(int state, void *ctx);
 
 /**
- * @brief  Receive a wake-word detection result.
+ * @brief  Receive a wakeup state change.
  *
- * @param[in]  trigger_ch  Triggering channel.
+ * @param[in]  state       1 on wakeup start, 0 on wakeup end.
+ * @param[in]  trigger_ch  Wake-word index on start; 0 when not applicable.
  * @param[in]  ctx         User context supplied when registering the callback.
  */
-typedef void (*esp_capture_service_ai_audio_src_wn_cb_t)(int trigger_ch, void *ctx);
+typedef void (*esp_capture_service_ai_audio_src_wn_cb_t)(int state, int trigger_ch, void *ctx);
 
 /**
  * @brief  Receive a direction-of-arrival result.
@@ -253,6 +254,68 @@ esp_err_t esp_capture_service_ai_audio_src_enable_dump(esp_capture_service_t *ca
 esp_err_t esp_capture_service_ai_audio_src_set_alc_gain(esp_capture_service_t *capture,
                                                         int channel,
                                                         float gain);
+
+/**
+ * @brief  Manually enter the AFE wakeup state.
+ *
+ *         Equivalent to a wake-word detection. Call after the capture service
+ *         has started. Requires the compact AFE element (`ai_afe`).
+ *
+ * @note  Not ISR-safe.
+ *
+ * @param[in]  capture  Audio capture service handle.
+ *
+ * @return
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_STATE  If the capture service is not running
+ *       - ESP_ERR_NOT_FOUND      If the AI source is unavailable
+ *       - ESP_ERR_NOT_SUPPORTED  If the AFE element is not present
+ *       - ESP_ERR_TIMEOUT        If the AFE command timed out
+ *       - Others                 If the AFE command failed
+ */
+esp_err_t esp_capture_service_ai_audio_src_trigger_wakeup(esp_capture_service_t *capture);
+
+/**
+ * @brief  Manually leave the AFE wakeup state.
+ *
+ *         Call after the capture service has started. Requires the compact AFE
+ *         element (`ai_afe`).
+ *
+ * @note  Not ISR-safe.
+ *
+ * @param[in]  capture  Audio capture service handle.
+ *
+ * @return
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_STATE  If the capture service is not running
+ *       - ESP_ERR_NOT_FOUND      If the AI source is unavailable
+ *       - ESP_ERR_NOT_SUPPORTED  If the AFE element is not present
+ *       - ESP_ERR_TIMEOUT        If the AFE command timed out
+ *       - Others                 If the AFE command failed
+ */
+esp_err_t esp_capture_service_ai_audio_src_trigger_sleep(esp_capture_service_t *capture);
+
+/**
+ * @brief  Keep the AFE in wakeup state without automatic timeout.
+ *
+ *         Use with a hold-to-talk button: enable on press after
+ *         `trigger_wakeup`, disable on release before `trigger_sleep`.
+ *         Call after the capture service has started.
+ *
+ * @note  Not ISR-safe.
+ *
+ * @param[in]  capture  Audio capture service handle.
+ * @param[in]  enable   True to stay awake, false to allow wakeup timeout.
+ *
+ * @return
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_STATE  If the capture service is not running
+ *       - ESP_ERR_NOT_FOUND      If the AI source is unavailable
+ *       - ESP_ERR_NOT_SUPPORTED  If the AFE element is not present
+ *       - ESP_ERR_TIMEOUT        If the AFE command timed out
+ *       - Others                 If the AFE command failed
+ */
+esp_err_t esp_capture_service_ai_audio_src_keep_awake(esp_capture_service_t *capture, bool enable);
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

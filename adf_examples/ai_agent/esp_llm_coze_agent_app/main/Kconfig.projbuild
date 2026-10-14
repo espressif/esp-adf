@@ -1,0 +1,75 @@
+menu "Coze LLM agent application"
+
+    config COZE_BOT_ID
+        string "Coze bot ID"
+        default ""
+
+    config COZE_ACCESS_TOKEN
+        string "Coze access token"
+        default ""
+
+    config COZE_WS_BASE_URL
+        string "Coze WebSocket URL"
+        default "wss://ws.coze.cn/v1/chat"
+
+    config COZE_CONV_CREATE_BASE_URL
+        string "Coze conversation-create URL"
+        default "https://api.coze.cn/v1/conversation/create"
+
+    config COZE_USER_ID
+        string "Coze user ID (empty uses adapter default)"
+        default ""
+
+    config COZE_VOICE_ID
+        string "Coze voice ID"
+        default ""
+        help
+            Leave empty to use the Coze system voice 7426720361733144585.
+
+    menu "Audio front-end features"
+
+        config COZE_AUDIO_VAD
+            bool "Enable voice activity detection"
+            default y
+
+        config COZE_AUDIO_WN
+            bool "Enable WakeNet wake-up"
+            default n
+            help
+                Enable local wake-word detection. When wake-up is enabled, the
+                current response is cancelled. Audio uplink stays closed until
+                the wake word.
+
+    endmenu
+
+    config COZE_OUTPUT_VOLUME
+        int "Audio output volume"
+        default 80
+        range 0 100
+
+    menu "Wi-Fi"
+
+        config COZE_WIFI_SSID
+            string "Wi-Fi SSID"
+            default "xtworks"
+
+        config COZE_WIFI_PASSWORD
+            string "Wi-Fi password"
+            default "esp123456"
+
+        config COZE_WIFI_CONNECT_TIMEOUT_MS
+            int "Wi-Fi connection timeout (ms)"
+            default 30000
+            range 5000 120000
+
+    endmenu
+
+    config COZE_RUN_TIME_SEC
+        int "Run time before clean shutdown (seconds, 0 runs forever)"
+        default 0
+        range 0 86400
+        help
+            Set a non-zero value to exercise the complete reverse stop,
+            unlink, and destroy path after the specified duration.
+
+endmenu

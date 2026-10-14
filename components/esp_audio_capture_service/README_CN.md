@@ -143,12 +143,12 @@ ESP_ERROR_CHECK(esp_audio_capture_service_apply_setup(capture, &setup));
 | `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_AEC` | `0x01` | 回声消除：从麦克风信号中去除扬声器 / DAC 参考回声 | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_AEC_SUPPORT` |
 | `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_NS` | `0x02` | 噪声抑制：降低处理后 PCM 中的稳态 / 背景噪声 | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_NS_SUPPORT` |
 | `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_VAD` | `0x04` | 语音活动检测：通过 `set_vad_cb()` 上报语音 / 噪声状态变化 | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_VAD_SUPPORT` |
-| `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_WN` | `0x08` | WakeNet：检测唤醒词，并通过 `set_wn_cb()` 上报触发通道 | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_WN_SUPPORT` |
+| `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_WN` | `0x08` | WakeNet：检测唤醒词，并通过 `set_wn_cb()` 上报唤醒开始/结束与触发通道 | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_WN_SUPPORT` |
 | `ESP_AUDIO_CAPTURE_SERVICE_AI_FEATURE_DOA` | `0x10` | 声源定位：通过 `set_doa_cb()` 估计说话人角度（度） | `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_DOA_SUPPORT` |
 
 同时需开启 `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_ENABLED` 以编译 AI 源；使用紧凑 AFE 路径时还需 `ESP_AUDIO_CAPTURE_SERVICE_AI_SRC_AFE_SUPPORT`（当 {AEC, NS, VAD, WN} 中同时启用两项及以上时优先走 AFE）。
 
-相关 API：`esp_capture_service_ai_audio_src_set_vad_cb()`、`_set_wn_cb()`、`_set_doa_cb()`、`_set_read_cb()`、`_enable_dump()`。
+相关 API：`esp_capture_service_ai_audio_src_set_vad_cb()`、`_set_wn_cb()`、`_set_doa_cb()`、`_set_read_cb()`、`_enable_dump()`、`_trigger_wakeup()`、`_trigger_sleep()`、`_keep_awake()`。`set_wn_cb()` 会上报唤醒开始（`state=1`）和结束（`state=0`）。唤醒控制 API 要求 capture 已启动且存在 compact AFE element。
 
 #### 调试提示
 

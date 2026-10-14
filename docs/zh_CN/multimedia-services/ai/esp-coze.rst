@@ -107,12 +107,12 @@ ASR 只做识别，通过 ``esp_coze_asr_send_audio`` 持续上行编码音频�
 鉴权
 ----------
 
-Chat、TTS、ASR 三个配置结构体都要求提供 ``access_token``\ ，即 Coze 的 PAT（Personal Access Token）或 OAuth/JWT 生成的 bearer token，详见 `Coze 鉴权文档 <https://www.coze.cn/open/docs/developer_guides/authentication>`__\ 。若使用 OAuth/JWT 方式，组件提供两个辅助接口：\ ``esp_coze_jwt_create`` 用 RS256 对 JWT 头部与载荷签名并返回可直接使用的 token 字符串；``esp_coze_http_post`` 发起同步 HTTP POST，用于向 Coze 的 OAuth 接口换取最终的 access token。PAT、Bot ID 等业务凭据不属于组件配置范围，建议放在应用侧 Kconfig 中管理，可参考 ``coze_ws_app`` 示例的做法。
+Chat、TTS、ASR 三个配置结构体都要求提供 ``access_token``\ ，即 Coze 的 PAT（Personal Access Token）或 OAuth/JWT 生成的 bearer token，详见 `Coze 鉴权文档 <https://www.coze.cn/open/docs/developer_guides/authentication>`__\ 。若使用 OAuth/JWT 方式，组件提供两个辅助接口：\ ``esp_coze_jwt_create`` 用 RS256 对 JWT 头部与载荷签名并返回可直接使用的 token 字符串；``esp_coze_http_post`` 发起同步 HTTP POST，用于向 Coze 的 OAuth 接口换取最终的 access token。PAT、Bot ID 等业务凭据不属于组件配置范围，建议放在应用侧 Kconfig 中管理，可参考 ``esp_llm_coze_agent_app`` 的做法。
 
 应用示例
 ----------
 
-- `coze_ws_app <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/coze_ws_app>`__ 演示按键触发和唤醒词两种交互模式下的完整 Chat 接入流程，并给出 PAT 与 OAuth/JWT 两种鉴权方式的配置方法
+- `esp_llm_coze_agent_app <https://github.com/espressif/esp-adf/tree/master/adf_examples/ai_agent/esp_llm_coze_agent_app>`__ 通过 ``esp_llm_coze`` 接入扣子，演示直接对话、唤醒和打断。Access token 与 Bot ID 在应用 Kconfig 中配置
 
 FAQ
 ------
