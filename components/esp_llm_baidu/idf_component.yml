@@ -2,7 +2,6 @@ version: "0.5.0"
 description: Baidu RTC adapter for esp_llm_service (agent + intercom)
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_llm_baidu
 issues: https://github.com/espressif/esp-adf/issues
-license: "LicenseRef-Espressif-Modified-MIT"
 
 targets:
   - esp32s3

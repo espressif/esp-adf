@@ -3,7 +3,6 @@ description: Unified AI Session / Agent service for application-owned media grap
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_llm_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_llm_service/README.md"
 issues: https://github.com/espressif/esp-adf/issues
-license: "LicenseRef-Espressif-Modified-MIT"
 
 tags:
   - "llm"
