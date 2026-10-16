@@ -2,7 +2,6 @@ version: "0.5.0"
 description: Coze adapter for esp_llm_service
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_llm_coze
 issues: https://github.com/espressif/esp-adf/issues
-license: "LicenseRef-Espressif-Modified-MIT"
 
 targets:
   - esp32
