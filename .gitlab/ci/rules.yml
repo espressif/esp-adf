@@ -147,6 +147,8 @@
   rules:
     - <<: *if-protected
     - <<: *if-merge_request_event
+    - <<: *if-pipeline
+    - <<: *if-web
     - <<: *if-open-merge-request
       when: never
 
@@ -240,4 +242,6 @@
 
 .rules:build:push-to-github:
   rules:
+    - if: '$UPSTREAM_COMPONENT'
+      when: never
     - <<: *if-github-push

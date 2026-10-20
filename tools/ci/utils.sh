@@ -575,6 +575,9 @@ function build_apps() {
     echo '[OK] No apps in apps_path.json match the current IDF_TARGET / BOARD / app_type; skipping build.' >&2
     return 0
   fi
+  if [[ -n "${UPSTREAM_COMPONENT:-}" ]]; then
+    run_cmd python "${CI_TOOLS_PATH}/ci/app_service/apply_upstream_component.py" --apps "${paths[@]}" || exit 1
+  fi
   # idf_build_apps / apps_build do not pass config_rules by default; CI explicitly passes the same three rules as the old implicit default.
   # Note: paths must come before --config-rules, otherwise nargs='+' will absorb them as rule fragments.
   run_cmd python "${CI_TOOLS_PATH}/ci/app_service/apps_service.py" build \
@@ -638,6 +641,9 @@ function build_test_apps() {
   local paths=()
   _load_ci_app_paths paths "${apps_list_file}" "${app_type}" "${IDF_TARGET}" "${BOARD}" build || exit 1
   [[ ${#paths[@]} -eq 0 ]] && exit 0
+  if [[ -n "${UPSTREAM_COMPONENT:-}" ]]; then
+    run_cmd python "${CI_TOOLS_PATH}/ci/app_service/apply_upstream_component.py" --apps "${paths[@]}" || exit 1
+  fi
   run_cmd python "${CI_TOOLS_PATH}/ci/app_service/apps_service.py" build \
     "${paths[@]}" \
     --config-rules 'sdkconfig.ci=default' 'sdkconfig.ci.*=' '=default' \
