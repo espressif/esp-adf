@@ -1,7 +1,16 @@
-version: "0.5.0"
+version: "0.5.0~1"
 description: Volc adapter for esp_llm_service
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_llm_volc
 issues: https://github.com/espressif/esp-adf/issues
+
+tags:
+  - "volc"
+  - "rtc"
+  - "esp_service"
+  - "llm"
+  - "agent"
+  - "adf"
+  - "gmf"
 
 targets:
   - esp32s3
@@ -15,8 +24,7 @@ dependencies:
     override_path: "../esp_llm_service"
   volc_conv_ai:
     require: public
-    version: "*"
-    override_path: "./src/volc_conv_ai"
+    path: "./src/volc_conv_ai"
 
 examples:
   - path: ../../adf_examples/ai_agent/esp_llm_volc_agent_app

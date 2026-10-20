@@ -1,7 +1,15 @@
-version: "0.5.0"
+version: "0.5.0~1"
 description: Tongyi adapter for esp_llm_service
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_llm_tongyi
 issues: https://github.com/espressif/esp-adf/issues
+
+tags:
+  - "tongyi"
+  - "esp_service"
+  - "llm"
+  - "agent"
+  - "adf"
+  - "gmf"
 
 targets:
   - esp32
