@@ -24,6 +24,7 @@ The adapter owns the Volc IoT authentication and the RTC session only. Capture a
 ```
 esp_llm_volc/
 ├── include/esp_llm_volc.h   Typed configuration, DEFAULT macro, and the public API
+├── components/volc_conv_ai/ Bundled Volc SDK sources, compiled into this component
 ├── src/                     Adapter implementation over volc_conv_ai
 ├── examples/volc_chat/      In-component chat example
 ├── Kconfig                  Audio profile and video RTC profile options
