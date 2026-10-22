@@ -41,8 +41,10 @@ typedef struct {
     int      rp;               /*!< Read pointer of cache buffer */
     bool     eos;              /*!< Input data end of stream */
     uint8_t* line_buffer;      /*!< Cache buffers for input data */
-    uint16_t line_size;        /*!< Buffer size of cache buffer */
+    uint16_t line_size;        /*!< Max payload bytes; buffer is line_size + 1 for NUL */
     uint16_t line_fill;        /*!< Cached size */
+    bool     truncated;        /*!< Current line has already exceeded line_size */
+    bool     last_truncated;   /*!< The line just returned exceeded line_size */
 } line_reader_t;
 
 /**
@@ -70,9 +72,15 @@ void line_reader_add_buffer(line_reader_t* reader, uint8_t* buffer, int size, bo
  * @param      reader: Line reader instance
  * @param      buffer: Buffer to be parsed
  * @param      size: Buffer size
- * @return     Line data
+ * @return     Line data. NULL means this buffer has no further line.
+ *             A truncated line is an empty string; line_reader_last_truncated() is then true.
  */
 char* line_reader_get_line(line_reader_t* reader);
+
+/**
+ * @brief      Whether the line just returned by line_reader_get_line() exceeded line_size
+ */
+bool line_reader_last_truncated(line_reader_t* reader);
 
 /**
  * @brief      Deinitialize line reader

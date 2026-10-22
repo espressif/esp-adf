@@ -33,22 +33,48 @@
 
 static inline void line_reader_add_char(line_reader_t* b, uint8_t c)
 {
+    /* Keep one byte free so a terminator can always be written. */
     if (b->line_fill < b->line_size) {
         b->line_buffer[b->line_fill++] = c;
-    } else {
-        ESP_LOGE(TAG, "Line too long try to init large than %d", b->line_size);
+    } else if (!b->truncated) {
+        b->truncated = true;
+        ESP_LOGE(TAG, "Line too long, increase line_size above %d", b->line_size);
     }
+}
+
+static char* line_reader_take_line(line_reader_t* b)
+{
+    b->line_buffer[b->line_fill] = 0;
+    bool truncated = b->truncated;
+    b->line_fill = 0;
+    b->truncated = false;
+    b->last_truncated = truncated;
+    if (truncated) {
+        /* NULL means the buffer has no more lines. An empty string keeps the
+         * scan going; the caller must drop it when last_truncated is set. */
+        b->line_buffer[0] = 0;
+    }
+    return (char*)b->line_buffer;
+}
+
+bool line_reader_last_truncated(line_reader_t* b)
+{
+    return b && b->last_truncated;
 }
 
 line_reader_t* line_reader_init(int line_size)
 {
+    if (line_size <= 0 || line_size > 65535) {
+        return NULL;
+    }
     line_reader_t* reader = (line_reader_t*) audio_calloc(1, sizeof(line_reader_t));
     if (reader == NULL) {
         return NULL;
     }
-    reader->line_buffer = (uint8_t*)audio_malloc(line_size);
+    /* Extra byte holds the NUL even when the payload fills line_size. */
+    reader->line_buffer = (uint8_t*)audio_malloc((size_t)line_size + 1);
     if (reader->line_buffer) {
-        reader->line_size = line_size;
+        reader->line_size = (uint16_t)line_size;
         return reader;
     }
     audio_free(reader);
@@ -69,25 +95,25 @@ char* line_reader_get_line(line_reader_t* b)
     if (b == NULL) {
         return NULL;
     }
+    b->last_truncated = false;
     while (b->rp < b->size) {
-        uint8_t c = b->buffer[b->rp];
+        uint8_t c = b->buffer[b->rp++];
         if (c == '\r' || c == '\n') {
-            b->rp++;
-            if (b->line_fill) {
-                line_reader_add_char(b, 0);
-                b->line_fill = 0;
-                return (char*)b->line_buffer;
+            if (b->line_fill || b->truncated) {
+                char* line = line_reader_take_line(b);
+                if (line) {
+                    return line;
+                }
             }
             continue;
-        } else {
-            line_reader_add_char(b, c);
         }
-        b->rp++;
+        line_reader_add_char(b, c);
     }
-    if (b->eos && b->line_fill) {
-        line_reader_add_char(b, 0);
-        b->line_fill = 0;
-        return (char*)b->line_buffer;
+    if (b->eos && (b->line_fill || b->truncated)) {
+        char* line = line_reader_take_line(b);
+        if (line) {
+            return line;
+        }
     }
     b->rp = 0; // auto reset
     b->size = 0;
