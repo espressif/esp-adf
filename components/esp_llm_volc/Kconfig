@@ -52,4 +52,6 @@ menu "ESP LLM Volc"
 
     endmenu
 
+    rsource "components/volc_conv_ai/Kconfig"
+
 endmenu

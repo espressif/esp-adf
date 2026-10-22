@@ -5,7 +5,7 @@
 ### Changes
 
 - Added component registry tags
-- Depend on the bundled `volc_conv_ai` by local path
+- Build the bundled `volc_conv_ai` sources in this component. It is not a registry dependency.
 
 ## v0.5.0
 

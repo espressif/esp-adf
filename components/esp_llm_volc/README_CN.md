@@ -24,6 +24,7 @@ Adapter 只拥有火山 IoT 鉴权和 RTC 会话。Capture 和 player 仍归应�
 ```
 esp_llm_volc/
 ├── include/esp_llm_volc.h   Typed 配置、DEFAULT 宏和公开 API
+├── components/volc_conv_ai/ 随附的火山 SDK 源码，编进本组件
 ├── src/                     基于 volc_conv_ai 的 adapter 实现
 ├── examples/volc_chat/      组件内对话示例
 ├── Kconfig                  音频档位与视频 RTC 档位选项

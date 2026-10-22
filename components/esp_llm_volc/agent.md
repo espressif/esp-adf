@@ -14,7 +14,7 @@ adapter. It exposes `esp_llm_volc_create()`.
 Official platform docs:
 
 - [Volcengine RTC](https://www.volcengine.com/docs/6348)
-- Embedded kit notes under `src/volc_conv_ai/README.md`
+- Embedded kit notes under `components/volc_conv_ai/README.md`
 
 The product example (`adf_examples/ai_agent/esp_llm_volc_agent`) is
 **audio-only RTC**. It disables `VIDEO_UP` and `VIDEO_DN`. The adapter itself
