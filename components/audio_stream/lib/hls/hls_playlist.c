@@ -23,6 +23,7 @@
  */
 
 #include <string.h>
+#include <strings.h>
 #include <audio_mem.h>
 #include <audio_error.h>
 #include "esp_log.h"
@@ -56,6 +57,7 @@ typedef struct {
     char*                uri;
     uint8_t              k[16];
     uint8_t              iv[16];
+    bool                 iv_set;          /*!< Explicit IV was present, even if the value is 0 */
     uint16_t             range[2];  /*!< Indicate key applied url range */
 } hls_key_t;
 
@@ -240,28 +242,83 @@ static int hls_main_tag_cb(hls_tag_info_t* tag_info, void* ctx)
     return 0;
 }
 
-static uint8_t h_to_i(char c)
+static int h_to_i(char c)
 {
-    if (c >= 'a' && c <= 'z') {
-        return c - 'a';
+    if (c >= '0' && c <= '9') {
+        return c - '0';
     }
-    if (c >= 'A' && c <= 'Z') {
-        return c - 'A';
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
     }
-    return c - '0';
+    if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+    return -1;
 }
 
-static void hls_hex_to_bin(uint8_t* v, char* s, int n)
+static int hls_hex_to_bin(uint8_t* v, int dst_size, char* s, int n)
 {
-    int i = 0;
-    while (i < n) {
-        *(v++) = (h_to_i(s[i]) << 4) + h_to_i(s[i+1]);
-        i += 2;
+    if (v == NULL || s == NULL || dst_size <= 0 || n < 0 || (n & 1) || (n / 2) > dst_size) {
+        return -1;
     }
+    for (int i = 0; i < n; i += 2) {
+        int hi = h_to_i(s[i]);
+        int lo = h_to_i(s[i + 1]);
+        if (hi < 0 || lo < 0) {
+            return -1;
+        }
+        *(v++) = (uint8_t)((hi << 4) + lo);
+    }
+    return 0;
+}
+
+/* RFC 8216 hexadecimal-sequence: optional 0x, 1..32 hex digits, big-endian, left-padded to 16 bytes. */
+static int hls_parse_iv(uint8_t iv[16], const char* text)
+{
+    if (text == NULL) {
+        return -1;
+    }
+    if (strncasecmp(text, "0x", 2) == 0) {
+        text += 2;
+    }
+    size_t len = strlen(text);
+    /* iv is a pointer here; AES-128 is 16 bytes, so at most 32 hex digits. */
+    if (len == 0 || len > 32) {
+        return -1;
+    }
+    memset(iv, 0, 16);
+    int out = 16 - (int)((len + 1) / 2);
+    size_t i = 0;
+    if (len & 1) {
+        int hi = h_to_i(text[i++]);
+        if (hi < 0) {
+            return -1;
+        }
+        iv[out++] = (uint8_t)hi;
+    }
+    for (; i < len; i += 2) {
+        int hi = h_to_i(text[i]);
+        int lo = h_to_i(text[i + 1]);
+        if (hi < 0 || lo < 0) {
+            return -1;
+        }
+        iv[out++] = (uint8_t)((hi << 4) + lo);
+    }
+    return 0;
+}
+
+static void hls_key_slot_clear(hls_key_t* key_info)
+{
+    if (key_info->uri) {
+        audio_free(key_info->uri);
+    }
+    memset(key_info, 0, sizeof(hls_key_t));
 }
 
 static int hls_append_key(hls_media_playlist_t* media, hls_tag_info_t* tag_info)
 {
+    int ret = 0;
+    hls_key_t *key_info;
     if ((media->key_num % 5) == 0) {
         int key_arr_size = sizeof(hls_key_t) *  (media->key_num + 5);
         hls_key_t* new_key = audio_realloc(media->key, key_arr_size);
@@ -271,21 +328,20 @@ static int hls_append_key(hls_media_playlist_t* media, hls_tag_info_t* tag_info)
         memset(&new_key[media->key_num], 0, sizeof(hls_key_t) * 5);
         media->key = new_key;
     }
-    hls_key_t *key_info = &media->key[media->key_num];
+    key_info = &media->key[media->key_num];
     for (int i = 0; i < tag_info->attr_num; i++) {
         switch (tag_info->k[i]) {
             case HLS_ATTR_METHOD:
                 key_info->method = (hls_encrypt_method_t)tag_info->v[i].v;
                 break;
-            case HLS_ATTR_IV: {
-                char* v = tag_info->v[i].s;
-                // Skip leading 0x
-                if (strncasecmp(v, "0x", 2) == 0) {
-                    v += 2;
+            case HLS_ATTR_IV:
+                if (hls_parse_iv(key_info->iv, tag_info->v[i].s) != 0) {
+                    ESP_LOGE(TAG, "Bad IV");
+                    ret = -1;
+                    goto _exit;
                 }
-                hls_hex_to_bin(key_info->iv, v, strlen(v));
+                key_info->iv_set = true;
                 break;
-            }
             case HLS_ATTR_URI:
                 key_info->uri = strdup(tag_info->v[i].s);
                 break;
@@ -299,7 +355,11 @@ static int hls_append_key(hls_media_playlist_t* media, hls_tag_info_t* tag_info)
         key_info[-1].range[1] = media->url_num ? media->url_num - 1 : 0;
     }
     media->key_num++;
-    return 0;
+_exit:
+    if (ret != 0) {
+        hls_key_slot_clear(key_info);
+    }
+    return ret;
 }
 
 static int hls_media_tag_cb(hls_tag_info_t* tag_info, void* ctx)
@@ -336,7 +396,7 @@ static int hls_media_tag_cb(hls_tag_info_t* tag_info, void* ctx)
         case HLS_TAG_KEY:
             if (tag_info->attr_num) {
                 if (hls_append_key(media, tag_info) != 0) {
-                    ESP_LOGE(TAG, "No memory for key");
+                    ESP_LOGE(TAG, "Fail to append key");
                     return -1;
                 }
             }
@@ -346,7 +406,11 @@ static int hls_media_tag_cb(hls_tag_info_t* tag_info, void* ctx)
             for (int i = 0; i < tag_info->attr_num; i++) {
                 switch (tag_info->k[i]) {
                     case HLS_ATTR_URI: {
-                        char* url = join_url(media->uri, tag_info->v[i].s);
+                        char* ext = tag_info->v[i].s;
+                        if (ext == NULL || ext[0] == '\0') {
+                            break;
+                        }
+                        char* url = join_url(media->uri, ext);
                         if (url) {
                             // Inc url number
                             media->url_num++;
@@ -547,12 +611,20 @@ int hls_playlist_parse_data(hls_handle_t h, uint8_t* buffer, int size, bool eos)
             hls->cfg.uri = NULL;
         }
     }
-    hls_parse_add_buffer(&hls->parser, buffer, size, eos);
+    if (hls_parse_add_buffer(&hls->parser, buffer, size, eos) != 0) {
+        return -1;
+    }
     if (hls->type == HLS_FILE_TYPE_MASTER_PLAYLIST) {
-        hls_parse(&hls->parser, hls_main_tag_cb, hls->master_playlist);
+        int ret = hls_parse(&hls->parser, hls_main_tag_cb, hls->master_playlist);
+        if (ret != 0) {
+            return ret;
+        }
     }
     if (hls->type == HLS_FILE_TYPE_MEDIA_PLAYLIST && hls->media_playlist) {
-        hls_parse(&hls->parser, hls_media_tag_cb, hls);
+        int ret = hls_parse(&hls->parser, hls_media_tag_cb, hls);
+        if (ret != 0) {
+            return ret;
+        }
     }
     return 0;
 }
@@ -574,9 +646,13 @@ int hls_playlist_parse_key(hls_handle_t h, uint8_t* buffer, int size)
         if (size == 16) {
             memcpy(media->key[0].k, buffer, size);
         } else if (size == 32) {
-            hls_hex_to_bin(media->key[0].k, (char*)buffer, 32);
+            if (hls_hex_to_bin(media->key[0].k, sizeof(media->key[0].k), (char*)buffer, 32) != 0) {
+                ESP_LOGE(TAG, "Bad AES key");
+                return -1;
+            }
         } else {
             ESP_LOGE(TAG, "Bad AES key size %d", size);
+            return -1;
         }
         return 0;
     }
@@ -648,8 +724,8 @@ int hls_playlist_get_key(hls_handle_t h, uint64_t sequence_no, hls_stream_key_t*
     hls_media_playlist_t* media = hls->media_playlist;
     if (media->key_num) {
         memcpy(key->key, media->key[0].k, sizeof(key->key));
-        // Check has iv or not
-        if (media->key[0].iv[0]) {
+        /* iv[0] == 0 is a legal explicit IV. Only a missing IV uses the sequence number. */
+        if (media->key[0].iv_set) {
             memcpy(key->iv, media->key[0].iv, sizeof(key->iv));
         } else {
             // Convert sequence_no to iv

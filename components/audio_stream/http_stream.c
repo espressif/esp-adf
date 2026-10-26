@@ -364,12 +364,23 @@ static esp_err_t _resolve_playlist(audio_element_handle_t self, const char *uri)
         }
         int need_read = MAX_PLAYLIST_LINE_SIZE;
         int rlen = need_read;
+        int playlist_err = 0;
         while (rlen == need_read) {
             rlen = _http_read_data(http, http->playlist->data, need_read);
             if (rlen < 0) {
                 break;
             }
-            hls_playlist_parse_data(hls, (uint8_t *)http->playlist->data, rlen, (rlen < need_read));
+            if (hls_playlist_parse_data(hls, (uint8_t *)http->playlist->data, rlen, (rlen < need_read)) != 0) {
+                playlist_err = -1;
+                break;
+            }
+        }
+        if (playlist_err != 0) {
+            ESP_LOGE(TAG, "HLS playlist rejected");
+            http->is_valid_playlist = false;
+            http_playlist_clear(http->playlist);
+            hls_playlist_close(hls);
+            return ESP_FAIL;
         }
         if (hls_playlist_is_master(hls)) {
             char *url = hls_playlist_get_prefer_url(hls, HLS_STREAM_TYPE_AUDIO);
@@ -808,7 +819,7 @@ static int _http_read(audio_element_handle_t self, char *buffer, int len, TickTy
         }
         audio_element_update_byte_pos(self, rlen);
     }
-    ESP_LOGD(TAG, "req lengh=%d, read=%d, pos=%d/%d", len, rlen, (int)info.byte_pos, (int)info.total_bytes);
+    ESP_LOGD(TAG, "req length=%d, read=%d, pos=%d/%d", len, rlen, (int)info.byte_pos, (int)info.total_bytes);
     return rlen;
 }
 
@@ -912,7 +923,7 @@ audio_element_handle_t http_stream_init(http_stream_cfg_t *config)
     #if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
         http->crt_bundle_attach = config->crt_bundle_attach;
     #else
-        ESP_LOGW(TAG, "Please enbale CONFIG_MBEDTLS_CERTIFICATE_BUNDLE configuration in menuconfig");
+        ESP_LOGW(TAG, "Please enable CONFIG_MBEDTLS_CERTIFICATE_BUNDLE configuration in menuconfig");
     #endif
 #else
         ESP_LOGW(TAG, "Just support MBEDTLS_CERTIFICATE_BUNDLE on esp-idf to v4.3 or later");

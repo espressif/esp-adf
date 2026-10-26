@@ -413,8 +413,14 @@ bool hls_matched(uint8_t* b, int len)
 
 hls_file_type_t hls_get_file_type(uint8_t* b, int len)
 {
-    while (len > sizeof(HLS_STR_EXT_X_STREAM_INF)) {
-        if (MEM_SAME(b, HLS_STR_EXT_X_STREAM_INF) || MEM_SAME(b, HLS_STR_EXT_X_MEDIA)) {
+    const int stream_inf_len = (int)sizeof(HLS_STR_EXT_X_STREAM_INF) - 1;
+    const int media_len = (int)sizeof(HLS_STR_EXT_X_MEDIA) - 1;
+    const int extinf_len = (int)sizeof(HLS_STR_EXTINF) - 1;
+    while (len >= extinf_len) {
+        if (len >= stream_inf_len && MEM_SAME(b, HLS_STR_EXT_X_STREAM_INF)) {
+            return HLS_FILE_TYPE_MASTER_PLAYLIST;
+        }
+        if (len >= media_len && MEM_SAME(b, HLS_STR_EXT_X_MEDIA)) {
             return HLS_FILE_TYPE_MASTER_PLAYLIST;
         }
         if (MEM_SAME(b, HLS_STR_EXTINF)) {
@@ -441,6 +447,11 @@ int hls_parse(hls_parse_t* parser, hls_tag_callback cb, void* ctx)
         char* line = line_reader_get_line(parser->reader);
         if (line == NULL) {
             break;
+        }
+        if (line_reader_last_truncated(parser->reader)) {
+            /* Drop the over-long line and any tag still waiting for its URI. */
+            parser->tag = HLS_TAG_IGNORE;
+            continue;
         }
         hls_tag_t tag;
         int attr_num = 0;
@@ -482,7 +493,10 @@ int hls_parse(hls_parse_t* parser, hls_tag_callback cb, void* ctx)
                 .k = parser->k,
                 .v = parser->v,
             };
-            cb(&tag_info, ctx);
+            int cb_ret = cb(&tag_info, ctx);
+            if (cb_ret != 0) {
+                return cb_ret;
+            }
         }
     }
     return 0;

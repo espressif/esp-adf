@@ -7,6 +7,37 @@ function add_ssh_keys() {
   chmod 600 ~/.ssh/id_rsa
 }
 
+function info() {
+  printf "\033[0;32m%s\n\033[0m" "${1}" >&2
+}
+
+# Map gitlab.espressif.cn to a local DNS/IP so CI does not rely on slow public DNS.
+# Override with GITLAB_LOCAL_DNS_IP / GITLAB_LOCAL_DNS_HOST if needed.
+function add_gitlab_local_dns() {
+  local ip="${GITLAB_LOCAL_DNS_IP:-192.168.2.181}"
+  local host="${GITLAB_LOCAL_DNS_HOST:-gitlab.espressif.cn}"
+  local hosts_file="/etc/hosts"
+
+  if grep -qE "^[[:space:]]*${ip}[[:space:]]+${host}([[:space:]]|$)" "${hosts_file}" 2>/dev/null; then
+    info "hosts already has ${ip} ${host}"
+    return 0
+  fi
+
+  local tmp
+  tmp="$(mktemp)"
+  # Drop any prior mapping for this hostname, then append the local one.
+  grep -vE "(^|[[:space:]])${host}([[:space:]]|$)" "${hosts_file}" >"${tmp}" || true
+  printf "%s %s\n" "${ip}" "${host}" >>"${tmp}"
+
+  if [[ -w "${hosts_file}" ]]; then
+    cat "${tmp}" >"${hosts_file}"
+  else
+    sudo cp "${tmp}" "${hosts_file}"
+  fi
+  rm -f "${tmp}"
+  info "Updated ${hosts_file}: ${ip} ${host}"
+}
+
 function add_gitlab_ssh_keys() {
   add_ssh_keys "${GITLAB_KEY}"
   echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >>~/.ssh/config
@@ -189,6 +220,7 @@ function update_submodule_remote() {
 
 function fetch_idf_branch() {
   local idf_ver="${1}"
+  add_gitlab_local_dns
   update_submodule_remote
   if [[ "$idf_ver" != "default" ]]; then
     check_idf_version ${idf_ver}

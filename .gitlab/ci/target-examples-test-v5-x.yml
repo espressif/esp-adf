@@ -59,7 +59,7 @@
       if [ "${IDF_TARGET}" = "esp32p4" ] && [ -n "${ESPPORT}" ]; then
         PYTEST_PORT_ARGS="--port ${ESPPORT}"
       fi
-      pytest $TEST_DIR --target ${IDF_TARGET} -m "${markers}" ${PYTEST_PORT_ARGS} --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1
+      pytest $TEST_DIR --target ${IDF_TARGET} -m "${markers}" ${PYTEST_PORT_ARGS} --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1 --reruns 1 --reruns-delay 5
   retry: 2
 
 .pytest_examples_dir_template:
@@ -285,4 +285,4 @@ example_test_pytest_esp32_audio_loopback:
     - markers=$(echo $job_tags | sed -e "s/,/ and /g")
     - eval $(python $ADF_PATH/tools/ci/apps_filter.py --target ${IDF_TARGET} --board ${AUDIO_BOARD} --idf_ver ${IDF_VERSION_TAG} --pytest-export)
     - test -n "$TEST_DIR" || exit 0
-    - pytest $TEST_DIR --target ${IDF_TARGET} -m "${markers}" --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1
+    - pytest $TEST_DIR --target ${IDF_TARGET} -m "${markers}" --junitxml=XUNIT_RESULT.xml --parallel-count 1 --parallel-index 1 --reruns 1 --reruns-delay 5

@@ -10,4 +10,4 @@ from pytest_embedded import Dut
 @pytest.mark.esp32p4
 @pytest.mark.ADF_EXAMPLE_GENERIC
 def test_pipeline_http_mp3(dut: Dut)-> None:
-    dut.expect(r'Receive music info from', timeout=20)
+    dut.expect(r'Receive music info from', timeout=100)

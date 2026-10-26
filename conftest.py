@@ -161,6 +161,14 @@ def test_case_name(request: FixtureRequest, target: str, config: str) -> str:
 
 
 @pytest.fixture
+def test_case_tempdir(request: FixtureRequest, test_case_name: str, session_tempdir: str) -> str:
+    execution_count = getattr(request.node, 'execution_count', 1)
+    if execution_count > 1:
+        return os.path.join(session_tempdir, f'{test_case_name}_rerun_{execution_count - 1}')
+    return os.path.join(session_tempdir, test_case_name)
+
+
+@pytest.fixture
 @multi_dut_fixture
 def build_dir(
     app_path: str,

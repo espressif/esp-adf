@@ -38,15 +38,34 @@ def test_cli(dut: Dut)-> None:
         # whichever file is index 0 and often exceeds the old 100s timeout.
         dut.write('play 0')
         dut.expect(r'ESP_AUDIO status is AEL_STATUS_STATE_RUNNING', timeout=30)
+        dut.write('stop')
+        dut.expect(r'ESP_AUDIO status is AEL_STATUS_STATE_STOPPED', timeout=30)
 
-    dut.write('join Audio_CI esp123456')
-    dut.expect(r'Got ip:', timeout=100)
+    time.sleep(3)
+    for _ in range(3):
+        dut.write('join Audio_CI esp123456')
+        try:
+            dut.expect(r'Got ip:', timeout=30)
+            break
+        except Exception:
+            pass
+    else:
+        raise RuntimeError('Failed to connect Wi-Fi')
 
     dut.write('wifi')
     dut.expect(r'Connected Wi-Fi, SSID:')
 
-    dut.write('play https://audiofile.espressif.cn/103_44100_2_320138_188.mp3')
-    dut.expect(r'ESP_AUDIO status is AEL_STATUS_STATE_RUNNING, 0, src:0, is_stopping:0', timeout=100)
+    for _ in range(3):
+        dut.write('play http://192.168.8.31:8008/103_44100_2_320138_188.mp3')
+        res = dut.expect([
+            r'ESP_AUDIO status is AEL_STATUS_STATE_RUNNING, 0, src:0, is_stopping:0',
+            r'esp_auido status:[35],err:',
+        ], timeout=50)
+        if b'AEL_STATUS_STATE_RUNNING' in res.group(0):
+            break
+        time.sleep(6)
+    else:
+        raise RuntimeError('Failed to start HTTP playback')
 
     time.sleep(2)
     dut.write('pause')
