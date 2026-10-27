@@ -1,0 +1,16 @@
+[sections:esp_compact_font_codec]
+entries:
+    .esp_compact_font_codec
+
+[scheme:esp_compact_font_codec_default]
+entries:
+    esp_compact_font_codec -> flash_rodata
+
+[mapping:esp_compact_font_codec]
+archive: *
+entries:
+    * (esp_compact_font_codec_default);
+        # ALIGN before SURROUND. The start symbol is then on the first
+        # descriptor. Placing it after SURROUND pads inside the span, and
+        # a 24-byte step never lands on the end symbol.
+        esp_compact_font_codec -> flash_rodata ALIGN(8) KEEP() SORT(name) SURROUND(esp_compact_font_codec_array)

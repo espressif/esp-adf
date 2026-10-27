@@ -1,0 +1,8 @@
+description: LVGL bin vs GFH decode bench, drawn on the board-manager panel
+
+dependencies:
+  idf: ">=5.4"
+  espressif/esp_board_manager: "~0.7"
+  espressif/esp_compact_font:
+    version: "*"
+    override_path: "../../../"

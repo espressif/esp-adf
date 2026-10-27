@@ -1,0 +1,19 @@
+idf_component_register(
+    SRCS
+        "app_main.c"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        esp_compact_font
+        esp_board_manager
+        esp_lcd
+        esp_timer
+        esp_mm
+    EMBED_FILES
+        "../fonts/lvgl_1bpp.bin"
+        "../fonts/lvgl_2bpp.bin"
+        "../fonts/lvgl_4bpp.bin"
+        "../fonts/gfh_1bpp.gfh"
+        "../fonts/gfh_2bpp.gfh"
+        "../fonts/gfh_4bpp.gfh"
+)

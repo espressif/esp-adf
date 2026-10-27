@@ -163,6 +163,10 @@ EXAMPLES:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_compact_font/examples/font_benchmark
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
 
 TEST_APPS:
   - app_dir: components/esp_codec_dev/test_apps/codec_dev_test
@@ -251,3 +255,10 @@ TEST_APPS:
     board:
       esp32s3:
         - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+  - app_dir: components/esp_compact_font/test_apps
+    board:
+      esp32s3:
+        - ESP32_S3_KORVO2_V3: v5.5-${LATEST_IDF_VERSION}
+      esp32p4:
+        - ESP32_P4_FUNCTION_EV: v5.5-${LATEST_IDF_VERSION}
+
