@@ -60,7 +60,7 @@ The key components of the board are described in a clockwise direction.
    * - Audio ADC Chip
      - `ES7210 <http://www.everest-semi.com/pdf/ES7210%20PB.pdf>`_ is a high-performance, low-power 4-channel audio analog-to-digital converter for microphone array applications. It is very suitable for music and speech applications. In addition, ES7210 can also be used to collect acoustic echo cancellation (AEC) echo reference signals.
    * - Audio Codec Chip
-     - The audio codec chip, `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_, is a low-power mono audio codec. It consists of 1-channel ADC, 1-channel DAC, low noise pre-amplifier, headphone driver, digital sound effects, analog mixing, and gain functions. It is interfaced with ESP32-S3-WROOM-1 module over I2S and I2C buses to provide audio processing in hardware independently from the audio application.
+     - The audio codec chip, ES8311, is a low-power mono audio codec. It consists of 1-channel ADC, 1-channel DAC, low noise pre-amplifier, headphone driver, digital sound effects, analog mixing, and gain functions. It is interfaced with ESP32-S3-WROOM-1 module over I2S and I2C buses to provide audio processing in hardware independently from the audio application.
    * - Audio PA Chip
      - NS4150 is a low-EMI, 3 W mono Class D audio power amplifier, amplifying audio signals from audio codec chips to drive speakers.
    * - Right Microphone
@@ -161,7 +161,7 @@ Retail Orders
 
 If you order a few samples, each board comes in an individual package in either antistatic bag or any packaging depending on your retailer.
 
-For retail orders, please go to https://www.espressif.com/en/company/contact/buy-a-sample.
+For retail orders, please visit `Get Samples <https://www.espressif.com/en/contact-us/get-samples>`_.
 
 
 Wholesale Orders
@@ -169,7 +169,7 @@ Wholesale Orders
 
 If you order in bulk, the boards come in large cardboard boxes.
 
-For wholesale orders, please go to https://www.espressif.com/en/contact-us/sales-questions.
+For wholesale orders, please visit `Sales Questions <https://www.espressif.com/en/contact-us/sales-questions>`_.
 
 
 Hardware Reference
