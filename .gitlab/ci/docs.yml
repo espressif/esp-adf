@@ -24,6 +24,8 @@ variables:
 
 .rules:build:docs:
   rules:
+    - if: '$UPSTREAM_COMPONENT'
+      when: never
     - <<: *if-schedule
       when: never
     - <<: *if-protected-docs
@@ -32,6 +34,8 @@ variables:
 
 .rules:deploy:docs_preview:
   rules:
+    - if: '$UPSTREAM_COMPONENT'
+      when: never
     - <<: *if-schedule
       when: never
     - <<: *if-label-build_docs
@@ -40,6 +44,8 @@ variables:
 
 .rules:deploy:docs_production:
   rules:
+    - if: '$UPSTREAM_COMPONENT'
+      when: never
     - <<: *if-schedule
       when: never
     - <<: *if-protected-docs
