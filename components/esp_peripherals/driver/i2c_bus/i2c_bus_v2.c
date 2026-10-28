@@ -225,10 +225,24 @@ esp_err_t i2c_bus_read_bytes_directly(i2c_bus_handle_t bus, int addr, uint8_t *o
 esp_err_t i2c_bus_delete(i2c_bus_handle_t bus)
 {
     i2c_bus_info_t *bus_info = (i2c_bus_info_t *)bus;
-    __sync_fetch_and_sub(&master[bus_info->port].ref_count, 1);
-    if (master[bus_info->port].ref_count == 0) {
-        mutex_destroy(master[bus_info->port].bus_lock);
-        master[bus_info->port].bus_lock = NULL;
+    int port = bus_info->port;
+
+    if (__sync_sub_and_fetch(&master[port].ref_count, 1) == 0)
+    {
+        /* Last reference: remove the devices added on this bus and free the list,
+         * otherwise i2c_bus_create() would SLIST_INIT() it and orphan the entries. */
+        while (!SLIST_EMPTY(&master[port].dev_lists))
+        {
+            i2c_dev_info_t *dev_info = SLIST_FIRST(&master[port].dev_lists);
+            SLIST_REMOVE_HEAD(&master[port].dev_lists, next);
+            if (dev_info->dev_handle)
+            {
+                i2c_master_bus_rm_device(dev_info->dev_handle);
+            }
+            audio_free(dev_info);
+        }
+        mutex_destroy(master[port].bus_lock);
+        master[port].bus_lock = NULL;
     }
     audio_free(bus);
     return ESP_OK;
