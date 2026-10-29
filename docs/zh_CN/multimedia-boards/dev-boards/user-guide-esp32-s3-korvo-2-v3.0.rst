@@ -60,7 +60,7 @@ ESP32-S3-Korvo-2 V3.0 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
    * - 音频模数转换器 (Audio ADC Chip)
      - `ES7210 <http://www.everest-semi.com/pdf/ES7210%20PB.pdf>`_ 是一款用于麦克风阵列应用的高性能、低功耗 4 通道音频模数转换器，非常适合音乐和语音应用。此外，ES7210 也可用于采集声学回声消除 (AEC) 的回声参考信号。
    * - 音频编解码芯片 (Audio Codec Chip)
-     - 音频编解码器芯片 `ES8311 <http://www.everest-semi.com/pdf/ES8311%20PB.pdf>`_ 是一种低功耗单声道音频编解码器，包含单通道 ADC、单通道 DAC、低噪声前置放大器、耳机驱动器、数字音效、模拟混音和增益功能。它通过 I2S 和 I2C 总线与 ESP32-S3-WROOM-1 模组连接，以提供独立于音频应用程序的硬件音频处理。
+     - 音频编解码器芯片 ES8311 是一种低功耗单声道音频编解码器，包含单通道 ADC、单通道 DAC、低噪声前置放大器、耳机驱动器、数字音效、模拟混音和增益功能。它通过 I2S 和 I2C 总线与 ESP32-S3-WROOM-1 模组连接，以提供独立于音频应用程序的硬件音频处理。
    * - 音频功率放大器 (Audio PA Chip)
      - NS4150 是一款低 EMI、3 W 单声道 D 类音频功率放大器，用于放大来自音频编解码芯片的音频信号，以驱动扬声器。
    * - 右侧麦克风 (Right Microphone)
@@ -161,7 +161,7 @@ ESP32-S3-Korvo-2 V3.0 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 
 如购买样品，每个开发板将以防静电袋或零售商选择的其他方式包装。
 
-零售订单请前往 https://www.espressif.com/zh-hans/company/contact/buy-a-sample。
+零售订单请前往 `获取样品 <https://www.espressif.com/zh-hans/contact-us/get-samples>`_。
 
 
 批量订单
@@ -169,7 +169,7 @@ ESP32-S3-Korvo-2 V3.0 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 
 如批量购买，开发板将以大纸板箱包装。
 
-批量订单请前往 https://www.espressif.com/zh-hans/contact-us/sales-questions。
+批量订单请前往 `销售咨询 <https://www.espressif.com/zh-hans/contact-us/sales-questions>`_。
 
 
 硬件参考
