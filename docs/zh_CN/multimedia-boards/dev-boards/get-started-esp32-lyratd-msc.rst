@@ -11,7 +11,7 @@ ESP32-LyraTD-MSC 是一款面向智能音箱和 AI 应用程序的硬件平台�
 -------------
 
 * 1 × :ref:`ESP32-LyraTD-MSC V2.2 board <get-started-esp32-lyratd-msc-v2.2-board>`
-* 2 x 扬声器或 3.5 mm 的耳机（若使用扬声器，建议功率不超过 3 瓦特，另外需要接口为 JST PH 2.0 毫米 2 针的插头，若没有此插头，开发过程中可替换为杜邦母跳线）
+* 2 x 扬声器或 3.5 mm 的耳机（若使用扬声器，建议选择 4 欧姆、功率不超过 3 瓦特的扬声器，另外需要接口为 JST PH 2.0 毫米 2 针的插头，若没有此插头，开发过程中可替换为杜邦母跳线）
 * 2 x Micro-USB 2.0 数据线（Type A 转 Micro B）
 * 1 × PC（Windows、 Linux 或 Mac OS）
 

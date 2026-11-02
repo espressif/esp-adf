@@ -66,7 +66,7 @@ The key components of the board are described in a clockwise direction.
    * - Right Microphone
      - Onboard microphone connected to ADC.
    * - Speaker Output Port
-     - External speaker playback can be enabled with the support of the audio power amplifier.
+     - Used to connect an external speaker. A 4-ohm, 3-watt speaker is recommended; the speaker connector has a 2.00 mm pitch.
    * - USB-to-UART Bridge Chip
      - A single chip USB-UART bridge CP2102N provides up to 3 Mbps transfer rates for software download and debugging.
    * - USB-to-UART Port
@@ -103,7 +103,7 @@ Required Hardware
 ^^^^^^^^^^^^^^^^^
 
 - 1 x ESP32-S3-Korvo-2 V3.0
-- 1 x Speaker
+- 1 x Speaker (4 ohms, 3 watts, with a 2.00 mm pitch connector)
 - 2 x USB 2.0 cable (Standard-A to Micro-B)
 - 1 x Computer running Windows, Linux, or macOS
 

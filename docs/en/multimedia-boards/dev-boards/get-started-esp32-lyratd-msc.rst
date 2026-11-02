@@ -12,7 +12,7 @@ What You Need
 -------------
 
 * 1 × :ref:`ESP32-LyraTD-MSC V2.2 board <get-started-esp32-lyratd-msc-v2.2-board>`
-* 2 x Speaker or headphones with a 3.5 mm jack. If you use a speaker, it is recommended to choose one no more than 3 watts, and JST PH 2.0 2-Pin plugs are needed. In case you do not have this type of plug it is also fine to use Dupont female jumper wires during development.
+* 2 x Speaker or headphones with a 3.5 mm jack. If you use a speaker, a 4-ohm speaker rated at no more than 3 watts is recommended, and JST PH 2.0 mm 2-pin plugs are needed. In case you do not have this type of plug it is also fine to use Dupont female jumper wires during development.
 * 2 x Micro-USB 2.0 cables, Type A to Micro B
 * 1 × PC loaded with Windows, Linux or Mac OS
 

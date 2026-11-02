@@ -41,7 +41,7 @@ What You Need
 * 1 x PC loaded with Windows, Mac OS, or Linux (Linux Operating System is recommended)
 * 1 x ESP32-Korvo-DU1906
 * 2 x Micro USB cables
-* 2 x Speaker (4 Ohm, 2.5 W)
+* 2 x Speaker (4 ohms, 2.5 watts, with a 2.00 mm pitch connector)
 
 Overview
 ~~~~~~~~~
@@ -89,7 +89,7 @@ The following list and figure describe key components, interfaces and controls o
    * - Line-in/out Connector (Earphone Jacks)
      - The two earphone jacks are used to connect to Line-out outputs of Audio DAC and Line-in inputs of Audio ADC respectively. When a device is plugged in the Line-out earphone jack of Audio DAC, the Audio PA on the ESP32-Korvo-DU1906 will be turned off.
    * - Speaker Connector
-     - Two external speakers can be supported via the digital Audio PA to provide stereo sound.
+     - Supports two external speakers via the digital Audio PA to provide stereo sound. A 4-ohm, 2.5-watt speaker is recommended; the speaker connector has a 2.00 mm pitch.
    * - Audio DAC (Audio Digital-to-Analog Converter)
      - ES7148 Stereo DAC is able to convert digital signals into analog audio outputs.
    * - Audio PA (Digital Audio Power Amplifier)
