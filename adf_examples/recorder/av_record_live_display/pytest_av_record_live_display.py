@@ -13,4 +13,8 @@ def test_av_record_live_display(dut: Dut) -> None:
     dut.expect(r'\[ 4 \] Start capture and interactive live display', timeout=60)
     dut.expect(r'Interactive UI ready, touch=(yes|no), offset=\([0-9]+,[0-9]+\)', timeout=30)
     dut.expect(r'Live display loop started', timeout=30)
-    dut.expect(r'Display fps=', timeout=60)
+    m = dut.expect(r'Display fps=(\d+(?:\.\d+)?)', timeout=60)
+    fps = float(m.group(1))
+    # The first one-second window on esp32s3 CI is about 7.8 fps (8 frames).
+    # A floor of 10 matches the esp32p4 sample log and fails this target.
+    assert fps >= 5, f'display fps must be >= 5, got {fps}'

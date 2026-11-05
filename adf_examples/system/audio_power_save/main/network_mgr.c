@@ -24,7 +24,8 @@
 static const char *TAG = "NETWORK_MGR";
 
 #define WIFI_LISTEN_INTERVAL     10
-#define WIFI_CONNECT_WAIT_SEC    30
+#define WIFI_CONNECT_WAIT_SEC    15
+#define WIFI_CONNECT_ATTEMPTS    3
 #define WIFI_CONNECT_PRIORITY    10
 #define WIFI_PROFILE_MAX_NUM     1
 #define MQTT_CONNECT_TIMEOUT_MS  10000
@@ -161,12 +162,20 @@ static esp_err_t wifi_service_connect(power_save_context_t *app_ctx)
 
     xEventGroupClearBits(app_ctx->wakeup_event, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT);
     ESP_LOGI(TAG, "Connect Wi-Fi, ssid:%s, listen_interval:%d", ssid, WIFI_LISTEN_INTERVAL);
-    ESP_GMF_RET_ON_ERROR(TAG, esp_wifi_service_request_connect(s_wifi_service, ssid, password,
-                                                               (uint8_t)WIFI_CONNECT_PRIORITY,
-                                                               WIFI_CONNECT_WAIT_SEC),
-                         return err_rc_, "Failed to connect Wi-Fi");
-    xEventGroupSetBits(app_ctx->wakeup_event, WIFI_CONNECTED_BIT);
-    return ESP_OK;
+    esp_err_t ret = ESP_FAIL;
+    for (int attempt = 1; attempt <= WIFI_CONNECT_ATTEMPTS; attempt++) {
+        ret = esp_wifi_service_request_connect(s_wifi_service, ssid, password,
+                                               (uint8_t)WIFI_CONNECT_PRIORITY,
+                                               WIFI_CONNECT_WAIT_SEC);
+        if (ret == ESP_OK) {
+            xEventGroupSetBits(app_ctx->wakeup_event, WIFI_CONNECTED_BIT);
+            return ESP_OK;
+        }
+        ESP_LOGW(TAG, "Wi-Fi connect attempt %d/%d failed: %s",
+                 attempt, WIFI_CONNECT_ATTEMPTS, esp_err_to_name(ret));
+    }
+    ESP_LOGE(TAG, "Failed to connect Wi-Fi");
+    return ret;
 }
 
 esp_err_t network_mgr_connect(power_save_context_t *app_ctx)

@@ -60,7 +60,7 @@ def mqtt_publish(uri: str, topic: str, payload: str) -> None:
 
 def _run_wakeup_flow(dut: Dut) -> None:
     dut.expect(r'Connect Wi-Fi, ssid:.*, listen_interval:10', timeout=60)
-    dut.expect(r'MQTT connected, broker=.*, keepalive=\d+ s', timeout=30)
+    dut.expect(r'MQTT connected, broker=.*, keepalive=\d+ s', timeout=60)
     dut.expect(r'Player idle; waiting for wakeup \(UART/MQTT/GPIO/timer\) in automatic light sleep', timeout=30)
     time.sleep(3)
     dut.write('123456789ABCDE\r\n')

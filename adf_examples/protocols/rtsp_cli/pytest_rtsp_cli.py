@@ -17,9 +17,11 @@ def test_rtsp_cli(dut: Dut) -> None:
 
     dut.write('help')
     dut.expect(r'RTSP control')
+    dut.expect(r'rtsp>')
 
     dut.write('rtsp info')
     dut.expect(r'session\s+: idle')
+    dut.expect(r'rtsp>')
 
     # The server role needs no remote peer, so it can be started and stopped on its own
     dut.write('rtsp server')
@@ -27,6 +29,7 @@ def test_rtsp_cli(dut: Dut) -> None:
 
     dut.write('rtsp info')
     dut.expect(r'session\s+: server')
+    dut.expect(r'rtsp>')
 
     dut.write('rtsp stop')
     dut.expect(r'Stopping the server session', timeout=30)

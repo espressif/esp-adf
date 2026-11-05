@@ -332,13 +332,14 @@ TEST_CASE("video rec setup supports manual record trigger", "[esp_video_capture_
 
     TEST_ASSERT_EQUAL(ESP_OK, esp_service_start(ESP_SERVICE_BASE(capture)));
     TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_start_record(capture, ESP_MEDIA_DEFAULT_STREAM));
-    for (uint8_t i = 0; i < 20 && s_muxer_stats.bytes == 0; i++) {
+    for (uint8_t i = 0; i < 20 && (s_muxer_stats.video_packets == 0 || s_muxer_stats.audio_packets == 0); i++) {
         drain_stream(capture, ESP_MEDIA_DEFAULT_STREAM, 1);
     }
     TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_stop_record(capture, ESP_MEDIA_DEFAULT_STREAM));
     TEST_ASSERT_GREATER_THAN(0, s_muxer_stats.open_count);
     TEST_ASSERT_EQUAL(ESP_MUXER_TYPE_MP4, s_muxer_stats.last_type);
-    TEST_ASSERT_GREATER_THAN(0, s_muxer_stats.video_packets + s_muxer_stats.audio_packets);
+    TEST_ASSERT_GREATER_THAN(0, s_muxer_stats.video_packets);
+    TEST_ASSERT_GREATER_THAN(0, s_muxer_stats.audio_packets);
     TEST_ASSERT_GREATER_THAN(0, s_muxer_stats.bytes);
     destroy_capture_and_srcs(capture, audio, video);
     unregister_fake_muxers();

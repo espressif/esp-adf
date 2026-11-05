@@ -239,7 +239,119 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
+# ROM stub upload reports 0x107 as "Checksum error". The flasher stub reports
+# 0xC100 as "Bad data checksum". Both are serial-noise failures.
+_FLASH_RETRY_SIGNATURES = (
+    'C100',
+    'Bad data checksum',
+    'Checksum error',
+    'Serial data stream stopped',
+    'StopIteration',
+)
+_ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
+
+
+def _exception_text(exc: BaseException) -> str:
+    parts = []
+    seen = set()
+    current: Optional[BaseException] = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        parts.append(f'{type(current).__name__}: {current}')
+        current = current.__cause__ or current.__context__
+    return '\n'.join(parts)
+
+
+def _serial_text(proc) -> str:
+    chunks = []
+    for part in (getattr(proc, 'before', None), getattr(proc, 'buffer', None)):
+        if not part:
+            continue
+        if isinstance(part, bytes):
+            chunks.append(part.decode('utf-8', 'ignore'))
+        else:
+            chunks.append(str(part))
+    return _ANSI_ESCAPE.sub('', ''.join(chunks))
+
+
+def _install_serial_resilience() -> None:
+    try:
+        import time
+        import pexpect
+        from pytest_embedded_idf.dut import IdfDut
+        from pytest_embedded_idf.serial import IdfSerial
+    except ImportError:
+        return
+
+    if getattr(IdfSerial, '_adf_flash_patched', False):
+        return
+
+    orig_flash = IdfSerial.flash
+
+    def _flash_with_retry(self, *args, **kwargs):
+        saved_settings = self.proc.get_settings()
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return orig_flash(self, *args, **kwargs)
+            except Exception as exc:
+                err_text = _exception_text(exc)
+                if attempt >= max_attempts or not any(sig in err_text for sig in _FLASH_RETRY_SIGNATURES):
+                    raise
+                logging.warning(
+                    'Flash attempt %d/%d failed (%s: %s); retrying...',
+                    attempt,
+                    max_attempts,
+                    type(exc).__name__,
+                    exc,
+                )
+                try:
+                    if not self.proc.is_open:
+                        self.proc.open()
+                    self.proc.apply_settings(saved_settings)
+                    self.proc.reset_input_buffer()
+                    self.proc.reset_output_buffer()
+                except Exception:
+                    pass
+                time.sleep(2)
+
+    IdfSerial.flash = _flash_with_retry
+    IdfSerial._adf_flash_patched = True
+
+    orig_write = IdfDut.write
+    orig_expect = IdfDut.expect
+
+    def _write_with_record(self, data):
+        cmd_text = data.decode('utf-8', 'ignore') if isinstance(data, bytes) else str(data)
+        cmd_stripped = cmd_text.strip('\r\n')
+        if cmd_stripped and '\n' not in cmd_stripped and len(cmd_stripped) <= 128 and cmd_stripped != '*':
+            self._adf_pending_cmd = cmd_stripped
+        else:
+            self._adf_pending_cmd = None
+        return orig_write(self, data)
+
+    def _expect_with_cmd_retry(self, pattern, **kwargs):
+        pending_cmd = getattr(self, '_adf_pending_cmd', None)
+        self._adf_pending_cmd = None
+        try:
+            return orig_expect(self, pattern, **kwargs)
+        except pexpect.TIMEOUT:
+            proc = getattr(self, 'pexpect_proc', None)
+            received = _serial_text(proc) if proc is not None else ''
+            # A timeout after the console echoed the command means the firmware ran it
+            # and missed the expected output. Resending would repeat non-idempotent commands.
+            if not pending_cmd or pending_cmd in received:
+                raise
+            logging.warning('Command %r was not echoed; resending once...', pending_cmd)
+            orig_write(self, '\x08' * 16 + pending_cmd)
+            return orig_expect(self, pattern, **kwargs)
+
+    IdfDut.write = _write_with_record
+    IdfDut.expect = _expect_with_cmd_retry
+
+
 def pytest_configure(config: Config) -> None:
+    _install_serial_resilience()
     # Require cli option "--target"
     help_commands = ['--help', '--fixtures', '--markers', '--version']
     for cmd in help_commands:
