@@ -1,0 +1,17 @@
+version: "1.0.0"
+description: >-
+  Compact font library with a unified API for multiple atlas codecs
+issues: https://github.com/espressif/esp-adf/issues
+repository: https://github.com/espressif/esp-adf.git
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_compact_font
+tags:
+  - adf
+  - font
+  - display
+  - lvgl
+  - graphics
+
+dependencies:
+  idf: ">=5.4"
+examples:
+  - path: examples/font_benchmark

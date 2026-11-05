@@ -72,3 +72,7 @@ adf_examples/player/play_music_control:
     - *if_idf_v6_0
   disable_test:
     - *if_esp32p4
+
+components/esp_compact_font/examples/font_benchmark:
+  disable_test:
+    - *if_all

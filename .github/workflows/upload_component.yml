@@ -44,6 +44,7 @@ jobs:
             components/esp_llm_coze;
             components/esp_llm_tongyi;
             components/esp_llm_volc;
+            components/esp_compact_font;
             adf_examples;
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}

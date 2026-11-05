@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO., LTD
+# SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
+CONFIG_FREERTOS_HZ=1000
+CONFIG_ESP_TASK_WDT_INIT=n
+CONFIG_UNITY_ENABLE_BACKTRACE_ON_FAIL=y
+# Unity runs on the main task. FreeRTOS checks that task's stack canary when
+# the task switches out, after "Returned from app_main()", so a smash during a
+# test is reported as an overflow on exit.
+# Decoder frames (zstd table build ~2 KB, GFH prev[192]) fit in 8 KB.
+# Glyph masks and framebuffers belong in static storage: two
+# ESP_COMPACT_FONT_GLYPH_MAX (80*80) masks are 12800 bytes and overflowed a
+# 16384-byte main stack on ESP32-S3.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+CONFIG_ESP_COMPACT_FONT_LVGL=y
+CONFIG_ESP_COMPACT_FONT_GFZ=y

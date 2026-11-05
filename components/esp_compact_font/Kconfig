@@ -1,0 +1,19 @@
+menu "ESP Compact Font"
+
+    comment "GFH is always built"
+
+    config ESP_COMPACT_FONT_GFZ
+        bool "GFZ zstd atlas"
+        default n
+        help
+            Also accept a .gfz file: 2-bit pixels, one zstd frame per glyph,
+            dictionary in the file. Leave this off unless that file should
+            load. Turning it on compiles the zstd decoder into this component.
+
+    config ESP_COMPACT_FONT_LVGL
+        bool "LVGL bin font"
+        default n
+        help
+            Accept the .bin written by lv_font_conv
+
+endmenu

@@ -1,0 +1,4 @@
+dependencies:
+  espressif/esp_compact_font:
+    version: "*"
+    override_path: "../.."
