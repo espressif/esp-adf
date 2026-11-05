@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.8~1
+
+### Bug Fixes
+
+- Added Wi-Fi connection retry loop in `system/audio_power_save` to recover from transient `esp_wifi_service_request_connect()` failures
+
 ## v0.2.8
 
 ### Features

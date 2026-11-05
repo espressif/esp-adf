@@ -15,21 +15,26 @@ def test_esp_audio_player_service_mix_cli_example(dut: IdfDut) -> None:
 
     dut.write('list')
     dut.expect(r'test\.mp3', timeout=30)
+    dut.expect(r'mix>', timeout=30)
 
     dut.write('start url')
     dut.expect(r'URL started', timeout=60)
+    dut.expect(r'mix>', timeout=30)
 
     dut.write('start feed')
     dut.expect(r'FEED started', timeout=60)
 
     dut.write('status')
     dut.expect(r'BACKGROUND', timeout=30)
+    dut.expect(r'mix>', timeout=30)
 
     dut.write('stop feed')
     dut.expect(r'FEED stopped', timeout=60)
+    dut.expect(r'mix>', timeout=30)
 
     dut.write('stop url')
     dut.expect(r'URL stopped', timeout=60)
+    dut.expect(r'mix>', timeout=30)
 
     dut.write('start link')
     dut.expect(r'LINK started|start link failed', timeout=60)

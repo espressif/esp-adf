@@ -157,7 +157,8 @@ TEST_CASE("rtmp loopback dummy_src to sink to src to dummy_sink", "[esp_rtmp_ser
 
     esp_media_dummy_stream_stats_t stats = {0};
     TEST_ESP_OK(esp_media_dummy_service_get_stats(dummy_sink, ESP_MEDIA_DEFAULT_STREAM, &stats));
-    TEST_ASSERT_GREATER_THAN(0, stats.audio_frame_count + stats.video_frame_count);
+    TEST_ASSERT_GREATER_THAN(0, stats.audio_frame_count);
+    TEST_ASSERT_GREATER_THAN(0, stats.video_frame_count);
 
     TEST_ESP_OK(esp_media_service_unlink(ESP_SERVICE_BASE(dummy_src), ESP_MEDIA_DEFAULT_STREAM,
                                          ESP_SERVICE_BASE(sink), ESP_MEDIA_DEFAULT_STREAM));
