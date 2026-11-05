@@ -239,9 +239,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
+# ROM stub upload reports 0x107 as "Checksum error". The flasher stub reports
+# 0xC100 as "Bad data checksum". Both are serial-noise failures.
 _FLASH_RETRY_SIGNATURES = (
     'C100',
     'Bad data checksum',
+    'Checksum error',
     'Serial data stream stopped',
     'StopIteration',
 )
