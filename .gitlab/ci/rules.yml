@@ -46,12 +46,6 @@
   if: '($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_BRANCH =~ /^release\/v/ || $CI_COMMIT_TAG =~ /^v\d+\.\d+(\.\d+)?($|-)/) &&
         $CI_PIPELINE_SOURCE != "schedule"'
 
-.if-label-unit_test: &if-label-unit_test
-  if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
-
-.if-label-example_test: &if-label-example_test
-  if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example_test(?:,[^,\n\r]+)*$/i'
-
 .if-latest-idf-version: &if-latest-idf-version
   if: '$LATEST_IDF_VERSION_ENV == "1"'
 
@@ -81,9 +75,6 @@
 .if-idf-version-lt-v6: &if-idf-version-lt-v6
   if: '$IDF_VERSION_TAG =~ /^v5\./'
 
-.if-label-example: &if-label-example
-  if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example(?:,[^,\n\r]+)*$/i'
-
 .if-idf-version-tag-v5-0: &if-idf-version-tag-v5-0
   if: '($IDF_VERSION_TAG == "v5.0.4" || $IDF_VERSION_TAG == "v5.0")'
   variables:
@@ -99,7 +90,6 @@
     - if: '$ESP32C3_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
     - if: '$ESP32C6_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
     - if: '$ESP32P4_ENV =~ /(^|,)EXAMPLE_TEST(,|$)/'
-    - <<: *if-label-example_test
 
 .rules:build:enable-unit-test:
   rules:
@@ -111,28 +101,24 @@
     - if: '$ESP32C3_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
     - if: '$ESP32C6_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
     - if: '$ESP32P4_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
-    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
 
 .rules:build:enable-unit-test-esp32:
   rules:
     - <<: *if-dev-push
       when: never
     - if: '$ESP32_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
-    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
 
 .rules:build:enable-unit-test-esp32s3:
   rules:
     - <<: *if-dev-push
       when: never
     - if: '$ESP32S3_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
-    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
 
 .rules:build:enable-unit-test-esp32p4:
   rules:
     - <<: *if-dev-push
       when: never
     - if: '$ESP32P4_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
-    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
 
 .rules:test:enable-unit-test-esp32p4:
   rules:
@@ -141,7 +127,6 @@
     - <<: *if-idf-version-lt-v6
       when: never
     - if: '$ESP32P4_ENV =~ /(^|,)COMPONENT_TEST(,|$)/'
-    - if: '$BOT_LABEL_UNIT_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*unit_test(?:,[^,\n\r]+)*$/i'
 
 .rules:build:adf-idfs-example-test:
   rules:
@@ -156,14 +141,6 @@
   rules:
     - <<: *if-ref-master
     - <<: *if-schedule
-
-.rules:ref:check-label:
-  rules:
-    - <<: *if-protected
-      when: never
-    - <<: *if-merge_request_event
-    - <<: *if-open-merge-request
-      when: never
 
 .rules:build:trigger-pipeline:
   rules:

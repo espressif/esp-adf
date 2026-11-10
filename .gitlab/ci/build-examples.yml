@@ -21,6 +21,7 @@ build_examples_esp32s3_korvo_v2:
   extends:
     - .build_example_test_template
     - .rules:build:enable-example-test-esp32s3
+  parallel: 4
   variables:
     IDF_TARGET: esp32s3
     BOARD: ESP32_S3_KORVO2_V3
@@ -45,6 +46,7 @@ build_examples_esp32p4_function_ev_board:
   extends:
     - .build_example_test_template
     - .rules:build:enable-example-test-esp32p4
+  parallel: 2
   variables:
     IDF_TARGET: esp32p4
     BOARD: ESP32_P4_FUNCTION_EV
