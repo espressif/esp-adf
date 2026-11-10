@@ -5,6 +5,7 @@ component_test_esp32s3:
   extends:
     - .rules:build:enable-unit-test-esp32s3
     - .build_component_test_template
+  parallel: 2
   variables:
     IDF_TARGET: esp32s3
     BOARD: ESP32_S3_KORVO2_V3

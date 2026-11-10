@@ -38,6 +38,7 @@ variables:
   variables:
     BATCH_BUILD: "1"
     V: "0"
+    IDF_CCACHE_ENABLE: "1"
     CI_TOOLS_PATH: "$CI_PROJECT_DIR/ci-tools"
 
 
@@ -136,11 +137,12 @@ variables:
     IDF_TARGET: esp32s3
   before_script:
     - source ${PROJECT_ROOT}/tools/ci/utils.sh
-    - before_script
+    - add_gitlab_local_dns
+    - add_gitlab_ssh_keys
     - check_idf_version $IDF_VERSION_TAG
     - git_clone_ci_tools
     - set_env_variable
-    - pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
+    - python -c "import pytest, pytest_embedded_idf, pytest_embedded_serial_esp, pytest_rerunfailures, pytest_timeout" 2>/dev/null || pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
   cache:
     # Usually do not need submodule-cache in target_test
     - key: pip-cache

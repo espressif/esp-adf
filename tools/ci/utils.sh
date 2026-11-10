@@ -72,10 +72,6 @@ function configure_ci_env() {
     export IDF_MIRROR_PREFIX_MAP=
   fi
 
-  if echo "$CI_MERGE_REQUEST_LABELS" | egrep "^([^,\n\r]+,)*include_nightly_run(,[^,\n\r]+)*$"; then
-    export INCLUDE_NIGHTLY_RUN="1"
-  fi
-
   # configure cmake related flags (GitLab sets CI_COMMIT_REF_NAME; skip locally when unset)
   if [ -n "${CI_COMMIT_REF_NAME:-}" ]; then
     source "$IDF_PATH/tools/ci/configure_ci_environment.sh"
@@ -418,6 +414,7 @@ function fetch_idf_branch() {
 }
 
 function set_env_variable() {
+  export IDF_CCACHE_ENABLE=1
   export LDGEN_CHECK_MAPPING=
   export PEDANTIC_CFLAGS="-w"
   export EXTRA_CFLAGS=${PEDANTIC_CFLAGS} && export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
