@@ -1,0 +1,12 @@
+version: "0.1.0"
+description: "Shared Bluetooth hub for Espressif SoCs, providing controller and host stack lifecycle management, GAP event routing, and resource arbitration with Bluedroid or NimBLE"
+url: https://github.com/espressif/esp-adf/tree/master/components/esp_bt_hub
+tags:
+  - adf
+  - bluetooth
+  - hub
+dependencies:
+  idf: ">=5.5"
+
+examples:
+  - path: "./examples/bt_hub"
