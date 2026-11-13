@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.8~2
+
+### Bug Fixes
+
+- Pinned `av_record_live_display` dependency ranges and dropped the direct `esp_video` dependency so `esp_capture` 1.1 selects `esp_video` 2.5
+
 ## v0.2.8~1
 
 ### Bug Fixes
