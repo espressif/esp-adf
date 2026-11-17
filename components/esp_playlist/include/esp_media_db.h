@@ -59,20 +59,31 @@ esp_err_t esp_media_db_deinit(esp_media_db_handle_t handle);
 /**
  * @brief  Load catalog data from the filesystem three-file database.
  *
- *         If loading fails, an empty catalog is created and ESP_OK is still returned
- *         after recreation (see implementation log).
+ *         The catalog is persisted under storage_path as `esp_mtb.db` (table), `esp_mof.db`
+ *         (row slots) and `esp_mda.db` (values); `~`-prefixed copies of the three are the
+ *         staging files used while the catalog is open. If none of the three exist yet, an
+ *         empty catalog is created. A save interrupted between removing a live file and
+ *         renaming its staging copy over it is finished here: the missing live file is
+ *         restored from the staging copy. If a live file is missing without its staging copy,
+ *         or the files cannot be parsed, an error is returned and the files are left
+ *         untouched; to rebuild, delete the files above and call esp_media_db_scan() or
+ *         esp_media_db_add() again.
  *
  * @param[in]  handle  Catalog handle
  *
  * @return
  *       - ESP_OK               On success
  *       - ESP_ERR_INVALID_ARG  If handle is NULL
- *       - ESP_ERR_NO_MEM       If opening or recreating the internal library fails
+ *       - ESP_ERR_NO_MEM       If allocation fails
+ *       - ESP_FAIL             If existing catalog files are incomplete, corrupted or unreadable
  */
 esp_err_t esp_media_db_load(esp_media_db_handle_t handle);
 
 /**
- * @brief  Clear the in-memory catalog without deleting filesystem files.
+ * @brief  Release the in-memory catalog without deleting filesystem files.
+ *
+ *         The next call that needs the catalog (add, scan, get, ...) reopens the
+ *         persisted files, so previously saved entries remain available.
  *
  * @param[in]  handle  Catalog handle
  *

@@ -31,7 +31,8 @@ esp_err_t playlist_test_storage_init(void)
         .allocation_unit_size = CONFIG_WL_SECTOR_SIZE,
         .use_one_fat = false,
     };
-    esp_err_t ret = esp_vfs_fat_spiflash_mount_rw_wl(PLAYLIST_TEST_STORAGE_BASE, "storage", &mount_config, &s_wl_handle);
+    esp_err_t ret = esp_vfs_fat_spiflash_mount_rw_wl(PLAYLIST_TEST_STORAGE_BASE, "storage", &mount_config,
+                                                     &s_wl_handle);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Mount %s failed: %s", PLAYLIST_TEST_STORAGE_BASE, esp_err_to_name(ret));
         return ret;

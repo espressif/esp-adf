@@ -33,7 +33,9 @@ TEST_CASE("playlist filter imports exact name match", "[esp_playlist][filter]")
     playlist_test_media_db_fixture_t fixture = {0};
     esp_playlist_handle_t playlist = NULL;
     TEST_ESP_OK(playlist_test_create_memory_media_db(&fixture));
-    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {.playlist_name = "filter_name_exact"}, &playlist));
+    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {
+                                     .playlist_name = "filter_name_exact"
+                                 }, &playlist));
 
     esp_media_filter_item_t filter_items[] = {
         {.key = "name", .expected = string_value("song_01"), .match_type = ESP_MEDIA_MATCH_EXACT},
@@ -62,7 +64,9 @@ TEST_CASE("playlist filter imports url prefix matches", "[esp_playlist][filter]"
     playlist_test_media_db_fixture_t fixture = {0};
     esp_playlist_handle_t playlist = NULL;
     TEST_ESP_OK(playlist_test_create_memory_media_db(&fixture));
-    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {.playlist_name = "filter_url_prefix"}, &playlist));
+    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {
+                                     .playlist_name = "filter_url_prefix"
+                                 }, &playlist));
 
     esp_media_filter_item_t filter_items[] = {
         {.key = "url", .expected = string_value("file:/playlist_ut/"), .match_type = ESP_MEDIA_MATCH_PREFIX},
@@ -86,7 +90,9 @@ TEST_CASE("playlist filter supports match all conditions", "[esp_playlist][filte
     playlist_test_media_db_fixture_t fixture = {0};
     esp_playlist_handle_t playlist = NULL;
     TEST_ESP_OK(playlist_test_create_memory_media_db(&fixture));
-    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {.playlist_name = "filter_match_all"}, &playlist));
+    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {
+                                     .playlist_name = "filter_match_all"
+                                 }, &playlist));
 
     esp_media_filter_item_t filter_items[] = {
         {.key = "name", .expected = string_value("song"), .match_type = ESP_MEDIA_MATCH_CONTAINS},
@@ -115,7 +121,9 @@ TEST_CASE("playlist filter supports match any conditions", "[esp_playlist][filte
     playlist_test_media_db_fixture_t fixture = {0};
     esp_playlist_handle_t playlist = NULL;
     TEST_ESP_OK(playlist_test_create_memory_media_db(&fixture));
-    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {.playlist_name = "filter_match_any"}, &playlist));
+    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {
+                                     .playlist_name = "filter_match_any"
+                                 }, &playlist));
 
     esp_media_filter_item_t filter_items[] = {
         {.key = "url", .expected = string_value("song_00.mp3"), .match_type = ESP_MEDIA_MATCH_CONTAINS},
@@ -141,8 +149,12 @@ TEST_CASE("multiple playlists import independently from one media db", "[esp_pla
     esp_playlist_handle_t playlist_a = NULL;
     esp_playlist_handle_t playlist_b = NULL;
     TEST_ESP_OK(playlist_test_create_memory_media_db(&fixture));
-    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {.playlist_name = "playlist_a"}, &playlist_a));
-    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {.playlist_name = "playlist_b"}, &playlist_b));
+    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {
+                                     .playlist_name = "playlist_a"
+                                 }, &playlist_a));
+    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {
+                                     .playlist_name = "playlist_b"
+                                 }, &playlist_b));
 
     esp_media_filter_item_t filter_a_items[] = {
         {.key = "name", .expected = string_value("song_00"), .match_type = ESP_MEDIA_MATCH_EXACT},
@@ -187,12 +199,14 @@ TEST_CASE("multiple playlists import independently from one media db", "[esp_pla
     playlist_test_destroy_memory_media_db(&fixture);
 }
 
-TEST_CASE("playlist filter ignores metadata fields without parsed metadata", "[esp_playlist][filter]")
+TEST_CASE("playlist filter rejects a key other than name, url and id", "[esp_playlist][filter]")
 {
     playlist_test_media_db_fixture_t fixture = {0};
     esp_playlist_handle_t playlist = NULL;
     TEST_ESP_OK(playlist_test_create_memory_media_db(&fixture));
-    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {.playlist_name = "filter_album_missing"}, &playlist));
+    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {
+                                     .playlist_name = "filter_bad_key"
+                                 }, &playlist));
 
     esp_media_filter_item_t filter_items[] = {
         {.key = "album", .expected = string_value("album_a"), .match_type = ESP_MEDIA_MATCH_EXACT},
@@ -202,7 +216,7 @@ TEST_CASE("playlist filter ignores metadata fields without parsed metadata", "[e
         .item_count = 1,
         .match_all = true,
     };
-    TEST_ASSERT_NOT_EQUAL(ESP_OK, esp_playlist_import_media(playlist, fixture.media_db, &filter));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, esp_playlist_import_media(playlist, fixture.media_db, &filter));
 
     int count = -1;
     TEST_ESP_OK(esp_playlist_get_count(playlist, &count));

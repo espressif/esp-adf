@@ -91,6 +91,12 @@ typedef enum {
 
 typedef struct epl_media_db_t *epl_media_db_handle_t;
 
+/* Reopen a database closed by failed rollback; a loaded database incurs no storage I/O. */
+epl_media_db_err_t epl_media_db_ensure_loaded(epl_media_db_handle_t db_handle);
+
+/* Reclaim unused value bytes, preserving IDs; zero forces any useful compaction. */
+epl_media_db_err_t epl_media_db_compact(epl_media_db_handle_t db_handle, uint32_t min_reclaim_percent);
+
 /**
  * @brief  Initialize a database cell with specified type and value
  *
@@ -103,7 +109,8 @@ typedef struct epl_media_db_t *epl_media_db_handle_t;
  * @return
  *       - Initialized  database cell
  */
-epl_media_db_cell_t epl_media_db_cell_init(epl_media_db_field_type_t type, const void *value_p, epl_media_db_size_t size);
+epl_media_db_cell_t epl_media_db_cell_init(epl_media_db_field_type_t type, const void *value_p,
+                                           epl_media_db_size_t size);
 
 /**
  * @brief  Create an invalid database cell
@@ -157,9 +164,9 @@ epl_media_db_err_t epl_media_db_init(const epl_media_db_cfg_t *db_cfg, epl_media
  * @param[in]  db_handle  Database handle
  *
  * @return
- *       - EPL_MEDIA_DB_OK             Database files exist
- *       - EPL_MEDIA_DB_ERR_NOT_FOUND  Database files do not exist
- *       - EPL_MEDIA_DB_ERR_FAIL       Check operation failed
+ *       - EPL_MEDIA_DB_OK             All database files exist
+ *       - EPL_MEDIA_DB_ERR_NOT_FOUND  No database file exists
+ *       - EPL_MEDIA_DB_ERR_FAIL       Only some of the files exist (incomplete catalog)
  */
 epl_media_db_err_t epl_media_db_exists(epl_media_db_handle_t db_handle);
 
@@ -193,20 +200,6 @@ epl_media_db_err_t epl_media_db_create(epl_media_db_handle_t *db_handle, const e
  *       - EPL_MEDIA_DB_ERR_NO_MEM     Memory allocation failed
  */
 epl_media_db_err_t epl_media_db_load(epl_media_db_handle_t *db_handle);
-
-/**
- * @brief  Save database with compression and optimization
- *
- *         Saves the database to storage while removing unused space and optimizing structure.
- *
- * @param[in]  db_handle  Database handle
- *
- * @return
- *       - EPL_MEDIA_DB_OK               Success
- *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid handle
- *       - EPL_MEDIA_DB_ERR_FAIL         Save operation failed
- */
-epl_media_db_err_t epl_media_db_save_squeeze(epl_media_db_handle_t db_handle);
 
 /**
  * @brief  Save database to storage
@@ -292,7 +285,8 @@ epl_media_db_err_t epl_media_db_deinit(epl_media_db_handle_t db_handle);
  *       - EPL_MEDIA_DB_ERR_NO_MEM       Memory allocation failed
  *       - EPL_MEDIA_DB_ERR_FAIL         Addition failed
  */
-epl_media_db_err_t epl_media_db_add_row(epl_media_db_handle_t db_handle, const char *key[], epl_media_db_cell_t cell[], epl_media_db_id_t cnt);
+epl_media_db_err_t epl_media_db_add_row(epl_media_db_handle_t db_handle, const char *key[], epl_media_db_cell_t cell[],
+                                        epl_media_db_id_t cnt);
 
 /**
  * @brief  Update an existing row with new values
@@ -311,7 +305,8 @@ epl_media_db_err_t epl_media_db_add_row(epl_media_db_handle_t db_handle, const c
  *       - EPL_MEDIA_DB_ERR_NOT_FOUND    Row not found
  *       - EPL_MEDIA_DB_ERR_FAIL         Update failed
  */
-epl_media_db_err_t epl_media_db_update_row(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key[], epl_media_db_cell_t cell[], epl_media_db_id_t cnt);
+epl_media_db_err_t epl_media_db_update_row(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key[],
+                                           epl_media_db_cell_t cell[], epl_media_db_id_t cnt);
 
 /**
  * @brief  Add an empty row to the database
@@ -345,7 +340,8 @@ epl_media_db_err_t epl_media_db_add_empty_row(epl_media_db_handle_t db_handle, e
  *       - EPL_MEDIA_DB_ERR_NOT_FOUND    Row or key not found
  *       - EPL_MEDIA_DB_ERR_FAIL         Update failed
  */
-epl_media_db_err_t epl_media_db_update_cell(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key, epl_media_db_cell_t cell);
+epl_media_db_err_t epl_media_db_update_cell(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key,
+                                            epl_media_db_cell_t cell);
 
 /**
  * @brief  Delete a row from the database
@@ -375,6 +371,7 @@ epl_media_db_err_t epl_media_db_delete_row(epl_media_db_handle_t db_handle, epl_
  * @return
  *       - EPL_MEDIA_DB_OK               Success
  *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters
+ *       - EPL_MEDIA_DB_ERR_FAIL         Table header or file could not be read
  */
 epl_media_db_err_t epl_media_db_row_exists(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, bool *is_exist);
 
@@ -390,10 +387,12 @@ epl_media_db_err_t epl_media_db_row_exists(epl_media_db_handle_t db_handle, epl_
  *
  * @return
  *       - EPL_MEDIA_DB_OK               Success
- *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters
- *       - EPL_MEDIA_DB_ERR_NOT_FOUND    Row or key not found
+ *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters, row not in use or unknown key
+ *       - EPL_MEDIA_DB_ERR_FAIL         Table header, offset entry or cell could not be read
+ *       - EPL_MEDIA_DB_ERR_NO_MEM       Memory allocation failed
  */
-epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key, epl_media_db_cell_t *cell);
+epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key,
+                                         epl_media_db_cell_t *cell);
 
 /**
  * @brief  Find the first row matching a key-value condition
@@ -407,10 +406,13 @@ epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_me
  *
  * @return
  *       - EPL_MEDIA_DB_OK               Success, matching row found
- *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters
+ *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters or unknown key
  *       - EPL_MEDIA_DB_ERR_NOT_FOUND    No matching row found
+ *       - EPL_MEDIA_DB_ERR_FAIL         A row could not be read and no readable row matched
+ *       - EPL_MEDIA_DB_ERR_NO_MEM       Memory allocation failed
  */
-epl_media_db_err_t epl_media_db_match_first_row(epl_media_db_handle_t db_handle, const char *key, epl_media_db_cell_t cell, epl_media_db_id_t *row_id);
+epl_media_db_err_t epl_media_db_match_first_row(epl_media_db_handle_t db_handle, const char *key,
+                                                epl_media_db_cell_t cell, epl_media_db_id_t *row_id);
 
 /**
  * @brief  Get all row IDs in the database
@@ -425,13 +427,15 @@ epl_media_db_err_t epl_media_db_match_first_row(epl_media_db_handle_t db_handle,
  *       - EPL_MEDIA_DB_OK               Success
  *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters
  *       - EPL_MEDIA_DB_ERR_NO_MEM       Memory allocation failed
+ *       - EPL_MEDIA_DB_ERR_FAIL         Table header or file could not be read
  */
-epl_media_db_err_t epl_media_db_get_all_row_ids(epl_media_db_handle_t db_handle, epl_media_db_id_t **row_ids, epl_media_db_id_t *row_count);
+epl_media_db_err_t epl_media_db_get_all_row_ids(epl_media_db_handle_t db_handle, epl_media_db_id_t **row_ids,
+                                                epl_media_db_id_t *row_count);
 
 /**
- * @brief  Get the total number of rows in the database
+ * @brief  Get the number of active rows in the database
  *
- *         Returns the count of all rows, including both active and deleted rows.
+ *         Deleted rows are not counted.
  *
  * @param[in]   db_handle  Database handle
  * @param[out]  count      Pointer to store the row count
@@ -439,6 +443,7 @@ epl_media_db_err_t epl_media_db_get_all_row_ids(epl_media_db_handle_t db_handle,
  * @return
  *       - EPL_MEDIA_DB_OK               Success
  *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters
+ *       - EPL_MEDIA_DB_ERR_FAIL         Table header or file could not be read
  */
 epl_media_db_err_t epl_media_db_get_row_count(epl_media_db_handle_t db_handle, int *count);
 
@@ -453,10 +458,11 @@ epl_media_db_err_t epl_media_db_get_row_count(epl_media_db_handle_t db_handle, i
  *
  * @return
  *       - EPL_MEDIA_DB_OK               Success
- *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters
- *       - EPL_MEDIA_DB_ERR_NOT_FOUND    Key not found
+ *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters or unknown key
+ *       - EPL_MEDIA_DB_ERR_FAIL         Table header could not be read
  */
-epl_media_db_err_t epl_media_db_get_key_type(epl_media_db_handle_t db_handle, const char *key, epl_media_db_field_type_t *key_type);
+epl_media_db_err_t epl_media_db_get_key_type(epl_media_db_handle_t db_handle, const char *key,
+                                             epl_media_db_field_type_t *key_type);
 
 /**
  * @brief  Get the internal ID of a key column
@@ -469,8 +475,8 @@ epl_media_db_err_t epl_media_db_get_key_type(epl_media_db_handle_t db_handle, co
  *
  * @return
  *       - EPL_MEDIA_DB_OK               Success
- *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters
- *       - EPL_MEDIA_DB_ERR_NOT_FOUND    Key not found
+ *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters or unknown key
+ *       - EPL_MEDIA_DB_ERR_FAIL         Table header could not be read
  */
 epl_media_db_err_t epl_media_db_get_key_id(epl_media_db_handle_t db_handle, const char *key, epl_media_db_id_t *key_id);
 
@@ -489,7 +495,8 @@ epl_media_db_err_t epl_media_db_get_key_id(epl_media_db_handle_t db_handle, cons
  *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters
  *       - EPL_MEDIA_DB_ERR_FAIL         File size query failed
  */
-epl_media_db_err_t epl_media_db_get_file_size(epl_media_db_handle_t db_handle, off_t *size_table, off_t *size_offset, off_t *size_data);
+epl_media_db_err_t epl_media_db_get_file_size(epl_media_db_handle_t db_handle, off_t *size_table, off_t *size_offset,
+                                              off_t *size_data);
 
 /**
  * @brief  Display all key names and types
@@ -545,7 +552,8 @@ epl_media_db_err_t epl_media_db_debug_show_all_rows(epl_media_db_handle_t db_han
  *       - EPL_MEDIA_DB_OK               Success
  *       - EPL_MEDIA_DB_ERR_INVALID_ARG  Invalid parameters
  */
-epl_media_db_err_t epl_media_db_debug_show_all_rows_keys(epl_media_db_handle_t db_handle, const char **keys, epl_media_db_id_t key_num);
+epl_media_db_err_t epl_media_db_debug_show_all_rows_keys(epl_media_db_handle_t db_handle, const char **keys,
+                                                         epl_media_db_id_t key_num);
 
 /**
  * @brief  Parse and display table file structure

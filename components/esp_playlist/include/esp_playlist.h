@@ -94,7 +94,10 @@ esp_err_t esp_playlist_del(esp_playlist_handle_t handle);
  *         Appends matching catalog rows to the playlist (no dedup by media_id).
  *         On failure, entries appended during this call are removed before returning.
  *         Binds the playlist to media_db_handle; a later import from a different handle
- *         returns ESP_ERR_INVALID_STATE.
+ *         returns ESP_ERR_INVALID_STATE until esp_playlist_clean(), esp_playlist_load() or
+ *         esp_playlist_import_ram() has replaced the items and released the binding.
+ *         The catalog handle is borrowed, not owned: keep it alive until this playlist
+ *         is deleted or its catalog binding is released.
  *
  * @param[in]  handle           Playlist handle
  * @param[in]  media_db_handle  Source media catalog
@@ -116,7 +119,8 @@ esp_err_t esp_playlist_import_media(esp_playlist_handle_t handle, esp_media_db_h
  *
  *         Not append semantics. JSON playlist format matches esp_playlist_save(),
  *         esp_playlist_export_ram(), and esp_playlist_import_ram(). Independent of
- *         esp_media_db VFS catalog files.
+ *         esp_media_db VFS catalog files. Parsed entries become inline items, and the media
+ *         catalog bound by an earlier esp_playlist_import_media() is released.
  *
  * @param[in]  handle     Playlist handle
  * @param[in]  load_path  Path to JSON playlist file
@@ -133,16 +137,29 @@ esp_err_t esp_playlist_load(esp_playlist_handle_t handle, const char *load_path)
  * @brief  Write the current playlist to a JSON file.
  *
  *         JSON playlist format matches esp_playlist_export_ram(), esp_playlist_load(),
- *         and esp_playlist_import_ram().
+ *         and esp_playlist_import_ram(). The file is written to "<save_path>.tmp" first and
+ *         renamed over save_path only after it is complete, so a failed save keeps the
+ *         previous file. Where rename() cannot overwrite (FATFS), the old file is removed
+ *         just before the rename; if that rename does not happen, the complete temporary
+ *         file is kept and the next esp_playlist_load() or esp_playlist_save() of the same
+ *         path installs it.
+ *
+ * @note  Unsupported temporary names return ESP_ERR_NOT_SUPPORTED without changing the
+ *        original file; there is no in-place fallback. FATFS without long filenames requires
+ *        an extensionless 8.3 save name so that "<name>.tmp" is valid. On SPIFFS, shorten
+ *        the path or increase CONFIG_SPIFFS_OBJ_NAME_LEN if the temporary path is too long.
  *
  * @param[in]  handle     Playlist handle
  * @param[in]  save_path  Path to JSON playlist file
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  If handle or save_path is NULL
- *       - ESP_ERR_NO_MEM       If JSON allocation fails
- *       - ESP_FAIL             If the file cannot be written
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_ARG    If handle or save_path is NULL
+ *       - ESP_ERR_NO_MEM         If JSON allocation fails
+ *       - ESP_ERR_INVALID_SIZE   If the JSON would exceed CONFIG_ESP_PLAYLIST_FILE_SIZE_MAX,
+ *                                which esp_playlist_load() refuses to read back; nothing is written
+ *       - ESP_ERR_NOT_SUPPORTED  If the temporary filename is rejected by the filesystem
+ *       - ESP_FAIL               If the file cannot be written
  */
 esp_err_t esp_playlist_save(esp_playlist_handle_t handle, const char *save_path);
 
@@ -152,7 +169,8 @@ esp_err_t esp_playlist_save(esp_playlist_handle_t handle, const char *save_path)
  *         Same replace semantics as esp_playlist_load(). The buffer must contain JSON in
  *         the same playlist format as the file read by esp_playlist_load() (and as written
  *         by esp_playlist_save() / esp_playlist_export_ram()). Parsed entries become inline
- *         items with copied name and url strings.
+ *         items with copied name and url strings, and the media catalog bound by an earlier
+ *         esp_playlist_import_media() is released.
  *
  * @param[in]  handle   Playlist handle
  * @param[in]  buf      JSON playlist text buffer
@@ -186,9 +204,10 @@ esp_err_t esp_playlist_import_ram(esp_playlist_handle_t handle, const char *buf,
 esp_err_t esp_playlist_export_ram(esp_playlist_handle_t handle, char **out_buf, size_t *out_len);
 
 /**
- * @brief  Clear all items from the in-RAM playlist.
+ * @brief  Clear all items from the in-RAM playlist and unbind the media catalog.
  *
- *         Does not delete JSON or media DB files on disk.
+ *         Does not delete JSON or media DB files on disk. After clean the playlist can
+ *         be bound to a different esp_media_db_handle_t via esp_playlist_import_media().
  *
  * @param[in]  handle  Playlist handle
  *
@@ -213,7 +232,7 @@ esp_err_t esp_playlist_set_repeat_mode(esp_playlist_handle_t handle, esp_playlis
 /**
  * @brief  Set the current playback index without loading item info.
  *
- *         Invalidates the esp_playlist_curr() cache. Default index after esp_playlist_new()
+ *         Default index after esp_playlist_new()
  *         is 0.
  *
  * @param[in]  handle  Playlist handle
@@ -265,8 +284,8 @@ esp_err_t esp_playlist_prev(esp_playlist_handle_t handle, esp_playlist_info_t *i
 /**
  * @brief  Read the current item without changing the index.
  *
- *         Uses an in-RAM cache when valid; otherwise loads from the bound media catalog
- *         or inline JSON items.
+ *         Re-reads the bound media catalog on every call. Removed or changed rows are not
+ *         served from an old playlist cache. Inline JSON items are read from the playlist.
  *
  * @param[in]   handle  Playlist handle
  * @param[out]  info    Caller buffer; strings are copied on success

@@ -1,4 +1,13 @@
 menu "ESP-Playlist"
+    config ESP_PLAYLIST_COMPACT_THRESHOLD
+        int "Deleted value bytes percentage triggering catalog compaction (0 disables)"
+        default 25
+        range 0 100
+        help
+            After a successful deletion, reclaim unused value data when its share
+            reaches this percentage. Media IDs and row slots remain stable;
+            0 disables automatic compaction.
+
     config ESP_PLAYLIST_NAME_MAX
         int "Maximum playlist name length (bytes, including NUL)"
         default 64
@@ -24,4 +33,14 @@ menu "ESP-Playlist"
             Size of media_url in esp_playlist_info_t. Long SD card paths or HTTP
             URLs may need a larger value; each esp_playlist_info_t on the stack
             grows by (new - old) bytes for this field.
+
+    config ESP_PLAYLIST_FILE_SIZE_MAX
+        int "Maximum playlist JSON file size accepted by esp_playlist_load (bytes)"
+        default 262144
+        range 1024 4194304
+        help
+            esp_playlist_load() refuses files larger than this instead of
+            allocating the whole file plus its cJSON tree in RAM, and
+            esp_playlist_save() returns ESP_ERR_INVALID_SIZE instead of writing
+            a file that load would refuse.
 endmenu

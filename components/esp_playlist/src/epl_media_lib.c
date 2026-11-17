@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include "esp_log.h"
+#include "sdkconfig.h"
 
 #include "epl_media_lib.h"
 
@@ -78,6 +79,13 @@ typedef struct {
     scan_url_hash_node_t **buckets;
     size_t                 bucket_count;
 } scan_url_hash_t;
+
+/* Batch-only index; URLs remain borrowed from the caller's item array. */
+typedef struct {
+    uint32_t  hash;
+    int       next;
+    bool      skip;
+} import_url_t;
 
 static esp_err_t epl_media_lib_add_media_not_save(epl_media_lib_t *lib, const char *name, const char *url);
 static esp_err_t _scan_dir(epl_media_lib_handle_t handle, const esp_media_db_scan_cfg_t *scan_cfg,
@@ -156,6 +164,18 @@ static uint32_t hash_url(const char *url)
         hash *= 16777619U;
     }
     return hash;
+}
+
+static int find_import_url(const esp_media_db_item_t *items, const import_url_t *urls, int count,
+                           const char *url, uint32_t hash)
+{
+    const int *heads = (const int *)(urls + count);
+    for (int i = heads[hash % count]; i >= 0; i = urls[i].next) {
+        if (urls[i].hash == hash && strcmp(items[i].url, url) == 0) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 static esp_err_t scan_url_hash_init(scan_url_hash_t *hash, size_t bucket_count)
@@ -316,120 +336,100 @@ static esp_err_t _epl_media_db_cell_to_db_field_value(epl_media_db_cell_t *cell,
 
 esp_err_t epl_media_lib_init(const epl_media_lib_cfg_t *cfg, bool load_existing, epl_media_lib_handle_t *handle)
 {
-    if (!cfg || !handle || !cfg->name) {
+    if (!cfg || !handle || !cfg->name ||
+        (cfg->meta_count && (!cfg->meta_names || !cfg->meta_types))) {
         return ESP_ERR_INVALID_ARG;
     }
-    epl_media_lib_t *lib = (epl_media_lib_t *)calloc(1, sizeof(epl_media_lib_t));
-    char *db_tb_name = (char *)malloc(strlen(cfg->name) + strlen(DB_TABLE_SUFFIX) + 1);
-    char *db_data_name = (char *)malloc(strlen(cfg->name) + strlen(DB_DATA_SUFFIX) + 1);
-    char *db_offset_name = (char *)malloc(strlen(cfg->name) + strlen(DB_OFFSET_SUFFIX) + 1);
-    if (!lib || !db_tb_name || !db_data_name || !db_offset_name) {
-        free(db_tb_name);
-        free(db_data_name);
-        free(db_offset_name);
-        free(lib);
-        return ESP_ERR_NO_MEM;
+    *handle = NULL;
+    esp_err_t ret = ESP_ERR_NO_MEM;
+    bool creating = false;
+    const char **keys = NULL;
+    epl_media_db_field_type_t *types = NULL;
+    epl_media_lib_t *lib = calloc(1, sizeof(*lib));
+    char *table = malloc(strlen(cfg->name) + sizeof(DB_TABLE_SUFFIX));
+    char *data = malloc(strlen(cfg->name) + sizeof(DB_DATA_SUFFIX));
+    char *offset = malloc(strlen(cfg->name) + sizeof(DB_OFFSET_SUFFIX));
+    if (!lib || !table || !data || !offset) {
+        goto cleanup;
     }
-    make_db_filename(db_tb_name, cfg->name, DB_TABLE_SUFFIX);
-    make_db_filename(db_data_name, cfg->name, DB_DATA_SUFFIX);
-    make_db_filename(db_offset_name, cfg->name, DB_OFFSET_SUFFIX);
-    epl_media_db_cfg_t db_cfg = {
-        .table_filename = db_tb_name,
-        .data_filename = db_data_name,
-        .offset_filename = db_offset_name,
+    lib->name = strdup(cfg->name);
+    if (!lib->name) {
+        goto cleanup;
+    }
+    make_db_filename(table, cfg->name, DB_TABLE_SUFFIX);
+    make_db_filename(data, cfg->name, DB_DATA_SUFFIX);
+    make_db_filename(offset, cfg->name, DB_OFFSET_SUFFIX);
+    const epl_media_db_cfg_t db_cfg = {
+        .table_filename = table,
+        .data_filename = data,
+        .offset_filename = offset,
         .storage_ops = cfg->storage_ops,
         .storage_ctx = cfg->storage_ctx,
     };
-    DB_CHECK(epl_media_db_init(&db_cfg, &lib->db_handle), {
-        free(db_tb_name);
-        free(db_data_name);
-        free(db_offset_name);
-        free(lib);
-        return ESP_FAIL;
-    });
+    ret = ESP_FAIL;
+    if (epl_media_db_init(&db_cfg, &lib->db_handle) != EPL_MEDIA_DB_OK) {
+        goto cleanup;
+    }
     if (load_existing) {
-        if (epl_media_db_exists(lib->db_handle) == EPL_MEDIA_DB_OK) {
-            DB_CHECK(epl_media_db_load(&lib->db_handle), {
-                epl_media_db_deinit(lib->db_handle);
-                free(db_tb_name);
-                free(db_data_name);
-                free(db_offset_name);
-                free(lib);
-                return ESP_FAIL;
-            });
-            ESP_LOGI(TAG, "Media catalog '%s' loaded successfully.", cfg->name);
-            lib->name = strdup(cfg->name);
-            if (!lib->name) {
-                epl_media_db_close(lib->db_handle);
-                epl_media_db_deinit(lib->db_handle);
-                free(db_tb_name);
-                free(db_data_name);
-                free(db_offset_name);
-                free(lib);
-                return ESP_ERR_NO_MEM;
+        epl_media_db_err_t exists = epl_media_db_exists(lib->db_handle);
+        if (exists == EPL_MEDIA_DB_OK) {
+            if (epl_media_db_load(&lib->db_handle) == EPL_MEDIA_DB_OK) {
+                ret = ESP_OK;
             }
-            *handle = lib;
-            free(db_tb_name);
-            free(db_data_name);
-            free(db_offset_name);
-            return ESP_OK;
+            goto cleanup;
+        }
+        if (exists != EPL_MEDIA_DB_ERR_NOT_FOUND) {
+            goto cleanup;
         }
     }
-    uint32_t key_count = cfg->meta_count + DEFAULT_META_COUNT;
-    const char **key = (const char **)malloc(sizeof(char *) * key_count);
-    epl_media_db_field_type_t *type = (epl_media_db_field_type_t *)malloc(sizeof(epl_media_db_field_type_t) * key_count);
-    if (!key || !type) {
-        free(key);
-        free(type);
-        free(db_tb_name);
-        free(db_data_name);
-        free(db_offset_name);
-        epl_media_db_deinit(lib->db_handle);
+    if (cfg->meta_count > INT32_MAX - DEFAULT_META_COUNT) {
+        ret = ESP_ERR_INVALID_ARG;
+        goto cleanup;
+    }
+    uint32_t count = cfg->meta_count + DEFAULT_META_COUNT;
+    keys = calloc(count, sizeof(*keys));
+    types = calloc(count, sizeof(*types));
+    if (!keys || !types) {
+        ret = ESP_ERR_NO_MEM;
+        goto cleanup;
+    }
+    for (uint32_t i = 0; i < count; i++) {
+        keys[i] = i < DEFAULT_META_COUNT ? default_keys[i] : cfg->meta_names[i - DEFAULT_META_COUNT];
+        types[i] = i < DEFAULT_META_COUNT ? default_types[i] : cfg->meta_types[i - DEFAULT_META_COUNT];
+        if (!keys[i]) {
+            ret = ESP_ERR_INVALID_ARG;
+            goto cleanup;
+        }
+    }
+    const epl_media_db_key_cfg_t key_cfg = {.key_count = count, .key_names = keys, .key_types = types};
+    creating = true;
+    if (epl_media_db_create(&lib->db_handle, &key_cfg) == EPL_MEDIA_DB_OK) {
+        ret = ESP_OK;
+    }
+
+cleanup:
+    free(keys);
+    free(types);
+    free(table);
+    free(data);
+    free(offset);
+    if (ret == ESP_OK) {
+        *handle = lib;
+    } else if (lib) {
+        if (lib->db_handle) {
+            if (creating) {
+                if (epl_media_db_delete(lib->db_handle) != EPL_MEDIA_DB_OK) {
+                    epl_media_db_deinit(lib->db_handle);
+                }
+            } else {
+                epl_media_db_close(lib->db_handle);
+                epl_media_db_deinit(lib->db_handle);
+            }
+        }
+        free(lib->name);
         free(lib);
-        return ESP_ERR_NO_MEM;
     }
-    for (uint32_t i = 0; i < DEFAULT_META_COUNT; i++) {
-        key[i] = default_keys[i];
-        type[i] = default_types[i];
-    }
-    for (uint32_t i = 0; i < cfg->meta_count; i++) {
-        key[i + DEFAULT_META_COUNT] = cfg->meta_names[i];
-        type[i + DEFAULT_META_COUNT] = cfg->meta_types[i];
-    }
-    epl_media_db_key_cfg_t key_cfg = {
-        .key_count = key_count,
-        .key_names = key,
-        .key_types = type,
-    };
-    DB_CHECK(epl_media_db_create(&lib->db_handle, &key_cfg), {
-        free(key);
-        free(type);
-        free(db_tb_name);
-        free(db_data_name);
-        free(db_offset_name);
-        epl_media_db_deinit(lib->db_handle);
-        free(lib);
-        return ESP_FAIL;
-    });
-    lib->name = strdup(cfg->name);
-    if (!lib->name) {
-        free(key);
-        free(type);
-        free(db_tb_name);
-        free(db_data_name);
-        free(db_offset_name);
-        epl_media_db_close(lib->db_handle);
-        epl_media_db_deinit(lib->db_handle);
-        free(lib);
-        return ESP_ERR_NO_MEM;
-    }
-    *handle = lib;
-    free(key);
-    free(type);
-    free(db_tb_name);
-    free(db_data_name);
-    free(db_offset_name);
-    return ESP_OK;
+    return ret;
 }
 
 esp_err_t epl_media_lib_save(epl_media_lib_handle_t handle)
@@ -438,8 +438,18 @@ esp_err_t epl_media_lib_save(epl_media_lib_handle_t handle)
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     DB_CHECK(epl_media_db_save(lib->db_handle), {return ESP_FAIL;});
     return ESP_OK;
+}
+
+static void maybe_compact(epl_media_lib_t *lib)
+{
+    if (CONFIG_ESP_PLAYLIST_COMPACT_THRESHOLD &&
+        epl_media_db_compact(lib->db_handle, CONFIG_ESP_PLAYLIST_COMPACT_THRESHOLD) != EPL_MEDIA_DB_OK) {
+        /* Deletion already committed; cleanup must not turn that success into a failed mutation. */
+        ESP_LOGW(TAG, "Deferred catalog compaction; next access will recover any pending installation");
+    }
 }
 
 esp_err_t epl_media_lib_close(epl_media_lib_handle_t handle)
@@ -448,13 +458,14 @@ esp_err_t epl_media_lib_close(epl_media_lib_handle_t handle)
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    esp_err_t ret = ESP_OK;
     if (lib->db_handle) {
-        DB_CHECK(epl_media_db_close(lib->db_handle), {return ESP_FAIL;});
-        DB_CHECK(epl_media_db_deinit(lib->db_handle), {return ESP_FAIL;});
+        DB_CHECK(epl_media_db_close(lib->db_handle), {ret = ESP_FAIL;});
+        DB_CHECK(epl_media_db_deinit(lib->db_handle), {ret = ESP_FAIL;});
     }
     free(lib->name);
     free(lib);
-    return ESP_OK;
+    return ret;
 }
 
 esp_err_t epl_media_lib_delete(epl_media_lib_handle_t handle)
@@ -463,12 +474,15 @@ esp_err_t epl_media_lib_delete(epl_media_lib_handle_t handle)
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
-    if (lib->db_handle) {
-        DB_CHECK(epl_media_db_delete(lib->db_handle), {return ESP_FAIL;});
+    esp_err_t ret = ESP_OK;
+    if (lib->db_handle && epl_media_db_delete(lib->db_handle) != EPL_MEDIA_DB_OK) {
+        /* A refused delete keeps the files and does not release the context. */
+        epl_media_db_deinit(lib->db_handle);
+        ret = ESP_FAIL;
     }
     free(lib->name);
     free(lib);
-    return ESP_OK;
+    return ret;
 }
 
 static esp_err_t epl_media_lib_add_media_not_save(epl_media_lib_t *lib, const char *name, const char *url)
@@ -488,6 +502,18 @@ static esp_err_t epl_media_lib_add_media_not_save(epl_media_lib_t *lib, const ch
     return ESP_OK;
 }
 
+/* Return the staged catalog to its last saved state. If that reload fails the db is closed, so a
+   later save can never install a half-restored copy; esp_media_db drops the library after a failed
+   call and reopens it on the next one. */
+static void rollback(epl_media_lib_t *lib)
+{
+    epl_media_db_flush(lib->db_handle);
+    if (epl_media_db_load(&lib->db_handle) != EPL_MEDIA_DB_OK) {
+        ESP_LOGE(TAG, "Rollback failed, catalog '%s' needs a reload", lib->name);
+        epl_media_db_close(lib->db_handle);
+    }
+}
+
 esp_err_t epl_media_lib_add_media(epl_media_lib_handle_t handle, const char *name, const char *url)
 {
     if (!handle || !name || !url) {
@@ -495,12 +521,15 @@ esp_err_t epl_media_lib_add_media(epl_media_lib_handle_t handle, const char *nam
     }
     /* epl_media_lib_add_media() does not deduplicate by URL. */
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     esp_err_t ret = epl_media_lib_add_media_not_save(lib, name, url);
-    if (ret != ESP_OK) {
-        return ret;
+    if (ret == ESP_OK && epl_media_db_save(lib->db_handle) != EPL_MEDIA_DB_OK) {
+        ret = ESP_FAIL;
     }
-    DB_CHECK(epl_media_db_save(lib->db_handle), {return ESP_FAIL;});
-    return ESP_OK;
+    if (ret != ESP_OK) {
+        rollback(lib);
+    }
+    return ret;
 }
 
 esp_err_t epl_media_lib_import_media(epl_media_lib_handle_t handle, const esp_media_db_item_t *media_infos,
@@ -510,28 +539,75 @@ esp_err_t epl_media_lib_import_media(epl_media_lib_handle_t handle, const esp_me
         return ESP_ERR_INVALID_ARG;
     }
 
-    epl_media_lib_t *lib = (epl_media_lib_t *)handle;
     for (int i = 0; i < media_count; i++) {
         if (media_infos[i].name == NULL || media_infos[i].url == NULL) {
             return ESP_ERR_INVALID_ARG;
         }
-        if (!skip_duplicate_check) {
-            bool exists = false;
-            esp_err_t ret = epl_media_lib_is_media_exist(handle, media_infos[i].url, &exists);
-            if (ret != ESP_OK) {
-                return ret;
-            }
-            if (exists) {
-                continue;
-            }
-        }
-        esp_err_t ret = epl_media_lib_add_media_not_save(lib, media_infos[i].name, media_infos[i].url);
-        if (ret != ESP_OK) {
+    }
+    epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
+    import_url_t *urls = NULL;
+    esp_err_t ret = ESP_OK;
+    if (!skip_duplicate_check && media_count == 1) {
+        bool exists = false;
+        ret = epl_media_lib_is_media_exist(lib, media_infos[0].url, &exists);
+        if (ret != ESP_OK || exists) {
             return ret;
         }
+    } else if (!skip_duplicate_check) {
+        if ((size_t)media_count > SIZE_MAX / (sizeof(*urls) + sizeof(int))) {
+            return ESP_ERR_NO_MEM;
+        }
+        urls = calloc(media_count, sizeof(*urls) + sizeof(int));
+        if (!urls) {
+            return ESP_ERR_NO_MEM;
+        }
+        int *heads = (int *)(urls + media_count);
+        for (int i = 0; i < media_count; i++) {
+            heads[i] = -1;
+        }
+        for (int i = 0; i < media_count; i++) {
+            urls[i].hash = hash_url(media_infos[i].url);
+            urls[i].skip = find_import_url(media_infos, urls, media_count, media_infos[i].url, urls[i].hash) >= 0;
+            if (!urls[i].skip) {
+                size_t bucket = urls[i].hash % media_count;
+                urls[i].next = heads[bucket];
+                heads[bucket] = i;
+            }
+        }
+        esp_media_id_t *ids = NULL;
+        int count = 0;
+        ret = epl_media_lib_get_all_media_ids(lib, &ids, &count);
+        for (int i = 0; i < count && ret == ESP_OK; i++) {
+            char *url = NULL;
+            ret = epl_media_lib_get_media_url(lib, ids[i], &url);
+            if (ret == ESP_OK) {
+                int match = find_import_url(media_infos, urls, media_count, url, hash_url(url));
+                if (match >= 0) {
+                    urls[match].skip = true;
+                }
+            }
+            free(url);
+        }
+        free(ids);
     }
-    DB_CHECK(epl_media_db_save(lib->db_handle), {return ESP_FAIL;});
-    return ESP_OK;
+    bool changed = false;
+    for (int i = 0; i < media_count && ret == ESP_OK; i++) {
+        if (urls && urls[i].skip) {
+            continue;
+        }
+        changed = true;
+        ret = epl_media_lib_add_media_not_save(lib, media_infos[i].name, media_infos[i].url);
+    }
+    free(urls);
+    if (ret == ESP_OK && changed && epl_media_db_save(lib->db_handle) != EPL_MEDIA_DB_OK) {
+        ret = ESP_FAIL;
+    }
+    if (ret != ESP_OK && changed) {
+        /* Discard the rows added by this call so a failed import leaves the catalog unchanged. */
+        rollback(lib);
+    }
+    return ret;
 }
 
 esp_err_t epl_media_lib_remove_media(epl_media_lib_handle_t handle, esp_media_id_t media_id)
@@ -540,8 +616,13 @@ esp_err_t epl_media_lib_remove_media(epl_media_lib_handle_t handle, esp_media_id
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
-    DB_CHECK(epl_media_db_delete_row(lib->db_handle, media_id), {return ESP_FAIL;});
-    epl_media_db_save(lib->db_handle);
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
+    if (epl_media_db_delete_row(lib->db_handle, media_id) != EPL_MEDIA_DB_OK ||
+        epl_media_db_save(lib->db_handle) != EPL_MEDIA_DB_OK) {
+        rollback(lib);
+        return ESP_FAIL;
+    }
+    maybe_compact(lib);
     return ESP_OK;
 }
 
@@ -552,6 +633,7 @@ esp_err_t epl_media_lib_delete_media(epl_media_lib_handle_t handle, const esp_me
     }
 
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     esp_err_t ret = ESP_OK;
     DB_CHECK(epl_media_db_flush(lib->db_handle), {return ESP_FAIL;});
 
@@ -570,7 +652,11 @@ esp_err_t epl_media_lib_delete_media(epl_media_lib_handle_t handle, const esp_me
     }
 
 cleanup:
-    epl_media_db_flush(lib->db_handle);
+    if (ret != ESP_OK) {
+        rollback(lib);
+    } else {
+        maybe_compact(lib);
+    }
     return ret;
 }
 
@@ -580,9 +666,14 @@ esp_err_t epl_media_lib_get_media_name(epl_media_lib_handle_t handle, esp_media_
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     char *name_tmp = NULL;
-    epl_media_db_cell_t cell;
+    epl_media_db_cell_t cell = epl_media_db_cell_invalid();
     DB_CHECK(epl_media_db_get_cell(lib->db_handle, media_id, "name", &cell), {return ESP_FAIL;});
+    if (cell.type != EPL_MEDIA_DB_FIELD_TYPE_STRING || cell.value.strv == NULL) {
+        epl_media_db_cell_free(&cell);
+        return ESP_FAIL;
+    }
     name_tmp = (char *)malloc(strlen(cell.value.strv) + 1);
     DB_MEM_CHECK(name_tmp, { epl_media_db_cell_free(&cell); return ESP_FAIL;});
     memcpy(name_tmp, cell.value.strv, strlen(cell.value.strv));
@@ -598,9 +689,14 @@ esp_err_t epl_media_lib_get_media_url(epl_media_lib_handle_t handle, esp_media_i
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     char *url_tmp = NULL;
-    epl_media_db_cell_t cell;
+    epl_media_db_cell_t cell = epl_media_db_cell_invalid();
     DB_CHECK(epl_media_db_get_cell(lib->db_handle, media_id, "url", &cell), {return ESP_FAIL;});
+    if (cell.type != EPL_MEDIA_DB_FIELD_TYPE_STRING || cell.value.strv == NULL) {
+        epl_media_db_cell_free(&cell);
+        return ESP_FAIL;
+    }
     url_tmp = (char *)malloc(strlen(cell.value.strv) + 1);
     DB_MEM_CHECK(url_tmp, { epl_media_db_cell_free(&cell); return ESP_FAIL;});
     memcpy(url_tmp, cell.value.strv, strlen(cell.value.strv) + 1);
@@ -617,6 +713,7 @@ esp_err_t epl_media_lib_get_media(epl_media_lib_handle_t handle, esp_media_id_t 
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     item->id = media_id;
     item->meta_num = meta_num;
     item->name = NULL;
@@ -666,6 +763,7 @@ esp_err_t epl_media_lib_get_all_media_ids(epl_media_lib_handle_t handle, esp_med
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     DB_CHECK(epl_media_db_get_all_row_ids(lib->db_handle, ids, count), {return ESP_FAIL;});
     return ESP_OK;
 }
@@ -677,6 +775,7 @@ esp_err_t epl_media_lib_get_media_meta(epl_media_lib_handle_t handle, esp_media_
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     epl_media_db_cell_t cell = {0};
     DB_CHECK(epl_media_db_get_cell(lib->db_handle, media_id, key, &cell), {return ESP_FAIL;});
     return _epl_media_db_cell_to_db_field_value(&cell, meta);
@@ -689,9 +788,13 @@ esp_err_t epl_media_lib_update_media_meta(epl_media_lib_handle_t handle, esp_med
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     epl_media_db_cell_t cell = _db_field_value_to_epl_media_db_cell(meta);
-    DB_CHECK(epl_media_db_update_cell(lib->db_handle, media_id, key, cell), {return ESP_FAIL;});
-    epl_media_db_save(lib->db_handle);
+    if (epl_media_db_update_cell(lib->db_handle, media_id, key, cell) != EPL_MEDIA_DB_OK ||
+        epl_media_db_save(lib->db_handle) != EPL_MEDIA_DB_OK) {
+        rollback(lib);
+        return ESP_FAIL;
+    }
     return ESP_OK;
 }
 
@@ -701,16 +804,19 @@ esp_err_t epl_media_lib_is_media_exist(epl_media_lib_handle_t handle, const char
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     esp_media_id_t _id;
-    epl_media_db_cell_t cell = epl_media_db_cell_init(EPL_MEDIA_DB_FIELD_TYPE_STRING, (const void *)url, strlen(url) + 1);
+    epl_media_db_cell_t cell = epl_media_db_cell_init(EPL_MEDIA_DB_FIELD_TYPE_STRING, url, strlen(url) + 1);
+    if (!cell.value.strv) {
+        return ESP_ERR_NO_MEM;
+    }
     epl_media_db_err_t ret = epl_media_db_match_first_row(lib->db_handle, "url", cell, &_id);
     epl_media_db_cell_free(&cell);
-    if (ret == EPL_MEDIA_DB_OK) {
-        *is_exist = true;
-    } else {
-        *is_exist = false;
+    if (ret == EPL_MEDIA_DB_OK || ret == EPL_MEDIA_DB_ERR_NOT_FOUND) {
+        *is_exist = (ret == EPL_MEDIA_DB_OK);
+        return ESP_OK;
     }
-    return ESP_OK;
+    return ret == EPL_MEDIA_DB_ERR_NO_MEM ? ESP_ERR_NO_MEM : ESP_FAIL;
 }
 
 esp_err_t epl_media_lib_scan_media(epl_media_lib_handle_t handle, const esp_media_db_scan_cfg_t *scan_cfg)
@@ -722,6 +828,7 @@ esp_err_t epl_media_lib_scan_media(epl_media_lib_handle_t handle, const esp_medi
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     scan_url_hash_t url_hash = {0};
     scan_url_hash_t *url_hash_ptr = NULL;
     bool enable_dup_check = !scan_cfg->skip_duplicate;
@@ -747,6 +854,12 @@ esp_err_t epl_media_lib_scan_media(epl_media_lib_handle_t handle, const esp_medi
 
     esp_err_t ret = _scan_dir(lib, scan_cfg, url_hash_ptr, scan_cfg->path, 0);
     scan_url_hash_deinit(&url_hash);
+    if (ret == ESP_OK && epl_media_db_save(lib->db_handle) != EPL_MEDIA_DB_OK) {
+        ret = ESP_FAIL;
+    }
+    if (ret != ESP_OK) {
+        rollback(lib);
+    }
     return ret;
 }
 
@@ -756,6 +869,7 @@ esp_err_t epl_media_lib_get_media_count(epl_media_lib_handle_t handle, int *out_
         return ESP_ERR_INVALID_ARG;
     }
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     int num = 0;
     DB_CHECK(epl_media_db_get_row_count(lib->db_handle, &num), {return ESP_FAIL;});
     *out_count = num;
@@ -769,6 +883,7 @@ esp_err_t epl_media_lib_find_media_id_by_name(epl_media_lib_handle_t handle, con
     DB_NULL_CHECK(out_id, return ESP_ERR_INVALID_ARG);
 
     epl_media_lib_t *lib = (epl_media_lib_t *)handle;
+    DB_CHECK(epl_media_db_ensure_loaded(lib->db_handle), {return ESP_FAIL;});
     esp_media_id_t id;
     epl_media_db_cell_t cell = epl_media_db_cell_init(EPL_MEDIA_DB_FIELD_TYPE_STRING, (void *)name, strlen(name) + 1);
     DB_CHECK(epl_media_db_match_first_row(lib->db_handle, "name", cell, &id), {
@@ -812,8 +927,8 @@ static esp_err_t _scan_dir(epl_media_lib_handle_t handle, const esp_media_db_sca
     }
     DIR *dir = opendir(path);
     if (dir == NULL) {
-        ESP_LOGE(TAG, "Failed to open directory: %s", path);
-        return ESP_FAIL;
+        ESP_LOGW(TAG, "Skip directory that cannot be opened: %s", path);
+        return cur_depth == 0 ? ESP_FAIL : ESP_OK;
     }
     struct dirent *entry;
     esp_err_t ret = ESP_OK;
@@ -827,7 +942,8 @@ static esp_err_t _scan_dir(epl_media_lib_handle_t handle, const esp_media_db_sca
             }
             char *sub_path = (char *)malloc(strlen(entry->d_name) + strlen(path) + 2);
             if (!sub_path) {
-                continue;
+                ret = ESP_ERR_NO_MEM;
+                break;
             }
             join_path(sub_path, path, entry->d_name);
             ret = _scan_dir(lib, scan_cfg, url_hash, sub_path, cur_depth + 1);
@@ -838,7 +954,8 @@ static esp_err_t _scan_dir(epl_media_lib_handle_t handle, const esp_media_db_sca
         } else {
             char *url = (char *)malloc(strlen(entry->d_name) + strlen(path) + strlen(SDCARD_FILE_PREV_NAME) + 2);
             if (!url) {
-                continue;
+                ret = ESP_ERR_NO_MEM;
+                break;
             }
             make_file_url(url, path, entry->d_name);
             char *dot = strrchr(entry->d_name, '.');
@@ -850,7 +967,8 @@ static esp_err_t _scan_dir(epl_media_lib_handle_t handle, const esp_media_db_sca
             char *name = strndup(entry->d_name, len);
             if (!name) {
                 free(url);
-                continue;
+                ret = ESP_ERR_NO_MEM;
+                break;
             }
             dot++;
             if (extension_matches(dot, scan_cfg->file_extensions, scan_cfg->file_extension_count)) {
@@ -876,9 +994,6 @@ static esp_err_t _scan_dir(epl_media_lib_handle_t handle, const esp_media_db_sca
             free(name);
             free(url);
         }
-    }
-    if (ret == ESP_OK) {
-        DB_CHECK(epl_media_db_save(lib->db_handle), {ret = ESP_FAIL;});
     }
     closedir(dir);
     return ret;

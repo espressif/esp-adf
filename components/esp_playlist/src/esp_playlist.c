@@ -5,13 +5,18 @@
  * See LICENSE file for details.
  */
 
+#include <errno.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_random.h"
 
 #include "cJSON.h"
 
@@ -50,8 +55,6 @@ typedef struct {
     int                         item_capacity;     /*!< Allocated slots in items[] */
     int                         current_index;     /*!< Zero-based navigation index */
     esp_playlist_repeat_mode_t  repeat_mode;       /*!< Repeat mode for next/prev navigation */
-    bool                        info_cache_valid;  /*!< info_cache matches current_index */
-    esp_playlist_info_t         info_cache;        /*!< Avoids repeated string copies for curr() */
 } esp_playlist_ctx_t;
 
 static inline esp_playlist_ctx_t *to_ctx(esp_playlist_handle_t handle)
@@ -124,19 +127,6 @@ static bool field_match(const esp_db_field_value_t *actual, const esp_media_filt
     return false;
 }
 
-static const esp_db_field_value_t *find_meta_value(const esp_media_db_meta_t *item, const char *key)
-{
-    if (!item || !key) {
-        return NULL;
-    }
-    for (int i = 0; i < item->meta_num; i++) {
-        if (item->meta_names && item->meta_names[i] && strcmp(item->meta_names[i], key) == 0) {
-            return &item->metas[i];
-        }
-    }
-    return NULL;
-}
-
 static bool media_matches_filter(const esp_media_db_meta_t *item, const esp_media_filter_t *filter)
 {
     if (!filter || filter->item_count <= 0 || !filter->items) {
@@ -165,8 +155,6 @@ static bool media_matches_filter(const esp_media_db_meta_t *item, const esp_medi
             tmp.value.intv = item->id;
             tmp.size = sizeof(int);
             actual = &tmp;
-        } else {
-            actual = find_meta_value(item, f->key);
         }
         bool matched = field_match(actual, f);
         if (filter->match_all && !matched) {
@@ -178,15 +166,6 @@ static bool media_matches_filter(const esp_media_db_meta_t *item, const esp_medi
         result = matched;
     }
     return result;
-}
-
-static inline void invalidate_info_cache(esp_playlist_ctx_t *ctx)
-{
-    if (!ctx) {
-        return;
-    }
-    ctx->info_cache_valid = false;
-    memset(&ctx->info_cache, 0, sizeof(ctx->info_cache));
 }
 
 static void free_item(epl_playlist_item_t *item)
@@ -207,7 +186,6 @@ static void clear_items(esp_playlist_ctx_t *ctx)
         if (ctx) {
             ctx->item_count = 0;
             ctx->current_index = 0;
-            invalidate_info_cache(ctx);
         }
         return;
     }
@@ -216,7 +194,6 @@ static void clear_items(esp_playlist_ctx_t *ctx)
     }
     ctx->item_count = 0;
     ctx->current_index = 0;
-    invalidate_info_cache(ctx);
 }
 
 static void trim_imported_items(esp_playlist_ctx_t *ctx, int keep_count)
@@ -225,7 +202,6 @@ static void trim_imported_items(esp_playlist_ctx_t *ctx, int keep_count)
         ctx->item_count--;
         free_item(&ctx->items[ctx->item_count]);
     }
-    invalidate_info_cache(ctx);
 }
 
 static esp_err_t reserve_items(esp_playlist_ctx_t *ctx, int additional)
@@ -260,7 +236,6 @@ static esp_err_t append_db_item(esp_playlist_ctx_t *ctx, esp_media_id_t media_id
     epl_playlist_item_t *item = &ctx->items[ctx->item_count++];
     item->source = EPL_PLAYLIST_ITEM_FROM_DB;
     item->data.media_id = media_id;
-    invalidate_info_cache(ctx);
     return ESP_OK;
 }
 
@@ -284,7 +259,6 @@ static esp_err_t append_inline_item(esp_playlist_ctx_t *ctx, const char *name, c
     item->source = EPL_PLAYLIST_ITEM_INLINE;
     item->data.inline_info.name = name_copy;
     item->data.inline_info.url = url_copy;
-    invalidate_info_cache(ctx);
     return ESP_OK;
 }
 
@@ -312,7 +286,7 @@ static esp_err_t get_item_strings(esp_playlist_ctx_t *ctx, int index, const char
     return ESP_OK;
 }
 
-static esp_err_t fill_info(esp_playlist_ctx_t *ctx, int index, esp_playlist_info_t *info, bool update_cache)
+static esp_err_t fill_info(esp_playlist_ctx_t *ctx, int index, esp_playlist_info_t *info)
 {
     if (!ctx || !info || index < 0 || index >= ctx->item_count) {
         return ESP_ERR_INVALID_ARG;
@@ -329,11 +303,17 @@ static esp_err_t fill_info(esp_playlist_ctx_t *ctx, int index, esp_playlist_info
     copy_string(info->media_name, sizeof(info->media_name), name);
     copy_string(info->media_url, sizeof(info->media_url), url);
     info->index = index;
-    if (update_cache) {
-        ctx->info_cache = *info;
-        ctx->info_cache_valid = true;
-    }
     return ESP_OK;
+}
+
+static char *make_tmp_path(const char *path)
+{
+    char *tmp_path = (char *)malloc(strlen(path) + sizeof(".tmp"));
+    if (tmp_path) {
+        strcpy(tmp_path, path);
+        strcat(tmp_path, ".tmp");
+    }
+    return tmp_path;
 }
 
 static char *read_file_to_string(const char *path)
@@ -348,6 +328,11 @@ static char *read_file_to_string(const char *path)
     }
     long size = ftell(fp);
     if (size < 0 || fseek(fp, 0, SEEK_SET) != 0) {
+        fclose(fp);
+        return NULL;
+    }
+    if (size > CONFIG_ESP_PLAYLIST_FILE_SIZE_MAX) {
+        ESP_LOGE(TAG, "Playlist file '%s' is %ld bytes, limit is %d", path, size, CONFIG_ESP_PLAYLIST_FILE_SIZE_MAX);
         fclose(fp);
         return NULL;
     }
@@ -424,6 +409,13 @@ esp_err_t esp_playlist_import_media(esp_playlist_handle_t handle, esp_media_db_h
         ESP_LOGE(TAG, "Import media failed: invalid filter");
         return ESP_ERR_INVALID_ARG;
     }
+    for (int i = 0; filter && i < filter->item_count; i++) {
+        if (!is_builtin_key(filter->items[i].key)) {
+            ESP_LOGE(TAG, "Import media failed: filter key '%s' is not supported, only name/url/id",
+                     filter->items[i].key ? filter->items[i].key : "(null)");
+            return ESP_ERR_INVALID_ARG;
+        }
+    }
 
     const int item_count_before = ctx->item_count;
     int count = 0;
@@ -449,25 +441,8 @@ esp_err_t esp_playlist_import_media(esp_playlist_handle_t handle, esp_media_db_h
         return ret;
     }
 
-    const char **meta_keys = NULL;
-    int meta_key_count = 0;
-    if (filter && filter->items && filter->item_count > 0) {
-        meta_keys = (const char **)calloc((size_t)filter->item_count, sizeof(char *));
-        if (!meta_keys) {
-            free(all_ids);
-            ESP_LOGE(TAG, "Import media failed: out of memory");
-            return ESP_ERR_NO_MEM;
-        }
-        for (int i = 0; i < filter->item_count; i++) {
-            if (!is_builtin_key(filter->items[i].key)) {
-                meta_keys[meta_key_count++] = filter->items[i].key;
-            }
-        }
-    }
-
     epl_media_lib_handle_t ml_handle = epl_media_db_host_get_media_lib(media_db_handle);
     if (!ml_handle) {
-        free(meta_keys);
         free(all_ids);
         ESP_LOGE(TAG, "Import media failed: media library is not available");
         return ESP_ERR_INVALID_ARG;
@@ -476,7 +451,7 @@ esp_err_t esp_playlist_import_media(esp_playlist_handle_t handle, esp_media_db_h
     int imported = 0;
     for (int i = 0; i < id_count; i++) {
         esp_media_db_meta_t item = {0};
-        ret = epl_media_lib_get_media(ml_handle, all_ids[i], meta_keys, meta_key_count, &item);
+        ret = epl_media_lib_get_media(ml_handle, all_ids[i], NULL, 0, &item);
         if (ret != ESP_OK) {
             break;
         }
@@ -491,7 +466,6 @@ esp_err_t esp_playlist_import_media(esp_playlist_handle_t handle, esp_media_db_h
         }
         imported++;
     }
-    free(meta_keys);
     free(all_ids);
     if (ret != ESP_OK) {
         trim_imported_items(ctx, item_count_before);
@@ -513,26 +487,48 @@ static esp_err_t playlist_populate_from_cjson(esp_playlist_ctx_t *ctx, cJSON *ro
         return ESP_FAIL;
     }
 
-    clear_items(ctx);
+    int count = cJSON_GetArraySize(items);
+    esp_playlist_ctx_t pending = {0};
+    if ((size_t)count > SIZE_MAX / sizeof(*pending.items)) {
+        return ESP_ERR_NO_MEM;
+    }
+    if (count > 0) {
+        pending.items = calloc(count, sizeof(*pending.items));
+        if (!pending.items) {
+            return ESP_ERR_NO_MEM;
+        }
+        pending.item_capacity = count;
+    }
     esp_err_t ret = ESP_OK;
     cJSON *json_item = NULL;
-    cJSON_ArrayForEach(json_item, items)
-    {
+    while ((json_item = items->child)) {
         cJSON *name = cJSON_GetObjectItem(json_item, "name");
         cJSON *url = cJSON_GetObjectItem(json_item, "url");
         if (!cJSON_IsString(name) || !cJSON_IsString(url)) {
             ret = ESP_FAIL;
             break;
         }
-        ret = append_inline_item(ctx, name->valuestring, url->valuestring);
+        ret = append_inline_item(&pending, name->valuestring, url->valuestring);
         if (ret != ESP_OK) {
             break;
         }
+        /* The callers delete root after this call; release each consumed node before the next copy. */
+        cJSON_Delete(cJSON_DetachItemViaPointer(items, json_item));
     }
     if (ret != ESP_OK) {
-        clear_items(ctx);
+        clear_items(&pending);
+        free(pending.items);
+        return ret;
     }
-    return ret;
+    clear_items(ctx);
+    free(ctx->items);
+    ctx->items = pending.items;
+    ctx->item_count = pending.item_count;
+    ctx->item_capacity = pending.item_capacity;
+    /* Every item is inline now, so no item needs the catalog bound by an earlier import. */
+    ctx->media_db = NULL;
+    ctx->current_index = 0;
+    return ESP_OK;
 }
 
 static esp_err_t playlist_build_cjson_root(esp_playlist_ctx_t *ctx, cJSON **out_root)
@@ -649,6 +645,18 @@ esp_err_t esp_playlist_load(esp_playlist_handle_t handle, const char *load_path)
         ESP_LOGE(TAG, "Load playlist failed: handle or load_path is NULL");
         return ESP_ERR_INVALID_ARG;
     }
+    /* A save that had to remove the old file and then could not rename the new one (or lost power in
+       between) leaves only "<path>.tmp": finish that rename before reading. */
+    struct stat st;
+    if (stat(load_path, &st) != 0 && errno == ENOENT) {
+        char *tmp_path = make_tmp_path(load_path);
+        if (tmp_path) {
+            if (stat(tmp_path, &st) == 0 && rename(tmp_path, load_path) != 0) {
+                ESP_LOGE(TAG, "Cannot install the leftover '%s'", tmp_path);
+            }
+            free(tmp_path);
+        }
+    }
     char *buf = read_file_to_string(load_path);
     if (!buf) {
         ESP_LOGE(TAG, "Load playlist failed: cannot read '%s'", load_path);
@@ -681,22 +689,67 @@ esp_err_t esp_playlist_save(esp_playlist_handle_t handle, const char *save_path)
     if (ret != ESP_OK) {
         return ret;
     }
-
-    FILE *fp = fopen(save_path, "w");
-    if (!fp) {
+    size_t len = strlen(text);
+    /* esp_playlist_load() refuses files over the cap, so never write one it cannot read back (+1: newline) */
+    if (len + 1 > CONFIG_ESP_PLAYLIST_FILE_SIZE_MAX) {
         free(text);
-        ESP_LOGE(TAG, "Save playlist failed: cannot open '%s'", save_path);
+        ESP_LOGE(TAG, "Save playlist failed: %u bytes, limit is %d",
+                 (unsigned)len + 1, CONFIG_ESP_PLAYLIST_FILE_SIZE_MAX);
+        return ESP_ERR_INVALID_SIZE;
+    }
+
+    /* Write to a temp file and rename so a power loss never leaves a truncated playlist. */
+    char *tmp_path = make_tmp_path(save_path);
+    if (!tmp_path) {
+        free(text);
+        ESP_LOGE(TAG, "Save playlist failed: out of memory");
+        return ESP_ERR_NO_MEM;
+    }
+    /* Same recovery as esp_playlist_load(). When the playlist file is missing, a leftover temp file
+       that cannot be installed is the only copy: do not open it for writing. */
+    struct stat st;
+    if (stat(save_path, &st) != 0 && errno == ENOENT && stat(tmp_path, &st) == 0 && rename(tmp_path, save_path) != 0) {
+        ESP_LOGE(TAG, "Save playlist failed: cannot install the leftover '%s'", tmp_path);
+        free(tmp_path);
+        free(text);
         return ESP_FAIL;
     }
-    size_t len = strlen(text);
+    errno = 0;
+    FILE *fp = fopen(tmp_path, "w");
+    if (!fp) {
+        ret = (errno == EINVAL || errno == ENAMETOOLONG) ? ESP_ERR_NOT_SUPPORTED : ESP_FAIL;
+        ESP_LOGE(TAG, "Save playlist failed: cannot open '%s'; original file unchanged", tmp_path);
+        free(tmp_path);
+        free(text);
+        return ret;
+    }
     bool ok = fwrite(text, 1, len, fp) == len;
     ok = ok && fwrite("\n", 1, 1, fp) == 1;
-    fclose(fp);
+    ok = ok && fflush(fp) == 0 && fsync(fileno(fp)) == 0;
+    ok = (fclose(fp) == 0) && ok;
     free(text);
+    /* FATFS rename() refuses to overwrite with EEXIST; only then drop the old file, after the new one is
+       fully synced. A rename() that replaces its destination can also remove the old file before it
+       fails, so the temp file is dropped only while the old file is still there; otherwise it is the only
+       complete copy and the next esp_playlist_load() or save finishes the rename. */
+    if (ok && rename(tmp_path, save_path) != 0) {
+        ok = errno == EEXIST && unlink(save_path) == 0 && rename(tmp_path, save_path) == 0;
+        if (!ok) {
+            if (stat(save_path, &st) == 0) {
+                unlink(tmp_path);
+            }
+            free(tmp_path);
+            ESP_LOGE(TAG, "Save playlist failed: cannot rename to '%s'", save_path);
+            return ESP_FAIL;
+        }
+    }
     if (!ok) {
-        ESP_LOGE(TAG, "Save playlist failed: cannot write '%s'", save_path);
+        unlink(tmp_path);
+        ESP_LOGE(TAG, "Save playlist failed: cannot write '%s'", tmp_path);
+        free(tmp_path);
         return ESP_FAIL;
     }
+    free(tmp_path);
     return ESP_OK;
 }
 
@@ -708,6 +761,7 @@ esp_err_t esp_playlist_clean(esp_playlist_handle_t handle)
         return ESP_ERR_INVALID_ARG;
     }
     clear_items(ctx);
+    ctx->media_db = NULL;
     return ESP_OK;
 }
 
@@ -741,8 +795,16 @@ esp_err_t esp_playlist_set_curr_index(esp_playlist_handle_t handle, int index)
         return ESP_ERR_NOT_FOUND;
     }
     ctx->current_index = index;
-    invalidate_info_cache(ctx);
     return ESP_OK;
+}
+
+static int pick_shuffle_index(const esp_playlist_ctx_t *ctx)
+{
+    if (ctx->item_count <= 1) {
+        return 0;
+    }
+    /* Random offset in [1, item_count - 1] so the current item is never picked twice in a row. */
+    return (ctx->current_index + 1 + (int)(esp_random() % (uint32_t)(ctx->item_count - 1))) % ctx->item_count;
 }
 
 static esp_err_t log_fill_info_fail(esp_err_t ret, const char *api)
@@ -767,21 +829,26 @@ esp_err_t esp_playlist_next(esp_playlist_handle_t handle, esp_playlist_info_t *i
     if (ctx->item_count <= 0) {
         return ESP_ERR_NOT_FOUND;
     }
-    if (ctx->repeat_mode == ESP_PLAYLIST_REPEAT_SHUFFLE && ctx->item_count > 1) {
-        ctx->current_index = rand() % ctx->item_count;
+    int index = ctx->current_index;
+    if (ctx->repeat_mode == ESP_PLAYLIST_REPEAT_SHUFFLE) {
+        index = pick_shuffle_index(ctx);
     } else if (ctx->repeat_mode != ESP_PLAYLIST_REPEAT_ONE) {
-        if (ctx->current_index + 1 >= ctx->item_count) {
+        if (index + 1 >= ctx->item_count) {
             if (ctx->repeat_mode == ESP_PLAYLIST_REPEAT_ALL) {
-                ctx->current_index = 0;
+                index = 0;
             } else {
                 ctx->current_index = ctx->item_count - 1;
                 return ESP_ERR_NOT_FOUND;
             }
         } else {
-            ctx->current_index++;
+            index++;
         }
     }
-    esp_err_t ret = fill_info(ctx, ctx->current_index, info, true);
+    /* Only move the cursor once the target item could actually be resolved. */
+    esp_err_t ret = fill_info(ctx, index, info);
+    if (ret == ESP_OK) {
+        ctx->current_index = index;
+    }
     return log_fill_info_fail(ret, "Next");
 }
 
@@ -795,21 +862,25 @@ esp_err_t esp_playlist_prev(esp_playlist_handle_t handle, esp_playlist_info_t *i
     if (ctx->item_count <= 0) {
         return ESP_ERR_NOT_FOUND;
     }
-    if (ctx->repeat_mode == ESP_PLAYLIST_REPEAT_SHUFFLE && ctx->item_count > 1) {
-        ctx->current_index = rand() % ctx->item_count;
+    int index = ctx->current_index;
+    if (ctx->repeat_mode == ESP_PLAYLIST_REPEAT_SHUFFLE) {
+        index = pick_shuffle_index(ctx);
     } else if (ctx->repeat_mode != ESP_PLAYLIST_REPEAT_ONE) {
-        if (ctx->current_index <= 0) {
+        if (index <= 0) {
             if (ctx->repeat_mode == ESP_PLAYLIST_REPEAT_ALL) {
-                ctx->current_index = ctx->item_count - 1;
+                index = ctx->item_count - 1;
             } else {
                 ctx->current_index = 0;
                 return ESP_ERR_NOT_FOUND;
             }
         } else {
-            ctx->current_index--;
+            index--;
         }
     }
-    esp_err_t ret = fill_info(ctx, ctx->current_index, info, true);
+    esp_err_t ret = fill_info(ctx, index, info);
+    if (ret == ESP_OK) {
+        ctx->current_index = index;
+    }
     return log_fill_info_fail(ret, "Previous");
 }
 
@@ -820,14 +891,10 @@ esp_err_t esp_playlist_curr(esp_playlist_handle_t handle, esp_playlist_info_t *i
         ESP_LOGE(TAG, "Current failed: handle or info is NULL");
         return ESP_ERR_INVALID_ARG;
     }
-    if (ctx->info_cache_valid && ctx->info_cache.index == ctx->current_index) {
-        *info = ctx->info_cache;
-        return ESP_OK;
-    }
     if (ctx->item_count <= 0) {
         return ESP_ERR_NOT_FOUND;
     }
-    esp_err_t ret = fill_info(ctx, ctx->current_index, info, true);
+    esp_err_t ret = fill_info(ctx, ctx->current_index, info);
     return log_fill_info_fail(ret, "Current");
 }
 
@@ -845,7 +912,7 @@ esp_err_t esp_playlist_get_info(esp_playlist_handle_t handle, int index, esp_pla
     if (index >= ctx->item_count) {
         return ESP_ERR_NOT_FOUND;
     }
-    esp_err_t ret = fill_info(ctx, index, info, index == ctx->current_index);
+    esp_err_t ret = fill_info(ctx, index, info);
     return log_fill_info_fail(ret, "Get info");
 }
 
