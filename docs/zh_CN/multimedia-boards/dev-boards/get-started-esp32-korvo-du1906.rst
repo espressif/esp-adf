@@ -40,7 +40,7 @@ ESP32-Korvo-DU1906 的核心组件包括一个 ESP32-DU1906 蓝牙/Wi-Fi音频 �
 * 1 x 装有 Windows、Mac OS 或 Linux 系统的 PC（推荐使用 Linux 操作系统）
 * 1 x ESP32-Korvo-DU1906
 * 2 x Micro USB 数据线
-* 2 x 扬声器 (4 Ohm, 2.5 W)
+* 2 x 扬声器（4 欧姆、2.5 瓦，扬声器连接器间距为 2.00 mm）
 
 概述
 ~~~~
@@ -88,7 +88,7 @@ ESP32-Korvo-DU1906 的主要组件和连接方式如下图所示。
    * - 耳机插孔 (Line-in/out connector)
      - 两个耳机插孔分别用来连接音频数模转换器的 Line-out 输出和音频模数转换器的 Line-in 的输入。当音频数模转换器的 Line-out 耳机插孔插入设备后，ESP32-Korvo-DU1906 上的数字音频功率放大器 (Audio PA) 会被关掉。
    * - 扬声器输出端口 (Speaker Connector)
-     - 可通过数字音频功率放大器（Audio PA）支持两个外部扬声器实现立体声功能。
+     - 通过数字音频功率放大器（Audio PA）支持两个外部扬声器，实现立体声功能。建议使用 4 欧姆、2.5 瓦扬声器；扬声器连接器间距为 2.00 mm。
    * - 音频数模转换器 (Audio DAC)
      - ES7148 立体声数模转换器可以将音频数字信号转换为模拟音频输出。
    * - 数字音频功率放大器 (Audio PA)

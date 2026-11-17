@@ -14,7 +14,7 @@ ESP32-LyraT-Mini 是单声道音频开发板，如需立体声音频开发板，
 -------------
 
 * :ref:`ESP32-LyraT-Mini V1.2 开发板 <get-started-esp32-lyrat-mini-v1.2-board>`
-* 扬声器或 3.5 mm 的耳机（若使用扬声器，建议功率不超过 3 瓦特，另外需要接口为 JST PH 2.0 毫米 2 针的插头，若没有此插头，开发过程中可替换为杜邦母跳线）
+* 扬声器或 3.5 mm 的耳机（若使用扬声器，建议选择 4 欧姆、功率不超过 3 瓦特的扬声器，另外需要接口为 JST PH 2.0 毫米 2 针的插头，若没有此插头，开发过程中可替换为杜邦母跳线）
 * 两个 Micro-USB 2.0 数据线（Type A 到 Micro B）
 * PC（Windows、Linux 或 Mac OS） 
 

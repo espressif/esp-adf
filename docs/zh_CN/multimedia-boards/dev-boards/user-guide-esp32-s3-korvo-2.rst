@@ -67,7 +67,7 @@ ESP32-S3-Korvo-2 V3.1 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
    * - 右侧麦克风 (Right Microphone)
      - 板载麦克风，连接至 ADC。
    * - 扬声器输出端口 (Speaker Output Port)
-     - 可通过音频功率放大器的支持，实现外部扬声器播放功能。
+     - 用于连接外部扬声器。建议使用 4 欧姆、3 瓦扬声器；扬声器连接器间距为 2.00 mm。
    * - USB-to-UART 桥接器 (USB-to-UART Bridge Chip)
      - 单芯片 USB-UART 桥接器 CP2102N 为软件下载和调试提供高达 3 Mbps 的传输速率。
    * - USB-to-UART 端口 (USB-to-UART Port)
@@ -104,7 +104,7 @@ ESP32-S3-Korvo-2 V3.1 主板可与 LCD 扩展板 :doc:`ESP32-S3-Korvo-2-LCD <use
 ^^^^^^^^
 
 - 1 x ESP32-S3-Korvo-2 V3.1
-- 1 x 扬声器
+- 1 x 扬声器（4 欧姆、3 瓦，配备 2.00 mm 间距的连接器）
 - 2 x USB 2.0 数据线（标准 A 型转 Micro-B 型）
 - 1 x 电脑（Windows、Linux 或 macOS）
 

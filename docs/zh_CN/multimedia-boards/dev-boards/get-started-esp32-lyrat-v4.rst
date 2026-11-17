@@ -14,7 +14,7 @@ ESP32-LyraT 开发板面向搭载 ESP32 双核芯片的音频应用领域，如 
 --------
 
 * 1 × :ref:`ESP32-LyraT V4 开发板 <get-started-esp32-lyrat-v4-board>`
-* 2 × 扬声器或 3.5 mm 耳机。若使用扬声器，建议功率不超过 3 瓦特，并需配备 JST PH 2.0 2 针插头。若无此类插头，开发过程中也可使用杜邦母跳线。
+* 2 × 扬声器或 3.5 mm 耳机。若使用扬声器，建议选择 4 欧姆、功率不超过 3 瓦特的扬声器，并需配备 JST PH 2.0 mm 2 针插头。若无此类插头，开发过程中也可使用杜邦母跳线。
 * 1 × Micro USB 2.0 数据线（Type A 转 Micro B）
 * 1 × 已安装 Windows、Linux 或 Mac OS 的 PC
 
