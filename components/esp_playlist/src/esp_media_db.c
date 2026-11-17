@@ -112,7 +112,7 @@ static esp_err_t ensure_media_lib(esp_media_db_ctx_t *c)
     if (c->ml) {
         return ESP_OK;
     }
-    return open_media_lib(c, false);
+    return open_media_lib(c, true);
 }
 
 static uint32_t hash_url(const char *url)
@@ -262,14 +262,9 @@ esp_err_t esp_media_db_load(esp_media_db_handle_t handle)
     }
     esp_err_t ret = open_media_lib(c, true);
     if (ret != ESP_OK) {
-        ESP_LOGW(TAG, "Load failed: %s, recreating empty catalog", esp_err_to_name(ret));
-        ret = open_media_lib(c, false);
-        if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Load failed: cannot recreate empty catalog (%s)", esp_err_to_name(ret));
-        }
-        return ret;
+        ESP_LOGE(TAG, "Load failed: %s", esp_err_to_name(ret));
     }
-    return ESP_OK;
+    return ret;
 }
 
 esp_err_t esp_media_db_clean(esp_media_db_handle_t handle)
@@ -368,7 +363,7 @@ esp_err_t esp_media_db_remove(esp_media_db_handle_t handle, const esp_media_db_i
         return ret;
     }
 
-    esp_media_id_t *remove_ids = (esp_media_id_t *)calloc(count, sizeof(esp_media_id_t));
+    esp_media_id_t *remove_ids = (esp_media_id_t *)calloc(all_count > 0 ? all_count : 1, sizeof(esp_media_id_t));
     if (!remove_ids) {
         free(all_ids);
         remove_url_hash_deinit(&remove_hash);
@@ -377,7 +372,7 @@ esp_err_t esp_media_db_remove(esp_media_db_handle_t handle, const esp_media_db_i
     }
 
     int remove_count = 0;
-    for (int i = 0; i < all_count && remove_count < count; i++) {
+    for (int i = 0; i < all_count; i++) {
         char *url = NULL;
         ret = epl_media_lib_get_media_url(c->ml, all_ids[i], &url);
         if (ret != ESP_OK) {

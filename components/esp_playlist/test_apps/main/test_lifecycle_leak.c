@@ -24,11 +24,15 @@ static void run_playlist_json_cycle(void)
     esp_playlist_handle_t loaded = NULL;
 
     TEST_ESP_OK(playlist_test_create_memory_media_db(&fixture));
-    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {.playlist_name = "leak_playlist"}, &playlist));
+    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {
+                                     .playlist_name = "leak_playlist"
+                                 }, &playlist));
     TEST_ESP_OK(esp_playlist_import_media(playlist, fixture.media_db, NULL));
     TEST_ESP_OK(esp_playlist_save(playlist, PLAYLIST_TEST_JSON_PATH));
 
-    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {.playlist_name = "leak_loaded"}, &loaded));
+    TEST_ESP_OK(esp_playlist_new(&(esp_playlist_cfg_t) {
+                                     .playlist_name = "leak_loaded"
+                                 }, &loaded));
     TEST_ESP_OK(esp_playlist_load(loaded, PLAYLIST_TEST_JSON_PATH));
 
     TEST_ESP_OK(esp_playlist_del(loaded));

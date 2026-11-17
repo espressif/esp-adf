@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,11 @@ typedef int esp_media_id_t;
 
 /**
  * @brief  Scan callback to accept or reject a discovered file URL.
+ *
+ *         Called from inside esp_media_db_scan() while the catalog is being modified. The
+ *         callback must not call any esp_media_db API on the handle being scanned: a nested
+ *         add / remove / scan / load would commit or roll back the rows the outer scan has
+ *         staged so far, and a failed nested call releases the library the scan is walking.
  *
  * @param[in]  ctx  Opaque context from esp_media_db_scan_cfg_t::filter_cb_ctx
  * @param[in]  url  File URL discovered during scan
@@ -90,7 +96,8 @@ typedef enum {
  * @brief  Single filter condition on a catalog column.
  */
 typedef struct {
-    const char             *key;         /*!< Column name, e.g. "name", "url", or "id" */
+    const char             *key;         /*!< Column to match: only "name", "url" and "id" are supported;
+                                              esp_playlist_import_media() rejects any other key */
     esp_db_field_value_t    expected;    /*!< Expected value; type must match the column */
     esp_media_match_type_t  match_type;  /*!< Comparison mode */
 } esp_media_filter_item_t;
@@ -108,12 +115,12 @@ typedef struct {
  * @brief  Directory scan configuration for esp_media_db_scan().
  */
 typedef struct {
-    bool                        skip_duplicate;        /*!< true: skip URL dedup; false: dedup when catalog is non-empty */
+    bool                        skip_duplicate;        /*!< false: dedup when catalog is non-empty */
     const char                 *path;                  /*!< Scan root directory */
     uint8_t                     scan_depth;            /*!< Max recursion depth under path (0 = path only) */
     const char *const          *file_extensions;       /*!< Allowed extensions; NULL if count is 0 */
     uint8_t                     file_extension_count;  /*!< Length of file_extensions; 0 disables filter */
-    esp_media_scan_filter_cb_t  filter_cb;             /*!< Optional post-scan callback; NULL to disable */
+    esp_media_scan_filter_cb_t  filter_cb;             /*!< NULL disables per-file filtering */
     void                       *filter_cb_ctx;         /*!< Context for filter_cb */
 } esp_media_db_scan_cfg_t;
 

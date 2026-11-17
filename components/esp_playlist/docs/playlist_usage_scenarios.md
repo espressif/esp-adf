@@ -33,7 +33,7 @@ When creating a catalog, choose lifecycle via `esp_media_db_cfg_t::storage_type`
 Public type roles:
 
 - `esp_media_db_item_t`: Basic entry passed when writing to the catalog (`name` and `url`).
-- `esp_media_filter_t` / `esp_media_filter_item_t`: Filters used when importing from a catalog into a playlist. Built-in fields: `name`, `url`, `id`; other keys require matching extended metadata inside the catalog.
+- `esp_media_filter_t` / `esp_media_filter_item_t`: Filters used when importing from a catalog into a playlist. Supported keys: `name`, `url`, `id`; any other key makes `esp_playlist_import_media()` return `ESP_ERR_INVALID_ARG`.
 - `esp_playlist_info_t`: Info for navigation and UI (`playlist_name`, `media_name`, `media_url`, `index`). Strings are copied into fixed arrays in the caller-provided struct and truncated if needed.
 
 Recommended teardown order: `esp_playlist_del()` first, then `esp_media_db_deinit()`.
@@ -53,7 +53,7 @@ esp_media_db_cfg_t db_cfg = {
 };
 ESP_ERROR_CHECK(esp_media_db_init(&db_cfg, &media_db));
 
-/* Call load explicitly to restore an existing persistent catalog; on failure the implementation recreates an empty catalog. */
+/* Call load explicitly to restore an existing persistent catalog; if no catalog files exist an empty catalog is created. A save interrupted between removing a live file and renaming its staging copy is finished here; any other incomplete or corrupted catalog returns an error and is left untouched. */
 ESP_ERROR_CHECK(esp_media_db_load(media_db));
 
 esp_playlist_handle_t playlist = NULL;
@@ -119,7 +119,7 @@ ESP_ERROR_CHECK(esp_media_db_init(&db_cfg, &media_db));
 
 ## 4. Clear Current Catalog and Re-import
 
-`esp_media_db_clean()` clears in-memory catalog content only; it does not delete persistent on-disk data. After clean you can `scan` / `add` again, or `load` to restore persisted content.
+`esp_media_db_clean()` releases the in-memory catalog only; it does not delete persistent on-disk data. The next `scan` / `add` / `load` reopens the persisted catalog, so entries saved before clean are still there.
 
 ```c
 ESP_ERROR_CHECK(esp_media_db_clean(media_db));
@@ -130,7 +130,7 @@ esp_media_db_item_t items[] = {
 ESP_ERROR_CHECK(esp_media_db_add(media_db, items, 1));
 ```
 
-To restore a persisted catalog after clean:
+To explicitly reload the persisted catalog after clean (also validates the files):
 
 ```c
 ESP_ERROR_CHECK(esp_media_db_load(media_db));
@@ -152,7 +152,7 @@ esp_err_t esp_playlist_import_media(esp_playlist_handle_t handle,
 - `url`: string; `EXACT`, `CONTAINS`, `PREFIX`.
 - `id`: integer; `ESP_MEDIA_MATCH_EXACT`.
 
-Other keys (`album`, `artist`, `year`, etc.) match only if the catalog stores that extended metadata. Public `esp_media_db_add()` writes only `name` and `url`, so entries created via public APIs are usually filtered on `name` / `url` / `id` only.
+Only `name`, `url` and `id` are valid filter keys: `esp_playlist_import_media()` returns `ESP_ERR_INVALID_ARG` for any other key, whether or not the catalog stores such a column (the public catalog API never writes extended columns). Public `esp_media_db_add()` writes only `name` and `url`, so entries created via public APIs are filtered on `name` / `url` / `id`.
 
 ### 5.1 Import by Exact URL
 
@@ -265,11 +265,15 @@ Behavior summary:
 - `ESP_PLAYLIST_REPEAT_NONE`: `next` past the end or `prev` before the start returns `ESP_ERR_NOT_FOUND`.
 - `ESP_PLAYLIST_REPEAT_ONE`: `next` / `prev` stay on the current item.
 - `ESP_PLAYLIST_REPEAT_ALL`: `next` at the tail wraps to the first item; `prev` at the head wraps to the last.
-- `ESP_PLAYLIST_REPEAT_SHUFFLE`: picks a random item.
+- `ESP_PLAYLIST_REPEAT_SHUFFLE`: picks a random item, never the same item twice in a row; a single-item list keeps returning that item.
 
 ## 8. Playlist Import / Export (File and RAM Buffer)
 
 `esp_playlist_save()` writes the current playlist to a JSON file; `esp_playlist_load()` loads from a JSON file. `esp_playlist_export_ram()` / `esp_playlist_import_ram()` provide the same format in RAM buffers for NVS, network delivery, or environments without a filesystem. This JSON is the playlist file format, not the catalog database.
+
+`curr()` re-reads database-backed entries, so catalog changes are visible without moving the index. Saves require a supported `<path>.tmp` name; unsupported names return `ESP_ERR_NOT_SUPPORTED` without truncating the old file. For FATFS 8.3 use an extensionless name such as `/sdcard/list`.
+
+Successful deletion automatically reclaims old value bytes at the configured garbage threshold while preserving IDs. Compaction requires temporary disk space and uses a recoverable two-file installation.
 
 ### 8.1 File Path
 
@@ -300,7 +304,7 @@ If the buffer is not NUL-terminated, pass an explicit length:
 ESP_ERROR_CHECK(esp_playlist_import_ram(loaded, payload, payload_len));
 ```
 
-`esp_playlist_load()` and `esp_playlist_import_ram()` use replace semantics: on success they clear existing playlist items and rebuild from the JSON `items` array. Loaded items are inline and self-contained; `name` / `url` do not require the original `esp_media_db_handle_t`.
+`esp_playlist_load()` and `esp_playlist_import_ram()` use replace semantics: on success they clear existing playlist items and rebuild from the JSON `items` array; on failure (invalid JSON, missing `name`/`url`, out of memory) the existing items and current index are left unchanged. Loaded items are inline and self-contained; `name` / `url` do not require the original `esp_media_db_handle_t`.
 
 The string returned by `esp_playlist_export_ram()` must be released with `free()`.
 
@@ -348,7 +352,7 @@ If you have additional playlists loaded from JSON, call `esp_playlist_del()` on 
 |------|-----|
 | Create catalog handle | `esp_media_db_init` |
 | Load existing persistent catalog | `esp_media_db_load` |
-| Clear current catalog content | `esp_media_db_clean` |
+| Release the in-memory catalog view | `esp_media_db_clean` |
 | Scan directory into catalog | `esp_media_db_scan` |
 | Add known name / url | `esp_media_db_add` |
 | Remove catalog entries | `esp_media_db_remove` |

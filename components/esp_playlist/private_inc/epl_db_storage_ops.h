@@ -32,7 +32,8 @@ typedef struct {
     esp_err_t (*open)(void *ctx, const char *name, esp_db_storage_open_mode_t mode, esp_db_storage_file_t *file);
     esp_err_t (*close)(void *ctx, esp_db_storage_file_t file);
     esp_err_t (*read)(void *ctx, esp_db_storage_file_t file, off_t offset, void *data, size_t size, size_t *read_size);
-    esp_err_t (*write)(void *ctx, esp_db_storage_file_t file, off_t offset, const void *data, size_t size, size_t *write_size);
+    esp_err_t (*write)(void *ctx, esp_db_storage_file_t file, off_t offset, const void *data, size_t size,
+                       size_t *write_size);
     esp_err_t (*remove)(void *ctx, const char *name);
     esp_err_t (*rename)(void *ctx, const char *old_name, const char *new_name);
     esp_err_t (*exists)(void *ctx, const char *name, bool *exists);

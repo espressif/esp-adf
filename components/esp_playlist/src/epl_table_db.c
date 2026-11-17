@@ -127,12 +127,6 @@ typedef struct {
     epl_media_db_id_t  key_cnt;
 } db_header_t;
 
-/** @brief Cached index of the first unused row slot. */
-typedef struct {
-    epl_media_db_id_t  first;
-    bool               is_valid;
-} db_valid_pos_cache_t;
-
 /** @brief Cached copy of db_header_t to avoid repeated storage reads. */
 typedef struct {
     db_header_t  header;
@@ -161,7 +155,9 @@ typedef struct epl_media_db_t {
     void                       *storage_ctx;
 
     db_table_header_cache_t  header_cache;
-    db_valid_pos_cache_t     valid_pos_cache;
+    /* Sticky: set by any short write, consumed where a mutation or save completes. */
+    bool                     write_failed;
+    bool                     refresh_staging;
 } epl_media_db_t;
 
 /** @brief Predicate comparing a stored cell to a caller buffer for key lookup. */
@@ -177,18 +173,19 @@ static inline const char *_db_temp_uri(epl_media_db_t *db, db_temp_file_t type);
 
 /* Static function declarations */
 static epl_media_db_err_t _db_debug_print_row(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id);
-static epl_media_db_err_t _db_debug_print_row_key(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, epl_media_db_id_t *key_id_arr, epl_media_db_id_t key_num);
+static epl_media_db_err_t _db_debug_print_row_key(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id,
+                                                  epl_media_db_id_t *key_id_arr, epl_media_db_id_t key_num);
 static db_file_t *_storage_open(epl_media_db_t *db, const char *name, const char *mode);
 static int _storage_close(epl_media_db_t *db, db_file_t *file);
 static off_t _storage_seek(epl_media_db_t *db, db_file_t *file, off_t offset, int whence);
 static ssize_t _storage_read(epl_media_db_t *db, db_file_t *file, void *data, size_t count);
 static ssize_t _storage_write(epl_media_db_t *db, db_file_t *file, const void *data, size_t count);
 static int _storage_remove(epl_media_db_t *db, const char *name);
-static int _storage_rename(epl_media_db_t *db, const char *old_name, const char *new_name);
 static int _storage_exists(epl_media_db_t *db, const char *name);
 static int _storage_sync(epl_media_db_t *db, db_file_t *file);
 static off_t _storage_get_size(epl_media_db_t *db, db_file_t *file);
 static epl_media_db_err_t _db_copy_file(epl_media_db_handle_t db_handle, const char *src_uri, const char *dst_uri);
+static epl_media_db_err_t _db_install_file(epl_media_db_t *db, const char *src_uri, const char *dst_uri);
 static epl_media_db_err_t _db_open_temp_file(epl_media_db_t *db, db_temp_file_t type, const char *mode);
 static void _db_close_temp_file(epl_media_db_t *db, db_temp_file_t type);
 static void _db_close_all_temp_files(epl_media_db_t *db);
@@ -201,14 +198,21 @@ static inline void _update_header_cache(epl_media_db_t *db, db_header_t header);
 static inline void _get_table_header_from_cache(epl_media_db_t *db, db_header_t *header);
 static epl_media_db_err_t _db_get_table_header(epl_media_db_handle_t db_handle, db_header_t *header);
 static epl_media_db_err_t _db_set_table_header(epl_media_db_handle_t db_handle, db_header_t header);
+static epl_media_db_err_t _db_take_write_result(epl_media_db_t *db);
+static epl_media_db_err_t _db_check_cell_range(epl_media_db_t *db, epl_media_db_id_t row_id, value_pos_t vpos);
 static epl_media_db_err_t _db_load_keys_cache(epl_media_db_handle_t db_handle, epl_media_db_id_t key_cnt);
-static epl_media_db_err_t _db_set_row_value_offset_size(epl_media_db_handle_t db_handle, db_header_t header, epl_media_db_id_t row_id, epl_media_db_id_t key_id, uint32_t blk_size, value_pos_t val_pos);
+static epl_media_db_err_t _db_set_row_value_offset_size(epl_media_db_handle_t db_handle, db_header_t header,
+                                                        epl_media_db_id_t row_id,
+                                                        epl_media_db_id_t key_id,
+                                                        uint32_t blk_size,
+                                                        value_pos_t val_pos);
 static inline epl_media_db_used_t _is_row_used(epl_media_db_t *db, db_header_t header, epl_media_db_id_t row_id);
-static inline void _set_row_used(epl_media_db_t *db, db_header_t header, epl_media_db_id_t row_id, epl_media_db_used_t used);
-static epl_media_db_err_t _db_update_first_unused_pos_cache(epl_media_db_handle_t db_handle, db_header_t header);
-static epl_media_db_err_t _db_get_first_unused_pos(epl_media_db_handle_t db_handle, db_header_t header, epl_media_db_id_t *first_unused_pos);
-static epl_media_db_err_t _db_append_data(epl_media_db_handle_t db_handle, const void *data, epl_media_db_size_t size, epl_media_db_value_offset_t *offset_ret);
-static epl_media_db_err_t _db_append_cell(epl_media_db_handle_t db, epl_media_db_cell_t *cell, epl_media_db_value_offset_t *offset_ret);
+static inline void _set_row_used(epl_media_db_t *db, db_header_t header, epl_media_db_id_t row_id,
+                                 epl_media_db_used_t used);
+static epl_media_db_err_t _db_append_data(epl_media_db_handle_t db_handle, const void *data, epl_media_db_size_t size,
+                                          epl_media_db_value_offset_t *offset_ret);
+static epl_media_db_err_t _db_append_cell(epl_media_db_handle_t db, epl_media_db_cell_t *cell,
+                                          epl_media_db_value_offset_t *offset_ret);
 
 epl_media_db_err_t epl_media_db_init(const epl_media_db_cfg_t *db_cfg, epl_media_db_handle_t *db_handle)
 {
@@ -273,22 +277,266 @@ epl_media_db_err_t epl_media_db_init(const epl_media_db_cfg_t *db_cfg, epl_media
     };
     db->header_cache.is_valid = false;
     db->header_cache.header = header;
-    db->valid_pos_cache.is_valid = false;
-    db->valid_pos_cache.first = 0;
     *db_handle = db;
     return EPL_MEDIA_DB_OK;
+}
+
+typedef struct {
+    char *data;
+    char *offset;
+    char *marker;  /* Owns the shared buffer; data and offset point inside it. */
+} compact_paths_t;
+
+static epl_media_db_err_t _db_compact_paths(epl_media_db_t *db, compact_paths_t *paths)
+{
+    size_t marker_size = strlen(db->table_file_uri) + 2;
+    size_t data_size = strlen(db->data_file_uri) + 2;
+    size_t offset_size = strlen(db->offset_file_uri) + 2;
+    if (marker_size > SIZE_MAX - data_size || marker_size + data_size > SIZE_MAX - offset_size) {
+        return EPL_MEDIA_DB_ERR_NO_MEM;
+    }
+    char *buffer = realloc(paths->marker, marker_size + data_size + offset_size);
+    if (!buffer) {
+        return EPL_MEDIA_DB_ERR_NO_MEM;
+    }
+    paths->marker = buffer;
+    paths->data = buffer + marker_size;
+    paths->offset = paths->data + data_size;
+    sprintf(paths->data, "^%s", db->data_file_uri);
+    sprintf(paths->offset, "^%s", db->offset_file_uri);
+    sprintf(paths->marker, "!%s", db->table_file_uri);
+    return EPL_MEDIA_DB_OK;
+}
+
+/* The marker is created only after both compacted files are synced. Until it is removed,
+   absent ^files mean already installed, not missing input. Recovery always rolls forward. */
+static epl_media_db_err_t _db_finish_compaction(epl_media_db_t *db)
+{
+    compact_paths_t paths = {0};
+    paths.marker = malloc(strlen(db->table_file_uri) + 2);
+    if (!paths.marker) {
+        return EPL_MEDIA_DB_ERR_NO_MEM;
+    }
+    sprintf(paths.marker, "!%s", db->table_file_uri);
+    bool pending = false;
+    epl_media_db_err_t ret = EPL_MEDIA_DB_ERR_FAIL;
+    if (db->storage_ops->exists(db->storage_ctx, paths.marker, &pending) != ESP_OK) {
+        goto cleanup;
+    }
+    if (!pending) {
+        ret = EPL_MEDIA_DB_OK;
+        goto cleanup;
+    }
+    ret = _db_compact_paths(db, &paths);
+    if (ret != EPL_MEDIA_DB_OK) {
+        goto cleanup;
+    }
+    ret = EPL_MEDIA_DB_ERR_FAIL;
+    const char *src[] = {paths.data, paths.offset};
+    const char *dst[] = {db->data_file_uri, db->offset_file_uri};
+    for (size_t i = 0; i < 2; i++) {
+        bool exists = false;
+        if (db->storage_ops->exists(db->storage_ctx, src[i], &exists) != ESP_OK) {
+            goto cleanup;
+        }
+        if (exists) {
+            if (_db_install_file(db, src[i], dst[i]) != EPL_MEDIA_DB_OK) {
+                goto cleanup;
+            }
+        } else if (db->storage_ops->exists(db->storage_ctx, dst[i], &exists) != ESP_OK || !exists) {
+            goto cleanup;
+        }
+    }
+    const char *staging[] = {db->temp_data_file_uri, db->temp_offset_file_uri, db->temp_table_file_uri};
+    for (size_t i = 0; i < 3; i++) {
+        bool exists = false;
+        if (db->storage_ops->exists(db->storage_ctx, staging[i], &exists) != ESP_OK ||
+            (exists && _storage_remove(db, staging[i]) != 0)) {
+            goto cleanup;
+        }
+    }
+    if (_storage_remove(db, paths.marker) == 0) {
+        ret = EPL_MEDIA_DB_OK;
+    }
+cleanup:
+    free(paths.marker);
+    return ret;
+}
+
+/* Count or copy live cells without renumbering row slots. Bounded streaming avoids allocating
+   the largest stored value, and validation happens before the commit marker can be created. */
+static epl_media_db_err_t _db_compact_cells(epl_media_db_t *db, db_header_t header,
+                                            db_file_t *data, db_file_t *offset, uint64_t *live_bytes)
+{
+    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
+    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_DATA, "r+"), {});
+    uint32_t block_size = CAL_BLOCK_SIZE(header.key_cnt);
+    *live_bytes = MAGIC_SIZE + VERSION_SIZE;
+    uint8_t buffer[512];
+    for (epl_media_db_id_t row = 0; row < header.row_blk_cnt; row++) {
+        epl_media_db_used_t used = _is_row_used(db, header, row);
+        if (used == USED_FALSE) {
+            continue;
+        }
+        if (used != USED_TRUE) {
+            return EPL_MEDIA_DB_ERR_FAIL;
+        }
+        for (epl_media_db_id_t key = 0; key < header.key_cnt; key++) {
+            off_t pos = FIRST_ROW_OFFSET + (off_t)row * block_size + ROW_ID_SIZE + USED_SIZE + key * VALUE_IDX_SIZE;
+            value_pos_t value = {0};
+            _storage_seek(db, db->temp_offset_file, pos, SEEK_SET);
+            if (_storage_read(db, db->temp_offset_file, &value.offset, VALUE_OFFSET_SIZE) != VALUE_OFFSET_SIZE ||
+                _storage_read(db, db->temp_offset_file, &value.size, VALUE_SIZE_SIZE) != VALUE_SIZE_SIZE) {
+                return EPL_MEDIA_DB_ERR_FAIL;
+            }
+            if (value.offset == OFFSET_INVALID && value.size == SIZE_INVALID) {
+                continue;
+            }
+            DB_CHECK_RETURN(_db_check_cell_range(db, row, value), {});
+            if (*live_bytes + value.size > UINT32_MAX) {
+                return EPL_MEDIA_DB_ERR_FAIL;
+            }
+            uint32_t new_offset = (uint32_t)*live_bytes;
+            *live_bytes += value.size;
+            if (!data) {
+                continue;
+            }
+            _storage_seek(db, db->temp_data_file, value.offset, SEEK_SET);
+            size_t remaining = value.size;
+            while (remaining) {
+                size_t count = remaining < sizeof(buffer) ? remaining : sizeof(buffer);
+                if (_storage_read(db, db->temp_data_file, buffer, count) != count ||
+                    _storage_write(db, data, buffer, count) != count) {
+                    return EPL_MEDIA_DB_ERR_FAIL;
+                }
+                remaining -= count;
+            }
+            _storage_seek(db, offset, pos, SEEK_SET);
+            if (_storage_write(db, offset, &new_offset, VALUE_OFFSET_SIZE) != VALUE_OFFSET_SIZE) {
+                return EPL_MEDIA_DB_ERR_FAIL;
+            }
+        }
+    }
+    return EPL_MEDIA_DB_OK;
+}
+
+epl_media_db_err_t epl_media_db_compact(epl_media_db_handle_t db_handle, uint32_t min_reclaim_percent)
+{
+    DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
+    if (min_reclaim_percent > 100) {
+        return EPL_MEDIA_DB_ERR_INVALID_ARG;
+    }
+    epl_media_db_t *db = db_handle;
+    DB_CHECK_RETURN(epl_media_db_ensure_loaded(db), {});
+    db_header_t header;
+    DB_CHECK_RETURN(_db_get_table_header(db, &header), {});
+    uint64_t live_bytes = 0;
+    DB_CHECK_RETURN(_db_compact_cells(db, header, NULL, NULL, &live_bytes), {});
+    off_t original_size = _storage_get_size(db, db->temp_data_file);
+    if (original_size < 0 || live_bytes > (uint64_t)original_size) {
+        return EPL_MEDIA_DB_ERR_FAIL;
+    }
+    uint64_t reclaim = (uint64_t)original_size - live_bytes;
+    if (!reclaim || reclaim * 100 < (uint64_t)original_size * min_reclaim_percent) {
+        return EPL_MEDIA_DB_OK;
+    }
+    _db_close_all_temp_files(db);
+    compact_paths_t paths = {0};
+    DB_CHECK_RETURN(_db_compact_paths(db, &paths), {});
+    db_file_t *data = NULL;
+    db_file_t *offset = NULL;
+    bool marked = false;
+    epl_media_db_err_t ret = _db_copy_file(db, db->temp_offset_file_uri, paths.offset);
+    if (ret != EPL_MEDIA_DB_OK) {
+        goto cleanup;
+    }
+    data = _storage_open(db, paths.data, "w+");
+    offset = _storage_open(db, paths.offset, "r+");
+    if (!data || !offset) {
+        ret = EPL_MEDIA_DB_ERR_FAIL;
+        goto cleanup;
+    }
+    epl_media_db_magic_t magic = MAGIC;
+    epl_media_db_version_t version = VERSION;
+    if (_storage_write(db, data, &magic, MAGIC_SIZE) != MAGIC_SIZE ||
+        _storage_write(db, data, &version, VERSION_SIZE) != VERSION_SIZE) {
+        ret = EPL_MEDIA_DB_ERR_FAIL;
+        goto cleanup;
+    }
+    ret = _db_compact_cells(db, header, data, offset, &live_bytes);
+    bool synced = _storage_sync(db, data) == 0;
+    synced = (_storage_sync(db, offset) == 0) && synced;
+    bool closed = _storage_close(db, data) == 0;
+    closed = (_storage_close(db, offset) == 0) && closed;
+    data = offset = NULL;
+    _db_close_all_temp_files(db);
+    if (ret != EPL_MEDIA_DB_OK || !synced || !closed) {
+        ret = EPL_MEDIA_DB_ERR_FAIL;
+        goto cleanup;
+    }
+    db_file_t *marker = _storage_open(db, paths.marker, "w");
+    if (!marker) {
+        ret = EPL_MEDIA_DB_ERR_FAIL;
+        goto cleanup;
+    }
+    marked = true;
+    synced = _storage_sync(db, marker) == 0;
+    closed = _storage_close(db, marker) == 0;
+    db->refresh_staging = true;
+    if (!synced || !closed) {
+        ret = EPL_MEDIA_DB_ERR_FAIL;
+        goto cleanup;
+    }
+    ret = _db_finish_compaction(db);
+cleanup:
+    if (data) {
+        _storage_close(db, data);
+    }
+    if (offset) {
+        _storage_close(db, offset);
+    }
+    _db_close_all_temp_files(db);
+    (void)_db_take_write_result(db);
+    if (!marked) {
+        _storage_remove(db, paths.data);
+        _storage_remove(db, paths.offset);
+    }
+    free(paths.marker);
+    return ret;
 }
 
 epl_media_db_err_t epl_media_db_exists(epl_media_db_handle_t db_handle)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
-    if (_storage_exists(db, db->table_file_uri) == 0 &&
-        _storage_exists(db, db->data_file_uri) == 0 &&
-        _storage_exists(db, db->offset_file_uri) == 0) {
+    DB_CHECK_RETURN(_db_finish_compaction(db), {});
+    const char *live[] = {db->table_file_uri, db->data_file_uri, db->offset_file_uri};
+    const char *staging[] = {db->temp_table_file_uri, db->temp_data_file_uri, db->temp_offset_file_uri};
+    int present = 0;
+    int missing = 0;
+    for (int i = 0; i < 3; i++) {
+        if (_storage_exists(db, live[i]) == 0) {
+            present++;
+        } else {
+            missing = i;
+        }
+    }
+    /* A save installs each file by removing the live one and renaming its synced staging copy over
+       it. If that stopped in between (rename error or power loss), exactly one live file is missing
+       and its staging copy is complete: finish the rename instead of refusing the catalog. */
+    if (present == 2 && _storage_exists(db, staging[missing]) == 0 &&
+        db->storage_ops->rename(db->storage_ctx, staging[missing], live[missing]) == ESP_OK) {
+        DB_LOGW("Finished an interrupted save of %s", live[missing]);
+        present = 3;
+    }
+    if (present == 3) {
         return EPL_MEDIA_DB_OK;
     }
-    return EPL_MEDIA_DB_ERR_NOT_FOUND;
+    if (present == 0) {
+        return EPL_MEDIA_DB_ERR_NOT_FOUND;
+    }
+    DB_LOGE("Incomplete catalog: %d of 3 files present", present);
+    return EPL_MEDIA_DB_ERR_FAIL;
 }
 
 epl_media_db_err_t epl_media_db_create(epl_media_db_handle_t *db_handle, const epl_media_db_key_cfg_t *key_cfg)
@@ -331,6 +579,7 @@ epl_media_db_err_t epl_media_db_create(epl_media_db_handle_t *db_handle, const e
     _storage_sync(db, table_file);
     _storage_close(db, table_file);
     EPL_CVECTOR_DESTROY(vec_key_lens);
+    DB_CHECK_RETURN(_db_take_write_result(db), {});
     db_file_t *offset_file = _storage_open(db, db->offset_file_uri, "w+");
     if (offset_file == NULL) {
         return EPL_MEDIA_DB_ERR_FAIL;
@@ -339,6 +588,7 @@ epl_media_db_err_t epl_media_db_create(epl_media_db_handle_t *db_handle, const e
     _storage_write(db, offset_file, &version, VERSION_SIZE);
     _storage_sync(db, offset_file);
     _storage_close(db, offset_file);
+    DB_CHECK_RETURN(_db_take_write_result(db), {});
     db_file_t *data_file = _storage_open(db, db->data_file_uri, "w+");
     if (data_file == NULL) {
         return EPL_MEDIA_DB_ERR_FAIL;
@@ -347,6 +597,7 @@ epl_media_db_err_t epl_media_db_create(epl_media_db_handle_t *db_handle, const e
     _storage_write(db, data_file, &version, VERSION_SIZE);
     _storage_sync(db, data_file);
     _storage_close(db, data_file);
+    DB_CHECK_RETURN(_db_take_write_result(db), {});
     DB_CHECK_RETURN(_db_copy_file(db, db->table_file_uri, db->temp_table_file_uri), {});
     DB_CHECK_RETURN(_db_copy_file(db, db->data_file_uri, db->temp_data_file_uri), {});
     DB_CHECK_RETURN(_db_copy_file(db, db->offset_file_uri, db->temp_offset_file_uri), {});
@@ -359,93 +610,43 @@ epl_media_db_err_t epl_media_db_load(epl_media_db_handle_t *db_handle)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     epl_media_db_t *db = (epl_media_db_t *)(*db_handle);
+    _db_close_all_temp_files(db);
+    DB_CHECK_RETURN(epl_media_db_exists(db), {});
     DB_CHECK_RETURN(_db_copy_file(db, db->table_file_uri, db->temp_table_file_uri), {});
     DB_CHECK_RETURN(_db_copy_file(db, db->data_file_uri, db->temp_data_file_uri), {});
     DB_CHECK_RETURN(_db_copy_file(db, db->offset_file_uri, db->temp_offset_file_uri), {});
+    db->refresh_staging = false;
     DB_CHECK_RETURN(_db_load_header_to_cache(db), {});
     db_header_t header;
     DB_CHECK_RETURN(_db_get_table_header(db, &header), {});
     DB_CHECK_RETURN(_db_load_keys_cache(db, header.key_cnt), {});
-    _db_close_all_temp_files(db);
-    return EPL_MEDIA_DB_OK;
-}
-
-epl_media_db_err_t epl_media_db_save_squeeze(epl_media_db_handle_t db_handle)
-{
-    DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
-    epl_media_db_t *db = (epl_media_db_t *)db_handle;
-    _db_flush_and_close_all_temp_files(db);
-    const size_t data_uri_len = strlen(db->data_file_uri);
-    const size_t suffix_len = strlen(".new");
-    char *new_data_file_uri = (char *)malloc(data_uri_len + suffix_len + 1);
-    DB_NULL_CHECK(new_data_file_uri, {return EPL_MEDIA_DB_ERR_NO_MEM;});
-    memcpy(new_data_file_uri, db->data_file_uri, data_uri_len);
-    memcpy(new_data_file_uri + data_uri_len, ".new", suffix_len + 1);
-    db_file_t *new_data_file = _storage_open(db, new_data_file_uri, "w+");
-    if (new_data_file == NULL) {
-        free(new_data_file_uri);
+    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
+    /* 64-bit: row_blk_cnt and key_cnt come from the file, a 32-bit product could wrap past the check */
+    uint64_t block_size = (uint64_t)ROW_ID_SIZE + USED_SIZE + (uint64_t)header.key_cnt * VALUE_IDX_SIZE;
+    uint64_t required = FIRST_ROW_OFFSET + (uint64_t)header.row_blk_cnt * block_size;
+    off_t offset_size = _storage_get_size(db, db->temp_offset_file);
+    if (offset_size < 0 || (uint64_t)offset_size < required) {
+        DB_LOGE("Offset file is shorter than %" PRIu32 " row slots", (uint32_t)header.row_blk_cnt);
+        _db_close_all_temp_files(db);
         return EPL_MEDIA_DB_ERR_FAIL;
     }
-    _storage_sync(db, new_data_file);
-    _storage_close(db, new_data_file);
-
-    db_header_t header;
-    DB_CHECK_RETURN(_db_get_table_header(db_handle, &header), {free(new_data_file_uri);});
-    uint32_t block_size = CAL_BLOCK_SIZE(header.key_cnt);
-    for (int i = 0; i < header.row_blk_cnt; i++) {
-        epl_media_db_used_t used = USED_INVALID;
-        epl_media_db_value_offset_t row_block_start = FIRST_ROW_OFFSET + i * block_size;
-        DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {free(new_data_file_uri);});
-        _storage_seek(db, db->temp_offset_file, row_block_start + USED_BLKOFFSET, SEEK_SET);
-        _storage_read(db, db->temp_offset_file, &used, USED_SIZE);
-        if (used == USED_TRUE) {
-            for (epl_media_db_id_t j = 0; j < header.key_cnt; j++) {
-                epl_media_db_value_offset_t offset = OFFSET_INVALID;
-                epl_media_db_size_t size = SIZE_INVALID;
-                epl_media_db_value_offset_t value_offset_pos = row_block_start + ROW_ID_SIZE + USED_SIZE + j * VALUE_IDX_SIZE;
-                _storage_seek(db, db->temp_offset_file, value_offset_pos, SEEK_SET);
-                _storage_read(db, db->temp_offset_file, &offset, VALUE_OFFSET_SIZE);
-                _storage_read(db, db->temp_offset_file, &size, VALUE_SIZE_SIZE);
-                if (offset != OFFSET_INVALID && size != SIZE_INVALID) {
-                    void *data = malloc(size);
-                    DB_MEM_CHECK(data, {_db_close_all_temp_files(db); free(new_data_file_uri); return EPL_MEDIA_DB_ERR_NO_MEM;});
-                    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_DATA, "r+"), {free(data); free(new_data_file_uri);});
-                    _storage_seek(db, db->temp_data_file, offset, SEEK_SET);
-                    _storage_read(db, db->temp_data_file, data, size);
-                    _db_close_temp_file(db, DB_TEMP_FILE_DATA);
-
-                    new_data_file = _storage_open(db, new_data_file_uri, "a+");
-                    if (new_data_file == NULL) {
-                        _db_close_all_temp_files(db);
-                        free(data);
-                        free(new_data_file_uri);
-                        return EPL_MEDIA_DB_ERR_FAIL;
-                    }
-                    off_t curr_ptr = _storage_get_size(db, new_data_file);
-                    _storage_write(db, new_data_file, data, size);
-                    _storage_sync(db, new_data_file);
-                    _storage_close(db, new_data_file);
-
-                    epl_media_db_value_offset_t curr_ptr_offset = (epl_media_db_value_offset_t)curr_ptr;
-                    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {free(data); free(new_data_file_uri);});
-                    _storage_seek(db, db->temp_offset_file, value_offset_pos, SEEK_SET);
-                    _storage_write(db, db->temp_offset_file, &curr_ptr_offset, VALUE_OFFSET_SIZE);
-                    free(data);
-                }
-            }
+    /* A save interrupted after the offset file was installed leaves the older table header next to
+       it; take row_cnt from the used slots so the count matches the rows that are served. */
+    epl_media_db_id_t used_cnt = 0;
+    for (epl_media_db_id_t i = 0; i < header.row_blk_cnt; i++) {
+        epl_media_db_used_t used = _is_row_used(db, header, i);
+        if (used != USED_TRUE && used != USED_FALSE) {
+            DB_LOGE("Invalid used flag 0x%02x of row %d", (unsigned)used, (int)i);
+            _db_close_all_temp_files(db);
+            return EPL_MEDIA_DB_ERR_FAIL;
         }
+        used_cnt += (used == USED_TRUE);
+    }
+    if (used_cnt != header.row_cnt) {
+        header.row_cnt = used_cnt;
+        DB_CHECK_RETURN(_db_set_table_header(db, header), {_db_close_all_temp_files(db);});
     }
     _db_close_all_temp_files(db);
-    _storage_remove(db, db->data_file_uri);
-    int ret = _storage_rename(db, new_data_file_uri, db->data_file_uri);
-    if (ret != 0) {
-        DB_LOGE("Rename failed with errno: %d", errno);
-    }
-    DB_CHECK_RETURN(_db_copy_file(db, db->data_file_uri, db->temp_data_file_uri), {free(new_data_file_uri);});
-    DB_CHECK_RETURN(_db_copy_file(db, db->temp_table_file_uri, db->table_file_uri), {free(new_data_file_uri);});
-    DB_CHECK_RETURN(_db_copy_file(db, db->temp_offset_file_uri, db->offset_file_uri), {free(new_data_file_uri);});
-    _db_close_all_temp_files(db);
-    free(new_data_file_uri);
     return EPL_MEDIA_DB_OK;
 }
 
@@ -454,18 +655,16 @@ epl_media_db_err_t epl_media_db_close(epl_media_db_handle_t db_handle)
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
     _db_close_all_temp_files(db);
-    if (db->temp_table_file_uri != NULL) {
+    /* While a live file is missing, the staging files hold the only complete copy: keep them so
+       the next open can finish the interrupted save. */
+    epl_media_db_err_t exists = epl_media_db_exists(db);
+    if (exists == EPL_MEDIA_DB_OK || exists == EPL_MEDIA_DB_ERR_NOT_FOUND) {
         _storage_remove(db, db->temp_table_file_uri);
-    }
-    if (db->temp_data_file_uri != NULL) {
         _storage_remove(db, db->temp_data_file_uri);
-    }
-    if (db->temp_offset_file_uri != NULL) {
         _storage_remove(db, db->temp_offset_file_uri);
     }
     _db_destroy_key_cache(db);
     db->header_cache.is_valid = false;
-    db->valid_pos_cache.is_valid = false;
     return EPL_MEDIA_DB_OK;
 }
 
@@ -475,19 +674,41 @@ epl_media_db_err_t epl_media_db_save(epl_media_db_handle_t db_handle)
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
     _db_flush_and_close_all_temp_files(db);
     DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_TABLE, "r+"), {});
-    _storage_sync(db, db->temp_table_file);
+    bool synced = _storage_sync(db, db->temp_table_file) == 0;
     _db_close_temp_file(db, DB_TEMP_FILE_TABLE);
     DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
-    _storage_sync(db, db->temp_offset_file);
+    synced = (_storage_sync(db, db->temp_offset_file) == 0) && synced;
     _db_close_temp_file(db, DB_TEMP_FILE_OFFSET);
     DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_DATA, "r+"), {});
-    _storage_sync(db, db->temp_data_file);
+    synced = (_storage_sync(db, db->temp_data_file) == 0) && synced;
     _db_close_temp_file(db, DB_TEMP_FILE_DATA);
-    DB_CHECK_RETURN(_db_copy_file(db, db->temp_table_file_uri, db->table_file_uri), {});
-    DB_CHECK_RETURN(_db_copy_file(db, db->temp_offset_file_uri, db->offset_file_uri), {});
-    DB_CHECK_RETURN(_db_copy_file(db, db->temp_data_file_uri, db->data_file_uri), {});
-    _db_close_all_temp_files(db);
+    if (!synced) {
+        DB_LOGE("Failed to sync the staging files, nothing installed");
+        return EPL_MEDIA_DB_ERR_FAIL;
+    }
+    /* Install the synced staging files by rename instead of copying over the live ones: a copy
+       truncates the live file before the new content is on storage, so a short write or a full
+       medium left the last saved catalog unloadable. Order is data, offset, table: the data file is
+       append-only and row slots are never reused, so the older offset and table files stay valid
+       next to a newer data file. If the save stops after the offset file, the older table header
+       hides the added rows and load() recounts row_cnt for the removed ones. A file whose rename
+       did not happen is installed from its staging copy by the next exists() or load(). */
+    DB_CHECK_RETURN(_db_install_file(db, db->temp_data_file_uri, db->data_file_uri), {});
+    DB_CHECK_RETURN(_db_install_file(db, db->temp_offset_file_uri, db->offset_file_uri), {});
+    DB_CHECK_RETURN(_db_install_file(db, db->temp_table_file_uri, db->table_file_uri), {});
+    /* All installs committed. Rebuild staging lazily, never turn a committed save into a failure. */
+    db->refresh_staging = true;
     return EPL_MEDIA_DB_OK;
+}
+
+epl_media_db_err_t epl_media_db_ensure_loaded(epl_media_db_handle_t db_handle)
+{
+    DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
+    epl_media_db_t *db = db_handle;
+    if (db->header_cache.is_valid && db->vec_key_names) {
+        return EPL_MEDIA_DB_OK;
+    }
+    return epl_media_db_load(&db_handle);
 }
 
 epl_media_db_err_t epl_media_db_flush(epl_media_db_handle_t db_handle)
@@ -503,6 +724,7 @@ epl_media_db_err_t epl_media_db_delete(epl_media_db_handle_t db_handle)
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
     _db_close_all_temp_files(db);
+    DB_CHECK_RETURN(_db_finish_compaction(db), {});
     if (_storage_exists(db, db->table_file_uri) == 0) {
         _storage_remove(db, db->table_file_uri);
     }
@@ -559,7 +781,8 @@ epl_media_db_err_t epl_media_db_deinit(epl_media_db_handle_t db_handle)
     return EPL_MEDIA_DB_OK;
 }
 
-epl_media_db_err_t epl_media_db_add_row(epl_media_db_handle_t db_handle, const char *key[], epl_media_db_cell_t cell[], epl_media_db_id_t cnt)
+epl_media_db_err_t epl_media_db_add_row(epl_media_db_handle_t db_handle, const char *key[], epl_media_db_cell_t cell[],
+                                        epl_media_db_id_t cnt)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     DB_NULL_CHECK(key, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
@@ -568,10 +791,9 @@ epl_media_db_err_t epl_media_db_add_row(epl_media_db_handle_t db_handle, const c
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
     db_header_t header;
     DB_CHECK_RETURN(_db_get_table_header(db_handle, &header), {});
-    epl_media_db_id_t blkidx;
-    DB_CHECK_RETURN(_db_get_first_unused_pos(db_handle, header, &blkidx), {});
+    epl_media_db_id_t blkidx = header.row_blk_cnt;
     uint32_t block_size = CAL_BLOCK_SIZE(header.key_cnt);
-    epl_media_db_used_t used = USED_TRUE;
+    epl_media_db_used_t used = USED_FALSE;
     DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
     _storage_seek(db, db->temp_offset_file, FIRST_ROW_OFFSET + blkidx * block_size, SEEK_SET);
     _storage_write(db, db->temp_offset_file, &blkidx, ROW_ID_SIZE);
@@ -591,7 +813,7 @@ epl_media_db_err_t epl_media_db_add_row(epl_media_db_handle_t db_handle, const c
             bool is_match = false;
             epl_media_db_id_t j, keyid;
             for (j = 0; j < cnt; j++) {
-                DB_CHECK_RETURN(epl_media_db_get_key_id(db_handle, key[j], &keyid), {});
+                DB_CHECK_RETURN(epl_media_db_get_key_id(db_handle, key[j], &keyid), {(void)_db_take_write_result(db);});
                 if (i == keyid) {
                     is_match = true;
                     break;
@@ -600,7 +822,7 @@ epl_media_db_err_t epl_media_db_add_row(epl_media_db_handle_t db_handle, const c
             if (is_match) {
                 vpos.offset = OFFSET_INVALID;
                 vpos.size = cell[j].size;
-                DB_CHECK_RETURN(_db_append_cell(db, &cell[j], &vpos.offset), {});
+                DB_CHECK_RETURN(_db_append_cell(db, &cell[j], &vpos.offset), {(void)_db_take_write_result(db);});
                 _storage_write(db, db->temp_offset_file, &vpos.offset, VALUE_OFFSET_SIZE);
                 _storage_write(db, db->temp_offset_file, &vpos.size, VALUE_SIZE_SIZE);
             } else {
@@ -613,15 +835,13 @@ epl_media_db_err_t epl_media_db_add_row(epl_media_db_handle_t db_handle, const c
         }
     }
     header.row_cnt++;
-    if (blkidx == header.row_blk_cnt) {
-        header.row_blk_cnt++;
-    }
-    _db_set_table_header(db, header);
-    DB_CHECK_RETURN(_db_update_first_unused_pos_cache(db, header), {});
-    return EPL_MEDIA_DB_OK;
+    header.row_blk_cnt++;
+    _set_row_used(db, header, blkidx, USED_TRUE);
+    return _db_set_table_header(db, header);
 }
 
-epl_media_db_err_t epl_media_db_update_row(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key[], epl_media_db_cell_t cell[], epl_media_db_id_t cnt)
+epl_media_db_err_t epl_media_db_update_row(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key[],
+                                           epl_media_db_cell_t cell[], epl_media_db_id_t cnt)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     DB_NULL_CHECK(key, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
@@ -656,10 +876,9 @@ epl_media_db_err_t epl_media_db_add_empty_row(epl_media_db_handle_t db_handle, e
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
     db_header_t header;
     DB_CHECK_RETURN(_db_get_table_header(db, &header), {});
-    epl_media_db_id_t blkidx;
-    DB_CHECK_RETURN(_db_get_first_unused_pos(db, header, &blkidx), {});
+    epl_media_db_id_t blkidx = header.row_blk_cnt;
     uint32_t block_size = CAL_BLOCK_SIZE(header.key_cnt);
-    epl_media_db_used_t used = USED_TRUE;
+    epl_media_db_used_t used = USED_FALSE;
     DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
     _storage_seek(db, db->temp_offset_file, FIRST_ROW_OFFSET + blkidx * block_size, SEEK_SET);
     _storage_write(db, db->temp_offset_file, &blkidx, ROW_ID_SIZE);
@@ -670,17 +889,16 @@ epl_media_db_err_t epl_media_db_add_empty_row(epl_media_db_handle_t db_handle, e
         _storage_write(db, db->temp_offset_file, &offset, VALUE_OFFSET_SIZE);
         _storage_write(db, db->temp_offset_file, &size, VALUE_SIZE_SIZE);
     }
-    if (blkidx == header.row_blk_cnt) {
-        header.row_blk_cnt++;
-    }
+    header.row_blk_cnt++;
     header.row_cnt++;
+    _set_row_used(db, header, blkidx, USED_TRUE);
     DB_CHECK_RETURN(_db_set_table_header(db, header), {});
-    DB_CHECK_RETURN(_db_update_first_unused_pos_cache(db, header), {});
     *row_id = blkidx;
     return EPL_MEDIA_DB_OK;
 }
 
-epl_media_db_err_t epl_media_db_update_cell(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key, epl_media_db_cell_t cell)
+epl_media_db_err_t epl_media_db_update_cell(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key,
+                                            epl_media_db_cell_t cell)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     DB_NULL_CHECK(key, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
@@ -740,14 +958,6 @@ epl_media_db_err_t epl_media_db_delete_row(epl_media_db_handle_t db_handle, epl_
         _storage_write(db, db->temp_offset_file, &vpos.size, VALUE_SIZE_SIZE);
     }
     header.row_cnt--;
-    if (db->valid_pos_cache.is_valid) {
-        if (db->valid_pos_cache.first > row_id) {
-            db->valid_pos_cache.first = row_id;
-        }
-    }
-    if (row_id == header.row_blk_cnt - 1) {
-        header.row_blk_cnt--;
-    }
     DB_CHECK_RETURN(_db_set_table_header(db, header), {});
     return EPL_MEDIA_DB_OK;
 }
@@ -767,7 +977,8 @@ epl_media_db_err_t epl_media_db_row_exists(epl_media_db_handle_t db_handle, epl_
     return EPL_MEDIA_DB_OK;
 }
 
-epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key, epl_media_db_cell_t *cell)
+epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, const char *key,
+                                         epl_media_db_cell_t *cell)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     DB_NULL_CHECK(cell, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
@@ -779,7 +990,7 @@ epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_me
     epl_media_db_used_t used = _is_row_used(db, header, row_id);
     if (used != USED_TRUE) {
         DB_LOGE("Row[%d] is invalid", row_id);
-        return EPL_MEDIA_DB_ERR_INVALID_ARG;
+        return used == USED_FALSE ? EPL_MEDIA_DB_ERR_INVALID_ARG : EPL_MEDIA_DB_ERR_FAIL;
     }
 
     epl_media_db_id_t key_id = 0;
@@ -794,17 +1005,19 @@ epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_me
 
     DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
     _storage_seek(db, db->temp_offset_file, value_offset_pos, SEEK_SET);
-    _storage_read(db, db->temp_offset_file, &vpos.offset, VALUE_OFFSET_SIZE);
-    _storage_read(db, db->temp_offset_file, &vpos.size, VALUE_SIZE_SIZE);
-
+    if (_storage_read(db, db->temp_offset_file, &vpos.offset, VALUE_OFFSET_SIZE) != (ssize_t)VALUE_OFFSET_SIZE
+        || _storage_read(db, db->temp_offset_file, &vpos.size, VALUE_SIZE_SIZE) != (ssize_t)VALUE_SIZE_SIZE) {
+        DB_LOGE("Row[%d] key[%s] offset entry could not be read", (int)row_id, key);
+        return EPL_MEDIA_DB_ERR_FAIL;
+    }
     if (vpos.offset == OFFSET_INVALID || vpos.size == SIZE_INVALID || vpos.size == 0) {
         /* No data blob; return invalid cell. */
         *cell = epl_media_db_cell_invalid();
         return EPL_MEDIA_DB_OK;
     }
+    DB_CHECK_RETURN(_db_check_cell_range(db, row_id, vpos), {});
     void *value_buf = malloc(vpos.size);
     DB_MEM_CHECK(value_buf, {return EPL_MEDIA_DB_ERR_NO_MEM;});
-    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_DATA, "r+"), {free(value_buf);});
     _storage_seek(db, db->temp_data_file, vpos.offset, SEEK_SET);
     if (_storage_read(db, db->temp_data_file, value_buf, vpos.size) != (ssize_t)vpos.size) {
         free(value_buf);
@@ -812,6 +1025,21 @@ epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_me
     }
     epl_media_db_field_type_t key_type = EPL_MEDIA_DB_FIELD_TYPE_INVALID;
     EPL_CVECTOR_GET(db->vec_key_types, epl_media_db_field_type_t, key_id, &key_type);
+    /* The stored length comes from the offset file; the scalar casts below read sizeof(type) bytes */
+    size_t type_size = 0;
+    if (key_type == EPL_MEDIA_DB_FIELD_TYPE_INT) {
+        type_size = sizeof(int);
+    } else if (key_type == EPL_MEDIA_DB_FIELD_TYPE_FLOAT) {
+        type_size = sizeof(float);
+    } else if (key_type == EPL_MEDIA_DB_FIELD_TYPE_BOOL) {
+        type_size = sizeof(bool);
+    }
+    if (vpos.size < type_size) {
+        DB_LOGE("Row[%d] key[%s] stores %" PRIu32 " bytes for a %u-byte field", (int)row_id, key, vpos.size,
+                (unsigned)type_size);
+        free(value_buf);
+        return EPL_MEDIA_DB_ERR_FAIL;
+    }
     switch (key_type) {
         case EPL_MEDIA_DB_FIELD_TYPE_INT:
             cell->value.intv = *(int *)value_buf;
@@ -825,7 +1053,7 @@ epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_me
             cell->type = EPL_MEDIA_DB_FIELD_TYPE_FLOAT;
             free(value_buf);
             break;
-        case EPL_MEDIA_DB_FIELD_TYPE_STRING:
+        case EPL_MEDIA_DB_FIELD_TYPE_STRING: {
             char *string_value = (char *)malloc(vpos.size + 1);
             DB_MEM_CHECK(string_value, {free(value_buf); return EPL_MEDIA_DB_ERR_NO_MEM;});
             memcpy(string_value, value_buf, vpos.size);
@@ -835,13 +1063,14 @@ epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_me
             cell->type = EPL_MEDIA_DB_FIELD_TYPE_STRING;
             free(value_buf);
             break;
+        }
         case EPL_MEDIA_DB_FIELD_TYPE_BOOL:
             cell->value.boolv = *(bool *)value_buf;
             cell->size = sizeof(bool);
             cell->type = EPL_MEDIA_DB_FIELD_TYPE_BOOL;
             free(value_buf);
             break;
-        case EPL_MEDIA_DB_FIELD_TYPE_INT_ARRAY:
+        case EPL_MEDIA_DB_FIELD_TYPE_INT_ARRAY: {
             void *array_value = malloc(vpos.size);
             DB_MEM_CHECK(array_value, {free(value_buf); return EPL_MEDIA_DB_ERR_NO_MEM;});
             memcpy(array_value, value_buf, vpos.size);
@@ -850,6 +1079,7 @@ epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_me
             cell->type = EPL_MEDIA_DB_FIELD_TYPE_INT_ARRAY;
             free(value_buf);
             break;
+        }
         default:
             DB_LOGE("Invalid key type");
             free(value_buf);
@@ -859,7 +1089,8 @@ epl_media_db_err_t epl_media_db_get_cell(epl_media_db_handle_t db_handle, epl_me
     return EPL_MEDIA_DB_OK;
 }
 
-epl_media_db_err_t epl_media_db_get_all_row_ids(epl_media_db_handle_t db_handle, epl_media_db_id_t **row_ids, epl_media_db_id_t *row_count)
+epl_media_db_err_t epl_media_db_get_all_row_ids(epl_media_db_handle_t db_handle, epl_media_db_id_t **row_ids,
+                                                epl_media_db_id_t *row_count)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     DB_NULL_CHECK(row_ids, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
@@ -882,17 +1113,17 @@ epl_media_db_err_t epl_media_db_get_all_row_ids(epl_media_db_handle_t db_handle,
         epl_media_db_value_offset_t row_block_start = FIRST_ROW_OFFSET + id * block_size;
         _storage_seek(db, db->temp_offset_file, row_block_start + USED_BLKOFFSET, SEEK_SET);
         _storage_read(db, db->temp_offset_file, &used, USED_SIZE);
-        if (used == USED_TRUE) {
+        if (used == USED_TRUE && idx < header.row_cnt) {
             ids[idx++] = id;
         }
     }
     *row_ids = ids;
-    *row_count = header.row_cnt;
-    /* *row_count is live rows; idx is the number of USED_TRUE slots filled above. */
+    *row_count = idx;
     return EPL_MEDIA_DB_OK;
 }
 
-epl_media_db_err_t epl_media_db_match_first_row(epl_media_db_handle_t db_handle, const char *key, epl_media_db_cell_t cell, epl_media_db_id_t *row_id)
+epl_media_db_err_t epl_media_db_match_first_row(epl_media_db_handle_t db_handle, const char *key,
+                                                epl_media_db_cell_t cell, epl_media_db_id_t *row_id)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     DB_NULL_CHECK(key, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
@@ -922,30 +1153,48 @@ epl_media_db_err_t epl_media_db_match_first_row(epl_media_db_handle_t db_handle,
         default:
             return EPL_MEDIA_DB_ERR_INVALID_ARG;
     }
+    /* A row whose used flag, offset entry or cell cannot be read is not a match; keep looking so one
+       damaged row does not hide the rows after it, and report the failure only when nothing matched. */
+    bool unreadable = false;
     for (epl_media_db_id_t id = 0; id < header.row_blk_cnt; id++) {
         epl_media_db_used_t used = _is_row_used(db, header, id);
+        if (used == USED_INVALID) {
+            unreadable = true;
+            continue;
+        }
         if (used != USED_TRUE) {
             continue;
         }
         uint32_t block_size = CAL_BLOCK_SIZE(header.key_cnt);
         epl_media_db_value_offset_t row_block_start = FIRST_ROW_OFFSET + id * block_size;
-        epl_media_db_value_offset_t value_offset_pos = row_block_start + ROW_ID_SIZE + USED_SIZE + key_id_found * VALUE_IDX_SIZE;
+        epl_media_db_value_offset_t value_offset_pos =
+            row_block_start + ROW_ID_SIZE + USED_SIZE + key_id_found * VALUE_IDX_SIZE;
         value_pos_t vpos = {
             .offset = OFFSET_INVALID,
             .size = SIZE_INVALID,
         };
         DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
         _storage_seek(db, db->temp_offset_file, value_offset_pos, SEEK_SET);
-        _storage_read(db, db->temp_offset_file, &vpos.offset, VALUE_OFFSET_SIZE);
-        _storage_read(db, db->temp_offset_file, &vpos.size, VALUE_SIZE_SIZE);
+        if (_storage_read(db, db->temp_offset_file, &vpos.offset, VALUE_OFFSET_SIZE) != (ssize_t)VALUE_OFFSET_SIZE
+            || _storage_read(db, db->temp_offset_file, &vpos.size, VALUE_SIZE_SIZE) != (ssize_t)VALUE_SIZE_SIZE) {
+            unreadable = true;
+            continue;
+        }
         if (vpos.offset == OFFSET_INVALID || vpos.size == SIZE_INVALID) {
+            continue;
+        }
+        if (_db_check_cell_range(db, id, vpos) != EPL_MEDIA_DB_OK) {
+            unreadable = true;
             continue;
         }
         char *value_buf = (char *)malloc(vpos.size);
         DB_MEM_CHECK(value_buf, {return EPL_MEDIA_DB_ERR_NO_MEM;});
-        DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_DATA, "r+"), {free(value_buf);});
         _storage_seek(db, db->temp_data_file, vpos.offset, SEEK_SET);
-        _storage_read(db, db->temp_data_file, value_buf, vpos.size);
+        if (_storage_read(db, db->temp_data_file, value_buf, vpos.size) != (ssize_t)vpos.size) {
+            free(value_buf);
+            unreadable = true;
+            continue;
+        }
         if (cmp_fn(&cell, value_buf, vpos.size)) {
             *row_id = id;
             free(value_buf);
@@ -953,10 +1202,11 @@ epl_media_db_err_t epl_media_db_match_first_row(epl_media_db_handle_t db_handle,
         }
         free(value_buf);
     }
-    return EPL_MEDIA_DB_ERR_NOT_FOUND;
+    return unreadable ? EPL_MEDIA_DB_ERR_FAIL : EPL_MEDIA_DB_ERR_NOT_FOUND;
 }
 
-epl_media_db_err_t epl_media_db_get_key_type(epl_media_db_handle_t db_handle, const char *key, epl_media_db_field_type_t *key_type)
+epl_media_db_err_t epl_media_db_get_key_type(epl_media_db_handle_t db_handle, const char *key,
+                                             epl_media_db_field_type_t *key_type)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     DB_NULL_CHECK(key, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
@@ -1006,7 +1256,8 @@ epl_media_db_err_t epl_media_db_get_row_count(epl_media_db_handle_t db_handle, i
     return EPL_MEDIA_DB_OK;
 }
 
-epl_media_db_err_t epl_media_db_get_file_size(epl_media_db_handle_t db_handle, off_t *size_table, off_t *size_offset, off_t *size_data)
+epl_media_db_err_t epl_media_db_get_file_size(epl_media_db_handle_t db_handle, off_t *size_table, off_t *size_offset,
+                                              off_t *size_data)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     DB_NULL_CHECK(size_table, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
@@ -1243,13 +1494,15 @@ epl_media_db_err_t epl_media_db_debug_show_all_rows(epl_media_db_handle_t db_han
     return EPL_MEDIA_DB_OK;
 }
 
-epl_media_db_err_t epl_media_db_debug_show_all_rows_keys(epl_media_db_handle_t db_handle, const char **keys, epl_media_db_id_t key_num)
+epl_media_db_err_t epl_media_db_debug_show_all_rows_keys(epl_media_db_handle_t db_handle, const char **keys,
+                                                         epl_media_db_id_t key_num)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
     db_header_t header;
     DB_CHECK_RETURN(_db_get_table_header(db, &header), {});
     epl_media_db_id_t *key_id_arr = (epl_media_db_id_t *)malloc(sizeof(epl_media_db_id_t) * key_num);
+    DB_MEM_CHECK(key_id_arr, {return EPL_MEDIA_DB_ERR_NO_MEM;});
     for (int i = 0; i < key_num; i++) {
         DB_CHECK_RETURN(epl_media_db_get_key_id(db, keys[i], &key_id_arr[i]), {free(key_id_arr);});
     }
@@ -1291,10 +1544,15 @@ epl_media_db_err_t epl_media_db_debug_table_parser(epl_media_db_handle_t db_hand
     printf("\n");
     printf("Key Definitions:\n");
     _storage_seek(db, db->temp_table_file, HEADER_START, SEEK_SET);
+    off_t table_size = _storage_get_size(db, db->temp_table_file);
     for (epl_media_db_id_t i = 0; i < key_count; i++) {
         epl_media_db_key_len_t key_len = 0;
         epl_media_db_field_type_t key_type = EPL_MEDIA_DB_FIELD_TYPE_INVALID;
         _storage_read(db, db->temp_table_file, &key_len, KEY_LEN_SIZE);
+        if (table_size < 0 || key_len > (uint64_t)table_size) {
+            DB_LOGE("Key[%d] length %" PRIu32 " exceeds the table file", (int)i, (uint32_t)key_len);
+            return EPL_MEDIA_DB_ERR_FAIL;
+        }
         char *key_name = (char *)malloc(key_len + 1);
         DB_MEM_CHECK(key_name, {return EPL_MEDIA_DB_ERR_NO_MEM;});
         key_name[key_len] = '\0';
@@ -1586,7 +1844,8 @@ static epl_media_db_err_t _db_debug_print_row(epl_media_db_handle_t db_handle, e
     return EPL_MEDIA_DB_OK;
 }
 
-static epl_media_db_err_t _db_debug_print_row_key(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id, epl_media_db_id_t *key_id_arr, epl_media_db_id_t key_num)
+static epl_media_db_err_t _db_debug_print_row_key(epl_media_db_handle_t db_handle, epl_media_db_id_t row_id,
+                                                  epl_media_db_id_t *key_id_arr, epl_media_db_id_t key_num)
 {
     DB_NULL_CHECK(db_handle, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
@@ -1604,7 +1863,8 @@ static epl_media_db_err_t _db_debug_print_row_key(epl_media_db_handle_t db_handl
             DB_LOGE("Invalid key_id: %d", key_id);
             return EPL_MEDIA_DB_ERR_INVALID_ARG;
         }
-        _storage_seek(db, db->temp_offset_file, FIRST_ROW_OFFSET + row_id * block_size + VALUE_ID_BLKOFFSET + key_id * VALUE_IDX_SIZE, SEEK_SET);
+        _storage_seek(db, db->temp_offset_file,
+                      FIRST_ROW_OFFSET + row_id * block_size + VALUE_ID_BLKOFFSET + key_id * VALUE_IDX_SIZE, SEEK_SET);
         epl_media_db_value_offset_t offset = OFFSET_INVALID;
         epl_media_db_size_t size = SIZE_INVALID;
         _storage_read(db, db->temp_offset_file, &offset, VALUE_OFFSET_SIZE);
@@ -1804,11 +2064,11 @@ static ssize_t _storage_read(epl_media_db_t *db, db_file_t *file, void *data, si
 
 static ssize_t _storage_write(epl_media_db_t *db, db_file_t *file, const void *data, size_t count)
 {
-    if (file == NULL) {
-        return -1;
-    }
     size_t write_size = 0;
-    if (db->storage_ops->write(db->storage_ctx, file->file, file->offset, data, count, &write_size) != ESP_OK) {
+    if (file == NULL ||
+        db->storage_ops->write(db->storage_ctx, file->file, file->offset, data, count, &write_size) != ESP_OK ||
+        write_size != count) {
+        db->write_failed = true;
         return -1;
     }
     file->offset += write_size;
@@ -1818,11 +2078,6 @@ static ssize_t _storage_write(epl_media_db_t *db, db_file_t *file, const void *d
 static int _storage_remove(epl_media_db_t *db, const char *name)
 {
     return db->storage_ops->remove(db->storage_ctx, name) == ESP_OK ? 0 : -1;
-}
-
-static int _storage_rename(epl_media_db_t *db, const char *old_name, const char *new_name)
-{
-    return db->storage_ops->rename(db->storage_ctx, old_name, new_name) == ESP_OK ? 0 : -1;
 }
 
 static int _storage_exists(epl_media_db_t *db, const char *name)
@@ -1932,6 +2187,14 @@ static void _db_make_room_for_temp_file(epl_media_db_t *db, db_temp_file_t type)
 
 static epl_media_db_err_t _db_open_temp_file(epl_media_db_t *db, db_temp_file_t type, const char *mode)
 {
+    if (db->refresh_staging) {
+        DB_CHECK_RETURN(_db_finish_compaction(db), {});
+        _db_close_all_temp_files(db);
+        DB_CHECK_RETURN(_db_copy_file(db, db->data_file_uri, db->temp_data_file_uri), {});
+        DB_CHECK_RETURN(_db_copy_file(db, db->offset_file_uri, db->temp_offset_file_uri), {});
+        DB_CHECK_RETURN(_db_copy_file(db, db->table_file_uri, db->temp_table_file_uri), {});
+        db->refresh_staging = false;
+    }
     db_file_t **file = _db_temp_file(db, type);
     const char *uri = _db_temp_uri(db, type);
     DB_NULL_CHECK(file, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
@@ -1988,6 +2251,7 @@ static epl_media_db_err_t _db_copy_file(epl_media_db_handle_t db_handle, const c
         }
         ssize_t bytes_written = _storage_write(db, dst_file, buffer, bytes_read);
         if (bytes_written != bytes_read) {
+            (void)_db_take_write_result(db);
             free(buffer);
             _storage_close(db, src_file);
             _storage_close(db, dst_file);
@@ -1996,9 +2260,20 @@ static epl_media_db_err_t _db_copy_file(epl_media_db_handle_t db_handle, const c
         remaining -= bytes_written;
     }
     free(buffer);
-    _storage_sync(db, dst_file);
-    _storage_close(db, src_file);
-    _storage_close(db, dst_file);
+    bool ok = _storage_sync(db, dst_file) == 0;
+    ok = (_storage_close(db, src_file) == 0) && ok;
+    ok = (_storage_close(db, dst_file) == 0) && ok;
+    return ok ? EPL_MEDIA_DB_OK : EPL_MEDIA_DB_ERR_FAIL;
+}
+
+static epl_media_db_err_t _db_install_file(epl_media_db_t *db, const char *src_uri, const char *dst_uri)
+{
+    /* FATFS rename() refuses to overwrite, so the old file goes first; src is complete and synced. */
+    _storage_remove(db, dst_uri);
+    if (db->storage_ops->rename(db->storage_ctx, src_uri, dst_uri) != ESP_OK) {
+        DB_LOGE("Failed to install %s", dst_uri);
+        return EPL_MEDIA_DB_ERR_FAIL;
+    }
     return EPL_MEDIA_DB_OK;
 }
 
@@ -2006,10 +2281,21 @@ static epl_media_db_err_t _read_header(epl_media_db_t *db, db_header_t *header)
 {
     DB_NULL_CHECK(header, {return EPL_MEDIA_DB_ERR_INVALID_ARG;});
     DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_TABLE, "r+"), {});
-    _storage_seek(db, db->temp_table_file, ROW_BLK_COUNT_OFFSET, SEEK_SET);
-    if (_storage_read(db, db->temp_table_file, &header->row_blk_cnt, ROW_BLK_COUNT_SIZE) != (ssize_t)ROW_BLK_COUNT_SIZE ||
+    epl_media_db_magic_t magic = 0;
+    epl_media_db_version_t version = 0;
+    _storage_seek(db, db->temp_table_file, MAGIC_OFFSET, SEEK_SET);
+    if (_storage_read(db, db->temp_table_file, &magic, MAGIC_SIZE) != (ssize_t)MAGIC_SIZE ||
+        _storage_read(db, db->temp_table_file, &version, VERSION_SIZE) != (ssize_t)VERSION_SIZE ||
+        _storage_read(db, db->temp_table_file, &header->row_blk_cnt, ROW_BLK_COUNT_SIZE) !=
+            (ssize_t)ROW_BLK_COUNT_SIZE ||
         _storage_read(db, db->temp_table_file, &header->row_cnt, ROW_COUNT_SIZE) != (ssize_t)ROW_COUNT_SIZE ||
         _storage_read(db, db->temp_table_file, &header->key_cnt, KEY_COUNT_SIZE) != (ssize_t)KEY_COUNT_SIZE) {
+        return EPL_MEDIA_DB_ERR_FAIL;
+    }
+    if (magic != MAGIC || version != VERSION || header->row_cnt < 0 || header->row_blk_cnt < 0 ||
+        header->key_cnt < 0 || header->row_cnt > header->row_blk_cnt) {
+        DB_LOGE("Invalid table header: magic=0x%08" PRIx32 " version=0x%08" PRIx32 " rows=%" PRIu32 "/%" PRIu32,
+                (uint32_t)magic, (uint32_t)version, (uint32_t)header->row_cnt, (uint32_t)header->row_blk_cnt);
         return EPL_MEDIA_DB_ERR_FAIL;
     }
     return EPL_MEDIA_DB_OK;
@@ -2052,6 +2338,12 @@ static epl_media_db_err_t _db_get_table_header(epl_media_db_handle_t db_handle, 
         _get_table_header_from_cache(db, header);
     } else {
         /* Cache miss: read header from temp table file. */
+        if (db->vec_key_names == NULL) {
+            /* Closed or never loaded: a staging table that is still on storage must not be served,
+               the key lookups have no names to compare. */
+            DB_LOGE("Database is not loaded");
+            return EPL_MEDIA_DB_ERR_FAIL;
+        }
         db_header_t tmp_header;
         DB_CHECK_RETURN(_read_header(db, &tmp_header), {});
         _update_header_cache(db, tmp_header);
@@ -2066,6 +2358,28 @@ static epl_media_db_err_t _db_set_table_header(epl_media_db_handle_t db_handle, 
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
     _write_header(db, header);
     _update_header_cache(db, header);
+    return _db_take_write_result(db);
+}
+
+static epl_media_db_err_t _db_take_write_result(epl_media_db_t *db)
+{
+    if (!db->write_failed) {
+        return EPL_MEDIA_DB_OK;
+    }
+    db->write_failed = false;
+    DB_LOGE("Short write to storage, operation aborted");
+    return EPL_MEDIA_DB_ERR_FAIL;
+}
+
+/* A cell's offset/size come from the offset file: read the range only when all of it lies inside the data file */
+static epl_media_db_err_t _db_check_cell_range(epl_media_db_t *db, epl_media_db_id_t row_id, value_pos_t vpos)
+{
+    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_DATA, "r+"), {});
+    off_t data_size = _storage_get_size(db, db->temp_data_file);
+    if (data_size < 0 || (uint64_t)vpos.offset + vpos.size > (uint64_t)data_size) {
+        DB_LOGE("Row[%d] cell points outside the data file", (int)row_id);
+        return EPL_MEDIA_DB_ERR_FAIL;
+    }
     return EPL_MEDIA_DB_OK;
 }
 
@@ -2083,12 +2397,21 @@ static epl_media_db_err_t _db_load_keys_cache(epl_media_db_handle_t db_handle, e
         EPL_CVECTOR_DESTROY(vec_key_types);
         return EPL_MEDIA_DB_ERR_NO_MEM;
     }
-    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_TABLE, "r+"), {});
+    if (_db_open_temp_file(db, DB_TEMP_FILE_TABLE, "r+") != EPL_MEDIA_DB_OK) {
+        goto load_error;
+    }
     _storage_seek(db, db->temp_table_file, HEADER_START, SEEK_SET);
+    off_t table_size = _storage_get_size(db, db->temp_table_file);
     for (uint32_t i = 0; i < key_cnt; i++) {
         epl_media_db_key_len_t key_len = 0;
         epl_media_db_field_type_t key_type = EPL_MEDIA_DB_FIELD_TYPE_INVALID;
         if (_storage_read(db, db->temp_table_file, &key_len, KEY_LEN_SIZE) != (ssize_t)KEY_LEN_SIZE) {
+            goto load_error;
+        }
+        /* key_len comes from the file: a name cannot be longer than the table file itself, and
+           0xFFFFFFFF would wrap key_len + 1 to a zero-byte allocation. */
+        if (table_size < 0 || key_len > (uint64_t)table_size) {
+            DB_LOGE("Key[%" PRIu32 "] length %" PRIu32 " exceeds the table file", i, (uint32_t)key_len);
             goto load_error;
         }
         char *key_name = (char *)malloc(key_len + 1);
@@ -2117,7 +2440,7 @@ static epl_media_db_err_t _db_load_keys_cache(epl_media_db_handle_t db_handle, e
     db->vec_key_types = vec_key_types;
     return EPL_MEDIA_DB_OK;
 
-load_error:
+load_error: {
     epl_media_db_t tmp_db = {
         .vec_key_names = vec_key_names,
         .vec_key_lens = vec_key_lens,
@@ -2126,8 +2449,13 @@ load_error:
     _db_destroy_key_cache(&tmp_db);
     return EPL_MEDIA_DB_ERR_FAIL;
 }
+}
 
-static epl_media_db_err_t _db_set_row_value_offset_size(epl_media_db_handle_t db_handle, db_header_t header, epl_media_db_id_t row_id, epl_media_db_id_t key_id, uint32_t blk_size, value_pos_t val_pos)
+static epl_media_db_err_t _db_set_row_value_offset_size(epl_media_db_handle_t db_handle, db_header_t header,
+                                                        epl_media_db_id_t row_id,
+                                                        epl_media_db_id_t key_id,
+                                                        uint32_t blk_size,
+                                                        value_pos_t val_pos)
 {
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
     DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
@@ -2136,7 +2464,7 @@ static epl_media_db_err_t _db_set_row_value_offset_size(epl_media_db_handle_t db
     _storage_seek(db, db->temp_offset_file, value_offset_pos, SEEK_SET);
     _storage_write(db, db->temp_offset_file, &val_pos.offset, VALUE_OFFSET_SIZE);
     _storage_write(db, db->temp_offset_file, &val_pos.size, VALUE_SIZE_SIZE);
-    return EPL_MEDIA_DB_OK;
+    return _db_take_write_result(db);
 }
 
 static inline epl_media_db_used_t _is_row_used(epl_media_db_t *db, db_header_t header, epl_media_db_id_t row_id)
@@ -2154,7 +2482,8 @@ static inline epl_media_db_used_t _is_row_used(epl_media_db_t *db, db_header_t h
     return res;
 }
 
-static inline void _set_row_used(epl_media_db_t *db, db_header_t header, epl_media_db_id_t row_id, epl_media_db_used_t used)
+static inline void _set_row_used(epl_media_db_t *db, db_header_t header, epl_media_db_id_t row_id,
+                                 epl_media_db_used_t used)
 {
     if (row_id >= header.row_blk_cnt) {
         DB_LOGE("Invalid row_id");
@@ -2167,61 +2496,8 @@ static inline void _set_row_used(epl_media_db_t *db, db_header_t header, epl_med
     _storage_write(db, db->temp_offset_file, &used, USED_SIZE);
 }
 
-static epl_media_db_err_t _db_update_first_unused_pos_cache(epl_media_db_handle_t db_handle, db_header_t header)
-{
-    epl_media_db_t *db = (epl_media_db_t *)db_handle;
-    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
-    /* Resume search from cached first free slot. */
-    uint32_t block_size = CAL_BLOCK_SIZE(header.key_cnt);
-    epl_media_db_id_t cur_unused_id = db->valid_pos_cache.first;
-    _storage_seek(db, db->temp_offset_file, FIRST_ROW_OFFSET + cur_unused_id * block_size + USED_BLKOFFSET, SEEK_SET);
-    epl_media_db_id_t i;
-    for (i = cur_unused_id; i < header.row_blk_cnt; i++) {
-        epl_media_db_used_t used = USED_INVALID;
-        _storage_read(db, db->temp_offset_file, &used, USED_SIZE);
-        if (used == USED_FALSE) {
-            db->valid_pos_cache.first = i;
-            db->valid_pos_cache.is_valid = true;
-            return EPL_MEDIA_DB_OK;
-        }
-        _storage_seek(db, db->temp_offset_file, block_size - USED_SIZE, SEEK_CUR);
-    }
-    /* All slots used: next insert uses row_blk_cnt. */
-    db->valid_pos_cache.first = header.row_blk_cnt;
-    db->valid_pos_cache.is_valid = true;
-    return EPL_MEDIA_DB_OK;
-}
-
-static epl_media_db_err_t _db_get_first_unused_pos(epl_media_db_handle_t db_handle, db_header_t header, epl_media_db_id_t *first_unused_pos)
-{
-    epl_media_db_t *db = (epl_media_db_t *)db_handle;
-    if (db->valid_pos_cache.is_valid) {
-        *first_unused_pos = db->valid_pos_cache.first;
-        return EPL_MEDIA_DB_OK;
-    }
-    DB_CHECK_RETURN(_db_open_temp_file(db, DB_TEMP_FILE_OFFSET, "r+"), {});
-    /* No valid_pos cache: scan offset file from row 0. */
-    uint32_t block_size = CAL_BLOCK_SIZE(header.key_cnt);
-    _storage_seek(db, db->temp_offset_file, FIRST_ROW_OFFSET + USED_BLKOFFSET, SEEK_SET);
-    epl_media_db_id_t i;
-    for (i = 0; i < header.row_blk_cnt; i++) {
-        epl_media_db_used_t used = USED_INVALID;
-        _storage_read(db, db->temp_offset_file, &used, USED_SIZE);
-        if (used == USED_FALSE) {
-            db->valid_pos_cache.first = i;
-            db->valid_pos_cache.is_valid = true;
-            *first_unused_pos = i;
-            return EPL_MEDIA_DB_OK;
-        }
-        _storage_seek(db, db->temp_offset_file, block_size - USED_SIZE, SEEK_CUR);
-    }
-    db->valid_pos_cache.first = header.row_blk_cnt;
-    db->valid_pos_cache.is_valid = true;
-    *first_unused_pos = header.row_blk_cnt;
-    return EPL_MEDIA_DB_OK;
-}
-
-static epl_media_db_err_t _db_append_data(epl_media_db_handle_t db_handle, const void *data, epl_media_db_size_t size, epl_media_db_value_offset_t *offset_ret)
+static epl_media_db_err_t _db_append_data(epl_media_db_handle_t db_handle, const void *data, epl_media_db_size_t size,
+                                          epl_media_db_value_offset_t *offset_ret)
 {
     /* size==0: caller deletes value without appending data. */
     epl_media_db_t *db = (epl_media_db_t *)db_handle;
@@ -2234,13 +2510,15 @@ static epl_media_db_err_t _db_append_data(epl_media_db_handle_t db_handle, const
     ssize_t bytes_written = _storage_write(db, db->temp_data_file, data, size);
     if (bytes_written != (ssize_t)size) {
         DB_LOGE("Failed to write data: expected %" PRIu32 " bytes, wrote %zd bytes", size, bytes_written);
+        (void)_db_take_write_result(db);
         return EPL_MEDIA_DB_ERR_FAIL;
     }
     *offset_ret = current_offset;
     return EPL_MEDIA_DB_OK;
 }
 
-static epl_media_db_err_t _db_append_cell(epl_media_db_handle_t db, epl_media_db_cell_t *cell, epl_media_db_value_offset_t *offset_ret)
+static epl_media_db_err_t _db_append_cell(epl_media_db_handle_t db, epl_media_db_cell_t *cell,
+                                          epl_media_db_value_offset_t *offset_ret)
 {
     if (!cell || !offset_ret) {
         return EPL_MEDIA_DB_ERR_INVALID_ARG;
@@ -2268,7 +2546,8 @@ static epl_media_db_err_t _db_append_cell(epl_media_db_handle_t db, epl_media_db
     }
 }
 
-epl_media_db_cell_t epl_media_db_cell_init(epl_media_db_field_type_t type, const void *value_p, epl_media_db_size_t size)
+epl_media_db_cell_t epl_media_db_cell_init(epl_media_db_field_type_t type, const void *value_p,
+                                           epl_media_db_size_t size)
 {
     epl_media_db_cell_t cell = epl_media_db_cell_invalid();
     cell.size = size;
@@ -2323,8 +2602,7 @@ epl_media_db_cell_t epl_media_db_cell_init(epl_media_db_field_type_t type, const
 
 epl_media_db_cell_t epl_media_db_cell_invalid()
 {
-    epl_media_db_cell_t cell;
-    cell.size = 0;
+    epl_media_db_cell_t cell = {0};
     cell.type = EPL_MEDIA_DB_FIELD_TYPE_INVALID;
     return cell;
 }

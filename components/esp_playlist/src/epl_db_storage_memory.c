@@ -106,7 +106,8 @@ static inline bool storage_memory_mode_truncates(esp_db_storage_open_mode_t mode
            mode == ESP_DB_STORAGE_OPEN_READ_WRITE_TRUNCATE;
 }
 
-static esp_err_t storage_memory_open(void *ctx, const char *name, esp_db_storage_open_mode_t mode, esp_db_storage_file_t *file)
+static esp_err_t storage_memory_open(void *ctx, const char *name, esp_db_storage_open_mode_t mode,
+                                     esp_db_storage_file_t *file)
 {
     ESP_RETURN_ON_FALSE(ctx != NULL && name != NULL && file != NULL, ESP_ERR_INVALID_ARG, TAG, "Invalid argument");
     *file = NULL;
@@ -151,7 +152,8 @@ static esp_err_t storage_memory_close(void *ctx, esp_db_storage_file_t file)
     return ESP_OK;
 }
 
-static esp_err_t storage_memory_read(void *ctx, esp_db_storage_file_t file, off_t offset, void *data, size_t size, size_t *read_size)
+static esp_err_t storage_memory_read(void *ctx, esp_db_storage_file_t file, off_t offset, void *data, size_t size,
+                                     size_t *read_size)
 {
     (void)ctx;
     db_storage_mem_file_t *mem_file = (db_storage_mem_file_t *)file;
@@ -198,7 +200,8 @@ static esp_err_t storage_memory_reserve(db_storage_mem_object_t *object, size_t 
     return ESP_OK;
 }
 
-static esp_err_t storage_memory_write(void *ctx, esp_db_storage_file_t file, off_t offset, const void *data, size_t size, size_t *write_size)
+static esp_err_t storage_memory_write(void *ctx, esp_db_storage_file_t file, off_t offset, const void *data,
+                                      size_t size, size_t *write_size)
 {
     (void)ctx;
     db_storage_mem_file_t *mem_file = (db_storage_mem_file_t *)file;
@@ -251,21 +254,25 @@ static esp_err_t storage_memory_remove(void *ctx, const char *name)
 
 static esp_err_t storage_memory_rename(void *ctx, const char *old_name, const char *new_name)
 {
-    ESP_RETURN_ON_FALSE(ctx != NULL && old_name != NULL && new_name != NULL, ESP_ERR_INVALID_ARG, TAG, "Invalid argument");
+    ESP_RETURN_ON_FALSE(ctx != NULL && old_name != NULL && new_name != NULL,
+                        ESP_ERR_INVALID_ARG, TAG, "Invalid argument");
     db_storage_mem_ctx_t *mem_ctx = (db_storage_mem_ctx_t *)ctx;
     db_storage_mem_object_t *object = storage_memory_find_object(mem_ctx, old_name);
     if (object == NULL) {
         return ESP_ERR_NOT_FOUND;
     }
 
-    db_storage_mem_object_t *existing = storage_memory_find_object(mem_ctx, new_name);
-    if (existing != NULL && existing != object) {
-        ESP_RETURN_ON_ERROR(storage_memory_remove(ctx, new_name), TAG, "Failed to remove existing target");
-    }
-
     char *name = strdup(new_name);
     if (name == NULL) {
         return ESP_ERR_NO_MEM;
+    }
+    db_storage_mem_object_t *existing = storage_memory_find_object(mem_ctx, new_name);
+    if (existing != NULL && existing != object) {
+        esp_err_t ret = storage_memory_remove(ctx, new_name);
+        if (ret != ESP_OK) {
+            free(name);
+            return ret;
+        }
     }
     free(object->name);
     object->name = name;

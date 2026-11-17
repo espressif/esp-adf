@@ -12,7 +12,7 @@
 #include "esp_media_db.h"
 
 #define PLAYLIST_TEST_STORAGE_BASE    "/spiflash"
-#define PLAYLIST_TEST_JSON_PATH       PLAYLIST_TEST_STORAGE_BASE "/playlist.json"
+#define PLAYLIST_TEST_JSON_PATH       PLAYLIST_TEST_STORAGE_BASE "/pl"
 #define PLAYLIST_TEST_MEDIA_COUNT     3
 #define PLAYLIST_TEST_LEAK_THRESHOLD  500
 
@@ -26,3 +26,5 @@ typedef struct {
 esp_err_t playlist_test_create_memory_media_db(playlist_test_media_db_fixture_t *fixture);
 void playlist_test_destroy_memory_media_db(playlist_test_media_db_fixture_t *fixture);
 size_t playlist_test_heap_free_8bit(void);
+/* Fail test-task calloc/strdup after this many calls; -1 restores normal allocation. */
+void playlist_test_fail_alloc_after(int allocations);

@@ -89,14 +89,15 @@ esp_err_t epl_media_lib_close(epl_media_lib_handle_t handle);
  * @brief  Delete media catalog
  *
  *         Permanently deletes the media catalog data from storage
- *         and releases all associated resources.
+ *         and releases all associated resources. The handle is released
+ *         even when the files could not be removed.
  *
  * @param[in]  handle  Media catalog handle
  *
  * @return
  *       - ESP_OK               Success
  *       - ESP_ERR_INVALID_ARG  Invalid handle
- *       - ESP_FAIL             Delete operation failed
+ *       - ESP_FAIL             Delete operation failed, catalog files kept
  */
 esp_err_t epl_media_lib_delete(epl_media_lib_handle_t handle);
 
@@ -289,11 +290,13 @@ esp_err_t epl_media_lib_scan_media(epl_media_lib_handle_t handle, const esp_medi
  *
  * @param[in]   handle    Media catalog handle
  * @param[in]   url       File URL to check
- * @param[out]  is_exist  Pointer to store the existence result
+ * @param[out]  is_exist  Pointer to store the existence result; valid only on ESP_OK
  *
  * @return
- *       - ESP_OK               Success
+ *       - ESP_OK               Lookup succeeded; is_exist distinguishes a match from a miss
  *       - ESP_ERR_INVALID_ARG  Invalid parameters
+ *       - ESP_ERR_NO_MEM       Lookup allocation failed
+ *       - ESP_FAIL             Catalog lookup failed
  */
 esp_err_t epl_media_lib_is_media_exist(epl_media_lib_handle_t handle, const char *url, bool *is_exist);
 

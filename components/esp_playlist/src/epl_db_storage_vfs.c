@@ -82,7 +82,8 @@ static int storage_vfs_open_mode_to_flags(esp_db_storage_open_mode_t mode)
     }
 }
 
-static esp_err_t storage_vfs_open(void *ctx, const char *name, esp_db_storage_open_mode_t mode, esp_db_storage_file_t *file)
+static esp_err_t storage_vfs_open(void *ctx, const char *name, esp_db_storage_open_mode_t mode,
+                                  esp_db_storage_file_t *file)
 {
     if (file == NULL) {
         return ESP_ERR_INVALID_ARG;
@@ -132,7 +133,8 @@ static esp_err_t storage_vfs_close(void *ctx, esp_db_storage_file_t file)
     return ret == 0 ? ESP_OK : ESP_FAIL;
 }
 
-static esp_err_t storage_vfs_read(void *ctx, esp_db_storage_file_t file, off_t offset, void *data, size_t size, size_t *read_size)
+static esp_err_t storage_vfs_read(void *ctx, esp_db_storage_file_t file, off_t offset, void *data, size_t size,
+                                  size_t *read_size)
 {
     (void)ctx;
     db_storage_vfs_file_t *vfs_file = (db_storage_vfs_file_t *)file;
@@ -152,7 +154,8 @@ static esp_err_t storage_vfs_read(void *ctx, esp_db_storage_file_t file, off_t o
     return ESP_OK;
 }
 
-static esp_err_t storage_vfs_write(void *ctx, esp_db_storage_file_t file, off_t offset, const void *data, size_t size, size_t *write_size)
+static esp_err_t storage_vfs_write(void *ctx, esp_db_storage_file_t file, off_t offset, const void *data, size_t size,
+                                   size_t *write_size)
 {
     (void)ctx;
     db_storage_vfs_file_t *vfs_file = (db_storage_vfs_file_t *)file;
