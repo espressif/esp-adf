@@ -399,7 +399,7 @@ esp_err_t esp_ota_service_http_example_run_ota_session(void)
         out = ESP_OK;
     } else if ((bits & EVT_OTA_DONE) && !(bits & EVT_OTA_FAIL)) {
         ESP_LOGI(TAG, "Run_ota_session: OTA session finished OK; rebooting from the application");
-        esp_ota_service_destroy(svc);
+        ESP_ERROR_CHECK(esp_ota_service_destroy(svc));
         vEventGroupDelete(s_ota_evt);
         s_ota_evt = NULL;
         esp_restart();
@@ -413,7 +413,7 @@ esp_err_t esp_ota_service_http_example_run_ota_session(void)
         out = ESP_OTA_SERVICE_HTTP_EX_ERR_OTA_TIMEOUT;
     }
 
-    esp_ota_service_destroy(svc);
+    ESP_ERROR_CHECK(esp_ota_service_destroy(svc));
     vEventGroupDelete(s_ota_evt);
     s_ota_evt = NULL;
     return out;

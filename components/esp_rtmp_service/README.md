@@ -52,7 +52,7 @@ flowchart TD
     C --> D[esp_service_start]
     D --> E[optional query for SERVER]
     E --> F[esp_service_stop]
-    F --> G[unlink / deinit / free]
+    F --> G[unlink / media deinit / free on success]
 ```
 
 ## Typical Usage
@@ -134,7 +134,7 @@ The payload is `esp_rtmp_service_event_payload_t`. Base lifecycle transitions co
 - Setup and `set_url` require the service to be stopped
 - `esp_rtmp_service_query()` is SERVER-only
 - A sink requests global interleaved cache through link `get_request`
-- Tear down with `esp_media_service_deinit()` then `free()`
+- Call `esp_media_service_deinit()` from the owner task and free only after `ESP_OK`. On failure retain the handle for cleanup retry. Stop external/MCP callers and unlink media endpoints first. Do not deinitialize from callbacks.
 
 ## Example
 

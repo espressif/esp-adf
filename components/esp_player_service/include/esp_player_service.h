@@ -9,11 +9,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
 #include "esp_err.h"
-#include "esp_media_service.h"
 #include "esp_player.h"
 #include "esp_player_scheduler.h"
+#include "esp_media_service.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +32,15 @@ extern "C" {
  *         (e.g. set to 2 for TTS + BGM mix).
  */
 #define ESP_PLAYER_SERVICE_DEFAULT_MAX_STREAM_NUM  1
+
+/**
+ * @brief  Default initializer for esp_player_service_cfg_t
+ */
+#define ESP_PLAYER_SERVICE_CFG_DEFAULT()  {                       \
+    .name           = ESP_PLAYER_SERVICE_DEFAULT_NAME,            \
+    .max_stream_num = ESP_PLAYER_SERVICE_DEFAULT_MAX_STREAM_NUM,  \
+    .pool           = NULL,                                       \
+}
 
 typedef struct esp_player_service esp_player_service_t;
 
@@ -101,15 +109,6 @@ typedef struct {
 } esp_player_service_cfg_t;
 
 /**
- * @brief  Default initializer for esp_player_service_cfg_t
- */
-#define ESP_PLAYER_SERVICE_CFG_DEFAULT()  {                       \
-    .name           = ESP_PLAYER_SERVICE_DEFAULT_NAME,            \
-    .max_stream_num = ESP_PLAYER_SERVICE_DEFAULT_MAX_STREAM_NUM,  \
-    .pool           = NULL,                                       \
-}
-
-/**
  * @brief  Create a player service
  *
  *         The service is created in an uninitialized state. Call
@@ -144,12 +143,16 @@ esp_err_t esp_player_service_create(const esp_player_service_cfg_t *cfg,
  *        `esp_player_stop()`). Custom providers must honor acquire timeout and
  *        `abort()` so those tasks can leave. `esp_service_stop()` uses the same
  *        join.
+ *        Stop external callers and unlink endpoints first. Do not call from
+ *        event/lifecycle callbacks. On error retain the handle for destroy
+ *        retry; never free it or its borrowed playlist manually until success.
  *
  * @param[in]  service  Service handle to destroy
  *
  * @return
  *       - ESP_OK               On success; handle is invalid afterwards
  *       - ESP_ERR_INVALID_ARG  If service is NULL
+ *       - other                Teardown failed; instance retained for retry
  */
 esp_err_t esp_player_service_destroy(esp_player_service_t *service);
 

@@ -6,7 +6,7 @@
  */
 
 /**
- * @file ut_transport_lifecycle_test.c
+ * @file ut_transport_lifecycle.c
  * @brief  MCP transport start/stop/destroy lifecycle stress test.
  *
  *         Repeatedly runs create → start → stop → destroy on each enabled
@@ -18,7 +18,7 @@
  *
  *         Heap usage is sampled before and after each batch to surface
  *         cumulative leaks.  The SSE / HTTP / WS lifecycle stress lives
- *         inside the corresponding `ut_*_transport.c` harness (e.g. `ut_sse_transport.c`)
+ *         inside `ut_transport_web_smoke.c`
  *         right after WiFi comes up (WiFi is a prerequisite for HTTPD-backed transports).
  *
  *         STDIO is intentionally excluded on device: the ESP console VFS
@@ -52,13 +52,13 @@
 #include "esp_service_mcp_trans_sse.h"
 #endif  /* CONFIG_ESP_MCP_TRANSPORT_SSE */
 
-static const char *TAG = "LIFECYCLE";
-
 #ifndef CONFIG_ESP_SVC_TEST_LIFECYCLE_STRESS_CYCLES
 #define CONFIG_ESP_SVC_TEST_LIFECYCLE_STRESS_CYCLES  100
 #endif  /* CONFIG_ESP_SVC_TEST_LIFECYCLE_STRESS_CYCLES */
 
 typedef esp_err_t (*transport_factory_fn)(esp_service_mcp_trans_t **out);
+
+static const char *TAG = "LIFECYCLE";
 
 #ifdef CONFIG_ESP_MCP_TRANSPORT_UART
 static esp_err_t make_uart_transport(esp_service_mcp_trans_t **out)
@@ -126,8 +126,8 @@ static int run_lifecycle_batch(esp_service_manager_t *mgr,
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "[%s] Cycle %d: start server failed: %s",
                      name, i, esp_err_to_name(ret));
-            esp_service_mcp_server_destroy(server);
-            esp_service_mcp_trans_destroy(transport);
+            TEST_ASSERT_EQUAL(ESP_OK, esp_service_mcp_server_destroy(server));
+            TEST_ASSERT_EQUAL(ESP_OK, esp_service_mcp_trans_destroy(transport));
             fail++;
             continue;
         }
@@ -141,8 +141,8 @@ static int run_lifecycle_batch(esp_service_manager_t *mgr,
             ESP_LOGW(TAG, "[%s] Cycle %d: stop server returned %s",
                      name, i, esp_err_to_name(ret));
         }
-        esp_service_mcp_server_destroy(server);
-        esp_service_mcp_trans_destroy(transport);
+        TEST_ASSERT_EQUAL(ESP_OK, esp_service_mcp_server_destroy(server));
+        TEST_ASSERT_EQUAL(ESP_OK, esp_service_mcp_trans_destroy(transport));
 
         ok++;
         if ((i + 1) % 20 == 0) {
@@ -251,7 +251,8 @@ void test_transport_lifecycle(void)
  * Runs a smaller SSE lifecycle stress batch once WiFi is up.  Keeps the cycle
  * count lower by default because each SSE start spins up an HTTPD listener.
  *
- * @return Number of failed cycles (0 = all OK).
+ * @return
+ *       - Number  of failed cycles (0 = all OK).
  */
 int test_sse_lifecycle_stress(esp_service_manager_t *mgr)
 {

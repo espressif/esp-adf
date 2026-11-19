@@ -12,6 +12,15 @@ menu "ESP Service test_apps Configuration"
         help
             WPA/WPA2 password for the STA interface used by transport smoke tests.
 
+    config ESP_SVC_TEST_MCP_AUTH_TOKEN
+        string "Bearer token required by the HTTP / SSE / WS MCP transports"
+        default ""
+        help
+            When non-empty, the transport smoke tests pass this token as auth_token so
+            every POST / SSE subscription / WebSocket upgrade must carry
+            "Authorization: Bearer <token>". scripts/test_mcp_*.py read the same value
+            from the MCP_AUTH_TOKEN environment variable. Empty disables authentication.
+
     if ESP_MCP_ENABLE
 
     config ESP_SVC_TEST_ENABLE_LIFECYCLE_STRESS
@@ -21,8 +30,8 @@ menu "ESP Service test_apps Configuration"
             Run repeated create / start / stop / destroy cycles on UART
             (UART_NUM_1, default pins) when CONFIG_ESP_MCP_TRANSPORT_UART is
             enabled. STDIO is not exercised on-device (console VFS is
-            non-blocking; see ut_transport_lifecycle_test.c). SSE lifecycle
-            stress (if compiled) runs inside ut_sse_transport.c once WiFi is up.
+            non-blocking; see ut_transport_lifecycle.c). SSE lifecycle stress
+            (if compiled) runs inside ut_transport_web_smoke.c once WiFi is up.
 
     config ESP_SVC_TEST_LIFECYCLE_STRESS_CYCLES
         int "Lifecycle stress cycle count per transport"
@@ -40,6 +49,15 @@ menu "ESP Service test_apps Configuration"
             Run the plain HTTP POST transport smoke (Unity).
             Requires WiFi and CONFIG_ESP_MCP_TRANSPORT_HTTP=y.
 
+    config ESP_SVC_TEST_HTTP_HOLD_AFTER_SMOKE
+        bool "After HTTP Unity smoke, keep MCP HTTP server running"
+        default n
+        depends on ESP_SVC_TEST_ENABLE_HTTP_TRANSPORT
+        help
+            When enabled, the device does not tear down the HTTP MCP server after the
+            in-firmware smoke test. Use this to run scripts/test_mcp.py http against
+            the board IP (default http://<ip>:8080/mcp).
+
     config ESP_SVC_TEST_ENABLE_SSE_TRANSPORT
         bool "Enable HTTP+SSE MCP transport smoke test"
         default n
@@ -56,7 +74,7 @@ menu "ESP Service test_apps Configuration"
         depends on ESP_SVC_TEST_ENABLE_SSE_TRANSPORT
         help
             When enabled, the device does not tear down the SSE MCP server after the
-            in-firmware smoke test. Use this so a PC can run scripts/test_mcp_sse.py against
+            in-firmware smoke test. Use this to run scripts/test_mcp.py sse against
             the board IP (default http://<ip>:8080/mcp/sse).
 
     config ESP_SVC_TEST_ENABLE_WS_TRANSPORT
@@ -74,7 +92,7 @@ menu "ESP Service test_apps Configuration"
         depends on ESP_SVC_TEST_ENABLE_WS_TRANSPORT
         help
             When enabled, the device does not tear down the WS MCP server after the
-            in-firmware smoke test. Use this so a PC can run scripts/test_mcp_ws.py against
+            in-firmware smoke test. Use this to run scripts/test_mcp.py ws against
             the board IP (default ws://<ip>:8081/mcp).
 
     config ESP_SVC_TEST_ENABLE_UART_TRANSPORT
@@ -91,7 +109,7 @@ menu "ESP Service test_apps Configuration"
         depends on ESP_SVC_TEST_ENABLE_UART_TRANSPORT
         help
             When enabled, the device does not tear down the UART MCP server after the
-            in-firmware smoke test. Use this so a PC can run scripts/test_mcp_uart.py against
+            in-firmware smoke test. Use this to run scripts/test_mcp.py uart against
             the same serial port as the board USB-UART (ESP32-S3 UART0, default GPIO43/44,
             115200 baud).
 

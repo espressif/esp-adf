@@ -8,7 +8,6 @@
 #pragma once
 
 #include <stdint.h>
-
 #include "esp_err.h"
 #include "esp_extractor.h"
 #include "esp_gmf_pool.h"
@@ -24,6 +23,14 @@ extern "C" {
  *         Scheduler and manager requests use this when cfg->name is NULL.
  */
 #define ESP_EXTRACTOR_SERVICE_NAME  "extractor_service"
+
+/**
+ * @brief  Default create configuration (name ESP_EXTRACTOR_SERVICE_NAME, internal pool)
+ */
+#define ESP_EXTRACTOR_SERVICE_CFG_DEFAULT()  {  \
+    .name = ESP_EXTRACTOR_SERVICE_NAME,         \
+    .pool = NULL,                               \
+}
 
 /**
  * @brief  Opaque extractor source service handle
@@ -58,7 +65,8 @@ typedef struct {
  * @brief  Extractor service create configuration
  *
  *         Stream settings (mask / pool size) are applied via ops before start.
- *         Tear down with esp_media_service_deinit() then free the handle.
+ *         Call esp_media_service_deinit() from the owner task and free the handle
+ *         only on success. On failure retain the handle for cleanup retry.
  *         Caller must register extractors (e.g. esp_extractor_register_default()).
  */
 typedef struct {
@@ -67,20 +75,12 @@ typedef struct {
 } esp_extractor_service_cfg_t;
 
 /**
- * @brief  Default create configuration (name ESP_EXTRACTOR_SERVICE_NAME, internal pool)
- */
-#define ESP_EXTRACTOR_SERVICE_CFG_DEFAULT()  {  \
-    .name = ESP_EXTRACTOR_SERVICE_NAME,         \
-    .pool = NULL,                               \
-}
-
-/**
  * @brief  Create an extractor source service
  *
  *         Recommended flow:
  *         create -> set_url or set_src_data -> optional set_extract_mask /
  *         set_out_pool_size -> optional set_auto_loop -> start -> get_provider or link -> seek/stop
- *         -> esp_media_service_deinit() -> free().
+ *         -> unlink -> esp_media_service_deinit() -> free() only after ESP_OK.
  *
  * @param[in]   cfg          Create configuration
  * @param[out]  out_service  Receives the created service handle

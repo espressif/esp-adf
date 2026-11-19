@@ -59,8 +59,8 @@ struct esp_muxer_service {
     esp_muxer_handle_t           muxer;                                /*!< Active muxer handle while running */
     esp_gmf_data_queue_t        *stream_queue;                         /*!< Muxed-byte queue when streaming */
     media_lib_thread_handle_t    task;                                 /*!< Muxer worker thread */
-    volatile bool                task_stop;                            /*!< Set to request worker exit */
-    volatile bool                task_running;                         /*!< True while worker is alive */
+    _Atomic bool                 task_stop;                            /*!< Set to request worker exit */
+    _Atomic bool                 task_running;                         /*!< True while worker is alive */
     muxer_service_track_state_t  tracks[ESP_MUXER_SERVICE_TRACK_MAX];  /*!< Audio / video bind state */
 };
 

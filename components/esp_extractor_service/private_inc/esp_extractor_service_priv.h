@@ -69,23 +69,23 @@ typedef struct {
  * @brief  Extractor source service instance (opaque as esp_extractor_service_t)
  */
 struct esp_extractor_service {
-    esp_media_service_t        media;                         /*!< Base media service (must be first) */
-    char                      *url;                           /*!< Copied URL; NULL when using src_data */
-    uint8_t                    extract_mask;                  /*!< ESP_EXTRACT_MASK_* applied at start */
-    uint32_t                   out_pool_size;                 /*!< Extractor output pool size in bytes */
-    esp_gmf_pool_handle_t      pool;                          /*!< GMF IO pool (file/http) */
-    bool                       own_pool;                      /*!< True if pool was created internally */
-    esp_media_track_mngr_t    *mngr;                          /*!< Track manager for published frames */
-    esp_media_provider_t       provider;                      /*!< Provider exposed via get_provider */
-    extractor_track_slot_t     tracks[EXTRACTOR_MAX_TRACKS];  /*!< Fast lookup for published tracks */
-    uint8_t                    track_count;                   /*!< Number of valid entries in tracks[] */
-    esp_extractor_handle_t     extractor;                     /*!< Active while task running; used by frame_release */
-    media_lib_thread_handle_t  task;                          /*!< Extractor worker thread */
-    QueueHandle_t              cmd_queue;                     /*!< Seek / stop commands for extractor task */
-    bool                       auto_loop;                     /*!< On EOS: seek 0 and continue when true */
-    uint32_t                   loop_count;                    /*!< Completed play-throughs this start */
-    volatile bool              task_stop;                     /*!< Set to request worker exit */
-    volatile bool              task_running;                  /*!< True while worker is alive */
+    esp_media_service_t             media;                         /*!< Base media service (must be first) */
+    char                           *url;                           /*!< Copied URL; NULL when using src_data */
+    uint8_t                         extract_mask;                  /*!< ESP_EXTRACT_MASK_* applied at start */
+    uint32_t                        out_pool_size;                 /*!< Extractor output pool size in bytes */
+    esp_gmf_pool_handle_t           pool;                          /*!< GMF IO pool (file/http) */
+    bool                            own_pool;                      /*!< True if pool was created internally */
+    esp_media_track_mngr_t         *mngr;                          /*!< Track manager for published frames */
+    esp_media_provider_t            provider;                      /*!< Provider exposed via get_provider */
+    extractor_track_slot_t          tracks[EXTRACTOR_MAX_TRACKS];  /*!< Fast lookup for published tracks */
+    uint8_t                         track_count;                   /*!< Number of valid entries in tracks[] */
+    _Atomic(esp_extractor_handle_t) extractor;                     /*!< Published after open; retained until task exit */
+    media_lib_thread_handle_t       task;                          /*!< Extractor worker thread */
+    QueueHandle_t                   cmd_queue;                     /*!< Seek / stop commands for extractor task */
+    bool                            auto_loop;                     /*!< On EOS: seek 0 and continue when true */
+    uint32_t                        loop_count;                    /*!< Completed play-throughs this start */
+    _Atomic bool                    task_stop;                     /*!< Set to request worker exit */
+    _Atomic bool                    task_running;                  /*!< True while worker is alive */
 #ifdef  CONFIG_ESP_EXTRACTOR_SERVICE_HLS_SUPPORT
     esp_hls_extractor_cfg_t *hls_cfg;  /*!< HLS helper config when URL is a playlist */
 #endif                                 /* CONFIG_ESP_EXTRACTOR_SERVICE_HLS_SUPPORT */

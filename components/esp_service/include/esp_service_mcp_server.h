@@ -56,6 +56,17 @@ extern "C" {
  *         @endcode
  */
 
+/**
+ * @brief  Default server configuration
+ */
+#define ESP_SERVICE_MCP_SERVER_CONFIG_DEFAULT()  {  \
+    .tool_provider     = {NULL, NULL, NULL},        \
+    .transport         = NULL,                      \
+    .server_name       = "esp-mcp-server",          \
+    .server_version    = "1.0.0",                   \
+    .max_response_size = 4096,                      \
+}
+
 /* Forward declarations */
 typedef struct esp_service_mcp_server esp_service_mcp_server_t;
 typedef struct esp_service_tool esp_service_tool_t;
@@ -82,24 +93,32 @@ struct esp_service_tool {
  */
 typedef struct {
     /**
-     * @brief  Enumerate all available tools
+     * @brief  Enumerate all available tools as a caller-owned snapshot
+     *
+     *         The provider allocates the array and every name/description/
+     *         input_schema string with malloc/strdup; the server releases
+     *         them with free(). A snapshot (rather than pointers into the
+     *         registry) keeps tools/list safe against concurrent unregister.
      *
      * @param[in]   ctx        Opaque context
-     * @param[out]  out_tools  Array to fill with tool pointers
-     * @param[in]   max_tools  Capacity of out_tools
-     * @param[out]  out_count  Number of tools written
+     * @param[out]  out_tools  Receives a newly allocated array (NULL when count is 0)
+     * @param[out]  out_count  Number of entries in *out_tools
      *
      * @return
-     *       - ESP_OK  On success
+     *       - ESP_OK          On success
+     *       - ESP_ERR_NO_MEM  Allocation failed
      */
-    esp_err_t (*get_tools)(void *ctx, const esp_service_tool_t **out_tools, uint16_t max_tools, uint16_t *out_count);
+    esp_err_t (*get_tools)(void *ctx, esp_service_tool_t **out_tools, uint16_t *out_count);
 
     /**
      * @brief  Invoke a named tool
      *
+     *         Provider validates its schema, argument types and value ranges.
+     *         The server checks that arguments are a JSON object only.
+     *
      * @param[in]   ctx          Opaque context
      * @param[in]   tool_name    Tool name
-     * @param[in]   args_json    JSON-encoded arguments (may be NULL or "{}")
+     * @param[in]   args_json    JSON object arguments; provider validates its own schema
      * @param[out]  result       Buffer for JSON result string
      * @param[in]   result_size  Size of result buffer
      *
@@ -107,9 +126,11 @@ typedef struct {
      *       - ESP_OK             On success
      *       - ESP_ERR_NOT_FOUND  If the tool name is unknown
      */
-    esp_err_t (*invoke_tool)(void *ctx, const char *tool_name, const char *args_json, char *result, size_t result_size);
+    esp_err_t (*invoke_tool)(void *ctx, const char *tool_name, const char *args_json,
+                             char *result, size_t result_size);
 
-    void *ctx;  /*!< Opaque context passed to both callbacks */
+    /** Opaque context passed to both callbacks */
+    void *ctx;
 } esp_service_mcp_tool_provider_t;
 
 /**
@@ -130,27 +151,13 @@ typedef struct {
 typedef struct {
     esp_service_mcp_tool_provider_t  tool_provider;      /*!< Tool source (esp_service_manager_as_tool_provider()) */
     esp_service_mcp_trans_t         *transport;          /*!< Abstract transport instance (required) */
-    const char                      *server_name;        /*!< Server name for MCP initialize (default: "esp-mcp-server") */
+    const char                      *server_name;        /*!< Server name for MCP initialize (default:
+                                                          * "esp-mcp-server") */
     const char                      *server_version;     /*!< Server version for MCP initialize (default: "1.0.0") */
-    size_t                           max_request_size;   /*!< Max request size in bytes (default: 4096) */
-    size_t                           max_response_size;  /*!< Max tool result + response size in bytes (default: 4096) */
-    uint16_t                         max_tools;          /*!< Max tools for tools/list (default: 64) */
-    uint32_t                         timeout_ms;         /*!< Request timeout (default: 5000) */
+    size_t                           max_response_size;  /*!< Size of the buffer a tools/call handler writes its
+                                                          * result into (default: 4096); tools/list is not bounded
+                                                          * by it and grows with the tool count */
 } esp_service_mcp_server_config_t;
-
-/**
- * @brief  Default server configuration
- */
-#define ESP_SERVICE_MCP_SERVER_CONFIG_DEFAULT()  {  \
-    .tool_provider     = {NULL, NULL, NULL},        \
-    .transport         = NULL,                      \
-    .server_name       = "esp-mcp-server",          \
-    .server_version    = "1.0.0",                   \
-    .max_request_size  = 4096,                      \
-    .max_response_size = 4096,                      \
-    .max_tools         = 64,                        \
-    .timeout_ms        = 5000,                      \
-}
 
 /**
  * @brief  MCP server capabilities
@@ -180,13 +187,24 @@ esp_err_t esp_service_mcp_server_create(const esp_service_mcp_server_config_t *c
 /**
  * @brief  Destroy MCP server
  *
- *         Stops the server if still running. Does NOT destroy the transport.
+ *         Stops the bound transport (even if the application started it
+ *         directly) and detaches the request handler before freeing the
+ *         server. The transport's stop() contract (see
+ *         esp_service_mcp_trans_ops_t::stop) is that no request handler
+ *         invocation is still running when it returns ESP_OK. On stop failure,
+ *         the server and handler binding are retained unchanged for owner-task
+ *         retry. Do not free either object or restart a partially stopped
+ *         transport before stop/destroy succeeds. Lifecycle and external API
+ *         calls must be serialized by the owner; callback-side destroy is not
+ *         supported. A custom transport must give the same stop guarantee.
+ *         Does NOT destroy the transport.
  *
  * @param[in]  srv  Server instance
  *
  * @return
  *       - ESP_OK               On success
  *       - ESP_ERR_INVALID_ARG  If srv is NULL
+ *       - Other                Transport stop failed; server remains valid for retry
  */
 esp_err_t esp_service_mcp_server_destroy(esp_service_mcp_server_t *srv);
 
@@ -214,6 +232,7 @@ esp_err_t esp_service_mcp_server_start(esp_service_mcp_server_t *srv);
  * @return
  *       - ESP_OK               On success (including when the server is not running)
  *       - ESP_ERR_INVALID_ARG  If srv is NULL
+ *       - Other                Transport stop failed; retry before restarting
  */
 esp_err_t esp_service_mcp_server_stop(esp_service_mcp_server_t *srv);
 
@@ -273,7 +292,8 @@ void esp_service_mcp_response_free(esp_service_mcp_response_t *response);
 /**
  * @brief  Helper: Build JSON-RPC success response
  *
- * @param[in]  id      Request ID (JSON string or number)
+ * @param[in]  id      Request ID; a non-empty decimal string is emitted as a JSON
+ *                     number, anything else (including "") as a JSON string
  * @param[in]  result  Result object (JSON string)
  *
  * @return
@@ -305,7 +325,7 @@ char *esp_service_mcp_build_error(const char *id, int code, const char *message)
  *       - Non-NULL  Heap-allocated JSON array string; caller must free()
  *       - NULL      On allocation failure (OOM)
  */
-char *esp_service_mcp_build_tools_list(const esp_service_tool_t **tools, uint16_t count);
+char *esp_service_mcp_build_tools_list(const esp_service_tool_t *tools, uint16_t count);
 
 #ifdef __cplusplus
 }

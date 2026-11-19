@@ -7,18 +7,15 @@
 
 #include <inttypes.h>
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/idf_additions.h"
-
 #include "esp_check.h"
 #include "esp_event.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
-
 #include "esp_wifi_service.h"
 #include "esp_wifi_service_comm.h"
 #include "esp_wifi_service_prov.h"
@@ -119,6 +116,12 @@ static esp_err_t wifi_service_publish_event(esp_wifi_service_t *service, uint16_
         payload_len = 0;
     }
     esp_err_t ret = esp_service_publish_event(&service->base, event_id, payload, payload_len, NULL, NULL);
+    esp_service_state_t state;
+    if (ret == ESP_ERR_INVALID_STATE && esp_service_get_state(&service->base, &state) == ESP_OK &&
+        state == ESP_SERVICE_STATE_STOPPING) {
+        /* Shutdown notifications are suppressed, not failed provisioning work. */
+        return ESP_OK;
+    }
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Publish failed: event_id=%u, err=%s", (unsigned)event_id, esp_err_to_name(ret));
     }
@@ -600,22 +603,25 @@ static esp_err_t wifi_service_on_deinit(esp_service_t *service)
     ESP_RETURN_ON_FALSE(service, ESP_ERR_INVALID_ARG, TAG, "Deinit failed: service is NULL");
     esp_wifi_service_t *wifi_service = (esp_wifi_service_t *)service;
     ESP_LOGI(TAG, "Deinit 'wifi_service': begin");
-    wifi_service_stop_selector(wifi_service);
+    /* Provisioning can also be started independently of base start/stop.
+     * Keep all callback targets intact if such an agent cannot detach. */
+    esp_err_t stop_ret = wifi_service_stop_all_agents(wifi_service);
+    if (stop_ret != ESP_OK) {
+        return stop_ret;
+    }
     if (wifi_service->selector) {
         esp_wifi_service_selector_deinit(wifi_service->selector);
         wifi_service->selector = NULL;
     }
-    esp_err_t first_error = ESP_OK;
-    esp_err_t stop_ret = wifi_service_stop_all_agents(wifi_service);
-    if (stop_ret != ESP_OK) {
-        first_error = stop_ret;
-    }
     wifi_service_unregister_sta_event_handlers(wifi_service);
     for (size_t i = 0; i < wifi_service->prov.num; ++i) {
+        if (wifi_service->prov.items[i].handle == NULL) {
+            continue;
+        }
         esp_err_t cb_ret = esp_wifi_service_prov_set_cb(wifi_service->prov.items[i].handle, NULL, NULL);
-        if (cb_ret != ESP_OK && first_error == ESP_OK) {
+        if (cb_ret != ESP_OK) {
             ESP_LOGW(TAG, "Deinit callback clear: index=%u, err=%s", (unsigned)i, esp_err_to_name(cb_ret));
-            first_error = cb_ret;
+            return cb_ret;
         }
         esp_wifi_service_prov_set_scan_agent(wifi_service->prov.items[i].handle, NULL);
         wifi_service->prov.items[i].started = false;
@@ -627,8 +633,15 @@ static esp_err_t wifi_service_on_deinit(esp_service_t *service)
     }
     wifi_service->profile_manager = NULL;
     wifi_service_teardown_wifi(wifi_service);
+    if (wifi_service->connect_wait_group) {
+        vEventGroupDeleteWithCaps(wifi_service->connect_wait_group);
+        wifi_service->connect_wait_group = NULL;
+    }
+    heap_caps_free(wifi_service->prov.items);
+    wifi_service->prov.items = NULL;
+    wifi_service->prov.num = 0;
     ESP_LOGI(TAG, "Deinit 'wifi_service': done");
-    return first_error;
+    return ESP_OK;
 }
 
 static esp_err_t wifi_service_on_start(esp_service_t *service)
@@ -836,15 +849,6 @@ esp_err_t esp_wifi_service_destroy(esp_wifi_service_t *service)
         ESP_LOGE(TAG, "Destroy failed: esp_service_deinit returned %s", esp_err_to_name(ret));
         return ret;
     }
-    if (service->connect_wait_group) {
-        vEventGroupDeleteWithCaps(service->connect_wait_group);
-        service->connect_wait_group = NULL;
-    }
-    if (service->scan_agent) {
-        esp_wifi_service_scan_deinit(service->scan_agent);
-        service->scan_agent = NULL;
-    }
-    heap_caps_free(service->prov.items);
     heap_caps_free(service);
     ESP_LOGI(TAG, "Destroy 'wifi_service': success");
     return ESP_OK;
@@ -859,7 +863,7 @@ esp_err_t esp_wifi_service_get_profile_manager(esp_wifi_service_t *service, esp_
 }
 
 esp_err_t esp_wifi_service_get_scan_handle(esp_wifi_service_t *service,
-                                          esp_wifi_service_scan_handle_t *scan_handle_out)
+                                           esp_wifi_service_scan_handle_t *scan_handle_out)
 {
     ESP_RETURN_ON_FALSE(service && scan_handle_out, ESP_ERR_INVALID_ARG, TAG,
                         "Get scan handle failed: invalid arguments");

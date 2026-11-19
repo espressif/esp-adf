@@ -7,9 +7,10 @@
 
 #include <string.h>
 #include "esp_log.h"
+#include "sdkconfig.h"
 #include "esp_media_service.h"
 #include "media_service_err.h"
-#include "sdkconfig.h"
+
 #if CONFIG_ESP_MEDIA_SERVICE_MCP_ENABLE
 #include "esp_media_service_mcp.h"
 #endif  /* CONFIG_ESP_MEDIA_SERVICE_MCP_ENABLE */
@@ -30,8 +31,11 @@ esp_err_t esp_media_service_init(esp_media_service_t *service, const esp_media_s
         .name = config->name,
         .user_data = config->user_data,
     };
-    RET_CHK(esp_service_init(&service->base, &base_cfg, config->service_ops),
-            "Failed to init base service");
+    esp_err_t ret = esp_service_init(&service->base, &base_cfg, config->service_ops);
+    if (ret != ESP_OK) {
+        service->media_ops = NULL;
+        RET_FOR(ret, "Failed to init base service");
+    }
 #if CONFIG_ESP_MEDIA_SERVICE_MCP_ENABLE
     esp_media_service_mcp_on_init(&service->base);
 #endif  /* CONFIG_ESP_MEDIA_SERVICE_MCP_ENABLE */
@@ -43,10 +47,11 @@ esp_err_t esp_media_service_deinit(esp_service_t *service)
     if (service == NULL) {
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid args service:%p", service);
     }
+    RET_CHK(esp_service_deinit(service), "Failed to deinit base service");
 #if CONFIG_ESP_MEDIA_SERVICE_MCP_ENABLE
     esp_media_service_mcp_on_deinit(service);
 #endif  /* CONFIG_ESP_MEDIA_SERVICE_MCP_ENABLE */
-    RET_CHK(esp_service_deinit(service), "Failed to deinit base service");
+    ((esp_media_service_t *)service)->media_ops = NULL;
     return ESP_OK;
 }
 

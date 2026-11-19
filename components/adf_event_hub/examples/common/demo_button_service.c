@@ -12,6 +12,7 @@
 
 static const char *TAG = "Button";
 
+#define BUTTON_TASK_STACK     (6 * 1024)
 #define BUTTON_TASK_PRIORITY  (tskIDLE_PRIORITY + 4)
 
 struct demo_button_service {
@@ -82,7 +83,7 @@ demo_button_service_t *demo_button_service_create(int rounds)
         return NULL;
     }
     BaseType_t ok = xTaskCreate(button_task, "btn_svc",
-                                configMINIMAL_STACK_SIZE * 2,
+                                BUTTON_TASK_STACK,
                                 svc, BUTTON_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");

@@ -18,6 +18,7 @@
 static const char *TAG = "LED";
 
 #define LED_QUEUE_LEN      48
+#define LED_TASK_STACK     (6 * 1024)
 #define LED_TASK_PRIORITY  (tskIDLE_PRIORITY + 2)
 
 struct demo_led_service {
@@ -142,7 +143,7 @@ demo_led_service_t *demo_led_service_create(void)
     }
 
     BaseType_t ok = xTaskCreate(led_task, "led_svc",
-                                configMINIMAL_STACK_SIZE * 2,
+                                LED_TASK_STACK,
                                 svc, LED_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");
@@ -156,11 +157,12 @@ demo_led_service_t *demo_led_service_create(void)
     return svc;
 
 fail:
-    adf_event_hub_destroy(svc->hub);
+    (void)adf_event_hub_unsubscribe_all(svc->hub);
     adf_event_delivery_t delivery;
     while (xQueueReceive(svc->queue, &delivery, 0) == pdTRUE) {
         adf_event_hub_delivery_done(svc->hub, &delivery);
     }
+    (void)adf_event_hub_destroy(svc->hub);
     vQueueDelete(svc->queue);
     vSemaphoreDelete(svc->exited);
     free(svc);

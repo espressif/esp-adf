@@ -201,13 +201,19 @@ static esp_err_t subscribe_events(rtmp_slot_t slot, esp_rtmp_service_t *rtmp)
     return esp_service_event_subscribe(ESP_SERVICE_BASE(rtmp), &info);
 }
 
-static void rtmp_service_delete(esp_rtmp_service_t *rtmp)
+static esp_err_t rtmp_service_delete(esp_rtmp_service_t **rtmp)
 {
-    if (rtmp == NULL) {
-        return;
+    if (*rtmp == NULL) {
+        return ESP_OK;
     }
-    (void)esp_media_service_deinit(ESP_SERVICE_BASE(rtmp));
-    free(rtmp);
+    esp_err_t ret = esp_media_service_deinit(ESP_SERVICE_BASE(*rtmp));
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Deinitialize RTMP failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+    free(*rtmp);
+    *rtmp = NULL;
+    return ESP_OK;
 }
 
 /* An rtmps:// URL verifies the ingest server against the IDF certificate bundle.
@@ -361,8 +367,6 @@ static esp_err_t build_player(esp_player_service_t **out_player)
     return ESP_OK;
 }
 
-/* Create, configure and subscribe one RTMP service. The handle lands in the slot
-   before the subscription so the event handler can always resolve it. */
 static esp_err_t build_rtmp(rtmp_slot_t slot, const rtmp_session_opts_t *opts, const char *url,
                             esp_rtmp_service_t **slot_handle)
 {
@@ -391,7 +395,6 @@ static esp_err_t build_rtmp(rtmp_slot_t slot, const rtmp_session_opts_t *opts, c
 
     esp_rtmp_service_t *rtmp = NULL;
     ESP_RETURN_ON_ERROR(esp_rtmp_service_create(&cfg, &rtmp), TAG, "Create RTMP service");
-    *slot_handle = rtmp;
 
     esp_err_t ret = subscribe_events(slot, rtmp);
     if (ret == ESP_OK) {
@@ -402,69 +405,130 @@ static esp_err_t build_rtmp(rtmp_slot_t slot, const rtmp_session_opts_t *opts, c
     }
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Set up the %s RTMP service failed: %s", slot_name(slot), esp_err_to_name(ret));
-        rtmp_service_delete(rtmp);
-        *slot_handle = NULL;
+        (void)rtmp_service_delete(&rtmp);
+        return ret;
     }
-    return ret;
+
+    *slot_handle = rtmp;
+    return ESP_OK;
 }
 
-static void server_slot_release(void)
+static esp_err_t server_slot_release(void)
 {
-    if (s_session.server != NULL) {
-        (void)esp_service_stop(ESP_SERVICE_BASE(s_session.server));
-        rtmp_service_delete(s_session.server);
-        s_session.server = NULL;
-    }
+    ESP_RETURN_ON_ERROR(rtmp_service_delete(&s_session.server), TAG, "Release server");
     s_session.server_url[0] = '\0';
+    return ESP_OK;
 }
 
-static void push_slot_release(void)
+static esp_err_t push_slot_release(void)
 {
+    esp_err_t first_err = ESP_OK;
+
     /* The producer stops first so the sink drains instead of blocking on an empty queue */
     if (s_session.capture != NULL) {
-        (void)esp_service_stop(ESP_SERVICE_BASE(s_session.capture));
+        esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.capture));
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Stop capture failed: %s", esp_err_to_name(err));
+            first_err = err;
+        }
     }
     if (s_session.sink != NULL) {
-        (void)esp_service_stop(ESP_SERVICE_BASE(s_session.sink));
+        esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.sink));
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Stop RTMP sink failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
     if (s_session.push_linked) {
-        (void)esp_media_service_unlink(ESP_SERVICE_BASE(s_session.capture), ESP_MEDIA_DEFAULT_STREAM,
-                                       ESP_SERVICE_BASE(s_session.sink), ESP_MEDIA_DEFAULT_STREAM);
-        s_session.push_linked = false;
+        esp_err_t err = esp_media_service_unlink(ESP_SERVICE_BASE(s_session.capture), ESP_MEDIA_DEFAULT_STREAM,
+                                                 ESP_SERVICE_BASE(s_session.sink), ESP_MEDIA_DEFAULT_STREAM);
+        if (err == ESP_OK) {
+            s_session.push_linked = false;
+        } else {
+            ESP_LOGE(TAG, "Unlink RTMP sink failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
 
-    rtmp_service_delete(s_session.sink);
-    s_session.sink = NULL;
-    if (s_session.capture != NULL) {
-        (void)esp_capture_service_destroy(s_session.capture);
-        s_session.capture = NULL;
+    esp_err_t err = rtmp_service_delete(&s_session.sink);
+    if (err != ESP_OK && first_err == ESP_OK) {
+        first_err = err;
     }
-    s_session.push_url[0] = '\0';
-    s_session.push_peer_gone = false;
+    if (s_session.capture != NULL) {
+        err = esp_capture_service_destroy(s_session.capture);
+        if (err == ESP_OK) {
+            s_session.capture = NULL;
+        } else {
+            ESP_LOGE(TAG, "Destroy capture failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
+    }
+    if (s_session.sink == NULL && s_session.capture == NULL) {
+        s_session.push_url[0] = '\0';
+        s_session.push_peer_gone = false;
+    }
+    return first_err;
 }
 
-static void pull_slot_release(void)
+static esp_err_t pull_slot_release(void)
 {
+    esp_err_t first_err = ESP_OK;
+
     if (s_session.src != NULL) {
-        (void)esp_service_stop(ESP_SERVICE_BASE(s_session.src));
+        esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.src));
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Stop RTMP source failed: %s", esp_err_to_name(err));
+            first_err = err;
+        }
     }
     if (s_session.player != NULL) {
-        (void)esp_service_stop(ESP_SERVICE_BASE(s_session.player));
+        esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.player));
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Stop player failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
     if (s_session.pull_linked) {
-        (void)esp_media_service_unlink(ESP_SERVICE_BASE(s_session.src), ESP_MEDIA_DEFAULT_STREAM,
-                                       ESP_SERVICE_BASE(s_session.player), ESP_MEDIA_DEFAULT_STREAM);
-        s_session.pull_linked = false;
+        esp_err_t err = esp_media_service_unlink(ESP_SERVICE_BASE(s_session.src), ESP_MEDIA_DEFAULT_STREAM,
+                                                 ESP_SERVICE_BASE(s_session.player), ESP_MEDIA_DEFAULT_STREAM);
+        if (err == ESP_OK) {
+            s_session.pull_linked = false;
+        } else {
+            ESP_LOGE(TAG, "Unlink RTMP source failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
 
-    rtmp_service_delete(s_session.src);
-    s_session.src = NULL;
-    if (s_session.player != NULL) {
-        (void)esp_player_service_destroy(s_session.player);
-        s_session.player = NULL;
+    esp_err_t err = rtmp_service_delete(&s_session.src);
+    if (err != ESP_OK && first_err == ESP_OK) {
+        first_err = err;
     }
-    s_session.pull_url[0] = '\0';
-    s_session.pull_peer_gone = false;
+    if (s_session.player != NULL) {
+        err = esp_player_service_destroy(s_session.player);
+        if (err == ESP_OK) {
+            s_session.player = NULL;
+        } else {
+            ESP_LOGE(TAG, "Destroy player failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
+    }
+    if (s_session.src == NULL && s_session.player == NULL) {
+        s_session.pull_url[0] = '\0';
+        s_session.pull_peer_gone = false;
+    }
+    return first_err;
 }
 
 void rtmp_session_opts_default(rtmp_session_opts_t *opts)
@@ -499,7 +563,7 @@ esp_err_t rtmp_session_start_server(const rtmp_session_opts_t *opts)
     }
     if (s_session.server != NULL) {
         ESP_LOGI(TAG, "Restarting the local server");
-        server_slot_release();
+        ESP_RETURN_ON_ERROR(server_slot_release(), TAG, "Release previous server");
     }
 
     const char *app = bare_name(opts->app, RTMP_SERVER_APP);
@@ -543,7 +607,7 @@ esp_err_t rtmp_session_start_push(const rtmp_session_opts_t *opts)
     }
     if (s_session.capture != NULL || s_session.sink != NULL) {
         ESP_LOGI(TAG, "Restarting the publisher");
-        push_slot_release();
+        ESP_RETURN_ON_ERROR(push_slot_release(), TAG, "Release previous publisher");
     }
 
     snprintf(s_session.push_url, sizeof(s_session.push_url), "%s", opts->url);
@@ -589,7 +653,7 @@ esp_err_t rtmp_session_start_pull(const rtmp_session_opts_t *opts)
     }
     if (s_session.src != NULL || s_session.player != NULL) {
         ESP_LOGI(TAG, "Restarting the player");
-        pull_slot_release();
+        ESP_RETURN_ON_ERROR(pull_slot_release(), TAG, "Release previous player");
     }
 
     snprintf(s_session.pull_url, sizeof(s_session.pull_url), "%s", opts->url);
@@ -685,10 +749,17 @@ esp_err_t rtmp_session_stop(void)
        attached. Among the clients the puller goes first: a server that loses its
        publisher drops the subscribers itself, and that cascade would race with
        this teardown. */
-    pull_slot_release();
-    push_slot_release();
-    server_slot_release();
+    esp_err_t ret = pull_slot_release();
+    esp_err_t err = push_slot_release();
+    if (ret == ESP_OK) {
+        ret = err;
+    }
+    err = server_slot_release();
+    if (ret == ESP_OK) {
+        ret = err;
+    }
     s_session.stopping = false;
+    ESP_RETURN_ON_ERROR(ret, TAG, "Release RTMP slots");
     ESP_LOGI(TAG, "All RTMP slots released");
     return ESP_OK;
 }

@@ -47,23 +47,10 @@ class LLMAdapter(ABC):
     def extract_text(self, response: Dict) -> str:
         """Extract the final assistant text from an LLM response."""
 
+    @abstractmethod
     def build_turn_messages(self, raw_response: Dict, tool_calls: List[Dict],
                             tool_results: List[str]) -> List[Dict]:
-        """Build follow-up messages to append after tool execution.
-
-        Default implementation uses a plain assistant/user exchange, which
-        works for Gemini and other non-OpenAI formats.  OpenAI-compatible
-        adapters override this to produce role='tool' messages with
-        tool_call_id as required by the OpenAI chat completions API.
-        """
-        call_summary = [{'tool': tc['name'], 'arguments': tc['arguments']}
-                        for tc in tool_calls]
-        result_summary = [{'tool': tc['name'], 'result': r}
-                          for tc, r in zip(tool_calls, tool_results)]
-        return [
-            {'role': 'assistant', 'content': f'Tool calls: {json.dumps(call_summary)}'},
-            {'role': 'user', 'content': f'Tool results: {json.dumps(result_summary)}'},
-        ]
+        """Build provider-native follow-up messages after tool execution."""
 
 
 # -----------------------------------------------------------------------------
@@ -102,9 +89,9 @@ class OpenAICompatibleAdapter(LLMAdapter):
         request_data = {
             'model': self.model,
             'messages': messages,
-            'tools': tools,
-            'tool_choice': 'auto',
         }
+        if tools:
+            request_data.update(tools=tools, tool_choice='auto')
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.api_key}',
@@ -120,7 +107,7 @@ class OpenAICompatibleAdapter(LLMAdapter):
 
     def extract_tool_calls(self, response: Dict) -> List[Dict]:
         tool_calls = []
-        for choice in response.get('choices', []):
+        for choice in response.get('choices', [])[:1]:
             tc_list = choice.get('message', {}).get('tool_calls')
             if tc_list:
                 for tc in tc_list:
@@ -209,8 +196,7 @@ class DoubaoAdapter(OpenAICompatibleAdapter):
         completion = client.chat.completions.create(
             model=self.model,
             messages=messages,
-            tools=tools,
-            tool_choice='auto',
+            **({'tools': tools, 'tool_choice': 'auto'} if tools else {}),
         )
         return completion.model_dump()
 
@@ -237,22 +223,22 @@ class GeminiAdapter(LLMAdapter):
                 'description': tool.get('description', ''),
             }
             if 'inputSchema' in tool:
-                schema = tool['inputSchema']
-                if schema.get('type') == 'object':
-                    func['parameters'] = {
-                        'type': 'object',
-                        'properties': schema.get('properties', {}),
-                    }
-                    if 'required' in schema:
-                        func['parameters']['required'] = schema['required']
+                func['parametersJsonSchema'] = tool['inputSchema']
             functions.append(func)
         return functions
 
     def call_with_tools(self, messages: List[Dict], tools: List[Dict]) -> Dict:
         request_data = {
-            'contents': messages,
-            'tools': [{'functionDeclarations': tools}],
+            'contents': [
+                message if 'parts' in message else {
+                    'role': 'model' if message['role'] == 'assistant' else message['role'],
+                    'parts': [{'text': message['content']}],
+                }
+                for message in messages
+            ],
         }
+        if tools:
+            request_data['tools'] = [{'functionDeclarations': tools}]
         response = requests.post(
             self.base_url,
             json=request_data,
@@ -267,22 +253,37 @@ class GeminiAdapter(LLMAdapter):
 
     def extract_tool_calls(self, response: Dict) -> List[Dict]:
         tool_calls = []
-        for candidate in response.get('candidates', []):
+        for candidate in response.get('candidates', [])[:1]:
             for part in candidate.get('content', {}).get('parts', []):
                 if 'functionCall' in part:
                     func_call = part['functionCall']
                     tool_calls.append({
+                        'id': func_call.get('id', ''),
                         'name': func_call.get('name', ''),
                         'arguments': func_call.get('args', {}),
                     })
         return tool_calls
 
+    def build_turn_messages(self, raw_response: Dict, tool_calls: List[Dict],
+                            tool_results: List[str]) -> List[Dict]:
+        """Preserve model parts/signatures and return native function responses."""
+        return [
+            raw_response['candidates'][0]['content'],
+            {'role': 'user', 'parts': [
+                {'functionResponse': {
+                    'name': tc['name'],
+                    'response': {'result': result},
+                    **({'id': tc['id']} if tc.get('id') else {}),
+                }}
+                for tc, result in zip(tool_calls, tool_results)
+            ]},
+        ]
+
     def extract_text(self, response: Dict) -> str:
         candidates = response.get('candidates', [])
         if candidates:
             parts = candidates[0].get('content', {}).get('parts', [])
-            if parts and 'text' in parts[0]:
-                return parts[0]['text']
+            return ''.join(part.get('text', '') for part in parts if not part.get('thought'))
         return ''
 
 

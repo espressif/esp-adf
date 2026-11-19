@@ -15,20 +15,6 @@ extern "C" {
 #endif  /* __cplusplus */
 
 /**
- * @brief  STDIO transport configuration
- *
- *         Line-based protocol over stdin/stdout:
- *         - Input:  one JSON-RPC request per line (terminated by '\n')
- *         - Output: one JSON-RPC response per line (terminated by '\n')
- */
-typedef struct {
-    size_t  max_request_size;  /*!< Max line length in bytes (default: 4096) */
-    size_t  stack_size;        /*!< Reader task stack size (default: 4096) */
-    int     task_priority;     /*!< Reader task priority (default: 5) */
-    int     task_core;         /*!< Reader task core affinity (-1 = any, default: -1) */
-} esp_service_mcp_stdio_config_t;
-
-/**
  * @brief  Default STDIO configuration
  */
 #define ESP_SERVICE_MCP_STDIO_CONFIG_DEFAULT()  {  \
@@ -39,6 +25,21 @@ typedef struct {
 }
 
 /**
+ * @brief  STDIO transport configuration
+ *
+ *         Line-based protocol over stdin/stdout:
+ *         - Input:  one JSON-RPC request per line (terminated by '\n')
+ *         - Output: one JSON-RPC response per line (terminated by '\n')
+ */
+typedef struct {
+    size_t  max_request_size;  /*!< Max line length in bytes including the terminator, at least 2 (default: 4096);
+                                * create() rejects smaller with ESP_ERR_INVALID_ARG */
+    size_t  stack_size;        /*!< Reader task stack size (default: 4096) */
+    int     task_priority;     /*!< Reader task priority (default: 5) */
+    int     task_core;         /*!< Reader task core affinity (-1 = any, default: -1) */
+} esp_service_mcp_stdio_config_t;
+
+/**
  * @brief  Create STDIO transport
  *
  * @param[in]   config         STDIO configuration (NULL for defaults)
@@ -46,7 +47,7 @@ typedef struct {
  *
  * @return
  *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  out_transport is NULL
+ *       - ESP_ERR_INVALID_ARG  out_transport is NULL or config->max_request_size < 2
  *       - ESP_ERR_NO_MEM       Allocation failed
  */
 esp_err_t esp_service_mcp_trans_stdio_create(const esp_service_mcp_stdio_config_t *config, esp_service_mcp_trans_t **out_transport);

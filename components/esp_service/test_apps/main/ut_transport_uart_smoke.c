@@ -6,7 +6,7 @@
  */
 
 /**
- * @file ut_uart_transport.c
+ * @file ut_transport_uart_smoke.c
  * @brief  On-device smoke test: MCP over UART — Unity assertions, finite teardown.
  */
 
@@ -88,14 +88,14 @@ static void uart_transport_smoke_body(void)
 
 #if CONFIG_ESP_SVC_TEST_UART_HOLD_AFTER_SMOKE
     ESP_LOGI(TAG, "UART MCP kept running (ESP_SVC_TEST_UART_HOLD_AFTER_SMOKE). On PC run:");
-    ESP_LOGI(TAG, "  (from test_apps/) python3 scripts/test_mcp_uart.py <serial-port> %d",
+    ESP_LOGI(TAG, "  (from test_apps/) python3 scripts/test_mcp.py uart <serial-port> %d",
              CONFIG_ESP_SVC_TEST_UART_BAUD_RATE);
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(60000));
     }
 #else
     TEST_ASSERT_EQUAL(ESP_OK, esp_service_mcp_server_stop(mcp));
-    esp_service_mcp_server_destroy(mcp);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_mcp_server_destroy(mcp));
 
     TEST_ASSERT_EQUAL(ESP_OK, esp_service_mcp_trans_destroy(transport));
 
@@ -107,7 +107,7 @@ static void uart_transport_smoke_body(void)
     ESP_LOGI(TAG, "UART smoke done (port=%d baud=%d TX=%d RX=%d)",
              (int)uart_cfg.uart_port, CONFIG_ESP_SVC_TEST_UART_BAUD_RATE,
              CONFIG_ESP_SVC_TEST_UART_TX_PIN, CONFIG_ESP_SVC_TEST_UART_RX_PIN);
-#endif
+#endif  /* CONFIG_ESP_SVC_TEST_UART_HOLD_AFTER_SMOKE */
 }
 
 void test_uart_transport(void)

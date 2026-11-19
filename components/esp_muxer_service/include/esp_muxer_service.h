@@ -9,10 +9,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
 #include "esp_err.h"
-#include "esp_media_service.h"
 #include "esp_muxer.h"
+#include "esp_media_service.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,6 +23,13 @@ extern "C" {
  *         Scheduler and manager requests use this when cfg->name is NULL.
  */
 #define ESP_MUXER_SERVICE_NAME  "esp_muxer_service"
+
+/**
+ * @brief  Default create configuration (name ESP_MUXER_SERVICE_NAME)
+ */
+#define ESP_MUXER_SERVICE_CFG_DEFAULT()  {  \
+    .name = ESP_MUXER_SERVICE_NAME,         \
+}
 
 /**
  * @brief  Opaque muxer sink service handle
@@ -40,18 +46,13 @@ typedef struct esp_muxer_service esp_muxer_service_t;
  *         esp_muxer_service_setup() / esp_muxer_service_set_storage_url()
  *         before start. The service is always a media sink.
  *
- *         Tear down with esp_service_deinit() then free the handle.
+ *         Call esp_media_service_deinit() from the owner task and free only
+ *         after ESP_OK. Any failure retains the handle for teardown retry.
+ *         Do not deinitialize from callbacks or while external callers run.
  */
 typedef struct {
     const char *name;  /*!< Service name, NULL uses ESP_MUXER_SERVICE_NAME */
 } esp_muxer_service_cfg_t;
-
-/**
- * @brief  Default create configuration (name ESP_MUXER_SERVICE_NAME)
- */
-#define ESP_MUXER_SERVICE_CFG_DEFAULT()  {  \
-    .name = ESP_MUXER_SERVICE_NAME,         \
-}
 
 /**
  * @brief  Create a muxer sink service
@@ -59,7 +60,7 @@ typedef struct {
  *         Recommended flow:
  *         create -> setup / set_storage_url -> esp_media_service_link()
  *         -> esp_service_start() -> optional streaming read -> esp_service_stop()
- *         -> unlink -> esp_media_service_deinit() -> free().
+ *         -> unlink -> esp_media_service_deinit() -> free() only after ESP_OK.
  *
  * @param[in]   cfg          Create configuration; NULL is invalid
  * @param[out]  out_service  Receives the created service handle

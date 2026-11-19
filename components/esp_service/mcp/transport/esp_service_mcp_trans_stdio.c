@@ -7,18 +7,18 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/select.h>
-#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
+#include "esp_log.h"
 #include "esp_service_mcp_trans_stdio.h"
-
-static const char *TAG = "MCP_STDIO";
+#include "mcp_line_reader.h"
 
 /**
  * @brief  Concrete STDIO transport structure
@@ -29,8 +29,10 @@ typedef struct {
     TaskHandle_t                    reader_task;
     SemaphoreHandle_t               write_mutex;      /*!< Protect stdout writes */
     SemaphoreHandle_t               reader_exit_sem;  /*!< Signalled by reader task before vTaskDelete */
-    bool                            running;
+    atomic_bool                     running;
 } stdio_impl_t;
+
+static const char *TAG = "MCP_STDIO";
 
 /* ─── Forward declarations of vtable ops ─── */
 static esp_err_t stdio_start(esp_service_mcp_trans_t *transport);
@@ -52,6 +54,10 @@ static esp_err_t stdio_write_line(stdio_impl_t *st, const char *line)
     if (xSemaphoreTake(st->write_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
         ESP_LOGE(TAG, "Failed to acquire write mutex");
         return ESP_ERR_TIMEOUT;
+    }
+    if (!st->running) {
+        xSemaphoreGive(st->write_mutex);
+        return ESP_ERR_INVALID_STATE;
     }
 
     fputs(line, stdout);
@@ -82,7 +88,6 @@ static void stdio_reader_task(void *arg)
     if (!line_buf) {
         ESP_LOGE(TAG, "Failed to allocate line buffer");
         st->running = false;
-        st->reader_task = NULL;
         xSemaphoreGive(st->reader_exit_sem);
         vTaskDelete(NULL);
         return;
@@ -97,6 +102,7 @@ static void stdio_reader_task(void *arg)
     ESP_LOGI(TAG, "STDIO reader task started");
 
     size_t pos = 0;
+    bool discard = false;
     while (st->running) {
         int sel = stdio_wait_readable(fd, 100);
         if (sel <= 0) {
@@ -111,31 +117,27 @@ static void stdio_reader_task(void *arg)
             vTaskDelay(pdMS_TO_TICKS(10));
             continue;
         }
-        if (ch == '\r') {
+        int result = mcp_line_feed(line_buf, st->config.max_request_size, &pos, &discard, ch);
+        if (result == 0) {
             continue;
         }
-        if (ch != '\n' && pos + 1 < st->config.max_request_size) {
-            line_buf[pos++] = ch;
-            continue;
-        }
-
-        line_buf[pos] = '\0';
-        if (pos == 0) {
+        if (result < 0) {
+            ESP_LOGW(TAG, "Receive: oversized or invalid line discarded");
             continue;
         }
 
-        ESP_LOGD(TAG, "Received line (%u bytes): %s", (unsigned)pos, line_buf);
+        ESP_LOGD(TAG, "Received line: %u bytes", (unsigned)strlen(line_buf));
 
         char *response_str = NULL;
         esp_err_t ret = esp_service_mcp_trans_dispatch_request(&st->base, line_buf, &response_str);
-        pos = 0;
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Request dispatch failed: %s", esp_err_to_name(ret));
-            continue;
         }
         if (response_str) {
-            stdio_write_line(st, response_str);
-            ESP_LOGD(TAG, "Sent response: %s", response_str);
+            if (ret == ESP_OK && st->running) {
+                stdio_write_line(st, response_str);
+            }
+            ESP_LOGD(TAG, "Sent response: %u bytes", (unsigned)strlen(response_str));
             free(response_str);
         }
     }
@@ -157,6 +159,11 @@ static esp_err_t stdio_start(esp_service_mcp_trans_t *transport)
         ESP_LOGW(TAG, "STDIO transport already running");
         return ESP_OK;
     }
+    if (st->reader_task) {
+        ESP_LOGW(TAG, "Start: previous stop must complete first");
+        return ESP_ERR_INVALID_STATE;
+    }
+    xSemaphoreTake(st->reader_exit_sem, 0);
 
     st->running = true;
 
@@ -189,16 +196,17 @@ static esp_err_t stdio_stop(esp_service_mcp_trans_t *transport)
 {
     stdio_impl_t *st = (stdio_impl_t *)transport;
 
-    if (!st->running) {
-        return ESP_OK;
+    if (st->reader_task && st->reader_task == xTaskGetCurrentTaskHandle()) {
+        ESP_LOGW(TAG, "Stop: reader cannot stop itself");
+        return ESP_ERR_INVALID_STATE;
     }
 
     st->running = false;
 
     if (st->reader_task) {
         if (xSemaphoreTake(st->reader_exit_sem, pdMS_TO_TICKS(2000)) != pdTRUE) {
-            ESP_LOGW(TAG, "Reader task did not exit within 2s; forcing delete");
-            vTaskDelete(st->reader_task);
+            ESP_LOGW(TAG, "Stop: reader has not exited; retry after the handler returns");
+            return ESP_ERR_TIMEOUT;
         }
         st->reader_task = NULL;
     }
@@ -211,8 +219,9 @@ static esp_err_t stdio_destroy(esp_service_mcp_trans_t *transport)
 {
     stdio_impl_t *st = (stdio_impl_t *)transport;
 
-    if (st->running) {
-        stdio_stop(transport);
+    esp_err_t ret = stdio_stop(transport);
+    if (ret != ESP_OK) {
+        return ret;
     }
 
     if (st->write_mutex) {
@@ -254,7 +263,14 @@ esp_err_t esp_service_mcp_trans_stdio_create(const esp_service_mcp_stdio_config_
         st->config = default_cfg;
     }
 
-    st->running = false;
+    /* stdio_read_line() needs room for one byte plus the terminator */
+    if (st->config.max_request_size < 2) {
+        ESP_LOGE(TAG, "Create: max_request_size=%u is too small (minimum 2)", (unsigned)st->config.max_request_size);
+        free(st);
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    atomic_init(&st->running, false);
 
     st->write_mutex = xSemaphoreCreateMutex();
     if (!st->write_mutex) {

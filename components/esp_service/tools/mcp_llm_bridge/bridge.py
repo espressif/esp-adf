@@ -33,9 +33,10 @@ class MCPLLMBridge:
     * **Strategy** – the concrete LLM is chosen via the injected adapter.
     """
 
-    def __init__(self, mcp_client: MCPClient, llm_adapter: LLMAdapter):
+    def __init__(self, mcp_client: MCPClient, llm_adapter: LLMAdapter, allow_execution: bool = False):
         self.mcp_client = mcp_client
         self.llm_adapter = llm_adapter
+        self.allow_execution = allow_execution
         self.mcp_tools: list = []
         self.llm_tools: list = []
 
@@ -53,12 +54,18 @@ class MCPLLMBridge:
 
     def execute_tool_call(self, tool_call: Dict) -> str:
         """Execute a single tool call via MCP and return its textual result."""
+        if not self.allow_execution:
+            raise PermissionError('Tool execution requires explicit allow_execution=True')
         name = tool_call.get('name', '')
         arguments = tool_call.get('arguments', {})
+        if not any(tool.get('name') == name for tool in self.mcp_tools):
+            raise ValueError('Tool was not advertised by the connected MCP server')
+        if not isinstance(arguments, dict):
+            raise ValueError('Tool arguments must be an object')
 
-        print(f'  Executing: {name}({json.dumps(arguments)})')
+        print(f'  Executing: {name}')
         result = self.mcp_client.call_tool(name, arguments)
-        print(f'  Result: {result}')
+        print('  Tool execution completed')
         return result
 
     def run_conversation(self, user_message: str, max_iterations: int = 5) -> str:

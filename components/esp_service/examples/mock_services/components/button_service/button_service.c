@@ -289,7 +289,10 @@ esp_err_t button_service_destroy(button_service_t *svc)
     if (svc == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-    esp_service_deinit(&svc->base);
+    esp_err_t ret = esp_service_deinit(&svc->base);
+    if (ret != ESP_OK) {
+        return ret;
+    }
     free(svc);
     ESP_LOGI(TAG, "Destroyed");
     return ESP_OK;

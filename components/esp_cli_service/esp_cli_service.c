@@ -7,18 +7,15 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-#include "adf_mem.h"
 #include <string.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
 #include "esp_console.h"
 #include "esp_log.h"
-
+#include "adf_mem.h"
 #include "esp_cli_service_internal.h"
 
 #define CLI_LOCK_TIMEOUT_MS          1000
@@ -35,14 +32,14 @@
 static const char *TAG = "esp_cli_service";
 
 static void cli_drain_console_input(void);
+static esp_err_t cli_on_deinit(esp_service_t *base);
 static esp_err_t cli_on_start(esp_service_t *base);
 static esp_err_t cli_on_stop(esp_service_t *base);
-static esp_err_t cli_on_deinit(esp_service_t *base);
 
 static const esp_service_ops_t s_cli_ops = {
+    .on_deinit = cli_on_deinit,
     .on_start  = cli_on_start,
     .on_stop   = cli_on_stop,
-    .on_deinit = cli_on_deinit,
 };
 
 bool cli_token_is_empty(const char *s)
@@ -299,25 +296,43 @@ static esp_err_t cli_on_stop(esp_service_t *base)
         return ESP_OK;
     }
 
+    /* esp_console_stop_repl() sets CONSOLE_REPL_STATE_DEINIT before steps that can
+     * fail, so a second stop call cannot succeed on UART or older IDF backends.
+     * Log the error, clear local REPL tracking, and return ESP_OK so teardown can finish. */
     esp_err_t ret = esp_console_stop_repl(svc->repl);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "Stop 'esp_cli_service': esp_console_stop_repl returned %s", esp_err_to_name(ret));
+    }
     (void)cli_set_repl_state(svc, NULL, false);
     cli_mark_static_commands_registered(svc, false);
-    if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "Stop 'esp_cli_service': REPL stopped");
-    } else {
-        ESP_LOGW(TAG, "Stop 'esp_cli_service': esp_console_stop_repl returned %s; REPL state cleared", esp_err_to_name(ret));
-    }
+    ESP_LOGI(TAG, "Stop 'esp_cli_service': REPL stopped");
     return ESP_OK;
 }
 
 static esp_err_t cli_on_deinit(esp_service_t *base)
 {
     esp_cli_service_t *svc = (esp_cli_service_t *)base;
-    if (svc->repl != NULL) {
-        (void)esp_console_stop_repl(svc->repl);
+
+    size_t tracked_count = adf_vec_size(&svc->tracked);
+    for (size_t i = 0; i < tracked_count; i++) {
+        cli_free_tracked_entry(ADF_VEC_AT(tracked_service_entry_t, &svc->tracked, i));
     }
-    (void)cli_set_repl_state(svc, NULL, false);
-    cli_mark_static_commands_registered(svc, false);
+
+    size_t static_count = adf_vec_size(&svc->static_cmds);
+    for (size_t i = 0; i < static_count; i++) {
+        cli_free_static_cmd_entry(ADF_VEC_AT(static_cmd_entry_t, &svc->static_cmds, i));
+    }
+
+    adf_vec_destroy(&svc->tracked);
+    adf_vec_destroy(&svc->static_cmds);
+
+    if (svc->lock != NULL) {
+        vSemaphoreDelete(svc->lock);
+        svc->lock = NULL;
+    }
+
+    adf_free(svc->prompt);
+    svc->prompt = NULL;
     return ESP_OK;
 }
 
@@ -380,19 +395,19 @@ esp_err_t esp_cli_service_create(const esp_cli_service_config_t *cfg, esp_cli_se
         return ESP_ERR_NO_MEM;
     }
 
+    esp_err_t ret = ESP_OK;
     svc->lock = xSemaphoreCreateMutex();
     if (svc->lock == NULL) {
         ESP_LOGE(TAG, "Create failed: no memory for mutex");
-        adf_free(svc);
-        return ESP_ERR_NO_MEM;
+        ret = ESP_ERR_NO_MEM;
+        goto fail;
     }
 
     svc->prompt = cli_dup_or_null(cli_token_is_empty(cfg->prompt) ? "cli>" : cfg->prompt);
     if (svc->prompt == NULL) {
         ESP_LOGE(TAG, "Create failed: no memory for prompt copy");
-        vSemaphoreDelete(svc->lock);
-        adf_free(svc);
-        return ESP_ERR_NO_MEM;
+        ret = ESP_ERR_NO_MEM;
+        goto fail;
     }
 
     svc->max_cmdline_length = max_cmdline;
@@ -402,40 +417,22 @@ esp_err_t esp_cli_service_create(const esp_cli_service_config_t *cfg, esp_cli_se
 
     int vec_ret = adf_vec_init(&svc->tracked, sizeof(tracked_service_entry_t), 0);
     if (vec_ret != ADF_VEC_OK) {
-        esp_err_t err = cli_vec_err_to_esp_err(vec_ret);
-        ESP_LOGE(TAG, "Create failed: init tracked list, %s", esp_err_to_name(err));
-        adf_free(svc->prompt);
-        vSemaphoreDelete(svc->lock);
-        adf_free(svc);
-        return err;
+        ret = cli_vec_err_to_esp_err(vec_ret);
+        ESP_LOGE(TAG, "Create failed: init tracked list, %s", esp_err_to_name(ret));
+        goto fail;
     }
 
     vec_ret = adf_vec_init(&svc->static_cmds, sizeof(static_cmd_entry_t), 0);
     if (vec_ret != ADF_VEC_OK) {
-        esp_err_t err = cli_vec_err_to_esp_err(vec_ret);
-        ESP_LOGE(TAG, "Create failed: init static command list, %s", esp_err_to_name(err));
-        adf_vec_destroy(&svc->tracked);
-        adf_free(svc->prompt);
-        vSemaphoreDelete(svc->lock);
-        adf_free(svc);
-        return err;
+        ret = cli_vec_err_to_esp_err(vec_ret);
+        ESP_LOGE(TAG, "Create failed: init static command list, %s", esp_err_to_name(ret));
+        goto fail;
     }
 
-    esp_err_t ret = cli_register_default_static_commands(svc);
+    ret = cli_register_default_static_commands(svc);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Create failed: register default static commands, %s", esp_err_to_name(ret));
-        /* Free any partially registered entries before destroying the vector. */
-        size_t partial = adf_vec_size(&svc->static_cmds);
-        for (size_t i = 0; i < partial; i++) {
-            static_cmd_entry_t *entry = ADF_VEC_AT(static_cmd_entry_t, &svc->static_cmds, i);
-            cli_free_static_cmd_entry(entry);
-        }
-        adf_vec_destroy(&svc->static_cmds);
-        adf_vec_destroy(&svc->tracked);
-        adf_free(svc->prompt);
-        vSemaphoreDelete(svc->lock);
-        adf_free(svc);
-        return ret;
+        goto fail;
     }
 
     esp_service_config_t base_cfg = cfg->base_cfg;
@@ -446,22 +443,16 @@ esp_err_t esp_cli_service_create(const esp_cli_service_config_t *cfg, esp_cli_se
     ret = esp_service_init(&svc->base, &base_cfg, &s_cli_ops);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Create failed: esp_service_init, %s", esp_err_to_name(ret));
-        /* Free default static cmd entries registered earlier. */
-        size_t partial = adf_vec_size(&svc->static_cmds);
-        for (size_t i = 0; i < partial; i++) {
-            static_cmd_entry_t *entry = ADF_VEC_AT(static_cmd_entry_t, &svc->static_cmds, i);
-            cli_free_static_cmd_entry(entry);
-        }
-        adf_vec_destroy(&svc->static_cmds);
-        adf_vec_destroy(&svc->tracked);
-        adf_free(svc->prompt);
-        vSemaphoreDelete(svc->lock);
-        adf_free(svc);
-        return ret;
+        goto fail;
     }
 
     *out = svc;
     return ESP_OK;
+
+fail:
+    (void)cli_on_deinit(&svc->base);
+    adf_free(svc);
+    return ret;
 }
 
 esp_err_t esp_cli_service_destroy(esp_cli_service_t *svc)
@@ -474,33 +465,11 @@ esp_err_t esp_cli_service_destroy(esp_cli_service_t *svc)
     esp_err_t ret = esp_service_deinit(&svc->base);
     if (ret != ESP_OK) {
         ESP_LOGW(TAG, "Destroy 'esp_cli_service': esp_service_deinit returned %s", esp_err_to_name(ret));
+        return ret;
     }
-
-    size_t tracked_count = adf_vec_size(&svc->tracked);
-    for (size_t i = 0; i < tracked_count; i++) {
-        tracked_service_entry_t *entry = ADF_VEC_AT(tracked_service_entry_t, &svc->tracked, i);
-        cli_free_tracked_entry(entry);
-    }
-
-    size_t static_count = adf_vec_size(&svc->static_cmds);
-    for (size_t i = 0; i < static_count; i++) {
-        static_cmd_entry_t *entry = ADF_VEC_AT(static_cmd_entry_t, &svc->static_cmds, i);
-        cli_free_static_cmd_entry(entry);
-    }
-
-    adf_vec_destroy(&svc->tracked);
-    adf_vec_destroy(&svc->static_cmds);
-
-    if (svc->lock != NULL) {
-        vSemaphoreDelete(svc->lock);
-        svc->lock = NULL;
-    }
-
-    adf_free(svc->prompt);
-    svc->prompt = NULL;
 
     adf_free(svc);
-    return ret;
+    return ESP_OK;
 }
 
 esp_err_t esp_cli_service_bind_manager(esp_cli_service_t *svc, esp_service_manager_t *mgr)

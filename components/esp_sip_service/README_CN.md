@@ -53,7 +53,7 @@ flowchart TD
     C --> D[esp_service_start：完成注册]
     D --> E[call / answer -> 通话 -> bye]
     E --> F[esp_service_stop]
-    F --> G[unlink / deinit / free]
+    F --> G[unlink / deinit 成功后 free]
 ```
 
 ## 典型用法
@@ -186,7 +186,7 @@ start 时的编码决策：SIP 对每种媒体类型只协商一份编码，只�
 - 同一时刻只能有一条 SIP MESSAGE 在发送中；在 `ESP_SIP_SERVICE_EVENT_MESSAGE_SENT` 到来前，`esp_sip_service_send_message()` 返回 `ESP_ERR_INVALID_STATE`
 - 非法 stream id 返回 `ESP_ERR_INVALID_ARG`，合法值只有 0 与 1
 - 拆除时请先停生产者，再停其消费服务
-- 使用 `esp_media_service_deinit()` 释放后再 free 服务句柄
+- 由所有者任务调用 `esp_media_service_deinit()`，仅返回 `ESP_OK` 时才能 free。失败保留对象并重试，禁止从回调直接销毁；先停止外部调用并断开媒体连接。示例在清理失败时终止，不释放对象，也不丢弃仍有效的句柄。
 
 ## 协议库限制
 

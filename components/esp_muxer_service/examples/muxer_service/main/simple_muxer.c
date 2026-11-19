@@ -7,20 +7,17 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
 #include "esp_fourcc.h"
 #include "esp_log.h"
+#include "settings.h"
+#include "simple_muxer.h"
 #include "esp_media_dummy_service.h"
 #include "esp_media_service.h"
 #include "esp_muxer_service.h"
 #include "esp_muxer_service_ops.h"
 #include "esp_service.h"
-
-#include "settings.h"
-#include "simple_muxer.h"
 
 static const char *TAG = "SIMPLE_MUXER";
 
@@ -55,7 +52,10 @@ static void muxer_delete(esp_muxer_service_t *muxer)
     if (muxer == NULL) {
         return;
     }
-    (void)esp_media_service_deinit(ESP_SERVICE_BASE(muxer));
+    if (esp_service_stop(ESP_SERVICE_BASE(muxer)) != ESP_OK ||
+        esp_media_service_deinit(ESP_SERVICE_BASE(muxer)) != ESP_OK) {
+        abort();
+    }
     free(muxer);
 }
 
@@ -174,8 +174,8 @@ static esp_err_t run_linked_muxer(bool with_video, uint32_t duration_ms, esp_mux
              with_video ? "av" : "audio", muxer_mode_name(mode), pkt_count, byte_count);
 
     muxer_delete(muxer);
-    if (src != NULL) {
-        (void)esp_media_dummy_service_destroy(src);
+    if (src != NULL && esp_media_dummy_service_destroy(src) != ESP_OK) {
+        abort();
     }
     return ret;
 }

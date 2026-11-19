@@ -19,11 +19,12 @@ dependencies:
     override_path: "../esp_media_service"
   espressif/esp_service:
     require: public
-    version: "~0.5"
+    version: "~1.0.0-beta1"
     override_path: "../esp_service"
   espressif/esp_playlist:
     require: public
-    version: "~0.5"
+    version: "~1.0.0-beta1"
+    override_path: "../esp_playlist"
   espressif/esp_player:
     require: public
     version: "~1.1"

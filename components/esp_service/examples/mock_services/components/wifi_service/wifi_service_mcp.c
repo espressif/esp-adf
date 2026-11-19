@@ -23,6 +23,7 @@
 #include "cJSON.h"
 #include "wifi_service.h"
 #include "wifi_service_mcp.h"
+#include "../mock_mcp_util.h"
 
 static const char *TAG = "WIFI_MCP";
 
@@ -60,7 +61,7 @@ esp_err_t wifi_service_tool_invoke(esp_service_t *service,
 {
     wifi_service_t *wifi = (wifi_service_t *)service;
 
-    ESP_LOGI(TAG, "Tool_invoke: %s args=%s", tool->name, args ? args : "{}");
+    ESP_LOGD(TAG, "Tool invoke: %s", tool->name);
 
     if (strcmp(tool->name, "wifi_service_get_status") == 0) {
         wifi_svc_status_t status;
@@ -73,9 +74,12 @@ esp_err_t wifi_service_tool_invoke(esp_service_t *service,
     if (strcmp(tool->name, "wifi_service_get_ssid") == 0) {
         const char *ssid = NULL;
         wifi_service_get_ssid(wifi, &ssid);
-        snprintf(result, result_size,
-                 "{\"ssid\":\"%s\"}", ssid ? ssid : "");
-        return ESP_OK;
+        cJSON *json = cJSON_CreateObject();
+        if (!json || !cJSON_AddStringToObject(json, "ssid", ssid ? ssid : "")) {
+            cJSON_Delete(json);
+            return ESP_ERR_NO_MEM;
+        }
+        return mock_mcp_write_json(json, result, result_size);
     }
 
     if (strcmp(tool->name, "wifi_service_get_rssi") == 0) {
@@ -92,40 +96,55 @@ esp_err_t wifi_service_tool_invoke(esp_service_t *service,
 
     if (strcmp(tool->name, "wifi_service_reconnect") == 0) {
         cJSON *root = cJSON_Parse(args);
-        if (root == NULL) {
+        if (!cJSON_IsObject(root)) {
+            cJSON_Delete(root);
             return ESP_ERR_INVALID_ARG;
         }
 
-        cJSON *ssid_item = cJSON_GetObjectItem(root, "ssid");
-        if (ssid_item == NULL || !cJSON_IsString(ssid_item)) {
+        cJSON *ssid_item = cJSON_GetObjectItemCaseSensitive(root, "ssid");
+        if (!cJSON_IsString(ssid_item) || strlen(ssid_item->valuestring) == 0 || strlen(ssid_item->valuestring) > 32) {
             cJSON_Delete(root);
             return ESP_ERR_INVALID_ARG;
         }
 
         const char *ssid = ssid_item->valuestring;
         const char *password = NULL;
-        cJSON *pw_item = cJSON_GetObjectItem(root, "password");
-        if (pw_item && cJSON_IsString(pw_item)) {
+        cJSON *pw_item = cJSON_GetObjectItemCaseSensitive(root, "password");
+        if (pw_item && (!cJSON_IsString(pw_item) || strlen(pw_item->valuestring) > 64)) {
+            cJSON_Delete(root);
+            return ESP_ERR_INVALID_ARG;
+        }
+        if (pw_item) {
             password = pw_item->valuestring;
         }
 
         esp_err_t ret = wifi_service_reconnect(wifi, ssid, password);
+        cJSON *json = cJSON_CreateObject();
+        if (!json || !cJSON_AddBoolToObject(json, "connected", ret == ESP_OK) ||
+            !cJSON_AddStringToObject(json, "ssid", ssid)) {
+            cJSON_Delete(json);
+            cJSON_Delete(root);
+            return ESP_ERR_NO_MEM;
+        }
         if (ret == ESP_OK) {
-            const char *current_ssid = NULL;
             int8_t rssi = 0;
-            wifi_service_get_ssid(wifi, &current_ssid);
             wifi_service_get_rssi(wifi, &rssi);
-            snprintf(result, result_size,
-                     "{\"connected\":true,\"ssid\":\"%s\",\"rssi\":%d}",
-                     current_ssid ? current_ssid : "", (int)rssi);
+            if (!cJSON_AddNumberToObject(json, "rssi", rssi)) {
+                cJSON_Delete(json);
+                cJSON_Delete(root);
+                return ESP_ERR_NO_MEM;
+            }
         } else {
-            snprintf(result, result_size,
-                     "{\"connected\":false,\"ssid\":\"%s\",\"error\":%d}",
-                     ssid, ret);
+            if (!cJSON_AddNumberToObject(json, "error", ret)) {
+                cJSON_Delete(json);
+                cJSON_Delete(root);
+                return ESP_ERR_NO_MEM;
+            }
         }
 
         cJSON_Delete(root);
-        return ret;
+        esp_err_t write_ret = mock_mcp_write_json(json, result, result_size);
+        return write_ret == ESP_OK ? ret : write_ret;
     }
 
     return ESP_ERR_NOT_SUPPORTED;

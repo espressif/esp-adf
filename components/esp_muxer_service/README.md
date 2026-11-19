@@ -56,7 +56,7 @@ flowchart TD
     F --> G[esp_service_start src]
     G --> H[read_streaming_data / storage file]
     H --> I[stop src then muxer]
-    I --> J[unlink / deinit / free]
+    I --> J[unlink / deinit success / free]
 ```
 
 ## Typical Usage
@@ -93,8 +93,9 @@ esp_service_stop(ESP_SERVICE_BASE(src));
 esp_service_stop(ESP_SERVICE_BASE(muxer));
 esp_media_service_unlink(ESP_SERVICE_BASE(src), ESP_MEDIA_DEFAULT_STREAM,
                          ESP_SERVICE_BASE(muxer), ESP_MEDIA_DEFAULT_STREAM);
-esp_media_service_deinit(ESP_SERVICE_BASE(muxer));
-free(muxer);
+if (esp_media_service_deinit(ESP_SERVICE_BASE(muxer)) == ESP_OK) {
+    free(muxer);
+}
 ```
 
 For storage, set `mode` to `STORAGE_ONLY` or `BOTH` and `storage_dir` (for example `/sdcard/muxed`), or call `esp_muxer_service_set_storage_url()` with a path such as `/sdcard/muxed/clip.ts`.
@@ -130,7 +131,7 @@ esp_muxer_service_release_streaming_data(muxer);
 esp_muxer_service_read_streaming_data(muxer, buffer, &inout_size, timeout_ms);
 ```
 
-Start / stop with `esp_service_start()` / `esp_service_stop()` on `ESP_SERVICE_BASE(muxer)`. Tear down with `esp_media_service_deinit()` then `free()`.
+Call `esp_media_service_deinit()` from the owner task and free only after `ESP_OK`. Failure retains the object for retry. Stop external callers and unlink first; never destroy inside callbacks. The example stops on cleanup failure rather than returning with a lost handle.
 
 ## Scheduler
 

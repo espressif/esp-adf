@@ -4,10 +4,9 @@
  */
 
 #include "unity.h"
-
 #include "esp_netif.h"
-#include "esp_service.h"
 #include "esp_wifi.h"
+#include "esp_service.h"
 #include "esp_wifi_service.h"
 #include "esp_wifi_service_prov.h"
 #include "test_wifi_service_storage.h"
@@ -35,6 +34,7 @@ typedef struct {
     unsigned                           start_count;
     unsigned                           stop_count;
     bool                               started;
+    bool                               fail_stop;
 } fake_prov_agent_t;
 
 static esp_err_t fake_prov_start(esp_wifi_service_prov_t prov)
@@ -49,6 +49,10 @@ static esp_err_t fake_prov_stop(esp_wifi_service_prov_t prov)
 {
     fake_prov_agent_t *agent = (fake_prov_agent_t *)prov;
     agent->stop_count++;
+    if (agent->fail_stop) {
+        agent->fail_stop = false;
+        return ESP_ERR_TIMEOUT;
+    }
     agent->started = false;
     return esp_wifi_service_prov_dispatch_event(prov, ESP_WIFI_SERVICE_PROV_EVT_STOPPED, NULL);
 }
@@ -221,6 +225,41 @@ TEST_CASE("wifi service initializes and deinitializes provisioning callbacks", "
     TEST_ASSERT_NULL(agent.base.event_cb);
     TEST_ASSERT_NULL(agent.base.event_ctx);
 
+    esp_wifi_service_profile_mgr_deinit(manager);
+    esp_config_storage_deinit(storage);
+}
+
+TEST_CASE("wifi service retries failed stop and suppresses shutdown notifications",
+          "[wifi_service][prov][lifecycle][timeout=30]")
+{
+    wifi_service_test_storage_ctx_t ram;
+    esp_config_storage_t storage = NULL;
+    esp_wifi_service_profile_mgr_t manager = NULL;
+    create_profile_mgr(&ram, &storage, &manager);
+    fake_prov_agent_t agent;
+    fake_prov_agent_init(&agent);
+    esp_wifi_service_prov_t prov_list[] = {(esp_wifi_service_prov_t)&agent};
+    esp_wifi_service_config_t cfg = {
+        .name = "wifi-service-destroy-retry-ut",
+        .profile_manager = manager,
+        .prov_list = prov_list,
+        .prov_num = 1,
+    };
+    esp_wifi_service_t *service = NULL;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_wifi_service_create(&cfg, &service));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_wifi_service_start_provisioning(service));
+    agent.fail_stop = true;
+    TEST_ASSERT_EQUAL(ESP_ERR_TIMEOUT, esp_wifi_service_destroy(service));
+    esp_service_state_t state;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_get_state((esp_service_t *)service, &state));
+    TEST_ASSERT_EQUAL(ESP_SERVICE_STATE_STOPPING, state);
+    TEST_ASSERT_TRUE(agent.started);
+    TEST_ASSERT_NOT_NULL(agent.base.event_cb);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_wifi_service_destroy(service));
+    TEST_ASSERT_EQUAL(2, agent.stop_count);
+    TEST_ASSERT_FALSE(agent.started);
+    TEST_ASSERT_NULL(agent.base.event_cb);
+    TEST_ASSERT_NULL(agent.base.event_ctx);
     esp_wifi_service_profile_mgr_deinit(manager);
     esp_config_storage_deinit(storage);
 }

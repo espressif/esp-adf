@@ -7,7 +7,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-
 #include "sdkconfig.h"
 #include "esp_check.h"
 #include "esp_log.h"
@@ -25,24 +24,24 @@ char *rtsp_strdup_or_null(const char *str)
 static esp_rtsp_service_event_t rtsp_state_to_service_event(esp_rtsp_state_t state)
 {
     switch (state) {
-    case RTSP_STATE_OPTIONS:
-        return ESP_RTSP_SERVICE_EVENT_OPTIONS;
-    case RTSP_STATE_ANNOUNCE:
-        return ESP_RTSP_SERVICE_EVENT_ANNOUNCE;
-    case RTSP_STATE_DESCRIBING:
-        return ESP_RTSP_SERVICE_EVENT_DESCRIBING;
-    case RTSP_STATE_DESCRIBE:
-        return ESP_RTSP_SERVICE_EVENT_DESCRIBE;
-    case RTSP_STATE_SETUP:
-        return ESP_RTSP_SERVICE_EVENT_SETUP;
-    case RTSP_STATE_PLAY:
-        return ESP_RTSP_SERVICE_EVENT_PLAY;
-    case RTSP_STATE_RECORD:
-        return ESP_RTSP_SERVICE_EVENT_RECORD;
-    case RTSP_STATE_TEARDOWN:
-        return ESP_RTSP_SERVICE_EVENT_TEARDOWN;
-    default:
-        return 0;
+        case RTSP_STATE_OPTIONS:
+            return ESP_RTSP_SERVICE_EVENT_OPTIONS;
+        case RTSP_STATE_ANNOUNCE:
+            return ESP_RTSP_SERVICE_EVENT_ANNOUNCE;
+        case RTSP_STATE_DESCRIBING:
+            return ESP_RTSP_SERVICE_EVENT_DESCRIBING;
+        case RTSP_STATE_DESCRIBE:
+            return ESP_RTSP_SERVICE_EVENT_DESCRIBE;
+        case RTSP_STATE_SETUP:
+            return ESP_RTSP_SERVICE_EVENT_SETUP;
+        case RTSP_STATE_PLAY:
+            return ESP_RTSP_SERVICE_EVENT_PLAY;
+        case RTSP_STATE_RECORD:
+            return ESP_RTSP_SERVICE_EVENT_RECORD;
+        case RTSP_STATE_TEARDOWN:
+            return ESP_RTSP_SERVICE_EVENT_TEARDOWN;
+        default:
+            return 0;
     }
 }
 
@@ -125,18 +124,18 @@ rtsp_payload_codec_t rtsp_to_video_codec(esp_media_codec_fourcc_t codec)
 esp_media_codec_fourcc_t rtsp_from_codec(rtsp_payload_codec_t codec)
 {
     switch (codec) {
-    case RTSP_ACODEC_AAC:
-        return ESP_MEDIA_CODEC_AAC;
-    case RTSP_ACODEC_G711A:
-        return ESP_MEDIA_CODEC_G711A;
-    case RTSP_ACODEC_G711U:
-        return ESP_MEDIA_CODEC_G711U;
-    case RTSP_VCODEC_H264:
-        return ESP_MEDIA_CODEC_H264;
-    case RTSP_VCODEC_MJPEG:
-        return ESP_MEDIA_CODEC_MJPEG;
-    default:
-        return 0;
+        case RTSP_ACODEC_AAC:
+            return ESP_MEDIA_CODEC_AAC;
+        case RTSP_ACODEC_G711A:
+            return ESP_MEDIA_CODEC_G711A;
+        case RTSP_ACODEC_G711U:
+            return ESP_MEDIA_CODEC_G711U;
+        case RTSP_VCODEC_H264:
+            return ESP_MEDIA_CODEC_H264;
+        case RTSP_VCODEC_MJPEG:
+            return ESP_MEDIA_CODEC_MJPEG;
+        default:
+            return 0;
     }
 }
 
@@ -144,19 +143,19 @@ static bool role_enabled(esp_rtsp_service_role_t role)
 {
     switch (role) {
 #ifdef CONFIG_ESP_RTSP_SERVICE_SERVER_SUPPORT
-    case ESP_RTSP_SERVICE_ROLE_SERVER:
-        return true;
-#endif
+        case ESP_RTSP_SERVICE_ROLE_SERVER:
+            return true;
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SERVER_SUPPORT */
 #ifdef CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT
-    case ESP_RTSP_SERVICE_ROLE_SRC:
-        return true;
-#endif
+        case ESP_RTSP_SERVICE_ROLE_SRC:
+            return true;
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT */
 #ifdef CONFIG_ESP_RTSP_SERVICE_SINK_SUPPORT
-    case ESP_RTSP_SERVICE_ROLE_SINK:
-        return true;
-#endif
-    default:
-        return false;
+        case ESP_RTSP_SERVICE_ROLE_SINK:
+            return true;
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SINK_SUPPORT */
+        default:
+            return false;
     }
 }
 
@@ -174,19 +173,19 @@ static esp_err_t rtsp_on_start(esp_service_t *base)
     esp_rtsp_service_t *service = (esp_rtsp_service_t *)base;
     switch (service->role) {
 #ifdef CONFIG_ESP_RTSP_SERVICE_SERVER_SUPPORT
-    case ESP_RTSP_SERVICE_ROLE_SERVER:
-        return rtsp_server_on_start(service);
-#endif
+        case ESP_RTSP_SERVICE_ROLE_SERVER:
+            return rtsp_server_on_start(service);
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SERVER_SUPPORT */
 #ifdef CONFIG_ESP_RTSP_SERVICE_SINK_SUPPORT
-    case ESP_RTSP_SERVICE_ROLE_SINK:
-        return rtsp_sink_on_start(service);
-#endif
+        case ESP_RTSP_SERVICE_ROLE_SINK:
+            return rtsp_sink_on_start(service);
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SINK_SUPPORT */
 #ifdef CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT
-    case ESP_RTSP_SERVICE_ROLE_SRC:
-        return rtsp_src_on_start(service);
-#endif
-    default:
-        return ESP_ERR_NOT_SUPPORTED;
+        case ESP_RTSP_SERVICE_ROLE_SRC:
+            return rtsp_src_on_start(service);
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT */
+        default:
+            return ESP_ERR_NOT_SUPPORTED;
     }
 }
 
@@ -195,32 +194,31 @@ static esp_err_t rtsp_on_stop(esp_service_t *base)
     esp_rtsp_service_t *service = (esp_rtsp_service_t *)base;
     switch (service->role) {
 #ifdef CONFIG_ESP_RTSP_SERVICE_SERVER_SUPPORT
-    case ESP_RTSP_SERVICE_ROLE_SERVER:
-        return rtsp_server_on_stop(service);
-#endif
+        case ESP_RTSP_SERVICE_ROLE_SERVER:
+            return rtsp_server_on_stop(service);
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SERVER_SUPPORT */
 #ifdef CONFIG_ESP_RTSP_SERVICE_SINK_SUPPORT
-    case ESP_RTSP_SERVICE_ROLE_SINK:
-        return rtsp_sink_on_stop(service);
-#endif
+        case ESP_RTSP_SERVICE_ROLE_SINK:
+            return rtsp_sink_on_stop(service);
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SINK_SUPPORT */
 #ifdef CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT
-    case ESP_RTSP_SERVICE_ROLE_SRC:
-        return rtsp_src_on_stop(service);
-#endif
-    default:
-        return ESP_OK;
+        case ESP_RTSP_SERVICE_ROLE_SRC:
+            return rtsp_src_on_stop(service);
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT */
+        default:
+            return ESP_OK;
     }
 }
 
 static esp_err_t rtsp_on_deinit(esp_service_t *base)
 {
     esp_rtsp_service_t *service = (esp_rtsp_service_t *)base;
-    (void)rtsp_on_stop(base);
 #ifdef CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT
     if (service->role == ESP_RTSP_SERVICE_ROLE_SRC && service->src.mngr != NULL) {
         esp_media_track_mngr_destroy(service->src.mngr);
         service->src.mngr = NULL;
     }
-#endif
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT */
     free(service->url);
     service->url = NULL;
     free(service->local_addr);
@@ -235,16 +233,16 @@ static esp_err_t rtsp_get_role(esp_service_t *base, esp_media_role_t *out_role)
         return ESP_ERR_INVALID_ARG;
     }
     switch (service->role) {
-    case ESP_RTSP_SERVICE_ROLE_SRC:
-        *out_role = ESP_MEDIA_ROLE_SRC;
-        break;
-    case ESP_RTSP_SERVICE_ROLE_SINK:
-    case ESP_RTSP_SERVICE_ROLE_SERVER:
-        *out_role = ESP_MEDIA_ROLE_SINK;
-        break;
-    default:
-        *out_role = ESP_MEDIA_ROLE_NONE;
-        break;
+        case ESP_RTSP_SERVICE_ROLE_SRC:
+            *out_role = ESP_MEDIA_ROLE_SRC;
+            break;
+        case ESP_RTSP_SERVICE_ROLE_SINK:
+        case ESP_RTSP_SERVICE_ROLE_SERVER:
+            *out_role = ESP_MEDIA_ROLE_SINK;
+            break;
+        default:
+            *out_role = ESP_MEDIA_ROLE_NONE;
+            break;
     }
     return ESP_OK;
 }
@@ -261,7 +259,7 @@ static esp_err_t rtsp_get_provider(esp_service_t *base, esp_media_stream_id_t st
     (void)base;
     (void)stream;
     (void)out_provider;
-#endif
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
@@ -277,7 +275,7 @@ static esp_err_t rtsp_set_provider(esp_service_t *base, esp_media_stream_id_t st
     (void)base;
     (void)stream;
     (void)provider;
-#endif
+#endif  /* defined(CONFIG_ESP_RTSP_SERVICE_SINK_SUPPORT) || defined(CONFIG_ESP_RTSP_SERVICE_SERVER_SUPPORT) */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
@@ -293,7 +291,7 @@ static esp_err_t rtsp_get_request(esp_service_t *base, esp_media_stream_id_t str
     (void)base;
     (void)stream;
     (void)request;
-#endif
+#endif  /* defined(CONFIG_ESP_RTSP_SERVICE_SINK_SUPPORT) || defined(CONFIG_ESP_RTSP_SERVICE_SERVER_SUPPORT) */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
@@ -309,47 +307,47 @@ static esp_err_t rtsp_set_request(esp_service_t *base, esp_media_stream_id_t str
     (void)base;
     (void)stream;
     (void)request;
-#endif
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
 static const char *rtsp_service_event_to_name(uint16_t event_id)
 {
     switch (event_id) {
-    case ESP_RTSP_SERVICE_EVENT_OPTIONS:
-        return "OPTIONS";
-    case ESP_RTSP_SERVICE_EVENT_ANNOUNCE:
-        return "ANNOUNCE";
-    case ESP_RTSP_SERVICE_EVENT_DESCRIBING:
-        return "DESCRIBING";
-    case ESP_RTSP_SERVICE_EVENT_DESCRIBE:
-        return "DESCRIBE";
-    case ESP_RTSP_SERVICE_EVENT_SETUP:
-        return "SETUP";
-    case ESP_RTSP_SERVICE_EVENT_PLAY:
-        return "PLAY";
-    case ESP_RTSP_SERVICE_EVENT_RECORD:
-        return "RECORD";
-    case ESP_RTSP_SERVICE_EVENT_TEARDOWN:
-        return "TEARDOWN";
-    default:
-        return NULL;
+        case ESP_RTSP_SERVICE_EVENT_OPTIONS:
+            return "OPTIONS";
+        case ESP_RTSP_SERVICE_EVENT_ANNOUNCE:
+            return "ANNOUNCE";
+        case ESP_RTSP_SERVICE_EVENT_DESCRIBING:
+            return "DESCRIBING";
+        case ESP_RTSP_SERVICE_EVENT_DESCRIBE:
+            return "DESCRIBE";
+        case ESP_RTSP_SERVICE_EVENT_SETUP:
+            return "SETUP";
+        case ESP_RTSP_SERVICE_EVENT_PLAY:
+            return "PLAY";
+        case ESP_RTSP_SERVICE_EVENT_RECORD:
+            return "RECORD";
+        case ESP_RTSP_SERVICE_EVENT_TEARDOWN:
+            return "TEARDOWN";
+        default:
+            return NULL;
     }
 }
 
 static const esp_service_ops_t s_rtsp_service_ops = {
-    .on_start = rtsp_on_start,
-    .on_stop = rtsp_on_stop,
-    .on_deinit = rtsp_on_deinit,
+    .on_start      = rtsp_on_start,
+    .on_stop       = rtsp_on_stop,
+    .on_deinit     = rtsp_on_deinit,
     .event_to_name = rtsp_service_event_to_name,
 };
 
 static const esp_media_service_ops_t s_rtsp_media_ops = {
-    .get_role = rtsp_get_role,
+    .get_role     = rtsp_get_role,
     .get_provider = rtsp_get_provider,
     .set_provider = rtsp_set_provider,
-    .get_request = rtsp_get_request,
-    .set_request = rtsp_set_request,
+    .get_request  = rtsp_get_request,
+    .set_request  = rtsp_set_request,
 };
 
 esp_err_t esp_rtsp_service_create(const esp_rtsp_service_cfg_t *cfg, esp_rtsp_service_t **out_service)
@@ -367,23 +365,23 @@ esp_err_t esp_rtsp_service_create(const esp_rtsp_service_cfg_t *cfg, esp_rtsp_se
     media_cfg.name = cfg->name ? cfg->name : ESP_RTSP_SERVICE_NAME;
     media_cfg.service_ops = &s_rtsp_service_ops;
     media_cfg.media_ops = &s_rtsp_media_ops;
-    esp_err_t ret = esp_media_service_init(&service->media, &media_cfg);
-    if (ret != ESP_OK) {
-        free(service);
-        RET_FOR(ret, "media init failed");
-    }
-
 #ifdef CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT
     if (service->role == ESP_RTSP_SERVICE_ROLE_SRC) {
         service->src.audio_cache_size = RTSP_DEFAULT_AUDIO_CACHE_SIZE;
         service->src.video_cache_size = RTSP_DEFAULT_CACHE_SIZE;
-        ret = rtsp_src_ensure_mngr(service);
+        esp_err_t ret = rtsp_src_ensure_mngr(service);
+        if (ret != ESP_OK) {
+            rtsp_on_deinit(ESP_SERVICE_BASE(service));
+            free(service);
+            RET_FOR(ret, "src manager init failed");
+        }
     }
-#endif
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT */
+    esp_err_t ret = esp_media_service_init(&service->media, &media_cfg);
     if (ret != ESP_OK) {
-        esp_media_service_deinit(ESP_SERVICE_BASE(service));
+        rtsp_on_deinit(ESP_SERVICE_BASE(service));
         free(service);
-        RET_FOR(ret, "src manager init failed");
+        RET_FOR(ret, "media init failed");
     }
 
     *out_service = service;
@@ -413,7 +411,7 @@ esp_err_t esp_rtsp_service_setup(esp_rtsp_service_t *service, const esp_rtsp_ser
             service->src.video_cache_size = cfg.video_cache_size;
         }
     }
-#endif
+#endif  /* CONFIG_ESP_RTSP_SERVICE_SRC_SUPPORT */
     return ESP_OK;
 }
 

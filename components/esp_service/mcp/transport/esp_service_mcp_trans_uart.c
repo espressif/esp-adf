@@ -7,14 +7,14 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "esp_log.h"
-#include "driver/uart.h"
+#include <stdatomic.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
+#include "esp_log.h"
+#include "driver/uart.h"
 #include "esp_service_mcp_trans_uart.h"
-
-static const char *TAG = "MCP_UART";
+#include "mcp_line_reader.h"
 
 /**
  * @brief  Concrete UART transport structure
@@ -25,9 +25,11 @@ typedef struct {
     TaskHandle_t                   reader_task;
     SemaphoreHandle_t              write_mutex;      /*!< Protect UART writes */
     SemaphoreHandle_t              reader_exit_sem;  /*!< Signalled by reader task before vTaskDelete */
-    bool                           running;
+    atomic_bool                    running;
     bool                           uart_installed;
 } uart_impl_t;
+
+static const char *TAG = "MCP_UART";
 
 /* ─── Forward declarations of vtable ops ─── */
 static esp_err_t uart_start(esp_service_mcp_trans_t *transport);
@@ -50,6 +52,10 @@ static esp_err_t uart_write_line(uart_impl_t *ut, const char *line)
         ESP_LOGE(TAG, "Failed to acquire write mutex");
         return ESP_ERR_TIMEOUT;
     }
+    if (!ut->running) {
+        xSemaphoreGive(ut->write_mutex);
+        return ESP_ERR_INVALID_STATE;
+    }
 
     size_t len = strlen(line);
     int written = uart_write_bytes(ut->config.uart_port, line, len);
@@ -66,7 +72,8 @@ static esp_err_t uart_write_line(uart_impl_t *ut, const char *line)
 static int uart_read_line(uart_impl_t *ut, char *buffer, size_t buffer_size)
 {
     size_t pos = 0;
-    while (pos < buffer_size - 1) {
+    bool discard = false;
+    while (ut->running) {
         uint8_t ch;
         int len = uart_read_bytes(ut->config.uart_port, &ch, 1, pdMS_TO_TICKS(100));
 
@@ -74,23 +81,20 @@ static int uart_read_line(uart_impl_t *ut, char *buffer, size_t buffer_size)
             if (!ut->running) {
                 return -1;
             }
-            if (pos == 0) {
+            continue;
+        }
+
+        int result = mcp_line_feed(buffer, buffer_size, &pos, &discard, (char)ch);
+        if (result != 0) {
+            if (result < 0) {
+                ESP_LOGW(TAG, "Receive: oversized or invalid line discarded");
                 return -1;
             }
-            continue;
+            return (int)strlen(buffer);
         }
-
-        if (ch == '\n') {
-            break;
-        }
-        if (ch == '\r') {
-            continue;
-        }
-        buffer[pos++] = (char)ch;
     }
 
-    buffer[pos] = '\0';
-    return (int)pos;
+    return -1;
 }
 
 static void uart_reader_task(void *arg)
@@ -101,7 +105,6 @@ static void uart_reader_task(void *arg)
     if (!line_buf) {
         ESP_LOGE(TAG, "Failed to allocate line buffer");
         ut->running = false;
-        ut->reader_task = NULL;
         xSemaphoreGive(ut->reader_exit_sem);
         vTaskDelete(NULL);
         return;
@@ -118,19 +121,20 @@ static void uart_reader_task(void *arg)
             continue;
         }
 
-        ESP_LOGD(TAG, "Received line (%d bytes): %s", len, line_buf);
+        ESP_LOGD(TAG, "Received line: %d bytes", len);
 
         /* Dispatch through the abstract transport layer */
         char *response_str = NULL;
         esp_err_t ret = esp_service_mcp_trans_dispatch_request(&ut->base, line_buf, &response_str);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Request dispatch failed: %s", esp_err_to_name(ret));
-            continue;
         }
 
         if (response_str) {
-            uart_write_line(ut, response_str);
-            ESP_LOGD(TAG, "Sent response: %s", response_str);
+            if (ret == ESP_OK && ut->running) {
+                uart_write_line(ut, response_str);
+            }
+            ESP_LOGD(TAG, "Sent response: %u bytes", (unsigned)strlen(response_str));
             free(response_str);
         }
     }
@@ -149,6 +153,11 @@ static esp_err_t uart_start(esp_service_mcp_trans_t *transport)
         ESP_LOGW(TAG, "UART transport already running");
         return ESP_OK;
     }
+    if (ut->reader_task || ut->uart_installed) {
+        ESP_LOGW(TAG, "Start: previous stop must complete first");
+        return ESP_ERR_INVALID_STATE;
+    }
+    xSemaphoreTake(ut->reader_exit_sem, 0);
 
     /* Configure UART */
     uart_config_t uart_config = {
@@ -183,8 +192,6 @@ static esp_err_t uart_start(esp_service_mcp_trans_t *transport)
         return ret;
     }
     ut->uart_installed = true;
-
-    uart_enable_pattern_det_baud_intr(ut->config.uart_port, '\n', 1, 9, 0, 0);
 
     ut->running = true;
 
@@ -221,22 +228,32 @@ static esp_err_t uart_stop(esp_service_mcp_trans_t *transport)
 {
     uart_impl_t *ut = (uart_impl_t *)transport;
 
-    if (!ut->running) {
-        return ESP_OK;
+    if (ut->reader_task && ut->reader_task == xTaskGetCurrentTaskHandle()) {
+        ESP_LOGW(TAG, "Stop: reader cannot stop itself");
+        return ESP_ERR_INVALID_STATE;
     }
 
     ut->running = false;
 
     if (ut->reader_task) {
         if (xSemaphoreTake(ut->reader_exit_sem, pdMS_TO_TICKS(5000)) != pdTRUE) {
-            ESP_LOGW(TAG, "Reader task did not exit within 5s; forcing delete");
-            vTaskDelete(ut->reader_task);
+            ESP_LOGW(TAG, "Stop: reader has not exited; retry after the handler returns");
+            return ESP_ERR_TIMEOUT;
         }
         ut->reader_task = NULL;
     }
 
     if (ut->uart_installed) {
-        uart_driver_delete(ut->config.uart_port);
+        if (xSemaphoreTake(ut->write_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+            ESP_LOGW(TAG, "Stop: writer has not exited");
+            return ESP_ERR_TIMEOUT;
+        }
+        esp_err_t ret = uart_driver_delete(ut->config.uart_port);
+        xSemaphoreGive(ut->write_mutex);
+        if (ret != ESP_OK) {
+            ESP_LOGW(TAG, "Stop: UART delete failed: %s", esp_err_to_name(ret));
+            return ret;
+        }
         ut->uart_installed = false;
     }
 
@@ -248,8 +265,9 @@ static esp_err_t uart_destroy(esp_service_mcp_trans_t *transport)
 {
     uart_impl_t *ut = (uart_impl_t *)transport;
 
-    if (ut->running) {
-        uart_stop(transport);
+    esp_err_t ret = uart_stop(transport);
+    if (ret != ESP_OK) {
+        return ret;
     }
 
     if (ut->write_mutex) {
@@ -291,7 +309,14 @@ esp_err_t esp_service_mcp_trans_uart_create(const esp_service_mcp_uart_config_t 
         ut->config = default_cfg;
     }
 
-    ut->running = false;
+    /* uart_read_line() needs room for one byte plus the terminator */
+    if (ut->config.max_request_size < 2) {
+        ESP_LOGE(TAG, "Create: max_request_size=%u is too small (minimum 2)", (unsigned)ut->config.max_request_size);
+        free(ut);
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    atomic_init(&ut->running, false);
     ut->uart_installed = false;
 
     ut->write_mutex = xSemaphoreCreateMutex();

@@ -43,6 +43,7 @@ typedef struct {
 
 static void sip_service_delete(esp_sip_service_t *service)
 {
+    TEST_ESP_OK(esp_service_stop(ESP_SERVICE_BASE(service)));
     TEST_ESP_OK(esp_media_service_deinit(ESP_SERVICE_BASE(service)));
     free(service);
 }

@@ -18,6 +18,7 @@
 #include "cJSON.h"
 #include "player_service.h"
 #include "player_service_mcp.h"
+#include "../mock_mcp_util.h"
 
 static const char *TAG = "PLAYER_MCP";
 
@@ -37,7 +38,7 @@ esp_err_t player_service_tool_invoke(esp_service_t *service,
 {
     player_service_t *player = (player_service_t *)service;
 
-    ESP_LOGI(TAG, "Tool_invoke: %s args=%s", tool->name, args ? args : "{}");
+    ESP_LOGD(TAG, "Tool invoke: %s", tool->name);
 
     if (strcmp(tool->name, "player_service_play") == 0) {
         player_service_play(player);
@@ -47,10 +48,10 @@ esp_err_t player_service_tool_invoke(esp_service_t *service,
     if (strcmp(tool->name, "player_service_set_volume") == 0) {
         cJSON *root = cJSON_Parse(args);
         if (root) {
-            cJSON *volume = cJSON_GetObjectItem(root, "volume");
-            if (volume && cJSON_IsNumber(volume)) {
-                player_service_set_volume(player, (uint32_t)volume->valueint);
-                snprintf(result, result_size, "{\"volume\":%d}", volume->valueint);
+            uint32_t volume;
+            if (mock_mcp_uint(root, "volume", 100, &volume)) {
+                player_service_set_volume(player, volume);
+                snprintf(result, result_size, "{\"volume\":%u}", (unsigned)volume);
                 cJSON_Delete(root);
                 return ESP_OK;
             }

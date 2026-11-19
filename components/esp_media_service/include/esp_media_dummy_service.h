@@ -72,7 +72,10 @@ esp_err_t esp_media_dummy_service_create(const esp_media_dummy_service_cfg_t *cf
 /**
  * @brief  Destroy a dummy service
  *
- *         Stops the service if still running.
+ *         Stops the service if still running. Single-owner operation after
+ *         unlinking endpoints and stopping external callers; not for event or
+ *         lifecycle callbacks. Only ESP_OK invalidates svc. On error retain
+ *         it for destroy retry and never free it manually.
  *
  * @param[in]  svc  Dummy service handle
  *

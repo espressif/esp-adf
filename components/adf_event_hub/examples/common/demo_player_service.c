@@ -16,6 +16,7 @@
 
 static const char *TAG = "Player";
 
+#define PLAYER_TASK_STACK            (6 * 1024)
 #define PLAYER_TASK_PRIORITY         (tskIDLE_PRIORITY + 2)
 #define PLAYER_PROGRESS_STEP         20
 #define PLAYER_PROGRESS_INTERVAL_MS  100
@@ -393,7 +394,7 @@ demo_player_service_t *demo_player_service_create(int rounds)
     }
 
     BaseType_t ok = xTaskCreate(player_task, "player_svc",
-                                configMINIMAL_STACK_SIZE * 2,
+                                PLAYER_TASK_STACK,
                                 svc, PLAYER_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");

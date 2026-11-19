@@ -15,18 +15,14 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
-
 #include "unity.h"
 #include "nvs.h"
-
 #include "esp_service.h"
 #include "esp_ota_service_resume.h"
 #include "esp_ota_service.h"
-
 #include "esp_ota_service_test_fixtures.h"
 #include "esp_ota_service_test_mocks.h"
 
@@ -824,13 +820,53 @@ static void ab_stop_requester_task(void *arg)
     vTaskDelete(NULL);
 }
 
-TEST_CASE("(abort) pause before start, start after resume", TAG_GROUP)
+static void hold_ota_worker(const adf_event_t *event, void *ctx)
+{
+    (void)event;
+    SemaphoreHandle_t *gate = ctx;
+    xSemaphoreGive(gate[0]);
+    xSemaphoreTake(gate[1], pdMS_TO_TICKS(10000));
+}
+
+TEST_CASE("(abort) timed out stop retains worker until explicit join", TAG_GROUP)
+{
+    esp_ota_service_mock_counters_reset();
+    esp_ota_service_test_service_cfg_t cfg = {.stop_timeout_ms = 1000};
+    esp_ota_service_t *svc = esp_ota_service_test_create_service(&cfg);
+    esp_service_t *base = (esp_service_t *)svc;
+    SemaphoreHandle_t gate[] = {xSemaphoreCreateBinary(), xSemaphoreCreateBinary()};
+    TEST_ASSERT_NOT_NULL(gate[0]);
+    TEST_ASSERT_NOT_NULL(gate[1]);
+    adf_event_subscribe_info_t sub = {
+        .event_id = ESP_OTA_SERVICE_EVT_ITEM_BEGIN,
+        .handler = hold_ota_worker,
+        .handler_ctx = gate,
+    };
+    TEST_ESP_OK(esp_service_event_subscribe(base, &sub));
+    esp_ota_upgrade_item_t item = lc_make_valid_item();
+    TEST_ESP_OK(esp_ota_service_set_upgrade_list(svc, &item, 1));
+    TEST_ESP_OK(esp_service_start(base));
+    TEST_ASSERT_EQUAL(pdTRUE, xSemaphoreTake(gate[0], pdMS_TO_TICKS(5000)));
+    TEST_ASSERT_EQUAL(ESP_ERR_TIMEOUT, esp_service_stop(base));
+    TEST_ASSERT_EQUAL(ESP_ERR_TIMEOUT, esp_ota_service_destroy(svc));
+    TEST_ASSERT_EQUAL(ESP_ERR_TIMEOUT, esp_service_deinit(base));
+    xSemaphoreGive(gate[1]);
+    TEST_ESP_OK(esp_service_stop(base));
+    TEST_ESP_OK(esp_ota_service_destroy(svc));
+    vSemaphoreDelete(gate[0]);
+    vSemaphoreDelete(gate[1]);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+
+TEST_CASE("(abort) pause and resume before start are rejected, session still completes", TAG_GROUP)
 {
     esp_ota_service_mock_counters_reset();
     esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
 
-    TEST_ASSERT_EQUAL(ESP_OK, esp_service_pause((esp_service_t *)svc));
-    TEST_ASSERT_EQUAL(ESP_OK, esp_service_resume((esp_service_t *)svc));
+    /* pause() needs RUNNING and resume() needs PAUSED; on an INITIALIZED
+     * service both are rejected without changing the state */
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_STATE, esp_service_pause((esp_service_t *)svc));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_STATE, esp_service_resume((esp_service_t *)svc));
 
     static const uint8_t p[] = {0x01, 0x02};
     esp_ota_service_mock_src_cfg_t scfg = {.data = p, .len = sizeof(p), .chunk_size = 16, .provide_seek = true};

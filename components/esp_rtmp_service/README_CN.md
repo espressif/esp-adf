@@ -52,7 +52,7 @@ flowchart TD
     C --> D[esp_service_start]
     D --> E[optional query for SERVER]
     E --> F[esp_service_stop]
-    F --> G[unlink / deinit / free]
+    F --> G[断开连接 / deinit 成功后 free]
 ```
 
 ## 典型用法
@@ -134,7 +134,7 @@ URL 形态：
 - Setup 与 `set_url` 要求服务处于停止状态
 - `esp_rtmp_service_query()` 仅适用于 SERVER
 - Sink 通过 link 的 `get_request` 请求全局交错缓存
-- 销毁时先调用 `esp_media_service_deinit()`，再 `free()`
+- 由所有者任务调用 `esp_media_service_deinit()`，仅在返回 `ESP_OK` 后 free。失败保留句柄供重试。销毁前停止外部调用和 MCP 分发，并断开媒体连接；不要在回调内调用。
 
 ## 示例
 

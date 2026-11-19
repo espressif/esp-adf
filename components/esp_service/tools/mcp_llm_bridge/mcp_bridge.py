@@ -3,7 +3,7 @@
 """
 MCP Bridge — single entry point for all MCP operations.
 
-  discover   Discover and test local MCP (发现测试本地 MCP). No LLM.
+  discover   List MCP tools without executing them. No LLM.
   run        Connect to LLM and test MCP (连接大模型测试 MCP). Batch or interactive.
   test       Run automated MCP test suite (自动测试).
 
@@ -52,7 +52,7 @@ def _cmd_discover(config_path, transport='http', sse_base_url=None):
         return 1
 
     print('=' * 70)
-    print('  Discover & test local MCP (no LLM)')
+    print('  Discover local MCP (read-only, no LLM)')
     print('=' * 70)
 
     effective_transport = transport or 'http'
@@ -95,16 +95,6 @@ def _cmd_discover(config_path, transport='http', sse_base_url=None):
             except Exception as e:
                 print(f'  (skip: {e})')
 
-        print('\n' + '=' * 70)
-        print('  Tool execution (schema-based args)')
-        print('=' * 70)
-        for test in generate_tool_test_cases(tools):
-            name, args = test['name'], test['arguments']
-            try:
-                result = client.call_tool(name, args)
-                print(f'  ✓ {name}: {result[:80]}{'...' if len(result) > 80 else ''}')
-            except Exception as e:
-                print(f'  ✗ {name}: {e}')
     finally:
         if hasattr(client, 'close'):
             client.close()
@@ -157,7 +147,7 @@ def _batch_mode(bridge, test_cases):
         prompt = tc.get('prompt', '')
         if not prompt:
             continue
-        print(f'\n--- Test {i}: {tc.get('description', 'Test')} ---')
+        print(f"\n--- Test {i}: {tc.get('description', 'Test')} ---")
         print(f'User: {prompt}\n')
         try:
             response = bridge.run_conversation(prompt)
@@ -166,7 +156,10 @@ def _batch_mode(bridge, test_cases):
             print(f'Error: {e}\n')
 
 
-def _cmd_run(config_path, mode, transport='http', sse_base_url=None):
+def _cmd_run(config_path, mode, transport='http', sse_base_url=None, allow_execution=False):
+    if not allow_execution:
+        print('Execution disabled. Review the target and tools, then pass --allow-execution.')
+        return 1
     print('Loading configuration...')
     try:
         config = load_config(config_path)
@@ -186,8 +179,8 @@ def _cmd_run(config_path, mode, transport='http', sse_base_url=None):
     print('=' * 70)
     print(f'MCP Server:    {mcp_url}')
     print(f'Transport:     {effective_transport}')
-    print(f'LLM Provider:  {config['llm']['provider']}')
-    print(f'LLM Model:     {config['llm']['model']}\n')
+    print(f"LLM Provider:  {config['llm']['provider']}")
+    print(f"LLM Model:     {config['llm']['model']}\n")
 
     if effective_transport == 'sse':
         base = sse_base_url or mcp_url.rsplit('/mcp', 1)[0]
@@ -203,7 +196,7 @@ def _cmd_run(config_path, mode, transport='http', sse_base_url=None):
             print(f'Error creating LLM adapter: {e}')
             return 1
 
-        bridge = MCPLLMBridge(mcp_client, llm_adapter)
+        bridge = MCPLLMBridge(mcp_client, llm_adapter, allow_execution=True)
         print('Discovering tools from MCP server...')
         bridge.discover_tools()
         print(f'✓ Discovered {len(bridge.mcp_tools)} tools')
@@ -260,10 +253,10 @@ class _IntegrationTester:
         for test in generate_tool_test_cases(self.tools):
             try:
                 r = self.mcp_client.call_tool(test['name'], test['arguments'])
-                print(f'  ✓ {test['name']}: {r[:50]}...')
+                print(f"  ✓ {test['name']}: {r[:50]}...")
                 passed += 1
             except Exception as e:
-                print(f'  ✗ {test['name']}: {e}')
+                print(f"  ✗ {test['name']}: {e}")
                 failed += 1
         print(f'\n  Summary: {passed} passed, {failed} failed')
         return failed == 0
@@ -286,7 +279,7 @@ class _IntegrationTester:
         try:
             for test in cases[:3]:
                 r = self.mcp_client.call_tool(test['name'], test['arguments'])
-                print(f'  ✓ {test['name']}: {r[:60]}{'...' if len(r) > 60 else ''}')
+                print(f"  ✓ {test['name']}: {r[:60]}{'...' if len(r) > 60 else ''}")
             return True
         except Exception as e:
             print(f'  ✗ FAIL: {e}')
@@ -310,7 +303,10 @@ class _IntegrationTester:
         return passed == len(tests)
 
 
-def _cmd_test(config_path):
+def _cmd_test(config_path, allow_execution=False):
+    if not allow_execution:
+        print('Tests execute real tools. Review the target, then pass --allow-execution.')
+        return 1
     try:
         mcp_url = get_mcp_url_from_env_or_config(config_path)
     except ValueError as e:
@@ -358,7 +354,7 @@ def main():
     )
     sub = parser.add_subparsers(dest='command', required=True)
 
-    discover_p = sub.add_parser('discover', help='Discover and test local MCP (no LLM)')
+    discover_p = sub.add_parser('discover', help='List local MCP tools without executing them')
     discover_p.add_argument('config', nargs='?', default=None,
                              help='Optional config for MCP URL and tool format')
     _add_transport_args(discover_p)
@@ -369,10 +365,14 @@ def main():
                         choices=['batch', 'interactive'],
                         help='batch (default) or interactive')
     _add_transport_args(run_p)
+    run_p.add_argument('--allow-execution', action='store_true',
+                       help='Authorize real execution of tools advertised by this target')
 
     test_p = sub.add_parser('test', help='Run automated MCP test suite')
     test_p.add_argument('config', nargs='?', default=None,
                          help='Optional config for MCP URL')
+    test_p.add_argument('--allow-execution', action='store_true',
+                        help='Authorize the automated suite to execute real tools')
 
     args = parser.parse_args()
 
@@ -383,8 +383,9 @@ def main():
     if args.command == 'run':
         sys.exit(_cmd_run(args.config, args.mode,
                           transport=args.transport,
-                          sse_base_url=args.sse_base_url))
-    sys.exit(_cmd_test(args.config))
+                          sse_base_url=args.sse_base_url,
+                          allow_execution=args.allow_execution))
+    sys.exit(_cmd_test(args.config, allow_execution=args.allow_execution))
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 dependencies:
-  idf: ">=5.0"
+  espressif/esp_service:
+    override_path: "../.."
   espressif/cjson:
     version: '^1.7'

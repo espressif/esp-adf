@@ -14,7 +14,7 @@ dependencies:
     version: "^0.5"
     override_path: "../../../../components/esp_config_manager"
   espressif/esp_service:
-    version: "^0.5"
+    version: "~1.0.0-beta1"
     override_path: "../../../../components/esp_service"
   espressif/esp_wifi_service:
     version: "^0.5.3"

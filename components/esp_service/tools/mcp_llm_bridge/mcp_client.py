@@ -14,10 +14,35 @@ Use :func:`create_mcp_client` as the generic factory.
 """
 
 import json
+import os
 import threading
 from typing import Any, Dict, List, Optional
+from urllib.parse import urljoin, urlsplit
 
 import requests
+
+
+def _auth_headers(auth_token: Optional[str]) -> Dict[str, str]:
+    return {'Authorization': f'Bearer {auth_token}'} if auth_token else {}
+
+
+def _same_origin_endpoint(base_url: str, endpoint: str) -> str:
+    target = urljoin(base_url + '/', endpoint)
+    base, parsed = urlsplit(base_url), urlsplit(target)
+    default_port = {'http': 80, 'https': 443}
+    if (parsed.scheme not in default_port or not parsed.hostname or
+            parsed.username is not None or parsed.password is not None or parsed.fragment or
+            (parsed.scheme, parsed.hostname,
+             parsed.port if parsed.port is not None else default_port[parsed.scheme]) !=
+            (base.scheme, base.hostname,
+             base.port if base.port is not None else default_port.get(base.scheme))):
+        raise ValueError('SSE endpoint must use the configured device origin without credentials or a fragment')
+    return target
+
+
+def _reject_redirect(response: Any) -> None:
+    if 300 <= response.status_code < 400:
+        raise ValueError('MCP HTTP redirects are not accepted')
 
 
 # -----------------------------------------------------------------------------
@@ -32,14 +57,18 @@ class MCPClient:
     e.g. ``http://<device>:8080/mcp``.
     """
 
-    def __init__(self, base_url: str, timeout: int = 10):
+    def __init__(self, base_url: str, timeout: int = 10,
+                 auth_token: Optional[str] = None):
         """
         Args:
-            base_url: MCP server URL (e.g. ``http://10.18.37.200:8080/mcp``)
-            timeout:  Request timeout in seconds.
+            base_url:   MCP server URL (e.g. ``http://10.18.37.200:8080/mcp``)
+            timeout:    Request timeout in seconds.
+            auth_token: Bearer token for a device built with ``auth_token``;
+                        defaults to the ``MCP_AUTH_TOKEN`` environment variable.
         """
         self.base_url = base_url
         self.timeout = timeout
+        self.auth_token = auth_token if auth_token is not None else os.environ.get('MCP_AUTH_TOKEN')
         self.request_id = 0
 
     def _next_id(self) -> int:
@@ -59,9 +88,11 @@ class MCPClient:
         response = requests.post(
             self.base_url,
             json=request,
-            headers={'Content-Type': 'application/json'},
+            headers={'Content-Type': 'application/json', **_auth_headers(self.auth_token)},
             timeout=self.timeout,
+            allow_redirects=False,
         )
+        _reject_redirect(response)
         response.raise_for_status()
         return response.json()
 
@@ -91,7 +122,7 @@ class MCPClient:
             if content:
                 return content[0].get('text', '')
         elif 'error' in result:
-            return f'Error: {result['error'].get('message', 'Unknown error')}'
+            return f"Error: {result['error'].get('message', 'Unknown error')}"
         return ''
 
 
@@ -123,16 +154,20 @@ class MCPSSEClient:
     ...     result = client.call_tool("led_service_blink", {})
     """
 
-    def __init__(self, base_url: str, sse_path: str = '/mcp/sse', timeout: int = 10):
+    def __init__(self, base_url: str, sse_path: str = '/mcp/sse', timeout: int = 10,
+                 auth_token: Optional[str] = None):
         """
         Args:
-            base_url: Device base URL (e.g. ``http://10.18.37.200:8080``).
-            sse_path: SSE subscription path (default ``/mcp/sse``).
-            timeout:  Timeout in seconds for POST requests.
+            base_url:   Device base URL (e.g. ``http://10.18.37.200:8080``).
+            sse_path:   SSE subscription path (default ``/mcp/sse``).
+            timeout:    Timeout in seconds for POST requests.
+            auth_token: Bearer token sent on the SSE GET and every POST;
+                        defaults to the ``MCP_AUTH_TOKEN`` environment variable.
         """
         self.base_url = base_url.rstrip('/')
         self.sse_path = sse_path
         self.timeout = timeout
+        self.auth_token = auth_token if auth_token is not None else os.environ.get('MCP_AUTH_TOKEN')
 
         self._request_id = 0
         self._messages_url: Optional[str] = None
@@ -185,9 +220,12 @@ class MCPSSEClient:
             with self._session.get(
                 url,
                 stream=True,
-                headers={'Accept': 'text/event-stream', 'Cache-Control': 'no-cache'},
+                headers={'Accept': 'text/event-stream', 'Cache-Control': 'no-cache',
+                         **_auth_headers(self.auth_token)},
                 timeout=(5, None),  # connect_timeout only; block on read
+                allow_redirects=False,
             ) as resp:
+                _reject_redirect(resp)
                 resp.raise_for_status()
                 self._parse_sse_stream(resp)
         except Exception as exc:
@@ -228,11 +266,8 @@ class MCPSSEClient:
     def _dispatch_event(self, event_type: str, data: str) -> None:
         """Handle a fully assembled SSE event."""
         if event_type == 'endpoint':
-            path = data.strip()
-            if path.startswith('http'):
-                self._messages_url = path
-            else:
-                self._messages_url = self.base_url + path
+            self._messages_url = None
+            self._messages_url = _same_origin_endpoint(self.base_url, data.strip())
             self._ready.set()
 
         elif event_type == 'message':
@@ -282,9 +317,11 @@ class MCPSSEClient:
             resp = requests.post(
                 self._messages_url,
                 json=request,
-                headers={'Content-Type': 'application/json'},
+                headers={'Content-Type': 'application/json', **_auth_headers(self.auth_token)},
                 timeout=self.timeout,
+                allow_redirects=False,
             )
+            _reject_redirect(resp)
             resp.raise_for_status()
             # Server returns 202 Accepted; real response arrives over SSE.
         except Exception:
@@ -321,7 +358,7 @@ class MCPSSEClient:
             if content:
                 return content[0].get('text', '')
         elif 'error' in result:
-            return f'Error: {result['error'].get('message', 'Unknown error')}'
+            return f"Error: {result['error'].get('message', 'Unknown error')}"
         return ''
 
 
@@ -332,7 +369,8 @@ class MCPSSEClient:
 def create_mcp_client(base_url: str,
                       transport: str = 'http',
                       timeout: int = 10,
-                      sse_path: str = '/mcp/sse'):
+                      sse_path: str = '/mcp/sse',
+                      auth_token: Optional[str] = None):
     """
     Create the right MCP client for the given transport.
 
@@ -342,13 +380,14 @@ def create_mcp_client(base_url: str,
         transport: ``"http"`` (plain POST) or ``"sse"``.
         timeout:   Request timeout in seconds.
         sse_path:  SSE subscription path (SSE only; default ``/mcp/sse``).
+        auth_token: Bearer token; defaults to ``MCP_AUTH_TOKEN``.
 
     Returns:
         ``MCPClient`` or ``MCPSSEClient`` instance.
     """
     if transport == 'sse':
-        return MCPSSEClient(base_url, sse_path=sse_path, timeout=timeout)
-    return MCPClient(base_url, timeout=timeout)
+        return MCPSSEClient(base_url, sse_path=sse_path, timeout=timeout, auth_token=auth_token)
+    return MCPClient(base_url, timeout=timeout, auth_token=auth_token)
 
 
 def print_tools(tools: List[Dict]) -> None:
@@ -366,7 +405,7 @@ def print_tools(tools: List[Dict]) -> None:
             name = tool.get('name', '')
             method = name.split('_service_', 1)[1] if '_service_' in name else name
             print(f'  - {method}')
-            print(f'    {tool.get('description', 'No description')}')
+            print(f"    {tool.get('description', 'No description')}")
             props = tool.get('inputSchema', {}).get('properties', {})
             if props:
                 print('    Parameters:')

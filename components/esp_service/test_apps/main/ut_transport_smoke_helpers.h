@@ -13,22 +13,9 @@
 #pragma once
 
 #include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "unity.h"
 #include "esp_service_mcp_server.h"
 
-/**
- * @brief Poll until *got_ip is true or timeout elapses; fails the test if no IP.
- */
-static inline void ut_transport_wait_sta_ip(volatile bool *got_ip, TickType_t timeout_ticks)
-{
-    TickType_t start = xTaskGetTickCount();
-    while (!*got_ip && (xTaskGetTickCount() - start) < timeout_ticks) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-    }
-    TEST_ASSERT_TRUE_MESSAGE(*got_ip, "STA did not get IP within timeout");
-}
 
 /**
  * @brief Call tools/list on the MCP server and assert a plausible JSON-RPC success payload.

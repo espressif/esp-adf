@@ -12,8 +12,6 @@
 #include "cJSON.h"
 #include "esp_service_mcp_server.h"
 
-static const char *TAG = "MCP_SERVER";
-
 /* JSON-RPC error codes */
 #define JSONRPC_PARSE_ERROR       -32700
 #define JSONRPC_INVALID_REQUEST   -32600
@@ -30,7 +28,7 @@ static const char *TAG = "MCP_SERVER";
  *         It has zero knowledge of any concrete transport implementation.
  */
 struct esp_service_mcp_server {
-    esp_service_mcp_server_config_t  config;   /*!< Server configuration (copy, owns tool_provider/transport references) */
+    esp_service_mcp_server_config_t  config;   /*!< Configuration copy; borrows provider and transport */
     bool                             running;  /*!< True while transport is started */
 };
 
@@ -41,10 +39,14 @@ struct esp_service_mcp_server {
  *         original cJSON root can be freed immediately after parsing.
  */
 typedef struct {
-    cJSON *id;      /*!< Request ID node (deep copy, NULL for notifications); preserves original JSON type and full precision */
+    cJSON *id;      /*!< Owned JSON-RPC ID; NULL for notifications */
     char  *method;  /*!< JSON-RPC method name (heap-allocated copy) */
     cJSON *params;  /*!< Parameters object (deep copy; NULL if absent) */
 } jsonrpc_request_t;
+
+static const char *TAG = "MCP_SERVER";
+
+static void free_jsonrpc_request(jsonrpc_request_t *req);
 
 static esp_err_t parse_jsonrpc_request(const char *request_str, jsonrpc_request_t *req, int *out_jsonrpc_code)
 {
@@ -66,8 +68,17 @@ static esp_err_t parse_jsonrpc_request(const char *request_str, jsonrpc_request_
         return ESP_FAIL;
     }
 
+    /* JSON-RPC 2.0: id must be a string, number or null; a request without
+     * an id is a notification. Other id types are rejected, not silently
+     * demoted to notifications (which would execute the call unanswered). */
     cJSON *id = cJSON_GetObjectItem(root, "id");
-    if (id && (cJSON_IsString(id) || cJSON_IsNumber(id))) {
+    if (id && !cJSON_IsString(id) && !cJSON_IsNumber(id) && !cJSON_IsNull(id)) {
+        ESP_LOGW(TAG, "Parse failed: id must be a string, number or null");
+        cJSON_Delete(root);
+        *out_jsonrpc_code = JSONRPC_INVALID_REQUEST;
+        return ESP_FAIL;
+    }
+    if (id) {
         req->id = cJSON_Duplicate(id, 1);
         if (!req->id) {
             ESP_LOGE(TAG, "Parse failed: cannot duplicate request id (OOM)");
@@ -100,9 +111,16 @@ static esp_err_t parse_jsonrpc_request(const char *request_str, jsonrpc_request_
         return ESP_ERR_NO_MEM;
     }
 
-    req->params = cJSON_GetObjectItem(root, "params");
-    if (req->params) {
-        req->params = cJSON_Duplicate(req->params, 1);
+    cJSON *params = cJSON_GetObjectItem(root, "params");
+    if (params) {
+        req->params = cJSON_Duplicate(params, 1);
+        if (!req->params) {
+            ESP_LOGE(TAG, "Parse failed: cannot duplicate params (OOM)");
+            cJSON_Delete(root);
+            free_jsonrpc_request(req);
+            *out_jsonrpc_code = JSONRPC_INTERNAL_ERROR;
+            return ESP_ERR_NO_MEM;
+        }
     }
 
     cJSON_Delete(root);
@@ -144,7 +162,7 @@ static void jsonrpc_add_id(cJSON *obj, const char *id)
     }
     char *endptr;
     long id_num = strtol(id, &endptr, 10);
-    if (*endptr == '\0') {
+    if (*id != '\0' && *endptr == '\0') {
         cJSON_AddNumberToObject(obj, "id", id_num);
     } else {
         cJSON_AddStringToObject(obj, "id", id);
@@ -204,65 +222,12 @@ static char *build_error_with_id_node(const cJSON *id, int code, const char *mes
     return response_str;
 }
 
-char *esp_service_mcp_build_response(const char *id, const char *result)
-{
-    cJSON *response = cJSON_CreateObject();
-    if (!response) {
-        ESP_LOGE(TAG, "Build response failed: cJSON_CreateObject OOM");
-        return NULL;
-    }
-    cJSON_AddStringToObject(response, "jsonrpc", "2.0");
-    jsonrpc_add_id(response, id);
-
-    cJSON *result_obj = cJSON_Parse(result);
-    if (result_obj) {
-        cJSON_AddItemToObject(response, "result", result_obj);
-    } else {
-        cJSON_AddStringToObject(response, "result", result);
-    }
-
-    char *response_str = cJSON_PrintUnformatted(response);
-    cJSON_Delete(response);
-    if (!response_str) {
-        ESP_LOGE(TAG, "Build response failed: cJSON_PrintUnformatted OOM");
-    }
-    return response_str;
-}
-
-char *esp_service_mcp_build_error(const char *id, int code, const char *message)
-{
-    cJSON *response = cJSON_CreateObject();
-    if (!response) {
-        ESP_LOGE(TAG, "Build error failed: cJSON_CreateObject OOM");
-        return NULL;
-    }
-    cJSON_AddStringToObject(response, "jsonrpc", "2.0");
-    jsonrpc_add_id(response, id);
-
-    cJSON *error = cJSON_CreateObject();
-    if (!error) {
-        ESP_LOGE(TAG, "Build error failed: cJSON_CreateObject OOM (error node)");
-        cJSON_Delete(response);
-        return NULL;
-    }
-    cJSON_AddNumberToObject(error, "code", code);
-    cJSON_AddStringToObject(error, "message", message);
-    cJSON_AddItemToObject(response, "error", error);
-
-    char *response_str = cJSON_PrintUnformatted(response);
-    cJSON_Delete(response);
-    if (!response_str) {
-        ESP_LOGE(TAG, "Build error failed: cJSON_PrintUnformatted OOM");
-    }
-    return response_str;
-}
-
-static cJSON *build_tools_cjson(const esp_service_tool_t **tools, uint16_t count)
+static cJSON *build_tools_cjson(const esp_service_tool_t *tools, uint16_t count)
 {
     cJSON *tools_array = cJSON_CreateArray();
 
     for (uint16_t i = 0; i < count; i++) {
-        const esp_service_tool_t *tool = tools[i];
+        const esp_service_tool_t *tool = &tools[i];
 
         cJSON *tool_obj = cJSON_CreateObject();
         cJSON_AddStringToObject(tool_obj, "name", tool->name ? tool->name : "");
@@ -279,21 +244,6 @@ static cJSON *build_tools_cjson(const esp_service_tool_t **tools, uint16_t count
     }
 
     return tools_array;
-}
-
-char *esp_service_mcp_build_tools_list(const esp_service_tool_t **tools, uint16_t count)
-{
-    cJSON *tools_array = build_tools_cjson(tools, count);
-    if (!tools_array) {
-        ESP_LOGE(TAG, "Build tools list failed: cJSON_CreateArray OOM");
-        return NULL;
-    }
-    char *result_str = cJSON_PrintUnformatted(tools_array);
-    cJSON_Delete(tools_array);
-    if (!result_str) {
-        ESP_LOGE(TAG, "Build tools list failed: cJSON_PrintUnformatted OOM");
-    }
-    return result_str;
 }
 
 static char *handle_initialize(esp_service_mcp_server_t *srv, cJSON *params, int *err_code)
@@ -346,23 +296,25 @@ static char *handle_ping(esp_service_mcp_server_t *srv, cJSON *params, int *err_
     return result_str;
 }
 
+static void free_tools_snapshot(esp_service_tool_t *tools, uint16_t count)
+{
+    for (uint16_t i = 0; i < count; i++) {
+        free(tools[i].name);
+        free(tools[i].description);
+        free(tools[i].input_schema);
+    }
+    free(tools);
+}
+
 static char *handle_tools_list(esp_service_mcp_server_t *srv, cJSON *params, int *err_code)
 {
     (void)params;
-    uint16_t max_tools = srv->config.max_tools;
 
-    const esp_service_tool_t **tools = calloc(max_tools, sizeof(esp_service_tool_t *));
-    if (!tools) {
-        ESP_LOGE(TAG, "Handle tools/list failed: OOM allocating tools buffer (%u slots)", max_tools);
-        *err_code = JSONRPC_INTERNAL_ERROR;
-        return NULL;
-    }
-
+    esp_service_tool_t *tools = NULL;
     uint16_t tool_count = 0;
-    esp_err_t ret = srv->config.tool_provider.get_tools(srv->config.tool_provider.ctx, tools, max_tools, &tool_count);
+    esp_err_t ret = srv->config.tool_provider.get_tools(srv->config.tool_provider.ctx, &tools, &tool_count);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Handle tools/list failed: get_tools returned %s", esp_err_to_name(ret));
-        free(tools);
         *err_code = JSONRPC_INTERNAL_ERROR;
         return NULL;
     }
@@ -370,13 +322,13 @@ static char *handle_tools_list(esp_service_mcp_server_t *srv, cJSON *params, int
     cJSON *result = cJSON_CreateObject();
     if (!result) {
         ESP_LOGE(TAG, "Handle tools/list failed: cJSON_CreateObject OOM");
-        free(tools);
+        free_tools_snapshot(tools, tool_count);
         *err_code = JSONRPC_INTERNAL_ERROR;
         return NULL;
     }
     cJSON *tools_array = build_tools_cjson(tools, tool_count);
     cJSON_AddItemToObject(result, "tools", tools_array);
-    free(tools);
+    free_tools_snapshot(tools, tool_count);
 
     char *result_str = cJSON_PrintUnformatted(result);
     cJSON_Delete(result);
@@ -405,6 +357,12 @@ static char *handle_tools_call(esp_service_mcp_server_t *srv, cJSON *params, int
         return NULL;
     }
 
+    if (arguments && !cJSON_IsObject(arguments)) {
+        ESP_LOGW(TAG, "Handle tools/call: arguments must be an object");
+        *err_code = JSONRPC_INVALID_PARAMS;
+        return NULL;
+    }
+
     /* Explicit NULL check is required: cJSON_PrintUnformatted can fail on OOM, and
      * forwarding NULL to invoke_tool would silently drop caller-supplied arguments. */
     char *args_json = arguments ? cJSON_PrintUnformatted(arguments) : strdup("{}");
@@ -427,6 +385,8 @@ static char *handle_tools_call(esp_service_mcp_server_t *srv, cJSON *params, int
     esp_err_t ret = srv->config.tool_provider.invoke_tool(srv->config.tool_provider.ctx, name->valuestring, args_json,
                                                           result_buffer, buf_size);
     free(args_json);
+    /* A handler may fill the whole buffer without a terminator. */
+    result_buffer[buf_size - 1] = '\0';
 
     cJSON *result = cJSON_CreateObject();
     cJSON *content_array = cJSON_CreateArray();
@@ -495,12 +455,86 @@ static esp_err_t server_on_request(const char *request, char **response, void *u
     if (resp.is_notification) {
         esp_service_mcp_response_free(&resp);
         *response = NULL;
+    } else if (!resp.response) {
+        /* The response text could not be built (out of memory): NULL would be
+         * taken for a notification and acknowledged with 202 by the transports */
+        ESP_LOGE(TAG, "Server on_request failed: no response could be built");
+        *response = NULL;
+        return ESP_ERR_NO_MEM;
     } else {
         *response = resp.response;
         resp.response = NULL;
     }
 
     return ESP_OK;
+}
+
+char *esp_service_mcp_build_response(const char *id, const char *result)
+{
+    cJSON *response = cJSON_CreateObject();
+    if (!response) {
+        ESP_LOGE(TAG, "Build response failed: cJSON_CreateObject OOM");
+        return NULL;
+    }
+    cJSON_AddStringToObject(response, "jsonrpc", "2.0");
+    jsonrpc_add_id(response, id);
+
+    cJSON *result_obj = cJSON_Parse(result);
+    if (result_obj) {
+        cJSON_AddItemToObject(response, "result", result_obj);
+    } else {
+        cJSON_AddStringToObject(response, "result", result);
+    }
+
+    char *response_str = cJSON_PrintUnformatted(response);
+    cJSON_Delete(response);
+    if (!response_str) {
+        ESP_LOGE(TAG, "Build response failed: cJSON_PrintUnformatted OOM");
+    }
+    return response_str;
+}
+
+char *esp_service_mcp_build_error(const char *id, int code, const char *message)
+{
+    cJSON *response = cJSON_CreateObject();
+    if (!response) {
+        ESP_LOGE(TAG, "Build error failed: cJSON_CreateObject OOM");
+        return NULL;
+    }
+    cJSON_AddStringToObject(response, "jsonrpc", "2.0");
+    jsonrpc_add_id(response, id);
+
+    cJSON *error = cJSON_CreateObject();
+    if (!error) {
+        ESP_LOGE(TAG, "Build error failed: cJSON_CreateObject OOM (error node)");
+        cJSON_Delete(response);
+        return NULL;
+    }
+    cJSON_AddNumberToObject(error, "code", code);
+    cJSON_AddStringToObject(error, "message", message);
+    cJSON_AddItemToObject(response, "error", error);
+
+    char *response_str = cJSON_PrintUnformatted(response);
+    cJSON_Delete(response);
+    if (!response_str) {
+        ESP_LOGE(TAG, "Build error failed: cJSON_PrintUnformatted OOM");
+    }
+    return response_str;
+}
+
+char *esp_service_mcp_build_tools_list(const esp_service_tool_t *tools, uint16_t count)
+{
+    cJSON *tools_array = build_tools_cjson(tools, count);
+    if (!tools_array) {
+        ESP_LOGE(TAG, "Build tools list failed: cJSON_CreateArray OOM");
+        return NULL;
+    }
+    char *result_str = cJSON_PrintUnformatted(tools_array);
+    cJSON_Delete(tools_array);
+    if (!result_str) {
+        ESP_LOGE(TAG, "Build tools list failed: cJSON_PrintUnformatted OOM");
+    }
+    return result_str;
 }
 
 esp_err_t esp_service_mcp_server_create(const esp_service_mcp_server_config_t *config, esp_service_mcp_server_t **out_srv)
@@ -530,9 +564,6 @@ esp_err_t esp_service_mcp_server_create(const esp_service_mcp_server_config_t *c
     if (srv->config.max_response_size == 0) {
         srv->config.max_response_size = 4096;
     }
-    if (srv->config.max_tools == 0) {
-        srv->config.max_tools = 64;
-    }
 
     esp_err_t ret = esp_service_mcp_trans_set_request_handler(srv->config.transport, server_on_request, srv);
     if (ret != ESP_OK) {
@@ -553,13 +584,15 @@ esp_err_t esp_service_mcp_server_destroy(esp_service_mcp_server_t *srv)
         return ESP_ERR_INVALID_ARG;
     }
 
-    if (srv->running) {
-        esp_service_mcp_server_stop(srv);
+    /* Stop the transport even if the application started it directly, so no
+     * transport task can still dispatch into this server after free(). */
+    esp_err_t ret = esp_service_mcp_trans_stop(srv->config.transport);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy 'mcp-server': transport stop returned %s", esp_err_to_name(ret));
+        return ret;
     }
-
-    if (srv->config.transport) {
-        esp_service_mcp_trans_set_request_handler(srv->config.transport, NULL, NULL);
-    }
+    srv->running = false;
+    esp_service_mcp_trans_set_request_handler(srv->config.transport, NULL, NULL);
 
     free(srv);
     ESP_LOGI(TAG, "Destroy 'mcp-server': server destroyed");
@@ -596,13 +629,10 @@ esp_err_t esp_service_mcp_server_stop(esp_service_mcp_server_t *srv)
         return ESP_ERR_INVALID_ARG;
     }
 
-    if (!srv->running) {
-        return ESP_OK;
-    }
-
     esp_err_t ret = esp_service_mcp_trans_stop(srv->config.transport);
     if (ret != ESP_OK) {
         ESP_LOGW(TAG, "Stop 'mcp-server': transport stop returned %s", esp_err_to_name(ret));
+        return ret;
     }
 
     srv->running = false;
@@ -716,7 +746,7 @@ esp_err_t esp_service_mcp_server_notify(esp_service_mcp_server_t *srv, const cha
         return ESP_ERR_NO_MEM;
     }
 
-    ESP_LOGD(TAG, "Notify '%s': %s", method, notification_str);
+    ESP_LOGD(TAG, "Notify '%s': %u bytes", method, (unsigned)strlen(notification_str));
 
     esp_err_t ret = esp_service_mcp_trans_broadcast(srv->config.transport, notification_str, strlen(notification_str));
     if (ret != ESP_OK) {

@@ -8,13 +8,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "esp_log.h"
-#include "cJSON.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "esp_log.h"
+#include "cJSON.h"
 #include "esp_service_manager.h"
-
-static const char *TAG = "SERVICE_MGR";
 
 /**
  * @brief  Service entry in registry (internal)
@@ -38,6 +36,8 @@ struct esp_service_manager {
     uint16_t                      service_count;  /*!< Number of registered services */
     SemaphoreHandle_t             mutex;          /*!< Mutex for thread-safe access */
 };
+
+static const char *TAG = "SERVICE_MGR";
 
 static esp_err_t parse_mcp_tools(const char *json_str, service_entry_t *entry, uint16_t max_tools)
 {
@@ -169,6 +169,31 @@ static void free_service_entry(service_entry_t *entry)
     free(entry);
 }
 
+/* Caller holds mgr->mutex. */
+static service_entry_t *find_tool(esp_service_manager_t *mgr, const char *tool_name, esp_service_tool_t **out_tool)
+{
+    for (service_entry_t *curr = mgr->services; curr != NULL; curr = curr->next) {
+        for (uint16_t i = 0; i < curr->tool_count; i++) {
+            if (curr->tools[i].name && strcmp(curr->tools[i].name, tool_name) == 0) {
+                *out_tool = &curr->tools[i];
+                return curr;
+            }
+        }
+    }
+    return NULL;
+}
+
+static esp_err_t provider_get_tools(void *ctx, esp_service_tool_t **out_tools, uint16_t *out_count)
+{
+    return esp_service_manager_clone_tools((esp_service_manager_t *)ctx, out_tools, out_count);
+}
+
+static esp_err_t provider_invoke_tool(
+    void *ctx, const char *tool_name, const char *args_json, char *result, size_t result_size)
+{
+    return esp_service_manager_invoke_tool((esp_service_manager_t *)ctx, tool_name, args_json, result, result_size);
+}
+
 esp_err_t esp_service_manager_create(const esp_service_manager_config_t *config, esp_service_manager_t **out_mgr)
 {
     if (!out_mgr) {
@@ -230,19 +255,22 @@ esp_err_t esp_service_manager_register(esp_service_manager_t *mgr, const esp_ser
         return ESP_ERR_INVALID_ARG;
     }
 
+    const char *name = NULL;
+    esp_service_get_name(reg->service, &name);
+
     if (xSemaphoreTakeRecursive(mgr->mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
         ESP_LOGE(TAG, "Register: mutex timeout");
         return ESP_ERR_TIMEOUT;
     }
 
-    service_entry_t *curr = mgr->services;
-    while (curr) {
-        if (curr->service == reg->service) {
+    for (service_entry_t *curr = mgr->services; curr != NULL; curr = curr->next) {
+        const char *curr_name = NULL;
+        esp_service_get_name(curr->service, &curr_name);
+        if (curr->service == reg->service || (name && curr_name && strcmp(curr_name, name) == 0)) {
             xSemaphoreGiveRecursive(mgr->mutex);
-            ESP_LOGW(TAG, "Service already registered");
+            ESP_LOGW(TAG, "Register: service '%s' already registered", name ? name : "unknown");
             return ESP_ERR_INVALID_STATE;
         }
-        curr = curr->next;
     }
 
     if (mgr->service_count >= mgr->config.max_services) {
@@ -262,35 +290,45 @@ esp_err_t esp_service_manager_register(esp_service_manager_t *mgr, const esp_ser
     entry->flags = reg->flags;
     entry->tool_invoke = reg->tool_invoke;
 
+    esp_err_t ret = ESP_OK;
     if (reg->category) {
         entry->category = strdup(reg->category);
         if (!entry->category) {
-            free_service_entry(entry);
-            xSemaphoreGiveRecursive(mgr->mutex);
             ESP_LOGE(TAG, "Register: no memory for category");
-            return ESP_ERR_NO_MEM;
+            ret = ESP_ERR_NO_MEM;
         }
     }
 
-    if (reg->tool_desc && reg->tool_invoke) {
-        esp_err_t ret = parse_mcp_tools(reg->tool_desc, entry, mgr->config.max_tools_per_service);
-        if (ret == ESP_ERR_NO_MEM) {
-            free_service_entry(entry);
-            xSemaphoreGiveRecursive(mgr->mutex);
-            ESP_LOGE(TAG, "Register: no memory parsing tools");
-            return ESP_ERR_NO_MEM;
-        }
+    if (ret == ESP_OK && reg->tool_desc && reg->tool_invoke) {
+        ret = parse_mcp_tools(reg->tool_desc, entry, mgr->config.max_tools_per_service);
         if (ret != ESP_OK) {
-            ESP_LOGW(TAG, "Failed to parse tools from JSON: %d", ret);
+            ESP_LOGE(
+                TAG, "Register: '%s' tool description rejected: %s", name ? name : "unknown", esp_err_to_name(ret));
         }
+        for (uint16_t i = 0; ret == ESP_OK && i < entry->tool_count; i++) {
+            esp_service_tool_t *dup = NULL;
+            if (find_tool(mgr, entry->tools[i].name, &dup) != NULL) {
+                ESP_LOGE(TAG, "Register: tool '%s' already provided by another service", entry->tools[i].name);
+                ret = ESP_ERR_INVALID_STATE;
+            }
+            for (uint16_t j = 0; ret == ESP_OK && j < i; j++) {
+                if (strcmp(entry->tools[j].name, entry->tools[i].name) == 0) {
+                    ESP_LOGE(TAG, "Register: tool '%s' listed twice in tool_desc", entry->tools[i].name);
+                    ret = ESP_ERR_INVALID_STATE;
+                }
+            }
+        }
+    }
+
+    if (ret != ESP_OK) {
+        free_service_entry(entry);
+        xSemaphoreGiveRecursive(mgr->mutex);
+        return ret;
     }
 
     entry->next = mgr->services;
     mgr->services = entry;
     mgr->service_count++;
-
-    const char *name = NULL;
-    esp_service_get_name(reg->service, &name);
     uint16_t tool_count = entry->tool_count;
 
     xSemaphoreGiveRecursive(mgr->mutex);
@@ -299,7 +337,12 @@ esp_err_t esp_service_manager_register(esp_service_manager_t *mgr, const esp_ser
              name ? name : "unknown", tool_count);
 
     if (mgr->config.auto_start_services) {
-        esp_service_start(reg->service);
+        ret = esp_service_start(reg->service);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Register: auto-start of '%s' failed: %s", name ? name : "unknown", esp_err_to_name(ret));
+            esp_service_manager_unregister(mgr, reg->service);
+            return ret;
+        }
     }
 
     return ESP_OK;
@@ -454,9 +497,13 @@ esp_err_t esp_service_manager_start_all(esp_service_manager_t *mgr)
     }
     xSemaphoreGiveRecursive(mgr->mutex);
 
+    esp_err_t ret = ESP_OK;
     for (uint16_t i = 0; i < idx; i++) {
         if (!(flags_snapshot[i] & ESP_SERVICE_REG_FLAG_SKIP_BATCH_START)) {
-            esp_service_start(snapshot[i]);
+            esp_err_t r = esp_service_start(snapshot[i]);
+            if (r != ESP_OK && ret == ESP_OK) {
+                ret = r;
+            }
         } else {
             const char *name = NULL;
             esp_service_get_name(snapshot[i], &name);
@@ -466,8 +513,8 @@ esp_err_t esp_service_manager_start_all(esp_service_manager_t *mgr)
     }
     free(snapshot);
     free(flags_snapshot);
-    ESP_LOGI(TAG, "Started all services");
-    return ESP_OK;
+    ESP_LOGI(TAG, "Started all services: %s", esp_err_to_name(ret));
+    return ret;
 }
 
 esp_err_t esp_service_manager_stop_all(esp_service_manager_t *mgr)
@@ -500,9 +547,14 @@ esp_err_t esp_service_manager_stop_all(esp_service_manager_t *mgr)
     }
     xSemaphoreGiveRecursive(mgr->mutex);
 
-    for (uint16_t i = 0; i < idx; i++) {
+    /* Reverse of start_all so dependents stop before their providers. */
+    esp_err_t ret = ESP_OK;
+    for (uint16_t i = idx; i-- > 0;) {
         if (!(flags_snapshot[i] & ESP_SERVICE_REG_FLAG_SKIP_BATCH_STOP)) {
-            esp_service_stop(snapshot[i]);
+            esp_err_t r = esp_service_stop(snapshot[i]);
+            if (r != ESP_OK && ret == ESP_OK) {
+                ret = r;
+            }
         } else {
             const char *name = NULL;
             esp_service_get_name(snapshot[i], &name);
@@ -512,8 +564,8 @@ esp_err_t esp_service_manager_stop_all(esp_service_manager_t *mgr)
     }
     free(snapshot);
     free(flags_snapshot);
-    ESP_LOGI(TAG, "Stopped all services");
-    return ESP_OK;
+    ESP_LOGI(TAG, "Stopped all services: %s", esp_err_to_name(ret));
+    return ret;
 }
 
 esp_err_t esp_service_manager_get_tools(esp_service_manager_t *mgr,
@@ -535,13 +587,18 @@ esp_err_t esp_service_manager_get_tools(esp_service_manager_t *mgr,
     uint16_t count = 0;
     service_entry_t *curr = mgr->services;
 
-    while (curr && count < max_tools) {
-        for (uint16_t i = 0; i < curr->tool_count && count < max_tools; i++) {
+    while (curr) {
+        for (uint16_t i = 0; i < curr->tool_count; i++) {
+            if (count >= max_tools) {
+                ESP_LOGW(TAG, "Get tools: more than %u tools registered, list truncated", (unsigned)max_tools);
+                goto done;
+            }
             out_tools[count++] = &curr->tools[i];
         }
         curr = curr->next;
     }
 
+done:
     *out_count = count;
     xSemaphoreGiveRecursive(mgr->mutex);
     return ESP_OK;
@@ -657,50 +714,45 @@ esp_err_t esp_service_manager_invoke_tool(esp_service_manager_t *mgr,
         ESP_LOGE(TAG, "Invoke tool: mutex timeout");
         return ESP_ERR_TIMEOUT;
     }
-    // Snapshot dispatch data under the lock so the callback runs unlocked.
-    // Caller must not unregister the service during invocation (shallow copy).
-    esp_service_tool_invoke_fn_t invoke_fn = NULL;
-    esp_service_t *svc = NULL;
-    esp_service_tool_t tool_snapshot = {0};
-    bool found = false;
-
-    for (service_entry_t *curr = mgr->services; curr != NULL && !found; curr = curr->next) {
-        for (uint16_t i = 0; i < curr->tool_count; i++) {
-            if (curr->tools[i].name && strcmp(curr->tools[i].name, tool_name) == 0) {
-                invoke_fn = curr->tool_invoke;
-                svc = curr->service;
-                tool_snapshot = curr->tools[i];
-                found = true;
-                break;
-            }
-        }
-    }
-    xSemaphoreGiveRecursive(mgr->mutex);
-    if (!found) {
+    /* Deep-copy the tool under the lock so the handler runs unlocked and keeps
+     * valid strings even if the owning entry is unregistered meanwhile. */
+    esp_service_tool_t *found = NULL;
+    service_entry_t *entry = find_tool(mgr, tool_name, &found);
+    if (!entry) {
+        xSemaphoreGiveRecursive(mgr->mutex);
         ESP_LOGW(TAG, "Invoke tool: '%s' not found", tool_name);
         return ESP_ERR_NOT_FOUND;
     }
-    if (!invoke_fn) {
+    esp_service_tool_invoke_fn_t invoke_fn = entry->tool_invoke;
+    esp_service_t *svc = entry->service;
+    esp_service_tool_t tool_copy = {
+        .name = strdup(found->name),
+        .description = found->description ? strdup(found->description) : NULL,
+        .input_schema = found->input_schema ? strdup(found->input_schema) : NULL,
+    };
+    bool copied = tool_copy.name && (!found->description || tool_copy.description) && (!found->input_schema || tool_copy.input_schema);
+    xSemaphoreGiveRecursive(mgr->mutex);
+
+    esp_err_t ret;
+    if (!copied) {
+        ESP_LOGE(TAG, "Invoke tool: no memory for '%s' snapshot", tool_name);
+        ret = ESP_ERR_NO_MEM;
+    } else if (!invoke_fn) {
         ESP_LOGE(TAG, "Tool '%s' has no invoke function", tool_name);
-        return ESP_ERR_NOT_SUPPORTED;
+        ret = ESP_ERR_NOT_SUPPORTED;
+    } else {
+        ret = invoke_fn(svc, &tool_copy, args_json, result, result_size);
+        if (result_size > 0 && memchr(result, '\0', result_size) == NULL) {
+            result[result_size - 1] = '\0';
+        }
+        if (ret != ESP_OK) {
+            ESP_LOGW(TAG, "Tool '%s' invocation failed: %d", tool_name, ret);
+        }
     }
-    esp_err_t ret = invoke_fn(svc, &tool_snapshot, args_json, result, result_size);
-    if (ret != ESP_OK) {
-        ESP_LOGW(TAG, "Tool '%s' invocation failed: %d", tool_name, ret);
-    }
+    free(tool_copy.name);
+    free(tool_copy.description);
+    free(tool_copy.input_schema);
     return ret;
-}
-
-static esp_err_t provider_get_tools(void *ctx, const esp_service_tool_t **out_tools, uint16_t max_tools,
-                                    uint16_t *out_count)
-{
-    return esp_service_manager_get_tools((esp_service_manager_t *)ctx, out_tools, max_tools, out_count);
-}
-
-static esp_err_t provider_invoke_tool(void *ctx, const char *tool_name, const char *args_json,
-                                      char *result, size_t result_size)
-{
-    return esp_service_manager_invoke_tool((esp_service_manager_t *)ctx, tool_name, args_json, result, result_size);
 }
 
 esp_err_t esp_service_manager_as_tool_provider(esp_service_manager_t *mgr, esp_service_mcp_tool_provider_t *out_provider)

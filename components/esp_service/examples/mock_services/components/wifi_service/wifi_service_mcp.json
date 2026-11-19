@@ -31,11 +31,14 @@
       "properties": {
         "ssid": {
           "type": "string",
-          "description": "SSID of the target Wi-Fi network"
+          "description": "SSID of the target Wi-Fi network (1-32 UTF-8 bytes)",
+          "minLength": 1,
+          "maxLength": 32
         },
         "password": {
           "type": "string",
-          "description": "Password for the target Wi-Fi network (omit or empty string for open networks)"
+          "description": "Password for the target Wi-Fi network (up to 64 UTF-8 bytes; omit or empty for open networks)",
+          "maxLength": 64
         }
       },
       "required": ["ssid"]

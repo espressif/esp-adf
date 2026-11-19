@@ -1,4 +1,6 @@
 dependencies:
+  espressif/esp_service:
+    override_path: "../../../esp_service"
   espressif/esp_capture_service:
     require: public
     version: "^0.5"

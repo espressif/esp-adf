@@ -7,21 +7,19 @@
 
 #include <stdlib.h>
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "unity.h"
-
-#include "capture_fake_aud_src.h"
-#include "capture_fake_vid_src.h"
 #include "esp_capture_audio_src_if.h"
 #include "esp_capture_overlay_if.h"
-#include "esp_capture_service_ops.h"
-#include "esp_capture_service_setup.h"
 #include "esp_capture_video_src_if.h"
 #include "esp_media_provider.h"
-#include "esp_media_service.h"
 #include "esp_muxer.h"
+#include "capture_fake_aud_src.h"
+#include "capture_fake_vid_src.h"
+#include "esp_capture_service_ops.h"
+#include "esp_capture_service_setup.h"
+#include "esp_media_service.h"
 #include "esp_service.h"
 
 #define TEST_AUDIO_RATE     16000
@@ -365,6 +363,64 @@ static void destroy_fake_sources(esp_capture_audio_src_if_t *audio, esp_capture_
 {
     free(audio);
     free(video);
+}
+
+TEST_CASE("capture service destroys configured capture without starting it", "[esp_capture_service]")
+{
+    esp_capture_audio_src_if_t *audio = NULL;
+    esp_capture_video_src_if_t *video = NULL;
+    esp_capture_service_t *service = create_service(&audio, &video);
+    esp_capture_service_cfg_t cfg = {.max_stream_num = 1};
+    esp_capture_service_setup_t *setup = esp_capture_service_setup_create(&cfg);
+    TEST_ASSERT_NOT_NULL(setup);
+    esp_capture_service_src_cfg_t src_cfg = {.audio_src = audio, .video_src = video};
+    esp_media_track_info_t track = make_audio_track(1, TEST_AUDIO_RATE);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_setup_src(setup, &src_cfg));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_setup_add_track(setup, ESP_MEDIA_DEFAULT_STREAM, &track));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_setup_apply(service, setup));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_setup_destroy(setup));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_destroy(service));
+    destroy_fake_sources(audio, video);
+}
+
+typedef struct {
+    unsigned  calls;
+    unsigned  releases;
+    void     *resource;
+} deinit_retry_ctx_t;
+
+static esp_err_t retry_deinit_cb(esp_capture_service_t *service, void *arg)
+{
+    (void)service;
+    deinit_retry_ctx_t *ctx = arg;
+    if (++ctx->calls == 1) {
+        return ESP_FAIL;
+    }
+    if (ctx->resource) {
+        free(ctx->resource);
+        ctx->resource = NULL;
+        ctx->releases++;
+    }
+    return ESP_OK;
+}
+
+TEST_CASE("capture service retains failed deinit callback for retry", "[esp_capture_service]")
+{
+    esp_capture_service_cfg_t cfg = ESP_CAPTURE_SERVICE_CFG_DEFAULT();
+    esp_capture_service_t *service = NULL;
+    deinit_retry_ctx_t ctx = {.resource = malloc(16)};
+    TEST_ASSERT_NOT_NULL(ctx.resource);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_create(&cfg, &service));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_set_deinit_cb(service, retry_deinit_cb, &ctx));
+    TEST_ASSERT_EQUAL(ESP_FAIL, esp_capture_service_destroy(service));
+    TEST_ASSERT_EQUAL(1, ctx.calls);
+    TEST_ASSERT_NOT_NULL(ctx.resource);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_capture_service_destroy(service));
+    bool released = ctx.resource == NULL;
+    free(ctx.resource);
+    TEST_ASSERT_EQUAL(2, ctx.calls);
+    TEST_ASSERT_EQUAL(1, ctx.releases);
+    TEST_ASSERT_TRUE(released);
 }
 
 TEST_CASE("capture service streams audio/video frames", "[esp_capture_service]")

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Preserve the instance on any base teardown failure for retry; free only after successful cleanup
+
 ## v0.5.1
 
 ### Changes

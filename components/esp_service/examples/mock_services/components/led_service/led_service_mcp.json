@@ -24,7 +24,8 @@
         "period_ms": {
           "type": "integer",
           "description": "Blink period in milliseconds",
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 4294967295
         }
       },
       "required": ["period_ms"]

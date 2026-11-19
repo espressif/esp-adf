@@ -215,7 +215,7 @@ esp_err_t esp_ota_service_ble_example_run_ota(void)
         out = ESP_OK;
     } else if ((bits & EVT_OTA_DONE) && !(bits & EVT_OTA_FAIL)) {
         ESP_LOGI(TAG, "Run_ota: OTA succeeded - rebooting ...");
-        esp_ota_service_destroy(svc);
+        ESP_ERROR_CHECK(esp_ota_service_destroy(svc));
         vEventGroupDelete(s_ota_evt);
         s_ota_evt = NULL;
         esp_restart();
@@ -227,11 +227,10 @@ esp_err_t esp_ota_service_ble_example_run_ota(void)
         ESP_LOGE(TAG, "Run_ota failed: BLE OTA (APP) timed out (%s)",
                  esp_err_to_name(ESP_OTA_SERVICE_BLE_EX_ERR_OTA_WAIT_TIMEOUT));
         vTaskDelay(pdMS_TO_TICKS(500));
-        esp_service_stop((esp_service_t *)svc);
         out = ESP_OTA_SERVICE_BLE_EX_ERR_OTA_WAIT_TIMEOUT;
     }
 
-    esp_ota_service_destroy(svc);
+    ESP_ERROR_CHECK(esp_ota_service_destroy(svc));
     vEventGroupDelete(s_ota_evt);
     s_ota_evt = NULL;
     return out;

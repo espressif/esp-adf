@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include "esp_log.h"
 #include "sdkconfig.h"
 #include "soc/soc_caps.h"
@@ -34,8 +35,10 @@ typedef struct {
     TaskHandle_t                   reader_task;
     SemaphoreHandle_t              write_mutex;      /*!< Protect SDIO sends */
     SemaphoreHandle_t              reader_exit_sem;  /*!< Signalled by reader task before vTaskDelete */
-    bool                           running;
-    uint8_t                      **recv_buffers;  /*!< Array of receive buffer pointers */
+    atomic_bool                    running;
+    bool                           driver_initialized;  /*!< Driver owns descriptors until deinit */
+    uint8_t                       *pending_send;        /*!< At most one DMA buffer owned by the send queue */
+    uint8_t                      **recv_buffers;        /*!< Array of receive buffer pointers */
 } sdio_impl_t;
 
 /* ─── Forward declarations of vtable ops ─── */
@@ -67,6 +70,19 @@ static esp_err_t sdio_send_data(sdio_impl_t *sd, const char *data, size_t len)
         return ESP_ERR_INVALID_STATE;
     }
 
+    /* Do not queue another buffer until ownership of the previous one returns. */
+    void *finished_arg = NULL;
+    esp_err_t ret;
+    if (sd->pending_send) {
+        ret = sdio_slave_send_get_finished(&finished_arg, pdMS_TO_TICKS(2000));
+        if (ret != ESP_OK) {
+            xSemaphoreGive(sd->write_mutex);
+            return ret;
+        }
+        free(sd->pending_send);
+        sd->pending_send = NULL;
+    }
+
     /* Allocate a DMA-capable buffer for the send */
     uint8_t *send_buf = heap_caps_malloc(len, MALLOC_CAP_DMA);
     if (!send_buf) {
@@ -76,7 +92,7 @@ static esp_err_t sdio_send_data(sdio_impl_t *sd, const char *data, size_t len)
     }
     memcpy(send_buf, data, len);
 
-    esp_err_t ret = sdio_slave_send_queue(send_buf, len, send_buf, pdMS_TO_TICKS(1000));
+    ret = sdio_slave_send_queue(send_buf, len, send_buf, pdMS_TO_TICKS(1000));
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to queue send: %s", esp_err_to_name(ret));
         free(send_buf);
@@ -84,11 +100,12 @@ static esp_err_t sdio_send_data(sdio_impl_t *sd, const char *data, size_t len)
         return ret;
     }
 
-    /* Wait for send to complete and free the buffer */
-    void *finished_arg = NULL;
+    sd->pending_send = send_buf;
+    /* Timeout does not return ownership: stop/deinit will cancel the DMA first. */
     ret = sdio_slave_send_get_finished(&finished_arg, pdMS_TO_TICKS(2000));
-    if (finished_arg) {
-        free(finished_arg);
+    if (ret == ESP_OK) {
+        free(sd->pending_send);
+        sd->pending_send = NULL;
     }
 
     xSemaphoreGive(sd->write_mutex);
@@ -98,57 +115,84 @@ static esp_err_t sdio_send_data(sdio_impl_t *sd, const char *data, size_t len)
 static void sdio_reader_task(void *arg)
 {
     sdio_impl_t *sd = (sdio_impl_t *)arg;
+    char *request = malloc(sd->config.recv_buffer_size + 1);
+    if (!request) {
+        ESP_LOGE(TAG, "Receive failed: no packet buffer");
+        sd->running = false;
+        xSemaphoreGive(sd->reader_exit_sem);
+        vTaskDelete(NULL);
+        return;
+    }
+    size_t pos = 0;
+    bool discard = false;
 
     ESP_LOGI(TAG, "SDIO reader task started");
 
     while (sd->running) {
         /* Wait for data from host */
         sdio_slave_buf_handle_t recv_handle;
-        uint8_t *recv_ptr = NULL;
-        size_t recv_len = 0;
-
-        esp_err_t ret = sdio_slave_recv(&recv_handle, &recv_ptr, &recv_len, pdMS_TO_TICKS(100));
+        esp_err_t ret = sdio_slave_recv_packet(&recv_handle, pdMS_TO_TICKS(100));
         if (ret == ESP_ERR_TIMEOUT) {
             continue;
         }
-        if (ret != ESP_OK) {
+        if (ret != ESP_OK && ret != ESP_ERR_NOT_FINISHED) {
             ESP_LOGE(TAG, "SDIO recv failed: %s", esp_err_to_name(ret));
+            discard = true;
             continue;
         }
-
-        if (recv_len == 0 || !recv_ptr) {
-            sdio_slave_recv_load_buf(recv_handle);
+        bool packet_end = ret == ESP_OK;
+        size_t recv_len = 0;
+        uint8_t *recv_ptr = sdio_slave_recv_get_buf(recv_handle, &recv_len);
+        /* The wire format permits one trailing NUL, never an embedded NUL. */
+        if (packet_end && recv_len && recv_ptr && recv_ptr[recv_len - 1] == '\0') {
+            recv_len--;
+        }
+        if (!recv_ptr || recv_len > sd->config.recv_buffer_size - pos ||
+            (recv_len && memchr(recv_ptr, '\0', recv_len))) {
+            discard = true;
+        }
+        if (!discard && recv_len) {
+            memcpy(request + pos, recv_ptr, recv_len);
+            pos += recv_len;
+        }
+        ret = sdio_slave_recv_load_buf(recv_handle);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Receive: buffer reload failed: %s", esp_err_to_name(ret));
+            sd->running = false;
+            break;
+        }
+        if (!packet_end) {
             continue;
         }
-
-        /* Ensure null termination */
-        if (recv_len < sd->config.recv_buffer_size) {
-            recv_ptr[recv_len] = '\0';
-        } else {
-            recv_ptr[sd->config.recv_buffer_size - 1] = '\0';
+        request[pos] = '\0';
+        bool accepted = !discard && pos != 0;
+        pos = 0;
+        if (discard) {
+            ESP_LOGW(TAG, "Receive: oversized or invalid packet discarded");
         }
-
-        ESP_LOGD(TAG, "Received SDIO data (%d bytes): %s", (int)recv_len, (char *)recv_ptr);
+        discard = false;
+        if (!accepted || !sd->running) {
+            continue;
+        }
 
         /* Dispatch through the abstract transport layer */
         char *response_str = NULL;
-        ret = esp_service_mcp_trans_dispatch_request(&sd->base, (char *)recv_ptr, &response_str);
-
-        /* Re-register the buffer for next receive */
-        sdio_slave_recv_load_buf(recv_handle);
+        ret = esp_service_mcp_trans_dispatch_request(&sd->base, request, &response_str);
 
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Request dispatch failed: %s", esp_err_to_name(ret));
-            continue;
         }
 
         if (response_str) {
-            sdio_send_data(sd, response_str, strlen(response_str) + 1);  /* +1 for null terminator */
-            ESP_LOGD(TAG, "Sent response: %s", response_str);
+            if (ret == ESP_OK && sd->running) {
+                sdio_send_data(sd, response_str, strlen(response_str) + 1);
+            }
+            ESP_LOGD(TAG, "Sent response: %u bytes", (unsigned)strlen(response_str));
             free(response_str);
         }
     }
 
+    free(request);
     ESP_LOGI(TAG, "SDIO reader task exiting");
     xSemaphoreGive(sd->reader_exit_sem);
     vTaskDelete(NULL);
@@ -162,6 +206,11 @@ static esp_err_t sdio_start(esp_service_mcp_trans_t *transport)
         ESP_LOGW(TAG, "SDIO transport already running");
         return ESP_OK;
     }
+    if (sd->reader_task || sd->driver_initialized) {
+        ESP_LOGW(TAG, "Start: previous stop must complete first");
+        return ESP_ERR_INVALID_STATE;
+    }
+    xSemaphoreTake(sd->reader_exit_sem, 0);
 
     /* Initialize SDIO slave */
     sdio_slave_config_t slave_config = {
@@ -175,48 +224,34 @@ static esp_err_t sdio_start(esp_service_mcp_trans_t *transport)
         ESP_LOGE(TAG, "Failed to initialize SDIO slave: %s", esp_err_to_name(ret));
         return ret;
     }
+    sd->driver_initialized = true;
 
     /* Allocate and register receive buffers */
     sd->recv_buffers = calloc(sd->config.recv_buffer_count, sizeof(uint8_t *));
     if (!sd->recv_buffers) {
-        sdio_slave_deinit();
-        return ESP_ERR_NO_MEM;
+        ESP_LOGE(TAG, "Start failed: no receive buffer table");
+        ret = ESP_ERR_NO_MEM;
+        goto fail;
     }
 
     for (int i = 0; i < sd->config.recv_buffer_count; i++) {
         sd->recv_buffers[i] = heap_caps_malloc(sd->config.recv_buffer_size, MALLOC_CAP_DMA);
         if (!sd->recv_buffers[i]) {
             ESP_LOGE(TAG, "Failed to allocate recv buffer %d", i);
-            for (int j = 0; j < i; j++) {
-                free(sd->recv_buffers[j]);
-            }
-            free(sd->recv_buffers);
-            sd->recv_buffers = NULL;
-            sdio_slave_deinit();
-            return ESP_ERR_NO_MEM;
+            ret = ESP_ERR_NO_MEM;
+            goto fail;
         }
 
         sdio_slave_buf_handle_t buf_handle = sdio_slave_recv_register_buf(sd->recv_buffers[i]);
         if (!buf_handle) {
             ESP_LOGE(TAG, "Failed to register recv buffer %d", i);
-            for (int j = 0; j <= i; j++) {
-                free(sd->recv_buffers[j]);
-            }
-            free(sd->recv_buffers);
-            sd->recv_buffers = NULL;
-            sdio_slave_deinit();
-            return ESP_FAIL;
+            ret = ESP_FAIL;
+            goto fail;
         }
         ret = sdio_slave_recv_load_buf(buf_handle);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Failed to load recv buffer %d: %s", i, esp_err_to_name(ret));
-            for (int j = 0; j <= i; j++) {
-                free(sd->recv_buffers[j]);
-            }
-            free(sd->recv_buffers);
-            sd->recv_buffers = NULL;
-            sdio_slave_deinit();
-            return ret;
+            goto fail;
         }
     }
 
@@ -224,13 +259,7 @@ static esp_err_t sdio_start(esp_service_mcp_trans_t *transport)
     ret = sdio_slave_start();
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start SDIO slave: %s", esp_err_to_name(ret));
-        for (int i = 0; i < sd->config.recv_buffer_count; i++) {
-            free(sd->recv_buffers[i]);
-        }
-        free(sd->recv_buffers);
-        sd->recv_buffers = NULL;
-        sdio_slave_deinit();
-        return ret;
+        goto fail;
     }
 
     sd->running = true;
@@ -252,41 +281,49 @@ static esp_err_t sdio_start(esp_service_mcp_trans_t *transport)
 
     if (xret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create reader task");
-        sd->running = false;
-        sdio_slave_stop();
-        for (int i = 0; i < sd->config.recv_buffer_count; i++) {
-            free(sd->recv_buffers[i]);
-        }
-        free(sd->recv_buffers);
-        sd->recv_buffers = NULL;
-        sdio_slave_deinit();
-        return ESP_FAIL;
+        ret = ESP_FAIL;
+        goto fail;
     }
 
     ESP_LOGI(TAG, "SDIO transport started (buf_size=%d, buf_count=%d)",
              (int)sd->config.recv_buffer_size, sd->config.recv_buffer_count);
     return ESP_OK;
+
+fail:
+    sdio_stop(transport);
+    return ret;
 }
 
 static esp_err_t sdio_stop(esp_service_mcp_trans_t *transport)
 {
     sdio_impl_t *sd = (sdio_impl_t *)transport;
 
-    if (!sd->running) {
-        return ESP_OK;
+    if (sd->reader_task && sd->reader_task == xTaskGetCurrentTaskHandle()) {
+        ESP_LOGW(TAG, "Stop: reader cannot stop itself");
+        return ESP_ERR_INVALID_STATE;
     }
 
     sd->running = false;
 
     if (sd->reader_task) {
         if (xSemaphoreTake(sd->reader_exit_sem, pdMS_TO_TICKS(5000)) != pdTRUE) {
-            ESP_LOGW(TAG, "Reader task did not exit within 5s; forcing delete");
-            vTaskDelete(sd->reader_task);
+            ESP_LOGW(TAG, "Stop: reader has not exited; retry after the handler returns");
+            return ESP_ERR_TIMEOUT;
         }
         sd->reader_task = NULL;
     }
 
-    sdio_slave_stop();
+    if (xSemaphoreTake(sd->write_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+        ESP_LOGW(TAG, "Stop: writer has not exited");
+        return ESP_ERR_TIMEOUT;
+    }
+    if (sd->driver_initialized) {
+        sdio_slave_stop();
+        sdio_slave_deinit();
+        sd->driver_initialized = false;
+    }
+    free(sd->pending_send);
+    sd->pending_send = NULL;
 
     if (sd->recv_buffers) {
         for (int i = 0; i < sd->config.recv_buffer_count; i++) {
@@ -298,7 +335,7 @@ static esp_err_t sdio_stop(esp_service_mcp_trans_t *transport)
         sd->recv_buffers = NULL;
     }
 
-    sdio_slave_deinit();
+    xSemaphoreGive(sd->write_mutex);
 
     ESP_LOGI(TAG, "SDIO transport stopped");
     return ESP_OK;
@@ -308,8 +345,9 @@ static esp_err_t sdio_destroy(esp_service_mcp_trans_t *transport)
 {
     sdio_impl_t *sd = (sdio_impl_t *)transport;
 
-    if (sd->running) {
-        sdio_stop(transport);
+    esp_err_t ret = sdio_stop(transport);
+    if (ret != ESP_OK) {
+        return ret;
     }
 
     if (sd->write_mutex) {
@@ -350,7 +388,13 @@ esp_err_t esp_service_mcp_trans_sdio_create(const esp_service_mcp_sdio_config_t 
         sd->config = default_cfg;
     }
 
-    sd->running = false;
+    atomic_init(&sd->running, false);
+    if (sd->config.recv_buffer_size < 2 || sd->config.recv_buffer_size > SDIO_SLAVE_RECV_MAX_BUFFER ||
+        sd->config.recv_buffer_count <= 0) {
+        ESP_LOGE(TAG, "Create failed: invalid receive buffer configuration");
+        free(sd);
+        return ESP_ERR_INVALID_ARG;
+    }
     sd->recv_buffers = NULL;
 
     sd->write_mutex = xSemaphoreCreateMutex();

@@ -10,30 +10,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
-
 #include "esp_fourcc.h"
 #include "esp_log.h"
+#include "esp_netif.h"
+#include "settings.h"
+#include "simple_rtsp.h"
 #include "esp_media_dummy_service.h"
 #include "esp_media_service.h"
-#include "esp_netif.h"
 #include "esp_rtsp_service.h"
 #include "esp_rtsp_service_ops.h"
 #include "esp_service.h"
-
-#include "settings.h"
-#include "simple_rtsp.h"
 
 static const char *TAG = "SIMPLE_RTSP";
 
 #define SIMPLE_RUN_DONE_BIT  BIT0
 
 typedef struct {
-    EventGroupHandle_t group;
-    bool               abort_run;
+    EventGroupHandle_t  group;
+    bool                abort_run;
 } simple_run_t;
 
 static void rtsp_event_handler(const adf_event_t *event, void *ctx)
@@ -129,14 +126,16 @@ static esp_err_t wait_run(simple_run_t *run, uint32_t duration_ms)
     return ESP_OK;
 }
 
+/* The walk-through owns a stack callback context until deinit completes. */
 static void rtsp_delete(esp_rtsp_service_t *service)
 {
     if (service == NULL) {
         return;
     }
-    esp_service_t *base = ESP_SERVICE_BASE(service);
-    (void)esp_service_set_user_data(base, NULL);
-    (void)esp_media_service_deinit(base);
+    if (esp_service_stop(ESP_SERVICE_BASE(service)) != ESP_OK ||
+        esp_media_service_deinit(ESP_SERVICE_BASE(service)) != ESP_OK) {
+        abort();
+    }
     free(service);
 }
 
@@ -214,7 +213,7 @@ esp_err_t simple_rtsp_pusher(uint32_t duration_ms, const char *url, int stream_m
     }
     char ip[16];
     fill_sta_ip(ip, sizeof(ip));
-    if (ip[0]) {
+    if (ret == ESP_OK && ip[0]) {
         ret = esp_rtsp_service_set_ip(rtsp, ip);
     }
     if (ret == ESP_OK) {
@@ -253,7 +252,9 @@ esp_err_t simple_rtsp_pusher(uint32_t duration_ms, const char *url, int stream_m
     }
     rtsp_delete(rtsp);
     if (src != NULL) {
-        (void)esp_media_dummy_service_destroy(src);
+        if (esp_media_dummy_service_destroy(src) != ESP_OK) {
+            abort();
+        }
     }
     simple_run_deinit(&run);
     return ret;
@@ -286,7 +287,7 @@ esp_err_t simple_rtsp_puller(uint32_t duration_ms, const char *url)
     }
     char ip[16];
     fill_sta_ip(ip, sizeof(ip));
-    if (ip[0]) {
+    if (ret == ESP_OK && ip[0]) {
         ret = esp_rtsp_service_set_ip(rtsp, ip);
     }
     if (ret == ESP_OK) {
@@ -323,9 +324,11 @@ esp_err_t simple_rtsp_puller(uint32_t duration_ms, const char *url)
     }
     if (rtsp != NULL) {
         (void)esp_media_service_unlink(ESP_SERVICE_BASE(rtsp), ESP_MEDIA_DEFAULT_STREAM,
-                                    ESP_SERVICE_BASE(sink), ESP_MEDIA_DEFAULT_STREAM);
+                                       ESP_SERVICE_BASE(sink), ESP_MEDIA_DEFAULT_STREAM);
     }
-    (void)esp_media_dummy_service_destroy(sink);
+    if (esp_media_dummy_service_destroy(sink) != ESP_OK) {
+        abort();
+    }
     rtsp_delete(rtsp);
     simple_run_deinit(&run);
     return ret;
@@ -364,7 +367,7 @@ esp_err_t simple_rtsp_server(uint32_t duration_ms, const char *url, int stream_m
     }
     char ip[16];
     fill_sta_ip(ip, sizeof(ip));
-    if (ip[0]) {
+    if (ret == ESP_OK && ip[0]) {
         ret = esp_rtsp_service_set_ip(rtsp, ip);
     }
     if (ret == ESP_OK) {
@@ -400,7 +403,9 @@ esp_err_t simple_rtsp_server(uint32_t duration_ms, const char *url, int stream_m
     }
     rtsp_delete(rtsp);
     if (src != NULL) {
-        (void)esp_media_dummy_service_destroy(src);
+        if (esp_media_dummy_service_destroy(src) != ESP_OK) {
+            abort();
+        }
     }
     simple_run_deinit(&run);
     return ret;

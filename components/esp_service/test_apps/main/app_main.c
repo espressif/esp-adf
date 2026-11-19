@@ -17,13 +17,24 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "sdkconfig.h"
 #include "esp_log.h"
 #include "unity.h"
+#include "unity_test_runner.h"
 
-static const char *TAG = "UT";
+#if CONFIG_ESP_MCP_ENABLE
+extern void esp_service_ut_mcp_server_force_link(void);
+#endif  /* CONFIG_ESP_MCP_ENABLE */
 
-extern void esp_service_ut_core_force_link(void);
+#ifdef ESP_SERVICE_TEST_FAULT_INJECTION
+extern void transport_serial_fault_force_link(void);
+extern void transport_demo_force_link(void);
+extern void transport_web_fault_force_link(void);
+extern void scheduler_and_mock_tools_force_link(void);
+#else
+extern void esp_service_ut_force_link(void);
 extern void esp_service_ut_manager_force_link(void);
+extern void derived_destroy_force_link(void);
 
 #ifdef CONFIG_ESP_SVC_TEST_ENABLE_LIFECYCLE_STRESS
 extern void test_transport_lifecycle(void);
@@ -41,12 +52,26 @@ extern void test_ws_transport(void);
 #ifdef CONFIG_ESP_SVC_TEST_ENABLE_UART_TRANSPORT
 extern void test_uart_transport(void);
 #endif  /* CONFIG_ESP_SVC_TEST_ENABLE_UART_TRANSPORT */
+#endif  /* ESP_SERVICE_TEST_FAULT_INJECTION */
+
+static const char *TAG = "UT";
 
 void app_main(void)
 {
     /* Keep ut_*.c in the link graph so TEST_CASE __attribute__((constructor)) runs. */
-    esp_service_ut_core_force_link();
+#ifdef ESP_SERVICE_TEST_FAULT_INJECTION
+    transport_serial_fault_force_link();
+    transport_demo_force_link();
+    transport_web_fault_force_link();
+    scheduler_and_mock_tools_force_link();
+#else
+    esp_service_ut_force_link();
     esp_service_ut_manager_force_link();
+    derived_destroy_force_link();
+#endif  /* ESP_SERVICE_TEST_FAULT_INJECTION */
+#if CONFIG_ESP_MCP_ENABLE
+    esp_service_ut_mcp_server_force_link();
+#endif  /* CONFIG_ESP_MCP_ENABLE */
 
     ESP_LOGI(TAG, "");
     ESP_LOGI(TAG, "################################################################");
@@ -54,9 +79,14 @@ void app_main(void)
     ESP_LOGI(TAG, "################################################################");
 
     UNITY_BEGIN();
+#ifdef ESP_SERVICE_TEST_FAULT_INJECTION
+    unity_run_all_tests();
+#else
     unity_run_tests_by_tag("[esp_service]", false);
+#endif  /* ESP_SERVICE_TEST_FAULT_INJECTION */
     UNITY_END();
 
+#ifndef ESP_SERVICE_TEST_FAULT_INJECTION
 #ifdef CONFIG_ESP_SVC_TEST_ENABLE_LIFECYCLE_STRESS
     test_transport_lifecycle();
 #endif  /* CONFIG_ESP_SVC_TEST_ENABLE_LIFECYCLE_STRESS */
@@ -84,6 +114,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Starting HTTP transport test...");
     test_http_transport();
 #endif  /* CONFIG_ESP_SVC_TEST_ENABLE_HTTP_TRANSPORT */
+#endif  /* ESP_SERVICE_TEST_FAULT_INJECTION */
 
     ESP_LOGI(TAG, "################################################################");
     ESP_LOGI(TAG, "#  TEST_APPS RUN COMPLETE                                      #");

@@ -1,6 +1,6 @@
 # MCP-to-LLM Bridge
 
-Connect MCP-enabled ESP32 devices (or the PC mock server) to Large Language
+Connect MCP-enabled ESP32 devices to Large Language
 Models — Gemini, DeepSeek, OpenAI, Doubao. Configuration-driven; no
 hard-coded keys or URLs.
 
@@ -8,27 +8,30 @@ hard-coded keys or URLs.
 
 ## Quick Start
 
+Requires Python 3.8 or newer.
+
 ```bash
 cd tools/mcp_llm_bridge
 pip install -r requirements.txt
 
-# 1. Discover and test local MCP (no LLM needed)
+# 1. Discover local MCP without executing tools (no LLM needed)
 export MCP_URL="http://<device-ip>:8080/mcp"
+# export MCP_AUTH_TOKEN="..."         # only when the device transport was created with auth_token
 python mcp_bridge.py discover
 
 # 2. Export the API key for the provider you want to use.
 #    The example configs reference these variables via ${...} placeholders.
-export DEEPSEEK_API_KEY="sk-..."     # for configs/deepseek.json, example.json, pc_integration.json
+export DEEPSEEK_API_KEY="sk-..."     # for configs/deepseek.json and example.json
 export DOUBAO_API_KEY="..."          # for configs/doubao.json, sse_test.json
 # export GEMINI_API_KEY="..."
 # export OPENAI_API_KEY="sk-..."
 
 # 3. Run with an LLM (batch or interactive)
-python mcp_bridge.py run configs/deepseek.json
-python mcp_bridge.py run configs/doubao.json interactive
+python mcp_bridge.py run configs/deepseek.json --allow-execution
+python mcp_bridge.py run configs/doubao.json interactive --allow-execution
 
 # 4. Automated MCP test suite (no LLM key needed)
-python mcp_bridge.py test configs/example.json
+python mcp_bridge.py test configs/example.json --allow-execution
 ```
 
 ---
@@ -39,14 +42,14 @@ Single entry point with three subcommands.
 
 | Command    | Purpose                      | Needs LLM? |
 |------------|------------------------------|------------|
-| `discover` | Discover and test local MCP  | No         |
+| `discover` | List MCP tools without execution | No     |
 | `run`      | Connect to LLM and test MCP  | Yes        |
 | `test`     | Automated MCP test suite     | No         |
 
 ### `discover` — discover local MCP tools
 
 Lists tools from the MCP server, optionally prints the tool format for a
-configured provider, and runs each tool with schema-based arguments.
+configured provider. It never calls the discovered tools.
 
 ```bash
 export MCP_URL="http://<host>:<port>/mcp"
@@ -65,11 +68,11 @@ config or an interactive REPL. The config must include `mcp_server` and
 
 ```bash
 # Batch (default)
-python mcp_bridge.py run configs/deepseek.json
-python mcp_bridge.py run configs/doubao.json
+python mcp_bridge.py run configs/deepseek.json --allow-execution
+python mcp_bridge.py run configs/doubao.json --allow-execution
 
 # Interactive
-python mcp_bridge.py run configs/deepseek.json interactive
+python mcp_bridge.py run configs/deepseek.json interactive --allow-execution
 ```
 
 ### `test` — automated MCP test suite
@@ -79,13 +82,35 @@ error handling, sequential calls.
 
 ```bash
 export MCP_URL="http://<host>:<port>/mcp"
-python mcp_bridge.py test
+python mcp_bridge.py test --allow-execution
 
-python mcp_bridge.py test configs/example.json
+python mcp_bridge.py test configs/example.json --allow-execution
 ```
 
 Help: `python mcp_bridge.py --help` and
 `python mcp_bridge.py <command> --help`.
+
+### Execution And Network Boundary
+
+`run` and `test` refuse execution before loading configuration or opening a
+connection unless `--allow-execution` is present. Review the target and its tools
+first: the flag authorizes real effects, including destructive operations. The
+library likewise defaults to `MCPLLMBridge(..., allow_execution=False)` and accepts
+only advertised tool names and object arguments. It is not a sandbox for an
+untrusted MCP server or an untrusted model.
+
+SSE endpoint events must retain the configured scheme, host and effective port;
+embedded credentials/fragments and cross-origin destinations are rejected. MCP
+GET/POST requests do not follow redirects. URLs chosen explicitly by the user
+remain the user's responsibility. Tool arguments and raw results are not printed
+by the bridge execution wrapper; CLI test results may still contain tool output.
+
+Run offline regressions with `python -m unittest -v test_bridge`.
+The protocol tests cover Gemini native `contents`/`parts`, complete JSON schemas,
+parallel `functionResponse` results, call IDs and unmodified model signatures.
+They also exercise selected-choice tool/result pairing for OpenAI, DeepSeek and
+Doubao. HTTP and SDK calls are mocked; these are not live-provider compatibility
+or availability checks. Configure a model ID currently supported by your provider.
 
 ---
 
@@ -113,7 +138,7 @@ Minimal config (see `configs/example.json`):
 
 ```bash
 export DEEPSEEK_API_KEY="sk-..."
-python mcp_bridge.py run configs/example.json
+python mcp_bridge.py run configs/example.json --allow-execution
 ```
 
 Full config with transport and test cases (see `configs/sse_test.json`):
@@ -148,6 +173,7 @@ Full config with transport and test cases (see `configs/sse_test.json`):
   `OPENAI_API_KEY`, `DOUBAO_API_KEY` / `DOUBAO_MODEL` /
   `DOUBAO_ENDPOINT_ID`.
 - **`MCP_URL`** always overrides `mcp_server.url` when set.
+- **`MCP_AUTH_TOKEN`** is sent as `Authorization: Bearer <token>` on every HTTP request and on the SSE GET; set it when the device transport was created with `auth_token`, otherwise the device answers `401`. `MCPClient` / `MCPSSEClient` also accept it as the `auth_token` argument.
 
 ---
 
@@ -222,7 +248,7 @@ Output — Gemini (`functionDeclarations`):
 {
   "name": "player_service_set_volume",
   "description": "Set the playback volume",
-  "parameters": {
+  "parametersJsonSchema": {
     "type": "object",
     "properties": { "volume": { "type": "integer", "minimum": 0, "maximum": 100 } },
     "required": ["volume"]

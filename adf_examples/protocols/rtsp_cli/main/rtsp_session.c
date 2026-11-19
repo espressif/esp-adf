@@ -171,15 +171,6 @@ static esp_err_t subscribe_events(esp_rtsp_service_t *rtsp)
     return esp_service_event_subscribe(base, &info);
 }
 
-static void rtsp_service_delete(esp_rtsp_service_t *rtsp)
-{
-    if (rtsp == NULL) {
-        return;
-    }
-    (void)esp_media_service_deinit(ESP_SERVICE_BASE(rtsp));
-    free(rtsp);
-}
-
 static uint32_t video_bitrate(const rtsp_session_opts_t *opts)
 {
     if (opts->bitrate != 0) {
@@ -304,7 +295,9 @@ static esp_err_t build_rtsp(session_role_t role, const rtsp_session_opts_t *opts
     }
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Set up RTSP service failed: %s", esp_err_to_name(ret));
-        rtsp_service_delete(rtsp);
+        if (esp_media_service_deinit(ESP_SERVICE_BASE(rtsp)) == ESP_OK) {
+            free(rtsp);
+        }
         return ret;
     }
 
@@ -312,52 +305,134 @@ static esp_err_t build_rtsp(session_role_t role, const rtsp_session_opts_t *opts
     return ESP_OK;
 }
 
-static void session_release(void)
+static esp_err_t session_release(void)
 {
-    /* Producers stop first so consumers drain instead of blocking on an empty queue */
-    if (s_session.role == SESSION_ROLE_PULL) {
-        if (s_session.rtsp != NULL) {
-            (void)esp_service_stop(ESP_SERVICE_BASE(s_session.rtsp));
-        }
-        if (s_session.player != NULL) {
-            (void)esp_service_stop(ESP_SERVICE_BASE(s_session.player));
-        }
-    } else {
-        if (s_session.capture != NULL) {
-            (void)esp_service_stop(ESP_SERVICE_BASE(s_session.capture));
-        }
-        if (s_session.rtsp != NULL) {
-            (void)esp_service_stop(ESP_SERVICE_BASE(s_session.rtsp));
-        }
+    esp_err_t first_err = ESP_OK;
+
+    switch (s_session.role) {
+        case SESSION_ROLE_PULL:
+            /* Producer stops first so the player drains instead of blocking on an empty queue */
+            if (s_session.rtsp != NULL) {
+                esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.rtsp));
+                if (err != ESP_OK) {
+                    ESP_LOGE(TAG, "Stop RTSP failed: %s", esp_err_to_name(err));
+                    first_err = err;
+                }
+            }
+            if (s_session.player != NULL) {
+                esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.player));
+                if (err != ESP_OK) {
+                    ESP_LOGE(TAG, "Stop player failed: %s", esp_err_to_name(err));
+                    if (first_err == ESP_OK) {
+                        first_err = err;
+                    }
+                }
+            }
+            if (s_session.linked) {
+                if (s_session.rtsp != NULL && s_session.player != NULL) {
+                    esp_err_t err = esp_media_service_unlink(
+                        ESP_SERVICE_BASE(s_session.rtsp), ESP_MEDIA_DEFAULT_STREAM,
+                        ESP_SERVICE_BASE(s_session.player), ESP_MEDIA_DEFAULT_STREAM);
+                    if (err == ESP_OK) {
+                        s_session.linked = false;
+                    } else {
+                        ESP_LOGE(TAG, "Unlink RTSP from player failed: %s", esp_err_to_name(err));
+                        if (first_err == ESP_OK) {
+                            first_err = err;
+                        }
+                    }
+                } else {
+                    s_session.linked = false;
+                }
+            }
+            break;
+
+        case SESSION_ROLE_SERVER:
+        case SESSION_ROLE_PUSH:
+            /* Producer stops first so the RTSP sink drains instead of blocking on an empty queue */
+            if (s_session.capture != NULL) {
+                esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.capture));
+                if (err != ESP_OK) {
+                    ESP_LOGE(TAG, "Stop capture failed: %s", esp_err_to_name(err));
+                    first_err = err;
+                }
+            }
+            if (s_session.rtsp != NULL) {
+                esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.rtsp));
+                if (err != ESP_OK) {
+                    ESP_LOGE(TAG, "Stop RTSP failed: %s", esp_err_to_name(err));
+                    if (first_err == ESP_OK) {
+                        first_err = err;
+                    }
+                }
+            }
+            if (s_session.linked) {
+                if (s_session.capture != NULL && s_session.rtsp != NULL) {
+                    esp_err_t err = esp_media_service_unlink(
+                        ESP_SERVICE_BASE(s_session.capture), ESP_MEDIA_DEFAULT_STREAM,
+                        ESP_SERVICE_BASE(s_session.rtsp), ESP_MEDIA_DEFAULT_STREAM);
+                    if (err == ESP_OK) {
+                        s_session.linked = false;
+                    } else {
+                        ESP_LOGE(TAG, "Unlink capture from RTSP failed: %s", esp_err_to_name(err));
+                        if (first_err == ESP_OK) {
+                            first_err = err;
+                        }
+                    }
+                } else {
+                    s_session.linked = false;
+                }
+            }
+            break;
+
+        default:
+            break;
     }
 
-    if (s_session.linked) {
-        if (s_session.role == SESSION_ROLE_PULL) {
-            (void)esp_media_service_unlink(ESP_SERVICE_BASE(s_session.rtsp), ESP_MEDIA_DEFAULT_STREAM,
-                                           ESP_SERVICE_BASE(s_session.player), ESP_MEDIA_DEFAULT_STREAM);
+    if (s_session.rtsp != NULL) {
+        esp_err_t err = esp_media_service_deinit(ESP_SERVICE_BASE(s_session.rtsp));
+        if (err == ESP_OK) {
+            free(s_session.rtsp);
+            s_session.rtsp = NULL;
         } else {
-            (void)esp_media_service_unlink(ESP_SERVICE_BASE(s_session.capture), ESP_MEDIA_DEFAULT_STREAM,
-                                           ESP_SERVICE_BASE(s_session.rtsp), ESP_MEDIA_DEFAULT_STREAM);
+            ESP_LOGE(TAG, "Deinitialize RTSP failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
         }
-        s_session.linked = false;
     }
-
-    rtsp_service_delete(s_session.rtsp);
-    s_session.rtsp = NULL;
 
     if (s_session.capture != NULL) {
-        (void)esp_capture_service_destroy(s_session.capture);
-        s_session.capture = NULL;
+        esp_err_t err = esp_capture_service_destroy(s_session.capture);
+        if (err == ESP_OK) {
+            s_session.capture = NULL;
+        } else {
+            ESP_LOGE(TAG, "Destroy capture failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
     if (s_session.player != NULL) {
-        (void)esp_player_service_destroy(s_session.player);
-        s_session.player = NULL;
+        esp_err_t err = esp_player_service_destroy(s_session.player);
+        if (err == ESP_OK) {
+            s_session.player = NULL;
+        } else {
+            ESP_LOGE(TAG, "Destroy player failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
 
-    s_session.role = SESSION_ROLE_NONE;
-    s_session.state = RTSP_STATE_NONE;
-    s_session.peer_gone = false;
-    s_session.url[0] = '\0';
+    if (s_session.rtsp == NULL && s_session.capture == NULL && s_session.player == NULL) {
+        s_session.role = SESSION_ROLE_NONE;
+        s_session.state = RTSP_STATE_NONE;
+        s_session.linked = false;
+        s_session.peer_gone = false;
+        s_session.url[0] = '\0';
+    }
+    return first_err;
 }
 
 static esp_err_t session_claim(session_role_t role, const rtsp_session_opts_t *opts)
@@ -368,7 +443,7 @@ static esp_err_t session_claim(session_role_t role, const rtsp_session_opts_t *o
     /* A peer that already left does not need a manual 'rtsp stop' first */
     if (s_session.peer_gone) {
         ESP_LOGI(TAG, "Releasing the finished %s session", role_name(s_session.role));
-        session_release();
+        ESP_RETURN_ON_ERROR(session_release(), TAG, "Release previous session");
     }
     if (s_session.role != SESSION_ROLE_NONE) {
         ESP_LOGE(TAG, "A %s session is running; stop it with 'rtsp stop' first", role_name(s_session.role));
@@ -515,8 +590,7 @@ esp_err_t rtsp_session_stop(void)
        devices until then, which is also why a new session cannot start earlier. */
     ESP_LOGI(TAG, "Stopping the %s session; waiting for the RTSP control connection to time out",
              role_name(s_session.role));
-    session_release();
-    return ESP_OK;
+    return session_release();
 }
 
 bool rtsp_session_is_active(void)

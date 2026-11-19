@@ -437,7 +437,6 @@ static esp_err_t sip_on_stop(esp_service_t *base)
 static esp_err_t sip_on_deinit(esp_service_t *base)
 {
     esp_sip_service_t *service = (esp_sip_service_t *)base;
-    (void)sip_on_stop(base);
 
 #ifdef CONFIG_ESP_SIP_SERVICE_DOWNLINK_SUPPORT
     sip_downlink_destroy(service);
@@ -782,23 +781,22 @@ esp_err_t esp_sip_service_create(const esp_sip_service_cfg_t *cfg, esp_sip_servi
     media_cfg.name = (cfg != NULL && cfg->name != NULL) ? cfg->name : ESP_SIP_SERVICE_NAME;
     media_cfg.service_ops = &s_sip_service_ops;
     media_cfg.media_ops = &s_sip_media_ops;
+#ifdef CONFIG_ESP_SIP_SERVICE_DOWNLINK_SUPPORT
+    /* A link may query the downlink provider before start. */
+    esp_err_t downlink_ret = sip_downlink_ensure_mngr(service);
+    if (downlink_ret != ESP_OK) {
+        sip_downlink_destroy(service);
+        media_lib_mutex_destroy(service->lock);
+        free(service);
+        RET_FOR(downlink_ret, "downlink manager init failed");
+    }
+#endif  /* CONFIG_ESP_SIP_SERVICE_DOWNLINK_SUPPORT */
     esp_err_t ret = esp_media_service_init(&service->media, &media_cfg);
     if (ret != ESP_OK) {
-        media_lib_mutex_destroy(service->lock);
+        sip_on_deinit(ESP_SERVICE_BASE(service));
         free(service);
         RET_FOR(ret, "media init failed");
     }
-
-#ifdef CONFIG_ESP_SIP_SERVICE_DOWNLINK_SUPPORT
-    /* A link may query the downlink provider before start. */
-    ret = sip_downlink_ensure_mngr(service);
-    if (ret != ESP_OK) {
-        esp_media_service_deinit(ESP_SERVICE_BASE(service));
-        media_lib_mutex_destroy(service->lock);
-        free(service);
-        RET_FOR(ret, "downlink manager init failed");
-    }
-#endif  /* CONFIG_ESP_SIP_SERVICE_DOWNLINK_SUPPORT */
 
     *out_service = service;
     return ESP_OK;

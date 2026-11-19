@@ -7,21 +7,18 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
 #include "esp_check.h"
 #include "esp_fourcc.h"
 #include "esp_log.h"
+#include "settings.h"
+#include "simple_sip.h"
 #include "esp_media_dummy_service.h"
 #include "esp_media_service.h"
 #include "esp_service.h"
 #include "esp_sip_service.h"
 #include "esp_sip_service_ops.h"
-
-#include "settings.h"
-#include "simple_sip.h"
 
 /**
  * @brief  Call progress collected from the service events
@@ -199,22 +196,25 @@ cleanup:
         esp_service_stop(ESP_SERVICE_BASE(call.sip));
     }
     if (linked_up) {
-        esp_media_service_unlink(ESP_SERVICE_BASE(dummy_src), ESP_MEDIA_DEFAULT_STREAM,
-                                 ESP_SERVICE_BASE(call.sip), ESP_SIP_SERVICE_STREAM_UPLINK);
+        esp_media_service_unlink(ESP_SERVICE_BASE(dummy_src), ESP_MEDIA_DEFAULT_STREAM, ESP_SERVICE_BASE(call.sip),
+                                 ESP_SIP_SERVICE_STREAM_UPLINK);
     }
     if (linked_down) {
         esp_media_service_unlink(ESP_SERVICE_BASE(call.sip), ESP_SIP_SERVICE_STREAM_DOWNLINK,
                                  ESP_SERVICE_BASE(dummy_sink), ESP_MEDIA_DEFAULT_STREAM);
     }
     if (call.sip != NULL) {
-        esp_media_service_deinit(ESP_SERVICE_BASE(call.sip));
+        if (esp_service_stop(ESP_SERVICE_BASE(call.sip)) != ESP_OK ||
+            esp_media_service_deinit(ESP_SERVICE_BASE(call.sip)) != ESP_OK) {
+            abort();
+        }
         free(call.sip);
     }
-    if (dummy_src != NULL) {
-        esp_media_dummy_service_destroy(dummy_src);
+    if (dummy_src != NULL && esp_media_dummy_service_destroy(dummy_src) != ESP_OK) {
+        abort();
     }
-    if (dummy_sink != NULL) {
-        esp_media_dummy_service_destroy(dummy_sink);
+    if (dummy_sink != NULL && esp_media_dummy_service_destroy(dummy_sink) != ESP_OK) {
+        abort();
     }
     return ret;
 }

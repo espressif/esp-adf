@@ -89,7 +89,6 @@ struct esp_media_dummy_service {
     esp_media_role_t     role;
     uint16_t             max_stream_num;
     volatile bool        running;
-    char                *name_storage;
 
     media_dummy_src_stream_t  *src_streams;
     media_dummy_sink_stream_t *sink_streams;

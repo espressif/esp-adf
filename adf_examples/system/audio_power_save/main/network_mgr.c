@@ -232,8 +232,12 @@ void network_mgr_deinit(void)
         s_mqtt_client = NULL;
     }
     if (s_wifi_service) {
-        esp_wifi_service_destroy(s_wifi_service);
-        s_wifi_service = NULL;
+        esp_err_t ret = esp_wifi_service_destroy(s_wifi_service);
+        if (ret == ESP_OK) {
+            s_wifi_service = NULL;
+        } else {
+            ESP_LOGE(TAG, "esp_wifi_service_destroy failed: %s", esp_err_to_name(ret));
+        }
     }
     if (s_profile_manager) {
         esp_wifi_service_profile_mgr_deinit(s_profile_manager);

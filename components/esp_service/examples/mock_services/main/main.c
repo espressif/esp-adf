@@ -11,7 +11,7 @@
  *
  *         This example only demonstrates how to use the six mock services
  *         under `components/`.  Framework-level tests (service manager, MCP
- *         server, HTTP / SSE / WS / UART transports, PC-side simulations)
+ *         server, and HTTP / SSE / WS / UART transports)
  *         live in `components/esp_service/test_apps/`.
  *
  *         Three representative service flavours are exercised on boot:

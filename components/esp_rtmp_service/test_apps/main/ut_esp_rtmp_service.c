@@ -5,25 +5,23 @@
  * See LICENSE file for details.
  */
 
+#include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "unity.h"
-
-#include <stdlib.h>
-
 #include "esp_fourcc.h"
+#include "esp_rtmp_scheduler.h"
 #include "esp_media_dummy_service.h"
 #include "esp_rtmp_service.h"
 #include "esp_rtmp_service_ops.h"
-#include "esp_rtmp_scheduler.h"
 #include "esp_service.h"
 #include "esp_service_scheduler.h"
 
-#define RTMP_SERVER_URL   "rtmp://127.0.0.1:1935/live"
-#define RTMP_STREAM_URL   "rtmp://127.0.0.1:1935/live/stream0"
-#define TEST_RUN_MS       1500
+#define RTMP_SERVER_URL  "rtmp://127.0.0.1:1935/live"
+#define RTMP_STREAM_URL  "rtmp://127.0.0.1:1935/live/stream0"
+#define TEST_RUN_MS      1500
 
-void esp_rtmp_service_ut_force_link(void) {}
+void esp_rtmp_service_ut_force_link(void)  { }
 
 static esp_err_t test_scheduler_cb(const esp_service_thread_request_t *request,
                                    esp_service_thread_cfg_t *cfg,
@@ -41,6 +39,7 @@ static esp_err_t test_scheduler_cb(const esp_service_thread_request_t *request,
 
 static void rtmp_service_delete(esp_rtmp_service_t *service)
 {
+    TEST_ESP_OK(esp_service_stop(ESP_SERVICE_BASE(service)));
     TEST_ESP_OK(esp_media_service_deinit(ESP_SERVICE_BASE(service)));
     free(service);
 }
@@ -115,7 +114,6 @@ TEST_CASE("rtmp loopback dummy_src to sink to src to dummy_sink", "[esp_rtmp_ser
     esp_media_dummy_service_t *dummy_sink = NULL;
     TEST_ESP_OK(esp_media_dummy_service_create(&dummy_sink_cfg, &dummy_sink));
 
-
     TEST_ESP_OK(esp_media_service_link(ESP_SERVICE_BASE(dummy_src), ESP_MEDIA_DEFAULT_STREAM,
                                        ESP_SERVICE_BASE(sink), ESP_MEDIA_DEFAULT_STREAM));
     TEST_ESP_OK(esp_media_service_link(ESP_SERVICE_BASE(src), ESP_MEDIA_DEFAULT_STREAM,
@@ -140,13 +138,12 @@ TEST_CASE("rtmp loopback dummy_src to sink to src to dummy_sink", "[esp_rtmp_ser
     vTaskDelay(pdMS_TO_TICKS(300));
     TEST_ESP_OK(esp_service_start(ESP_SERVICE_BASE(src)));
     printf("go %d.....\n", __LINE__);
-    int timeout =  5000;
+    int timeout = 5000;
     while (timeout > 0) {
         printf("\n\n");
         rtmp_server_query(server);
         vTaskDelay(pdMS_TO_TICKS(1000));
         timeout -= 1000;
-
     }
 
     TEST_ESP_OK(esp_service_stop(ESP_SERVICE_BASE(dummy_sink)));

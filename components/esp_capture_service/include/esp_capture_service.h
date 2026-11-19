@@ -8,13 +8,29 @@
 #pragma once
 
 #include <stdint.h>
-
 #include "esp_err.h"
 #include "esp_service.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
+
+#define ESP_CAPTURE_SERVICE_NAME  "capture_service"
+
+#define ESP_CAPTURE_SERVICE_CFG_DEFAULT()  {     \
+    .name           = ESP_CAPTURE_SERVICE_NAME,  \
+    .max_stream_num = 1,                         \
+}
+
+/**
+ * @brief  Service name used when forwarding esp_capture threads to esp_service_scheduler.
+ *
+ *         Capture pipeline threads (e.g. `venc_0`, `aenc_0`, `AUD_SRC`, `VID_SRC`)
+ *         are requested under this name. Applications should tune them through
+ *         `esp_service_scheduler_set_cb()` instead of `esp_capture_set_thread_scheduler()`.
+ *         The bridge is installed automatically by `esp_capture_service_create()`.
+ */
+#define ESP_CAPTURE_SERVICE_SCHEDULER_NAME  "esp_capture"
 
 /**
  * @brief  Capture service handle.
@@ -28,6 +44,8 @@ typedef struct esp_capture_service esp_capture_service_t;
 
 /**
  * @brief  Callback invoked when the capture service is deinitialized
+ * @note  Failure retains this callback and its context for destroy retry.
+ *        Make partial cleanup retryable and do not free the service here.
  *
  * @param[in]  service    Capture service handle
  * @param[in]  user_data  User context from esp_capture_service_set_deinit_cb()
@@ -46,23 +64,6 @@ typedef struct {
     uint16_t    max_stream_num;  /*!< Maximum output streams */
 } esp_capture_service_cfg_t;
 
-#define ESP_CAPTURE_SERVICE_NAME  "capture_service"
-
-#define ESP_CAPTURE_SERVICE_CFG_DEFAULT() {      \
-    .name           = ESP_CAPTURE_SERVICE_NAME,  \
-    .max_stream_num = 1,                         \
-}
-
-/**
- * @brief  Service name used when forwarding esp_capture threads to esp_service_scheduler.
- *
- *         Capture pipeline threads (e.g. `venc_0`, `aenc_0`, `AUD_SRC`, `VID_SRC`)
- *         are requested under this name. Applications should tune them through
- *         `esp_service_scheduler_set_cb()` instead of `esp_capture_set_thread_scheduler()`.
- *         The bridge is installed automatically by `esp_capture_service_create()`.
- */
-#define ESP_CAPTURE_SERVICE_SCHEDULER_NAME  "esp_capture"
-
 /**
  * @brief  Create capture service.
  *
@@ -80,11 +81,17 @@ esp_err_t esp_capture_service_create(const esp_capture_service_cfg_t *cfg,
 /**
  * @brief  Destroy capture service.
  *
+ * @note  Single-owner operation after unlinking endpoints, returning borrowed
+ *        frames and stopping external callers. Not for event/lifecycle
+ *        callbacks. Only ESP_OK invalidates service; on error retain it for
+ *        destroy retry and never free it manually.
+ *
  * @param[in]  service  Capture service handle
  *
  * @return
  *       - ESP_OK               On success
  *       - ESP_ERR_INVALID_ARG  Invalid argument
+ *       - other                Teardown failed; instance retained for retry
  */
 esp_err_t esp_capture_service_destroy(esp_capture_service_t *service);
 

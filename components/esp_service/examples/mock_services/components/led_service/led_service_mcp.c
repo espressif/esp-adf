@@ -18,6 +18,7 @@
 #include "cJSON.h"
 #include "led_service.h"
 #include "led_service_mcp.h"
+#include "../mock_mcp_util.h"
 
 static const char *TAG = "LED_MCP";
 
@@ -37,7 +38,7 @@ esp_err_t led_service_tool_invoke(esp_service_t *service,
 {
     led_service_t *led = (led_service_t *)service;
 
-    ESP_LOGI(TAG, "Tool_invoke: %s args=%s", tool->name, args ? args : "{}");
+    ESP_LOGD(TAG, "Tool invoke: %s", tool->name);
 
     if (strcmp(tool->name, "led_service_on") == 0) {
         led_service_on(led);
@@ -52,11 +53,11 @@ esp_err_t led_service_tool_invoke(esp_service_t *service,
     if (strcmp(tool->name, "led_service_blink") == 0) {
         cJSON *root = cJSON_Parse(args);
         if (root) {
-            cJSON *period = cJSON_GetObjectItem(root, "period_ms");
-            if (period && cJSON_IsNumber(period)) {
-                led_service_blink(led, (uint32_t)period->valueint);
-                snprintf(result, result_size, "{\"state\":\"BLINK\",\"period\":%d}",
-                         period->valueint);
+            uint32_t period;
+            if (mock_mcp_uint(root, "period_ms", UINT32_MAX, &period)) {
+                led_service_blink(led, period);
+                snprintf(result, result_size, "{\"state\":\"BLINK\",\"period\":%u}",
+                         (unsigned)period);
                 cJSON_Delete(root);
                 return ESP_OK;
             }
@@ -67,10 +68,10 @@ esp_err_t led_service_tool_invoke(esp_service_t *service,
     if (strcmp(tool->name, "led_service_set_brightness") == 0) {
         cJSON *root = cJSON_Parse(args);
         if (root) {
-            cJSON *brightness = cJSON_GetObjectItem(root, "brightness");
-            if (brightness && cJSON_IsNumber(brightness)) {
-                led_service_set_brightness(led, (uint32_t)brightness->valueint);
-                snprintf(result, result_size, "{\"brightness\":%d}", brightness->valueint);
+            uint32_t brightness;
+            if (mock_mcp_uint(root, "brightness", 100, &brightness)) {
+                led_service_set_brightness(led, brightness);
+                snprintf(result, result_size, "{\"brightness\":%u}", (unsigned)brightness);
                 cJSON_Delete(root);
                 return ESP_OK;
             }

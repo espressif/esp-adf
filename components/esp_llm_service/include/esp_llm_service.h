@@ -105,17 +105,17 @@ esp_err_t esp_llm_service_create(const esp_llm_adapter_desc_t *adapter,
 /**
  * @brief  Destroy an LLM service instance
  *
- * @note  Does not stop the instance. Call esp_service_stop() first.
- *         esp_media_service_deinit() releases the adapter. On success, *service
- *         is set to NULL. On failure the handle is retained for retry.
+ * @note  Stops the instance if active and releases the adapter via
+ *         esp_media_service_deinit(). On success, *service is set to NULL.
+ *         On failure the handle is retained for retry.
  *
  * @param[in,out]  service  Pointer to a handle from esp_llm_service_create()
  *
  * @return
  *       - ESP_OK                 On success
  *       - ESP_ERR_INVALID_ARG    If service or *service is NULL
- *       - ESP_ERR_INVALID_STATE  If an uplink task is still running
- *       - ESP_FAIL               If the adapter context was not released
+ *       - ESP_ERR_INVALID_STATE  If called from a callback or active lifecycle hook
+ *       - Others                 If stopping or releasing the adapter failed
  */
 esp_err_t esp_llm_service_destroy(esp_llm_service_t **service);
 

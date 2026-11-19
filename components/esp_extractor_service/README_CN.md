@@ -50,7 +50,7 @@ flowchart TD
     E --> F[esp_service_start]
     F --> G[acquire_frame 或 sink 消费]
     G --> H[esp_service_stop]
-    H --> I[esp_media_service_deinit + free]
+    H --> I[断开连接 / deinit 成功后 free]
 ```
 
 ## 典型用法
@@ -108,7 +108,7 @@ esp_extractor_service_set_url(extractor, url);
 esp_extractor_service_set_src_data(extractor, buf, size);
 ```
 
-通过 `ESP_SERVICE_BASE(extractor)` 调用 `esp_service_start()` / `esp_service_stop()`。销毁时先 `esp_media_service_deinit()` 再 `free()`。
+由所有者任务调用 `esp_media_service_deinit()`，仅在返回 `ESP_OK` 后 free。失败保留句柄供重试。销毁前停止外部调用和 MCP 分发，并断开媒体连接；不要在回调内调用。
 
 ## 调度
 
@@ -128,7 +128,7 @@ esp_extractor_service_set_src_data(extractor, buf, size);
 - 开启 HLS Kconfig 时需调用 `esp_hls_extractor_register()`。
 - 文件用例需要已挂载的文件系统（通常通过 `esp_board_manager` 挂载 SD）；HTTP / HLS 用例需要网络。
 - stop / destroy 前必须释放所有已获取帧。
-- 销毁时先 `esp_media_service_deinit()` 再 `free()`。
+- 由所有者任务调用 `esp_media_service_deinit()`，仅在返回 `ESP_OK` 后 free。失败保留句柄供重试。销毁前停止外部调用和 MCP 分发，并断开媒体连接；不要在回调内调用。
 
 ## 示例
 

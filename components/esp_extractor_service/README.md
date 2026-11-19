@@ -50,7 +50,7 @@ flowchart TD
     E --> F[esp_service_start]
     F --> G[acquire_frame or sink consumes]
     G --> H[esp_service_stop]
-    H --> I[esp_media_service_deinit + free]
+    H --> I[unlink / media deinit / free on success]
 ```
 
 ## Typical Usage
@@ -108,7 +108,7 @@ esp_extractor_service_set_url(extractor, url);
 esp_extractor_service_set_src_data(extractor, buf, size);
 ```
 
-Start / stop with `esp_service_start()` / `esp_service_stop()` on `ESP_SERVICE_BASE(extractor)`. Tear down with `esp_media_service_deinit()` then `free()`.
+Call `esp_media_service_deinit()` from the owner task and free only after `ESP_OK`. On failure retain the handle for cleanup retry. Stop external/MCP callers and unlink media endpoints first. Do not deinitialize from callbacks.
 
 ## Scheduler
 
@@ -128,7 +128,7 @@ Thread name: `ESP_EXTRACTOR_SCHED_SRC_TASK` (`extractor_src`). Default stack 819
 - HLS needs `esp_hls_extractor_register()` when HLS Kconfig is on.
 - File cases need a mounted filesystem (typically SD via `esp_board_manager`); HTTP / HLS cases need a network connection.
 - Always release acquired frames before stop / destroy.
-- Tear down with `esp_media_service_deinit()` then `free()`.
+- Call `esp_media_service_deinit()` from the owner task and free only after `ESP_OK`. On failure retain the handle for cleanup retry. Stop external/MCP callers and unlink media endpoints first. Do not deinitialize from callbacks.
 
 ## Example
 

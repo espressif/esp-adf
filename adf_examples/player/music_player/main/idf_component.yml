@@ -11,5 +11,5 @@ dependencies:
   espressif/esp_mmap_assets:
     version: "^2.0"
   espressif/esp_playlist:
-    version: "^0.5"
+    version: "~1.0.0-beta1"
     override_path: ../../../../components/esp_playlist

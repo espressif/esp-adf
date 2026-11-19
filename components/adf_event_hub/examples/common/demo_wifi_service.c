@@ -13,6 +13,7 @@
 
 static const char *TAG = "WiFi";
 
+#define WIFI_TASK_STACK     (6 * 1024)
 #define WIFI_TASK_PRIORITY  (tskIDLE_PRIORITY + 3)
 
 struct demo_wifi_service {
@@ -244,7 +245,7 @@ demo_wifi_service_t *demo_wifi_service_create(int rounds)
     }
 
     BaseType_t ok = xTaskCreate(wifi_task, "wifi_svc",
-                                configMINIMAL_STACK_SIZE * 2,
+                                WIFI_TASK_STACK,
                                 svc, WIFI_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");

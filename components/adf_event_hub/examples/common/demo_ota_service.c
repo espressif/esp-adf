@@ -15,6 +15,7 @@
 
 static const char *TAG = "OTA";
 
+#define OTA_TASK_STACK     (6 * 1024)
 #define OTA_TASK_PRIORITY  (tskIDLE_PRIORITY + 2)
 
 struct demo_ota_service {
@@ -223,7 +224,7 @@ demo_ota_service_t *demo_ota_service_create(int fail_pct, int rounds)
     }
 
     BaseType_t ok = xTaskCreate(ota_task, "ota_svc",
-                                configMINIMAL_STACK_SIZE * 2,
+                                OTA_TASK_STACK,
                                 svc, OTA_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");

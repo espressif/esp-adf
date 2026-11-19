@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Zero-initialize the media service object in `esp_media_service_init()` (single initialization per instance) and clear `media_ops` on init failure or successful `esp_media_service_deinit()`
+- Adapt private cleanup and MCP table removal to staged base teardown; retain the instance on any cleanup failure
+
 ## v0.5.3~1
 
 ### Changes

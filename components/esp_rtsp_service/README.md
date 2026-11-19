@@ -48,7 +48,7 @@ flowchart TD
     B --> C[optional esp_media_service_link]
     C --> D[esp_service_start]
     D --> E[esp_service_stop]
-    E --> F[unlink / deinit / free]
+    E --> F[unlink / media deinit / free on success]
 ```
 
 ## Typical Usage
@@ -130,7 +130,7 @@ Base lifecycle transitions continue to use `ESP_SERVICE_EVENT_STATE_CHANGED`.
 - `setup`, `set_url`, and `set_ip` require the service to be stopped
 - Link the provider before starting SINK or SERVER so track information is available
 - Stop producers before their consuming service during teardown
-- Tear down with `esp_media_service_deinit()` and then free the service handle
+- Call `esp_media_service_deinit()` from the owner task and free only after `ESP_OK`. On failure retain the handle for cleanup retry. Stop external/MCP callers and unlink media endpoints first. Do not deinitialize from callbacks.
 
 ## Example
 

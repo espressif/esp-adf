@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
 #include "esp_err.h"
 
 #ifdef __cplusplus
@@ -84,6 +83,10 @@ typedef esp_err_t (*esp_service_scheduler_cb_t)(const esp_service_thread_request
 /**
  * @brief  Set the scheduler callback.
  *
+ * @note  Callback and ctx are published as a pair. Callbacks execute outside
+ *        the internal lock. Replacing or clearing the pair does not wait for
+ *        earlier callbacks: retain their ctx until all concurrent get calls
+ *        finish. Prefer configuring before services start. Not ISR-safe.
  * @param[in]  cb   Callback used to override thread configuration, or NULL to clear.
  * @param[in]  ctx  User context passed to cb.
  *
@@ -95,18 +98,25 @@ esp_err_t esp_service_scheduler_set_cb(esp_service_scheduler_cb_t cb, void *ctx)
 /**
  * @brief  Get scheduler configuration for a thread request.
  *
- *         Copies default_cfg into out_cfg, or uses zero defaults with
- *         ESP_SERVICE_THREAD_CORE_NO_AFFINITY when default_cfg is NULL. If a
- *         scheduler callback is registered, it may override fields in out_cfg.
+ *         Copies default_cfg into out_cfg, or the built-in defaults (4 KiB
+ *         stack, priority 5, ESP_SERVICE_THREAD_CORE_NO_AFFINITY, internal
+ *         RAM) when default_cfg is NULL. If a scheduler callback is
+ *         registered, its edits are applied to out_cfg only when it returns
+ *         ESP_OK; on ESP_ERR_NOT_FOUND or any error out_cfg keeps the defaults.
+ *
+ * @note  Each call takes a consistent callback/ctx snapshot. Stack size must
+ *        be nonzero, priority below configMAX_PRIORITIES, and core_id either
+ *        NO_AFFINITY or a configured CPU index. Invalid callback output leaves
+ *        defaults unchanged; invalid default_cfg leaves out_cfg unchanged.
  *
  * @param[in]   request      Thread request identity.
  * @param[in]   default_cfg  Default configuration, or NULL to use built-in defaults.
  * @param[out]  out_cfg      Output scheduler configuration.
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  request, request names, or out_cfg is NULL
- *       - others               Error returned by the scheduler callback
+ *       - ESP_OK               On success (including callback returning ESP_ERR_NOT_FOUND)
+ *       - ESP_ERR_INVALID_ARG  Required pointer is NULL or thread settings are invalid
+ *       - others               Error returned by the scheduler callback; out_cfg holds the defaults
  */
 esp_err_t esp_service_scheduler_get_thread_cfg(const esp_service_thread_request_t *request,
                                                const esp_service_thread_cfg_t *default_cfg,
