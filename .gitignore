@@ -32,6 +32,8 @@ examples/**/sdkconfig.bmgr_board.old
 **/sdkconfig
 **/sdkconfig.old
 **/build
+**/build_asan
+**/build_*/
 **/managed_components
 **/dependencies.lock
 **/sdkconfig.bmgr_board.old

@@ -9,6 +9,24 @@
 
 #include "test_fixtures.h"
 
+static adf_event_hub_stats_t resource_baseline;
+
+void setUp(void)
+{
+    resource_baseline = (adf_event_hub_stats_t) {0};
+    esp_err_t ret = adf_event_hub_get_stats(&resource_baseline);
+    TEST_ASSERT_TRUE(ret == ESP_OK || ret == ESP_ERR_INVALID_STATE);
+}
+
+void tearDown(void)
+{
+    adf_event_hub_stats_t after = {0};
+    esp_err_t ret = adf_event_hub_get_stats(&after);
+    TEST_ASSERT_TRUE(ret == ESP_OK || ret == ESP_ERR_INVALID_STATE);
+    TEST_ASSERT_EQUAL_UINT32(resource_baseline.domain_count, after.domain_count);
+    TEST_ASSERT_EQUAL_UINT32(resource_baseline.envelopes_in_use, after.envelopes_in_use);
+}
+
 /* ── Basic fixtures ──────────────────────────────────────────────── */
 
 void cb_count(const adf_event_t *ev, void *ctx)

@@ -1,5 +1,6 @@
 version: "0.5.0~1"
 description: ADF domain-scoped publish-subscribe event hub with queue and callback delivery modes
+license: LicenseRef-Espressif-Modified-MIT
 url: https://github.com/espressif/esp-adf/tree/master/components/adf_event_hub
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/adf_event_hub/README.md"
 issues: "https://github.com/espressif/esp-adf/issues"
@@ -10,3 +11,7 @@ tags:
   - "subscribe"
   - "adf"
   - "gmf"
+
+files:
+  exclude:
+    - "test_apps/**/*"

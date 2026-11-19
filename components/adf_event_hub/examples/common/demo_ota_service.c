@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdatomic.h>
 #include "adf_event_hub_port.h"
 #include "demo_ota_service.h"
 #include "demo_wifi_service.h"
@@ -17,18 +18,19 @@ static const char *TAG = "OTA";
 #define OTA_TASK_PRIORITY  (tskIDLE_PRIORITY + 2)
 
 struct demo_ota_service {
-    adf_event_hub_t  hub;
-    TaskHandle_t     task;
-    volatile bool    running;
-    volatile bool    checking;
-    volatile bool    wifi_check_req;  /* set by on_wifi_got_ip, consumed by task */
-    int              fail_pct;
-    int              rounds;
-    int              wifi_trigger_max;  /* cap on wifi-triggered OTA attempts */
-    int              wifi_trigger_count;
-    int              attempt_count;
-    int              update_count;
-    int              events_sent;
+    adf_event_hub_t    hub;
+    TaskHandle_t       task;
+    SemaphoreHandle_t  exited;
+    atomic_bool        running;
+    volatile bool      checking;
+    volatile bool      wifi_check_req;  /* set by on_wifi_got_ip, consumed by task */
+    int                fail_pct;
+    int                rounds;
+    int                wifi_trigger_max;  /* cap on wifi-triggered OTA attempts */
+    int                wifi_trigger_count;
+    int                attempt_count;
+    int                update_count;
+    int                events_sent;
 };
 
 static void release_payload(const void *payload, void *ctx)
@@ -181,6 +183,7 @@ static void ota_task(void *arg)
     }
 
     ESP_LOGI(TAG, "Task stopped (%d events sent)", svc->events_sent);
+    xSemaphoreGive(svc->exited);
     vTaskDelete(NULL);
 }
 
@@ -193,7 +196,7 @@ demo_ota_service_t *demo_ota_service_create(int fail_pct, int rounds)
     svc->fail_pct = fail_pct;
     svc->rounds = rounds;
     svc->wifi_trigger_max = rounds;  /* cap wifi-triggered checks to same count */
-    svc->running = true;
+    atomic_init(&svc->running, true);
 
     esp_err_t ret = adf_event_hub_create(OTA_DOMAIN, &svc->hub);
     if (ret != ESP_OK) {
@@ -202,27 +205,41 @@ demo_ota_service_t *demo_ota_service_create(int fail_pct, int rounds)
         return NULL;
     }
 
+    svc->exited = xSemaphoreCreateBinary();
+    if (!svc->exited) {
+        ESP_LOGE(TAG, "Create failed: no worker exit semaphore");
+        adf_event_hub_destroy(svc->hub);
+        free(svc);
+        return NULL;
+    }
     adf_event_subscribe_info_t info = ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
     info.event_domain = WIFI_DOMAIN;
     info.event_id = WIFI_EVT_GOT_IP;
     info.handler = on_wifi_got_ip;
     info.handler_ctx = svc;
-    adf_event_hub_subscribe(svc->hub, &info);
+    ret = adf_event_hub_subscribe(svc->hub, &info);
+    if (ret != ESP_OK) {
+        goto fail;
+    }
 
     BaseType_t ok = xTaskCreate(ota_task, "ota_svc",
                                 configMINIMAL_STACK_SIZE * 2,
                                 svc, OTA_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");
-        adf_event_hub_destroy(svc->hub);
-        free(svc);
-        return NULL;
+        goto fail;
     }
 
     ESP_LOGI(TAG, "Service created (domain='%s', fail_pct=%d, self-rounds=%d, "
                   "wifi-trigger-max=%d), subscribed to %s/GOT_IP",
              OTA_DOMAIN, fail_pct, rounds, rounds, WIFI_DOMAIN);
     return svc;
+
+fail:
+    adf_event_hub_destroy(svc->hub);
+    vSemaphoreDelete(svc->exited);
+    free(svc);
+    return NULL;
 }
 
 void demo_ota_service_destroy(demo_ota_service_t *svc)
@@ -230,9 +247,26 @@ void demo_ota_service_destroy(demo_ota_service_t *svc)
     if (!svc) {
         return;
     }
+    bool dispatching = false;
+    adf_event_hub_is_dispatching(&dispatching);
+    if (dispatching || svc->task == xTaskGetCurrentTaskHandle()) {
+        ESP_LOGW(TAG, "Destroy: request teardown from the owner task");
+        return;
+    }
     svc->running = false;
-    vTaskDelay(pdMS_TO_TICKS(200));
-    adf_event_hub_destroy(svc->hub);
+    if (adf_event_hub_unsubscribe_all(svc->hub) != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy: callbacks have not drained; retry from the owner task");
+        return;
+    }
+    if (svc->task) {
+        xSemaphoreTake(svc->exited, portMAX_DELAY);
+        svc->task = NULL;
+    }
+    if (adf_event_hub_destroy(svc->hub) != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy: hub is still in use; retry from the owner task");
+        return;
+    }
+    vSemaphoreDelete(svc->exited);
     ESP_LOGI(TAG, "Service destroyed (attempts=%d, updates=%d, sent=%d)",
              svc->attempt_count, svc->update_count, svc->events_sent);
     free(svc);

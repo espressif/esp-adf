@@ -25,7 +25,6 @@
  */
 
 #include <stdint.h>
-
 #include "test_port.h"
 #include "test_fixtures.h"
 
@@ -497,6 +496,68 @@ TEST_CASE("queue full - callback subscriber still receives when queue is full", 
     adf_event_delivery_t d = {0};
     TEST_ASSERT_EQUAL(pdTRUE, xQueueReceive(inbox, &d, pdMS_TO_TICKS(500)));
     TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_delivery_done(hub, &d));
+
+    vQueueDelete(inbox);
+    TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(hub));
+}
+
+/* Records, at the moment the handler runs, how many times release_cb has
+ * already fired so the test can prove the payload was still alive. */
+typedef struct {
+    cb_ctx_t *rel;
+    int       release_count_at_cb;
+    uint32_t  payload_value;
+} cb_observe_release_t;
+
+static void cb_observe_release(const adf_event_t *ev, void *ctx)
+{
+    cb_observe_release_t *o = (cb_observe_release_t *)ctx;
+    o->release_count_at_cb = o->rel->release_count;
+    o->payload_value = *(const uint32_t *)ev->payload;
+}
+
+TEST_CASE("queue full - payload stays alive for later callback subscriber", "[adf_event_hub]")
+{
+    adf_event_hub_t hub = NULL;
+    TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_create("q_drop_cb_payload", &hub));
+
+    QueueHandle_t inbox = xQueueCreate(1, sizeof(adf_event_delivery_t));
+    TEST_ASSERT_NOT_NULL(inbox);
+
+    /* queue subscriber registered first, so it is dispatched before the callback */
+    adf_event_subscribe_info_t qinfo = ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
+    qinfo.event_domain = "q_drop_cb_payload";
+    qinfo.target_queue = inbox;
+    TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_subscribe(hub, &qinfo));
+
+    cb_ctx_t rel = {0};
+    cb_observe_release_t obs = {.rel = &rel};
+    adf_event_subscribe_info_t cbinfo = ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
+    cbinfo.event_domain = "q_drop_cb_payload";
+    cbinfo.handler = cb_observe_release;
+    cbinfo.handler_ctx = &obs;
+    TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_subscribe(hub, &cbinfo));
+
+    uint32_t *p1 = make_payload(0x11);
+    adf_event_t ev1 = {.domain = "q_drop_cb_payload", .event_id = 1, .payload = p1, .payload_len = sizeof(*p1)};
+    TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_publish(hub, &ev1, release_count_cb, &rel));
+    TEST_ASSERT_EQUAL_INT(0, obs.release_count_at_cb);
+    TEST_ASSERT_EQUAL_UINT32(0x11, obs.payload_value);
+
+    /* queue is now full: the drop releases the queue ref, the callback must
+     * still see a live payload */
+    uint32_t *p2 = make_payload(0x22);
+    adf_event_t ev2 = {.domain = "q_drop_cb_payload", .event_id = 2, .payload = p2, .payload_len = sizeof(*p2)};
+    TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_publish(hub, &ev2, release_count_cb, &rel));
+    TEST_ASSERT_EQUAL_INT(0, obs.release_count_at_cb);
+    TEST_ASSERT_EQUAL_UINT32(0x22, obs.payload_value);
+    /* dropped event released exactly once, after the callback ran */
+    TEST_ASSERT_EQUAL_INT(1, rel.release_count);
+
+    adf_event_delivery_t d = {0};
+    TEST_ASSERT_EQUAL(pdTRUE, xQueueReceive(inbox, &d, pdMS_TO_TICKS(500)));
+    TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_delivery_done(hub, &d));
+    TEST_ASSERT_EQUAL_INT(2, rel.release_count);
 
     vQueueDelete(inbox);
     TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(hub));

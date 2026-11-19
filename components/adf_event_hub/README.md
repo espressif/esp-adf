@@ -12,7 +12,7 @@
 - **Startup-order tolerant** — `adf_event_hub_subscribe()` auto-creates the target domain if the publisher has not yet called `adf_event_hub_create()`
 - **Ref-counted envelope delivery** — optional `release_cb` is invoked exactly once per successful publish: immediately if there are no queue-mode subscribers, or after the last `adf_event_hub_delivery_done()` call; safe for heap-allocated payloads on all code paths
 - **Best-effort queue delivery** — a full subscriber queue drops that subscriber's copy only; other subscribers still receive the event
-- **Thread-safe** — a single internal mutex protects all public APIs; safe to call from any task (not ISR-safe)
+- **Thread-safe** — internal mutexes protect the registry and the envelope pool; subscriber dispatch runs outside the lock. `publish()`, `subscribe()` and `delivery_done()` only take the internal mutexes briefly and never wait for a subscriber or a queue; `unsubscribe()` / `destroy()` wait until no other task is delivering to one of the removed subscriptions (not for whole dispatches; the wait polls once per tick and lasts as long as that handler runs), and skip the removed subscriptions in every dispatch that has not reached them yet, so a handler may remove its own hub and free its handler contexts as soon as the call returns `ESP_OK` (a removed queue must still be drained with `delivery_done()` before it is deleted); two handlers on two tasks removing each other's subscriptions do not deadlock (the second logs a warning and returns `ESP_ERR_NOT_FINISHED` without waiting: the subscriptions are removed, but the other handler is still running and its context must stay valid until it returns); safe to call from any task (not ISR-safe)
 - **Introspection** — `adf_event_hub_get_stats()` returns per-domain subscriber counts and envelope-pool usage; `adf_event_hub_dump()` logs the full state
 
 ## How It Works
@@ -32,6 +32,26 @@ Publisher task                   adf_event_hub                  Subscriber(s)
 Events are shallow-copied into a ref-counted envelope slot. Callback-mode subscribers are invoked synchronously in the publisher's task; queue-mode subscribers get an `adf_event_delivery_t` item and must call `adf_event_hub_delivery_done()` exactly once per delivery to release the envelope reference.
 
 ## Configuration
+
+### Statistics Ownership
+
+For per-domain statistics, initialize every selected `adf_event_domain_stat_t`
+with a caller-owned `domain` buffer and its `domain_capacity` (including NUL).
+`get_stats()` copies names under the registry lock; they remain valid after
+domain removal. An absent or undersized buffer returns `ESP_ERR_INVALID_SIZE`
+without modifying per-domain entries. Enlarge the buffers and retry. Aggregate
+statistics need only a zero-initialized `adf_event_hub_stats_t`.
+
+`queue_drop_count` counts full-queue deliveries since bootstrap and saturates at
+`UINT32_MAX`. Publication remains non-blocking/best-effort and returns `ESP_OK`
+for queue-full drops; payload ownership does not change. Only the first drop
+warns, while statistics expose subsequent drops.
+
+Handles identify domain names, not allocations: same-name re-creation returns
+the same value. Balance every create with one destroy and do not reuse a
+released handle. Envelope capacity is retained for slot reuse and stable
+delivery tokens, not reclaimed automatically. Dump lock time, pool high-water
+capacity and publish stack use remain measurement-driven optimization work.
 
 `adf_event_hub` has no module-level configuration struct; state is per-hub and set at `create` / `subscribe` time.
 
@@ -134,15 +154,7 @@ A multi-service simulation that exercises the hub end-to-end is available at:
 components/adf_event_hub/examples/
 ```
 
-The same service sources build on both platforms:
-
 ```bash
-# PC host (FreeRTOS POSIX simulator)
-cd components/adf_event_hub/examples/host
-cmake -S . -B build -G Ninja
-cmake --build build
-./build/event_hub_example
-
 # ESP-IDF target (flashes to a chip)
 cd components/adf_event_hub/examples
 idf.py set-target esp32s3
@@ -151,4 +163,4 @@ idf.py build flash monitor
 
 ## Testing
 
-Unit tests live under [`test_apps/`](test_apps/) and share a single source-of-truth suite that compiles on both PC host and ESP target. See [`test_apps/README.md`](test_apps/README.md) for build, run, sanitizer, and coverage instructions.
+Run the same unit-test firmware on hardware or EMU. See [test_apps](test_apps/README.md).
