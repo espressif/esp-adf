@@ -1,22 +1,22 @@
 # Multiple channel mixing example
 
-- [English Version](./README.md)
-- 例程难度：![alt text](../../../docs/_static/level_regular.png "中级")
+- [中文版本](./README_CN.md)
+- Regular Example: ![alt text](../../../docs/_static/level_regular.png "Regular Example")
 
 
-## 例程简介
+## Example Brief
 
 This example demonstrates how to perform multi-channel mixing using the ADF.
 
    ```
-   [sdcard] ---> file_mp3_reader ---> mp3_decoder ---+ 
+   [sdcard] ---> file_mp3_reader ---> mp3_decoder ---+
                                                       |
-   [http] -----> http_mp3_reader ---> mp3_decoder-----|            
+   [http] -----> http_mp3_reader ---> mp3_decoder-----|
                                                       |
                                                       |-------> Audio Mixer ----> i2s_stream_writer ---> [codec_chip] --->PA
    [tone] -----> tone_aac_reader ---> aac_decoder-----|                    |
                                                       |                    |-----> Sdcard
-   [reorder] ----------> i2s read ------------------- |                    |
+   [recorder] ---------> i2s read ------------------- |                    |
                                                       |                    |-----> Internet
    [Others]
    ```
@@ -24,7 +24,7 @@ This example demonstrates how to perform multi-channel mixing using the ADF.
 Refer to the table below for the supported commands:
 |Index|Command|Description or Usage|Related Function|
 | -- | -- | -- | -- |
-|01| play| Play a single audio channel using esp_sudio. Currently, `play` can only play one record, while others can be played using PMixer |cli_play|
+|01| play| Play a single audio channel using esp_audio. Currently, `play` can only play one record, while others can be played using PMixer |cli_play|
 |02| stop| Stop playing audio initiated by `play` |cli_stop|
 |03| pmixer| Play a single audio channel. Multiple channels can be played simultaneously using different slots to achieve mixing effects |cli_play_mixer|
 |04| smixer| Stop playback initiated by `pmixer` |cli_replay_mixer|

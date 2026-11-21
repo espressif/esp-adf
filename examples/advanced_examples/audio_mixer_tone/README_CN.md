@@ -9,14 +9,14 @@
 此示例展示了如何使用 ADF 进行多路混音。
 
    ```
-   [sdcard] ---> file_mp3_reader ---> mp3_decoder ---+ 
+   [sdcard] ---> file_mp3_reader ---> mp3_decoder ---+
                                                       |
-   [http] -----> http_mp3_reader ---> mp3_decoder-----|            
+   [http] -----> http_mp3_reader ---> mp3_decoder-----|
                                                       |
                                                       |-------> Audio Mixer ----> i2s_stream_writer ---> [codec_chip] --->PA
    [tone] -----> tone_aac_reader ---> aac_decoder-----|                    |
                                                       |                    |-----> Sdcard
-   [reorder] ----------> i2s read ------------------- |                    |
+   [recorder] ---------> i2s read ------------------- |                    |
                                                       |                    |-----> Internet
    [Others]
    ```
