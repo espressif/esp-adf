@@ -240,12 +240,28 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 # ROM stub upload reports 0x107 as "Checksum error". The flasher stub reports
-# 0xC100 as "Bad data checksum". Both are serial-noise failures.
+# 0xC000 ("Bad data length"), 0xC100 ("Bad data checksum"), 0xC200
+# ("Bad blocksize"), 0xC700 ("Inflate error"), 0xC800 ("Not enough data"),
+# and 0xC900 ("Too much data") on serial-noise corruption during download.
 _FLASH_RETRY_SIGNATURES = (
-    'C100',
+    'result was C000',
+    'result was C100',
+    'result was C200',
+    'result was C700',
+    'result was C800',
+    'result was C900',
+    'Bad data length',
     'Bad data checksum',
+    'Bad blocksize',
     'Checksum error',
+    'Inflate error',
+    'Not enough data',
+    'Too much data',
+    'Failed to leave compressed flash mode',
     'Serial data stream stopped',
+    'Packet content transfer stopped',
+    'Invalid head of packet',
+    'Timed out waiting for packet',
     'StopIteration',
 )
 _ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
@@ -350,8 +366,329 @@ def _install_serial_resilience() -> None:
     IdfDut.expect = _expect_with_cmd_retry
 
 
+def _patch_pytest_embedded_serial_redirect() -> None:
+    """Use blocking read(1) with bounded RX draining to prevent USB-Serial-JTAG truncation.
+
+    pytest_embedded_serial's _SerialRedirectThread sleeps 50 ms between
+    non-blocking read_all() calls. On USB-Serial-JTAG targets (e.g. ESP32-P4
+    on /dev/ttyACM0), the 400 MHz CPU bursts a large Unity menu in a few
+    milliseconds, filling the Linux tty + cdc_acm buffers (~5 KB) while the
+    reader thread is asleep. Because the firmware's USB-Serial-JTAG VFS flush
+    timeout is also 50 ms (TX_FLUSH_TIMEOUT_US), the tail of the menu—including
+    "Enter test for running."—gets silently dropped before the host wakes up.
+
+    Using pyserial's select()-backed read(1) with a bounded short timeout (<= 50 ms)
+    avoids idle polling while waking immediately on the first incoming byte, then
+    draining up to 4 KB per iteration before forwarding to the message queue and
+    re-checking lifecycle events.
+    """
+    try:
+        import queue
+        import time
+        import serial as pyserial
+        from pytest_embedded_serial import serial as _pes_serial
+    except ImportError:
+        return
+
+    redirect_cls = getattr(_pes_serial, '_SerialRedirectThread', None)
+    if redirect_cls is None or getattr(redirect_cls, '_adf_patched', False):
+        return
+
+    max_read_timeout_s = 0.05
+    block_sleep_s = 0.01
+    max_drain_bytes = 4096
+
+    def _event_loop(self) -> None:
+        while True:
+            try:
+                _e = self._event_q.get_nowait()
+            except queue.Empty:
+                _e = 'read'
+            except OSError:
+                return
+
+            if _e == 'stop':
+                self._block_reading = True
+                continue
+            if _e == 'start':
+                self._block_reading = False
+                continue
+            if _e == 'end':
+                return
+            if _e != 'read':
+                continue
+
+            if self._block_reading:
+                time.sleep(block_sleep_s)
+                continue
+
+            try:
+                timeout = self._s.timeout
+                if timeout is None or timeout <= 0 or timeout > max_read_timeout_s:
+                    self._s.timeout = max_read_timeout_s
+                data = self._s.read(1)
+            except OSError as e:
+                logging.error('OSError detected: %s. Serial connection may be lost.', e)
+                if self._s.closed:
+                    logging.error('Serial port is already closed. Exiting event loop.')
+                    return
+
+                port = self._s.port
+                port_config = {
+                    'baudrate': self._s.baudrate,
+                    'bytesize': self._s.bytesize,
+                    'parity': self._s.parity,
+                    'stopbits': self._s.stopbits,
+                    'timeout': self._s.timeout,
+                    'xonxoff': self._s.xonxoff,
+                    'rtscts': self._s.rtscts,
+                }
+                for attempt in range(1, 4):
+                    delay = attempt * 1.5
+                    logging.warning(
+                        'Attempting to reconnect to serial port %s (try %d/3) after %.1fs...',
+                        port,
+                        attempt,
+                        delay,
+                    )
+                    time.sleep(delay)
+                    try:
+                        self._s.close()
+                        self._s = pyserial.serial_for_url(port, **port_config)
+                        logging.info('Successfully reconnected to serial port %s.', port)
+                        break
+                    except Exception as ex:
+                        logging.warning('Reconnection attempt %d failed: %s', attempt, ex)
+                else:
+                    logging.error(
+                        'Failed to reconnect to serial port %s after 3 attempts. Exiting event loop.',
+                        port,
+                    )
+                    return
+
+                continue
+
+            except Exception as e:
+                logging.warning(
+                    'unknown error: %s.\nRecommend to close the serial process by `dut.serial.close()`',
+                    str(e),
+                )
+                return
+
+            if not data:
+                continue
+
+            buf = bytearray(data)
+            try:
+                waiting = self._s.in_waiting
+                if waiting > 0:
+                    chunk = self._s.read(min(waiting, max_drain_bytes))
+                    if chunk:
+                        buf.extend(chunk)
+            except OSError as e:
+                logging.error('Serial drain failed: %s', e)
+
+            try:
+                self._q.put(bytes(buf))
+            except OSError as e:
+                logging.warning('OSError. Error msg: %s', e)
+                return
+            except Exception as e:
+                logging.warning(
+                    'unknown error: %s.\nRecommend to close the serial process by `dut.serial.close()`',
+                    str(e),
+                )
+                return
+
+    redirect_cls._event_loop = _event_loop
+    redirect_cls._adf_patched = True
+
+
+def _patch_pytest_embedded_unity_menu_parser() -> None:
+    """Tolerate repeated / truncated unity test menus from IDF."""
+    try:
+        from pytest_embedded_idf import unity_tester as _uut
+    except ImportError:
+        return
+
+    if getattr(_uut.IdfUnityDutMixin, '_adf_menu_patched', False):
+        return
+
+    case_re = re.compile(r'\((\d+)\)\s\"(.+)\"\s(\[.+\])+')
+    incomplete_case_re = re.compile(r'\(\d+\)\s\"')
+    subcase_re = re.compile(r'\t\((\d+)\)\s\"(.+)\"')
+    benign_prefixes = (
+        "Here's the test menu, pick your combo:",
+        'Press ENTER to see the list of tests',
+    )
+    UnittestMenuCase = _uut.UnittestMenuCase
+
+    def _parse(s):
+        cases = []
+        for line in s.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+            cm = case_re.match(line)
+            if cm is not None:
+                index, name, tag_block = cm.groups()
+                tags = re.findall(r'\[(.+?)\]', tag_block)
+                if 'multi_stage' in tags:
+                    _type = 'multi_stage'
+                    tags.remove('multi_stage')
+                elif 'multi_device' in tags:
+                    _type = 'multi_device'
+                    tags.remove('multi_device')
+                else:
+                    _type = 'normal'
+                keyword = []
+                if 'ignore' in tags:
+                    keyword.append('ignore')
+                    tags.remove('ignore')
+                elif 'disable' in tags:
+                    keyword.append('disable')
+                    tags.remove('disable')
+                attributes = {}
+                group = []
+                for tag in tags:
+                    if '=' in tag:
+                        k, v = tag.replace(' ', '').split('=')
+                        attributes[k] = v
+                    else:
+                        group.append(tag)
+                cases.append(UnittestMenuCase(
+                    index=int(index), name=name, type=_type,
+                    keywords=keyword, groups=group,
+                    attributes=attributes, subcases=[],
+                ))
+                continue
+            sm = subcase_re.match(line)
+            if sm is not None:
+                if cases:
+                    idx, name = sm.groups()
+                    cases[-1].subcases.append({'index': int(idx), 'name': name})
+                continue
+            if stripped.startswith(benign_prefixes):
+                continue
+            if incomplete_case_re.match(stripped):
+                continue
+            raise NotImplementedError('Unrecognized test case:', line)
+
+        deduped = {}
+        for c in cases:
+            deduped[(c.index, c.name)] = c
+        return list(deduped.values())
+
+    def _parse_test_menu(
+        self,
+        ready_line: str = 'Press ENTER to see the list of tests',
+        pattern="Here's the test menu, pick your combo:(.+)Enter test for running.",
+        trigger: str = '',
+    ):
+        self.expect_exact(ready_line)
+        res = self.confirm_write(trigger, expect_pattern=pattern, timeout=2, retry_times=5)
+        return self._parse_unity_menu_from_str(res.group(1).decode('utf8', errors='replace'))
+
+    _uut.IdfUnityDutMixin._parse_unity_menu_from_str = staticmethod(_parse)
+    _uut.IdfUnityDutMixin._parse_test_menu = _parse_test_menu
+    _uut.IdfUnityDutMixin._adf_menu_patched = True
+
+
+def _patch_esptool_progress_bar() -> None:
+    """Throttle esptool flash progress output to 20% steps without bar glyphs."""
+    step_pct = 20
+
+    try:
+        from esptool.logger import EsptoolLogger
+    except ImportError:
+        EsptoolLogger = None
+
+    if EsptoolLogger is not None and hasattr(EsptoolLogger, 'progress_bar'):
+        if getattr(EsptoolLogger, '_adf_progress_patched', False):
+            return
+        state = {'prev_iter': -1, 'prev_bucket': -1, 'prev_total': -1}
+
+        def _throttled_progress_bar(
+            self,
+            cur_iter: int,
+            total_iters: int,
+            prefix: str = '',
+            suffix: str = '',
+            bar_length: int = 30,
+        ) -> None:
+            if getattr(self, '_verbosity', None) in ('silent', 0):
+                return
+            if total_iters <= 0:
+                return
+            cur_iter = max(0, min(cur_iter, total_iters))
+            pct = 100.0 * cur_iter / total_iters
+            bucket = 100 if cur_iter >= total_iters else (int(pct) // step_pct) * step_pct
+            is_new_run = (
+                state['prev_bucket'] < 0
+                or total_iters != state['prev_total']
+                or cur_iter < state['prev_iter']
+            )
+            if not is_new_run and bucket == state['prev_bucket']:
+                state['prev_iter'] = cur_iter
+                return
+            if cur_iter >= total_iters:
+                state['prev_iter'] = -1
+                state['prev_bucket'] = -1
+                state['prev_total'] = -1
+            else:
+                state['prev_iter'] = cur_iter
+                state['prev_bucket'] = bucket
+                state['prev_total'] = total_iters
+            self.print(f'{prefix}{pct:5.1f}%{suffix}')
+
+        EsptoolLogger.progress_bar = _throttled_progress_bar
+        EsptoolLogger._adf_progress_patched = True
+        return
+
+    try:
+        from esptool import cmds as _esptool_cmds
+        from esptool import util as _esptool_util
+    except ImportError:
+        return
+
+    if getattr(_esptool_util, '_adf_progress_patched', False):
+        return
+
+    orig_print_overwrite = getattr(_esptool_util, 'print_overwrite', None)
+    if orig_print_overwrite is None:
+        return
+
+    pct_re = re.compile(r'^Writing at 0x[0-9a-fA-F]+\.\.\. \((\d+)\s*%\)$')
+    state = {'prev_bucket': -1, 'prev_pct': -1}
+
+    def _throttled_print_overwrite(message: str, last_line: bool = False) -> None:
+        if not last_line and isinstance(message, str):
+            m = pct_re.match(message.strip())
+            if m:
+                pct = int(m.group(1))
+                bucket = 100 if pct >= 100 else (pct // step_pct) * step_pct
+                if state['prev_bucket'] >= 0 and pct >= state['prev_pct'] and bucket == state['prev_bucket']:
+                    state['prev_pct'] = pct
+                    return
+                if pct >= 100:
+                    state['prev_pct'] = -1
+                    state['prev_bucket'] = -1
+                else:
+                    state['prev_pct'] = pct
+                    state['prev_bucket'] = bucket
+        orig_print_overwrite(message, last_line=last_line)
+
+    _esptool_util.print_overwrite = _throttled_print_overwrite
+    if hasattr(_esptool_cmds, 'print_overwrite'):
+        _esptool_cmds.print_overwrite = _throttled_print_overwrite
+    _esptool_util._adf_progress_patched = True
+
+
 def pytest_configure(config: Config) -> None:
     _install_serial_resilience()
+    _patch_pytest_embedded_serial_redirect()
+    _patch_pytest_embedded_unity_menu_parser()
+    _patch_esptool_progress_bar()
     # Require cli option "--target"
     help_commands = ['--help', '--fixtures', '--markers', '--version']
     for cmd in help_commands:

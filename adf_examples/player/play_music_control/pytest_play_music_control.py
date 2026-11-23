@@ -12,7 +12,7 @@ from pytest_embedded_idf.utils import idf_parametrize
 def test_play_music_control(dut: Dut) -> None:
     dut.expect(r'=== Play Music Control', timeout=15)
     dut.expect(r'\[ 5 \] Connect to WiFi', timeout=60)
-    dut.expect(r'WiFi connected', timeout=60)
+    dut.expect(r'WiFi connected', timeout=75)
     dut.expect(r'CLI ready', timeout=15)
 
     dut.write('help')
@@ -20,6 +20,9 @@ def test_play_music_control(dut: Dut) -> None:
 
     dut.write('list')
     dut.expect(r'Music File List')
+    match = dut.expect(r'\[(\d+)\]\s+\[FILE\]\s+littlefs/alarm\.mp3', timeout=15)
+    song_index = match.group(1).decode('utf-8')
+    dut.expect(r'=============================', timeout=15)
 
-    dut.write('play 1')
+    dut.write(f'play {song_index}')
     dut.expect(r'Song finished', timeout=100)

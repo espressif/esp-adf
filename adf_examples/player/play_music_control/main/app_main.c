@@ -25,7 +25,9 @@
 #define CLI_SERVICE_TASK_PRIO     15
 #define CLI_SERVICE_TASK_STACK    5120
 #define DEFAULT_PLAYBACK_VOLUME   80
-#define WIFI_CONNECT_WAIT_SEC     30
+#define WIFI_CONNECT_ATTEMPTS     3
+#define WIFI_CONNECT_WAIT_SEC     15
+#define WIFI_CONNECT_PRIORITY     10
 #define WIFI_PROFILE_MAX_NUM      4
 #define WIFI_SSID                 CONFIG_EXAMPLE_WIFI_SSID
 #define WIFI_PASSWORD             CONFIG_EXAMPLE_WIFI_PASSWORD
@@ -243,13 +245,18 @@ static esp_err_t wifi_connect(void)
         goto cleanup;
     }
 
-    ret = esp_wifi_service_request_connect(s_wifi_service, WIFI_SSID, WIFI_PASSWORD, 10, WIFI_CONNECT_WAIT_SEC);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "WiFi connect failed: %s", esp_err_to_name(ret));
-        goto cleanup;
+    for (int attempt = 1; attempt <= WIFI_CONNECT_ATTEMPTS; attempt++) {
+        ESP_LOGI(TAG, "Connecting to WiFi (attempt %d/%d)", attempt, WIFI_CONNECT_ATTEMPTS);
+        ret = esp_wifi_service_request_connect(s_wifi_service, WIFI_SSID, WIFI_PASSWORD,
+                                               WIFI_CONNECT_PRIORITY, WIFI_CONNECT_WAIT_SEC);
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "WiFi connected");
+            return ESP_OK;
+        }
+        ESP_LOGW(TAG, "WiFi connect attempt %d/%d failed: %s", attempt, WIFI_CONNECT_ATTEMPTS, esp_err_to_name(ret));
     }
-    ESP_LOGI(TAG, "WiFi connected");
-    return ESP_OK;
+    ESP_LOGE(TAG, "WiFi connect failed: %s", esp_err_to_name(ret));
+    goto cleanup;
 
 cleanup:
     wifi_disconnect();
