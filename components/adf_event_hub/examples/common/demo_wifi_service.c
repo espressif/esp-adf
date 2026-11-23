@@ -7,24 +7,27 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include "demo_wifi_service.h"
 #include "demo_button_service.h"
 
 static const char *TAG = "WiFi";
 
+#define WIFI_TASK_STACK     (6 * 1024)
 #define WIFI_TASK_PRIORITY  (tskIDLE_PRIORITY + 3)
 
 struct demo_wifi_service {
-    adf_event_hub_t  hub;
-    TaskHandle_t     task;
-    volatile bool    running;
-    volatile bool    connected;
-    volatile bool    connect_req;
-    volatile bool    disconnect_req;
-    volatile bool    reconnect_req;
-    int              rssi;
-    int              rounds;
-    int              events_sent;
+    adf_event_hub_t    hub;
+    TaskHandle_t       task;
+    SemaphoreHandle_t  exited;
+    atomic_bool        running;
+    volatile bool      connected;
+    volatile bool      connect_req;
+    volatile bool      disconnect_req;
+    volatile bool      reconnect_req;
+    int                rssi;
+    int                rounds;
+    int                events_sent;
 };
 
 static void release_int32(const void *payload, void *ctx)
@@ -173,6 +176,7 @@ static void wifi_task(void *arg)
     }
 
     ESP_LOGI(TAG, "Task stopped (%d events sent)", svc->events_sent);
+    xSemaphoreGive(svc->exited);
     vTaskDelete(NULL);
 }
 
@@ -203,7 +207,7 @@ demo_wifi_service_t *demo_wifi_service_create(int rounds)
     if (!svc) {
         return NULL;
     }
-    svc->running = true;
+    atomic_init(&svc->running, true);
     svc->rounds = rounds;
 
     esp_err_t ret = adf_event_hub_create(WIFI_DOMAIN, &svc->hub);
@@ -213,34 +217,51 @@ demo_wifi_service_t *demo_wifi_service_create(int rounds)
         return NULL;
     }
 
+    svc->exited = xSemaphoreCreateBinary();
+    if (!svc->exited) {
+        ESP_LOGE(TAG, "Create failed: no worker exit semaphore");
+        adf_event_hub_destroy(svc->hub);
+        free(svc);
+        return NULL;
+    }
     adf_event_subscribe_info_t info = ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
     info.event_domain = BUTTON_DOMAIN;
     info.event_id = BUTTON_EVT_PROVISION;
     info.handler = on_provision;
     info.handler_ctx = svc;
-    adf_event_hub_subscribe(svc->hub, &info);
+    ret = adf_event_hub_subscribe(svc->hub, &info);
+    if (ret != ESP_OK) {
+        goto fail;
+    }
 
     info = (adf_event_subscribe_info_t)ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
     info.event_domain = BUTTON_DOMAIN;
     info.event_id = BUTTON_EVT_MODE;
     info.handler = on_mode;
     info.handler_ctx = svc;
-    adf_event_hub_subscribe(svc->hub, &info);
+    ret = adf_event_hub_subscribe(svc->hub, &info);
+    if (ret != ESP_OK) {
+        goto fail;
+    }
 
     BaseType_t ok = xTaskCreate(wifi_task, "wifi_svc",
-                                configMINIMAL_STACK_SIZE * 2,
+                                WIFI_TASK_STACK,
                                 svc, WIFI_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");
-        adf_event_hub_destroy(svc->hub);
-        free(svc);
-        return NULL;
+        goto fail;
     }
 
     ESP_LOGI(TAG, "Service created (domain='%s', rounds=%d), "
                   "subscribed to %s/{PROVISION,MODE}",
              WIFI_DOMAIN, rounds, BUTTON_DOMAIN);
     return svc;
+
+fail:
+    adf_event_hub_destroy(svc->hub);
+    vSemaphoreDelete(svc->exited);
+    free(svc);
+    return NULL;
 }
 
 void demo_wifi_service_destroy(demo_wifi_service_t *svc)
@@ -248,9 +269,26 @@ void demo_wifi_service_destroy(demo_wifi_service_t *svc)
     if (!svc) {
         return;
     }
+    bool dispatching = false;
+    adf_event_hub_is_dispatching(&dispatching);
+    if (dispatching || svc->task == xTaskGetCurrentTaskHandle()) {
+        ESP_LOGW(TAG, "Destroy: request teardown from the owner task");
+        return;
+    }
     svc->running = false;
-    vTaskDelay(pdMS_TO_TICKS(200));
-    adf_event_hub_destroy(svc->hub);
+    if (adf_event_hub_unsubscribe_all(svc->hub) != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy: callbacks have not drained; retry from the owner task");
+        return;
+    }
+    if (svc->task) {
+        xSemaphoreTake(svc->exited, portMAX_DELAY);
+        svc->task = NULL;
+    }
+    if (adf_event_hub_destroy(svc->hub) != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy: hub is still in use; retry from the owner task");
+        return;
+    }
+    vSemaphoreDelete(svc->exited);
     ESP_LOGI(TAG, "Service destroyed (%d events sent)", svc->events_sent);
     free(svc);
 }

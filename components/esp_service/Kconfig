@@ -1,4 +1,4 @@
-menu "ESP-Service: ESP Service Base"
+menu "ESP Service"
 
     config ESP_MCP_ENABLE
         bool "Enable MCP (Model Context Protocol) support"
@@ -29,15 +29,47 @@ menu "ESP-Service: ESP Service Base"
             help
                 MCP-recommended transport using HTTP GET for a persistent
                 Server-Sent Events channel and HTTP POST for JSON-RPC delivery.
-                Requires ESP-IDF >= 5.1 (httpd async handler API).
+                Requires the httpd async handler API available in the
+                supported ESP-IDF versions (>= 5.4.3).
 
         config ESP_MCP_TRANSPORT_WS
             bool "WebSocket transport"
             default y
             depends on HTTPD_WS_SUPPORT
+            # Releases with both handshake callbacks (v5.5.5+, v6.0.1+) answer
+            # the upgrade without calling the URI handler: the bearer token
+            # and Origin checks run from the pre-handshake callback (401/403)
+            # and clients are registered from the post-handshake callback.
+            # Releases with only the pre-handshake callback (v5.4.3,
+            # v5.5.2-v5.5.4, v6.0) still call the handler for the GET, which
+            # registers the client. Releases without either (v5.5.0, v5.5.1)
+            # call the handler after the 101 is sent; the transport refuses
+            # to start there with a token or CORS disabled. Selecting an
+            # undefined symbol is a no-op.
+            select HTTPD_WS_PRE_HANDSHAKE_CB_SUPPORT
+            select HTTPD_WS_POST_HANDSHAKE_CB_SUPPORT
             help
                 WebSocket transport. Requires CONFIG_HTTPD_WS_SUPPORT=y
                 in the HTTP server component.
+
+        config ESP_MCP_HTTPD_BODY_TIMEOUT_MS
+            int "HTTP/SSE request body and WebSocket frame deadline (ms)"
+            default 15000
+            range 5000 600000
+            help
+                Longest time one POST body or one WebSocket frame may take to
+                arrive, measured from the first read. esp_http_server serves
+                every connection from one task, so a client that trickles its
+                body holds all other clients for about this long; a POST is
+                then answered with 408 and the socket is closed, a WebSocket
+                client is dropped. The deadline is checked around each read,
+                so a read that blocks for the httpd receive timeout
+                (recv_wait_timeout, 5 s by default) can overrun it by that
+                much; the minimum is one such window. esp_http_server reads
+                the first byte of a WebSocket frame before the handler arms
+                the deadline, so a frame can overrun it by two such windows.
+                The default allows a max_request_size body (4096 bytes) at
+                well under 3 kbit/s.
 
         config ESP_MCP_TRANSPORT_UART
             bool "UART transport"

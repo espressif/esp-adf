@@ -36,11 +36,10 @@ On boot you should see `ALL SMOKE TESTS PASSED`.
 
 ## Where Did The Transport Demos Go?
 
-Everything that exercises the `esp_service` framework itself — service manager, MCP JSON-RPC, HTTP / SSE / WebSocket / UART transports, the Python MCP clients, the PC-side multi-service simulation — now lives in [`../../test_apps/`](../../test_apps/):
+The `esp_service` framework tests live in [`../../test_apps/`](../../test_apps/):
 
-- On-device transport tests: `test_apps/main/`
-- PC-side scenarios (sim, tool dispatch, integration, long-running MCP HTTP server): `test_apps/pc/`
-- Python MCP clients (on-device transport smoke / hold): `test_apps/scripts/test_mcp_http.py`, `test_mcp_sse.py`, `test_mcp_ws.py`, `test_mcp_uart.py`
+- ESP32-S3 EMU and on-device transport tests: `test_apps/main/`
+- External smoke client for a real device: `test_apps/scripts/test_mcp.py` with `http`, `sse`, `ws`, or `uart`
 
 See [`../../test_apps/README.md`](../../test_apps/README.md) for how to run those.
 

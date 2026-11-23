@@ -34,6 +34,18 @@ extern "C" {
 /** @brief Default esp_service_stop() wait when esp_ota_service_cfg_t.stop_timeout_ms is 0 */
 #define ESP_OTA_SERVICE_DEFAULT_STOP_TIMEOUT_MS  10000U
 
+/** @brief Convenience initialiser for esp_ota_service_cfg_t */
+#define ESP_OTA_SERVICE_CFG_DEFAULT()  {  \
+    .name        = NULL,                  \
+    .worker_task = {                      \
+        .stack_size = 0,                  \
+        .priority   = 0,                  \
+        .core_id    = -1,                 \
+    },                                    \
+    .write_chunk_size = 0,                \
+    .stop_timeout_ms  = 0,                \
+}
+
 /**
  * @brief  Opaque OTA service handle (definition in esp_ota_service.c)
  *
@@ -231,21 +243,6 @@ typedef struct {
                                                         Minimum when non-zero: 1000. */
 } esp_ota_service_cfg_t;
 
-/** @brief Convenience initialiser for esp_ota_service_cfg_t */
-/* clang-format off */
-#define ESP_OTA_SERVICE_CFG_DEFAULT() \
-    { \
-        .name = NULL, \
-        .worker_task = { \
-            .stack_size = 0, \
-            .priority = 0, \
-            .core_id = -1, \
-        }, \
-        .write_chunk_size = 0, \
-        .stop_timeout_ms = 0, \
-    }
-/* clang-format on */
-
 /**
  * @brief  Information about available firmware update
  *
@@ -273,15 +270,19 @@ esp_err_t esp_ota_service_create(const esp_ota_service_cfg_t *cfg, esp_ota_servi
 /**
  * @brief  Destroy an OTA service instance and free all resources
  *
- *         Calls esp_service_stop() to abort any in-progress upgrade, destroys the
- *         source/target/verifier/checker instances in the current upgrade list, deinits the
- *         ADF service base, and frees the service object.
+ *         Stops the worker and deinitializes the base before freeing the upgrade
+ *         list and service object. A stop timeout leaves all resources intact.
+ * @note  Single-owner operation after stopping external callers. Do not call
+ *        from event/lifecycle callbacks. Only ESP_OK invalidates svc; on error
+ *        retain it for destroy retry and never free it manually.
  *
  * @param[in]  svc  Service handle obtained from esp_ota_service_create()
  *
  * @return
  *       - ESP_OK               On success
  *       - ESP_ERR_INVALID_ARG  If svc is NULL
+ *       - ESP_ERR_TIMEOUT      Worker has not exited; instance retained for retry
+ *       - other                Teardown failed; instance retained for retry
  */
 esp_err_t esp_ota_service_destroy(esp_ota_service_t *svc);
 

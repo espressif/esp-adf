@@ -305,6 +305,17 @@ static esp_err_t service_on_stop(esp_service_t *base)
     return ret;
 }
 
+static void destroy_uplink_semaphores(esp_llm_service_t *service)
+{
+    for (int i = ESP_LLM_MEDIA_STREAM_AUDIO_UP; i <= ESP_LLM_MEDIA_STREAM_VIDEO_UP; i++) {
+        esp_llm_media_path_t *path = &service->paths[i];
+        if (path->up.done != NULL) {
+            vSemaphoreDelete(path->up.done);
+            path->up.done = NULL;
+        }
+    }
+}
+
 static esp_err_t release_service_resources(esp_llm_service_t *service)
 {
     esp_err_t ret = esp_llm_audio_ai_detach(service);
@@ -317,6 +328,7 @@ static esp_err_t release_service_resources(esp_llm_service_t *service)
     }
     service->adapter_desc = NULL;
     esp_llm_media_destroy_downlink(service);
+    destroy_uplink_semaphores(service);
     return ESP_OK;
 }
 
@@ -336,17 +348,6 @@ static const esp_service_ops_t s_service_ops = {
     .on_deinit = service_on_deinit,
     .event_to_name = esp_llm_event_to_name,
 };
-
-static void destroy_uplink_semaphores(esp_llm_service_t *service)
-{
-    for (int i = ESP_LLM_MEDIA_STREAM_AUDIO_UP; i <= ESP_LLM_MEDIA_STREAM_VIDEO_UP; i++) {
-        esp_llm_media_path_t *path = &service->paths[i];
-        if (path->up.done != NULL) {
-            vSemaphoreDelete(path->up.done);
-            path->up.done = NULL;
-        }
-    }
-}
 
 esp_err_t esp_llm_service_create(const esp_llm_adapter_desc_t *adapter,
                                  const void *adapter_cfg,
@@ -445,27 +446,9 @@ esp_err_t esp_llm_service_destroy(esp_llm_service_t **service)
     }
 
     esp_llm_service_t *svc = *service;
-    if (esp_llm_uplink_running(svc)) {
-        ESP_LOGE(TAG, "Destroy '%s' failed: uplink task is still running; call esp_service_stop() first",
-                 esp_llm_adapter_name(svc));
-        return ESP_ERR_INVALID_STATE;
-    }
-
     const char *adapter_name = esp_llm_adapter_name(svc);
-    esp_service_state_t state = ESP_SERVICE_STATE_UNINITIALIZED;
-    esp_err_t state_ret = esp_service_get_state(ESP_SERVICE_BASE(svc), &state);
-    if (state_ret != ESP_OK) {
-        ESP_LOGE(TAG, "Destroy '%s' failed: get state returned %s",
-                 adapter_name, esp_err_to_name(state_ret));
-        return state_ret;
-    }
-
-    esp_err_t release_ret = ESP_OK;
-    if (state != ESP_SERVICE_STATE_UNINITIALIZED) {
-        /* esp_service_deinit() ignores on_deinit errors. adapter_ctx is checked below. */
-        release_ret = esp_media_service_deinit(ESP_SERVICE_BASE(svc));
-    } else if (svc->adapter_ctx != NULL) {
-        /* A previous destroy already deinited the base and kept this handle. */
+    esp_err_t release_ret = esp_media_service_deinit(ESP_SERVICE_BASE(svc));
+    if (release_ret == ESP_OK && svc->adapter_ctx != NULL) {
         release_ret = release_service_resources(svc);
     }
     if (release_ret != ESP_OK || svc->adapter_ctx != NULL) {
@@ -476,7 +459,6 @@ esp_err_t esp_llm_service_destroy(esp_llm_service_t **service)
     }
 
     ESP_LOGI(TAG, "Destroy '%s': service destroyed", adapter_name);
-    destroy_uplink_semaphores(svc);
     free(svc);
     *service = NULL;
     return ESP_OK;

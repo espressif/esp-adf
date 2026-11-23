@@ -151,7 +151,7 @@ static esp_err_t create_services(void)
     esp_rtsp_service_cfg_t rtsp_cfg = ESP_RTSP_SERVICE_CFG_DEFAULT(ESP_RTSP_SERVICE_ROLE_SINK);
     esp_err_t ret = esp_rtsp_service_create(&rtsp_cfg, &s_rtsp);
     if (ret != ESP_OK) {
-        (void)esp_capture_service_destroy(s_capture);
+        ESP_RETURN_ON_ERROR(esp_capture_service_destroy(s_capture), TAG, "Destroy capture service");
         s_capture = NULL;
         ESP_RETURN_ON_ERROR(ret, TAG, "Create RTSP service");
     }
@@ -245,19 +245,46 @@ static esp_err_t stop_rtsp_push(void)
 
 static esp_err_t deinit_services(void)
 {
-    esp_err_t unlink_ret = esp_media_service_unlink(ESP_SERVICE_BASE(s_capture), ESP_MEDIA_DEFAULT_STREAM,
-                                                    ESP_SERVICE_BASE(s_rtsp), ESP_MEDIA_DEFAULT_STREAM);
-    esp_err_t rtsp_ret = esp_media_service_deinit(ESP_SERVICE_BASE(s_rtsp));
-    free(s_rtsp);
-    s_rtsp = NULL;
+    esp_err_t first_err = ESP_OK;
 
-    esp_err_t capture_ret = esp_capture_service_destroy(s_capture);
-    s_capture = NULL;
-    ESP_RETURN_ON_ERROR(unlink_ret, TAG, "Unlink capture from RTSP");
-    ESP_RETURN_ON_ERROR(rtsp_ret, TAG, "Deinitialize RTSP service");
-    ESP_RETURN_ON_ERROR(capture_ret, TAG, "Destroy capture service");
-    ESP_LOGI(TAG, "RTSP push services deinitialized");
-    return ESP_OK;
+    if (s_rtsp != NULL) {
+        if (s_capture != NULL) {
+            esp_err_t err = esp_media_service_unlink(ESP_SERVICE_BASE(s_capture), ESP_MEDIA_DEFAULT_STREAM,
+                                                     ESP_SERVICE_BASE(s_rtsp), ESP_MEDIA_DEFAULT_STREAM);
+            if (err != ESP_OK) {
+                ESP_LOGE(TAG, "Unlink capture from RTSP failed: %s", esp_err_to_name(err));
+                if (first_err == ESP_OK) {
+                    first_err = err;
+                }
+            }
+        }
+        esp_err_t err = esp_media_service_deinit(ESP_SERVICE_BASE(s_rtsp));
+        if (err == ESP_OK) {
+            free(s_rtsp);
+            s_rtsp = NULL;
+        } else {
+            ESP_LOGE(TAG, "Deinitialize RTSP service failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
+    }
+
+    if (s_capture != NULL) {
+        esp_err_t err = esp_capture_service_destroy(s_capture);
+        if (err == ESP_OK) {
+            s_capture = NULL;
+        } else {
+            ESP_LOGE(TAG, "Destroy capture service failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
+    }
+    if (first_err == ESP_OK) {
+        ESP_LOGI(TAG, "RTSP push services deinitialized");
+    }
+    return first_err;
 }
 
 void app_main(void)

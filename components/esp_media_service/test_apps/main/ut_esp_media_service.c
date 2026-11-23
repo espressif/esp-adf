@@ -6,16 +6,15 @@
  */
 
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "unity.h"
-#include "esp_media_service.h"
 #include "esp_media_provider.h"
 #include "esp_media_track.h"
 #include "esp_fourcc.h"
+#include "esp_media_service.h"
 
 #define MAX_STREAMS         2
 #define MAX_TRACKS          2
@@ -141,11 +140,11 @@ static bool mock_reader_is_linked(mock_media_service_t *mock, esp_media_stream_i
 
 static const esp_service_ops_t s_mock_service_ops = {
     .on_start = mock_on_start,
-    .on_stop = mock_on_stop,
+    .on_stop  = mock_on_stop,
 };
 
 static const esp_media_service_ops_t s_mock_media_ops = {
-    .get_role = mock_get_role,
+    .get_role     = mock_get_role,
     .get_provider = mock_get_provider,
     .set_provider = mock_set_provider,
 };
@@ -384,6 +383,52 @@ static void run_scenario(const scenario_cfg_t *cfg)
 
     destroy_mock_service(&sink);
     destroy_mock_service(&source);
+}
+
+static esp_err_t fail_media_on_init(esp_service_t *service, const esp_service_config_t *config)
+{
+    (void)service;
+    (void)config;
+    return ESP_ERR_INVALID_CRC;
+}
+
+TEST_CASE("media service init zeroes uninitialized storage and clears ops on failure", "[esp_media_service]")
+{
+    esp_media_service_t failed;
+    memset(&failed, 0xA5, sizeof(failed));
+    static const esp_service_ops_t s_fail_ops = {
+        .on_init = fail_media_on_init,
+    };
+    esp_media_service_config_t cfg = ESP_MEDIA_SERVICE_CONFIG_DEFAULT();
+    cfg.name = "media_fail_init";
+    cfg.service_ops = &s_fail_ops;
+    cfg.media_ops = &s_mock_media_ops;
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_CRC, esp_media_service_init(&failed, &cfg));
+    TEST_ASSERT_NULL(failed.media_ops);
+    esp_service_state_t state = ESP_SERVICE_STATE_RUNNING;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_get_state(ESP_SERVICE_BASE(&failed), &state));
+    TEST_ASSERT_EQUAL(ESP_SERVICE_STATE_UNINITIALIZED, state);
+
+    mock_media_service_t mock = {
+        .role = ESP_MEDIA_ROLE_SRC,
+        .stream_num = 1,
+    };
+    memset(&mock.service, 0xA5, sizeof(mock.service));
+    cfg.name = "media_dirty_init";
+    cfg.service_ops = &s_mock_service_ops;
+    cfg.media_ops = &s_mock_media_ops;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_media_service_init(&mock.service, &cfg));
+    TEST_ASSERT_EQUAL_PTR(&s_mock_media_ops, mock.service.media_ops);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_get_state(ESP_SERVICE_BASE(&mock.service), &state));
+    TEST_ASSERT_EQUAL(ESP_SERVICE_STATE_INITIALIZED, state);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start(ESP_SERVICE_BASE(&mock.service)));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_stop(ESP_SERVICE_BASE(&mock.service)));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start(ESP_SERVICE_BASE(&mock.service)));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_stop(ESP_SERVICE_BASE(&mock.service)));
+    TEST_ASSERT_EQUAL(2, mock.start_count);
+    TEST_ASSERT_EQUAL(2, mock.stop_count);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_media_service_deinit(ESP_SERVICE_BASE(&mock.service)));
+    TEST_ASSERT_NULL(mock.service.media_ops);
 }
 
 TEST_CASE("media service one track without link", "[esp_media_service]")
@@ -960,10 +1005,10 @@ static void abort_peer_task(void *arg)
 
     io->peer_step = 1;
     if (as_writer) {
-/**
+        /**
          * Reader-abort: produce frames while agent reads its rounds.
          * Stop once ROUNDS_DONE is set (or cache stays full).
- */
+         */
         ESP_LOGI(ABORT_UT_TAG, "peer writer filling until ROUNDS_DONE");
         TickType_t deadline = xTaskGetTickCount() + pdMS_TO_TICKS(ABORT_WAIT_MS);
         int i = 0;
@@ -1093,10 +1138,10 @@ static void run_abort_scenario(abort_side_t side, size_t cache_size)
              (unsigned)done, (unsigned)io.agent_fail, (unsigned)io.peer_fail, (unsigned)io.peer_abort_err,
              io.agent_step, io.peer_step, io.after_ok_count, io.abort_events, io.peer_ok_count);
 
-/**
+    /**
      * DONE bits are set immediately before vTaskDelete(). Yield so the idle
      * task can reclaim both TCBs/stacks; otherwise tearDown reports ~4KB leak.
- */
+     */
     vTaskDelay(pdMS_TO_TICKS(50));
 
     vEventGroupDelete(eg);

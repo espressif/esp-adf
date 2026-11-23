@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
 #include "esp_err.h"
 #include "esp_media_service.h"
 #include "media_lib_tls.h"
@@ -23,6 +22,38 @@ extern "C" {
 #define ESP_RTMP_SERVICE_DEFAULT_APP_NAME  "live"
 #define ESP_RTMP_SERVICE_DEFAULT_PORT      1935
 
+#define ESP_RTMP_SERVICE_STREAM_NAME_MAX  128
+
+#define ESP_RTMP_SERVICE_CFG_DEFAULT(_role)  {  \
+    .name = ESP_RTMP_SERVICE_NAME,              \
+    .role = (_role),                            \
+}
+
+#define ESP_RTMP_SERVICE_SERVER_SETUP_DEFAULT()  {         \
+    .chunk_size     = 4096,                                \
+    .ssl_cfg.server = {0},                                 \
+    .server         = {                                    \
+        .port        = ESP_RTMP_SERVICE_DEFAULT_PORT,      \
+        .app_name    = ESP_RTMP_SERVICE_DEFAULT_APP_NAME,  \
+        .max_clients = 4,                                  \
+    },                                                     \
+}
+
+#define ESP_RTMP_SERVICE_SRC_SETUP_DEFAULT()  {  \
+    .chunk_size     = 4096,                      \
+    .ssl_cfg.client = {0},                       \
+    .src            = {                          \
+        .cache_size       = 0,                   \
+        .audio_cache_size = 0,                   \
+        .video_cache_size = 0,                   \
+    },                                           \
+}
+
+#define ESP_RTMP_SERVICE_SINK_SETUP_DEFAULT()  {  \
+    .chunk_size     = 4096,                       \
+    .ssl_cfg.client = {0},                        \
+}
+
 /**
  * @brief  Forward declaration of esp_rtmp_service_t
  */
@@ -33,8 +64,6 @@ typedef enum {
     ESP_RTMP_SERVICE_ROLE_SRC    = 1,  /*!< RTMP puller source */
     ESP_RTMP_SERVICE_ROLE_SINK   = 2,  /*!< RTMP pusher sink */
 } esp_rtmp_service_role_t;
-
-#define ESP_RTMP_SERVICE_STREAM_NAME_MAX  128
 
 /**
  * @brief  RTMP service event identifiers
@@ -53,25 +82,22 @@ typedef enum {
  * @brief  Payload published with RTMP service events
  */
 typedef struct {
-    esp_rtmp_service_role_t role;                                      /*!< Service role that emitted the event */
-    char                    stream_name[ESP_RTMP_SERVICE_STREAM_NAME_MAX]; /*!< SERVER stream, empty when unavailable */
+    esp_rtmp_service_role_t  role;  /*!< Service role that emitted the event */
+    /** SERVER stream, empty when unavailable */
+    char                     stream_name[ESP_RTMP_SERVICE_STREAM_NAME_MAX];
 } esp_rtmp_service_event_payload_t;
 
 /**
  * @brief  RTMP service create configuration
  *
  *         Role-specific settings are applied by esp_rtmp_service_setup().
- *         Tear down with esp_media_service_deinit() then free the handle.
+ *         Call esp_media_service_deinit() from the owner task and free the handle
+ *         only on success. On failure retain the handle for cleanup retry.
  */
 typedef struct {
-    const char             *name;  /*!< Service name, NULL uses ESP_RTMP_SERVICE_NAME */
-    esp_rtmp_service_role_t role;  /*!< Service role */
+    const char              *name;  /*!< Service name, NULL uses ESP_RTMP_SERVICE_NAME */
+    esp_rtmp_service_role_t  role;  /*!< Service role */
 } esp_rtmp_service_cfg_t;
-
-#define ESP_RTMP_SERVICE_CFG_DEFAULT(_role) {  \
-    .name = ESP_RTMP_SERVICE_NAME,             \
-    .role = (_role),                           \
-}
 
 /**
  * @brief  Optional server role setup (used when role is SERVER)
@@ -79,9 +105,9 @@ typedef struct {
  *         set_url(rtmp[s]://host:port/app) overrides port and app_name when present.
  */
 typedef struct {
-    uint16_t     port;         /*!< Fallback port when URL has none, 0 uses default */
-    const char  *app_name;     /*!< Fallback app name when URL has none */
-    uint8_t      max_clients;  /*!< Max clients, 0 uses protocol default */
+    uint16_t    port;         /*!< Fallback port when URL has none, 0 uses default */
+    const char *app_name;     /*!< Fallback app name when URL has none */
+    uint8_t     max_clients;  /*!< Max clients, 0 uses protocol default */
 } esp_rtmp_service_server_setup_t;
 
 /**
@@ -102,42 +128,17 @@ typedef struct {
 typedef struct {
     uint32_t  chunk_size;  /*!< RTMP chunk size, 0 uses protocol default */
     union {
-        esp_rtmp_service_server_setup_t  server; /*!< Server role setup */
-        esp_rtmp_service_src_setup_t     src;    /*!< Source role setup */
+        esp_rtmp_service_server_setup_t  server;  /*!< Server role setup */
+        esp_rtmp_service_src_setup_t     src;     /*!< Source role setup */
     };
     union {
         media_lib_tls_cfg_t         client;  /*!< SRC/SINK RTMPS client TLS */
         media_lib_tls_server_cfg_t  server;  /*!< SERVER RTMPS TLS */
-    } ssl_cfg;  /*!< RTMPS TLS configuration. Any certificate, key, or password
-                     pointer is borrowed. If a key is provided, its buffer must
-                     remain valid from setup until the full RTMPS handshake
-                     completes */
+    } ssl_cfg;                               /*!< RTMPS TLS configuration. Any certificate, key, or password
+                                                  pointer is borrowed. If a key is provided, its buffer must
+                                                  remain valid from setup until the full RTMPS handshake
+                                                  completes */
 } esp_rtmp_service_setup_t;
-
-#define ESP_RTMP_SERVICE_SERVER_SETUP_DEFAULT() {       \
-    .chunk_size = 4096,                                 \
-    .ssl_cfg.server = {0},                              \
-    .server = {                                         \
-        .port = ESP_RTMP_SERVICE_DEFAULT_PORT,          \
-        .app_name = ESP_RTMP_SERVICE_DEFAULT_APP_NAME,  \
-        .max_clients = 4,                               \
-    },                                                  \
-}
-
-#define ESP_RTMP_SERVICE_SRC_SETUP_DEFAULT() {  \
-    .chunk_size = 4096,                          \
-    .ssl_cfg.client = {0},                      \
-    .src = {                                    \
-        .cache_size = 0,                        \
-        .audio_cache_size = 0,                  \
-        .video_cache_size = 0,                  \
-    },                                          \
-}
-
-#define ESP_RTMP_SERVICE_SINK_SETUP_DEFAULT() {  \
-    .chunk_size = 4096,                           \
-    .ssl_cfg.client = {0},                       \
-}
 
 /**
  * @brief  Create an RTMP service based on its role, supported roles are:
@@ -147,7 +148,7 @@ typedef struct {
  *
  *         Recommended flow:
  *         create -> setup / set_url -> optional link -> start -> stop
- *         -> unlink -> esp_media_service_deinit() -> free().
+ *         -> unlink -> esp_media_service_deinit() -> free() only after ESP_OK.
  *
  * @param[in]   cfg          Create configuration (name + role)
  * @param[out]  out_service  Receives the created service handle

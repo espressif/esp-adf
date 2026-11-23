@@ -1,9 +1,17 @@
 # adf_event_hub Multi-Service Example
 
 A runnable demo that wires five independent services together through
-`adf_event_hub` and prints the resulting event flow.  The same sources compile
-on both ESP-IDF and a PC build (FreeRTOS POSIX simulator), so you can iterate
-on the integration logic without flashing a board.
+`adf_event_hub` and prints the resulting event flow. Run the ESP-IDF firmware on a board or in EMU.
+
+## Teardown Ownership
+
+Destroy demo services only from one owner task, never from an event callback or
+their worker task. Callback-side calls are rejected without releasing resources;
+request owner-side teardown instead. Each demo joins its worker with an exit
+semaphore rather than a fixed delay. Subscription removal must succeed before
+callback contexts or queues are released; LED unsubscribes, drains every queued
+delivery, joins the worker and only then deletes the queue. Subscription failures
+roll back construction instead of returning a partially subscribed service.
 
 ## Layout
 
@@ -14,11 +22,7 @@ examples/
 ├── main/                 # IDF-only entry
 │   ├── CMakeLists.txt    #   Component registration (pulls in ../common/*.c)
 │   └── app_main.c        #   IDF entry (spawns example_run from a task)
-├── pc/                   # PC-only glue
-│   ├── CMakeLists.txt    #   Standalone CMake, fetches FreeRTOS-Kernel
-│   ├── FreeRTOSConfig.h  #   POSIX simulator config
-│   └── main.c            #   PC entry (starts scheduler, runs example task)
-└── common/               # Shared sources (IDF + PC)
+└── common/               # Demo sources
     ├── example_run.[ch]  #   Platform-neutral simulation body
     ├── demo_button_service.*      #   Publisher: random button presses (demo, not esp_button_service)
     ├── demo_wifi_service.*      #   Reacts to button, publishes wifi events (demo stub)
@@ -29,17 +33,6 @@ examples/
 
 ## Build and Run
 
-### PC (FreeRTOS POSIX simulator)
-
-```bash
-cd components/adf_event_hub/examples/pc
-cmake -S . -B build -G Ninja
-cmake --build build
-./build/event_hub_example
-```
-
-The process exits cleanly after the simulation completes (~10 s).
-
 ### ESP-IDF target
 
 ```bash
@@ -48,8 +41,7 @@ idf.py set-target esp32s3   # or any supported chip
 idf.py build flash monitor
 ```
 
-`app_main()` spawns the same `event_hub_example_run()` function in a dedicated
-task; the log output matches the PC run.
+The example runs in a dedicated FreeRTOS task and prints its statistics and cleanup markers.
 
 ## Event Flow
 

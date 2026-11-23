@@ -1,8 +1,15 @@
 # adf_event_hub 多服务示例
 
 通过 `adf_event_hub` 把五个独立的服务连接起来的可运行示例，可以打印完整的
-事件流。同一份源码同时支持 ESP-IDF 目标和 PC 构建（FreeRTOS POSIX 模拟器），
-集成逻辑的迭代无需烧录。
+事件流。ESP-IDF 固件可在真机或 EMU 中运行。
+
+## 销毁职责
+
+只由单一 owner 任务销毁示例服务，不在事件回调或服务工作任务内销毁。回调内的
+销毁调用会被拒绝且不释放资源，应通知 owner 再处理。每个示例增加一个退出信号量，
+等待工作任务完成最后一次访问，不再用固定延时代替退出确认。注销成功后才释放回调
+上下文或队列；LED 先注销，再排空并归还每一份 delivery，等待任务退出后才删除队列。
+订阅失败会回滚构造，不返回部分订阅成功的服务。
 
 ## 目录结构
 
@@ -13,11 +20,7 @@ examples/
 ├── main/                 # 仅 IDF 入口
 │   ├── CMakeLists.txt    #   组件注册（引入 ../common/*.c）
 │   └── app_main.c        #   IDF 入口（创建任务调用 example_run）
-├── pc/                   # 仅 PC 端所需
-│   ├── CMakeLists.txt    #   独立 CMake，FetchContent 拉取 FreeRTOS-Kernel
-│   ├── FreeRTOSConfig.h  #   POSIX 模拟器配置
-│   └── main.c            #   PC 入口（启动调度器并运行 example 任务）
-└── common/               # 共享源码（IDF + PC 都编译）
+└── common/               # 示例源码
     ├── example_run.[ch]  #   平台无关的仿真主体
     ├── demo_button_service.*      #   发布端：随机按键（演示桩，非 esp_button_service 组件）
     ├── demo_wifi_service.*      #   响应按键，发布 wifi 事件（演示桩）
@@ -28,17 +31,6 @@ examples/
 
 ## 构建与运行
 
-### PC（FreeRTOS POSIX 模拟器）
-
-```bash
-cd components/adf_event_hub/examples/pc
-cmake -S . -B build -G Ninja
-cmake --build build
-./build/event_hub_example
-```
-
-仿真结束（约 10 秒）后进程会自行退出。
-
 ### ESP-IDF 目标
 
 ```bash
@@ -47,8 +39,7 @@ idf.py set-target esp32s3   # 或任意受支持的芯片
 idf.py build flash monitor
 ```
 
-`app_main()` 会将同一个 `event_hub_example_run()` 放入独立任务执行，与 PC
-端输出一致。
+示例在独立的 FreeRTOS 任务中运行，结束时打印统计信息和清理完成标记。
 
 ## 事件流
 

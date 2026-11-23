@@ -28,14 +28,23 @@ extern "C" {
  *         - Thread-safe operations
  */
 
-/* Forward declaration */
-typedef struct esp_service_manager esp_service_manager_t;
-
 /**
  * @brief  Registration flags (per-service batch control)
  */
 #define ESP_SERVICE_REG_FLAG_SKIP_BATCH_START  (1U << 0)  /*!< Skip this service in start_all */
 #define ESP_SERVICE_REG_FLAG_SKIP_BATCH_STOP   (1U << 1)  /*!< Skip this service in stop_all */
+
+/**
+ * @brief  Default configuration
+ */
+#define ESP_SERVICE_MANAGER_CONFIG_DEFAULT()  {  \
+    .max_services          = 16,                 \
+    .max_tools_per_service = 32,                 \
+    .auto_start_services   = false,              \
+}
+
+/* Forward declaration */
+typedef struct esp_service_manager esp_service_manager_t;
 
 /**
  * @brief  Tool invocation callback — translate a JSON-RPC tool call into a C API call
@@ -84,15 +93,6 @@ typedef struct {
 } esp_service_manager_config_t;
 
 /**
- * @brief  Default configuration
- */
-#define ESP_SERVICE_MANAGER_CONFIG_DEFAULT()  {  \
-    .max_services          = 16,                 \
-    .max_tools_per_service = 32,                 \
-    .auto_start_services   = false,              \
-}
-
-/**
  * @brief  Create service manager
  *
  * @param[in]   config   Configuration (NULL for defaults)
@@ -108,6 +108,11 @@ esp_err_t esp_service_manager_create(const esp_service_manager_config_t *config,
 /**
  * @brief  Destroy service manager
  *
+ *         Frees the registry only; registered services are neither stopped
+ *         nor deinitialized. Call esp_service_manager_stop_all() first if
+ *         needed. The caller must ensure no other task is using the manager
+ *         (this call takes no lock, since the lock itself is destroyed).
+ *
  * @param[in]  mgr  Manager instance
  *
  * @return
@@ -119,17 +124,23 @@ esp_err_t esp_service_manager_destroy(esp_service_manager_t *mgr);
 /**
  * @brief  Register a service
  *
- *         Automatically parses tool description from service->tool_desc and
- *         registers all capabilities as invocable tools.
+ *         Parses reg->tool_desc and registers all capabilities as invocable
+ *         tools. Service names and tool names must be unique across the
+ *         manager, including within one tool_desc. With auto_start_services
+ *         enabled the service is started right away; if that fails the
+ *         registration is rolled back.
  *
  * @param[in]  mgr  Manager instance
  * @param[in]  reg  Registration info
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  Parameters invalid
- *       - ESP_ERR_NO_MEM       Registry full
- *       - ESP_FAIL             JSON parsing failed
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_ARG    Parameters invalid
+ *       - ESP_ERR_INVALID_STATE  Duplicate service instance, service name or tool name
+ *       - ESP_ERR_NO_MEM         Registry full or allocation failed
+ *       - ESP_ERR_TIMEOUT        Mutex acquisition timed out
+ *       - ESP_FAIL               tool_desc is not a JSON array
+ *       - other                  Error from esp_service_start when auto_start_services is set
  */
 esp_err_t esp_service_manager_register(esp_service_manager_t *mgr, const esp_service_registration_t *reg);
 
@@ -197,29 +208,56 @@ esp_err_t esp_service_manager_get_count(esp_service_manager_t *mgr, uint16_t *ou
 /**
  * @brief  Start all registered services
  *
+ *         Every service without ESP_SERVICE_REG_FLAG_SKIP_BATCH_START is
+ *         started even if an earlier one fails; the first failure is returned.
+ *
+ * @note  The manager never owns service instances. The registry mutex is
+ *         released before each esp_service_start() call, so every registered
+ *         instance must stay alive (not deinitialized or freed) until this
+ *         call returns.
+ *
  * @param[in]  mgr  Manager instance
  *
  * @return
- *       - ESP_OK               On success.
+ *       - ESP_OK               All services started.
  *       - ESP_ERR_INVALID_ARG  mgr is NULL.
+ *       - ESP_ERR_NO_MEM       Snapshot allocation failed.
  *       - ESP_ERR_TIMEOUT      Mutex acquisition timed out.
+ *       - other                First error returned by esp_service_start.
  */
 esp_err_t esp_service_manager_start_all(esp_service_manager_t *mgr);
 
 /**
  * @brief  Stop all registered services
  *
+ *         Services are stopped in the reverse of the start_all order so
+ *         dependents stop before their providers. Every service without
+ *         ESP_SERVICE_REG_FLAG_SKIP_BATCH_STOP is stopped even if an earlier
+ *         one fails; the first failure is returned.
+ *
+ * @note  The manager never owns service instances. The registry mutex is
+ *         released before each esp_service_stop() call, so every registered
+ *         instance must stay alive (not deinitialized or freed) until this
+ *         call returns.
+ *
  * @param[in]  mgr  Manager instance
  *
  * @return
- *       - ESP_OK               On success.
+ *       - ESP_OK               All services stopped.
  *       - ESP_ERR_INVALID_ARG  mgr is NULL.
+ *       - ESP_ERR_NO_MEM       Snapshot allocation failed.
  *       - ESP_ERR_TIMEOUT      Mutex acquisition timed out.
+ *       - other                First error returned by esp_service_stop.
  */
 esp_err_t esp_service_manager_stop_all(esp_service_manager_t *mgr);
 
 /**
  * @brief  Get all available tools
+ *
+ *         Returns raw pointers into manager-owned storage that become invalid
+ *         when the owning service is unregistered. If more than max_tools
+ *         tools are registered the list is truncated and a warning is logged;
+ *         use esp_service_manager_clone_tools() for a complete snapshot.
  *
  * @param[in]   mgr        Manager instance
  * @param[out]  out_tools  Output: array of tool pointers
@@ -272,16 +310,17 @@ void esp_service_manager_free_cloned_tools(esp_service_tool_t *tools, uint16_t c
  * @brief  Invoke a tool
  *
  *         The manager mutex is released before the handler runs, so
- *         long-running handlers do not block other manager APIs.
+ *         long-running handlers do not block other manager APIs. The handler
+ *         receives a private deep copy of the tool metadata, so concurrent
+ *         unregistration cannot invalidate the tool strings.
  *
- * @note  The caller must not unregister the owning service while a tool
- *         on it is being invoked; the handler receives a shallow snapshot
- *         whose string fields are owned by the service entry.
+ * @note  The service instance itself must stay alive (not deinitialized or
+ *         freed) while a tool on it is being invoked.
  *
  * @param[in]   mgr          Manager instance
  * @param[in]   tool_name    Tool name
  * @param[in]   args_json    Arguments (JSON string)
- * @param[out]  result       Buffer for result (JSON string)
+ * @param[out]  result       Result buffer (JSON string); always NUL-terminated on return
  * @param[in]   result_size  Size of result buffer
  *
  * @return
@@ -290,6 +329,7 @@ void esp_service_manager_free_cloned_tools(esp_service_tool_t *tools, uint16_t c
  *       - ESP_ERR_NOT_FOUND      Tool not found.
  *       - ESP_ERR_NOT_SUPPORTED  Tool has no invocation handler.
  *       - ESP_ERR_TIMEOUT        Mutex acquisition timed out.
+ *       - ESP_ERR_NO_MEM         The private copy of the tool metadata could not be allocated.
  *       - Other                  Error from tool invocation handler.
  */
 esp_err_t esp_service_manager_invoke_tool(esp_service_manager_t *mgr,
@@ -302,8 +342,10 @@ esp_err_t esp_service_manager_invoke_tool(esp_service_manager_t *mgr,
  * @brief  Wrap a service manager instance as an esp_service_mcp_tool_provider_t
  *
  *         Populates out_provider with callbacks that delegate to the given
- *         manager.  No allocation is performed; out_provider may live on the
- *         stack or inside a config struct.
+ *         manager (get_tools maps to esp_service_manager_clone_tools so
+ *         tools/list never reads registry memory outside the lock). No
+ *         allocation is performed; out_provider may live on the stack or
+ *         inside a config struct.
  *
  * @param[in]   mgr           Service manager instance
  * @param[out]  out_provider  Provider struct to populate

@@ -61,6 +61,7 @@ TEST_CASE("create - same domain twice returns OK with same handle", "[adf_event_
     TEST_ASSERT_NOT_NULL(hub2);
     TEST_ASSERT_EQUAL_PTR(hub1, hub2);
     TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(hub1));
+    TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(hub2));
 }
 
 TEST_CASE("create and destroy - resource lifecycle", "[adf_event_hub]")

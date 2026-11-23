@@ -56,7 +56,7 @@ flowchart TD
     F --> G[esp_service_start src]
     G --> H[read_streaming_data / 存储文件]
     H --> I[先 stop 源再 stop muxer]
-    I --> J[unlink / deinit / free]
+    I --> J[unlink / deinit 成功后 free]
 ```
 
 ## 典型用法
@@ -93,8 +93,9 @@ esp_service_stop(ESP_SERVICE_BASE(src));
 esp_service_stop(ESP_SERVICE_BASE(muxer));
 esp_media_service_unlink(ESP_SERVICE_BASE(src), ESP_MEDIA_DEFAULT_STREAM,
                          ESP_SERVICE_BASE(muxer), ESP_MEDIA_DEFAULT_STREAM);
-esp_media_service_deinit(ESP_SERVICE_BASE(muxer));
-free(muxer);
+if (esp_media_service_deinit(ESP_SERVICE_BASE(muxer)) == ESP_OK) {
+    free(muxer);
+}
 ```
 
 若要落盘，将 `mode` 设为 `STORAGE_ONLY` 或 `BOTH` 并设置 `storage_dir`（例如 `/sdcard/muxed`），或调用 `esp_muxer_service_set_storage_url()` 传入如 `/sdcard/muxed/clip.ts` 的路径。
@@ -130,7 +131,7 @@ esp_muxer_service_release_streaming_data(muxer);
 esp_muxer_service_read_streaming_data(muxer, buffer, &inout_size, timeout_ms);
 ```
 
-通过 `ESP_SERVICE_BASE(muxer)` 调用 `esp_service_start()` / `esp_service_stop()`。销毁时先 `esp_media_service_deinit()` 再 `free()`。
+由所有者任务调用 `esp_media_service_deinit()`，仅返回 `ESP_OK` 时才能 free。失败保留对象并重试，禁止从回调直接销毁；先停止外部调用并断开媒体连接。示例在清理失败时终止，不释放对象，也不丢弃仍有效的句柄。
 
 ## 调度
 

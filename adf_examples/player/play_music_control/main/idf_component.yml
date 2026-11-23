@@ -4,10 +4,10 @@ dependencies:
   espressif/esp_board_manager:
     version: "*"
   espressif/esp_playlist:
-    version: ^0.5
+    version: ~1.0.0-beta1
     override_path: ../../../../components/esp_playlist
   espressif/esp_service:
-    version: ^0.5
+    version: ~1.0.0-beta1
     override_path: ../../../../components/esp_service
   espressif/esp_cli_service:
     version: ^0.5

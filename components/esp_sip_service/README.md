@@ -53,7 +53,7 @@ flowchart TD
     C --> D[esp_service_start: registers]
     D --> E[call / answer -> talk -> bye]
     E --> F[esp_service_stop]
-    F --> G[unlink / deinit / free]
+    F --> G[unlink / deinit success / free]
 ```
 
 ## Typical Usage
@@ -189,7 +189,7 @@ Call, hangup, error, MESSAGE and DTMF events each carry their own payload type (
 - Only one SIP MESSAGE may be in flight; `esp_sip_service_send_message()` returns `ESP_ERR_INVALID_STATE` until `ESP_SIP_SERVICE_EVENT_MESSAGE_SENT` arrives
 - An invalid stream id returns `ESP_ERR_INVALID_ARG`; the two valid ones are 0 and 1
 - Stop producers before their consuming service during teardown
-- Tear down with `esp_media_service_deinit()` and then free the service handle
+- Call `esp_media_service_deinit()` from the owner task and free only after `ESP_OK`. Failure retains the object for retry. Stop external callers and unlink first; never destroy inside callbacks. The example stops on cleanup failure rather than returning with a lost handle.
 
 ## Protocol Library Limitations
 

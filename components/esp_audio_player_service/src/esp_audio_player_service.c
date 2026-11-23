@@ -67,7 +67,8 @@ static esp_audio_player_service_ctx_t *ctx_list_find(esp_player_service_t *playe
 static esp_err_t audio_player_deinit_cb(esp_player_service_t *service, void *user_data)
 {
     (void)user_data;
-    return esp_audio_player_service_detach(service);
+    esp_err_t ret = esp_audio_player_service_detach(service);
+    return (ret == ESP_ERR_NOT_FOUND) ? ESP_OK : ret;
 }
 
 void *esp_audio_player_service_select_codec(const char *dev_name)

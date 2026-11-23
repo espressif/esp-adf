@@ -97,7 +97,11 @@ esp_err_t link_source_stop(void)
         (void)esp_media_service_unlink(ESP_SERVICE_BASE(s_src), s_stream,
                                        ESP_SERVICE_BASE(s_player), s_stream);
     }
-    (void)esp_media_dummy_service_destroy(s_src);
+    esp_err_t ret = esp_media_dummy_service_destroy(s_src);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Destroy dummy source failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
     s_src = NULL;
     return ESP_OK;
 }

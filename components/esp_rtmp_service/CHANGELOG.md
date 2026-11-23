@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Free example service handles only after successful media deinitialization
+- Update example cleanup to retain failed teardown handles for retry
+
 ## v0.5.1
 
 ### Bug Fixes

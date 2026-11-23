@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include <string.h>
 #include "demo_player_service.h"
 #include "demo_button_service.h"
@@ -15,6 +16,7 @@
 
 static const char *TAG = "Player";
 
+#define PLAYER_TASK_STACK            (6 * 1024)
 #define PLAYER_TASK_PRIORITY         (tskIDLE_PRIORITY + 2)
 #define PLAYER_PROGRESS_STEP         20
 #define PLAYER_PROGRESS_INTERVAL_MS  100
@@ -24,18 +26,19 @@ static const char *TAG = "Player";
 #define PLAYER_VOLUME_DEFAULT        50
 
 struct demo_player_service {
-    adf_event_hub_t  hub;
-    TaskHandle_t     task;
-    volatile bool    running;
-    volatile bool    playing;
-    volatile bool    reboot_pending;
-    volatile bool    play_req;
-    volatile bool    stop_req;
-    volatile bool    pause_req;
-    volatile int     vol_delta;
-    int              volume;
-    int              rounds;
-    int              events_sent;
+    adf_event_hub_t    hub;
+    TaskHandle_t       task;
+    SemaphoreHandle_t  exited;
+    atomic_bool        running;
+    volatile bool      playing;
+    volatile bool      reboot_pending;
+    volatile bool      play_req;
+    volatile bool      stop_req;
+    volatile bool      pause_req;
+    volatile int       vol_delta;
+    int                volume;
+    int                rounds;
+    int                events_sent;
 };
 
 static void release_payload(const void *payload, void *ctx)
@@ -263,6 +266,7 @@ static void player_task(void *arg)
     }
 
     ESP_LOGI(TAG, "Task stopped (%d events sent)", svc->events_sent);
+    xSemaphoreGive(svc->exited);
     vTaskDelete(NULL);
 }
 
@@ -321,7 +325,7 @@ demo_player_service_t *demo_player_service_create(int rounds)
     if (!svc) {
         return NULL;
     }
-    svc->running = true;
+    atomic_init(&svc->running, true);
     svc->volume = PLAYER_VOLUME_DEFAULT;
     svc->rounds = rounds;
 
@@ -332,55 +336,81 @@ demo_player_service_t *demo_player_service_create(int rounds)
         return NULL;
     }
 
+    svc->exited = xSemaphoreCreateBinary();
+    if (!svc->exited) {
+        ESP_LOGE(TAG, "Create failed: no worker exit semaphore");
+        adf_event_hub_destroy(svc->hub);
+        free(svc);
+        return NULL;
+    }
     adf_event_subscribe_info_t info = ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
     info.event_domain = BUTTON_DOMAIN;
     info.event_id = BUTTON_EVT_PLAY;
     info.handler = on_play_press;
     info.handler_ctx = svc;
-    adf_event_hub_subscribe(svc->hub, &info);
+    ret = adf_event_hub_subscribe(svc->hub, &info);
+    if (ret != ESP_OK) {
+        goto fail;
+    }
 
     info = (adf_event_subscribe_info_t)ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
     info.event_domain = BUTTON_DOMAIN;
     info.event_id = BUTTON_EVT_VOL_UP;
     info.handler = on_vol_up;
     info.handler_ctx = svc;
-    adf_event_hub_subscribe(svc->hub, &info);
+    ret = adf_event_hub_subscribe(svc->hub, &info);
+    if (ret != ESP_OK) {
+        goto fail;
+    }
 
     info = (adf_event_subscribe_info_t)ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
     info.event_domain = BUTTON_DOMAIN;
     info.event_id = BUTTON_EVT_VOL_DOWN;
     info.handler = on_vol_down;
     info.handler_ctx = svc;
-    adf_event_hub_subscribe(svc->hub, &info);
+    ret = adf_event_hub_subscribe(svc->hub, &info);
+    if (ret != ESP_OK) {
+        goto fail;
+    }
 
     info = (adf_event_subscribe_info_t)ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
     info.event_domain = WIFI_DOMAIN;
     info.event_id = WIFI_EVT_DISCONNECTED;
     info.handler = on_wifi_disconnect;
     info.handler_ctx = svc;
-    adf_event_hub_subscribe(svc->hub, &info);
+    ret = adf_event_hub_subscribe(svc->hub, &info);
+    if (ret != ESP_OK) {
+        goto fail;
+    }
 
     info = (adf_event_subscribe_info_t)ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
     info.event_domain = OTA_DOMAIN;
     info.event_id = OTA_EVT_COMPLETE;
     info.handler = on_ota_complete;
     info.handler_ctx = svc;
-    adf_event_hub_subscribe(svc->hub, &info);
+    ret = adf_event_hub_subscribe(svc->hub, &info);
+    if (ret != ESP_OK) {
+        goto fail;
+    }
 
     BaseType_t ok = xTaskCreate(player_task, "player_svc",
-                                configMINIMAL_STACK_SIZE * 2,
+                                PLAYER_TASK_STACK,
                                 svc, PLAYER_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");
-        adf_event_hub_destroy(svc->hub);
-        free(svc);
-        return NULL;
+        goto fail;
     }
 
     ESP_LOGI(TAG, "Service created (domain='%s', rounds=%d), subscribed to "
                   "%s/{PLAY,VOL_UP,VOL_DOWN} + %s/DISCONNECTED + %s/COMPLETE",
              PLAYER_DOMAIN, rounds, BUTTON_DOMAIN, WIFI_DOMAIN, OTA_DOMAIN);
     return svc;
+
+fail:
+    adf_event_hub_destroy(svc->hub);
+    vSemaphoreDelete(svc->exited);
+    free(svc);
+    return NULL;
 }
 
 void demo_player_service_destroy(demo_player_service_t *svc)
@@ -388,10 +418,27 @@ void demo_player_service_destroy(demo_player_service_t *svc)
     if (!svc) {
         return;
     }
+    bool dispatching = false;
+    adf_event_hub_is_dispatching(&dispatching);
+    if (dispatching || svc->task == xTaskGetCurrentTaskHandle()) {
+        ESP_LOGW(TAG, "Destroy: request teardown from the owner task");
+        return;
+    }
     svc->playing = false;
     svc->running = false;
-    vTaskDelay(pdMS_TO_TICKS(300));
-    adf_event_hub_destroy(svc->hub);
+    if (adf_event_hub_unsubscribe_all(svc->hub) != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy: callbacks have not drained; retry from the owner task");
+        return;
+    }
+    if (svc->task) {
+        xSemaphoreTake(svc->exited, portMAX_DELAY);
+        svc->task = NULL;
+    }
+    if (adf_event_hub_destroy(svc->hub) != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy: hub is still in use; retry from the owner task");
+        return;
+    }
+    vSemaphoreDelete(svc->exited);
     ESP_LOGI(TAG, "Service destroyed (vol=%d, sent=%d)",
              svc->volume, svc->events_sent);
     free(svc);

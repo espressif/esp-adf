@@ -1,7 +1,5 @@
 #
-# IDF component registration for the adf_event_hub unit-test app.  The shared
-# test bodies live in ../common/ and are reused by the PC build under ../pc/
-# via file(GLOB).
+# The ESP-IDF test firmware uses the same cases on hardware and in EMU.
 
 file(GLOB SHARED_TEST_SOURCES "${CMAKE_CURRENT_LIST_DIR}/../common/test_*.c")
 

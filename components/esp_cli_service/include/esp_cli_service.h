@@ -8,7 +8,6 @@
 #pragma once
 
 #include <stdint.h>
-
 #include "esp_console.h"
 #include "esp_err.h"
 #include "esp_service.h"
@@ -17,6 +16,17 @@
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
+
+#define ESP_CLI_SERVICE_CONFIG_DEFAULT()  {                  \
+    .struct_size        = sizeof(esp_cli_service_config_t),  \
+    .reserved           = {0, 0},                            \
+    .base_cfg           = ESP_SERVICE_CONFIG_DEFAULT(),      \
+    .prompt             = "cli>",                            \
+    .max_cmdline_length = 256,                               \
+    .task_stack         = 4096,                              \
+    .task_prio          = 2,                                 \
+    .manager            = NULL,                              \
+}
 
 typedef struct esp_cli_service esp_cli_service_t;
 
@@ -42,17 +52,6 @@ typedef struct {
     esp_service_manager_t *manager;             /*!< Optional manager for @c tool commands */
 } esp_cli_service_config_t;
 
-#define ESP_CLI_SERVICE_CONFIG_DEFAULT()  {                  \
-    .struct_size        = sizeof(esp_cli_service_config_t),  \
-    .reserved           = {0, 0},                            \
-    .base_cfg           = ESP_SERVICE_CONFIG_DEFAULT(),      \
-    .prompt             = "cli>",                            \
-    .max_cmdline_length = 256,                               \
-    .task_stack         = 4096,                              \
-    .task_prio          = 2,                                 \
-    .manager            = NULL,                              \
-}
-
 /**
  * @brief  Create a CLI service handle (UART REPL backed by esp_console)
  *
@@ -76,8 +75,10 @@ esp_err_t esp_cli_service_create(const esp_cli_service_config_t *cfg, esp_cli_se
  *
  *         Stops the REPL if running, frees tracked/static command state, and invalidates @a svc.
  *
- * @note  After this returns, @a svc must not be used even if the return code is not ESP_OK
- *        (resources are still released).
+ * @note  Stops the REPL if running; if esp_console_stop_repl() reports an error,
+ *        it is logged and local REPL tracking is cleared because IDF already marks
+ *        the REPL deinitialized and cannot retry stop safely. Only ESP_OK
+ *        invalidates svc. Do not call from event/lifecycle callbacks.
  *
  * @note  Not ISR-safe. Not thread-safe against concurrent use of @a svc or its REPL task;
  *        call when the service is quiesced.
@@ -87,8 +88,7 @@ esp_err_t esp_cli_service_create(const esp_cli_service_config_t *cfg, esp_cli_se
  * @return
  *       - ESP_OK               On success.
  *       - ESP_ERR_INVALID_ARG  svc is NULL.
- *       - Other                Error from underlying service teardown; all resources are
- *                              freed regardless.
+ *       - Other                Teardown failed; instance retained for retry.
  */
 esp_err_t esp_cli_service_destroy(esp_cli_service_t *svc);
 

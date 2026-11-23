@@ -328,17 +328,14 @@ static void wifi_svc_publish_disconnected(wifi_disconnect_reason_t reason,
     }
 }
 
-static void ota_mark_failed_from_wifi_drop(void)
+static void ota_request_stop_from_wifi_drop(void)
 {
     if (!s_ota_running || !s_ota_svc) {
         return;
     }
 
-    ESP_LOGW(TAG, "Wi-Fi disconnected while OTA running -> stop OTA and mark failed");
-    (void)esp_service_stop((esp_service_t *)s_ota_svc);
-    s_ota_running = false;
+    ESP_LOGW(TAG, "Wi-Fi disconnected while OTA running -> notify OTA owner to stop");
     xEventGroupSetBits(s_flow_evt, FLOW_BIT_OTA_FAIL);
-    ESP_LOGW(TAG, "OTA upgrade failed (Wi-Fi disconnected / provisioning)");
 }
 
 static void enter_provisioning_mode(void)
@@ -357,7 +354,7 @@ static void enter_provisioning_mode(void)
     }
 
     wifi_svc_publish_disconnected(WIFI_DISCONNECT_REASON_BY_USER, false);
-    ota_mark_failed_from_wifi_drop();
+    ota_request_stop_from_wifi_drop();
 }
 
 static void on_global_event(const adf_event_t *ev, void *ctx)
@@ -389,7 +386,7 @@ static void on_global_event(const adf_event_t *ev, void *ctx)
             ev->payload && ev->payload_len == sizeof(wifi_disconnected_payload_t)) {
             const wifi_disconnected_payload_t *p = (const wifi_disconnected_payload_t *)ev->payload;
             ESP_LOGW(TAG, "[wifi] DISCONNECTED reason=%s", wifi_reason_to_str(p->reason));
-            ota_mark_failed_from_wifi_drop();
+            ota_request_stop_from_wifi_drop();
             return;
         }
 
@@ -516,6 +513,8 @@ static esp_err_t create_wifi_service(wifi_service_t **out_svc)
 static esp_err_t create_ota_service(esp_ota_service_t **out_svc)
 {
     esp_ota_service_cfg_t svc_cfg = ESP_OTA_SERVICE_CFG_DEFAULT();
+    /* Exceed the HTTP source read timeout (15 s) so Wi-Fi drop aborts finish before stop times out. */
+    svc_cfg.stop_timeout_ms = 20000;
 
     esp_ota_service_t *svc = NULL;
     esp_err_t ret = esp_ota_service_create(&svc_cfg, &svc);
@@ -771,6 +770,19 @@ static esp_err_t run_ota_flow_triggered_by_wifi(void)
         return ESP_ERR_INVALID_STATE;
     }
 
+    esp_service_state_t ota_state = ESP_SERVICE_STATE_UNINITIALIZED;
+    esp_err_t state_ret = esp_service_get_state((esp_service_t *)s_ota_svc, &ota_state);
+    if (state_ret != ESP_OK) {
+        return state_ret;
+    }
+    if (ota_state == ESP_SERVICE_STATE_ERROR || ota_state == ESP_SERVICE_STATE_STOPPING) {
+        esp_err_t stop_ret = esp_service_stop((esp_service_t *)s_ota_svc);
+        if (stop_ret != ESP_OK) {
+            ESP_LOGW(TAG, "Previous OTA teardown incomplete (%s), skip OTA check", esp_err_to_name(stop_ret));
+            return stop_ret;
+        }
+    }
+
     ESP_LOGI(TAG, "Wi-Fi connected event received -> OTA check_update start");
 
     esp_ota_service_update_info_t info = {0};
@@ -835,27 +847,25 @@ static esp_err_t run_ota_flow_triggered_by_wifi(void)
                                            pdFALSE,
                                            pdMS_TO_TICKS(CONFIG_PROD_OTA_TIMEOUT_MS));
 
-    if (bits & FLOW_BIT_OTA_DONE) {
+    if ((bits & (FLOW_BIT_OTA_DONE | FLOW_BIT_OTA_FAIL)) == FLOW_BIT_OTA_DONE) {
         ESP_LOGI(TAG, "OTA flow done: upgrade completed, rebooting to apply new firmware");
         /* esp_ota_service delegates reboot to the application; trigger it now so
          * the newly written image actually takes effect. */
         esp_restart();
     }
 
-    if (bits & FLOW_BIT_OTA_FAIL) {
-        ESP_LOGE(TAG, "OTA flow done: upgrade failed");
-        s_ota_running = false;
-        /* Return the service to INITIALIZED so a later Wi-Fi reconnect can
-         * retry OTA; otherwise esp_service_start() keeps failing with
-         * ESP_ERR_INVALID_STATE. */
-        (void)esp_service_stop((esp_service_t *)s_ota_svc);
-        return ESP_FAIL;
-    }
-
-    ESP_LOGE(TAG, "OTA flow timeout");
     s_ota_running = false;
-    (void)esp_service_stop((esp_service_t *)s_ota_svc);
-    return ESP_ERR_TIMEOUT;
+    bool failed = (bits & FLOW_BIT_OTA_FAIL) != 0;
+    ESP_LOGE(TAG, "OTA flow %s", failed ? "done: upgrade failed" : "timeout");
+    /* Return the service to INITIALIZED so a later Wi-Fi reconnect can
+     * retry OTA; otherwise esp_service_start() keeps failing with
+     * ESP_ERR_INVALID_STATE. */
+    esp_err_t stop_ret = esp_service_stop((esp_service_t *)s_ota_svc);
+    if (stop_ret != ESP_OK) {
+        ESP_LOGE(TAG, "esp_service_stop (%s) returned %s",
+                 failed ? "OTA fail" : "OTA timeout", esp_err_to_name(stop_ret));
+    }
+    return failed ? ESP_FAIL : ESP_ERR_TIMEOUT;
 }
 
 static void cli_random_test_task(void *arg)

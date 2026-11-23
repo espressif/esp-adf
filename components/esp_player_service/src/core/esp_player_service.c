@@ -8,28 +8,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-
 #include "esp_log.h"
-
 #include "esp_fourcc.h"
 #include "esp_gmf_oal_thread.h"
 #include "esp_media_provider.h"
 #include "esp_player.h"
 #include "esp_player_advance.h"
+#include "esp_player_scheduler.h"
+#include "internal/esp_player_service_subclass.h"
+#include "player_out.h"
 #include "esp_service.h"
 #include "esp_service_scheduler.h"
-
-#include "esp_player_scheduler.h"
 #include "esp_player_service.h"
 #include "esp_player_service_defaults.h"
 #include "esp_player_service_priv.h"
 #include "esp_player_service_setup.h"
-#include "internal/esp_player_service_subclass.h"
-#include "player_out.h"
 
 #define ESP_PLAYER_SERVICE_CODEC_PCM  ESP_FOURCC_PCM
 
@@ -1112,31 +1108,46 @@ static esp_err_t audio_player_service_on_stop(esp_service_t *base)
     return ps_stop_runtime(service);
 }
 
+static void release_slot_player(player_stream_slot_t *slot)
+{
+    if (slot->player != NULL) {
+        esp_player_handle_t player = slot->player;
+        esp_player_set_event_cb(player, NULL, NULL);
+        slot->player = NULL;
+        esp_player_stop(player);
+        esp_player_deinit(player);
+    }
+}
+
 static esp_err_t audio_player_service_on_deinit(esp_service_t *base)
 {
     esp_player_service_t *service = (esp_player_service_t *)base;
 
     ps_defer_stop(service);
 
-    /* Drop provider cbs before freeing slots (unlink may be skipped). */
+    /* Drop provider cbs and slot resources before invoking deinit_cb (unlink may be skipped). */
     for (uint8_t i = 0; service->streams != NULL && i < service->max_stream_num; i++) {
         player_stream_slot_t *slot = &service->streams[i];
         if (ps_slot_linked(slot)) {
             esp_media_provider_set_event_cb(&slot->provider, NULL, NULL);
+            slot->provider.ops = NULL;
+            slot->provider.ctx = NULL;
         }
-    }
-    (void)ps_stop_runtime(service);
-    if (service->streams != NULL) {
-        for (uint8_t i = 0; i < service->max_stream_num; i++) {
-            if (service->streams[i].feed_lock != NULL) {
-                vSemaphoreDelete(service->streams[i].feed_lock);
-                service->streams[i].feed_lock = NULL;
-            }
+        /* Setting a URL can allocate a player even before service start. */
+        release_slot_player(slot);
+        free(slot->url);
+        slot->url = NULL;
+        if (slot->feed_lock != NULL) {
+            vSemaphoreDelete(slot->feed_lock);
+            slot->feed_lock = NULL;
         }
     }
     player_out_audio_destroy(&service->out);
     if (service->deinit_cb != NULL) {
-        (void)service->deinit_cb(service, service->deinit_ctx);
+        esp_err_t ret = service->deinit_cb(service, service->deinit_ctx);
+        if (ret != ESP_OK) {
+            return ret;
+        }
         service->deinit_cb = NULL;
         service->deinit_ctx = NULL;
     }
@@ -1390,13 +1401,7 @@ esp_err_t ps_stop_runtime(esp_player_service_t *service)
     for (uint8_t i = 0; service->streams != NULL && i < service->max_stream_num; i++) {
         player_stream_slot_t *slot = &service->streams[i];
         ps_wait_slot_provider_join(slot, i);
-        if (slot->player != NULL) {
-            esp_player_handle_t player = slot->player;
-            esp_player_set_event_cb(player, NULL, NULL);
-            slot->player = NULL;
-            esp_player_stop(player);
-            esp_player_deinit(player);
-        }
+        release_slot_player(slot);
         slot->audio_slot = NULL;
         player_out_slot_release(service->out, i);
         slot->feed_session = false;
@@ -1478,14 +1483,7 @@ esp_err_t esp_player_service_create(const esp_player_service_cfg_t *cfg,
     media_cfg.media_ops = &s_media_ops;
     ret = esp_media_service_init(&service->media, &media_cfg);
     if (ret != ESP_OK) {
-        audio_player_service_on_deinit((esp_service_t *)service);
-        if (service->streams != NULL) {
-            free(service->streams);
-            service->streams = NULL;
-        }
-        if (service->pool_owned) {
-            ps_clear_default_pool(&service->pool, &service->pool_owned);
-        }
+        (void)audio_player_service_on_deinit((esp_service_t *)service);
         free(service);
         ESP_LOGE(TAG, "Create failed: media service init: %s", esp_err_to_name(ret));
         return ret;
@@ -1506,22 +1504,9 @@ esp_err_t esp_player_service_destroy(esp_player_service_t *service)
                            ? service->media.base.name
                            : ESP_PLAYER_SERVICE_DEFAULT_NAME;
     ESP_LOGI(TAG, "Destroy '%s': player service releasing", name);
-    (void)esp_media_service_deinit(ESP_SERVICE_BASE(service));
-    if (service->streams != NULL) {
-        for (uint8_t i = 0; i < service->max_stream_num; i++) {
-            ps_wait_slot_provider_join(&service->streams[i], i);
-        }
-        for (uint8_t i = 0; i < service->max_stream_num; i++) {
-            if (service->streams[i].feed_lock != NULL) {
-                vSemaphoreDelete(service->streams[i].feed_lock);
-                service->streams[i].feed_lock = NULL;
-            }
-        }
-        free(service->streams);
-        service->streams = NULL;
-        if (service->pool_owned) {
-            ps_clear_default_pool(&service->pool, &service->pool_owned);
-        }
+    esp_err_t ret = esp_media_service_deinit(ESP_SERVICE_BASE(service));
+    if (ret != ESP_OK) {
+        return ret;
     }
     free(service);
     return ESP_OK;

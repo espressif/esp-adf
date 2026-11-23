@@ -66,7 +66,8 @@ esp_err_t ota_service_tool_invoke(esp_service_t *service,
 {
     ota_service_t *ota = (ota_service_t *)service;
 
-    ESP_LOGI(TAG, "Tool_invoke: %s args=%s", tool->name, args ? args : "{}");
+    (void)args;
+    ESP_LOGD(TAG, "Tool invoke: %s", tool->name);
 
     if (strcmp(tool->name, "ota_service_get_version") == 0) {
         uint32_t current = 0;

@@ -20,7 +20,7 @@ dependencies:
     override_path: "../esp_config_manager"
   espressif/esp_service:
     require: public
-    version: "^0.5"
+    version: "~1.0.0-beta1"
     override_path: "../esp_service"
   espressif/adf_event_hub:
     require: public

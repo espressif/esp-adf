@@ -9,18 +9,15 @@
 #include <stdint.h>
 #include <string.h>
 #include <inttypes.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
-
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_ota_ops.h"
 #include "esp_err.h"
 #include "esp_heap_caps.h"
 #include "adf_mem.h"
-
 #include "esp_ota_service.h"
 
 #if CONFIG_OTA_ENABLE_RESUME
@@ -580,14 +577,8 @@ static void esp_ota_service_worker_task(void *arg)
     };
     fire_event(ota, &evt);
 
-    /* Do NOT transition the service state here: if we did, an external thread
-     * observing INITIALIZED could race in and free @c ota before we finish
-     * tearing down. State transition is driven exclusively by the next
-     * esp_ota_service_on_stop() call (invoked by esp_service_stop() from stop/destroy),
-     * which synchronises with us via stop_sem. */
-    SemaphoreHandle_t sem = ota->stop_sem;
-    ota->worker_task = NULL;
-    xSemaphoreGive(sem);
+    /* Last access to ota: only the owner clears worker_task after this signal. */
+    xSemaphoreGive(ota->stop_sem);
 
     vTaskDelete(NULL);
 }
@@ -601,7 +592,14 @@ static esp_err_t esp_ota_service_on_init(esp_service_t *base, const esp_service_
 
 static esp_err_t esp_ota_service_on_deinit(esp_service_t *base)
 {
-    (void)base;
+    esp_ota_service_t *ota = (esp_ota_service_t *)base;
+    free_upgrade_list(ota->upgrade_list, ota->upgrade_count);
+    ota->upgrade_list = NULL;
+    ota->upgrade_count = 0;
+    if (ota->stop_sem != NULL) {
+        vSemaphoreDelete(ota->stop_sem);
+        ota->stop_sem = NULL;
+    }
     return ESP_OK;
 }
 
@@ -657,7 +655,7 @@ static esp_err_t esp_ota_service_on_stop(esp_service_t *base)
 {
     esp_ota_service_t *ota = (esp_ota_service_t *)base;
     if (ota->worker_task == NULL) {
-        /* No worker was ever started or a previous stop force-cleared it. */
+        /* No worker was started or the owner already joined it. */
         return ESP_OK;
     }
 
@@ -666,10 +664,11 @@ static esp_err_t esp_ota_service_on_stop(esp_service_t *base)
     atomic_store(&ota->paused, false);  /* unblock any active pause */
 
     if (xSemaphoreTake(ota->stop_sem, pdMS_TO_TICKS(ota->stop_timeout_ms)) != pdTRUE) {
-        ESP_LOGE(TAG, "OTA worker did not stop within %" PRIu32 " ms - force-deleting task", ota->stop_timeout_ms);
-    } else {
-        ESP_LOGI(TAG, "OTA worker stopped cleanly");
+        ESP_LOGE(TAG, "OTA worker did not stop within %" PRIu32 " ms", ota->stop_timeout_ms);
+        return ESP_ERR_TIMEOUT;
     }
+    ota->worker_task = NULL;
+    ESP_LOGI(TAG, "OTA worker stopped cleanly");
     return ESP_OK;
 }
 
@@ -838,11 +837,10 @@ esp_err_t esp_ota_service_destroy(esp_ota_service_t *svc)
         return ESP_ERR_INVALID_ARG;
     }
 
-    /* Stop any running upgrade first */
-    esp_service_stop((esp_service_t *)svc);
-    esp_service_deinit((esp_service_t *)svc);
-    free_upgrade_list(svc->upgrade_list, svc->upgrade_count);
-    vSemaphoreDelete(svc->stop_sem);
+    esp_err_t ret = esp_service_deinit((esp_service_t *)svc);
+    if (ret != ESP_OK) {
+        return ret;
+    }
     adf_free(svc);
     return ESP_OK;
 }

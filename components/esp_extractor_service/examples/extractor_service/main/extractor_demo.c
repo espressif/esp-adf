@@ -8,25 +8,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-
 #include "esp_check.h"
+#include "esp_log.h"
+#include "esp_media_provider.h"
+#include "esp_timer.h"
+#include "extractor_demo.h"
+#include "settings.h"
 #include "esp_extractor_service.h"
 #include "esp_extractor_service_ops.h"
-#include "esp_log.h"
 #include "esp_media_dummy_service.h"
-#include "esp_media_provider.h"
 #include "esp_media_service.h"
 #include "esp_media_service_types.h"
 #include "esp_service.h"
-#include "esp_timer.h"
-
-#include "extractor_demo.h"
-#include "settings.h"
 
 static const char *TAG = "EXTRACTOR_DEMO";
 
@@ -117,7 +114,7 @@ static void on_event(const adf_event_t *event, void *ctx)
                  p ? (unsigned)p->position_ms : 0,
                  p ? (unsigned)p->loop_count : 0,
                  p ? esp_err_to_name(p->err) : "-");
-        if (demo == NULL || demo->ev == NULL) {
+        if (demo == NULL) {
             return;
         }
         if (event->event_id == ESP_EXTRACTOR_SERVICE_EVENT_SEEK_DONE) {
@@ -137,7 +134,7 @@ static void on_event(const adf_event_t *event, void *ctx)
         event->payload_len >= sizeof(esp_service_state_changed_payload_t)) {
         const esp_service_state_changed_payload_t *st = event->payload;
         ESP_LOGI(TAG, "event %s state:%d", name, (int)st->new_state);
-        if (st->new_state == ESP_SERVICE_STATE_ERROR && demo != NULL && demo->ev != NULL) {
+        if (st->new_state == ESP_SERVICE_STATE_ERROR && demo != NULL) {
             demo->failed = true;
             xEventGroupSetBits(demo->ev, BIT_FAILED);
         }
@@ -157,11 +154,12 @@ static esp_err_t demo_subscribe(esp_service_t *svc, demo_t *demo)
     return esp_service_event_subscribe(svc, &info);
 }
 
-static void demo_init(demo_t *demo, uint32_t repeat_n)
+static esp_err_t demo_init(demo_t *demo, uint32_t repeat_n)
 {
     memset(demo, 0, sizeof(*demo));
     demo->repeat_n = repeat_n;
     demo->ev = xEventGroupCreate();
+    return demo->ev != NULL ? ESP_OK : ESP_ERR_NO_MEM;
 }
 
 static void demo_deinit(demo_t *demo)
@@ -174,10 +172,6 @@ static void demo_deinit(demo_t *demo)
 
 static esp_err_t demo_wait(demo_t *demo, uint32_t duration_ms)
 {
-    if (demo->ev == NULL) {
-        vTaskDelay(pdMS_TO_TICKS(duration_ms));
-        return ESP_OK;
-    }
     const int64_t deadline = esp_timer_get_time() + (int64_t)duration_ms * 1000;
     while (esp_timer_get_time() < deadline) {
         int64_t left_ms = (deadline - esp_timer_get_time()) / 1000;
@@ -478,35 +472,36 @@ _exit:
     return demo->failed ? ESP_FAIL : ret;
 }
 
+static void destroy_extractor(esp_extractor_service_t *svc)
+{
+    if (esp_service_stop(ESP_SERVICE_BASE(svc)) != ESP_OK ||
+        esp_media_service_deinit(ESP_SERVICE_BASE(svc)) != ESP_OK) {
+        abort();
+    }
+    free(svc);
+}
+
 static esp_err_t create_extractor(esp_extractor_service_t **out, const char *url)
 {
     /* Separate name from MCP extractor so event hubs are not shared. */
     esp_extractor_service_cfg_t cfg = ESP_EXTRACTOR_SERVICE_CFG_DEFAULT();
     cfg.name = "extractor_demo";
     ESP_RETURN_ON_ERROR(esp_extractor_service_create(&cfg, out), TAG, "create");
-    ESP_RETURN_ON_ERROR(esp_extractor_service_set_extract_mask(*out, ESP_EXTRACT_MASK_AV), TAG, "mask");
-    ESP_RETURN_ON_ERROR(esp_extractor_service_set_out_pool_size(*out, EXTRACTOR_OUT_POOL_SIZE), TAG, "pool");
-    ESP_RETURN_ON_ERROR(esp_extractor_service_set_url(*out, url), TAG, "url");
-    return ESP_OK;
+    esp_err_t ret = esp_extractor_service_set_extract_mask(*out, ESP_EXTRACT_MASK_AV);
+    if (ret == ESP_OK) {
+        ret = esp_extractor_service_set_out_pool_size(*out, EXTRACTOR_OUT_POOL_SIZE);
+    }
+    if (ret == ESP_OK) {
+        ret = esp_extractor_service_set_url(*out, url);
+    }
+    if (ret != ESP_OK) {
+        destroy_extractor(*out);
+        *out = NULL;
+    }
+    return ret;
 }
 
-static void destroy_extractor(esp_extractor_service_t *svc)
-{
-    if (svc == NULL) {
-        return;
-    }
-    esp_service_t *base = ESP_SERVICE_BASE(svc);
-    esp_service_state_t state = ESP_SERVICE_STATE_UNINITIALIZED;
-    if (esp_service_get_state(base, &state) == ESP_OK && state == ESP_SERVICE_STATE_RUNNING) {
-        (void)esp_service_stop(base);
-    }
-    (void)esp_service_event_unsubscribe(base, NULL, ADF_EVENT_ANY_ID);
-    (void)esp_service_set_user_data(base, NULL);
-    (void)esp_media_service_deinit(base);
-    free(svc);
-}
-
-static esp_err_t run_link(esp_extractor_service_t *src, uint32_t duration_ms, uint32_t repeat_n)
+static esp_err_t run_link(esp_extractor_service_t *src, uint32_t duration_ms, demo_t *demo)
 {
     esp_media_dummy_service_cfg_t sink_cfg = ESP_MEDIA_DUMMY_SERVICE_CONFIG_DEFAULT();
     sink_cfg.role = ESP_MEDIA_ROLE_SINK;
@@ -514,12 +509,10 @@ static esp_err_t run_link(esp_extractor_service_t *src, uint32_t duration_ms, ui
     sink_cfg.name = "extractor_demo_sink";
 
     esp_media_dummy_service_t *sink = NULL;
-    demo_t demo;
-    demo_init(&demo, repeat_n);
 
     esp_err_t ret = esp_media_dummy_service_create(&sink_cfg, &sink);
     if (ret == ESP_OK) {
-        ret = demo_subscribe(ESP_SERVICE_BASE(src), &demo);
+        ret = demo_subscribe(ESP_SERVICE_BASE(src), demo);
     }
     if (ret == ESP_OK) {
         ret = esp_media_service_link(ESP_SERVICE_BASE(src), ESP_MEDIA_DEFAULT_STREAM,
@@ -532,7 +525,7 @@ static esp_err_t run_link(esp_extractor_service_t *src, uint32_t duration_ms, ui
         ret = esp_service_start(ESP_SERVICE_BASE(src));
     }
     if (ret == ESP_OK) {
-        ret = demo_wait(&demo, duration_ms);
+        ret = demo_wait(demo, duration_ms);
     }
 
     (void)esp_service_stop(ESP_SERVICE_BASE(src));
@@ -545,22 +538,20 @@ static esp_err_t run_link(esp_extractor_service_t *src, uint32_t duration_ms, ui
                  stats.video_frame_count, stats.video_byte_count);
         (void)esp_media_service_unlink(ESP_SERVICE_BASE(src), ESP_MEDIA_DEFAULT_STREAM,
                                        ESP_SERVICE_BASE(sink), ESP_MEDIA_DEFAULT_STREAM);
-        (void)esp_media_dummy_service_destroy(sink);
+        if (esp_media_dummy_service_destroy(sink) != ESP_OK) {
+            abort();
+        }
     }
     (void)esp_service_event_unsubscribe(ESP_SERVICE_BASE(src), NULL, ADF_EVENT_ANY_ID);
     (void)esp_service_set_user_data(ESP_SERVICE_BASE(src), NULL);
-    demo_deinit(&demo);
     return ret;
 }
 
-static esp_err_t run_provider(esp_extractor_service_t *src, const char *url,
-                              uint32_t duration_ms, uint32_t repeat_n)
+static esp_err_t run_provider(esp_extractor_service_t *src, const char *url, uint32_t duration_ms, demo_t *demo)
 {
     uint32_t wait_ms = url_needs_network(url) ? TRACK_WAIT_NETWORK_MS : TRACK_WAIT_FILE_MS;
-    demo_t demo;
-    demo_init(&demo, repeat_n);
 
-    esp_err_t ret = demo_subscribe(ESP_SERVICE_BASE(src), &demo);
+    esp_err_t ret = demo_subscribe(ESP_SERVICE_BASE(src), demo);
     if (ret == ESP_OK) {
         ret = esp_service_start(ESP_SERVICE_BASE(src));
     }
@@ -570,14 +561,13 @@ static esp_err_t run_provider(esp_extractor_service_t *src, const char *url,
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "get_provider: %s", esp_err_to_name(ret));
         } else {
-            ret = consume_provider(src, &provider, &demo, duration_ms, wait_ms);
+            ret = consume_provider(src, &provider, demo, duration_ms, wait_ms);
         }
     }
 
     (void)esp_service_stop(ESP_SERVICE_BASE(src));
     (void)esp_service_event_unsubscribe(ESP_SERVICE_BASE(src), NULL, ADF_EVENT_ANY_ID);
     (void)esp_service_set_user_data(ESP_SERVICE_BASE(src), NULL);
-    demo_deinit(&demo);
     return ret;
 }
 
@@ -591,10 +581,15 @@ esp_err_t extractor_demo_run(const char *url, uint32_t duration_ms, extractor_de
     if (ret != ESP_OK) {
         return ret;
     }
-    ret = (mode == EXTRACTOR_DEMO_MODE_LINK_DUMMY_SINK)
-              ? run_link(src, duration_ms, 0)
-              : run_provider(src, url, duration_ms, 0);
+    /* Keep callback context alive until owner-side destruction has drained events. */
+    demo_t demo = {0};
+    ret = demo_init(&demo, 0);
+    if (ret == ESP_OK) {
+        ret = (mode == EXTRACTOR_DEMO_MODE_LINK_DUMMY_SINK) ? run_link(src, duration_ms, &demo)
+                                                            : run_provider(src, url, duration_ms, &demo);
+    }
     destroy_extractor(src);
+    demo_deinit(&demo);
     return ret;
 }
 
@@ -616,9 +611,13 @@ esp_err_t extractor_demo_run_repeat(const char *url, uint32_t duration_ms,
         destroy_extractor(src);
         return ret;
     }
-    ret = (mode == EXTRACTOR_DEMO_MODE_LINK_DUMMY_SINK)
-              ? run_link(src, duration_ms, repeat_count)
-              : run_provider(src, url, duration_ms, repeat_count);
+    demo_t demo = {0};
+    ret = demo_init(&demo, repeat_count);
+    if (ret == ESP_OK) {
+        ret = (mode == EXTRACTOR_DEMO_MODE_LINK_DUMMY_SINK) ? run_link(src, duration_ms, &demo)
+                                                            : run_provider(src, url, duration_ms, &demo);
+    }
     destroy_extractor(src);
+    demo_deinit(&demo);
     return ret;
 }

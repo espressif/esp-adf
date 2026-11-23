@@ -7,11 +7,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-
 #include "esp_check.h"
 #include "esp_log.h"
 #include "sdkconfig.h"
-
 #include "media_dummy_priv.h"
 
 static const char *TAG = "DUMMY_SVC";
@@ -45,7 +43,7 @@ static esp_err_t on_start(esp_service_t *service)
 #endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT */
 #else
     (void)service;
-#endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT || CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT */
+#endif  /* defined(CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT) || defined(CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT) */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
@@ -66,7 +64,7 @@ static esp_err_t on_stop(esp_service_t *service)
 #endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT */
 #else
     (void)service;
-#endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT || CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT */
+#endif  /* defined(CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT) || defined(CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT) */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
@@ -109,9 +107,26 @@ static esp_err_t set_provider(esp_service_t *service, esp_media_stream_id_t stre
 #endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT */
 }
 
+static esp_err_t on_deinit(esp_service_t *service)
+{
+    esp_media_dummy_service_t *svc = (esp_media_dummy_service_t *)service;
+#ifdef CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT
+    if (svc->role == ESP_MEDIA_ROLE_SRC) {
+        media_dummy_src_deinit(svc);
+    }
+#endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT */
+#ifdef CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT
+    if (svc->role == ESP_MEDIA_ROLE_SINK) {
+        media_dummy_sink_deinit(svc);
+    }
+#endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT */
+    return ESP_OK;
+}
+
 static const esp_service_ops_t s_service_ops = {
-    .on_start = on_start,
-    .on_stop  = on_stop,
+    .on_deinit = on_deinit,
+    .on_start  = on_start,
+    .on_stop   = on_stop,
 };
 
 static const esp_media_service_ops_t s_src_media_ops = {
@@ -155,11 +170,6 @@ esp_err_t esp_media_dummy_service_create(const esp_media_dummy_service_cfg_t *cf
 
     const char *default_name = (cfg->role == ESP_MEDIA_ROLE_SRC) ? ESP_MEDIA_DUMMY_SERVICE_DEFAULT_SRC_NAME : ESP_MEDIA_DUMMY_SERVICE_DEFAULT_SINK_NAME;
     const char *name = cfg->name ? cfg->name : default_name;
-    svc->name_storage = strdup(name);
-    if (svc->name_storage == NULL) {
-        free(svc);
-        return ESP_ERR_NO_MEM;
-    }
 
     esp_err_t ret = ESP_OK;
 #ifdef CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT
@@ -173,13 +183,12 @@ esp_err_t esp_media_dummy_service_create(const esp_media_dummy_service_cfg_t *cf
     }
 #endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT */
     if (ret != ESP_OK) {
-        free(svc->name_storage);
         free(svc);
         return ret;
     }
 
     esp_media_service_config_t media_cfg = ESP_MEDIA_SERVICE_CONFIG_DEFAULT();
-    media_cfg.name = svc->name_storage;
+    media_cfg.name = name;
     media_cfg.service_ops = &s_service_ops;
     if (cfg->role == ESP_MEDIA_ROLE_SRC) {
         media_cfg.media_ops = &s_src_media_ops;
@@ -189,17 +198,7 @@ esp_err_t esp_media_dummy_service_create(const esp_media_dummy_service_cfg_t *cf
     ret = esp_media_service_init(&svc->media, &media_cfg);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "media init failed: %s", esp_err_to_name(ret));
-#ifdef CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT
-        if (cfg->role == ESP_MEDIA_ROLE_SRC) {
-            media_dummy_src_deinit(svc);
-        }
-#endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT */
-#ifdef CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT
-        if (cfg->role == ESP_MEDIA_ROLE_SINK) {
-            media_dummy_sink_deinit(svc);
-        }
-#endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT */
-        free(svc->name_storage);
+        (void)on_deinit(ESP_SERVICE_BASE(&svc->media));
         free(svc);
         return ret;
     }
@@ -212,21 +211,12 @@ esp_err_t esp_media_dummy_service_destroy(esp_media_dummy_service_t *svc)
     if (svc == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-    (void)esp_service_stop(ESP_SERVICE_BASE(&svc->media));
-#ifdef CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT
-    if (svc->role == ESP_MEDIA_ROLE_SRC) {
-        media_dummy_src_deinit(svc);
-    }
-#endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SRC_SUPPORT */
-#ifdef CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT
-    if (svc->role == ESP_MEDIA_ROLE_SINK) {
-        media_dummy_sink_deinit(svc);
-    }
-#endif  /* CONFIG_ESP_MEDIA_DUMMY_SERVICE_SINK_SUPPORT */
     esp_err_t ret = esp_media_service_deinit(ESP_SERVICE_BASE(&svc->media));
-    free(svc->name_storage);
+    if (ret != ESP_OK) {
+        return ret;
+    }
     free(svc);
-    return ret;
+    return ESP_OK;
 }
 
 esp_err_t esp_media_dummy_service_add_track(esp_media_dummy_service_t *svc,

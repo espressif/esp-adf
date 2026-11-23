@@ -60,7 +60,14 @@ typedef struct {
     /** Start the transport (open port, start task, etc.) */
     esp_err_t (*start)(esp_service_mcp_trans_t *transport);
 
-    /** Stop the transport (close connections, stop task) */
+    /**
+     * Stop the transport (close connections, stop task).
+     * Must return only when no request handler invocation is still running,
+     * because esp_service_mcp_server_destroy() frees the server right after
+     * calling it. On failure, retain the transport and every resource still
+     * used by a handler; the owner must retry after the handler returns.
+     * Never delete a reader task while it may be executing a handler.
+     */
     esp_err_t (*stop)(esp_service_mcp_trans_t *transport);
 
     /** Free all resources. Must stop first if running. */
@@ -119,6 +126,10 @@ esp_err_t esp_service_mcp_trans_init(esp_service_mcp_trans_t *transport, esp_ser
  *
  *         Called internally by esp_service_mcp_server_create() to wire the server into
  *         the transport's request path. Not normally called by application code.
+ *         The owner must serialize binding with start/stop/destroy and bind
+ *         only before start or after a successful stop. Hot replacement while
+ *         requests are executing is not supported. This keeps callback and
+ *         user_data updates outside every request invocation.
  *
  * @param[in]  transport  Transport instance
  * @param[in]  handler    Callback to invoke on each incoming request
@@ -143,6 +154,11 @@ esp_err_t esp_service_mcp_trans_start(esp_service_mcp_trans_t *transport);
 /**
  * @brief  Stop the transport
  *
+ * @note  ESP_OK guarantees all request callbacks have returned. On failure
+ *         retain the instance and retry from its owner task. Do not call from
+ *         a request callback. External API/broadcast callers must be quiesced
+ *         before stop/destroy; lifecycle calls have a single owner.
+ *
  * @param[in]  transport  Transport instance
  *
  * @return
@@ -152,6 +168,9 @@ esp_err_t esp_service_mcp_trans_stop(esp_service_mcp_trans_t *transport);
 
 /**
  * @brief  Destroy the transport and free all resources
+ *
+ * @note  Failure retains the instance for retry. After ESP_OK, the caller must
+ *         clear its pointer and must not call destroy again on the freed object.
  *
  * @param[in]  transport  Transport instance
  *
@@ -170,8 +189,12 @@ esp_err_t esp_service_mcp_trans_destroy(esp_service_mcp_trans_t *transport);
  * @param[in]  len        Data length in bytes
  *
  * @return
- *       - ESP_OK                 On success
+ *       - ESP_OK                 Delivered to every live client, or no client is connected
+ *       - ESP_ERR_INVALID_ARG    Invalid argument
  *       - ESP_ERR_NOT_SUPPORTED  Broadcast unavailable for this transport
+ *       - ESP_ERR_INVALID_STATE  Transport not started
+ *       - ESP_FAIL               Clients were connected and none received the message
+ *       - Other                  Write error of a single-link transport (UART, STDIO, SDIO)
  */
 esp_err_t esp_service_mcp_trans_broadcast(esp_service_mcp_trans_t *transport, const char *data, size_t len);
 
@@ -196,7 +219,11 @@ esp_service_mcp_trans_type_t esp_service_mcp_trans_get_type(esp_service_mcp_tran
  * @param[out]  response   Allocated response string (NULL for notifications)
  *
  * @return
- *       - ESP_OK  On success
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_ARG    Invalid argument
+ *       - ESP_ERR_INVALID_STATE  No request handler registered
+ *       - Other                  Error returned by the request handler (the MCP server
+ *                                returns ESP_ERR_NO_MEM when it cannot build the response)
  */
 esp_err_t esp_service_mcp_trans_dispatch_request(esp_service_mcp_trans_t *transport, const char *request, char **response);
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Preserve the instance on any base teardown failure for retry; free only after successful cleanup
+- Accept esp_capture's already-stopped result so configured, never-started captures can be destroyed
+- Retain failed user deinit callbacks and their contexts until cleanup succeeds
+
 ## v0.5.1~1
 
 ### Changes

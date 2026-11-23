@@ -6,11 +6,9 @@
  */
 
 #include <stdlib.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "unity.h"
-
 #include "esp_fourcc.h"
 #include "esp_media_dummy_service.h"
 #include "esp_rtsp_service.h"
@@ -18,15 +16,15 @@
 #include "esp_service.h"
 #include "esp_service_scheduler.h"
 
-
 #define RTSP_SERVER_URL  "rtsp://127.0.0.1:8554/live"
 #define RTSP_CLIENT_URL  "rtsp://127.0.0.1:8554/live"
 #define TEST_RUN_MS      2000
 
-void esp_rtsp_service_ut_force_link(void) {}
+void esp_rtsp_service_ut_force_link(void)  { }
 
 static void rtsp_service_delete(esp_rtsp_service_t *service)
 {
+    TEST_ESP_OK(esp_service_stop(ESP_SERVICE_BASE(service)));
     TEST_ESP_OK(esp_media_service_deinit(ESP_SERVICE_BASE(service)));
     free(service);
 }

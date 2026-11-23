@@ -14,8 +14,7 @@
  *     bumps a counter, and a malloc-backed uint32 payload helper.
  *   - An N-way barrier built from two counting semaphores plus a
  *     mutex-protected counter handler, shared by the reentrant / ordering
- *     tests to force real concurrency on both the IDF target and the
- *     POSIX PC build.
+ *     tests to coordinate concurrent FreeRTOS tasks.
  */
 
 #pragma once

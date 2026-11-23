@@ -7,7 +7,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-
 #include "sdkconfig.h"
 #include "esp_check.h"
 #include "esp_log.h"
@@ -16,9 +15,9 @@
 #include "esp_rtmp_service_priv.h"
 
 static const char *TAG = "RTMP_SVC";
-#define RTMP_DEFAULT_STACK_SIZE 4096
-#define RTMP_DEFAULT_PRIORITY   10
-#define RTMP_DEFAULT_CORE_ID    0
+#define RTMP_DEFAULT_STACK_SIZE  4096
+#define RTMP_DEFAULT_PRIORITY    10
+#define RTMP_DEFAULT_CORE_ID     0
 
 esp_err_t rtmp_media_err_to_esp(esp_media_err_t err)
 {
@@ -118,30 +117,30 @@ esp_rtmp_video_codec_t rtmp_to_video_codec(esp_media_codec_fourcc_t codec)
 esp_media_codec_fourcc_t rtmp_from_audio_codec(esp_rtmp_audio_codec_t codec)
 {
     switch (codec) {
-    case RTMP_AUDIO_CODEC_AAC:
-        return ESP_MEDIA_CODEC_AAC;
-    case RTMP_AUDIO_CODEC_MP3:
-        return ESP_MEDIA_CODEC_MP3;
-    case RTMP_AUDIO_CODEC_PCM:
-        return ESP_MEDIA_CODEC_PCM;
-    case RTMP_AUDIO_CODEC_G711A:
-        return ESP_MEDIA_CODEC_G711A;
-    case RTMP_AUDIO_CODEC_G711U:
-        return ESP_MEDIA_CODEC_G711U;
-    default:
-        return 0;
+        case RTMP_AUDIO_CODEC_AAC:
+            return ESP_MEDIA_CODEC_AAC;
+        case RTMP_AUDIO_CODEC_MP3:
+            return ESP_MEDIA_CODEC_MP3;
+        case RTMP_AUDIO_CODEC_PCM:
+            return ESP_MEDIA_CODEC_PCM;
+        case RTMP_AUDIO_CODEC_G711A:
+            return ESP_MEDIA_CODEC_G711A;
+        case RTMP_AUDIO_CODEC_G711U:
+            return ESP_MEDIA_CODEC_G711U;
+        default:
+            return 0;
     }
 }
 
 esp_media_codec_fourcc_t rtmp_from_video_codec(esp_rtmp_video_codec_t codec)
 {
     switch (codec) {
-    case RTMP_VIDEO_CODEC_H264:
-        return ESP_MEDIA_CODEC_H264;
-    case RTMP_VIDEO_CODEC_MJPEG:
-        return ESP_MEDIA_CODEC_MJPEG;
-    default:
-        return 0;
+        case RTMP_VIDEO_CODEC_H264:
+            return ESP_MEDIA_CODEC_H264;
+        case RTMP_VIDEO_CODEC_MJPEG:
+            return ESP_MEDIA_CODEC_MJPEG;
+        default:
+            return 0;
     }
 }
 
@@ -149,19 +148,19 @@ static bool role_enabled(esp_rtmp_service_role_t role)
 {
     switch (role) {
 #ifdef CONFIG_ESP_RTMP_SERVICE_SERVER_SUPPORT
-    case ESP_RTMP_SERVICE_ROLE_SERVER:
-        return true;
-#endif
+        case ESP_RTMP_SERVICE_ROLE_SERVER:
+            return true;
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SERVER_SUPPORT */
 #ifdef CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT
-    case ESP_RTMP_SERVICE_ROLE_SRC:
-        return true;
-#endif
+        case ESP_RTMP_SERVICE_ROLE_SRC:
+            return true;
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT */
 #ifdef CONFIG_ESP_RTMP_SERVICE_SINK_SUPPORT
-    case ESP_RTMP_SERVICE_ROLE_SINK:
-        return true;
-#endif
-    default:
-        return false;
+        case ESP_RTMP_SERVICE_ROLE_SINK:
+            return true;
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SINK_SUPPORT */
+        default:
+            return false;
     }
 }
 
@@ -217,19 +216,19 @@ static esp_err_t rtmp_on_start(esp_service_t *base)
     esp_rtmp_service_t *service = (esp_rtmp_service_t *)base;
     switch (service->role) {
 #ifdef CONFIG_ESP_RTMP_SERVICE_SERVER_SUPPORT
-    case ESP_RTMP_SERVICE_ROLE_SERVER:
-        return rtmp_server_on_start(service);
-#endif
+        case ESP_RTMP_SERVICE_ROLE_SERVER:
+            return rtmp_server_on_start(service);
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SERVER_SUPPORT */
 #ifdef CONFIG_ESP_RTMP_SERVICE_SINK_SUPPORT
-    case ESP_RTMP_SERVICE_ROLE_SINK:
-        return rtmp_sink_on_start(service);
-#endif
+        case ESP_RTMP_SERVICE_ROLE_SINK:
+            return rtmp_sink_on_start(service);
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SINK_SUPPORT */
 #ifdef CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT
-    case ESP_RTMP_SERVICE_ROLE_SRC:
-        return rtmp_src_on_start(service);
-#endif
-    default:
-        return ESP_ERR_NOT_SUPPORTED;
+        case ESP_RTMP_SERVICE_ROLE_SRC:
+            return rtmp_src_on_start(service);
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT */
+        default:
+            return ESP_ERR_NOT_SUPPORTED;
     }
 }
 
@@ -238,32 +237,31 @@ static esp_err_t rtmp_on_stop(esp_service_t *base)
     esp_rtmp_service_t *service = (esp_rtmp_service_t *)base;
     switch (service->role) {
 #ifdef CONFIG_ESP_RTMP_SERVICE_SERVER_SUPPORT
-    case ESP_RTMP_SERVICE_ROLE_SERVER:
-        return rtmp_server_on_stop(service);
-#endif
+        case ESP_RTMP_SERVICE_ROLE_SERVER:
+            return rtmp_server_on_stop(service);
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SERVER_SUPPORT */
 #ifdef CONFIG_ESP_RTMP_SERVICE_SINK_SUPPORT
-    case ESP_RTMP_SERVICE_ROLE_SINK:
-        return rtmp_sink_on_stop(service);
-#endif
+        case ESP_RTMP_SERVICE_ROLE_SINK:
+            return rtmp_sink_on_stop(service);
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SINK_SUPPORT */
 #ifdef CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT
-    case ESP_RTMP_SERVICE_ROLE_SRC:
-        return rtmp_src_on_stop(service);
-#endif
-    default:
-        return ESP_OK;
+        case ESP_RTMP_SERVICE_ROLE_SRC:
+            return rtmp_src_on_stop(service);
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT */
+        default:
+            return ESP_OK;
     }
 }
 
 static esp_err_t rtmp_on_deinit(esp_service_t *base)
 {
     esp_rtmp_service_t *service = (esp_rtmp_service_t *)base;
-    (void)rtmp_on_stop(base);
 #ifdef CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT
     if (service->role == ESP_RTMP_SERVICE_ROLE_SRC && service->src.mngr != NULL) {
         esp_media_track_mngr_destroy(service->src.mngr);
         service->src.mngr = NULL;
     }
-#endif
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT */
     if (service->role == ESP_RTMP_SERVICE_ROLE_SERVER) {
         free(service->server.app_name);
         service->server.app_name = NULL;
@@ -280,15 +278,15 @@ static esp_err_t rtmp_get_role(esp_service_t *base, esp_media_role_t *out_role)
         return ESP_ERR_INVALID_ARG;
     }
     switch (service->role) {
-    case ESP_RTMP_SERVICE_ROLE_SRC:
-        *out_role = ESP_MEDIA_ROLE_SRC;
-        break;
-    case ESP_RTMP_SERVICE_ROLE_SINK:
-        *out_role = ESP_MEDIA_ROLE_SINK;
-        break;
-    default:
-        *out_role = ESP_MEDIA_ROLE_NONE;
-        break;
+        case ESP_RTMP_SERVICE_ROLE_SRC:
+            *out_role = ESP_MEDIA_ROLE_SRC;
+            break;
+        case ESP_RTMP_SERVICE_ROLE_SINK:
+            *out_role = ESP_MEDIA_ROLE_SINK;
+            break;
+        default:
+            *out_role = ESP_MEDIA_ROLE_NONE;
+            break;
     }
     return ESP_OK;
 }
@@ -305,7 +303,7 @@ static esp_err_t rtmp_get_provider(esp_service_t *base, esp_media_stream_id_t st
     (void)base;
     (void)stream;
     (void)out_provider;
-#endif
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
@@ -321,7 +319,7 @@ static esp_err_t rtmp_set_provider(esp_service_t *base, esp_media_stream_id_t st
     (void)base;
     (void)stream;
     (void)provider;
-#endif
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SINK_SUPPORT */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
@@ -337,7 +335,7 @@ static esp_err_t rtmp_get_request(esp_service_t *base, esp_media_stream_id_t str
     (void)base;
     (void)stream;
     (void)request;
-#endif
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SINK_SUPPORT */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
@@ -353,39 +351,39 @@ static esp_err_t rtmp_set_request(esp_service_t *base, esp_media_stream_id_t str
     (void)base;
     (void)stream;
     (void)request;
-#endif
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT */
     return ESP_ERR_NOT_SUPPORTED;
 }
 
 static const char *rtmp_service_event_to_name(uint16_t event_id)
 {
     switch (event_id) {
-    case ESP_RTMP_SERVICE_EVENT_PEER_CLOSED:
-        return "PEER_CLOSED";
-    case ESP_RTMP_SERVICE_EVENT_SERVER_CLIENT_CONNECTED:
-        return "SERVER_CLIENT_CONNECTED";
-    case ESP_RTMP_SERVICE_EVENT_SERVER_PULLER_STARTED:
-        return "SERVER_PULLER_STARTED";
-    case ESP_RTMP_SERVICE_EVENT_SERVER_PULLER_STOPPED:
-        return "SERVER_PULLER_STOPPED";
-    default:
-        return NULL;
+        case ESP_RTMP_SERVICE_EVENT_PEER_CLOSED:
+            return "PEER_CLOSED";
+        case ESP_RTMP_SERVICE_EVENT_SERVER_CLIENT_CONNECTED:
+            return "SERVER_CLIENT_CONNECTED";
+        case ESP_RTMP_SERVICE_EVENT_SERVER_PULLER_STARTED:
+            return "SERVER_PULLER_STARTED";
+        case ESP_RTMP_SERVICE_EVENT_SERVER_PULLER_STOPPED:
+            return "SERVER_PULLER_STOPPED";
+        default:
+            return NULL;
     }
 }
 
 static const esp_service_ops_t s_rtmp_service_ops = {
-    .on_start = rtmp_on_start,
-    .on_stop = rtmp_on_stop,
-    .on_deinit = rtmp_on_deinit,
+    .on_start      = rtmp_on_start,
+    .on_stop       = rtmp_on_stop,
+    .on_deinit     = rtmp_on_deinit,
     .event_to_name = rtmp_service_event_to_name,
 };
 
 static const esp_media_service_ops_t s_rtmp_media_ops = {
-    .get_role = rtmp_get_role,
+    .get_role     = rtmp_get_role,
     .get_provider = rtmp_get_provider,
     .set_provider = rtmp_set_provider,
-    .get_request = rtmp_get_request,
-    .set_request = rtmp_set_request,
+    .get_request  = rtmp_get_request,
+    .set_request  = rtmp_set_request,
 };
 
 esp_err_t esp_rtmp_service_create(const esp_rtmp_service_cfg_t *cfg, esp_rtmp_service_t **out_service)
@@ -399,26 +397,26 @@ esp_err_t esp_rtmp_service_create(const esp_rtmp_service_cfg_t *cfg, esp_rtmp_se
     service->role = cfg->role;
     service->chunk_size = 0;
     switch (service->role) {
-    case ESP_RTMP_SERVICE_ROLE_SERVER:
-        service->server.port = ESP_RTMP_SERVICE_DEFAULT_PORT;
-        service->server.max_clients = 4;
-        service->server.app_name = rtmp_strdup_or_null(ESP_RTMP_SERVICE_DEFAULT_APP_NAME);
-        if (service->server.app_name == NULL) {
+        case ESP_RTMP_SERVICE_ROLE_SERVER:
+            service->server.port = ESP_RTMP_SERVICE_DEFAULT_PORT;
+            service->server.max_clients = 4;
+            service->server.app_name = rtmp_strdup_or_null(ESP_RTMP_SERVICE_DEFAULT_APP_NAME);
+            if (service->server.app_name == NULL) {
+                free(service);
+                RET_FOR(ESP_ERR_NO_MEM, "no mem");
+            }
+            break;
+        case ESP_RTMP_SERVICE_ROLE_SRC:
+            service->src.need_global_cache = false;
+            service->src.cache_size = RTMP_DEFAULT_CACHE_SIZE;
+            service->src.audio_cache_size = RTMP_DEFAULT_AUDIO_CACHE_SIZE;
+            service->src.video_cache_size = RTMP_DEFAULT_VIDEO_CACHE_SIZE;
+            break;
+        case ESP_RTMP_SERVICE_ROLE_SINK:
+            break;
+        default:
             free(service);
-            RET_FOR(ESP_ERR_NO_MEM, "no mem");
-        }
-        break;
-    case ESP_RTMP_SERVICE_ROLE_SRC:
-        service->src.need_global_cache = false;
-        service->src.cache_size = RTMP_DEFAULT_CACHE_SIZE;
-        service->src.audio_cache_size = RTMP_DEFAULT_AUDIO_CACHE_SIZE;
-        service->src.video_cache_size = RTMP_DEFAULT_VIDEO_CACHE_SIZE;
-        break;
-    case ESP_RTMP_SERVICE_ROLE_SINK:
-        break;
-    default:
-        free(service);
-        RET_FOR(ESP_ERR_NOT_SUPPORTED, "unsupported role");
+            RET_FOR(ESP_ERR_NOT_SUPPORTED, "unsupported role");
     }
 
     esp_media_service_config_t media_cfg = ESP_MEDIA_SERVICE_CONFIG_DEFAULT();
@@ -447,45 +445,45 @@ esp_err_t esp_rtmp_service_setup(esp_rtmp_service_t *service, const esp_rtmp_ser
     memcpy(&service->ssl_cfg, &setup->ssl_cfg, sizeof(service->ssl_cfg));
 
     switch (service->role) {
-    case ESP_RTMP_SERVICE_ROLE_SERVER:
-        if (setup->server.port != 0) {
-            service->server.port = setup->server.port;
-        }
-        if (setup->server.app_name != NULL) {
-            char *app_name = strdup(setup->server.app_name);
-            ESP_RETURN_ON_FALSE(app_name != NULL, ESP_ERR_NO_MEM, TAG, "no mem");
-            free(service->server.app_name);
-            service->server.app_name = app_name;
-        }
-        if (setup->server.max_clients != 0) {
-            service->server.max_clients = setup->server.max_clients;
-        }
-        break;
-    case ESP_RTMP_SERVICE_ROLE_SRC:
-#ifdef CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT
-        if (setup->src.cache_size != 0) {
-            service->src.cache_size = setup->src.cache_size;
-        }
-        if (setup->src.audio_cache_size != 0) {
-            service->src.audio_cache_size = setup->src.audio_cache_size;
-        }
-        if (setup->src.video_cache_size != 0) {
-            service->src.video_cache_size = setup->src.video_cache_size;
-        }
-        if (service->src.mngr != NULL) {
-            esp_err_t ret = esp_media_track_mngr_set_global_cache(service->src.mngr,
-                                                                  service->src.need_global_cache,
-                                                                  service->src.cache_size);
-            if (ret != ESP_OK) {
-                RET_FOR(ret, "set global cache failed");
+        case ESP_RTMP_SERVICE_ROLE_SERVER:
+            if (setup->server.port != 0) {
+                service->server.port = setup->server.port;
             }
-        }
-#endif
-        break;
-    case ESP_RTMP_SERVICE_ROLE_SINK:
-        break;
-    default:
-        RET_FOR(ESP_ERR_NOT_SUPPORTED, "unsupported role");
+            if (setup->server.app_name != NULL) {
+                char *app_name = strdup(setup->server.app_name);
+                ESP_RETURN_ON_FALSE(app_name != NULL, ESP_ERR_NO_MEM, TAG, "no mem");
+                free(service->server.app_name);
+                service->server.app_name = app_name;
+            }
+            if (setup->server.max_clients != 0) {
+                service->server.max_clients = setup->server.max_clients;
+            }
+            break;
+        case ESP_RTMP_SERVICE_ROLE_SRC:
+#ifdef CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT
+            if (setup->src.cache_size != 0) {
+                service->src.cache_size = setup->src.cache_size;
+            }
+            if (setup->src.audio_cache_size != 0) {
+                service->src.audio_cache_size = setup->src.audio_cache_size;
+            }
+            if (setup->src.video_cache_size != 0) {
+                service->src.video_cache_size = setup->src.video_cache_size;
+            }
+            if (service->src.mngr != NULL) {
+                esp_err_t ret = esp_media_track_mngr_set_global_cache(service->src.mngr,
+                                                                      service->src.need_global_cache,
+                                                                      service->src.cache_size);
+                if (ret != ESP_OK) {
+                    RET_FOR(ret, "set global cache failed");
+                }
+            }
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SRC_SUPPORT */
+            break;
+        case ESP_RTMP_SERVICE_ROLE_SINK:
+            break;
+        default:
+            RET_FOR(ESP_ERR_NOT_SUPPORTED, "unsupported role");
     }
     return ESP_OK;
 }
@@ -527,5 +525,5 @@ esp_err_t esp_rtmp_service_query(esp_rtmp_service_t *service)
     return rtmp_server_query(service);
 #else
     RET_FOR(ESP_ERR_NOT_SUPPORTED, "RTMP server support is disabled");
-#endif
+#endif  /* CONFIG_ESP_RTMP_SERVICE_SERVER_SUPPORT */
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Update manual deinit/free guidance and the example to free only after `ESP_OK`
+
 ## v0.5.0
 
 ### Features

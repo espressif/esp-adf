@@ -3,5 +3,6 @@ idf_component_register(
                  "adf_vec.c"
                  "adf_mem.c"
     INCLUDE_DIRS "include"
-    REQUIRES     freertos esp_timer log heap esp_system
+    REQUIRES     freertos log
+    PRIV_REQUIRES heap esp_system
 )

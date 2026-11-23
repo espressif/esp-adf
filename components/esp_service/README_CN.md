@@ -7,15 +7,26 @@
 
 ## 主要特性
 
+MCP 请求大小和读取期限由各 transport 配置；server 不再提供无效的 `max_request_size`
+和 `timeout_ms` 字段。server 拒绝非 object 的工具参数，各工具 provider 校验自己的
+schema、类型和范围。transport 与示例适配器日志不输出完整请求、响应或参数。
+
+scheduler 以短锁读取配对的 callback/ctx，在锁外执行回调。替换或清除不会回收旧 ctx，
+调用方必须等并发配置查询退出后才能释放旧上下文，建议在 service 启动前完成配置。
+非法线程配置会被拒绝，不提交回调修改。
+
 - **生命周期状态机** — `UNINITIALIZED → INITIALIZED → RUNNING ⇄ PAUSED`；所有转换均在调用方任务上下文中同步执行
 - **基于 vtable 的子类化** — 派生服务填充 `esp_service_ops_t` 函数指针，并将 `esp_service_t` 作为第一个成员嵌入
-- **事件总线集成** — 每个服务拥有一个 `adf_event_hub_t`；通过 `esp_service_publish_event()` / `esp_service_event_subscribe()` 实现发布-订阅模式的领域事件
-- **低功耗钩子** — `on_lowpower_enter` / `on_lowpower_exit` 是直接回调，不改变状态；适用于挂起无线电、LED 和时钟
+- **事件总线集成** — `on_init` 可以登记订阅，但服务只有在初始化成功后才能发布事件。
+- **低功耗钩子** — `on_lowpower_enter` / `on_lowpower_exit` 不改变状态；实例处于 `UNINITIALIZED` 或 `STOPPING` 时以 `ESP_ERR_INVALID_STATE` 拒绝；适用于挂起无线电、LED 和时钟
 - **动态服务注册中心** — `esp_service_manager` 支持运行时注册/注销服务，批量 `start_all` / `stop_all`，以及按名称或类别查找服务
 - **自动工具发现** — 管理器在注册时解析 JSON 数组，所有描述的工具均可通过 `esp_service_manager_invoke_tool()` 调用
 - **MCP 服务器（可选）** — 实现 MCP 2024-11-05（`tools/list`、`tools/call`、`notifications/tools/list_changed`），通过可插拔传输层对外暴露；需启用 `CONFIG_ESP_MCP_ENABLE=y`
 - **多种传输方式** — HTTP、SSE、WebSocket、UART、STDIO、SDIO；每种均为独立的 Kconfig 选项
-- **线程安全** — 服务管理器和 MCP 服务器内部由互斥锁保护；`esp_service_t::state` 为原子变量，可在任意任务中无锁读取
+- **生命周期与所有权** — 每个实例仅支持一次非并发的 `esp_service_init()`（函数内部负责清零），`start`/`stop`/`pause`/`resume` 可重复调用。普通生命周期操作由实例锁串行化；同步 `deinit`/`destroy` 必须由单一所有者调用，不得从事件回调、被停止流程等待的工作任务或 ISR 调用。回调只能向控制任务提交销毁请求。销毁前停止外部 API/MCP 调用、等待在途调用结束并断开媒体连接；manager 不拥有 service，注销也不代表在途调用已经结束。
+- **同步回收** — `on_stop` 停止并等待后台用户退出，保留回调共享资源；base 取消全部所属订阅并排空回调和事件发布后，调用可重试的 `on_deinit` 释放私有资源。失败保留 `STOPPING` 和对象，所有者可重试资源清理，不会再次调用 on_stop；成功才进入 `UNINITIALIZED`。对象由所有者在 deinit 成功后释放；`user_data` 是借用的，不由 base 释放。等待期间不持有生命周期锁，等待时间由任务和回调退出时间决定。所有并发调用必须在最终释放前退出。
+- **管理器与 MCP** — 注册表由互斥锁保护，state 可原子读取。MCP server 销毁前停止传输层，传输层 stop 必须等待请求处理完成；这不会自动回收已注册的 service。
+- **MCP 清理失败** — stop/destroy 失败时保留 server、transport 和 handler 绑定，交给 owner 任务重试。串口 reader 不再强制删除，未完成清理前拒绝重新启动。handler 只在启动前或成功停止后绑定，不支持请求执行期间热替换。先停止外部 API/broadcast 调用，旧式 server/transport 指针仅在销毁成功后由调用方置空。
 
 ## 架构
 
@@ -84,12 +95,19 @@ stateDiagram-v2
     PAUSED --> RUNNING : esp_service_resume()
     RUNNING --> INITIALIZED : esp_service_stop()
     PAUSED --> INITIALIZED : esp_service_stop()
-    INITIALIZED --> UNINITIALIZED : esp_service_deinit()
-    RUNNING --> ERROR : on_start/on_stop 失败
-    PAUSED --> ERROR : on_pause/on_resume 失败
+    ERROR --> INITIALIZED : esp_service_stop()
+    INITIALIZED --> STOPPING : esp_service_deinit()
+    STOPPING --> UNINITIALIZED : on_deinit 完成，事件中心已销毁
+    INITIALIZED --> ERROR : on_start 失败
+    RUNNING --> ERROR : on_pause/on_stop 失败
+    PAUSED --> ERROR : on_resume/on_stop 失败
 ```
 
-低功耗钩子（`esp_service_lowpower_enter()` / `esp_service_lowpower_exit()`）**不改变**状态——它们直接调用 `on_lowpower_enter` / `on_lowpower_exit`。
+钩子和同步状态通知在生命周期锁外执行。同一实例有生命周期操作尚未结束时，其他生命周期调用直接返回 `ESP_ERR_INVALID_STATE`。同步 Event Hub 回调不能直接调用任何实例的生命周期 API，即使收到的只是普通业务事件。需要切换状态时，由回调通知持有者任务处理。
+
+对运行中、暂停或出错的服务调用 `esp_service_deinit()` 时，基类会先同步停止服务（若 `on_stop` 失败则保持 `ERROR` 状态返回错误）；对 `UNINITIALIZED` 调用则幂等返回 `ESP_OK`。停稳后 `deinit` 关闭事件入口、排空回调、释放事件中心，再由 `on_deinit` 释放私有资源；失败保留 `STOPPING` 供重试。
+
+由一个 owner 任务负责销毁：先停外部调用、解除端点连接并归还借用的事件/帧。事件回调及本实例的生命周期钩子只向 owner 提交销毁请求，不能自行销毁。`esp_service_deinit()` 清资源但不释放对象，媒体对象使用 `esp_media_service_deinit()`。成功后才能 free；失败保留句柄。`on_stop` 停止并等待 worker，但保留回调共享资源；`on_deinit` 在排空后释放这些资源。`user_data` 归用户所有。存活 service 的名称必须唯一，同名实例会共享同一事件订阅 owner。
 
 ## 快速开始——子类化
 
@@ -130,11 +148,11 @@ esp_err_t my_service_create(my_service_t **out_svc)
 
 ### 生命周期事件
 
-基类在每次成功状态转换时自动发布 `ESP_SERVICE_EVENT_STATE_CHANGED`，其 ID 为 `UINT16_MAX - 1`；派生服务不得使用 `UINT16_MAX`（通配符）或 `UINT16_MAX - 1`。
+基类对 start/stop/pause/resume 的状态变化（包括错误状态）发布 `ESP_SERVICE_EVENT_STATE_CHANGED`，init 和销毁不发布；其 ID 为 `UINT16_MAX - 1`，派生服务不得使用 `UINT16_MAX`（通配符）或 `UINT16_MAX - 1`。
 
 | 事件 | 载荷 | 触发时机 |
 |------|------|----------|
-| `ESP_SERVICE_EVENT_STATE_CHANGED` | `esp_service_state_changed_payload_t`（`old_state`、`new_state`） | 任意生命周期转换 |
+| `ESP_SERVICE_EVENT_STATE_CHANGED` | `esp_service_state_changed_payload_t`（`old_state`、`new_state`） | start/stop/pause/resume 状态变化 |
 
 ### 领域事件（子类模式）
 
@@ -241,6 +259,15 @@ esp_service_event_subscribe((esp_service_t *)svc, &sub);
 | UART | `CONFIG_ESP_MCP_TRANSPORT_UART` | `esp_service_mcp_trans_uart.h` |
 | STDIO | `CONFIG_ESP_MCP_TRANSPORT_STDIO` | `esp_service_mcp_trans_stdio.h` |
 | SDIO | `CONFIG_ESP_MCP_TRANSPORT_SDIO` | `esp_service_mcp_trans_sdio.h` |
+
+### 支持的 ESP-IDF 版本
+
+开发和测试时，在应用的 `main/idf_component.yml` 中直接用 `override_path` 指向仓库内的 `esp_service`，不附加版本约束，可参考 `test_apps`。已发布组件的依赖版本约束保持不变。
+
+WebSocket 握手行为取决于 ESP-IDF 提供的能力。同时提供两个握手回调（`CONFIG_HTTPD_WS_PRE_HANDSHAKE_CB_SUPPORT` 与 `CONFIG_HTTPD_WS_POST_HANDSHAKE_CB_SUPPORT`，v5.5.5+ 与 v6.0.1+）的版本应答升级时不再调用 URI handler：bearer 与 `Origin` 校验在 pre-handshake 回调中执行，供 `broadcast()` 使用的客户端登记在 post-handshake 回调中完成。只有 pre-handshake 回调的版本（v5.4.3、v5.5.2–v5.5.4、v6.0）仍会为握手 GET 调用 URI handler，客户端在那里登记。v5.5.0 与 v5.5.1 两个回调都没有，且只在 `101` 发出之后才调用 handler，校验无法拒绝升级；除非未设置 `auth_token` 且 `enable_cors` 为 true，否则 `esp_service_mcp_trans_ws_start()` 在这些版本上返回 `ESP_ERR_NOT_SUPPORTED`。UART 与 SDIO 传输依赖 `esp_driver_uart` 与 `esp_driver_sdio` 组件，二者自 v5.3 起存在。
+
+公开 HTTP/SSE/WS 头文件暴露了 `httpd_handle_t`，所以 `esp_http_server` 必须为公开依赖。
+关闭 MCP 时完全裁剪 transport 依赖另行处理，当前 base 组件不承诺这项裁剪。
 
 ## 典型应用场景
 

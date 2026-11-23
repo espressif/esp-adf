@@ -4,8 +4,10 @@ set(srcs
     "service/esp_service_manager.c"
     "service/esp_service_scheduler.c"
 )
-set(requires freertos esp_timer log adf_event_hub esp_http_server esp_driver_uart)
-set(priv_requires)
+set(requires freertos esp_timer log adf_event_hub esp_driver_uart esp_http_server)
+# Requirements are resolved before sdkconfig is loaded, so a dependency added
+# under if(CONFIG_...) is ignored; esp_driver_sdio must be listed unconditionally.
+set(priv_requires esp_driver_sdio)
 
 # MCP layer — compiled only when CONFIG_ESP_MCP_ENABLE=y
 if(CONFIG_ESP_MCP_ENABLE)

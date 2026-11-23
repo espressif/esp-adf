@@ -12,16 +12,15 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <time.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_capture.h"
 #include "esp_log.h"
+#include "esp_muxer_default.h"
 #include "esp_service_scheduler.h"
 #include "esp_capture_service_priv.h"
 #include "esp_capture_service_setup.h"
 #include "capture_service_err.h"
-#include "esp_muxer_default.h"
 
 #define ESP_CAPTURE_SERVICE_STORAGE_SLICE_MS  600000
 #define ESP_CAPTURE_SERVICE_POLL_STEP_MS      10
@@ -308,9 +307,7 @@ static esp_err_t capture_service_setup_storage(capture_stream_t *stream)
         muxer_cfg.base_config->url_pattern_ex = storage_url_pattern;
     }
     muxer_cfg.base_config->ctx = stream;
-    muxer_cfg.base_config->slice_duration = stream->muxer.slice_duration ?
-                                            stream->muxer.slice_duration :
-                                            ESP_CAPTURE_SERVICE_STORAGE_SLICE_MS;
+    muxer_cfg.base_config->slice_duration = stream->muxer.slice_duration ? stream->muxer.slice_duration : ESP_CAPTURE_SERVICE_STORAGE_SLICE_MS;
     muxer_cfg.base_config->ram_cache_size = stream->muxer.ram_cache_size;
 
     esp_err_t ret = capture_err_to_esp(esp_capture_sink_add_muxer(stream->sink, &muxer_cfg));
@@ -661,7 +658,9 @@ static esp_err_t capture_service_on_stop(esp_service_t *base)
             (void)capture_stream_abort_provider(&service->streams[j], false);
         }
     }
-    return capture_err_to_esp(esp_capture_stop(service->capture));
+    esp_capture_err_t ret = esp_capture_stop(service->capture);
+    /* esp_capture 1.1 returns INVALID_STATE only when already stopped. */
+    return ret == ESP_CAPTURE_ERR_INVALID_STATE ? ESP_OK : capture_err_to_esp(ret);
 }
 
 static esp_err_t capture_service_on_deinit(esp_service_t *base)
@@ -673,9 +672,14 @@ static esp_err_t capture_service_on_deinit(esp_service_t *base)
     destroy_capture(service);
     if (service->deinit_cb != NULL) {
         esp_err_t ret = service->deinit_cb(service, service->user_data);
+        if (ret != ESP_OK) {
+            return ret;
+        }
         service->user_data = NULL;
         service->deinit_cb = NULL;
-        return ret;
+    }
+    if (scheduler_names == service->media.base.name) {
+        scheduler_names = NULL;
     }
     return ESP_OK;
 }
@@ -708,9 +712,6 @@ static void destroy_stream(capture_stream_t *stream)
 static void destroy_capture(esp_capture_service_t *service)
 {
     if (service->streams != NULL) {
-        if (service->capture != NULL) {
-            esp_capture_stop(service->capture);
-        }
         for (uint16_t i = 0; i < service->stream_num; i++) {
             destroy_stream(&service->streams[i]);
         }
@@ -737,7 +738,7 @@ esp_err_t capture_service_teardown(esp_capture_service_t *service)
     if (esp_service_get_state(ESP_SERVICE_BASE(service), &state) != ESP_OK) {
         return ESP_ERR_INVALID_STATE;
     }
-    if (state == ESP_SERVICE_STATE_RUNNING) {
+    if (state != ESP_SERVICE_STATE_INITIALIZED) {
         return ESP_ERR_INVALID_STATE;
     }
     if (!service->configured) {
@@ -758,16 +759,23 @@ esp_err_t esp_capture_service_create(const esp_capture_service_cfg_t *cfg, esp_c
     }
     service->max_stream_num = cfg->max_stream_num;
     static const esp_media_service_ops_t s_media_ops = {
-        .get_role     = media_get_role,
+        .get_role = media_get_role,
         .get_provider = media_get_provider,
         .set_provider = NULL,
-        .set_request  = media_set_request,
+        .set_request = media_set_request,
     };
     static const esp_service_ops_t s_service_ops = {
         .on_deinit = capture_service_on_deinit,
-        .on_start  = capture_service_on_start,
-        .on_stop   = capture_service_on_stop,
+        .on_start = capture_service_on_start,
+        .on_stop = capture_service_on_stop,
     };
+
+    // TODO only support one service currently
+    esp_capture_err_t capt_ret = esp_capture_set_thread_scheduler(capture_service_scheduler);
+    if (capt_ret != ESP_CAPTURE_ERR_OK) {
+        free(service);
+        RET_FOR(capture_err_to_esp(capt_ret), "Set scheduler failed");
+    }
 
     esp_media_service_config_t media_cfg = {
         .name = cfg->name ? cfg->name : ESP_CAPTURE_SERVICE_NAME,
@@ -779,14 +787,7 @@ esp_err_t esp_capture_service_create(const esp_capture_service_cfg_t *cfg, esp_c
         free(service);
         RET_FOR(ret, "Initialize media service failed");
     }
-    // TODO only support one service currently
     scheduler_names = service->media.base.name;
-    esp_capture_err_t capt_ret = esp_capture_set_thread_scheduler(capture_service_scheduler);
-    if (capt_ret != ESP_CAPTURE_ERR_OK) {
-        esp_media_service_deinit(&service->media.base);
-        free(service);
-        RET_FOR(capture_err_to_esp(capt_ret), "Set scheduler failed");
-    }
     *out_service = service;
     return ESP_OK;
 }
@@ -796,14 +797,13 @@ esp_err_t esp_capture_service_destroy(esp_capture_service_t *service)
     if (service == NULL) {
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid service");
     }
-    /* Destroy is best-effort: the service memory is always released, but the
-       deinit/callback result is propagated so callers can log a failure. */
     esp_err_t ret = esp_media_service_deinit(&service->media.base);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "%s:%d Deinitialize media service failed", __func__, __LINE__);
+        return ret;
     }
     free(service);
-    return ret;
+    return ESP_OK;
 }
 
 esp_err_t esp_capture_service_set_deinit_cb(esp_capture_service_t *service,
@@ -886,13 +886,13 @@ esp_err_t esp_capture_service_get_provider(esp_capture_service_t *service, esp_m
         RET_FOR(ESP_ERR_INVALID_ARG, "Invalid provider output");
     }
     static const esp_media_provider_ops_t s_provider_ops = {
-        .get_track_num  = provider_get_track_num,
+        .get_track_num = provider_get_track_num,
         .get_track_info = provider_get_track_info,
-        .set_event_cb   = provider_set_event_cb,
-        .acquire_frame  = provider_acquire_frame,
-        .read_frame     = provider_read_frame,
-        .release_frame  = provider_release_frame,
-        .abort          = provider_abort,
+        .set_event_cb = provider_set_event_cb,
+        .acquire_frame = provider_acquire_frame,
+        .read_frame = provider_read_frame,
+        .release_frame = provider_release_frame,
+        .abort = provider_abort,
     };
     out_provider->ops = &s_provider_ops;
     out_provider->ctx = stream_state;

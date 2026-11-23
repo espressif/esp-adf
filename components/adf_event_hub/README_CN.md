@@ -12,7 +12,7 @@
 - **容忍任意启动顺序** — `adf_event_hub_subscribe()` 可在目标域尚未创建时调用，目标域会被自动创建
 - **带引用计数的 envelope 投递** — 可选的 `release_cb` 在每次成功 publish 后被精确调用一次：若无队列模式订阅者则立即调用，否则在最后一次 `adf_event_hub_delivery_done()` 调用后触发；对所有代码路径下的堆上 payload 均安全
 - **尽力而为的队列投递** — 某个订阅者队列满只影响该订阅者的单次投递，不影响其他订阅者
-- **线程安全** — 所有公共 API 由单个内部互斥锁保护，可从任意任务安全调用（不支持 ISR）
+- **线程安全** — 内部互斥锁保护注册表与 envelope 池，订阅者分发在锁外执行。`publish()`、`subscribe()`、`delivery_done()` 只短暂持有内部互斥锁，不会等待订阅者或队列；`unsubscribe()` / `destroy()` 会等到没有其他任务正在向被移除的订阅投递后才返回（只等该条投递，不等整次分发；等待按 tick 轮询，持续到该 handler 返回为止，没有上限），并在所有尚未投递到它们的分发中跳过被移除的订阅，因此 handler 可以移除自己的 hub 并在返回 `ESP_OK` 后立即释放 handler 上下文（被移除的队列仍需先用 `delivery_done()` 排空再删除）；两个任务上的 handler 互相移除对方的订阅时不会死锁（后到者打印告警并直接返回 `ESP_ERR_NOT_FINISHED`：订阅已被移除，但对方 handler 仍在运行，其上下文须保持有效直到它返回）；可从任意任务安全调用（不支持 ISR）
 - **可观测** — `adf_event_hub_get_stats()` 返回每个域的订阅者数量与 envelope 池使用情况；`adf_event_hub_dump()` 输出完整状态日志
 
 ## 工作原理
@@ -32,6 +32,20 @@
 事件被浅拷贝到带引用计数的 envelope 槽中。回调模式订阅者在发布者任务里同步执行；队列模式订阅者收到 `adf_event_delivery_t` 项后，必须对每次投递调用恰好一次 `adf_event_hub_delivery_done()` 以释放引用。
 
 ## 配置说明
+
+### 统计结果所有权
+
+获取逐域统计时，为每个选中的 `adf_event_domain_stat_t` 提供调用方所有的 `domain`
+缓冲区和 `domain_capacity`（包含 NUL）。`get_stats()` 在注册表锁内复制名称，域移除后
+副本仍有效。缓冲区缺失或不足返回 `ESP_ERR_INVALID_SIZE`，不改写逐域条目，可扩大后重试。
+只取汇总统计时，将 `adf_event_hub_stats_t` 清零即可。
+
+`queue_drop_count` 累计模块启动后的满队列丢弃次数，在 `UINT32_MAX` 饱和。发布仍为非阻塞、
+尽力投递，队列满仍返回 `ESP_OK`，不改变 payload 所有权。仅首次丢弃告警，后续通过统计观测。
+
+句柄代表域名而非一次内存分配，同名重建返回同值。每次 create 必须配平一次 destroy，
+释放后不可继续使用旧句柄。envelope 池保留容量以复用槽位并保持 delivery token 的索引稳定，
+不自动缩容。dump 持锁时长、池高水位容量和 publish 栈占用保留为测量驱动的优化待办。
 
 `adf_event_hub` 没有模块级配置结构；状态以 hub 为粒度，在 `create` / `subscribe` 时设定。
 
@@ -134,15 +148,7 @@ adf_event_hub_publish(wifi_hub, &ev, release_payload, NULL);
 components/adf_event_hub/examples/
 ```
 
-同一份服务源码在两端都能编译：
-
 ```bash
-# PC 主机（FreeRTOS POSIX 模拟器）
-cd components/adf_event_hub/examples/host
-cmake -S . -B build -G Ninja
-cmake --build build
-./build/event_hub_example
-
 # ESP-IDF 目标（烧录到芯片）
 cd components/adf_event_hub/examples
 idf.py set-target esp32s3
@@ -151,5 +157,5 @@ idf.py build flash monitor
 
 ## 测试
 
-单元测试位于 [`test_apps/`](test_apps/)，共享同一套源码，同时在 PC 主机和 ESP 目标上编译运行。构建、运行、Sanitizer 和覆盖率用法详见 [`test_apps/README.md`](test_apps/README.md)。
+同一份单测固件可在真机或 EMU 中执行，参见[测试工程](test_apps/README_CN.md)。
 

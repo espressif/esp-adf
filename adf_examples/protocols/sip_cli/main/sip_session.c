@@ -475,58 +475,114 @@ static esp_err_t build_sip(const sip_session_opts_t *opts, esp_sip_service_t **o
     }
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Set up SIP service failed: %s", esp_err_to_name(ret));
-        (void)esp_media_service_deinit(base);
-        free(sip);
+        if (esp_media_service_deinit(base) == ESP_OK) {
+            free(sip);
+        }
         return ret;
     }
-
     *out_sip = sip;
     return ESP_OK;
 }
 
-static void session_release(void)
+static esp_err_t session_release(void)
 {
+    esp_err_t first_err = ESP_OK;
+
+    s_session.active = false;
     /* Producers stop first so consumers drain instead of blocking on an empty
        queue: capture feeds the uplink, and the SIP downlink feeds the player. */
     if (s_session.capture != NULL) {
-        (void)esp_service_stop(ESP_SERVICE_BASE(s_session.capture));
+        esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.capture));
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Stop capture failed: %s", esp_err_to_name(err));
+            first_err = err;
+        }
     }
     if (s_session.sip != NULL) {
-        (void)esp_service_stop(ESP_SERVICE_BASE(s_session.sip));
+        esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.sip));
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Stop SIP failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
     if (s_session.player != NULL) {
-        (void)esp_service_stop(ESP_SERVICE_BASE(s_session.player));
+        esp_err_t err = esp_service_stop(ESP_SERVICE_BASE(s_session.player));
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Stop player failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
 
     if (s_session.linked_up) {
-        (void)esp_media_service_unlink(ESP_SERVICE_BASE(s_session.capture), ESP_MEDIA_DEFAULT_STREAM,
-                                       ESP_SERVICE_BASE(s_session.sip), ESP_SIP_SERVICE_STREAM_UPLINK);
-        s_session.linked_up = false;
+        esp_err_t err = esp_media_service_unlink(ESP_SERVICE_BASE(s_session.capture), ESP_MEDIA_DEFAULT_STREAM,
+                                                 ESP_SERVICE_BASE(s_session.sip), ESP_SIP_SERVICE_STREAM_UPLINK);
+        if (err == ESP_OK) {
+            s_session.linked_up = false;
+        } else {
+            ESP_LOGE(TAG, "Unlink SIP uplink failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
     if (s_session.linked_down) {
-        (void)esp_media_service_unlink(ESP_SERVICE_BASE(s_session.sip), ESP_SIP_SERVICE_STREAM_DOWNLINK,
-                                       ESP_SERVICE_BASE(s_session.player), ESP_MEDIA_DEFAULT_STREAM);
-        s_session.linked_down = false;
+        esp_err_t err = esp_media_service_unlink(ESP_SERVICE_BASE(s_session.sip), ESP_SIP_SERVICE_STREAM_DOWNLINK,
+                                                 ESP_SERVICE_BASE(s_session.player), ESP_MEDIA_DEFAULT_STREAM);
+        if (err == ESP_OK) {
+            s_session.linked_down = false;
+        } else {
+            ESP_LOGE(TAG, "Unlink SIP downlink failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
 
     if (s_session.sip != NULL) {
-        (void)esp_media_service_deinit(ESP_SERVICE_BASE(s_session.sip));
-        free(s_session.sip);
-        s_session.sip = NULL;
+        esp_err_t err = esp_media_service_deinit(ESP_SERVICE_BASE(s_session.sip));
+        if (err == ESP_OK) {
+            free(s_session.sip);
+            s_session.sip = NULL;
+        } else {
+            ESP_LOGE(TAG, "Deinitialize SIP failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
     if (s_session.capture != NULL) {
-        (void)esp_capture_service_destroy(s_session.capture);
-        s_session.capture = NULL;
+        esp_err_t err = esp_capture_service_destroy(s_session.capture);
+        if (err == ESP_OK) {
+            s_session.capture = NULL;
+        } else {
+            ESP_LOGE(TAG, "Destroy capture failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
     if (s_session.player != NULL) {
-        (void)esp_player_service_destroy(s_session.player);
-        s_session.player = NULL;
+        esp_err_t err = esp_player_service_destroy(s_session.player);
+        if (err == ESP_OK) {
+            s_session.player = NULL;
+        } else {
+            ESP_LOGE(TAG, "Destroy player failed: %s", esp_err_to_name(err));
+            if (first_err == ESP_OK) {
+                first_err = err;
+            }
+        }
     }
 
-    s_session.active = false;
-    s_session.registered = false;
-    s_session.call = CALL_IDLE;
-    s_session.peer[0] = '\0';
+    if (s_session.sip == NULL && s_session.capture == NULL && s_session.player == NULL) {
+        s_session.registered = false;
+        s_session.call = CALL_IDLE;
+        s_session.peer[0] = '\0';
+    }
+    return first_err;
 }
 
 void sip_session_opts_default(sip_session_opts_t *opts)
@@ -556,7 +612,7 @@ void sip_session_opts_default(sip_session_opts_t *opts)
 esp_err_t sip_session_start(const sip_session_opts_t *opts)
 {
     ESP_RETURN_ON_FALSE(opts != NULL, ESP_ERR_INVALID_ARG, TAG, "No options");
-    ESP_RETURN_ON_FALSE(!s_session.active, ESP_ERR_INVALID_STATE, TAG,
+    ESP_RETURN_ON_FALSE(!sip_session_is_active(), ESP_ERR_INVALID_STATE, TAG,
                         "A session is running; stop it with 'sip stop' first");
     ESP_RETURN_ON_FALSE(opts->user != NULL && opts->user[0] != '\0' && opts->server != NULL &&
                             opts->server[0] != '\0',
@@ -624,12 +680,11 @@ esp_err_t sip_session_start(const sip_session_opts_t *opts)
 
 esp_err_t sip_session_stop(void)
 {
-    if (!s_session.active) {
+    if (!sip_session_is_active()) {
         return ESP_OK;
     }
     ESP_LOGI(TAG, "Stopping the SIP session");
-    session_release();
-    return ESP_OK;
+    return session_release();
 }
 
 esp_err_t sip_session_call(const char *peer)
@@ -703,7 +758,7 @@ void sip_session_set_auto_answer(bool enable)
 
 bool sip_session_is_active(void)
 {
-    return s_session.active;
+    return s_session.sip != NULL || s_session.capture != NULL || s_session.player != NULL;
 }
 
 void sip_session_print_info(void)

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Preserve the instance on any base teardown failure and retain failed provisioning resources for cleanup retry
+- Suppress expected shutdown-notification rejection instead of reporting a false stop failure
+
 ## v0.5.3
 
 ### Features

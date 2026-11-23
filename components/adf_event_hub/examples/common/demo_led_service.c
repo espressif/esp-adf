@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdatomic.h>
 #include "demo_led_service.h"
 #include "demo_button_service.h"
 #include "demo_wifi_service.h"
@@ -17,14 +18,16 @@
 static const char *TAG = "LED";
 
 #define LED_QUEUE_LEN      48
+#define LED_TASK_STACK     (6 * 1024)
 #define LED_TASK_PRIORITY  (tskIDLE_PRIORITY + 2)
 
 struct demo_led_service {
-    adf_event_hub_t  hub;
-    QueueHandle_t    queue;
-    TaskHandle_t     task;
-    volatile bool    running;
-    int              total_processed;
+    adf_event_hub_t    hub;
+    QueueHandle_t      queue;
+    TaskHandle_t       task;
+    SemaphoreHandle_t  exited;
+    atomic_bool        running;
+    int                total_processed;
 };
 
 static const char *domain_evt_name(const char *domain, uint16_t id)
@@ -91,6 +94,7 @@ static void led_task(void *arg)
 
     ESP_LOGI(TAG, "Task stopped (total events processed: %d)",
              svc->total_processed);
+    xSemaphoreGive(svc->exited);
     vTaskDelete(NULL);
 }
 
@@ -100,7 +104,7 @@ demo_led_service_t *demo_led_service_create(void)
     if (!svc) {
         return NULL;
     }
-    svc->running = true;
+    atomic_init(&svc->running, true);
 
     esp_err_t ret = adf_event_hub_create(LED_DOMAIN, &svc->hub);
     if (ret != ESP_OK) {
@@ -117,6 +121,14 @@ demo_led_service_t *demo_led_service_create(void)
         return NULL;
     }
 
+    svc->exited = xSemaphoreCreateBinary();
+    if (!svc->exited) {
+        ESP_LOGE(TAG, "Create failed: no worker exit semaphore");
+        adf_event_hub_destroy(svc->hub);
+        vQueueDelete(svc->queue);
+        free(svc);
+        return NULL;
+    }
     const char *domains[] = {
         BUTTON_DOMAIN, WIFI_DOMAIN, OTA_DOMAIN, PLAYER_DOMAIN};
     for (int i = 0; i < 4; i++) {
@@ -126,18 +138,16 @@ demo_led_service_t *demo_led_service_create(void)
         ret = adf_event_hub_subscribe(svc->hub, &info);
         if (ret != ESP_OK) {
             ESP_LOGW(TAG, "Failed to subscribe to %s: 0x%x", domains[i], ret);
+            goto fail;
         }
     }
 
     BaseType_t ok = xTaskCreate(led_task, "led_svc",
-                                configMINIMAL_STACK_SIZE * 2,
+                                LED_TASK_STACK,
                                 svc, LED_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");
-        vQueueDelete(svc->queue);
-        adf_event_hub_destroy(svc->hub);
-        free(svc);
-        return NULL;
+        goto fail;
     }
 
     ESP_LOGI(TAG, "Service created (domain='%s'), subscribed to "
@@ -145,6 +155,18 @@ demo_led_service_t *demo_led_service_create(void)
              LED_DOMAIN, BUTTON_DOMAIN, WIFI_DOMAIN,
              OTA_DOMAIN, PLAYER_DOMAIN);
     return svc;
+
+fail:
+    (void)adf_event_hub_unsubscribe_all(svc->hub);
+    adf_event_delivery_t delivery;
+    while (xQueueReceive(svc->queue, &delivery, 0) == pdTRUE) {
+        adf_event_hub_delivery_done(svc->hub, &delivery);
+    }
+    (void)adf_event_hub_destroy(svc->hub);
+    vQueueDelete(svc->queue);
+    vSemaphoreDelete(svc->exited);
+    free(svc);
+    return NULL;
 }
 
 void demo_led_service_destroy(demo_led_service_t *svc)
@@ -152,10 +174,28 @@ void demo_led_service_destroy(demo_led_service_t *svc)
     if (!svc) {
         return;
     }
+    bool dispatching = false;
+    adf_event_hub_is_dispatching(&dispatching);
+    if (dispatching || svc->task == xTaskGetCurrentTaskHandle()) {
+        ESP_LOGW(TAG, "Destroy: request teardown from the owner task");
+        return;
+    }
+    /* Cancel admission before the consumer performs its final queue drain. */
+    if (adf_event_hub_unsubscribe_all(svc->hub) != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy: deliveries have not drained; retry from the owner task");
+        return;
+    }
     svc->running = false;
-    vTaskDelay(pdMS_TO_TICKS(300));
+    if (svc->task) {
+        xSemaphoreTake(svc->exited, portMAX_DELAY);
+        svc->task = NULL;
+    }
+    if (adf_event_hub_destroy(svc->hub) != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy: hub is still in use; retry from the owner task");
+        return;
+    }
     vQueueDelete(svc->queue);
-    adf_event_hub_destroy(svc->hub);
+    vSemaphoreDelete(svc->exited);
     ESP_LOGI(TAG, "Service destroyed (total events processed: %d)",
              svc->total_processed);
     free(svc);

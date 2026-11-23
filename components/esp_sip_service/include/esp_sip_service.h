@@ -9,10 +9,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
 #include "esp_err.h"
-#include "esp_media_service.h"
 #include "esp_rtc.h"
+#include "esp_media_service.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,6 +38,10 @@ extern "C" {
 #define ESP_SIP_SERVICE_CONTENT_TYPE_MAX  32
 #define ESP_SIP_SERVICE_BODY_MAX          1024
 #define ESP_SIP_SERVICE_DTMF_MAX          16
+
+#define ESP_SIP_SERVICE_CFG_DEFAULT()  {  \
+    .name = ESP_SIP_SERVICE_NAME,         \
+}
 
 typedef struct esp_sip_service esp_sip_service_t;
 
@@ -111,15 +114,13 @@ typedef struct {
  * @brief  SIP service create configuration
  *
  *         Session settings are applied through esp_sip_service_ops.h.
- *         Tear down with esp_media_service_deinit() then free the handle.
+ *         Call esp_media_service_deinit() from the owner task and free only
+ *         after ESP_OK. Any failure retains the handle for teardown retry.
+ *         Do not deinitialize from callbacks or while external callers run.
  */
 typedef struct {
     const char *name;  /*!< Service name, NULL uses ESP_SIP_SERVICE_NAME */
 } esp_sip_service_cfg_t;
-
-#define ESP_SIP_SERVICE_CFG_DEFAULT()  {  \
-    .name = ESP_SIP_SERVICE_NAME,         \
-}
 
 /**
  * @brief  Create a SIP service
@@ -127,7 +128,7 @@ typedef struct {
  *         Recommended flow:
  *         create -> setup / set_uri or set_account -> optional uplink link ->
  *         start -> call / answer / bye / send_message -> stop -> unlink
- *         -> esp_media_service_deinit() -> free().
+ *         -> esp_media_service_deinit() -> free() only after ESP_OK.
  *
  *         The service always reports ESP_MEDIA_ROLE_SRC_SINK. A linked
  *         uplink track supplies the negotiated codec; a receive-only device

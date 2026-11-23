@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
 #include "esp_err.h"
 #include "esp_service.h"
 #include "esp_wifi_service_profile_mgr.h"
@@ -68,7 +67,7 @@ typedef struct {
  * @brief  Create Wi-Fi service instance
  *
  * @note  The caller is responsible for creating the profile manager before calling this function and
- *        destroying it after @c esp_wifi_service_destroy returns. The same handle should be passed to
+ *        destroying it after @c esp_wifi_service_destroy succeeds. The same handle should be passed to
  *        each provisioning config so that all components share one profile store.
  *
  * @param[in]   cfg          Required configuration; @c profile_manager must be a valid, initialised handle
@@ -84,11 +83,16 @@ esp_err_t esp_wifi_service_create(const esp_wifi_service_config_t *cfg, esp_wifi
 /**
  * @brief  Destroy the service
  *
+ * @note  Single-owner operation, never from subscriber callbacks. Success
+ *        frees the instance; failure retains it for teardown retry. Stop all
+ *        external callers first; do not manually free a failed instance.
+ *
  * @param[in]  service  Service handle
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  Invalid argument
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_ARG    Invalid argument
+ *       - Others                 Cleanup error; instance retained for retry
  */
 esp_err_t esp_wifi_service_destroy(esp_wifi_service_t *service);
 
@@ -119,7 +123,7 @@ esp_err_t esp_wifi_service_get_profile_manager(esp_wifi_service_t *service, esp_
  *       - ESP_ERR_INVALID_ARG  NULL argument
  */
 esp_err_t esp_wifi_service_get_scan_handle(esp_wifi_service_t *service,
-                                          esp_wifi_service_scan_handle_t *scan_handle_out);
+                                           esp_wifi_service_scan_handle_t *scan_handle_out);
 
 /**
  * @brief  Start all provisioning instances

@@ -60,7 +60,7 @@ static esp_err_t drain_stream(esp_media_dummy_service_t *svc, uint16_t stream)
         }
         ret = drain_track(svc, stream, info.type);
         if (ret != ESP_OK) {
-            if (ret == ESP_ERR_TIMEOUT) {
+            if (ret == ESP_ERR_TIMEOUT || ret == ESP_ERR_INVALID_STATE) {
                 continue;
             }
             return ret;
@@ -82,7 +82,7 @@ static void sink_consume_task(void *ctx)
             linked = true;
             esp_err_t ret = drain_stream(svc, i);
             if (ret != ESP_OK) {
-                if (ret == ESP_ERR_TIMEOUT) {
+                if (ret == ESP_ERR_TIMEOUT || ret == ESP_ERR_INVALID_STATE) {
                     continue;
                 }
                 err_stream++;

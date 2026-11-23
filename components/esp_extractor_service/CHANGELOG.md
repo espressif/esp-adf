@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Preserve callback-shared IO until event draining completes and free the example handle only after successful deinitialization
+- Update example cleanup to retain failed teardown handles for retry
+
 ## v0.5.0~1
 
 ### Changes

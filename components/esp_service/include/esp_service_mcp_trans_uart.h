@@ -16,32 +16,6 @@ extern "C" {
 #endif  /* __cplusplus */
 
 /**
- * @brief  UART transport configuration
- *
- *         Line-based protocol over UART:
- *         - Input:  one JSON-RPC request per line (terminated by '\n')
- *         - Output: one JSON-RPC response per line (terminated by '\n')
- */
-typedef struct {
-    uart_port_t            uart_port;         /*!< UART port number (default: UART_NUM_1) */
-    int                    baud_rate;         /*!< Baud rate (default: 115200) */
-    int                    tx_pin;            /*!< TX GPIO pin (default: UART_PIN_NO_CHANGE) */
-    int                    rx_pin;            /*!< RX GPIO pin (default: UART_PIN_NO_CHANGE) */
-    int                    rts_pin;           /*!< RTS GPIO pin (default: UART_PIN_NO_CHANGE) */
-    int                    cts_pin;           /*!< CTS GPIO pin (default: UART_PIN_NO_CHANGE) */
-    size_t                 rx_buffer_size;    /*!< UART RX ring buffer size (default: 2048) */
-    size_t                 tx_buffer_size;    /*!< UART TX ring buffer size (default: 0, blocking) */
-    size_t                 max_request_size;  /*!< Max request line length (default: 4096) */
-    size_t                 stack_size;        /*!< Reader task stack size (default: 4096) */
-    int                    task_priority;     /*!< Reader task priority (default: 5) */
-    int                    task_core;         /*!< Reader task core affinity (-1 = any, default: -1) */
-    uart_word_length_t     data_bits;         /*!< Data bits (default: UART_DATA_8_BITS) */
-    uart_parity_t          parity;            /*!< Parity (default: UART_PARITY_DISABLE) */
-    uart_stop_bits_t       stop_bits;         /*!< Stop bits (default: UART_STOP_BITS_1) */
-    uart_hw_flowcontrol_t  flow_ctrl;         /*!< Flow control (default: UART_HW_FLOWCTRL_DISABLE) */
-} esp_service_mcp_uart_config_t;
-
-/**
  * @brief  Default UART configuration
  */
 #define ESP_SERVICE_MCP_UART_CONFIG_DEFAULT()  {   \
@@ -64,6 +38,33 @@ typedef struct {
 }
 
 /**
+ * @brief  UART transport configuration
+ *
+ *         Line-based protocol over UART:
+ *         - Input:  one JSON-RPC request per line (terminated by '\n')
+ *         - Output: one JSON-RPC response per line (terminated by '\n')
+ */
+typedef struct {
+    uart_port_t            uart_port;         /*!< UART port number (default: UART_NUM_1) */
+    int                    baud_rate;         /*!< Baud rate (default: 115200) */
+    int                    tx_pin;            /*!< TX GPIO pin (default: UART_PIN_NO_CHANGE) */
+    int                    rx_pin;            /*!< RX GPIO pin (default: UART_PIN_NO_CHANGE) */
+    int                    rts_pin;           /*!< RTS GPIO pin (default: UART_PIN_NO_CHANGE) */
+    int                    cts_pin;           /*!< CTS GPIO pin (default: UART_PIN_NO_CHANGE) */
+    size_t                 rx_buffer_size;    /*!< UART RX ring buffer size (default: 2048) */
+    size_t                 tx_buffer_size;    /*!< UART TX ring buffer size (default: 0, blocking) */
+    size_t                 max_request_size;  /*!< Max request line length including the terminator, at least 2
+                                               * (default: 4096); create() rejects smaller with ESP_ERR_INVALID_ARG */
+    size_t                 stack_size;        /*!< Reader task stack size (default: 4096) */
+    int                    task_priority;     /*!< Reader task priority (default: 5) */
+    int                    task_core;         /*!< Reader task core affinity (-1 = any, default: -1) */
+    uart_word_length_t     data_bits;         /*!< Data bits (default: UART_DATA_8_BITS) */
+    uart_parity_t          parity;            /*!< Parity (default: UART_PARITY_DISABLE) */
+    uart_stop_bits_t       stop_bits;         /*!< Stop bits (default: UART_STOP_BITS_1) */
+    uart_hw_flowcontrol_t  flow_ctrl;         /*!< Flow control (default: UART_HW_FLOWCTRL_DISABLE) */
+} esp_service_mcp_uart_config_t;
+
+/**
  * @brief  Create UART transport
  *
  * @param[in]   config         UART configuration (NULL for defaults)
@@ -71,7 +72,7 @@ typedef struct {
  *
  * @return
  *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  out_transport is NULL
+ *       - ESP_ERR_INVALID_ARG  out_transport is NULL or config->max_request_size < 2
  *       - ESP_ERR_NO_MEM       Allocation failed
  */
 esp_err_t esp_service_mcp_trans_uart_create(const esp_service_mcp_uart_config_t *config, esp_service_mcp_trans_t **out_transport);

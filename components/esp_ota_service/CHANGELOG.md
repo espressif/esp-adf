@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Return ESP_ERR_TIMEOUT if the worker has not exited. Destroy stops the worker before releasing resources; failure retains the instance for retry.
+
 ## v0.5.2~3
 
 ### Changes

@@ -7,18 +7,21 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include "demo_button_service.h"
 
 static const char *TAG = "Button";
 
+#define BUTTON_TASK_STACK     (6 * 1024)
 #define BUTTON_TASK_PRIORITY  (tskIDLE_PRIORITY + 4)
 
 struct demo_button_service {
-    adf_event_hub_t  hub;
-    TaskHandle_t     task;
-    volatile bool    running;
-    int              rounds;
-    int              events_sent;
+    adf_event_hub_t    hub;
+    TaskHandle_t       task;
+    SemaphoreHandle_t  exited;
+    atomic_bool        running;
+    int                rounds;
+    int                events_sent;
 };
 
 static void button_task(void *arg)
@@ -52,6 +55,7 @@ static void button_task(void *arg)
     }
 
     ESP_LOGI(TAG, "Task finished (%d events sent)", svc->events_sent);
+    xSemaphoreGive(svc->exited);
     vTaskDelete(NULL);
 }
 
@@ -62,7 +66,7 @@ demo_button_service_t *demo_button_service_create(int rounds)
         return NULL;
     }
     svc->rounds = rounds;
-    svc->running = true;
+    atomic_init(&svc->running, true);
 
     esp_err_t ret = adf_event_hub_create(BUTTON_DOMAIN, &svc->hub);
     if (ret != ESP_OK) {
@@ -71,12 +75,20 @@ demo_button_service_t *demo_button_service_create(int rounds)
         return NULL;
     }
 
+    svc->exited = xSemaphoreCreateBinary();
+    if (!svc->exited) {
+        ESP_LOGE(TAG, "Create failed: no worker exit semaphore");
+        adf_event_hub_destroy(svc->hub);
+        free(svc);
+        return NULL;
+    }
     BaseType_t ok = xTaskCreate(button_task, "btn_svc",
-                                configMINIMAL_STACK_SIZE * 2,
+                                BUTTON_TASK_STACK,
                                 svc, BUTTON_TASK_PRIORITY, &svc->task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create task");
         adf_event_hub_destroy(svc->hub);
+        vSemaphoreDelete(svc->exited);
         free(svc);
         return NULL;
     }
@@ -90,9 +102,22 @@ void demo_button_service_destroy(demo_button_service_t *svc)
     if (!svc) {
         return;
     }
+    bool dispatching = false;
+    adf_event_hub_is_dispatching(&dispatching);
+    if (dispatching || svc->task == xTaskGetCurrentTaskHandle()) {
+        ESP_LOGW(TAG, "Destroy: request teardown from the owner task");
+        return;
+    }
     svc->running = false;
-    vTaskDelay(pdMS_TO_TICKS(200));
-    adf_event_hub_destroy(svc->hub);
+    if (svc->task) {
+        xSemaphoreTake(svc->exited, portMAX_DELAY);
+        svc->task = NULL;
+    }
+    if (adf_event_hub_destroy(svc->hub) != ESP_OK) {
+        ESP_LOGW(TAG, "Destroy: hub is still in use; retry from the owner task");
+        return;
+    }
+    vSemaphoreDelete(svc->exited);
     ESP_LOGI(TAG, "Service destroyed (%d events sent)", svc->events_sent);
     free(svc);
 }

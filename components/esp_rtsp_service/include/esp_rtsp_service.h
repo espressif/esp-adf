@@ -9,22 +9,37 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
 #include "esp_err.h"
-#include "esp_media_service.h"
 #include "esp_rtsp.h"
+#include "esp_media_service.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
 
-#define ESP_RTSP_SERVICE_NAME              "esp_rtsp_service"
-#define ESP_RTSP_SERVICE_DEFAULT_PATH      "/live"
-#define ESP_RTSP_SERVICE_DEFAULT_PORT      554
+#define ESP_RTSP_SERVICE_NAME          "esp_rtsp_service"
+#define ESP_RTSP_SERVICE_DEFAULT_PATH  "/live"
+#define ESP_RTSP_SERVICE_DEFAULT_PORT  554
 
 #define ESP_RTSP_SERVICE_PUSH_TASK_NAME    "rtsp_push"
 #define ESP_RTSP_SERVICE_SRC_TASK_NAME     "rtsp_src"
 #define ESP_RTSP_SERVICE_SERVER_TASK_NAME  "rtsp_server"
+
+#define ESP_RTSP_SERVICE_CFG_DEFAULT(_role)  {  \
+    .name = ESP_RTSP_SERVICE_NAME,              \
+    .role = (_role),                            \
+}
+
+#define ESP_RTSP_SERVICE_SETUP_DEFAULT()  {             \
+    .local_port       = ESP_RTSP_SERVICE_DEFAULT_PORT,  \
+    .transport        = RTSP_TRANSPORT_UDP,             \
+    .audio_enable     = true,                           \
+    .video_enable     = true,                           \
+    .audio_cache_size = 0,                              \
+    .video_cache_size = 0,                              \
+    .aud_frame_size   = 0,                              \
+    .vid_frame_size   = 0,                              \
+}
 
 typedef struct esp_rtsp_service esp_rtsp_service_t;
 
@@ -61,25 +76,21 @@ typedef enum {
  * @brief  Payload published with RTSP service events
  */
 typedef struct {
-    esp_rtsp_service_role_t role;   /*!< Service role that emitted the event */
-    esp_rtsp_state_t        state;  /*!< Native RTSP state mapped to the event ID */
+    esp_rtsp_service_role_t  role;   /*!< Service role that emitted the event */
+    esp_rtsp_state_t         state;  /*!< Native RTSP state mapped to the event ID */
 } esp_rtsp_service_event_payload_t;
 
 /**
  * @brief  RTSP service create configuration
  *
  *         Stream/session settings are applied by esp_rtsp_service_setup().
- *         Tear down with esp_media_service_deinit() then free the handle.
+ *         Call esp_media_service_deinit() from the owner task and free the handle
+ *         only on success. On failure retain the handle for cleanup retry.
  */
 typedef struct {
     const char              *name;  /*!< Service name, NULL uses ESP_RTSP_SERVICE_NAME */
     esp_rtsp_service_role_t  role;  /*!< Service role */
 } esp_rtsp_service_cfg_t;
-
-#define ESP_RTSP_SERVICE_CFG_DEFAULT(_role) {  \
-    .name = ESP_RTSP_SERVICE_NAME,             \
-    .role = (_role),                           \
-}
 
 /**
  * @brief  Optional stream/session setup before start
@@ -99,23 +110,12 @@ typedef struct {
     uint32_t              vid_frame_size;    /*!< Video max frame length; 0 uses default (64 KB) */
 } esp_rtsp_service_setup_t;
 
-#define ESP_RTSP_SERVICE_SETUP_DEFAULT() {           \
-    .local_port = ESP_RTSP_SERVICE_DEFAULT_PORT,     \
-    .transport = RTSP_TRANSPORT_UDP,                 \
-    .audio_enable = true,                            \
-    .video_enable = true,                            \
-    .audio_cache_size = 0,                           \
-    .video_cache_size = 0,                           \
-    .aud_frame_size = 0,                             \
-    .vid_frame_size = 0,                             \
-}
-
 /**
  * @brief  Create an RTSP service
  *
  *         Recommended flow:
  *         create -> setup / set_url / set_ip -> optional link -> start -> stop
- *         -> unlink -> esp_media_service_deinit() -> free().
+ *         -> unlink -> esp_media_service_deinit() -> free() only after ESP_OK.
  *
  * @param[in]   cfg          Create configuration (name + role)
  * @param[out]  out_service  Receives the created service handle

@@ -6,19 +6,19 @@
  */
 
 #include <stdlib.h>
-#include "adf_mem.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdatomic.h>
 #include "sys/queue.h"
 #include "esp_log.h"
 #include "esp_err.h"
-#include "adf_vec.h"
-#include "esp_button_service.h"
 #include "esp_board_device.h"
 #include "esp_board_manager_defs.h"
 #include "dev_button.h"
 #include "iot_button.h"
+#include "adf_mem.h"
+#include "adf_vec.h"
+#include "esp_button_service.h"
 
 /* Linked list head from board-generated code (esp_board_manager). */
 extern const esp_board_device_desc_t g_esp_board_devices[];
@@ -471,11 +471,12 @@ esp_err_t esp_button_service_create(const esp_button_service_cfg_t *cfg,
     base_cfg.name = cfg->name ? cfg->name : "esp_button_service";
     base_cfg.user_data = priv;
 
-    /* esp_service_init calls on_init synchronously; on failure it calls on_deinit,
-     * freeing priv and any partially initialized devices — only btn needs freeing here. */
+    /* esp_service_init does not invoke on_deinit when on_init fails; release
+     * priv and any partially initialized button devices here. */
     esp_err_t ret = esp_service_init(&btn->base, &base_cfg, &s_btn_ops);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Create failed: esp_service_init, %s", esp_err_to_name(ret));
+        (void)button_on_deinit(&btn->base);
         adf_free(btn);
         return ret;
     }
@@ -491,7 +492,10 @@ esp_err_t esp_button_service_destroy(esp_button_service_t *svc)
         ESP_LOGE(TAG, "Destroy failed: svc is NULL");
         return ESP_ERR_INVALID_ARG;
     }
-    esp_service_deinit(&svc->base);
+    esp_err_t ret = esp_service_deinit(&svc->base);
+    if (ret != ESP_OK) {
+        return ret;
+    }
     adf_free(svc);
     ESP_LOGI(TAG, "Destroy 'esp_button_service': done");
     return ESP_OK;

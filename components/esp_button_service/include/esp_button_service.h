@@ -8,13 +8,31 @@
 #pragma once
 
 #include <stdint.h>
-
 #include "esp_err.h"
 #include "esp_service.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
+
+/**
+ * @brief  Bitmask constants for selecting which iot_button events to register.
+ *
+ *         Pass an OR of these values in esp_button_service_cfg_t::event_mask.
+ */
+#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_DOWN         (1u << ESP_BUTTON_SERVICE_EVT_PRESS_DOWN)
+#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_UP           (1u << ESP_BUTTON_SERVICE_EVT_PRESS_UP)
+#define ESP_BUTTON_SERVICE_EVT_MASK_SINGLE_CLICK       (1u << ESP_BUTTON_SERVICE_EVT_SINGLE_CLICK)
+#define ESP_BUTTON_SERVICE_EVT_MASK_DOUBLE_CLICK       (1u << ESP_BUTTON_SERVICE_EVT_DOUBLE_CLICK)
+#define ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_START   (1u << ESP_BUTTON_SERVICE_EVT_LONG_PRESS_START)
+#define ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_HOLD    (1u << ESP_BUTTON_SERVICE_EVT_LONG_PRESS_HOLD)
+#define ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_UP      (1u << ESP_BUTTON_SERVICE_EVT_LONG_PRESS_UP)
+#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_REPEAT       (1u << ESP_BUTTON_SERVICE_EVT_PRESS_REPEAT)
+#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_REPEAT_DONE  (1u << ESP_BUTTON_SERVICE_EVT_PRESS_REPEAT_DONE)
+#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_END          (1u << ESP_BUTTON_SERVICE_EVT_PRESS_END)
+
+/** Default event mask: the most common button interactions */
+#define ESP_BUTTON_SERVICE_EVT_MASK_DEFAULT  (ESP_BUTTON_SERVICE_EVT_MASK_PRESS_DOWN | ESP_BUTTON_SERVICE_EVT_MASK_PRESS_UP | ESP_BUTTON_SERVICE_EVT_MASK_SINGLE_CLICK | ESP_BUTTON_SERVICE_EVT_MASK_DOUBLE_CLICK | ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_START | ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_UP)
 
 typedef struct esp_button_service esp_button_service_t;
 
@@ -38,26 +56,6 @@ enum {
     ESP_BUTTON_SERVICE_EVT_PRESS_REPEAT_DONE = 9,   /*!< Repeat press sequence ended */
     ESP_BUTTON_SERVICE_EVT_PRESS_END         = 10,  /*!< Press sequence complete */
 };
-
-/**
- * @brief  Bitmask constants for selecting which iot_button events to register.
- *
- *         Pass an OR of these values in esp_button_service_cfg_t::event_mask.
- */
-#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_DOWN         (1u << ESP_BUTTON_SERVICE_EVT_PRESS_DOWN)
-#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_UP           (1u << ESP_BUTTON_SERVICE_EVT_PRESS_UP)
-#define ESP_BUTTON_SERVICE_EVT_MASK_SINGLE_CLICK       (1u << ESP_BUTTON_SERVICE_EVT_SINGLE_CLICK)
-#define ESP_BUTTON_SERVICE_EVT_MASK_DOUBLE_CLICK       (1u << ESP_BUTTON_SERVICE_EVT_DOUBLE_CLICK)
-#define ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_START   (1u << ESP_BUTTON_SERVICE_EVT_LONG_PRESS_START)
-#define ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_HOLD    (1u << ESP_BUTTON_SERVICE_EVT_LONG_PRESS_HOLD)
-#define ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_UP      (1u << ESP_BUTTON_SERVICE_EVT_LONG_PRESS_UP)
-#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_REPEAT       (1u << ESP_BUTTON_SERVICE_EVT_PRESS_REPEAT)
-#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_REPEAT_DONE  (1u << ESP_BUTTON_SERVICE_EVT_PRESS_REPEAT_DONE)
-#define ESP_BUTTON_SERVICE_EVT_MASK_PRESS_END          (1u << ESP_BUTTON_SERVICE_EVT_PRESS_END)
-
-/** Default event mask: the most common button interactions */
-#define ESP_BUTTON_SERVICE_EVT_MASK_DEFAULT  \
-    (ESP_BUTTON_SERVICE_EVT_MASK_PRESS_DOWN | ESP_BUTTON_SERVICE_EVT_MASK_PRESS_UP | ESP_BUTTON_SERVICE_EVT_MASK_SINGLE_CLICK | ESP_BUTTON_SERVICE_EVT_MASK_DOUBLE_CLICK | ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_START | ESP_BUTTON_SERVICE_EVT_MASK_LONG_PRESS_UP)
 
 /**
  * @brief  Payload carried by every ESP_BUTTON_SERVICE_EVT_* event.
@@ -107,13 +105,16 @@ esp_err_t esp_button_service_create(const esp_button_service_cfg_t *cfg, esp_but
  * @brief  Stop, deinitialize, and free the button service.
  *
  *         Deinitializes all board-manager devices and releases all resources.
- *         After this call the pointer is invalid.
+ *         Only ESP_OK invalidates the pointer. On error retain it for destroy
+ *         retry and never free it manually. Single-owner operation after
+ *         stopping external callers; not for event/lifecycle callbacks.
  *
  * @param[in]  svc  Service instance returned by esp_button_service_create().
  *
  * @return
  *       - ESP_OK               On success
  *       - ESP_ERR_INVALID_ARG  svc is NULL
+ *       - other                Teardown failed; instance retained for retry
  */
 esp_err_t esp_button_service_destroy(esp_button_service_t *svc);
 

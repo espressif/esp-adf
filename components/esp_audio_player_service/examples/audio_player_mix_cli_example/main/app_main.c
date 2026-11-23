@@ -36,7 +36,10 @@ static esp_err_t create_player_service(esp_player_service_t **out_service)
     setup_cfg.dev_name = ESP_BOARD_DEVICE_NAME_AUDIO_DAC;
     esp_err_t ret = esp_audio_player_service_apply_setup(service, &setup_cfg);
     if (ret != ESP_OK) {
-        esp_player_service_destroy(service);
+        esp_err_t destroy_ret = esp_player_service_destroy(service);
+        if (destroy_ret != ESP_OK) {
+            ESP_LOGE(TAG, "Destroy player failed during rollback: %s", esp_err_to_name(destroy_ret));
+        }
         return ret;
     }
 

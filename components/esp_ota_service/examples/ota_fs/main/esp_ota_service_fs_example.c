@@ -583,7 +583,7 @@ esp_err_t esp_ota_service_fs_example_run_ota(const char *mount_point)
     if ((bits & EVT_OTA_DONE) && (bits & EVT_OTA_SUCCESS) && !(bits & EVT_OTA_FAIL)) {
         /* At least one item upgraded — reboot to apply the new image. */
         ESP_LOGI(TAG, "Run_ota: OTA session finished successfully — rebooting to apply new firmware ...");
-        esp_ota_service_destroy(svc);
+        ESP_ERROR_CHECK(esp_ota_service_destroy(svc));
         vEventGroupDelete(s_evt);
         s_evt = NULL;
         esp_restart();
@@ -597,11 +597,10 @@ esp_err_t esp_ota_service_fs_example_run_ota(const char *mount_point)
     } else {
         ESP_LOGE(TAG, "Run_ota failed: wait for OTA completion timed out (%s)",
                  esp_err_to_name(ESP_OTA_SERVICE_FS_EX_ERR_OTA_WAIT_TIMEOUT));
-        esp_service_stop((esp_service_t *)svc);
         out = ESP_OTA_SERVICE_FS_EX_ERR_OTA_WAIT_TIMEOUT;
     }
 
-    esp_ota_service_destroy(svc);
+    ESP_ERROR_CHECK(esp_ota_service_destroy(svc));
     vEventGroupDelete(s_evt);
     s_evt = NULL;
     return out;

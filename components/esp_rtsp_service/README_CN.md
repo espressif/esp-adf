@@ -48,7 +48,7 @@ flowchart TD
     B --> C[optional esp_media_service_link]
     C --> D[esp_service_start]
     D --> E[esp_service_stop]
-    E --> F[unlink / deinit / free]
+    E --> F[断开连接 / deinit 成功后 free]
 ```
 
 ## 典型用法
@@ -130,7 +130,7 @@ ESP_ERROR_CHECK(esp_service_start(ESP_SERVICE_BASE(src)));
 - `setup`、`set_url` 与 `set_ip` 要求服务处于停止状态
 - 启动 SINK 或 SERVER 前先链接 provider，确保轨道信息可用
 - 销毁时先停止生产端，再停止对应的消费服务
-- 最后调用 `esp_media_service_deinit()`，再释放服务句柄
+- 由所有者任务调用 `esp_media_service_deinit()`，仅在返回 `ESP_OK` 后 free。失败保留句柄供重试。销毁前停止外部调用和 MCP 分发，并断开媒体连接；不要在回调内调用。
 
 ## 示例
 

@@ -8,20 +8,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "sdkconfig.h"
 #include "esp_check.h"
-#include "esp_extractor_service_err.h"
-#include "esp_extractor_service_ops.h"
-#include "esp_extractor_service_priv.h"
 #include "esp_extractor_scheduler.h"
 #include "esp_fourcc.h"
 #include "esp_gmf_obj.h"
 #include "esp_gmf_payload.h"
 #include "esp_log.h"
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
+#include "esp_extractor_service_err.h"
+#include "esp_extractor_service_ops.h"
+#include "esp_extractor_service_priv.h"
 
 #ifdef CONFIG_ESP_EXTRACTOR_SERVICE_FILE_IO_SUPPORT
 #include "esp_gmf_io_file.h"
@@ -37,20 +35,6 @@ static const char *TAG = "EXTRACT_SVC";
 #define WRITE_TIMEOUT_MS   100
 #define EXIT_TIMEOUT_MS    3000
 #define MAP_CODEC(format)  ((esp_media_codec_fourcc_t)format)
-
-#define WAIT_FOR_COND(run_cond, timeout_ms, warn_msg)  do {  \
-    int wait_count = timeout_ms / 10;                        \
-    while (run_cond) {                                       \
-        media_lib_thread_sleep(10);                          \
-        if (wait_count > 0) {                                \
-            wait_count--;                                    \
-            if (wait_count == 0) {                           \
-                ESP_LOGW(TAG, warn_msg);                     \
-                break;                                       \
-            }                                                \
-        }                                                    \
-    }                                                        \
-} while (0)
 
 esp_err_t extractor_err_to_esp(esp_extractor_err_t err)
 {
@@ -691,8 +675,7 @@ static void extractor_task(void *arg)
 {
     esp_extractor_service_t *service = (esp_extractor_service_t *)arg;
 
-    service->task_running = true;
-    service->extractor = NULL;
+    esp_extractor_handle_t extractor = NULL;
     bool clean_eos = false;
 
     if (service->url != NULL) {
@@ -701,7 +684,7 @@ static void extractor_task(void *arg)
             service->hls_cfg = esp_hls_extractor_io_cfg_init(service->url, service->pool, service->extract_mask,
                                                              service->out_pool_size, EXTRACTOR_DEFAULT_OUTPUT_ALIGN);
             if (service->hls_cfg == NULL ||
-                esp_hls_extractor_open_with_cfg(service->hls_cfg, &service->extractor) != ESP_EXTRACTOR_ERR_OK) {
+                esp_hls_extractor_open_with_cfg(service->hls_cfg, &extractor) != ESP_EXTRACTOR_ERR_OK) {
                 ESP_LOGE(TAG, "HLS extractor open failed");
                 goto exit;
             }
@@ -714,7 +697,7 @@ static void extractor_task(void *arg)
         }
     }
 
-    if (service->extractor == NULL) {
+    if (extractor == NULL) {
         esp_extractor_config_t cfg = {
             .type = service->url ? type_from_url(service->url) : ESP_EXTRACTOR_TYPE_NONE,
             .extract_mask = service->extract_mask,
@@ -725,12 +708,13 @@ static void extractor_task(void *arg)
             .out_pool_size = service->out_pool_size,
             .out_align = EXTRACTOR_DEFAULT_OUTPUT_ALIGN,
         };
-        if (esp_extractor_open(&cfg, &service->extractor) != ESP_EXTRACTOR_ERR_OK) {
+        if (esp_extractor_open(&cfg, &extractor) != ESP_EXTRACTOR_ERR_OK) {
             ESP_LOGE(TAG, "extractor open failed");
             goto exit;
         }
     }
 
+    service->extractor = extractor;
     if (!service->task_stop && esp_extractor_parse_stream(service->extractor) == ESP_EXTRACTOR_ERR_OK &&
         publish_all_tracks(service, service->extractor) == ESP_OK) {
         while (!service->task_stop) {
@@ -840,29 +824,17 @@ static esp_err_t extractor_on_start(esp_service_t *base)
     media_lib_thread_cfg_t cfg = {0};
     extractor_get_media_thread_cfg(service, &cfg);
     service->task_stop = false;
+    service->task_running = true;
     if (media_lib_thread_create(&service->task, ESP_EXTRACTOR_SCHED_SRC_TASK, extractor_task, service,
                                 cfg.stack_size, cfg.priority, cfg.core_id) != ESP_OK) {
+        service->task_running = false;
         return ESP_FAIL;
     }
     return ESP_OK;
 }
 
-static esp_err_t extractor_on_stop(esp_service_t *base)
+static void extractor_release_stopped_io(esp_extractor_service_t *service)
 {
-    esp_extractor_service_t *service = (esp_extractor_service_t *)base;
-    service->task_stop = true;
-    (void)extractor_cmd_send(service, EXTRACTOR_CMD_STOP, 0, true);
-    if (service->mngr != NULL) {
-        esp_media_track_write_abort(service->mngr);
-    }
-    /* Close extractor will abort ongioing time consume reading */
-    esp_extractor_handle_t extractor = service->extractor;
-    service->extractor = NULL;
-    esp_extractor_close(extractor);
-    if (service->task != NULL) {
-        WAIT_FOR_COND(service->task_running, EXTRACTOR_TASK_EXIT_TIMEOUT_MS, "task stop timeout");
-        service->task = NULL;
-    }
     close_url_io(service);
 #ifdef CONFIG_ESP_EXTRACTOR_SERVICE_HLS_SUPPORT
     if (service->hls_cfg != NULL) {
@@ -870,6 +842,32 @@ static esp_err_t extractor_on_stop(esp_service_t *base)
         service->hls_cfg = NULL;
     }
 #endif  /* CONFIG_ESP_EXTRACTOR_SERVICE_HLS_SUPPORT */
+}
+
+static esp_err_t extractor_on_stop(esp_service_t *base)
+{
+    esp_extractor_service_t *service = (esp_extractor_service_t *)base;
+    service->task_stop = true;
+    (void)extractor_cmd_send(service, EXTRACTOR_CMD_STOP, 0, true);
+    extractor_abort_read(service);
+    if (service->mngr != NULL) {
+        esp_media_track_write_abort(service->mngr);
+    }
+    if (service->task != NULL) {
+        for (int remaining = EXTRACTOR_TASK_EXIT_TIMEOUT_MS; service->task_running; remaining -= 10) {
+            if (remaining <= 0) {
+                ESP_LOGE(TAG, "task stop timeout");
+                return ESP_ERR_TIMEOUT;
+            }
+            media_lib_thread_sleep(10);
+        }
+        service->task = NULL;
+    }
+    if (service->extractor != NULL) {
+        esp_extractor_close(service->extractor);
+        service->extractor = NULL;
+    }
+    extractor_release_stopped_io(service);
     extractor_cmd_queue_reset(service);
     return ESP_OK;
 }
@@ -877,7 +875,7 @@ static esp_err_t extractor_on_stop(esp_service_t *base)
 static esp_err_t extractor_on_deinit(esp_service_t *base)
 {
     esp_extractor_service_t *service = (esp_extractor_service_t *)base;
-    extractor_on_stop(base);
+    extractor_release_stopped_io(service);
     if (service->mngr != NULL) {
         esp_media_track_mngr_destroy(service->mngr);
         service->mngr = NULL;
@@ -979,11 +977,7 @@ esp_err_t esp_extractor_service_create(const esp_extractor_service_cfg_t *cfg,
     media_cfg.name = cfg->name ? cfg->name : ESP_EXTRACTOR_SERVICE_NAME;
     media_cfg.service_ops = &s_extractor_service_ops;
     media_cfg.media_ops = &s_extractor_media_ops;
-    esp_err_t ret = esp_media_service_init(&service->media, &media_cfg);
-    if (ret != ESP_OK) {
-        free(service);
-        RET_FOR(ret, "media service init failed");
-    }
+    esp_err_t ret;
     const char *err_msg = NULL;
     do {
         ret = register_internal_io(service);
@@ -1002,14 +996,18 @@ esp_err_t esp_extractor_service_create(const esp_extractor_service_cfg_t *cfg,
             err_msg = "cmd queue failed";
             break;
         }
-        *out_service = service;
+        ret = esp_media_service_init(&service->media, &media_cfg);
+        if (ret != ESP_OK) {
+            err_msg = "media service init failed";
+        }
     } while (0);
     if (err_msg != NULL) {
-        esp_media_service_deinit(ESP_SERVICE_BASE(service));
+        extractor_on_deinit(ESP_SERVICE_BASE(service));
         free(service);
         RET_ERR_MSG(ret, err_msg);
     }
-    return ret;
+    *out_service = service;
+    return ESP_OK;
 }
 
 static esp_err_t ensure_running(esp_extractor_service_t *service)

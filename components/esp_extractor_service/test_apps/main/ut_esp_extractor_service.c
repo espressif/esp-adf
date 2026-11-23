@@ -11,18 +11,16 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "unity.h"
-
+#include "esp_media_provider.h"
+#include "esp_vfs.h"
 #include "esp_extractor_service.h"
 #include "esp_extractor_service_ops.h"
 #include "esp_media_dummy_service.h"
-#include "esp_media_provider.h"
 #include "esp_media_service.h"
 #include "esp_service.h"
-#include "esp_vfs.h"
 
 /** Keep ut object linked when running tests by tag from app_main. */
 void esp_extractor_service_ut_force_link(void)  { }

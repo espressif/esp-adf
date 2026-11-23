@@ -15,18 +15,21 @@ extern "C" {
 #endif  /* __cplusplus */
 
 /** Default media service configuration */
-#define ESP_MEDIA_SERVICE_CONFIG_DEFAULT() {  \
-    .name        = NULL,                      \
-    .user_data   = NULL,                      \
-    .service_ops = NULL,                      \
-    .media_ops   = NULL,                      \
+#define ESP_MEDIA_SERVICE_CONFIG_DEFAULT()  {  \
+    .name        = NULL,                       \
+    .user_data   = NULL,                       \
+    .service_ops = NULL,                       \
+    .media_ops   = NULL,                       \
 }
+
+/** Default media stream ID */
+#define ESP_MEDIA_DEFAULT_STREAM  ((esp_media_stream_id_t)0)
 
 /**
  * @brief  Media service data direction
  */
 typedef enum {
-    ESP_MEDIA_ROLE_NONE     = 0,
+    ESP_MEDIA_ROLE_NONE     = 0,                                           /*!< No media direction */
     ESP_MEDIA_ROLE_SRC      = (1 << 0),                                    /*!< Service produces media frames */
     ESP_MEDIA_ROLE_SINK     = (1 << 1),                                    /*!< Service consumes media frames */
     ESP_MEDIA_ROLE_SRC_SINK = (ESP_MEDIA_ROLE_SRC | ESP_MEDIA_ROLE_SINK),  /*!< Service produces and consumes frames */
@@ -36,9 +39,6 @@ typedef enum {
  * @brief  Instance-aware media stream address
  */
 typedef uint16_t esp_media_stream_id_t;
-
-/** Default media stream ID */
-#define ESP_MEDIA_DEFAULT_STREAM  ((esp_media_stream_id_t)0)
 
 /**
  * @brief  Media-service link request/capability hints
@@ -54,11 +54,20 @@ typedef struct {
  * @brief  Media-service virtual operations
  */
 typedef struct {
-    esp_err_t (*get_role)(esp_service_t *service, esp_media_role_t *out_role);                                                   /*!< Query source/sink role */
-    esp_err_t (*get_provider)(esp_service_t *service, esp_media_stream_id_t stream, esp_media_provider_t *out_provider);         /*!< Get provider exported by a source stream */
-    esp_err_t (*set_provider)(esp_service_t *service, esp_media_stream_id_t stream, const esp_media_provider_t *provider);       /*!< Set provider consumed by a sink stream */
-    esp_err_t (*get_request)(esp_service_t *service, esp_media_stream_id_t stream, esp_media_service_request_t *request);        /*!< Get sink link requests */
-    esp_err_t (*set_request)(esp_service_t *service, esp_media_stream_id_t stream, const esp_media_service_request_t *request);  /*!< Apply sink requests to a source */
+    /** Query source/sink role */
+    esp_err_t (*get_role)(esp_service_t *service, esp_media_role_t *out_role);
+    /** Get provider exported by a source stream */
+    esp_err_t (*get_provider)(esp_service_t *service, esp_media_stream_id_t stream,
+                              esp_media_provider_t *out_provider);
+    /** Set provider consumed by a sink stream */
+    esp_err_t (*set_provider)(esp_service_t *service, esp_media_stream_id_t stream,
+                              const esp_media_provider_t *provider);
+    /** Get sink link requests */
+    esp_err_t (*get_request)(esp_service_t *service, esp_media_stream_id_t stream,
+                             esp_media_service_request_t *request);
+    /** Apply sink requests to a source */
+    esp_err_t (*set_request)(esp_service_t *service, esp_media_stream_id_t stream,
+                             const esp_media_service_request_t *request);
 } esp_media_service_ops_t;
 
 /**
@@ -86,25 +95,41 @@ typedef struct esp_media_service {
  *         Derived services call this after allocating or embedding
  *         esp_media_service_t, before exposing the base esp_service_t
  *
+ * @note  Zeroes `*service`, sets `media_ops`, and initializes the base service
+ *        once per instance (start/stop cycles may repeat; calling init more than
+ *        once on the same instance is not supported). Must not run concurrently
+ *        with other calls on the instance, and must not expose the object until
+ *        init succeeds. On failure `media_ops` is cleared.
+ *
  * @param[in,out]  service  Media service object to initialize
  * @param[in]      config   Media service configuration
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  service or config is NULL
- *       - Others               Error returned by esp_service_init()
+ *       - ESP_OK                 On success
+ *       - ESP_ERR_INVALID_ARG    service or config is NULL
+ *       - ESP_ERR_INVALID_STATE  Called from an Event Hub dispatch callback
+ *       - Others                 Error returned by esp_service_init()
  */
 esp_err_t esp_media_service_init(esp_media_service_t *service, const esp_media_service_config_t *config);
 
 /**
  * @brief  Deinitialize a media service base object
  *
+ * @note  Follows esp_service_deinit(): stops active services if needed, is a
+ *        no-op returning ESP_OK when UNINITIALIZED, and rejects Event Hub or
+ *        same-instance lifecycle callbacks. Use this wrapper instead of
+ *        esp_service_deinit() for media objects. Quiesce external API/MCP
+ *        calls and unlink media endpoints before teardown. Only success removes
+ *        the media MCP entry and permits release of storage. On failure retain
+ *        the handle and any borrowed user context.
+ *
  * @param[in]  service  Base service pointer returned by ESP_SERVICE_BASE()
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  service is NULL
- *       - Others               Error returned by esp_service_deinit()
+ *       - ESP_OK                 On success or already UNINITIALIZED
+ *       - ESP_ERR_INVALID_ARG    service is NULL
+ *       - ESP_ERR_INVALID_STATE  Callback context or lifecycle operation active
+ *       - Others                 Error returned by esp_service_deinit()
  */
 esp_err_t esp_media_service_deinit(esp_service_t *service);
 

@@ -25,19 +25,6 @@ static const char *TAG = "MUXER_SVC";
 #define STORAGE_DIR_MAX_DEPTH    2
 #define MUXER_EXIT_TIMEOUT_MS    3000
 
-#define WAIT_FOR_COND(run_cond, timeout_ms, warn_msg)  do {  \
-    int wait_count = timeout_ms / 10;                        \
-    while (run_cond) {                                       \
-        media_lib_thread_sleep(10);                          \
-        if (wait_count > 0) {                                \
-            wait_count--;                                    \
-            if (wait_count == 0) {                           \
-                ESP_LOGW(TAG, warn_msg);                     \
-            }                                                \
-        }                                                    \
-    }                                                        \
-} while (0)
-
 typedef union {
     ts_muxer_config_t   ts_cfg;
     mp4_muxer_config_t  mp4_cfg;
@@ -514,7 +501,6 @@ static esp_err_t add_frame_packet(esp_muxer_service_t *service, const esp_media_
 static void muxer_task(void *arg)
 {
     esp_muxer_service_t *service = (esp_muxer_service_t *)arg;
-    service->task_running = true;
     while (!service->task_stop) {
         esp_media_frame_t frame = {0};
         esp_err_t ret = esp_media_provider_acquire_frame(&service->provider, &frame, 20);
@@ -575,8 +561,10 @@ static esp_err_t muxer_on_start(esp_service_t *base)
     media_lib_thread_cfg_t task_cfg = {0};
     muxer_get_media_thread_cfg(service, &task_cfg);
     service->task_stop = false;
+    service->task_running = true;
     if (media_lib_thread_create(&service->task, ESP_MUXER_SCHED_TASK, muxer_task, service,
                                 task_cfg.stack_size, task_cfg.priority, task_cfg.core_id) != ESP_OK) {
+        service->task_running = false;
         esp_muxer_close(service->muxer);
         service->muxer = NULL;
         if (service->stream_queue != NULL) {
@@ -599,7 +587,13 @@ static esp_err_t muxer_on_stop(esp_service_t *base)
         esp_gmf_data_queue_wakeup(service->stream_queue);
     }
     if (service->task != NULL) {
-        WAIT_FOR_COND(service->task_running, MUXER_EXIT_TIMEOUT_MS, "muxer exit timeout");
+        for (int remaining = MUXER_EXIT_TIMEOUT_MS; service->task_running; remaining -= 10) {
+            if (remaining <= 0) {
+                ESP_LOGE(TAG, "muxer exit timeout");
+                return ESP_ERR_TIMEOUT;
+            }
+            media_lib_thread_sleep(10);
+        }
         service->task = NULL;
     }
     if (service->muxer != NULL) {
@@ -617,7 +611,6 @@ static esp_err_t muxer_on_stop(esp_service_t *base)
 static esp_err_t muxer_on_deinit(esp_service_t *base)
 {
     esp_muxer_service_t *service = (esp_muxer_service_t *)base;
-    (void)muxer_on_stop(base);
     if (service->provider.ops != NULL) {
         esp_media_provider_set_event_cb(&service->provider, NULL, NULL);
     }

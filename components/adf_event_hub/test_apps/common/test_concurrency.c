@@ -9,8 +9,7 @@
  * adf_event_hub unit tests — concurrency & API-call ordering.
  *
  * Each test launches N FreeRTOS tasks that synchronise on a barrier so
- * they enter the critical section together.  On the POSIX port every
- * FreeRTOS task is a real OS thread, so races are genuine.
+ * they contend for the same event hub operation.
  *
  * Coverage:
  *   - Reentrant: concurrent create of the same domain, concurrent
@@ -88,7 +87,9 @@ TEST_CASE("reentrant - concurrent create same domain: all return OK with same ha
                                       "tasks got different handles");
     }
 
-    TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(expected));
+    for (int i = 0; i < RC_TASK_COUNT; i++) {
+        TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(args[i].result_hub));
+    }
     vSemaphoreDelete(done);
     test_barrier_destroy(&gate);
 }
@@ -342,6 +343,7 @@ TEST_CASE("reentrant - same name create N times sequential: handle stable, one d
         TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_create("rc_seq_same", &hub));
         /* handle must remain the same every time */
         TEST_ASSERT_EQUAL_PTR(first, hub);
+        TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(hub));
     }
 
     /* one publish must hit the callback exactly once (not RC_SEQ_COUNT times) */
@@ -617,6 +619,11 @@ TEST_CASE("order - concurrent subscribe-auto-create + hub_create race",
     int total_subs = (ORD_RACE_TASKS / 2) + 1;
     TEST_ASSERT_EQUAL_INT(total_subs, hit);
 
+    for (int i = 0; i < ORD_RACE_TASKS; i++) {
+        if (args[i].role == 1) {
+            TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(args[i].created_hub));
+        }
+    }
     TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(hub_race));
     TEST_ASSERT_EQUAL(ESP_OK, adf_event_hub_destroy(hub_base));
     vSemaphoreDelete(done);
@@ -641,12 +648,13 @@ static void ord_publisher_task(void *arg)
     xSemaphoreTake(lc->sub_ready, portMAX_DELAY);
 
     adf_event_hub_t hub = NULL;
-    adf_event_hub_create("svc_net", &hub);
+    configASSERT(adf_event_hub_create("svc_net", &hub) == ESP_OK);
 
     for (int i = 0; i < ORD_LIFECYCLE_EVENTS; i++) {
         adf_event_t ev = {.domain = "svc_net", .event_id = (uint16_t)(i + 1)};
         adf_event_hub_publish(hub, &ev, NULL, NULL);
     }
+    configASSERT(adf_event_hub_destroy(hub) == ESP_OK);
     xSemaphoreGive(lc->pub_done);
     vTaskDelete(NULL);
 }
@@ -656,7 +664,7 @@ static void ord_subscriber_task(void *arg)
     ord_lifecycle_t *lc = (ord_lifecycle_t *)arg;
 
     adf_event_hub_t my_hub = NULL;
-    adf_event_hub_create("svc_ui", &my_hub);
+    configASSERT(adf_event_hub_create("svc_ui", &my_hub) == ESP_OK);
 
     adf_event_subscribe_info_t info = ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
     info.event_domain = "svc_net";
@@ -675,6 +683,7 @@ static void ord_subscriber_task(void *arg)
             break;
         }
     }
+    configASSERT(adf_event_hub_destroy(my_hub) == ESP_OK);
     xSemaphoreGive(lc->recv_done);
     vTaskDelete(NULL);
 }
@@ -701,14 +710,6 @@ TEST_CASE("order - multi-task lifecycle: subscribe-before-create across tasks",
     xSemaphoreTake(lc.recv_done, portMAX_DELAY);
 
     TEST_ASSERT_EQUAL_INT(ORD_LIFECYCLE_EVENTS, lc.received);
-
-    adf_event_hub_t hub_net = NULL;
-    adf_event_hub_create("svc_net", &hub_net);
-    adf_event_hub_destroy(hub_net);
-
-    adf_event_hub_t hub_ui = NULL;
-    adf_event_hub_create("svc_ui", &hub_ui);
-    adf_event_hub_destroy(hub_ui);
 
     vQueueDelete(lc.inbox);
     vSemaphoreDelete(lc.recv_done);

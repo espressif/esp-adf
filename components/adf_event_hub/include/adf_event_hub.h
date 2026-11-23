@@ -5,6 +5,17 @@
  * See LICENSE file for details.
  */
 
+#pragma once
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
+#include "adf_event_hub_port.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 /**
  * adf_event_hub — domain-scoped publish-subscribe event facility.
  *
@@ -15,14 +26,35 @@
  *
  * Lifecycle: create() -> subscribe / publish / unsubscribe -> destroy().
  * subscribe() may target a domain before its publisher calls create(); the
- * domain is auto-created and a later create() returns the same handle.
+ * domain is auto-created without a publisher reference, and a later create()
+ * returns the same handle. A domain is removed once it has no create()
+ * references and no subscribers.
  *
- * Ownership: adf_event_t fields are shallow-copied. The caller retains
- * ownership of the domain string and payload for the entire delivery.
+ * Ownership: adf_event_t fields are shallow-copied. For callback-mode
+ * delivery the caller's domain string and payload must stay valid until
+ * publish() returns. For queue-mode delivery the hub copies the domain
+ * string and owns the payload until the last delivery_done() (see
+ * adf_event_payload_release_cb_t).
  *
  * Conventions:
- *   - Thread-safe (internal mutex); no API blocks on events; not ISR-safe.
+ *   - Thread-safe (internal mutex); publish() never blocks on a queue or a
+ *     subscriber; not ISR-safe.
  *   - Callbacks must not call adf_event_hub_publish() recursively.
+ *   - unsubscribe() and destroy() wait until no other task is delivering to
+ *     one of the removed subscriptions, so the caller must not hold a lock
+ *     that a running handler may need. The wait polls once per tick and has
+ *     no upper bound: it lasts as long as the handler being delivered to runs.
+ *     Subscriptions already snapshotted by a running publish() but not yet
+ *     delivered are skipped. A handler may therefore unsubscribe or destroy
+ *     its own hub and free its handler contexts as soon as the call returns
+ *     ESP_OK, even while other tasks publish to the same domain. A subscriber
+ *     queue may still hold deliveries: drain it with delivery_done() before
+ *     deleting it. The one exception is a cycle: when the handler being
+ *     waited for is itself waiting for the caller's handler (two handlers on
+ *     two tasks removing each other's subscriptions), the caller does not
+ *     wait for it, logs a warning and returns ESP_ERR_NOT_FINISHED; the
+ *     subscriptions are removed all the same, but that handler is still
+ *     running, so its context must stay valid until it has returned.
  *   - All APIs except create() require at least one hub to exist, otherwise
  *     ESP_ERR_INVALID_STATE is returned.
  *   - Domain identity is case-sensitive: "WiFi" and "wifi" are different
@@ -48,24 +80,27 @@
  *   adf_event_hub_subscribe(svc_hub, &info);
  */
 
-#pragma once
+/** Wildcard event ID: matches any event_id in subscribe / unsubscribe. */
+#define ADF_EVENT_ANY_ID  (UINT16_MAX)
 
-#include <stdint.h>
-#include <stddef.h>
-#include "adf_event_hub_port.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif  /* __cplusplus */
+/**
+ * Zero-initialise an adf_event_subscribe_info_t with event_id set to
+ * ADF_EVENT_ANY_ID and all other fields NULL.
+ *
+ * Usage:
+ *   adf_event_subscribe_info_t info = ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
+ *   info.event_domain = "wifi";
+ *   info.handler      = my_handler;
+ */
+#define ADF_EVENT_SUBSCRIBE_INFO_DEFAULT()  {  \
+    NULL, ADF_EVENT_ANY_ID, NULL, NULL, NULL   \
+}
 
 /**
  * Opaque hub handle. Do not perform pointer arithmetic or semantic
  * comparisons on this value.
  */
 typedef void *adf_event_hub_t;
-
-/** Wildcard event ID: matches any event_id in subscribe / unsubscribe. */
-#define ADF_EVENT_ANY_ID  (UINT16_MAX)
 
 /**
  * @brief  Payload release callback.
@@ -143,9 +178,10 @@ typedef struct {
  * @brief  Per-domain statistics returned by adf_event_hub_get_stats().
  */
 typedef struct {
-    const char *domain;                  /*!< Domain name (valid until hub is destroyed) */
-    size_t      cb_subscriber_count;     /*!< Callback-mode subscriber count */
-    size_t      queue_subscriber_count;  /*!< Queue-mode subscriber count */
+    char   *domain;                  /*!< Caller-provided name buffer; owns its copied contents */
+    size_t  domain_capacity;         /*!< Name buffer capacity including the terminator */
+    size_t  cb_subscriber_count;     /*!< Callback-mode subscriber count */
+    size_t  queue_subscriber_count;  /*!< Queue-mode subscriber count */
 } adf_event_domain_stat_t;
 
 /**
@@ -158,22 +194,10 @@ typedef struct {
     size_t                   domain_count;        /*!< Total registered domains */
     size_t                   envelope_pool_size;  /*!< Total envelope slots (only grows) */
     size_t                   envelopes_in_use;    /*!< Currently active (referenced) envelopes */
+    uint32_t                 queue_drop_count;    /*!< Queue-full deliveries since bootstrap; saturates at UINT32_MAX */
     adf_event_domain_stat_t *domains;             /*!< Caller-provided array; filled on return */
     size_t                   domains_capacity;    /*!< Capacity of the domains array */
 } adf_event_hub_stats_t;
-
-/**
- * Zero-initialise an adf_event_subscribe_info_t with event_id set to
- * ADF_EVENT_ANY_ID and all other fields NULL.
- *
- * Usage:
- *   adf_event_subscribe_info_t info = ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
- *   info.event_domain = "wifi";
- *   info.handler      = my_handler;
- */
-#define ADF_EVENT_SUBSCRIBE_INFO_DEFAULT()  {  \
-    NULL, ADF_EVENT_ANY_ID, NULL, NULL, NULL   \
-}
 
 /**
  * @brief  Register a domain and return its hub handle.
@@ -182,7 +206,13 @@ typedef struct {
  *        reference count of the domain — whether the domain was newly created
  *        or already existed. Every call to adf_event_hub_create() MUST be
  *        balanced by exactly one call to adf_event_hub_destroy(); the domain
- *        is physically removed only when the count reaches zero.
+ *        is physically removed only when the count reaches zero and no
+ *        subscribers remain on it. The handle value is derived from the
+ *        domain name, so a domain re-created after its last destroy()
+ *        yields the same handle.
+ *        This is a domain identity, not an allocation identity. After releasing
+ *        a create reference, do not reuse that handle without a new create();
+ *        stale-handle detection across destroy/re-create is not provided.
  *
  *        Use this balanced create/destroy pair as the idiomatic way to "retain"
  *        a handle that will outlive the immediate creator (e.g. when a shared
@@ -198,9 +228,12 @@ typedef struct {
  *                       all subsequent APIs.
  *
  * @return
- *       - ESP_OK               Domain registered (or retained); *out_hub is valid.
- *       - ESP_ERR_INVALID_ARG  domain or out_hub is NULL, or domain is empty.
- *       - ESP_ERR_NO_MEM       Heap or internal vector allocation failed.
+ *       - ESP_OK                 Domain registered (or retained); *out_hub is valid.
+ *       - ESP_ERR_INVALID_ARG    domain or out_hub is NULL, or domain is empty.
+ *       - ESP_ERR_INVALID_STATE  A different domain name already maps to the
+ *                                same handle (hash collision); pick another name.
+ *       - ESP_ERR_NO_MEM         Allocation failed, or the domain already holds
+ *                                UINT16_MAX references.
  */
 esp_err_t adf_event_hub_create(const char *domain, adf_event_hub_t *out_hub);
 
@@ -208,9 +241,12 @@ esp_err_t adf_event_hub_create(const char *domain, adf_event_hub_t *out_hub);
  * @brief  Release one reference to a domain hub.
  *
  * @note  Reference-counted counterpart to adf_event_hub_create(). Each call
- *        decrements the domain's reference count. The domain is physically
- *        unregistered and all its subscribers are removed only when the count
- *        reaches zero.
+ *        decrements the domain's reference count. When the count reaches
+ *        zero, every subscription created through this hub (on any domain)
+ *        is removed and the call waits until no other task is still
+ *        delivering to one of them (a dispatch running on the calling task
+ *        skips them instead); subscriptions other hubs hold on this domain
+ *        stay registered and the domain is removed once they are gone too.
  *
  *        In-flight deliveries already queued in subscriber inboxes are not
  *        invalidated when the domain is finally removed; drain subscriber
@@ -220,20 +256,51 @@ esp_err_t adf_event_hub_create(const char *domain, adf_event_hub_t *out_hub);
  * @param[in]  hub  Hub handle returned by adf_event_hub_create().
  *
  * @return
- *       - ESP_OK                 Reference released. Domain removed if refcount
- *                                reached zero; otherwise removal is deferred.
+ *       - ESP_OK                Reference released. Domain removed if refcount
+ *                               reached zero; otherwise removal is deferred.
+ *       - ESP_ERR_NOT_FINISHED  Reference released and subscriptions removed, but
+ *                               a handler of one of them is still running on a
+ *                                task that is itself waiting for the caller (see
+ *                                file-level Conventions); keep its context valid.
  *       - ESP_ERR_INVALID_ARG    hub is NULL.
  *       - ESP_ERR_INVALID_STATE  Module not initialised.
- *       - ESP_ERR_NOT_FOUND      hub does not match any registered domain.
+ *       - ESP_ERR_NOT_FOUND      hub does not hold a create() reference.
  */
 esp_err_t adf_event_hub_destroy(adf_event_hub_t hub);
+
+/**
+ * @brief  Check whether the calling task is inside an event dispatch
+ * @note  Includes synchronous publish payload-release callbacks, even when
+ *        publication has no matching subscribers or exits early with an error.
+ *        Deferred delivery_done payload release is not a publish dispatch.
+ * @param[out]  out_dispatching  True during any dispatch on the calling task
+ * @return
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  out_dispatching is NULL
+ */
+esp_err_t adf_event_hub_is_dispatching(bool *out_dispatching);
+
+/**
+ * @brief  Remove all subscriptions owned by hub and wait for their callbacks
+ *
+ * @note  Idempotent, independent of create-reference count. Keeps the hub
+ *        reference. Do not hold locks needed by callbacks. Not ISR-safe.
+ *        Queue owners must still drain queued deliveries before deleting queues.
+ * @param[in]  hub  Subscription owner
+ * @return
+ *       - ESP_OK                 All owned callbacks on other tasks have returned
+ *       - ESP_ERR_INVALID_ARG    hub is NULL
+ *       - ESP_ERR_INVALID_STATE  hub has no live create reference
+ *       - ESP_ERR_NOT_FINISHED   A cyclic callback wait was skipped; keep contexts alive
+ */
+esp_err_t adf_event_hub_unsubscribe_all(adf_event_hub_t hub);
 
 /**
  * @brief  Register a subscriber on a domain.
  *
  * @note  At least one delivery target (target_queue or handler) must be set.
  *        If info->event_domain names a domain not yet created, that domain is
- *        auto-created (see file-level "Startup ordering").
+ *        auto-created (see file-level "Lifecycle").
  *        event_domain matching is case-sensitive (see file-level Conventions).
  *
  * @param[in]  hub   Hub handle of the calling service's context.
@@ -242,20 +309,26 @@ esp_err_t adf_event_hub_destroy(adf_event_hub_t hub);
  * @return
  *       - ESP_OK                 Subscriber registered.
  *       - ESP_ERR_INVALID_ARG    hub or info is NULL; both target_queue and handler
- *                                are NULL.
- *       - ESP_ERR_INVALID_STATE  Module not initialised.
- *       - ESP_ERR_NOT_FOUND      event_domain is NULL and hub's own domain is not
- *                                registered (should not happen in normal use).
- *       - ESP_ERR_NO_MEM         Domain auto-create or subscriber vector grow failed.
+ *                                are NULL; event_domain is an empty string.
+ *       - ESP_ERR_INVALID_STATE  Module not initialised, or event_domain collides
+ *                                with a different registered domain name.
+ *       - ESP_ERR_NOT_FOUND      hub does not hold a create() reference.
+ *       - ESP_ERR_NO_MEM         Domain auto-create or subscriber vector grow
+ *                                failed, or the domain reached its subscriber limit.
  */
 esp_err_t adf_event_hub_subscribe(adf_event_hub_t hub, const adf_event_subscribe_info_t *info);
 
 /**
  * @brief  Remove subscriptions from a domain.
  *
- * @note  Removes all subscriptions whose event_id matches the filter. The
- *        current implementation does not track subscriber ownership, so this
- *        call is not limited to subscriptions created by the calling hub.
+ * @note  Removes the subscriptions created through hub whose event_id matches
+ *        the filter. Subscriptions created through other hubs are untouched.
+ *        Returns only after no other task is still delivering to one of the
+ *        removed subscriptions, so the removed handler and its context can be
+ *        released safely; a removed queue must still be drained with
+ *        adf_event_hub_delivery_done() before it is deleted. When called from
+ *        a handler of the same dispatch, the removed subscriptions that
+ *        dispatch has not reached yet are skipped instead.
  *
  * @param[in]  hub       Hub handle of the calling service's context.
  * @param[in]  domain    Domain to unsubscribe from; NULL = hub's own domain.
@@ -263,7 +336,11 @@ esp_err_t adf_event_hub_subscribe(adf_event_hub_t hub, const adf_event_subscribe
  * @param[in]  event_id  Event ID filter; ADF_EVENT_ANY_ID removes all.
  *
  * @return
- *       - ESP_OK                 At least one subscriber removed.
+ *       - ESP_OK                At least one subscriber removed.
+ *       - ESP_ERR_NOT_FINISHED  Subscribers removed, but a handler of one of them
+ *                               is still running on a task that is itself waiting
+ *                                for the caller (see file-level Conventions); keep
+ *                                its context valid.
  *       - ESP_ERR_INVALID_ARG    hub is NULL.
  *       - ESP_ERR_INVALID_STATE  Module not initialised.
  *       - ESP_ERR_NOT_FOUND      Domain not registered, or no matching subscriber.
@@ -291,7 +368,10 @@ esp_err_t adf_event_hub_unsubscribe(adf_event_hub_t hub, const char *domain, uin
  *                                is invoked exactly once.
  *       - ESP_ERR_INVALID_STATE  Module not initialised.
  *       - ESP_ERR_NOT_FOUND      hub is not a registered domain.
- *       - ESP_ERR_NO_MEM         Internal envelope storage could not grow.
+ *       - ESP_ERR_NO_MEM         Subscriber snapshot or event envelope could not
+ *                                be allocated. On envelope failure the callback
+ *                                subscribers are still invoked and only the queue
+ *                                subscribers are skipped.
  */
 esp_err_t adf_event_hub_publish(adf_event_hub_t hub,
                                 const adf_event_t *event,
@@ -302,10 +382,12 @@ esp_err_t adf_event_hub_publish(adf_event_hub_t hub,
  * @brief  Release a queue-mode delivery reference.
  *
  * @note  Must be called exactly once per received adf_event_delivery_t.
- *        Skipping leaks the envelope slot; a redundant second call is safe
- *        and ignored. Not ISR-safe.
+ *        Skipping leaks the envelope slot. Calling it again on the same
+ *        struct is safe and ignored; a copy of the struct is not protected.
+ *        After this call delivery->event.domain and payload must not be
+ *        accessed. Not ISR-safe.
  *
- * @param[in]  hub       Any valid hub handle (used to verify module is active).
+ * @param[in]  hub       Any non-NULL hub handle; it is not validated.
  * @param[in]  delivery  Delivery item from the subscriber queue;
  *                       delivery->_opaque must not be modified by the caller.
  *
@@ -328,13 +410,20 @@ void adf_event_hub_dump(void);
  *
  * @note  If stats->domains is non-NULL and stats->domains_capacity > 0,
  *        per-domain details are written up to min(domain_count, domains_capacity).
+ *        Initialize each selected entry's domain and domain_capacity with a
+ *        caller-owned buffer. Names are copied under the hub lock and remain
+ *        valid after domains are removed. No allocation or ownership transfer
+ *        occurs. Insufficient name capacity returns ESP_ERR_INVALID_SIZE
+ *        without modifying any per-domain entries; retry with larger buffers.
+ *        The domain and envelope totals are sampled under separate locks.
  *
- * @param[out]  stats  Caller-owned structure; zero-initialise before calling
- *                     if per-domain detail is not needed.
+ * @param[in,out]  stats  Caller-owned structure; zero-initialise before calling
+ *                        if per-domain detail is not needed.
  *
  * @return
  *       - ESP_OK                 Stats populated.
  *       - ESP_ERR_INVALID_ARG    stats is NULL.
+ *       - ESP_ERR_INVALID_SIZE   A selected domain name buffer is absent or too small.
  *       - ESP_ERR_INVALID_STATE  No hub has been created yet.
  */
 esp_err_t adf_event_hub_get_stats(adf_event_hub_stats_t *stats);

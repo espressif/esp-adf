@@ -17,9 +17,8 @@
  *   LED     (domain "led")     — subscribes to all domains via queue mode (consumer)
  *
  * `event_hub_example_run()` creates the services, lets them run for a while,
- * then collects stats and tears down.  The entry point (`main` on PC,
- * `app_main` on ESP-IDF) is provided separately so the same body compiles
- * unchanged on both platforms.
+ * then collects stats and tears down. The ESP-IDF entry point runs it in
+ * a dedicated FreeRTOS task.
  */
 
 #include <stdio.h>
@@ -110,7 +109,12 @@ static adf_event_hub_t monitor_hub_create(void)
         adf_event_subscribe_info_t info = ADF_EVENT_SUBSCRIBE_INFO_DEFAULT();
         info.event_domain = domains[i];
         info.handler = monitor_cb;
-        adf_event_hub_subscribe(hub, &info);
+        ret = adf_event_hub_subscribe(hub, &info);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Monitor subscribe failed: 0x%x", ret);
+            adf_event_hub_destroy(hub);
+            return NULL;
+        }
     }
 
     ESP_LOGI(TAG, "Monitor hub created, callback-subscribed to %s + %s + %s + %s (ANY_ID)",
@@ -163,7 +167,12 @@ void event_hub_example_run(void)
     ESP_LOGI(TAG, "");
     adf_event_hub_dump();
 
-    adf_event_domain_stat_t dom_stats[8];
+    char domain_names[8][64];
+    adf_event_domain_stat_t dom_stats[8] = {0};
+    for (size_t i = 0; i < 8; i++) {
+        dom_stats[i].domain = domain_names[i];
+        dom_stats[i].domain_capacity = sizeof(domain_names[i]);
+    }
     adf_event_hub_stats_t hub_stats = {
         .domains = dom_stats,
         .domains_capacity = 8,

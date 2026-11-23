@@ -10,30 +10,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
-
 #include "esp_fourcc.h"
 #include "esp_log.h"
+#include "esp_netif.h"
+#include "settings.h"
+#include "simple_rtmp.h"
 #include "esp_media_dummy_service.h"
 #include "esp_media_service.h"
-#include "esp_netif.h"
 #include "esp_rtmp_service.h"
 #include "esp_rtmp_service_ops.h"
 #include "esp_service.h"
-
-#include "settings.h"
-#include "simple_rtmp.h"
 
 static const char *TAG = "SIMPLE_RTMP";
 
 #define SIMPLE_RUN_DONE_BIT  BIT0
 
 typedef struct {
-    EventGroupHandle_t group;
-    bool               abort_run;
+    EventGroupHandle_t  group;
+    bool                abort_run;
 } simple_run_t;
 
 static void rtmp_event_handler(const adf_event_t *event, void *ctx)
@@ -119,14 +116,16 @@ static esp_err_t wait_run(simple_run_t *run, uint32_t duration_ms)
     return ESP_OK;
 }
 
+/* The walk-through owns a stack callback context until deinit completes. */
 static void rtmp_delete(esp_rtmp_service_t *service)
 {
     if (service == NULL) {
         return;
     }
-    esp_service_t *base = ESP_SERVICE_BASE(service);
-    (void)esp_service_set_user_data(base, NULL);
-    (void)esp_media_service_deinit(base);
+    if (esp_service_stop(ESP_SERVICE_BASE(service)) != ESP_OK ||
+        esp_media_service_deinit(ESP_SERVICE_BASE(service)) != ESP_OK) {
+        abort();
+    }
     free(service);
 }
 
@@ -229,7 +228,9 @@ esp_err_t simple_rtmp_pusher(uint32_t duration_ms, const char *url)
     }
     rtmp_delete(rtmp);
     if (src != NULL) {
-        (void)esp_media_dummy_service_destroy(src);
+        if (esp_media_dummy_service_destroy(src) != ESP_OK) {
+            abort();
+        }
     }
     simple_run_deinit(&run);
     return ret;
@@ -292,7 +293,9 @@ esp_err_t simple_rtmp_puller(uint32_t duration_ms, const char *url)
             (void)esp_media_service_unlink(ESP_SERVICE_BASE(rtmp), ESP_MEDIA_DEFAULT_STREAM,
                                            ESP_SERVICE_BASE(sink), ESP_MEDIA_DEFAULT_STREAM);
         }
-        (void)esp_media_dummy_service_destroy(sink);
+        if (esp_media_dummy_service_destroy(sink) != ESP_OK) {
+            abort();
+        }
     }
     rtmp_delete(rtmp);
     simple_run_deinit(&run);
