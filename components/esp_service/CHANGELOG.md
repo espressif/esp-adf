@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.0-beta2
+
+### Changes
+
+- Updated `adf_event_hub` dependency constraint to `~1.0.0-beta1` and excluded `test_apps/` from the component archive
+
 ## v1.0.0-beta1
 
 ### Features

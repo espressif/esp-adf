@@ -272,15 +272,12 @@ static void on_ota_adf_event(const adf_event_t *event, void *ctx)
                 case ESP_OTA_SERVICE_ITEM_STATUS_OK:
                     ESP_LOGI(TAG, "[OTA] Item %d success", evt->item_index);
                     break;
-                case ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED:
-                    ESP_LOGW(TAG, "[OTA] Item %d skipped (reason=%d)",
-                             evt->item_index, (int)evt->item_end.reason);
-                    xEventGroupSetBits(s_evt, EVT_OTA_SKIP);
-                    break;
                 case ESP_OTA_SERVICE_ITEM_STATUS_FAILED:
                     ESP_LOGE(TAG, "[OTA] Item %d failed: %s (reason=%d)", evt->item_index,
                              esp_err_to_name(evt->error), (int)evt->item_end.reason);
                     xEventGroupSetBits(s_evt, EVT_OTA_FAIL);
+                    break;
+                default:
                     break;
             }
             break;

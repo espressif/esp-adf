@@ -31,12 +31,6 @@
  * Must match esp_ota_service_resume_point_t::uri[] capacity (256 including NUL). */
 #define ESP_OTA_SERVICE_URI_MAX_LEN           255
 
-/* File-local sentinel returned by process_item() when a streaming verifier
- * rejects the image (at verify_begin or verify_finish) and the item should
- * be reported as SKIPPED rather than FAILED. Kept internal: the public event
- * conveys the outcome via esp_ota_service_event_t::item_end.{status,reason}. */
-#define ESP_OTA_SERVICE_PROC_ITEM_SKIPPED  ((esp_err_t)0x91001)
-
 struct esp_ota_service {
     /* First member: &ota->base == (esp_service_t *)ota (same address as the esp_ota_service object). */
     esp_service_t  base;
@@ -52,7 +46,10 @@ struct esp_ota_service {
     uint32_t  write_chunk_size;
     uint32_t  stop_timeout_ms;
 
-    /* Worker task coordination */
+    /* Worker task and API serialization */
+    SemaphoreHandle_t  api_lock;
+    StaticSemaphore_t  api_lock_storage;
+    bool               api_busy;
     TaskHandle_t       worker_task;
     SemaphoreHandle_t  stop_sem;  /* Given by worker AFTER it has finished touching the service. */
     atomic_bool        abort_requested;
@@ -69,9 +66,7 @@ static const char *TAG = "OTA_SERVICE";
 /**
  * Event payload layout: [esp_ota_service_event_t header][item_label bytes + NUL].
  * The label is always owned by the payload, so subscribers can safely read
- * @c evt->item_label up to the release callback. Before the service was
- * changed, this pointer borrowed from @c esp_ota_upgrade_item_t::partition_label
- * and became dangling once the upgrade list was destroyed.
+ * @c evt->item_label up to the release callback.
  */
 typedef struct {
     esp_ota_service_event_t  event;
@@ -170,7 +165,19 @@ static void free_upgrade_list(esp_ota_upgrade_item_t *list, int count)
     adf_free(list);
 }
 
-static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item_t *item, int idx)
+static void abort_target(esp_ota_service_target_t *tgt, int idx)
+{
+    if (tgt == NULL || tgt->abort == NULL) {
+        return;
+    }
+    esp_err_t err = tgt->abort(tgt);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "[%d] Target abort failed: %s", idx, esp_err_to_name(err));
+    }
+}
+
+static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item_t *item, int idx,
+                              esp_ota_service_item_end_reason_t *reason)
 {
     esp_ota_service_source_t *src = item->source;
     esp_ota_service_target_t *tgt = item->target;
@@ -185,8 +192,14 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
         esp_ota_service_resume_point_t rp;
         if (esp_ota_service_resume_load(idx, &rp) == ESP_OK && rp.item_index == (int8_t)idx &&
             strcmp(rp.uri, item->uri) == 0 && rp.written_bytes > 0) {
-            resume_offset = rp.written_bytes;
-            ESP_LOGI(TAG, "[%d] Resuming from offset %" PRIu32, idx, resume_offset);
+            if (ver) {
+                /* A streaming digest needs every byte; a partial stream can never verify. */
+                ESP_LOGW(TAG, "[%d] Verifier attached - ignoring resume point, restarting from beginning", idx);
+                (void)esp_ota_service_resume_clear(idx);
+            } else {
+                resume_offset = rp.written_bytes;
+                ESP_LOGI(TAG, "[%d] Resuming from offset %" PRIu32, idx, resume_offset);
+            }
         }
     }
 #endif  /* CONFIG_OTA_ENABLE_RESUME */
@@ -228,7 +241,8 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "[%d] Verifier begin rejected image: %s", idx, esp_err_to_name(ret));
             src->close(src);
-            return ESP_OTA_SERVICE_PROC_ITEM_SKIPPED;
+            *reason = ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED;
+            return ret;
         }
     }
 
@@ -255,7 +269,7 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
         ret = src->open(src, item->uri);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "[%d] Source reopen failed: %s", idx, esp_err_to_name(ret));
-            tgt->abort(tgt);
+            abort_target(tgt, idx);
             return ret;
         }
         atomic_store(&ota->total_bytes, esp_ota_service_total_bytes_from_source_size(src->get_size(src)));
@@ -277,7 +291,7 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
                                            MALLOC_CAP_DEFAULT | MALLOC_CAP_SPIRAM);
     if (!buf) {
         ESP_LOGE(TAG, "Failed to allocate write buffer");
-        tgt->abort(tgt);
+        abort_target(tgt, idx);
         src->close(src);
         return ESP_ERR_NO_MEM;
     }
@@ -312,6 +326,7 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
             ret = ver->verify_update(ver, buf, (size_t)r);
             if (ret != ESP_OK) {
                 ESP_LOGE(TAG, "[%d] Verifier update rejected chunk", idx);
+                *reason = ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED;
                 break;
             }
         }
@@ -325,7 +340,7 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
         uint32_t written_now = atomic_fetch_add(&ota->bytes_written, (uint32_t)r) + (uint32_t)r;
 
 #if CONFIG_OTA_ENABLE_RESUME
-        if (item->resumable) {
+        if (item->resumable && !ver) {
             bytes_since_last_save += (uint32_t)r;
             if (bytes_since_last_save >= CONFIG_OTA_RESUME_SAVE_INTERVAL_KB * 1024) {
                 esp_ota_service_resume_point_t rp;
@@ -358,7 +373,7 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
 
     adf_free(buf);
     if (atomic_load(&ota->abort_requested)) {
-        tgt->abort(tgt);
+        abort_target(tgt, idx);
         src->close(src);
         ESP_LOGW(TAG, "[%d] Upgrade aborted by user", idx);
         return ESP_ERR_TIMEOUT;  /* caller checks abort_requested separately */
@@ -368,8 +383,7 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
         ret = ver->verify_finish(ver);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "[%d] Verifier finish rejected image: %s", idx, esp_err_to_name(ret));
-            /* Treat a post-download verifier rejection as a skip, not a write failure. */
-            ret = ESP_OTA_SERVICE_PROC_ITEM_SKIPPED;
+            *reason = ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED;
         }
     }
 
@@ -377,16 +391,16 @@ static esp_err_t process_item(esp_ota_service_t *ota, const esp_ota_upgrade_item
         ret = tgt->commit(tgt);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "[%d] Target commit failed: %s", idx, esp_err_to_name(ret));
-        } else {
-#if CONFIG_OTA_ENABLE_RESUME
-            if (item->resumable) {
-                (void)esp_ota_service_resume_clear(idx);
-            }
-#endif  /* CONFIG_OTA_ENABLE_RESUME */
         }
     } else {
-        tgt->abort(tgt);
+        abort_target(tgt, idx);
     }
+#if CONFIG_OTA_ENABLE_RESUME
+    /* Committed or aborted: either way the saved offset no longer describes the target. */
+    if (item->resumable) {
+        (void)esp_ota_service_resume_clear(idx);
+    }
+#endif  /* CONFIG_OTA_ENABLE_RESUME */
 
     src->close(src);
     return ret;
@@ -419,7 +433,8 @@ static void esp_ota_service_worker_task(void *arg)
         if (item->checker != NULL) {
             esp_ota_service_update_info_t info;
             memset(&info, 0, sizeof(info));
-            esp_err_t cr = esp_ota_service_check_update(ota, i, &info);
+            info.image_size = UINT32_MAX;
+            esp_err_t cr = item->checker->check(item->checker, item->uri, item->source, &info);
 
             if (atomic_load(&ota->abort_requested)) {
                 break;
@@ -494,7 +509,8 @@ static void esp_ota_service_worker_task(void *arg)
             }
         }
 
-        esp_err_t ret = process_item(ota, item, i);
+        esp_ota_service_item_end_reason_t reason = ESP_OTA_SERVICE_ITEM_END_REASON_PIPELINE;
+        esp_err_t ret = process_item(ota, item, i, &reason);
 
         if (atomic_load(&ota->abort_requested)) {
             /* Emit ITEM_END for abort (ITEM_BEGIN is sent from process_item when the read loop is entered). */
@@ -527,21 +543,6 @@ static void esp_ota_service_worker_task(void *arg)
             };
             fire_event(ota, &evt);
             i++;
-        } else if (ret == ESP_OTA_SERVICE_PROC_ITEM_SKIPPED) {
-            skip_count++;
-            evt = (esp_ota_service_event_t) {
-                .id = ESP_OTA_SERVICE_EVT_ITEM_END,
-                .item_index = i,
-                .item_label = item->partition_label,
-                .error = ESP_OK,
-                .item_end = {
-                    .status = ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED,
-                    .reason = ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED,
-                },
-            };
-            fire_event(ota, &evt);
-            ESP_LOGI(TAG, "[%d] Item skipped (verifier rejected)", i);
-            i++;
         } else {
             fail_count++;
             last_error = ret;
@@ -552,7 +553,7 @@ static void esp_ota_service_worker_task(void *arg)
                 .error = ret,
                 .item_end = {
                     .status = ESP_OTA_SERVICE_ITEM_STATUS_FAILED,
-                    .reason = ESP_OTA_SERVICE_ITEM_END_REASON_PIPELINE,
+                    .reason = reason,
                 },
             };
             fire_event(ota, &evt);
@@ -590,6 +591,15 @@ static esp_err_t esp_ota_service_on_init(esp_service_t *base, const esp_service_
     return ESP_OK;
 }
 
+static void ota_release_idle(esp_ota_service_t *svc)
+{
+    if (svc->api_lock != NULL) {
+        xSemaphoreTake(svc->api_lock, portMAX_DELAY);
+        svc->api_busy = false;
+        xSemaphoreGive(svc->api_lock);
+    }
+}
+
 static esp_err_t esp_ota_service_on_deinit(esp_service_t *base)
 {
     esp_ota_service_t *ota = (esp_ota_service_t *)base;
@@ -600,28 +610,50 @@ static esp_err_t esp_ota_service_on_deinit(esp_service_t *base)
         vSemaphoreDelete(ota->stop_sem);
         ota->stop_sem = NULL;
     }
+    if (ota->api_lock != NULL) {
+        vSemaphoreDelete(ota->api_lock);
+        ota->api_lock = NULL;
+    }
     return ESP_OK;
 }
 
 static esp_err_t esp_ota_service_on_start(esp_service_t *base)
 {
     esp_ota_service_t *ota = (esp_ota_service_t *)base;
-    if (ota == NULL || ota->upgrade_list == NULL || ota->upgrade_count == 0) {
+    if (ota == NULL || ota->api_lock == NULL) {
+        ESP_LOGE(TAG, "Start failed: invalid service");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    xSemaphoreTake(ota->api_lock, portMAX_DELAY);
+    if (ota->api_busy || ota->worker_task != NULL) {
+        xSemaphoreGive(ota->api_lock);
+        ESP_LOGE(TAG, "Start failed: service is busy or worker is still active");
+        return ESP_ERR_INVALID_STATE;
+    }
+    ota->api_busy = true;
+    xSemaphoreGive(ota->api_lock);
+
+    if (ota->upgrade_list == NULL || ota->upgrade_count == 0) {
         ESP_LOGE(TAG, "No upgrade list set - call esp_ota_service_set_upgrade_list() first");
+        ota_release_idle(ota);
         return ESP_ERR_INVALID_STATE;
     }
 
     for (int i = 0; i < ota->upgrade_count; i++) {
         if (ota->upgrade_list[i].source == NULL) {
             ESP_LOGE(TAG, "Start failed: upgrade_list[%d].source is NULL", i);
+            ota_release_idle(ota);
             return ESP_ERR_INVALID_ARG;
         }
         if (ota->upgrade_list[i].target == NULL) {
             ESP_LOGE(TAG, "Start failed: upgrade_list[%d].target is NULL", i);
+            ota_release_idle(ota);
             return ESP_ERR_INVALID_ARG;
         }
         if (ota->upgrade_list[i].uri == NULL) {
             ESP_LOGE(TAG, "Start failed: upgrade_list[%d].uri is NULL", i);
+            ota_release_idle(ota);
             return ESP_ERR_INVALID_ARG;
         }
     }
@@ -643,9 +675,11 @@ static esp_err_t esp_ota_service_on_start(esp_service_t *base)
     if (rc != pdPASS) {
         ESP_LOGE(TAG, "Failed to create OTA worker task (stack=%" PRIu32 " prio=%u)", ota->worker_stack_size,
                  ota->worker_priority);
+        ota_release_idle(ota);
         return ESP_ERR_NO_MEM;
     }
 
+    ota_release_idle(ota);
     ESP_LOGI(TAG, "OTA worker started (%d items, stack=%" PRIu32 " prio=%u)", ota->upgrade_count,
              ota->worker_stack_size, ota->worker_priority);
     return ESP_OK;
@@ -658,6 +692,16 @@ static esp_err_t esp_ota_service_on_stop(esp_service_t *base)
         /* No worker was started or the owner already joined it. */
         return ESP_OK;
     }
+    if (xSemaphoreTake(ota->stop_sem, 0) == pdTRUE) {
+        xSemaphoreTake(ota->api_lock, portMAX_DELAY);
+        ota->worker_task = NULL;
+        xSemaphoreGive(ota->api_lock);
+        return ESP_OK;
+    }
+    if (xTaskGetCurrentTaskHandle() == ota->worker_task) {
+        ESP_LOGE(TAG, "Stop failed: called from OTA worker task");
+        return ESP_ERR_INVALID_STATE;
+    }
 
     ESP_LOGI(TAG, "Requesting OTA worker to stop...");
     atomic_store(&ota->abort_requested, true);
@@ -667,7 +711,9 @@ static esp_err_t esp_ota_service_on_stop(esp_service_t *base)
         ESP_LOGE(TAG, "OTA worker did not stop within %" PRIu32 " ms", ota->stop_timeout_ms);
         return ESP_ERR_TIMEOUT;
     }
+    xSemaphoreTake(ota->api_lock, portMAX_DELAY);
     ota->worker_task = NULL;
+    xSemaphoreGive(ota->api_lock);
     ESP_LOGI(TAG, "OTA worker stopped cleanly");
     return ESP_OK;
 }
@@ -746,6 +792,7 @@ esp_err_t esp_ota_service_create(const esp_ota_service_cfg_t *cfg, esp_ota_servi
         adf_free(ota);
         return ESP_ERR_NO_MEM;
     }
+    ota->api_lock = xSemaphoreCreateMutexStatic(&ota->api_lock_storage);
 
     ota->worker_stack_size =
         cfg->worker_task.stack_size > 0 ? cfg->worker_task.stack_size : ESP_OTA_SERVICE_DEFAULT_WORKER_STACK_SIZE;
@@ -758,6 +805,7 @@ esp_err_t esp_ota_service_create(const esp_ota_service_cfg_t *cfg, esp_ota_servi
         chunk = ESP_OTA_SERVICE_DEFAULT_WRITE_CHUNK_SIZE;
     } else if (chunk < 512 || chunk > 65536) {
         ESP_LOGE(TAG, "Invalid write_chunk_size %" PRIu32, chunk);
+        vSemaphoreDelete(ota->api_lock);
         vSemaphoreDelete(ota->stop_sem);
         adf_free(ota);
         return ESP_ERR_INVALID_ARG;
@@ -769,6 +817,7 @@ esp_err_t esp_ota_service_create(const esp_ota_service_cfg_t *cfg, esp_ota_servi
         stop_ms = ESP_OTA_SERVICE_DEFAULT_STOP_TIMEOUT_MS;
     } else if (stop_ms < 1000) {
         ESP_LOGE(TAG, "Invalid stop_timeout_ms %" PRIu32, stop_ms);
+        vSemaphoreDelete(ota->api_lock);
         vSemaphoreDelete(ota->stop_sem);
         adf_free(ota);
         return ESP_ERR_INVALID_ARG;
@@ -783,6 +832,7 @@ esp_err_t esp_ota_service_create(const esp_ota_service_cfg_t *cfg, esp_ota_servi
     esp_err_t ret = esp_service_init((esp_service_t *)ota, &svc_cfg, &s_esp_ota_service_ops);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Create failed: esp_service_init, %s", esp_err_to_name(ret));
+        vSemaphoreDelete(ota->api_lock);
         vSemaphoreDelete(ota->stop_sem);
         adf_free(ota);
         return ret;
@@ -830,6 +880,31 @@ esp_err_t esp_ota_service_is_pending_verify(bool *out_pending)
 #endif  /* CONFIG_OTA_ENABLE_ROLLBACK */
 }
 
+/* Claim exclusive idle access via api_lock/api_busy so slow list teardown or
+ * checker network I/O never holds the mutex. */
+static bool ota_claim_idle(esp_ota_service_t *svc, const char *op)
+{
+    bool dispatching = false;
+    adf_event_hub_is_dispatching(&dispatching);
+    if (dispatching || svc->api_lock == NULL) {
+        ESP_LOGE(TAG, "%s failed: invalid call context", op);
+        return false;
+    }
+
+    xSemaphoreTake(svc->api_lock, portMAX_DELAY);
+    esp_service_state_t state = ESP_SERVICE_STATE_UNINITIALIZED;
+    (void)esp_service_get_state(&svc->base, &state);
+    bool idle = !svc->api_busy && state == ESP_SERVICE_STATE_INITIALIZED && svc->worker_task == NULL;
+    if (idle) {
+        svc->api_busy = true;
+    }
+    xSemaphoreGive(svc->api_lock);
+    if (!idle) {
+        ESP_LOGE(TAG, "%s failed: service busy or not INITIALIZED", op);
+    }
+    return idle;
+}
+
 esp_err_t esp_ota_service_destroy(esp_ota_service_t *svc)
 {
     if (!svc) {
@@ -837,8 +912,25 @@ esp_err_t esp_ota_service_destroy(esp_ota_service_t *svc)
         return ESP_ERR_INVALID_ARG;
     }
 
+    bool dispatching = false;
+    adf_event_hub_is_dispatching(&dispatching);
+    if (dispatching || svc->api_lock == NULL) {
+        ESP_LOGE(TAG, "Destroy failed: invalid call context");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    xSemaphoreTake(svc->api_lock, portMAX_DELAY);
+    if (svc->api_busy || (svc->worker_task != NULL && xTaskGetCurrentTaskHandle() == svc->worker_task)) {
+        xSemaphoreGive(svc->api_lock);
+        ESP_LOGE(TAG, "Destroy failed: service operation is active");
+        return ESP_ERR_INVALID_STATE;
+    }
+    svc->api_busy = true;
+    xSemaphoreGive(svc->api_lock);
+
     esp_err_t ret = esp_service_deinit((esp_service_t *)svc);
     if (ret != ESP_OK) {
+        ota_release_idle(svc);
         return ret;
     }
     adf_free(svc);
@@ -865,118 +957,88 @@ esp_err_t esp_ota_service_set_upgrade_list(esp_ota_service_t *svc, const esp_ota
         return ESP_ERR_INVALID_ARG;
     }
 
-    esp_service_state_t svc_state;
-    if (esp_service_get_state((esp_service_t *)svc, &svc_state) != ESP_OK) {
-        ESP_LOGE(TAG, "Set upgrade list failed: could not get service state");
-        destroy_caller_items(list, 0, count);
-        return ESP_ERR_INVALID_ARG;
-    }
-    if (svc_state != ESP_SERVICE_STATE_INITIALIZED && svc_state != ESP_SERVICE_STATE_PAUSED) {
-        ESP_LOGE(TAG, "Set upgrade list not allowed in state %d (need INITIALIZED or PAUSED)", (int)svc_state);
+    if (!ota_claim_idle(svc, "Set upgrade list")) {
         destroy_caller_items(list, 0, count);
         return ESP_ERR_INVALID_STATE;
     }
 
-    /* Per-item semantic validation. We check BEFORE allocating so a
-     * configuration mistake does not tie up heap, and we can reject the
-     * entire call atomically (destroying all borrowed objects). */
+    esp_err_t ret = ESP_ERR_INVALID_ARG;
     for (int i = 0; i < count; i++) {
         if (list[i].uri == NULL) {
             ESP_LOGE(TAG, "Set upgrade list failed: item[%d].uri is NULL", i);
-            destroy_caller_items(list, 0, count);
-            return ESP_ERR_INVALID_ARG;
+            goto rejected;
         }
         if (strlen(list[i].uri) > ESP_OTA_SERVICE_URI_MAX_LEN) {
-            ESP_LOGE(TAG, "Set upgrade list failed: item[%d].uri exceeds %d chars (resume store would truncate)",
+            ESP_LOGE(TAG, "Set upgrade list failed: item[%d].uri exceeds %d chars",
                      i, ESP_OTA_SERVICE_URI_MAX_LEN);
-            destroy_caller_items(list, 0, count);
-            return ESP_ERR_INVALID_ARG;
+            goto rejected;
         }
         if (list[i].source == NULL) {
             ESP_LOGE(TAG, "Set upgrade list failed: item[%d].source is NULL", i);
-            destroy_caller_items(list, 0, count);
-            return ESP_ERR_INVALID_ARG;
+            goto rejected;
         }
         if (list[i].target == NULL) {
             ESP_LOGE(TAG, "Set upgrade list failed: item[%d].target is NULL", i);
-            destroy_caller_items(list, 0, count);
-            return ESP_ERR_INVALID_ARG;
+            goto rejected;
+        }
+        if (list[i].checker != NULL && list[i].checker->check == NULL) {
+            ESP_LOGE(TAG, "Set upgrade list failed: item[%d].checker->check is NULL", i);
+            goto rejected;
         }
         if (list[i].resumable) {
-            /* For resume to actually work, the source must support random-
-             * access seek AND the target must be able to recover its own
-             * write cursor (set_write_offset). The data / bootloader targets
-             * intentionally lack set_write_offset because they must erase
-             * the whole partition up front. Rather than silently ignoring
-             * resumable=true, we refuse the configuration so the caller
-             * learns about the mismatch immediately. */
             if (list[i].source->seek == NULL) {
                 ESP_LOGE(TAG, "Set upgrade list failed: item[%d].resumable=true but source has no seek()", i);
-                destroy_caller_items(list, 0, count);
-                return ESP_ERR_NOT_SUPPORTED;
+                ret = ESP_ERR_NOT_SUPPORTED;
+                goto rejected;
             }
             if (list[i].target->set_write_offset == NULL) {
-                ESP_LOGE(TAG, "Set upgrade list failed: item[%d].resumable=true but target has no set_write_offset()"
-                              " (e.g. data / bootloader targets cannot resume)", i);
-                destroy_caller_items(list, 0, count);
-                return ESP_ERR_NOT_SUPPORTED;
+                ESP_LOGE(TAG, "Set upgrade list failed: item[%d].resumable=true but target has no set_write_offset()",
+                         i);
+                ret = ESP_ERR_NOT_SUPPORTED;
+                goto rejected;
             }
         }
     }
 
-    free_upgrade_list(svc->upgrade_list, svc->upgrade_count);
-    svc->upgrade_list = NULL;
-    svc->upgrade_count = 0;
-
+    ret = ESP_ERR_NO_MEM;
     esp_ota_upgrade_item_t *new_list = adf_calloc(count, sizeof(esp_ota_upgrade_item_t));
-    if (!new_list) {
+    if (new_list == NULL) {
         ESP_LOGE(TAG, "Set upgrade list failed: no memory for list of %d items", count);
-        destroy_caller_items(list, 0, count);
-        return ESP_ERR_NO_MEM;
+        goto rejected;
     }
-
-    /* Phase 1: shallow-copy every item to transfer source/target/verifier/checker
-     * ownership into new_list immediately. String fields are cleared so
-     * free_upgrade_list() never double-frees caller-owned memory at any
-     * error point below. */
     for (int i = 0; i < count; i++) {
         new_list[i] = list[i];
         new_list[i].uri = NULL;
         new_list[i].partition_label = NULL;
     }
-
-    /* Phase 2: deep-copy strings. On failure free_upgrade_list() destroys
-     * every transferred object and frees whatever strings were copied. */
     for (int i = 0; i < count; i++) {
         new_list[i].uri = adf_strdup(list[i].uri);
-        if (!new_list[i].uri) {
-            ESP_LOGE(TAG, "Set upgrade list failed: no memory to copy uri at index %d", i);
+        if (new_list[i].uri == NULL) {
+            ESP_LOGE(TAG, "Set upgrade list failed: no memory for item[%d].uri", i);
             free_upgrade_list(new_list, count);
-            return ESP_ERR_NO_MEM;
+            goto done;
         }
-        if (list[i].partition_label) {
+        if (list[i].partition_label != NULL) {
             new_list[i].partition_label = adf_strdup(list[i].partition_label);
-            if (!new_list[i].partition_label) {
-                ESP_LOGE(TAG, "Set upgrade list failed: no memory to copy partition_label at index %d", i);
+            if (new_list[i].partition_label == NULL) {
+                ESP_LOGE(TAG, "Set upgrade list failed: no memory for item[%d].partition_label", i);
                 free_upgrade_list(new_list, count);
-                return ESP_ERR_NO_MEM;
+                goto done;
             }
         }
     }
 
+    free_upgrade_list(svc->upgrade_list, svc->upgrade_count);
     svc->upgrade_list = new_list;
     svc->upgrade_count = count;
+    ret = ESP_OK;
+    goto done;
 
-#if CONFIG_OTA_ENABLE_RESUME
-    /* Resume records from a previous session are only trustworthy when the
-     * upgrade list matches (same uri at the same index). Re-running
-     * set_upgrade_list is an explicit signal that the configuration might
-     * have changed, so err on the safe side and drop every record. The
-     * per-item load still gates actual use by comparing URI. */
-    (void)esp_ota_service_resume_clear_all();
-#endif  /* CONFIG_OTA_ENABLE_RESUME */
-
-    return ESP_OK;
+rejected:
+    destroy_caller_items(list, 0, count);
+done:
+    ota_release_idle(svc);
+    return ret;
 }
 
 esp_err_t esp_ota_service_check_update(esp_ota_service_t *svc, int item_index, esp_ota_service_update_info_t *out_info)
@@ -989,39 +1051,40 @@ esp_err_t esp_ota_service_check_update(esp_ota_service_t *svc, int item_index, e
         ESP_LOGE(TAG, "Check update failed: out_info is NULL");
         return ESP_ERR_INVALID_ARG;
     }
-    if (!svc->upgrade_list) {
+    if (!ota_claim_idle(svc, "Check update")) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    esp_err_t ret = ESP_ERR_INVALID_ARG;
+    if (svc->upgrade_list == NULL) {
         ESP_LOGE(TAG, "Check update failed: upgrade list is not set");
-        return ESP_ERR_INVALID_ARG;
+        goto done;
     }
     if (item_index < 0 || item_index >= svc->upgrade_count) {
         ESP_LOGE(TAG, "Check update failed: item_index %d is out of range (count=%d)", item_index, svc->upgrade_count);
-        return ESP_ERR_INVALID_ARG;
+        goto done;
     }
-
     const esp_ota_upgrade_item_t *item = &svc->upgrade_list[item_index];
-
-    if (!item->checker) {
+    if (item->checker == NULL || item->checker->check == NULL) {
         ESP_LOGE(TAG, "Check update failed: checker is NULL at item_index %d", item_index);
-        return ESP_ERR_INVALID_ARG;
-    }
-    if (!item->checker->check) {
-        ESP_LOGE(TAG, "Check update failed: checker->check is NULL at item_index %d", item_index);
-        return ESP_ERR_INVALID_ARG;
+        goto done;
     }
 
     memset(out_info, 0, sizeof(*out_info));
     out_info->image_size = UINT32_MAX;
-
-    esp_err_t ret = item->checker->check(item->checker, item->uri, item->source, out_info);
+    ret = item->checker->check(item->checker, item->uri, item->source, out_info);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Check update failed: checker returned %s", esp_err_to_name(ret));
-        return ret;
+        goto done;
     }
 
     ESP_LOGI(TAG, "Check update: incoming version='%s' label='%s' size=%" PRIu32 " upgrade_available=%s",
              out_info->version, out_info->label, out_info->image_size,
              out_info->upgrade_available ? "true" : "false");
-    return ESP_OK;
+
+done:
+    ota_release_idle(svc);
+    return ret;
 }
 
 esp_err_t esp_ota_service_get_progress(const esp_ota_service_t *svc, uint32_t *out_written, uint32_t *out_total,
@@ -1062,6 +1125,10 @@ esp_err_t esp_ota_service_confirm_update(void)
 {
 #if CONFIG_OTA_ENABLE_ROLLBACK
     const esp_partition_t *running = esp_ota_get_running_partition();
+    if (running == NULL) {
+        ESP_LOGE(TAG, "Confirm update failed: could not get running partition");
+        return ESP_ERR_INVALID_STATE;
+    }
     esp_ota_img_states_t state;
     if (esp_ota_get_state_partition(running, &state) != ESP_OK) {
         ESP_LOGE(TAG, "Confirm update failed: could not read running partition OTA state");

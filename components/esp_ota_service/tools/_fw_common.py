@@ -38,16 +38,19 @@ EXAMPLES: dict[str, dict] = {
     'http': {
         'dir_name': 'ota_http',
         'project_name': 'ota_http',
+        'default_version': '1.0.0',
         'default_url': 'http://0.0.0.0:18070/firmware.bin',
     },
     'fs': {
         'dir_name': 'ota_fs',
         'project_name': 'ota_fs',
+        'default_version': '0.1.0',
         'default_url': 'file:///sdcard/app.bin',
     },
     'ble': {
         'dir_name': 'ota_ble',
         'project_name': 'ota_ble',
+        'default_version': '1.0.0',
         'default_url': 'ble://ota_ble/app.bin',
     },
     'services_hub': {

@@ -516,8 +516,8 @@ def upload_iot(ser, path, device_name, conn_index=0, scan_duration_sec=None):
     # so we never need to span sectors in one write.
     packet_payload = max(1, min(SECTOR_SIZE, mtu - 6))
     n_sectors = (size + SECTOR_SIZE - 1) // SECTOR_SIZE
-    print(f'OTA service idx={handles['svc']}, '
-          f'recv_fw idx={handles['recv_fw']}, command idx={handles['command']}')
+    print(f'OTA service idx={handles["svc"]}, '
+          f'recv_fw idx={handles["recv_fw"]}, command idx={handles["command"]}')
     print(f'Negotiated MTU={mtu}, packet payload={packet_payload} B, '
           f'sector={SECTOR_SIZE} B, total sectors={n_sectors}')
 

@@ -59,10 +59,10 @@ typedef struct esp_ota_service esp_ota_service_t;
  * @brief  OTA service event identifiers
  *
  *         Enumerators are listed in the typical emission order within one session.
- *         IDs start at 2 (0 is invalid for @c esp_service_publish_event(), 1 is
- *         reserved for @c ESP_SERVICE_EVENT_STATE_CHANGED); use the symbols — numeric
- *         values are not stable across releases.  @c ESP_OTA_SERVICE_EVT_MAX is a non-event
- *         upper-bound sentinel and is never published.
+ *         IDs start at 2 (0 is invalid for @c esp_service_publish_event(); base-layer
+ *         IDs such as @c ESP_SERVICE_EVENT_STATE_CHANGED live at @c UINT16_MAX - 1);
+ *         use the symbols — numeric values are not stable across releases.
+ *         @c ESP_OTA_SERVICE_EVT_MAX is a non-event upper-bound sentinel and is never published.
  *
  *         @c ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK fires only when @c checker is non-NULL; read
  *         @c error first, then @c ver_check.upgrade_available:
@@ -78,9 +78,11 @@ typedef enum {
                                                  No union payload; only @c item_index / @c item_label. */
     ESP_OTA_SERVICE_EVT_ITEM_PROGRESS,      /*!< Progress update for the current item (throttled, ~1s) */
     ESP_OTA_SERVICE_EVT_ITEM_END,           /*!< Single partition upgrade finished. Payload carries @c item_end.status
-                                                 (OK / SKIPPED / FAILED), @c item_end.reason (classification when status
-                                                 is not OK), and @c error (@c ESP_OK for OK and SKIPPED; pipeline /
-                                                 checker / abort codes when @c FAILED). */
+                                                 (OK / FAILED), @c item_end.reason (classification when status is
+                                                 FAILED), and @c error (@c ESP_OK for OK; verifier / pipeline /
+                                                 checker / abort codes when @c FAILED). Items whose checker reports
+                                                 no upgrade available only emit ITEM_VER_CHECK and are counted in
+                                                 @c session_end.skipped_count. */
     ESP_OTA_SERVICE_EVT_SESSION_END,        /*!< OTA session finished. Payload carries success/failed/skipped counts and
                                                  aborted flag; consumers should handle this single event instead of three
                                                  disjoint outcomes. */
@@ -93,7 +95,8 @@ typedef enum {
  */
 typedef enum {
     ESP_OTA_SERVICE_ITEM_STATUS_OK      = 0,  /*!< Item written and committed successfully. */
-    ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED = 1,  /*!< Item was deliberately not applied; see @c esp_ota_service_item_end_reason_t. */
+    ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED = 1,  /*!< Reserved for compatibility; no longer emitted. Verifier
+                                                   rejections use FAILED + VERIFIER_REJECTED. */
     ESP_OTA_SERVICE_ITEM_STATUS_FAILED  = 2,  /*!< Item failed; @c esp_ota_service_event_t::error carries the reason. */
 } esp_ota_service_item_status_t;
 
@@ -101,13 +104,12 @@ typedef enum {
  * @brief  Coarse outcome detail for @c ESP_OTA_SERVICE_EVT_ITEM_END.
  *
  *         When @c item_end.status is @c ESP_OTA_SERVICE_ITEM_STATUS_OK, the value is @c ESP_OTA_SERVICE_ITEM_END_REASON_NONE.
- *         For @c ESP_OTA_SERVICE_ITEM_STATUS_FAILED and @c ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED, use @c reason together with
- *         @c esp_ota_service_event_t::error (especially for failures — @c error holds the precise @c esp_err_t).
+ *         For @c ESP_OTA_SERVICE_ITEM_STATUS_FAILED, use @c reason together with @c esp_ota_service_event_t::error
+ *         (@c error holds the precise @c esp_err_t, e.g. the verifier's return value for VERIFIER_REJECTED).
  */
 typedef enum {
     ESP_OTA_SERVICE_ITEM_END_REASON_NONE              = 0,  /*!< No extra classification (success path). */
-    ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED = 1,  /*!< SKIPPED: streaming verifier rejected the image at
-                                                                 verify_begin() or verify_finish(). */
+    ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED = 1,  /*!< FAILED: streaming verifier rejected the image. */
     ESP_OTA_SERVICE_ITEM_END_REASON_CHECK_FAILED      = 2,  /*!< FAILED: pre-download checker returned an error. */
     ESP_OTA_SERVICE_ITEM_END_REASON_ABORTED           = 3,  /*!< FAILED: session stop / user abort before item finished. */
     ESP_OTA_SERVICE_ITEM_END_REASON_PIPELINE          = 4,  /*!< FAILED: download / write / commit path (@c error). */
@@ -153,7 +155,7 @@ typedef struct {
 
         /** ESP_OTA_SERVICE_EVT_ITEM_END */
         struct {
-            esp_ota_service_item_status_t      status;  /*!< OK / SKIPPED / FAILED */
+            esp_ota_service_item_status_t      status;  /*!< OK / FAILED */
             esp_ota_service_item_end_reason_t  reason;  /*!< @c ESP_OTA_SERVICE_ITEM_END_REASON_NONE when @c status is OK; otherwise coarse class */
         } item_end;
 
@@ -161,7 +163,7 @@ typedef struct {
         struct {
             uint16_t  success_count;  /*!< Items with ESP_OTA_SERVICE_ITEM_STATUS_OK */
             uint16_t  failed_count;   /*!< Items with ESP_OTA_SERVICE_ITEM_STATUS_FAILED */
-            uint16_t  skipped_count;  /*!< Items with ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED */
+            uint16_t  skipped_count;  /*!< Items whose checker reported no upgrade available */
             bool      aborted;        /*!< True when stopped by esp_service_stop() */
         } session_end;
 
@@ -212,7 +214,15 @@ typedef struct esp_ota_upgrade_item {
                                                    *   returns ESP_ERR_NOT_SUPPORTED. Data-partition and
                                                    *   bootloader targets erase the whole partition on open()
                                                    *   and therefore cannot be resumed: only the app target
-                                                   *   and sources with random-access seek currently qualify. */
+                                                   *   and sources with random-access seek currently qualify.
+                                                   *   A saved offset is matched by @c item_index and @c uri only
+                                                   *   (change the URI when the served image payload changes) and is
+                                                   *   only used when the item has no @c verifier (a streaming digest
+                                                   *   needs every byte, so such items clear the record and restart
+                                                   *   from 0). Once the write phase finishes by commit, target abort,
+                                                   *   or verifier rejection (or if the target rejects stale data),
+                                                   *   the record is cleared; early open/allocation failures and
+                                                   *   esp_service_stop() preserve it for the next attempt. */
 } esp_ota_upgrade_item_t;
 
 /**
@@ -271,18 +281,22 @@ esp_err_t esp_ota_service_create(const esp_ota_service_cfg_t *cfg, esp_ota_servi
  * @brief  Destroy an OTA service instance and free all resources
  *
  *         Stops the worker and deinitializes the base before freeing the upgrade
- *         list and service object. A stop timeout leaves all resources intact.
+ *         list and service object. A stop timeout leaves all resources intact;
+ *         retry after the source unblocks.
+ *
  * @note  Single-owner operation after stopping external callers. Do not call
- *        from event/lifecycle callbacks. Only ESP_OK invalidates svc; on error
- *        retain it for destroy retry and never free it manually.
+ *        concurrently with other API calls or from event/lifecycle/interface
+ *        callbacks. Only ESP_OK invalidates svc; on error retain it for destroy
+ *        retry and never free it manually.
  *
  * @param[in]  svc  Service handle obtained from esp_ota_service_create()
  *
  * @return
- *       - ESP_OK               On success
- *       - ESP_ERR_INVALID_ARG  If svc is NULL
- *       - ESP_ERR_TIMEOUT      Worker has not exited; instance retained for retry
- *       - other                Teardown failed; instance retained for retry
+ *       - ESP_OK                 On success; the handle is no longer valid
+ *       - ESP_ERR_INVALID_ARG    If svc is NULL
+ *       - ESP_ERR_TIMEOUT        Worker has not exited; instance retained for retry
+ *       - ESP_ERR_INVALID_STATE  Lifecycle busy, in event dispatch, or called from worker; instance retained
+ *       - Other                  Teardown failed; instance retained for retry
  */
 esp_err_t esp_ota_service_destroy(esp_ota_service_t *svc);
 
@@ -298,22 +312,27 @@ esp_err_t esp_ota_service_destroy(esp_ota_service_t *svc);
  *         verifier/checker before returning.
  *
  *         If a previous list exists, its source/target/verifier/checker destroy()
- *         functions are called before the list is replaced. Any saved NVS resume
- *         records are cleared at this point, because the new list may not match
- *         the previous item layout.
+ *         functions are called before the list is replaced. Saved NVS resume
+ *         records are NOT touched here: they are keyed by item index and @c uri,
+ *         so an interrupted download survives a reboot and a fresh
+ *         set_upgrade_list() with the same URIs. A record for a different
+ *         @c uri at the same index is ignored when that item runs.
  *
- *         Allowed only while the service is in INITIALIZED or PAUSED. Not allowed
- *         in RUNNING while the worker is downloading.
+ *         Allowed only in INITIALIZED after the worker has been joined by esp_service_stop().
+ *         PAUSED still has a live worker and does not permit list replacement.
+ *         Serialized with lifecycle operations and check_update(); a busy service is rejected.
+ *         Each object must be exclusive to its item; do not pass objects from the current list.
  *
  * @param[in]  svc    Service instance
  * @param[in]  list   Array of upgrade item descriptors
  * @param[in]  count  Number of items in the array (must be > 0)
  *
  * @return
- *       - ESP_OK                 On success
- *       - ESP_ERR_INVALID_ARG    If svc/list is NULL, count <= 0, item uri/source/target is NULL, or a uri
+ *       - ESP_OK               On success
+ *       - ESP_ERR_INVALID_ARG  If svc/list is NULL, count <= 0, item uri/source/target is NULL,
+ *                              a non-NULL item checker has a NULL check() callback, or a uri
  *                                exceeds the resume store's capacity (255 chars)
- *       - ESP_ERR_INVALID_STATE  If called while the service is neither INITIALIZED nor PAUSED
+ *       - ESP_ERR_INVALID_STATE  If the service is busy, not INITIALIZED, or its worker is not joined
  *       - ESP_ERR_NOT_SUPPORTED  If item.resumable=true but the source has no seek() or the target has
  *                                no set_write_offset() (data / bootloader targets cannot resume)
  *       - ESP_ERR_NO_MEM         If the list or deep-copied strings cannot be allocated
@@ -325,17 +344,20 @@ esp_err_t esp_ota_service_set_upgrade_list(esp_ota_service_t *svc, const esp_ota
  *
  *         Calls @c checker->check() on the item at @a item_index. No flash write.
  *         Requires @c esp_ota_service_set_upgrade_list() first, and the item must have a
- *         non-NULL @c checker.
+ *         non-NULL @c checker. Allowed only in INITIALIZED with no unjoined worker.
+ *         Serialized with lifecycle operations and list replacement; a busy service is rejected.
+ *         Interface and event callbacks must not re-enter lifecycle/list/check APIs.
  *
  * @param[in]   svc         Service instance
  * @param[in]   item_index  Index into the upgrade list (0-based)
  * @param[out]  out_info    Receives update information
  *
  * @return
- *       - ESP_OK               On success (inspect @c out_info->upgrade_available)
- *       - ESP_ERR_INVALID_ARG  If svc or out_info is NULL, item_index is invalid,
- *                              upgrade list is unset, or item's @c checker is NULL
- *       - Other                Error from @c checker->check()
+ *       - ESP_OK                 On success (inspect @c out_info->upgrade_available)
+ *       - ESP_ERR_INVALID_ARG    If svc or out_info is NULL, item_index is invalid,
+ *                                upgrade list is unset, or item's @c checker is NULL
+ *       - ESP_ERR_INVALID_STATE  If the service is busy, not INITIALIZED, or its worker is not joined
+ *       - Other                  Error from @c checker->check()
  */
 esp_err_t esp_ota_service_check_update(esp_ota_service_t *svc, int item_index, esp_ota_service_update_info_t *out_info);
 
@@ -369,8 +391,10 @@ esp_err_t esp_ota_service_get_progress(const esp_ota_service_t *svc, uint32_t *o
  *
  * @return
  *       - ESP_OK                 On success (rollback cancelled)
- *       - ESP_ERR_INVALID_STATE  If the running image is not pending verification
+ *       - ESP_ERR_INVALID_STATE  If the running partition cannot be determined or the running image is not
+ *                                pending verification
  *       - ESP_ERR_NOT_SUPPORTED  If CONFIG_OTA_ENABLE_ROLLBACK is disabled
+ *       - ESP_FAIL               If the running partition OTA state cannot be read
  *       - Other                  Error code returned by esp_ota_mark_app_valid_cancel_rollback() on failure
  */
 esp_err_t esp_ota_service_confirm_update(void);

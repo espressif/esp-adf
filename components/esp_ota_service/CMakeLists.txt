@@ -17,7 +17,7 @@ set(srcs
     "${src_root}/resume/esp_ota_service_resume.c"
 )
 
-set(embed_files "")
+set(embed_txtfiles "")
 
 set(requires
     app_update
@@ -34,8 +34,8 @@ set(priv_requires
 )
 
 if(CONFIG_ESP_MCP_ENABLE)
-    list(APPEND srcs        "${src_root}/esp_ota_service_mcp.c")
-    list(APPEND embed_files "${src_root}/esp_ota_service_mcp.json")
+    list(APPEND srcs           "${src_root}/esp_ota_service_mcp.c")
+    list(APPEND embed_txtfiles "${src_root}/esp_ota_service_mcp.json")
 endif()
 
 if (CONFIG_OTA_ENABLE_BOOTLOADER_OTA)
@@ -47,12 +47,12 @@ if (CONFIG_OTA_ENABLE_BLE_SOURCE)
 endif()
 
 idf_component_register(
-    SRCS             ${srcs}
-    INCLUDE_DIRS     "include" "include/checker" "include/source" "include/target" "include/verifier"
+    SRCS              ${srcs}
+    INCLUDE_DIRS      "include" "include/checker" "include/source" "include/target" "include/verifier"
     PRIV_INCLUDE_DIRS "${src_root}/resume"
-    REQUIRES         ${requires}
-    PRIV_REQUIRES    ${priv_requires}
-    EMBED_FILES      ${embed_files}
+    REQUIRES          ${requires}
+    PRIV_REQUIRES     ${priv_requires}
+    EMBED_TXTFILES    ${embed_txtfiles}
 )
 
 if (CONFIG_OTA_ENABLE_BLE_SOURCE)

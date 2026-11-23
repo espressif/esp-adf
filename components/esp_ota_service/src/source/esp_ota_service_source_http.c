@@ -14,7 +14,6 @@
 #include "esp_gmf_io.h"
 #include "esp_gmf_io_http.h"
 #include "esp_gmf_obj.h"
-#include "esp_gmf_data_bus.h"
 #include "esp_log.h"
 
 #if defined(CONFIG_MBEDTLS_CERTIFICATE_BUNDLE)
@@ -99,16 +98,15 @@ static int http_read(esp_ota_service_source_t *self, uint8_t *buf, int len)
         return 0;
     }
 
-    esp_gmf_data_bus_block_t blk = {0};
-    esp_gmf_err_io_t ret = esp_gmf_io_acquire_read(priv->io, (esp_gmf_payload_t *)&blk,
-                                                   (uint32_t)len, priv->wait_ticks);
+    esp_gmf_payload_t blk = {0};
+    esp_gmf_err_io_t ret = esp_gmf_io_acquire_read(priv->io, &blk, (uint32_t)len, priv->wait_ticks);
     if (ret == ESP_GMF_IO_FAIL || ret == ESP_GMF_IO_ABORT || ret == ESP_GMF_IO_TIMEOUT) {
         ESP_LOGE(TAG, "Acquire read failed: %d", ret);
         return -1;
     }
 
     if (blk.valid_size == 0) {
-        esp_gmf_io_release_read(priv->io, (esp_gmf_payload_t *)&blk, 0);
+        esp_gmf_io_release_read(priv->io, &blk, 0);
         return 0;
     }
 
@@ -122,7 +120,7 @@ static int http_read(esp_ota_service_source_t *self, uint8_t *buf, int len)
             uint8_t *new_buf = adf_realloc(priv->leftover_buf, remainder);
             if (new_buf == NULL) {
                 ESP_LOGE(TAG, "Failed to realloc leftover buffer to %zu", remainder);
-                esp_gmf_io_release_read(priv->io, (esp_gmf_payload_t *)&blk, 0);
+                esp_gmf_io_release_read(priv->io, &blk, 0);
                 return -1;
             }
             priv->leftover_buf = new_buf;
@@ -133,11 +131,11 @@ static int http_read(esp_ota_service_source_t *self, uint8_t *buf, int len)
         priv->leftover_offset = 0;
     }
 
-    if (blk.is_last) {
+    if (blk.is_done) {
         priv->eof = true;
     }
 
-    esp_gmf_io_release_read(priv->io, (esp_gmf_payload_t *)&blk, 0);
+    esp_gmf_io_release_read(priv->io, &blk, 0);
     return (int)copy;
 }
 
@@ -246,6 +244,7 @@ esp_err_t esp_ota_service_source_http_create(const esp_ota_service_source_http_c
     esp_gmf_err_t ret = esp_gmf_io_http_init(&gmf_cfg, &io);
     if (ret != ESP_GMF_ERR_OK || io == NULL) {
         ESP_LOGE(TAG, "Failed to init GMF HTTP IO: %d", ret);
+        adf_free(priv->leftover_buf);
         adf_free(priv);
         adf_free(src);
         return ESP_ERR_NO_MEM;

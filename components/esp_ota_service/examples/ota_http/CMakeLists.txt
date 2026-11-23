@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(ota_http)
+project(ota_http VERSION 1.0.0)
 
 # Publishing to tools/firmware_samples/ is done by tools/build_firmware.py
 # (writes a versioned ota_http_v<ver>.bin and refreshes manifest.json). Run it

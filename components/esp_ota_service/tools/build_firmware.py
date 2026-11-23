@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import struct
@@ -55,9 +56,12 @@ def write_version_txt(ex_dir: Path, version: str) -> Path:
     return version_path
 
 
-def read_version_txt(ex_dir: Path) -> str:
+def read_version_txt(ex_dir: Path, default_version: str | None = None) -> str:
     version_path = ex_dir / 'version.txt'
     if not version_path.is_file():
+        if default_version is not None:
+            parse_semver(default_version)
+            return default_version
         raise FileNotFoundError(
             f'{version_path} not found - pass --version to create it'
         )
@@ -66,17 +70,32 @@ def read_version_txt(ex_dir: Path) -> str:
     return version
 
 
-def run_idf_build(ex_dir: Path, target: str | None, port: str | None) -> None:
+def read_built_project_version(ex_dir: Path) -> str | None:
+    desc_path = ex_dir / 'build' / 'project_description.json'
+    if not desc_path.is_file():
+        return None
+    try:
+        data = json.loads(desc_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    ver = data.get('project_version')
+    return str(ver).strip() if ver is not None else None
+
+
+def run_idf_build(ex_dir: Path, target: str | None, port: str | None,
+                  reconfigure: bool = False) -> None:
     env = os.environ.copy()
     cmd: list[str] = ['idf.py']
     if port:
         cmd += ['-p', port]
+    if reconfigure and not target:
+        cmd += ['reconfigure']
     cmd += ['build']
     if target:
         # idf.py handles set-target if sdkconfig doesn't match, but we let the
         # caller trigger it explicitly with --target.
         subprocess.check_call(['idf.py', 'set-target', target], cwd=ex_dir, env=env)
-    print(f'+ (cwd {ex_dir}) {' '.join(cmd)}', flush=True)
+    print(f'+ (cwd {ex_dir}) {" ".join(cmd)}', flush=True)
     subprocess.check_call(cmd, cwd=ex_dir, env=env)
 
 
@@ -129,7 +148,7 @@ def refresh_manifest(example_key: str, version: str, fw_path: Path,
         entry['userdata_file'] = userdata_path.name
 
     save_manifest(entry)
-    print(f'[manifest] refreshed {FIRMWARE_SAMPLES_DIR / 'manifest.json'}')
+    print(f'[manifest] refreshed {FIRMWARE_SAMPLES_DIR / "manifest.json"}')
     print(f'           version={version}  size={stats.size}  sha256={stats.sha256}')
 
 
@@ -166,6 +185,7 @@ def main() -> int:
         print(f'[error] example dir missing: {ex_dir}', file=sys.stderr)
         return 1
 
+    info = EXAMPLES[args.example]
     if args.version:
         try:
             version = args.version.strip().lstrip('vV')
@@ -176,22 +196,30 @@ def main() -> int:
         write_version_txt(ex_dir, version)
     else:
         try:
-            version = read_version_txt(ex_dir)
+            version = read_version_txt(ex_dir, info.get('default_version'))
         except (FileNotFoundError, ValueError) as e:
             print(f'[error] {e}', file=sys.stderr)
             return 1
 
     if not args.skip_build:
+        prev_built = read_built_project_version(ex_dir)
+        need_reconfigure = prev_built is not None and prev_built.lstrip('vV') != version
         try:
-            run_idf_build(ex_dir, args.target, args.port)
+            run_idf_build(ex_dir, args.target, args.port, reconfigure=need_reconfigure)
         except subprocess.CalledProcessError as e:
             return e.returncode or 1
 
-    info = EXAMPLES[args.example]
-    build_bin = ex_dir / 'build' / f'{info['project_name']}.bin'
+    build_bin = ex_dir / 'build' / f'{info["project_name"]}.bin'
     if not build_bin.is_file():
         print(f'[error] missing build output: {build_bin}\n'
               f'        Run without --skip-build, or build manually first.',
+              file=sys.stderr)
+        return 1
+
+    built_ver = read_built_project_version(ex_dir)
+    if built_ver is not None and built_ver.lstrip('vV') != version:
+        print(f'[error] built image version {built_ver!r} does not match '
+              f'expected {version!r} - rebuild without --skip-build.',
               file=sys.stderr)
         return 1
 

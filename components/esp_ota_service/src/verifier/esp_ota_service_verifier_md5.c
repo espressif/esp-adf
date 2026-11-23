@@ -32,6 +32,15 @@ typedef struct {
 static esp_err_t md5_begin(esp_ota_service_verifier_t *self)
 {
     esp_ota_service_verifier_md5_priv_t *priv = (esp_ota_service_verifier_md5_priv_t *)self->priv;
+    /* An aborted item never reaches verify_finish; release that context first. */
+    if (priv->started) {
+#if OTA_MD5_USE_MBEDTLS_LEGACY
+        mbedtls_md5_free(&priv->ctx);
+#else
+        (void)psa_hash_abort(&priv->ctx);
+#endif  /* OTA_MD5_USE_MBEDTLS_LEGACY */
+        priv->started = false;
+    }
 #if OTA_MD5_USE_MBEDTLS_LEGACY
     mbedtls_md5_init(&priv->ctx);
     /* Mark the context live immediately after init so md5_destroy() always
@@ -85,6 +94,8 @@ static esp_err_t md5_finish(esp_ota_service_verifier_t *self)
 
 #if OTA_MD5_USE_MBEDTLS_LEGACY
     int ret = mbedtls_md5_finish(&priv->ctx, computed);
+    mbedtls_md5_free(&priv->ctx);
+    priv->started = false;
     if (ret != 0) {
         ESP_LOGE(TAG, "MD5 finish failed: mbedtls_md5_finish returned -0x%04x", (unsigned)-ret);
         return ESP_FAIL;

@@ -91,7 +91,7 @@ def build_and_flash(port: str | None, target: str | None, board: str,
     if flash:
         cmd += ['flash']
 
-    print(f'+ (cwd {SDCARD_WRITER_DIR}) {' '.join(cmd)}', flush=True)
+    print(f'+ (cwd {SDCARD_WRITER_DIR}) {" ".join(cmd)}', flush=True)
     subprocess.check_call(cmd, cwd=SDCARD_WRITER_DIR, env=env)
 
 
@@ -185,8 +185,8 @@ def main() -> int:
         return 1
 
     print(f'[bin] app      = {app}')
-    print(f'[bin] userdata = {userdata or '(none)'}')
-    print(f'[bin] tone     = {tone or '(none)'}')
+    print(f'[bin] userdata = {userdata or "(none)"}')
+    print(f'[bin] tone     = {tone or "(none)"}')
     if userdata is None and args.userdata is None:
         print(f'       (no userdata_v*.bin in {FIRMWARE_SAMPLES_DIR}; '
               f'writer will skip /sdcard/data.bin)')

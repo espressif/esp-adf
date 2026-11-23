@@ -14,5 +14,5 @@ CONFIG_ESP_MAIN_TASK_STACK_SIZE=35840
 CONFIG_UNITY_ENABLE_BACKTRACE_ON_FAIL=y
 CONFIG_UNITY_ENABLE_64BIT=y
 
-# OTA unit tests do not require MCP support
-CONFIG_ESP_MCP_ENABLE=n
+# Enable MCP layer so esp_ota_service_mcp unit tests run by default
+CONFIG_ESP_MCP_ENABLE=y

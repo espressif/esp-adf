@@ -40,6 +40,7 @@ from pathlib import Path
 
 from _fw_common import (
     ADF_ROOT,
+    EXAMPLES,
     TOOLS_DIR,
     example_dir,
     parse_semver,
@@ -51,12 +52,12 @@ except ImportError:
     print('Install pyserial: pip install pyserial', file=sys.stderr)
     raise
 
-PROGRESS_RE = re.compile(rb'\[ota\] progress:\s+(\d+)\s+/\s+(\d+)')
+PROGRESS_RE = re.compile(rb'\[ota\] progress:\s+(\d+)\s+/\s+(\d+)', re.IGNORECASE)
 RESUME_RE = re.compile(rb'Resuming from offset\s+(\d+)')
 
 
 def _run(cmd: list[str], cwd: Path | None = None) -> None:
-    print(f'+ (cwd {cwd or os.getcwd()}) {' '.join(cmd)}', flush=True)
+    print(f'+ (cwd {cwd or os.getcwd()}) {" ".join(cmd)}', flush=True)
     subprocess.check_call(cmd, cwd=str(cwd) if cwd else None)
 
 
@@ -157,11 +158,11 @@ def main() -> int:
 
     ex_fs = example_dir('fs')
     version_txt = ex_fs / 'version.txt'
-    if not version_txt.is_file():
-        print(f'[error] missing {version_txt}; create it with the running version',
-              file=sys.stderr)
-        return 1
-    orig_version = version_txt.read_text().strip()
+    had_version_txt = version_txt.is_file()
+    if had_version_txt:
+        orig_version = version_txt.read_text().strip()
+    else:
+        orig_version = EXAMPLES['fs']['default_version']
     try:
         parse_semver(orig_version)
     except ValueError as e:
@@ -186,11 +187,11 @@ def main() -> int:
                 cmd += ['--target', args.target]
             _run(cmd)
 
-            version_txt.write_text(orig_version + '\n')
-
         print(f'== Stage C: rebuild ota_fs @ {orig_version} and flash S3 ==')
-        version_txt.write_text(orig_version + '\n')
-        _run([sys.executable, str(build_py), 'fs', '-v', orig_version])
+        cmd = [sys.executable, str(build_py), 'fs', '-v', orig_version]
+        if args.target:
+            cmd += ['--target', args.target]
+        _run(cmd)
         # Flash ota_fs first, then start the grabber so it only competes for
         # the port after esptool has released it.
         flash_cmd = ['idf.py', '-p', args.port, 'flash']
@@ -230,6 +231,11 @@ def main() -> int:
         return 0
     except subprocess.CalledProcessError as e:
         return e.returncode or 1
+    finally:
+        if had_version_txt:
+            version_txt.write_text(orig_version + '\n')
+        else:
+            version_txt.unlink(missing_ok=True)
 
 
 if __name__ == '__main__':

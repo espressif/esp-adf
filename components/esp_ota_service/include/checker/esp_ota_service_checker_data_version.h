@@ -25,14 +25,15 @@ typedef struct {
  *
  *         Reads the first 4 bytes of the remote image via the source stream as a
  *         packed semver (little-endian uint32: major<<16 | minor<<8 | patch) and
- *         compares it against @a current_version.
+ *         compares it against @a current_version. Headers with a non-zero top
+ *         byte are rejected with ESP_ERR_INVALID_VERSION.
  *
  *         This convention matches @c esp_ota_service_version_pack_semver() and the raw-data
  *         image layout used in the ota_fs example.
  *
  *         For non-semver data formats, implement @c esp_ota_service_checker_t yourself.
  *
- * @param[in]  cfg  Configuration; must not be NULL.
+ * @param[in]  cfg  Configuration; must not be NULL and @c current_version must parse as "x.y.z".
  *
  * @return
  *       - New  checker, or NULL on allocation failure or invalid config

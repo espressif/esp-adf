@@ -21,11 +21,12 @@ typedef struct {
     const char *manifest_uri;            /*!< URL of the JSON manifest endpoint (deep-copied) */
     const char *current_version;         /*!< Running firmware version "x.y.z" (deep-copied) */
     bool        require_higher_version;  /*!< @c true: reject if incoming semver is not strictly higher */
-    bool        check_project_name;      /*!< @c true: reject if project_name differs from @a current_project
-                                          *   (requires @a current_project to be set) */
+    bool        check_project_name;      /*!< @c true: reject if project_name is missing or differs from
+                                          *   @a current_project (requires @a current_project to be set) */
     const char *current_project;         /*!< Running project name for comparison (deep-copied);
                                           *   only used when @a check_project_name is @c true */
-    const char *cert_pem;                /*!< PEM certificate for HTTPS; NULL to use the default bundle */
+    const char *cert_pem;                /*!< PEM certificate for HTTPS; NULL uses the default bundle
+                                          *   when CONFIG_MBEDTLS_CERTIFICATE_BUNDLE is enabled */
     int         timeout_ms;              /*!< HTTP timeout in ms; 0 = default (5000 ms) */
 } esp_ota_service_checker_manifest_cfg_t;
 

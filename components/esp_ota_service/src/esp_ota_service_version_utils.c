@@ -6,7 +6,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -21,9 +20,12 @@
 
 static const char *TAG = "OTA_VER_UTIL";
 
+/* Accepts only "[v]MAJOR.MINOR.PATCH" with each part 0..255; empty parts,
+ * leading/trailing dots and suffixes such as "-rc1" are rejected. The string
+ * is scanned in place, so it is safe for concurrent callers. */
 static int parse_version(const char *version)
 {
-    if (!version || strlen(version) == 0 || strlen(version) > 32) {
+    if (!version || version[0] == '\0' || strnlen(version, 33) > 32) {
         return -1;
     }
     const char *p = version;
@@ -31,27 +33,28 @@ static int parse_version(const char *version)
         p++;
     }
 
-    char buf[33];
-    snprintf(buf, sizeof(buf), "%s", p);
-
     int ver_num = 0;
-    int count = 0;
-    char *tok = strtok(buf, ".");
-    while (tok && count < 3) {
-        for (int i = 0; tok[i]; i++) {
-            if (tok[i] < '0' || tok[i] > '9') {
+    for (int count = 0; count < 3; count++) {
+        if (count > 0) {
+            if (*p != '.') {
                 return -1;
             }
+            p++;
         }
-        int part = atoi(tok);
-        if (part < 0 || part > 255) {
+        if (*p < '0' || *p > '9') {
             return -1;
         }
+        int part = 0;
+        while (*p >= '0' && *p <= '9') {
+            part = part * 10 + (*p - '0');
+            if (part > 255) {
+                return -1;
+            }
+            p++;
+        }
         ver_num |= (part << ((2 - count) * 8));
-        tok = strtok(NULL, ".");
-        count++;
     }
-    if (count != 3 || tok != NULL) {
+    if (*p != '\0') {
         return -1;
     }
     return ver_num;
@@ -100,12 +103,23 @@ esp_err_t esp_ota_service_version_compare_descriptors(const esp_app_desc_t *runn
         return ESP_OK;
     }
 
-    ESP_LOGI(TAG, "Current firmware: %s  Incoming firmware: %s", running_desc->version, incoming_desc->version);
+    /* Fixed-size descriptor fields from an untrusted image may lack a NUL
+     * terminator; never read them with %s or strlen(). */
+    if (memchr(incoming_desc->version, '\0', sizeof(incoming_desc->version)) == NULL ||
+        memchr(incoming_desc->project_name, '\0', sizeof(incoming_desc->project_name)) == NULL) {
+        ESP_LOGE(TAG, "Incoming app descriptor version/project_name is not NUL-terminated");
+        return ESP_ERR_INVALID_VERSION;
+    }
+
+    ESP_LOGI(TAG, "Current firmware: %.*s  Incoming firmware: %.*s",
+             (int)sizeof(running_desc->version), running_desc->version,
+             (int)sizeof(incoming_desc->version), incoming_desc->version);
 
     if (p->check_project_name) {
         if (strncmp(running_desc->project_name, incoming_desc->project_name, sizeof(running_desc->project_name)) != 0) {
-            ESP_LOGE(TAG, "Project name mismatch: running='%s'  incoming='%s'",
-                     running_desc->project_name, incoming_desc->project_name);
+            ESP_LOGE(TAG, "Project name mismatch: running='%.*s'  incoming='%.*s'",
+                     (int)sizeof(running_desc->project_name), running_desc->project_name,
+                     (int)sizeof(incoming_desc->project_name), incoming_desc->project_name);
             return ESP_ERR_INVALID_VERSION;
         }
     }
@@ -115,19 +129,22 @@ esp_err_t esp_ota_service_version_compare_descriptors(const esp_app_desc_t *runn
         int new_ver = parse_version(incoming_desc->version);
 
         if (new_ver < 0) {
-            ESP_LOGE(TAG, "Cannot parse incoming version string: '%s'", incoming_desc->version);
+            ESP_LOGE(TAG, "Cannot parse incoming version string: '%.*s'",
+                     (int)sizeof(incoming_desc->version), incoming_desc->version);
             return ESP_ERR_INVALID_VERSION;
         }
         /* Running firmware version must also be parseable; otherwise the
          * signed comparison below would silently accept any new_ver>=0 as an
          * upgrade and bypass downgrade protection. */
         if (cur_ver < 0) {
-            ESP_LOGE(TAG, "Cannot parse running version string: '%s'", running_desc->version);
+            ESP_LOGE(TAG, "Cannot parse running version string: '%.*s'",
+                     (int)sizeof(running_desc->version), running_desc->version);
             return ESP_ERR_INVALID_VERSION;
         }
         if (new_ver <= cur_ver) {
-            ESP_LOGW(TAG, "Incoming version (%s) is not higher than current (%s) - rejecting",
-                     incoming_desc->version, running_desc->version);
+            ESP_LOGW(TAG, "Incoming version (%.*s) is not higher than current (%.*s) - rejecting",
+                     (int)sizeof(incoming_desc->version), incoming_desc->version,
+                     (int)sizeof(running_desc->version), running_desc->version);
             return ESP_ERR_INVALID_VERSION;
         }
     }

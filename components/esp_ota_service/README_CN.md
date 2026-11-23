@@ -79,7 +79,7 @@ flowchart TD
     B --> VB{verifier?}
     VB -- 无 --> D
     VB -- 有 --> C[verifier.verify_begin]
-    C -- 拒绝 --> SKIP
+    C -- 拒绝 --> FAIL
     C -- 通过 --> D[target.open]
     D --> E{source.read 循环}
     E --> F[verifier.verify_update]
@@ -99,7 +99,11 @@ flowchart TD
 
 > **所有权规则：** 调用 `esp_ota_service_set_upgrade_list()` 后，服务接管列表中每个 `source`、`target`、`checker` 和 `verifier` 的所有权。不要直接调用它们的 `destroy()`——`esp_ota_service_destroy()` 会负责释放。
 
+> **生命周期规则：** `esp_ota_service_set_upgrade_list()` 和 `esp_ota_service_check_update()` 要求服务处于 `INITIALIZED` 且空闲（否则返回 `ESP_ERR_INVALID_STATE`）。`esp_service_stop()` 和 `esp_ota_service_destroy()` 最多等待 `stop_timeout_ms` 让 worker 退出；若返回 `ESP_ERR_TIMEOUT`，实例及其资源保持有效，待数据源解除阻塞后可重试。
+
 重启进入新固件后，在确认连接正常时调用 `esp_ota_service_confirm_update()` 以取消回滚计时器（需要 `CONFIG_OTA_ENABLE_ROLLBACK=y`）。
+
+传给检查器的版本字符串须为 `[v]x.y.z` 格式（每段 0-255），`1.0`、`1.0.0-rc1` 等非标准格式会被拒绝。`esp_ota_service_checker_app_create(NULL)` 的 `require_higher_version` 取自 `CONFIG_OTA_FORCE_VERSION_CHECK`（默认 `y`）。
 
 ## 选择合适的组合
 
@@ -124,16 +128,18 @@ flowchart TD
 | `ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK` | 版本检查完成 | `ver_check.upgrade_available`，`error` |
 | `ESP_OTA_SERVICE_EVT_ITEM_BEGIN` | 下载写入循环即将开始 | `item_index`，`item_label` |
 | `ESP_OTA_SERVICE_EVT_ITEM_PROGRESS` | 约每秒一次进度更新 | `progress.bytes_written`，`progress.total_bytes` |
-| `ESP_OTA_SERVICE_EVT_ITEM_END` | 单个分区升级完成 | `item_end.status`，`item_end.reason`，`error` |
+| `ESP_OTA_SERVICE_EVT_ITEM_END` | 单个分区升级完成 | `item_end.status`（`OK` / `FAILED`），`item_end.reason`，`error` |
 | `ESP_OTA_SERVICE_EVT_SESSION_END` | 全部条目完成或中止 | `session_end.{success,failed,skipped}_count`，`aborted` |
 
-`ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK` 说明：`error != ESP_OK` → 检查器报错，随后会触发 `ITEM_END(FAILED)`；`!upgrade_available` → 条目静默跳过（不触发 `ITEM_BEGIN`/`ITEM_END`）；`upgrade_available` → 继续下载。
+`ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK` 说明：`error != ESP_OK` → 检查器报错，随后会触发 `ITEM_END(FAILED)`；`!upgrade_available` → 条目跳过并计入 `skipped_count`（不触发 `ITEM_BEGIN`/`ITEM_END`）；`upgrade_available` → 继续下载。
+
+校验器在任一阶段（`verify_begin`、`verify_update`、`verify_finish`）拒绝时，条目均以 `ITEM_END(FAILED)` 结束且 `reason = ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED`。
 
 ## 可选功能
 
 | 功能 | 启用方式 | 说明 |
 |------|----------|------|
-| 基于 NVS 的断点续传 | `CONFIG_OTA_ENABLE_RESUME=y`（默认开启） | 每 `OTA_RESUME_SAVE_INTERVAL_KB` KB 保存一次偏移；对没有 `set_write_offset()` 的目标（数据、Bootloader）或没有 `seek()` 的数据源（BLE）须将 `resumable` 设为 `false`，否则 `esp_ota_service_set_upgrade_list()` 返回 `ESP_ERR_NOT_SUPPORTED` |
+| 基于 NVS 的断点续传 | `CONFIG_OTA_ENABLE_RESUME=y`（默认开启） | 每 `OTA_RESUME_SAVE_INTERVAL_KB` KB 保存一次偏移；对没有 `set_write_offset()` 的目标（数据、Bootloader）或没有 `seek()` 的数据源（BLE）须将 `resumable` 设为 `false`，否则 `esp_ota_service_set_upgrade_list()` 返回 `ESP_ERR_NOT_SUPPORTED`。续传记录按 `(item_index, uri)` 匹配，在提交或目标中止后清除；挂载流式 `verifier` 的条目会自动从 0 重新下载 |
 | 回滚 | `CONFIG_OTA_ENABLE_ROLLBACK=y` | 新固件验证通过后（如 WiFi 已连接）调用 `esp_ota_service_confirm_update()`；若未调用，每次重启都会触发回滚——参见 `examples/ota_http/main/app_main.c` |
 | Bootloader OTA | `CONFIG_OTA_ENABLE_BOOTLOADER_OTA=y` | 通过暂存分区写入；无原子性保证——拷贝途中断电可能导致设备变砖；`test_apps` 暂时未覆盖该路径（TODO：后续补充自动化测试） |
 | BLE 数据源 | `CONFIG_OTA_ENABLE_BLE_SOURCE=y` | 需要官方 ESP BLE OTA APP 协议；未实现 `seek`，因此 `resumable` 必须为 `false` |

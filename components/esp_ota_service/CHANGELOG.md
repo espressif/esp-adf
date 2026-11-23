@@ -1,10 +1,36 @@
 # Changelog
 
-## Unreleased
+## v1.0.0-beta1
+
+### Breaking changes
+
+- A verifier rejection (`verify_begin`, `verify_update` or `verify_finish`) now ends the item with `ESP_OTA_SERVICE_ITEM_STATUS_FAILED` and `ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED`; `ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED` is no longer emitted. Handlers that matched `SKIPPED` must match `FAILED` + `VERIFIER_REJECTED` instead
+- `esp_ota_service_set_upgrade_list()` and `esp_ota_service_check_update()` return `ESP_ERR_INVALID_STATE` unless the service is `INITIALIZED`, idle, and the previous worker has been joined (including MCP `esp_ota_service_check_update` calls while a session runs; poll `esp_ota_service_get_version` for cached metadata during downloads). `esp_ota_service_set_upgrade_list()` also rejects a non-NULL checker whose `check` callback is NULL with `ESP_ERR_INVALID_ARG`
+- `esp_ota_service_set_upgrade_list()` no longer clears NVS resume records; they are matched by `(item_index, uri)` and cleared once the write phase finishes by commit, target abort, or verifier rejection (early open/allocation failures and `esp_service_stop()` preserve them)
+- `esp_ota_service_checker_app_create(NULL)` takes `require_higher_version` from `CONFIG_OTA_FORCE_VERSION_CHECK`, whose default changed to `y`
+- Version strings must be `[v]x.y.z` with each part 0-255; partial, suffixed (`-rc1`) or four-part versions are rejected (`ESP_ERR_INVALID_VERSION` in descriptor/data-header checks and unparsable running versions, or `upgrade_available = false` for unparsable incoming versions in the app/manifest/tone checkers). The manifest checker also requires `project_name` when `check_project_name` and `current_project` are set
+
+### Bugfix
+
+- Return `ESP_ERR_TIMEOUT` from `esp_service_stop()` / `esp_ota_service_destroy()` if the worker has not exited, retaining the instance and its resources for retry; join an already-exited worker immediately and reject worker-context self-stop calls with `ESP_ERR_INVALID_STATE`
+- Fixed a stale NVS resume offset being applied to an item with a streaming verifier, which produced a digest over a partial image; such items now restart from 0, drop the record, and skip writing checkpoints
+- Fixed a failed item leaving its NVS resume record behind after writing, so a later session resumed into an aborted partition
+- Fixed `esp_ota_service_confirm_update()` dereferencing a NULL running partition; it now returns `ESP_ERR_INVALID_STATE`
+- Fixed the SHA-256 / MD5 verifiers leaking the hash context when an item was aborted before `verify_finish`, and freed/cleared legacy mbedTLS contexts on `finish()`
+- Fixed the data-partition target writing before a successful `open()` (`ESP_ERR_INVALID_STATE`) and returned erase errors from `abort()`
+- Fixed `esp_app_desc_t::version` / `project_name` being read past their fixed-size fields in the app and tone-descriptor checkers
+- Fixed the data-version checker accepting a header with a non-zero top byte and a `current_version` that does not parse
+- Fixed the manifest checker checking `content_length` before HTTP status, ignoring `301/302/303/307/308` redirects, accepting `size` values at or above `UINT32_MAX`, and failing to build when `CONFIG_MBEDTLS_CERTIFICATE_BUNDLE` is disabled
+- Fixed the HTTP source leaking its leftover buffer, and fixed the bootloader target missing `esp_flash.h` on IDF 6.x and ignoring staging erase errors in `abort()`
+- Fixed the MCP tools composing JSON with `snprintf`, ignoring `cJSON_Add*` OOM failures, reporting `4294967295` instead of `-1` for unknown `total_bytes`/`size`, accessing the update-info cache without a lock, and embedding the schema without a NUL terminator (`EMBED_TXTFILES`)
+- Fixed `tools/*.py` using nested same-quote f-strings that fail on Python < 3.12, and set default `x.y.z` project versions in the `ota_http`, `ota_fs` and `ota_ble` examples so bare `idf.py build` images pass strict semver checks without a pre-existing `version.txt`
 
 ### Changes
 
-- Return ESP_ERR_TIMEOUT if the worker has not exited. Destroy stops the worker before releasing resources; failure retains the instance for retry.
+- Documented thread safety, the stop / destroy ordering, resume-record lifetime, accepted version formats and the event contract in `README.md`, `README_CN.md`, user guides and `esp_ota_service.h`
+- Added regression tests in `test_apps` covering session restart, PAUSED list replacement, non-blocking `check_update` and busy-state rejection, multi-item verifier halt, resume with a verifier, MCP schema/bounds/cache, and unit checks for version parsing, checkers, verifiers and the data target
+- Declared `license: LicenseRef-Espressif-Modified-MIT` and excluded `test_apps/` and `tools/esp_at_esp32c6/` bridge binaries from the component archive
+- Required `esp_service` `~1.0.0-beta1`
 
 ## v0.5.2~3
 

@@ -20,9 +20,21 @@
 #include "freertos/semphr.h"
 #include "unity.h"
 #include "nvs.h"
+#include "esp_app_desc.h"
+#include "esp_app_format.h"
+#include "esp_partition.h"
 #include "esp_service.h"
 #include "esp_ota_service_resume.h"
 #include "esp_ota_service.h"
+#include "esp_ota_service_version_utils.h"
+#include "checker/esp_ota_service_checker_app.h"
+#include "checker/esp_ota_service_checker_data_version.h"
+#include "checker/esp_ota_service_checker_manifest.h"
+#include "verifier/esp_ota_service_verifier_sha256.h"
+#include "target/esp_ota_service_target_data.h"
+#if CONFIG_ESP_MCP_ENABLE
+#include "esp_ota_service_mcp.h"
+#endif  /* CONFIG_ESP_MCP_ENABLE */
 #include "esp_ota_service_test_fixtures.h"
 #include "esp_ota_service_test_mocks.h"
 
@@ -367,6 +379,45 @@ TEST_CASE("(lifecycle) rollback APIs return NOT_SUPPORTED when disabled", TAG_GR
 }
 #endif  /* !CONFIG_OTA_ENABLE_ROLLBACK */
 
+TEST_CASE("(lifecycle) restart session after stop replaces list and completes", TAG_GROUP)
+{
+    esp_ota_service_mock_counters_reset();
+    esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
+
+    static const uint8_t p1[] = {0x11, 0x22, 0x33};
+    static const uint8_t p2[] = {0x44, 0x55, 0x66, 0x77};
+    esp_ota_service_mock_src_cfg_t s1 = {.data = p1, .len = sizeof(p1), .chunk_size = 16, .provide_seek = true};
+    esp_ota_service_mock_src_cfg_t s2 = {.data = p2, .len = sizeof(p2), .chunk_size = 16, .provide_seek = true};
+    esp_ota_service_mock_tgt_cfg_t tcfg = {0};
+
+    esp_ota_upgrade_item_t first = {
+        .uri = "mock://run1",
+        .partition_label = "p",
+        .source = esp_ota_service_mock_source_create(&s1),
+        .target = esp_ota_service_mock_target_create(&tcfg),
+    };
+    esp_ota_service_test_run_items(svc, &first, 1, 5000);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_stop((esp_service_t *)svc));
+
+    esp_ota_service_test_recorder_reset();
+    esp_ota_service_target_t *tgt2 = esp_ota_service_mock_target_create(&tcfg);
+    esp_ota_upgrade_item_t second = {
+        .uri = "mock://run2",
+        .partition_label = "p",
+        .source = esp_ota_service_mock_source_create(&s2),
+        .target = tgt2,
+    };
+    esp_ota_service_test_run_items(svc, &second, 1, 5000);
+
+    uint32_t written = 0;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_get_progress(svc, &written, NULL, NULL));
+    TEST_ASSERT_EQUAL_UINT32(sizeof(p2), written);
+    TEST_ASSERT_EQUAL_UINT(sizeof(p2), esp_ota_service_mock_target_bytes_written(tgt2));
+
+    esp_ota_service_test_destroy_service(svc);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+
 /* ===================================================================== */
 /*                                                                       */
 /*  Section 2: Pipeline events                                           */
@@ -596,7 +647,7 @@ TEST_CASE("(pipeline) target write failure → PIPELINE after ITEM_BEGIN", TAG_G
     static uint8_t p[128];
     memset(p, 0x44, sizeof(p));
     esp_ota_service_mock_src_cfg_t scfg = {.data = p, .len = sizeof(p), .chunk_size = 32, .provide_seek = true};
-    esp_ota_service_mock_tgt_cfg_t tcfg = {.write_fail_after_bytes = 32};
+    esp_ota_service_mock_tgt_cfg_t tcfg = {.write_fail_after_bytes = 32, .abort_ret = ESP_ERR_INVALID_STATE};
     pl_run_pipeline_failure("mock://badwrite", scfg, tcfg, ESP_FAIL, true);
 }
 
@@ -1049,6 +1100,62 @@ TEST_CASE("(abort) set_upgrade_list refused in RUNNING and cleans up", TAG_GROUP
     esp_ota_service_mock_assert_all_destroyed();
 }
 
+TEST_CASE("(abort #486) set_upgrade_list refused in PAUSED and cleans up", TAG_GROUP)
+{
+    esp_ota_service_mock_counters_reset();
+    esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
+
+    SemaphoreHandle_t read_reached = xSemaphoreCreateBinary();
+    SemaphoreHandle_t read_continue = xSemaphoreCreateBinary();
+    TEST_ASSERT_NOT_NULL(read_reached);
+    TEST_ASSERT_NOT_NULL(read_continue);
+
+    static const uint8_t p1[] = {0x01, 0x02, 0x03, 0x04};
+    esp_ota_service_mock_src_cfg_t s1 = {
+        .data = p1,
+        .len = sizeof(p1),
+        .chunk_size = 2,
+        .read_reached_sem = read_reached,
+        .read_continue_sem = read_continue,
+        .provide_seek = true,
+    };
+    esp_ota_service_mock_tgt_cfg_t t1 = {0};
+    esp_ota_upgrade_item_t first = {
+        .uri = "mock://paused_active",
+        .partition_label = "p",
+        .source = esp_ota_service_mock_source_create(&s1),
+        .target = esp_ota_service_mock_target_create(&t1),
+    };
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_set_upgrade_list(svc, &first, 1));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start((esp_service_t *)svc));
+    TEST_ASSERT_EQUAL(pdTRUE, xSemaphoreTake(read_reached, pdMS_TO_TICKS(5000)));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_pause((esp_service_t *)svc));
+
+    static const uint8_t p2[] = {0x05};
+    esp_ota_service_mock_src_cfg_t s2 = {.data = p2, .len = sizeof(p2), .chunk_size = 16, .provide_seek = true};
+    esp_ota_upgrade_item_t second = {
+        .uri = "mock://paused_replace",
+        .partition_label = "p",
+        .source = esp_ota_service_mock_source_create(&s2),
+        .target = esp_ota_service_mock_target_create(&t1),
+    };
+    esp_ota_service_mock_counters_t before = esp_ota_service_mock_counters_snapshot();
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_STATE, esp_ota_service_set_upgrade_list(svc, &second, 1));
+    esp_ota_service_mock_counters_t after = esp_ota_service_mock_counters_snapshot();
+    TEST_ASSERT_EQUAL_INT(atomic_load(&before.src_destroyed) + 1, atomic_load(&after.src_destroyed));
+    TEST_ASSERT_EQUAL_INT(atomic_load(&before.tgt_destroyed) + 1, atomic_load(&after.tgt_destroyed));
+
+    xSemaphoreGive(read_continue);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_resume((esp_service_t *)svc));
+    TEST_ASSERT_TRUE(esp_ota_service_test_recorder_wait_session_end(10000));
+
+    vSemaphoreDelete(read_reached);
+    vSemaphoreDelete(read_continue);
+
+    esp_ota_service_test_destroy_service(svc);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+
 #undef TAG_GROUP
 #define TAG_GROUP  "[ota][checker][timeout=30][test_env=UT_T1_AUDIO]"
 
@@ -1115,7 +1222,7 @@ TEST_CASE("(checker) check_update rejects item without checker", TAG_GROUP)
     esp_ota_service_mock_assert_all_destroyed();
 }
 
-TEST_CASE("(checker) check_update rejects checker with NULL check fn", TAG_GROUP)
+TEST_CASE("(checker) set_upgrade_list rejects checker with NULL check fn", TAG_GROUP)
 {
     esp_ota_service_mock_counters_reset();
     esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
@@ -1125,7 +1232,7 @@ TEST_CASE("(checker) check_update rejects checker with NULL check fn", TAG_GROUP
 
     static const uint8_t blob[] = {0xef};
     esp_ota_upgrade_item_t item = chk_make_item("mock://nullfn", blob, sizeof(blob), chk);
-    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_set_upgrade_list(svc, &item, 1));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, esp_ota_service_set_upgrade_list(svc, &item, 1));
 
     esp_ota_service_update_info_t info = {0};
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, esp_ota_service_check_update(svc, 0, &info));
@@ -1288,6 +1395,125 @@ TEST_CASE("(checker) ITEM_VER_CHECK upgrade_available → begin/end proceed", TA
     esp_ota_service_mock_assert_all_destroyed();
 }
 
+TEST_CASE("(checker #492) check_update rejected while RUNNING or PAUSED", TAG_GROUP)
+{
+    esp_ota_service_mock_counters_reset();
+    esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
+
+    SemaphoreHandle_t read_reached = xSemaphoreCreateBinary();
+    SemaphoreHandle_t read_continue = xSemaphoreCreateBinary();
+    TEST_ASSERT_NOT_NULL(read_reached);
+    TEST_ASSERT_NOT_NULL(read_continue);
+
+    static const uint8_t blob[] = {0x01, 0x02};
+    esp_ota_service_mock_src_cfg_t s0 = {
+        .data = blob,
+        .len = sizeof(blob),
+        .chunk_size = 1,
+        .read_reached_sem = read_reached,
+        .read_continue_sem = read_continue,
+        .provide_seek = true,
+    };
+    esp_ota_service_mock_tgt_cfg_t tcfg = {0};
+    esp_ota_service_mock_chk_cfg_t ccfg = {.check_ret = ESP_OK, .upgrade_available = true, .image_size = sizeof(blob)};
+    esp_ota_service_checker_t *chk = esp_ota_service_mock_checker_create(&ccfg);
+
+    esp_ota_upgrade_item_t items[2] = {
+        {
+            .uri = "mock://chk_busy_0",
+            .partition_label = "p0",
+            .source = esp_ota_service_mock_source_create(&s0),
+            .target = esp_ota_service_mock_target_create(&tcfg),
+        },
+        chk_make_item("mock://chk_busy_1", blob, sizeof(blob), chk),
+    };
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_set_upgrade_list(svc, items, 2));
+
+    esp_ota_service_update_info_t info = {0};
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_check_update(svc, 1, &info));
+    TEST_ASSERT_EQUAL_UINT(1, esp_ota_service_mock_checker_check_count(chk));
+
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start((esp_service_t *)svc));
+    TEST_ASSERT_EQUAL(pdTRUE, xSemaphoreTake(read_reached, pdMS_TO_TICKS(5000)));
+
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_STATE, esp_ota_service_check_update(svc, 1, &info));
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_pause((esp_service_t *)svc));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_STATE, esp_ota_service_check_update(svc, 1, &info));
+    TEST_ASSERT_EQUAL_UINT(1, esp_ota_service_mock_checker_check_count(chk));
+
+    xSemaphoreGive(read_continue);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_resume((esp_service_t *)svc));
+    TEST_ASSERT_TRUE(esp_ota_service_test_recorder_wait_session_end(10000));
+
+    vSemaphoreDelete(read_reached);
+    vSemaphoreDelete(read_continue);
+
+    esp_ota_service_test_destroy_service(svc);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+
+typedef struct {
+    esp_ota_service_t *svc;
+    SemaphoreHandle_t  done;
+    esp_err_t          ret;
+} chk_bg_ctx_t;
+
+static void chk_bg_task(void *arg)
+{
+    chk_bg_ctx_t *ctx = (chk_bg_ctx_t *)arg;
+    esp_ota_service_update_info_t info = {0};
+    ctx->ret = esp_ota_service_check_update(ctx->svc, 0, &info);
+    xSemaphoreGive(ctx->done);
+    vTaskDelete(NULL);
+}
+
+TEST_CASE("(checker #492) slow check_update does not block concurrent lifecycle calls", TAG_GROUP)
+{
+    esp_ota_service_mock_counters_reset();
+    esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
+
+    SemaphoreHandle_t check_reached = xSemaphoreCreateBinary();
+    SemaphoreHandle_t check_continue = xSemaphoreCreateBinary();
+    SemaphoreHandle_t bg_done = xSemaphoreCreateBinary();
+    TEST_ASSERT_NOT_NULL(check_reached);
+    TEST_ASSERT_NOT_NULL(check_continue);
+    TEST_ASSERT_NOT_NULL(bg_done);
+
+    esp_ota_service_mock_chk_cfg_t ccfg = {
+        .check_ret = ESP_OK,
+        .upgrade_available = true,
+        .image_size = 64,
+        .check_reached_sem = check_reached,
+        .check_continue_sem = check_continue,
+    };
+    esp_ota_service_checker_t *chk = esp_ota_service_mock_checker_create(&ccfg);
+    static const uint8_t blob[] = {0xab};
+    esp_ota_upgrade_item_t item = chk_make_item("mock://slow_chk", blob, sizeof(blob), chk);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_set_upgrade_list(svc, &item, 1));
+
+    chk_bg_ctx_t bg = {.svc = svc, .done = bg_done, .ret = ESP_FAIL};
+    TEST_ASSERT_EQUAL(pdPASS, xTaskCreate(chk_bg_task, "ota_chk_bg", 4096, &bg, 5, NULL));
+    TEST_ASSERT_EQUAL(pdTRUE, xSemaphoreTake(check_reached, pdMS_TO_TICKS(5000)));
+
+    esp_ota_upgrade_item_t replacement = lc_make_valid_item();
+    TickType_t begin = xTaskGetTickCount();
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_STATE, esp_service_start((esp_service_t *)svc));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_STATE, esp_ota_service_destroy(svc));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_STATE, esp_ota_service_set_upgrade_list(svc, &replacement, 1));
+    TEST_ASSERT_LESS_THAN_UINT32((uint32_t)pdMS_TO_TICKS(300), (uint32_t)(xTaskGetTickCount() - begin));
+
+    xSemaphoreGive(check_continue);
+    TEST_ASSERT_EQUAL(pdTRUE, xSemaphoreTake(bg_done, pdMS_TO_TICKS(5000)));
+    TEST_ASSERT_EQUAL(ESP_OK, bg.ret);
+
+    vSemaphoreDelete(check_reached);
+    vSemaphoreDelete(check_continue);
+    vSemaphoreDelete(bg_done);
+
+    esp_ota_service_test_destroy_service(svc);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+
 #undef TAG_GROUP
 #define TAG_GROUP  "[ota][verifier][timeout=30][test_env=UT_T1_AUDIO]"
 
@@ -1306,19 +1532,27 @@ static esp_ota_upgrade_item_t vf_make_item_with_verifier(const uint8_t *data, si
     return item;
 }
 
-TEST_CASE("(verifier) verify_begin failure → SKIPPED + VERIFIER_REJECTED", TAG_GROUP)
+TEST_CASE("(verifier) verify_begin failure → FAILED + VERIFIER_REJECTED", TAG_GROUP)
 {
     esp_ota_service_mock_counters_reset();
     esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
 
-    esp_ota_service_mock_ver_cfg_t vcfg = {.begin_ret = ESP_ERR_INVALID_ARG, .update_ret = ESP_OK, .finish_ret = ESP_OK};
+    esp_ota_service_mock_ver_cfg_t vcfg = {
+        .begin_ret = ESP_ERR_INVALID_ARG,
+        .update_ret = ESP_OK,
+        .finish_ret = ESP_OK,
+    };
     esp_ota_service_verifier_t *ver = esp_ota_service_mock_verifier_create(&vcfg);
 
     static const uint8_t p[] = {0x01, 0x02, 0x03, 0x04};
-    esp_ota_upgrade_item_t item = vf_make_item_with_verifier(p, sizeof(p), ver);
-    esp_ota_service_test_run_items(svc, &item, 1, 5000);
+    esp_ota_upgrade_item_t items[2] = {
+        vf_make_item_with_verifier(p, sizeof(p), ver),
+        lc_make_valid_item(),
+    };
+    items[0].skip_on_fail = false;
+    esp_ota_service_test_run_items(svc, items, 2, 5000);
 
-    /* No ITEM_BEGIN because target was never opened. */
+    /* No ITEM_BEGIN because target was never opened, and item[1] is halted. */
     const esp_ota_service_event_id_t expect[] = {
         ESP_OTA_SERVICE_EVT_SESSION_BEGIN,
         ESP_OTA_SERVICE_EVT_ITEM_END,
@@ -1328,19 +1562,22 @@ TEST_CASE("(verifier) verify_begin failure → SKIPPED + VERIFIER_REJECTED", TAG
 
     esp_ota_service_test_event_record_t r;
     esp_ota_service_test_recorder_get(1, &r);
-    TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED, r.item_status);
+    TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_STATUS_FAILED, r.item_status);
     TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED, r.item_reason);
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, r.error);
+    TEST_ASSERT_EQUAL_UINT(0, esp_ota_service_mock_source_open_count(items[1].source));
 
     esp_ota_service_test_recorder_get(2, &r);
     TEST_ASSERT_EQUAL_UINT16(0, r.session_success);
-    TEST_ASSERT_EQUAL_UINT16(0, r.session_failed);
-    TEST_ASSERT_EQUAL_UINT16(1, r.session_skipped);
+    TEST_ASSERT_EQUAL_UINT16(1, r.session_failed);
+    TEST_ASSERT_EQUAL_UINT16(0, r.session_skipped);
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, r.error);
 
     esp_ota_service_test_destroy_service(svc);
     esp_ota_service_mock_assert_all_destroyed();
 }
 
-TEST_CASE("(verifier) verify_update mid-stream failure → FAILED + PIPELINE", TAG_GROUP)
+TEST_CASE("(verifier) verify_update mid-stream failure → FAILED + VERIFIER_REJECTED", TAG_GROUP)
 {
     esp_ota_service_mock_counters_reset();
     esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
@@ -1369,13 +1606,13 @@ TEST_CASE("(verifier) verify_update mid-stream failure → FAILED + PIPELINE", T
     esp_ota_service_test_event_record_t r;
     esp_ota_service_test_recorder_get(2, &r);
     TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_STATUS_FAILED, r.item_status);
-    TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_END_REASON_PIPELINE, r.item_reason);
+    TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED, r.item_reason);
 
     esp_ota_service_test_destroy_service(svc);
     esp_ota_service_mock_assert_all_destroyed();
 }
 
-TEST_CASE("(verifier) verify_finish failure → SKIPPED + VERIFIER_REJECTED", TAG_GROUP)
+TEST_CASE("(verifier) verify_finish failure → FAILED + VERIFIER_REJECTED", TAG_GROUP)
 {
     esp_ota_service_mock_counters_reset();
     esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
@@ -1388,8 +1625,12 @@ TEST_CASE("(verifier) verify_finish failure → SKIPPED + VERIFIER_REJECTED", TA
     esp_ota_service_verifier_t *ver = esp_ota_service_mock_verifier_create(&vcfg);
 
     static const uint8_t p[] = {0xaa, 0xbb, 0xcc};
-    esp_ota_upgrade_item_t item = vf_make_item_with_verifier(p, sizeof(p), ver);
-    esp_ota_service_test_run_items(svc, &item, 1, 5000);
+    esp_ota_upgrade_item_t items[2] = {
+        vf_make_item_with_verifier(p, sizeof(p), ver),
+        lc_make_valid_item(),
+    };
+    items[0].skip_on_fail = false;
+    esp_ota_service_test_run_items(svc, items, 2, 5000);
 
     const esp_ota_service_event_id_t expect[] = {
         ESP_OTA_SERVICE_EVT_SESSION_BEGIN,
@@ -1401,8 +1642,13 @@ TEST_CASE("(verifier) verify_finish failure → SKIPPED + VERIFIER_REJECTED", TA
 
     esp_ota_service_test_event_record_t r;
     esp_ota_service_test_recorder_get(2, &r);
-    TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED, r.item_status);
+    TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_STATUS_FAILED, r.item_status);
     TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED, r.item_reason);
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_CRC, r.error);
+    TEST_ASSERT_EQUAL_UINT(0, esp_ota_service_mock_source_open_count(items[1].source));
+
+    esp_ota_service_test_recorder_get(3, &r);
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_CRC, r.error);
 
     esp_ota_service_test_destroy_service(svc);
     esp_ota_service_mock_assert_all_destroyed();
@@ -1569,11 +1815,6 @@ TEST_CASE("(resume) service seeks and sets target offset from NVS", TAG_GROUP)
     const uint32_t resume_at = 128;
     const char *uri = "mock://resume/honour";
 
-    /* Seed the resume point BEFORE the service loads its upgrade list. The
-     * subsequent set_upgrade_list() would clear_all, so we write the record
-     * AFTER it instead.  Ordering: create → set_upgrade_list (clears) →
-     * save resume point → esp_service_start → worker loads it.
-     */
     esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
 
     esp_ota_service_source_t *src = NULL;
@@ -1584,8 +1825,6 @@ TEST_CASE("(resume) service seeks and sets target offset from NVS", TAG_GROUP)
 
     TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_set_upgrade_list(svc, &owned, 1));
 
-    /* Seed the persistent resume record AFTER set_upgrade_list (which does a
-     * clear_all under the hood). */
     esp_ota_service_resume_point_t rp = {
         .item_index = 0,
         .written_bytes = resume_at,
@@ -1752,40 +1991,116 @@ TEST_CASE("(resume) stale target triggers source reopen and restart", TAG_GROUP)
     esp_ota_service_mock_assert_all_destroyed();
 }
 
-TEST_CASE("(resume) set_upgrade_list clears every persisted record", TAG_GROUP)
+TEST_CASE("(resume #490) set_upgrade_list keeps persisted records", TAG_GROUP)
 {
     rs_clean_resume_namespace();
     esp_ota_service_mock_counters_reset();
 
-    /* Write a few records by hand. */
-    for (int i = 0; i < 3; ++i) {
-        esp_ota_service_resume_point_t p = {.item_index = (int8_t)i, .written_bytes = 42};
-        snprintf(p.uri, sizeof(p.uri), "mock://resume/pre/%d", i);
-        TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_resume_save(&p));
-    }
+    static uint8_t payload[512];
+    memset(payload, 0xD1, sizeof(payload));
+    const uint32_t resume_at = 128;
+    const char *uri = "mock://resume/survives_list";
 
-    /* Creating the service alone must not touch them (it does not call
-     * set_upgrade_list). */
+    /* Record written before the list exists: the reboot-then-retry path. */
+    esp_ota_service_resume_point_t rp = {.item_index = 0, .written_bytes = resume_at};
+    strncpy(rp.uri, uri, sizeof(rp.uri) - 1);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_resume_save(&rp));
+
     esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
+    esp_ota_service_source_t *src = NULL;
+    esp_ota_service_target_t *tgt = NULL;
+    esp_ota_upgrade_item_t item = rs_make_resumable_item(uri, payload, sizeof(payload), 64, &src, &tgt);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_set_upgrade_list(svc, &item, 1));
 
     esp_ota_service_resume_point_t loaded;
     TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_resume_load(0, &loaded));
-    TEST_ASSERT_EQUAL_UINT32(42, loaded.written_bytes);
+    TEST_ASSERT_EQUAL_UINT32(resume_at, loaded.written_bytes);
 
-    /* Now install a list — documented to drop every resume record. */
-    esp_ota_service_mock_src_cfg_t scfg = {.data = (const uint8_t *)"\x00", .len = 1, .provide_seek = true};
-    esp_ota_service_mock_tgt_cfg_t tcfg = {.provide_offset_hooks = true};
-    esp_ota_upgrade_item_t item = {
-        .uri = "mock://resume/post",
-        .partition_label = "app",
-        .source = esp_ota_service_mock_source_create(&scfg),
-        .target = esp_ota_service_mock_target_create(&tcfg),
-    };
+    esp_ota_service_test_recorder_reset();
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start((esp_service_t *)svc));
+    TEST_ASSERT_TRUE(esp_ota_service_test_recorder_wait_session_end(10000));
+
+    TEST_ASSERT_EQUAL_INT64((int64_t)resume_at, esp_ota_service_mock_source_last_seek(src));
+    TEST_ASSERT_EQUAL_INT64((int64_t)resume_at, esp_ota_service_mock_target_last_set_off(tgt));
+    TEST_ASSERT_EQUAL(ESP_ERR_NVS_NOT_FOUND, esp_ota_service_resume_load(0, &loaded));
+
+    esp_ota_service_test_destroy_service(svc);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+
+TEST_CASE("(resume #489) verifier item ignores saved offset and restarts from 0", TAG_GROUP)
+{
+    rs_clean_resume_namespace();
+    esp_ota_service_mock_counters_reset();
+
+    static uint8_t payload[512];
+    memset(payload, 0xD2, sizeof(payload));
+    const char *uri = "mock://resume/verifier";
+
+    esp_ota_service_resume_point_t rp = {.item_index = 0, .written_bytes = 128};
+    strncpy(rp.uri, uri, sizeof(rp.uri) - 1);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_resume_save(&rp));
+
+    esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
+    esp_ota_service_source_t *src = NULL;
+    esp_ota_service_target_t *tgt = NULL;
+    esp_ota_upgrade_item_t item = rs_make_resumable_item(uri, payload, sizeof(payload), 64, &src, &tgt);
+    esp_ota_service_mock_ver_cfg_t vcfg = {.begin_ret = ESP_OK, .update_ret = ESP_OK, .finish_ret = ESP_OK};
+    esp_ota_service_verifier_t *ver = esp_ota_service_mock_verifier_create(&vcfg);
+    item.verifier = ver;
     TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_set_upgrade_list(svc, &item, 1));
 
-    for (int i = 0; i < 3; ++i) {
-        TEST_ASSERT_EQUAL(ESP_ERR_NVS_NOT_FOUND, esp_ota_service_resume_load(i, &loaded));
-    }
+    esp_ota_service_test_recorder_reset();
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start((esp_service_t *)svc));
+    TEST_ASSERT_TRUE(esp_ota_service_test_recorder_wait_session_end(10000));
+
+    TEST_ASSERT_EQUAL_UINT(0, esp_ota_service_mock_source_seek_count(src));
+    TEST_ASSERT_EQUAL_UINT(0, esp_ota_service_mock_target_set_off_count(tgt));
+    TEST_ASSERT_EQUAL_UINT(sizeof(payload), esp_ota_service_mock_target_bytes_written(tgt));
+    TEST_ASSERT_EQUAL_UINT(sizeof(payload), esp_ota_service_mock_verifier_bytes_seen(ver));
+
+    esp_ota_service_test_event_record_t r;
+    esp_ota_service_test_recorder_get(esp_ota_service_test_recorder_find(ESP_OTA_SERVICE_EVT_ITEM_END), &r);
+    TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_STATUS_OK, r.item_status);
+
+    esp_ota_service_resume_point_t after;
+    TEST_ASSERT_EQUAL(ESP_ERR_NVS_NOT_FOUND, esp_ota_service_resume_load(0, &after));
+
+    esp_ota_service_test_destroy_service(svc);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+
+TEST_CASE("(resume #489) failed item clears its record", TAG_GROUP)
+{
+    rs_clean_resume_namespace();
+    esp_ota_service_mock_counters_reset();
+
+    static uint8_t payload[512];
+    memset(payload, 0xD3, sizeof(payload));
+    const char *uri = "mock://resume/failed";
+
+    esp_ota_service_resume_point_t rp = {.item_index = 0, .written_bytes = 128};
+    strncpy(rp.uri, uri, sizeof(rp.uri) - 1);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_resume_save(&rp));
+
+    esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
+    esp_ota_service_source_t *src = NULL;
+    esp_ota_service_target_t *tgt = NULL;
+    esp_ota_upgrade_item_t item = rs_make_resumable_item(uri, payload, sizeof(payload), 64, &src, &tgt);
+    esp_ota_service_mock_target_cfg(tgt)->commit_ret = ESP_ERR_INVALID_CRC;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_set_upgrade_list(svc, &item, 1));
+
+    esp_ota_service_test_recorder_reset();
+    TEST_ASSERT_EQUAL(ESP_OK, esp_service_start((esp_service_t *)svc));
+    TEST_ASSERT_TRUE(esp_ota_service_test_recorder_wait_session_end(10000));
+
+    esp_ota_service_test_event_record_t r;
+    esp_ota_service_test_recorder_get(esp_ota_service_test_recorder_find(ESP_OTA_SERVICE_EVT_ITEM_END), &r);
+    TEST_ASSERT_EQUAL(ESP_OTA_SERVICE_ITEM_STATUS_FAILED, r.item_status);
+
+    /* The aborted target no longer holds the bytes the record describes. */
+    esp_ota_service_resume_point_t after;
+    TEST_ASSERT_EQUAL(ESP_ERR_NVS_NOT_FOUND, esp_ota_service_resume_load(0, &after));
 
     esp_ota_service_test_destroy_service(svc);
     esp_ota_service_mock_assert_all_destroyed();
@@ -1837,3 +2152,263 @@ TEST_CASE("(resume) non-resumable item ignores stored record", TAG_GROUP)
     esp_ota_service_test_destroy_service(svc);
     esp_ota_service_mock_assert_all_destroyed();
 }
+
+/* ===========================================================================
+ * Unit-level regression tests for the review fixes in individual modules
+ * (version utils, data-version checker, sha256 verifier, data target).
+ * =========================================================================== */
+#undef TAG_GROUP
+#define TAG_GROUP  "[ota][units][timeout=30][test_env=UT_T1_AUDIO]"
+
+TEST_CASE("(units #501) pack_semver rejects malformed version strings", TAG_GROUP)
+{
+    TEST_ASSERT_EQUAL_HEX32(0x010203, esp_ota_service_version_pack_semver("v1.2.3"));
+    TEST_ASSERT_EQUAL_HEX32(0x000000, esp_ota_service_version_pack_semver("0.0.0"));
+    TEST_ASSERT_EQUAL_HEX32(0xFFFFFF, esp_ota_service_version_pack_semver("255.255.255"));
+
+    static const char *const bad[] = {
+        "1.0", "1..0.0", "1.0.0.", ".1.0.0", "1.0.0.1", "1.0.0-rc1", "256.0.0", "1.a.0", "",
+    };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        TEST_ASSERT_EQUAL_HEX32_MESSAGE(UINT32_MAX, esp_ota_service_version_pack_semver(bad[i]), bad[i]);
+    }
+}
+
+TEST_CASE("(units #500) compare_descriptors rejects unparsable running version and unterminated fields", TAG_GROUP)
+{
+    esp_app_desc_t running = {.magic_word = ESP_APP_DESC_MAGIC_WORD};
+    esp_app_desc_t incoming = {.magic_word = ESP_APP_DESC_MAGIC_WORD};
+    strcpy(running.project_name, "ota_ut");
+    strcpy(incoming.project_name, "ota_ut");
+    strcpy(running.version, "1.0.0");
+    strcpy(incoming.version, "1.0.1");
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_version_compare_descriptors(&running, &incoming, NULL));
+
+    /* Unparsable running version must not degrade into "accept anything". */
+    strcpy(running.version, "dev");
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_VERSION, esp_ota_service_version_compare_descriptors(&running, &incoming, NULL));
+    strcpy(running.version, "1.0.0");
+
+    /* Fixed-size fields from the image without a NUL terminator are rejected, not read with %s. */
+    memset(incoming.version, 'A', sizeof(incoming.version));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_VERSION, esp_ota_service_version_compare_descriptors(&running, &incoming, NULL));
+    strcpy(incoming.version, "1.0.1");
+    memset(incoming.project_name, 'B', sizeof(incoming.project_name));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_VERSION, esp_ota_service_version_compare_descriptors(&running, &incoming, NULL));
+}
+
+TEST_CASE("(units #502) data-version checker rejects bad current version and non-zero top byte", TAG_GROUP)
+{
+    esp_ota_service_mock_counters_reset();
+
+    esp_ota_service_checker_data_cfg_t bad_cfg = {.current_version = "1.0"};
+    TEST_ASSERT_NULL(esp_ota_service_checker_data_version_create(&bad_cfg));
+
+    esp_ota_service_checker_data_cfg_t cfg = {.current_version = "1.0.0"};
+    esp_ota_service_checker_t *chk = esp_ota_service_checker_data_version_create(&cfg);
+    TEST_ASSERT_NOT_NULL(chk);
+
+    /* 0x80010203: top byte set -> not a packed semver, must not read as "upgrade available". */
+    static const uint8_t hdr_bad[] = {0x03, 0x02, 0x01, 0x80};
+    esp_ota_service_mock_src_cfg_t scfg = {.data = hdr_bad, .len = sizeof(hdr_bad)};
+    esp_ota_service_source_t *src = esp_ota_service_mock_source_create(&scfg);
+    esp_ota_service_update_info_t info = {0};
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_VERSION, chk->check(chk, "mock://data", src, &info));
+    TEST_ASSERT_FALSE(info.upgrade_available);
+    esp_ota_service_mock_source_destroy(src);
+
+    static const uint8_t hdr_ok[] = {0x01, 0x00, 0x01, 0x00};
+    scfg.data = hdr_ok;
+    scfg.len = sizeof(hdr_ok);
+    src = esp_ota_service_mock_source_create(&scfg);
+    memset(&info, 0, sizeof(info));
+    TEST_ASSERT_EQUAL(ESP_OK, chk->check(chk, "mock://data", src, &info));
+    TEST_ASSERT_TRUE(info.upgrade_available);
+    TEST_ASSERT_EQUAL_STRING("1.0.1", info.version);
+    esp_ota_service_mock_source_destroy(src);
+
+    chk->destroy(chk);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+
+TEST_CASE("(units #504) sha256 verifier restarts cleanly when begin is called twice", TAG_GROUP)
+{
+    /* SHA-256("abc") */
+    static const uint8_t abc_digest[32] = {
+        0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
+        0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
+    };
+    esp_ota_service_verifier_sha256_cfg_t cfg;
+    memcpy(cfg.expected_hash, abc_digest, sizeof(abc_digest));
+    esp_ota_service_verifier_t *ver = NULL;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_verifier_sha256_create(&cfg, &ver));
+
+    TEST_ASSERT_EQUAL(ESP_OK, ver->verify_begin(ver));
+    TEST_ASSERT_EQUAL(ESP_OK, ver->verify_update(ver, (const uint8_t *)"xyz", 3));
+    /* Second begin (session restart) must discard the previous state. */
+    TEST_ASSERT_EQUAL(ESP_OK, ver->verify_begin(ver));
+    TEST_ASSERT_EQUAL(ESP_OK, ver->verify_update(ver, (const uint8_t *)"abc", 3));
+    TEST_ASSERT_EQUAL(ESP_OK, ver->verify_finish(ver));
+
+    ver->destroy(ver);
+}
+
+TEST_CASE("(units #503) manifest parser checks version, project_name and size bounds", TAG_GROUP)
+{
+    esp_ota_service_check_result_t res;
+
+    TEST_ASSERT_EQUAL(ESP_OK,
+                      esp_ota_service_checker_manifest_parse_json(
+                          "{\"version\":\"1.2.0\",\"project_name\":\"demo\",\"size\":4096}",
+                          "1.1.0", true, true, "demo", &res));
+    TEST_ASSERT_TRUE(res.upgrade_available);
+    TEST_ASSERT_EQUAL_UINT32(4096, res.image_size);
+
+    /* Missing project_name must be rejected when check_project_name is enabled. */
+    TEST_ASSERT_EQUAL(ESP_OK,
+                      esp_ota_service_checker_manifest_parse_json(
+                          "{\"version\":\"1.2.0\"}", "1.1.0", true, true, "demo", &res));
+    TEST_ASSERT_FALSE(res.upgrade_available);
+
+    /* Size >= UINT32_MAX stays at the unknown sentinel instead of overflowing uint32_t. */
+    TEST_ASSERT_EQUAL(ESP_OK,
+                      esp_ota_service_checker_manifest_parse_json(
+                          "{\"version\":\"1.2.0\",\"size\":5000000000}",
+                          "1.1.0", true, false, NULL, &res));
+    TEST_ASSERT_TRUE(res.upgrade_available);
+    TEST_ASSERT_EQUAL_UINT32(UINT32_MAX, res.image_size);
+
+    /* Unparsable running version returns ESP_ERR_INVALID_VERSION. */
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_VERSION,
+                      esp_ota_service_checker_manifest_parse_json(
+                          "{\"version\":\"1.2.0\"}", "bad", true, false, NULL, &res));
+}
+
+#define TEST_APP_HDR_LEN  (sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t))
+
+static void build_mock_app_header(uint8_t *hdr, const char *project, const char *version)
+{
+    memset(hdr, 0, TEST_APP_HDR_LEN);
+    esp_app_desc_t *desc = (esp_app_desc_t *)(hdr + sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t));
+    desc->magic_word = ESP_APP_DESC_MAGIC_WORD;
+    snprintf(desc->project_name, sizeof(desc->project_name), "%s", project);
+    snprintf(desc->version, sizeof(desc->version), "%s", version);
+}
+
+TEST_CASE("(units #499) app checker enforces default Kconfig and explicit version policies", TAG_GROUP)
+{
+    esp_ota_service_mock_counters_reset();
+
+    const esp_app_desc_t *cur = esp_app_get_description();
+    TEST_ASSERT_EQUAL_STRING("1.0.0", cur->version);
+
+    uint8_t hdr[TEST_APP_HDR_LEN];
+    esp_ota_service_mock_src_cfg_t scfg = {.data = hdr, .len = sizeof(hdr)};
+    esp_ota_service_source_t *src = esp_ota_service_mock_source_create(&scfg);
+    esp_ota_service_update_info_t info = {0};
+
+    esp_ota_service_checker_t *chk_def = esp_ota_service_checker_app_create(NULL);
+    TEST_ASSERT_NOT_NULL(chk_def);
+
+    /* Higher version + matching project -> upgrade available. */
+    build_mock_app_header(hdr, cur->project_name, "1.0.1");
+    TEST_ASSERT_EQUAL(ESP_OK, chk_def->check(chk_def, "mock://app", src, &info));
+    TEST_ASSERT_TRUE(info.upgrade_available);
+    TEST_ASSERT_EQUAL_STRING("1.0.1", info.version);
+
+    /* Same version -> follows CONFIG_OTA_FORCE_VERSION_CHECK. */
+    build_mock_app_header(hdr, cur->project_name, "1.0.0");
+    TEST_ASSERT_EQUAL(ESP_OK, chk_def->check(chk_def, "mock://app", src, &info));
+#ifdef CONFIG_OTA_FORCE_VERSION_CHECK
+    TEST_ASSERT_FALSE(info.upgrade_available);
+#else
+    TEST_ASSERT_TRUE(info.upgrade_available);
+#endif  /* CONFIG_OTA_FORCE_VERSION_CHECK */
+
+    /* Project mismatch -> rejected even with higher version. */
+    build_mock_app_header(hdr, "other_project", "2.0.0");
+    TEST_ASSERT_EQUAL(ESP_OK, chk_def->check(chk_def, "mock://app", src, &info));
+    TEST_ASSERT_FALSE(info.upgrade_available);
+    chk_def->destroy(chk_def);
+
+    /* Explicit policy disabling require_higher_version accepts equal version. */
+    esp_ota_service_checker_app_cfg_t relaxed_cfg = {
+        .version_policy = {
+            .require_higher_version = false,
+            .check_project_name = true,
+        },
+    };
+    esp_ota_service_checker_t *chk_relaxed = esp_ota_service_checker_app_create(&relaxed_cfg);
+    TEST_ASSERT_NOT_NULL(chk_relaxed);
+    build_mock_app_header(hdr, cur->project_name, "1.0.0");
+    TEST_ASSERT_EQUAL(ESP_OK, chk_relaxed->check(chk_relaxed, "mock://app", src, &info));
+    TEST_ASSERT_TRUE(info.upgrade_available);
+    chk_relaxed->destroy(chk_relaxed);
+
+    esp_ota_service_mock_source_destroy(src);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+
+TEST_CASE("(units #505) data target rejects write before open", TAG_GROUP)
+{
+    esp_ota_service_target_data_cfg_t cfg = {.pre_erased = true};
+    esp_ota_service_target_t *tgt = NULL;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_target_data_create(&cfg, &tgt));
+
+    static const uint8_t blob[16] = {0};
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_STATE, tgt->write(tgt, blob, sizeof(blob)));
+
+    const esp_partition_t *part =
+        esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "flash_test");
+    TEST_ASSERT_NOT_NULL(part);
+    TEST_ASSERT_EQUAL(ESP_OK, tgt->open(tgt, "flash_test"));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_SIZE, tgt->write(tgt, blob, (size_t)part->size + 1));
+    TEST_ASSERT_EQUAL(ESP_OK, tgt->abort(tgt));
+
+    tgt->destroy(tgt);
+}
+
+#if CONFIG_ESP_MCP_ENABLE
+TEST_CASE("(units #507) MCP schema, progress sentinel/bounds and check_update JSON", TAG_GROUP)
+{
+    esp_ota_service_mock_counters_reset();
+
+    const char *schema = NULL;
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_mcp_schema_get(&schema));
+    TEST_ASSERT_NOT_NULL(schema);
+    TEST_ASSERT_GREATER_THAN_UINT32(32, (uint32_t)strlen(schema));
+    TEST_ASSERT_NOT_NULL(strstr(schema, "\"esp_ota_service_check_update\""));
+
+    esp_ota_service_t *svc = esp_ota_service_test_create_service(NULL);
+    esp_service_tool_t prog_tool = {.name = "esp_ota_service_get_progress"};
+    char tiny[32];
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_SIZE,
+                      esp_ota_service_tool_invoke((esp_service_t *)svc, &prog_tool, "{}", tiny, sizeof(tiny)));
+
+    char buf[256];
+    TEST_ASSERT_EQUAL(ESP_OK,
+                      esp_ota_service_tool_invoke((esp_service_t *)svc, &prog_tool, "{}", buf, sizeof(buf)));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"total_bytes\":-1"));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"percent\":-1"));
+
+    esp_ota_service_mock_chk_cfg_t ccfg = {.check_ret = ESP_OK, .upgrade_available = true, .image_size = UINT32_MAX};
+    esp_ota_service_checker_t *chk = esp_ota_service_mock_checker_create(&ccfg);
+    static const uint8_t blob[] = {0x01};
+    esp_ota_upgrade_item_t item = chk_make_item("mock://mcp", blob, sizeof(blob), chk);
+    TEST_ASSERT_EQUAL(ESP_OK, esp_ota_service_set_upgrade_list(svc, &item, 1));
+
+    esp_service_tool_t chk_tool = {.name = "esp_ota_service_check_update"};
+    TEST_ASSERT_EQUAL(ESP_OK,
+                      esp_ota_service_tool_invoke((esp_service_t *)svc, &chk_tool, "{}", buf, sizeof(buf)));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"update_available\":true"));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"size\":-1"));
+
+    esp_service_tool_t ver_tool = {.name = "esp_ota_service_get_version"};
+    TEST_ASSERT_EQUAL(ESP_OK,
+                      esp_ota_service_tool_invoke((esp_service_t *)svc, &ver_tool, "{}", buf, sizeof(buf)));
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\"upgrade_available\":true"));
+
+    esp_ota_service_test_destroy_service(svc);
+    esp_ota_service_mock_assert_all_destroyed();
+}
+#endif  /* CONFIG_ESP_MCP_ENABLE */

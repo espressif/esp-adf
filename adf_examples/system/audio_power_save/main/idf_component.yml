@@ -5,9 +5,6 @@ dependencies:
   espressif/esp_service:
     version: "~1.0.0-beta1"
     override_path: ../../../../components/esp_service
-  espressif/adf_event_hub:
-    version: "^0.5"
-    override_path: ../../../../components/adf_event_hub
   espressif/esp_wifi_service:
     version: "^0.5"
     override_path: ../../../../components/esp_wifi_service

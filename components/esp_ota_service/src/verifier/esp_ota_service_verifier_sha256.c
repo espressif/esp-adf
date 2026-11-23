@@ -32,6 +32,15 @@ typedef struct {
 static esp_err_t sha256_begin(esp_ota_service_verifier_t *self)
 {
     esp_ota_service_verifier_sha256_priv_t *priv = (esp_ota_service_verifier_sha256_priv_t *)self->priv;
+    /* An aborted item never reaches verify_finish; release that context first. */
+    if (priv->started) {
+#if OTA_SHA256_USE_MBEDTLS_LEGACY
+        mbedtls_sha256_free(&priv->ctx);
+#else
+        (void)psa_hash_abort(&priv->ctx);
+#endif  /* OTA_SHA256_USE_MBEDTLS_LEGACY */
+        priv->started = false;
+    }
 #if OTA_SHA256_USE_MBEDTLS_LEGACY
     mbedtls_sha256_init(&priv->ctx);
     /* Mark the context live immediately after init so sha256_destroy() always
@@ -85,6 +94,8 @@ static esp_err_t sha256_finish(esp_ota_service_verifier_t *self)
 
 #if OTA_SHA256_USE_MBEDTLS_LEGACY
     int ret = mbedtls_sha256_finish(&priv->ctx, computed);
+    mbedtls_sha256_free(&priv->ctx);
+    priv->started = false;
     if (ret != 0) {
         ESP_LOGE(TAG, "SHA-256 finish failed: mbedtls_sha256_finish returned -0x%04x", (unsigned)-ret);
         return ESP_FAIL;

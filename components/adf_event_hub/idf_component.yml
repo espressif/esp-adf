@@ -1,4 +1,4 @@
-version: "0.5.0~1"
+version: "1.0.0-beta1"
 description: ADF domain-scoped publish-subscribe event hub with queue and callback delivery modes
 license: LicenseRef-Espressif-Modified-MIT
 url: https://github.com/espressif/esp-adf/tree/master/components/adf_event_hub
