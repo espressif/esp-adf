@@ -425,11 +425,17 @@ int64_t esp_ota_service_mock_target_last_set_off(const esp_ota_service_target_t 
 typedef struct {
     esp_ota_service_checker_t       chk;
     esp_ota_service_mock_chk_cfg_t  cfg;
+    size_t                          check_count;
 } mock_chk_bundle_t;
 
 static mock_chk_bundle_t *bundle_from_chk(esp_ota_service_checker_t *self)
 {
     return (mock_chk_bundle_t *)((uint8_t *)self - offsetof(mock_chk_bundle_t, chk));
+}
+
+static const mock_chk_bundle_t *const_bundle_from_chk(const esp_ota_service_checker_t *self)
+{
+    return (const mock_chk_bundle_t *)((const uint8_t *)self - offsetof(mock_chk_bundle_t, chk));
 }
 
 static esp_err_t mock_chk_check(esp_ota_service_checker_t *self, const char *uri,
@@ -438,6 +444,13 @@ static esp_err_t mock_chk_check(esp_ota_service_checker_t *self, const char *uri
     (void)uri;
     (void)source;
     mock_chk_bundle_t *b = bundle_from_chk(self);
+    b->check_count++;
+    if (b->cfg.check_reached_sem) {
+        xSemaphoreGive(b->cfg.check_reached_sem);
+    }
+    if (b->cfg.check_continue_sem) {
+        (void)xSemaphoreTake(b->cfg.check_continue_sem, portMAX_DELAY);
+    }
     memset(result, 0, sizeof(*result));
     result->upgrade_available = b->cfg.upgrade_available;
     result->image_size = b->cfg.image_size;
@@ -479,6 +492,11 @@ void esp_ota_service_mock_checker_destroy(esp_ota_service_checker_t *chk)
         return;
     }
     mock_chk_destroy(chk);
+}
+
+size_t esp_ota_service_mock_checker_check_count(const esp_ota_service_checker_t *chk)
+{
+    return chk ? const_bundle_from_chk(chk)->check_count : 0;
 }
 
 typedef struct {

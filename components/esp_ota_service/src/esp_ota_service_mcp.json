@@ -17,7 +17,7 @@
   },
   {
     "name": "esp_ota_service_check_update",
-    "description": "Trigger OTA check_update and return whether update is available with incoming version metadata",
+    "description": "Trigger OTA check_update when the service is idle and return whether update is available with incoming version metadata (-1 size if unknown); query esp_ota_service_get_version for cached metadata while a session is running",
     "inputSchema": {
       "type": "object",
       "properties": {}

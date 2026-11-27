@@ -55,8 +55,8 @@ typedef struct {
  *         For data partitions or non-@c esp_app_desc_t metadata, use
  *         @c esp_ota_service_checker_data_version_create() or implement @c esp_ota_service_checker_t yourself.
  *
- * @param[in]  cfg  Configuration; NULL uses strict defaults (require_higher_version=true,
- *                  check_project_name=true, no custom hook).
+ * @param[in]  cfg  Configuration; NULL uses the defaults check_project_name=true, no custom hook,
+ *                  and require_higher_version taken from CONFIG_OTA_FORCE_VERSION_CHECK.
  *
  * @return
  *       - New  checker, or NULL on allocation failure

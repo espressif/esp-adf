@@ -50,6 +50,7 @@ static void copy_label(char *dst, size_t dst_sz, const char *src)
 
 static void recorder_push(const esp_ota_service_event_t *evt)
 {
+    bool dropped = false;
     portENTER_CRITICAL(&s_rec_lock);
     if (s_rec_count < ESP_OTA_SERVICE_TEST_REC_CAP) {
         esp_ota_service_test_event_record_t *r = &s_rec[s_rec_count++];
@@ -81,9 +82,12 @@ static void recorder_push(const esp_ota_service_event_t *evt)
                 break;
         }
     } else {
-        ESP_LOGW(TAG, "Recorder dropped event id=%d (buffer full)", (int)evt->id);
+        dropped = true;
     }
     portEXIT_CRITICAL(&s_rec_lock);
+    if (dropped) {
+        ESP_LOGW(TAG, "Recorder dropped event id=%d (buffer full)", (int)evt->id);
+    }
 
     if (evt->id == ESP_OTA_SERVICE_EVT_SESSION_END && s_end_group) {
         xEventGroupSetBits(s_end_group, SESSION_END_BIT);

@@ -10,6 +10,7 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "sdkconfig.h"
 #include "esp_log.h"
 
 #include "adf_mem.h"
@@ -45,8 +46,8 @@ static esp_err_t checker_app_check(esp_ota_service_checker_t *self, const char *
 
     memset(result, 0, sizeof(*result));
     result->image_size = image_size;
-    snprintf(result->version, sizeof(result->version), "%s", incoming.version);
-    snprintf(result->label, sizeof(result->label), "%s", incoming.project_name);
+    snprintf(result->version, sizeof(result->version), "%.*s", (int)sizeof(incoming.version), incoming.version);
+    snprintf(result->label, sizeof(result->label), "%.*s", (int)sizeof(incoming.project_name), incoming.project_name);
 
     esp_app_desc_t cur_desc;
     const esp_app_desc_t *cur_ptr = NULL;
@@ -94,7 +95,11 @@ esp_ota_service_checker_t *esp_ota_service_checker_app_create(const esp_ota_serv
         obj->should_upgrade = cfg->should_upgrade;
         obj->should_upgrade_ctx = cfg->should_upgrade_ctx;
     } else {
+#ifdef CONFIG_OTA_FORCE_VERSION_CHECK
         obj->policy.require_higher_version = true;
+#else
+        obj->policy.require_higher_version = false;
+#endif  /* CONFIG_OTA_FORCE_VERSION_CHECK */
         obj->policy.check_project_name = true;
     }
 

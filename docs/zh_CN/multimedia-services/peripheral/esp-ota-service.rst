@@ -41,11 +41,11 @@ ESP OTA Service
           Open --> Vb{verifier?}
           Vb -- 无 --> TOpen[target.open]
           Vb -- 有 --> VBegin[verifier.verify_begin]
-          VBegin -- 拒绝 --> Skip
+          VBegin -- 拒绝 --> Fail([中止])
           VBegin -- 通过 --> TOpen
           TOpen --> Loop{source.read 循环}
           Loop --> Update[verifier.verify_update]
-          Update -- 校验失败 --> Fail([中止])
+          Update -- 校验失败 --> Fail
           Update -- 通过 --> Write[target.write] --> Loop
           Loop -- EOF --> Vf{verifier?}
           Vf -- 无 --> Commit[target.commit]
@@ -86,7 +86,7 @@ ESP OTA Service
 事件与进度
 ^^^^^^^^^^^^^^
 
-通过 :cpp:func:`esp_service_event_subscribe` 订阅后，每次回调收到的 ``adf_event_t`` 中 ``payload`` 指向 :cpp:type:`esp_ota_service_event_t`\ ，需要先读取 ``id`` 字段，再访问对应的联合体分支：\ ``ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK`` 报告版本检查结果，\ ``ESP_OTA_SERVICE_EVT_ITEM_PROGRESS`` 约每秒更新一次下载字节数，\ ``ESP_OTA_SERVICE_EVT_ITEM_END`` 携带单个分区的成功/跳过/失败结果，\ ``ESP_OTA_SERVICE_EVT_SESSION_END`` 携带整个会话的汇总统计。调用方也可以直接用 :cpp:func:`esp_ota_service_get_progress` 轮询当前条目的下载进度百分比。
+通过 :cpp:func:`esp_service_event_subscribe` 订阅后，每次回调收到的 ``adf_event_t`` 中 ``payload`` 指向 :cpp:type:`esp_ota_service_event_t`\ ，需要先读取 ``id`` 字段，再访问对应的联合体分支：\ ``ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK`` 报告版本检查结果，\ ``ESP_OTA_SERVICE_EVT_ITEM_PROGRESS`` 约每秒更新一次下载字节数，\ ``ESP_OTA_SERVICE_EVT_ITEM_END`` 携带单个分区的成功/失败结果，\ ``ESP_OTA_SERVICE_EVT_SESSION_END`` 携带整个会话的汇总统计。调用方也可以直接用 :cpp:func:`esp_ota_service_get_progress` 轮询当前条目的下载进度百分比。
 
 断点续传与回滚
 ^^^^^^^^^^^^^^^^^^

@@ -28,30 +28,33 @@ static const char *TAG = "OTA_TGT_DATA";
 static esp_err_t data_open(esp_ota_service_target_t *self, const char *partition_label)
 {
     esp_ota_service_target_data_priv_t *priv = (esp_ota_service_target_data_priv_t *)self->priv;
+    priv->partition = NULL;
+    priv->write_offset = 0;
 
     if (partition_label == NULL) {
         ESP_LOGE(TAG, "Open failed: partition_label must not be NULL for data partition target");
         return ESP_ERR_INVALID_ARG;
     }
 
-    priv->partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, partition_label);
-    if (priv->partition == NULL) {
+    const esp_partition_t *part =
+        esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, partition_label);
+    if (part == NULL) {
         ESP_LOGE(TAG, "Partition '%s' not found", partition_label);
         return ESP_ERR_NOT_FOUND;
     }
 
-    ESP_LOGI(TAG, "Data partition '%s' found  size: %" PRIu32 " bytes", partition_label, priv->partition->size);
+    ESP_LOGI(TAG, "Data partition '%s' found  size: %" PRIu32 " bytes", partition_label, part->size);
 
     if (!priv->pre_erased) {
         ESP_LOGI(TAG, "Erasing partition '%s'...", partition_label);
-        esp_err_t ret = esp_partition_erase_range(priv->partition, 0, priv->partition->size);
+        esp_err_t ret = esp_partition_erase_range(part, 0, part->size);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Erase failed: %s", esp_err_to_name(ret));
             return ret;
         }
     }
 
-    priv->write_offset = 0;
+    priv->partition = part;
     return ESP_OK;
 }
 
@@ -59,9 +62,15 @@ static esp_err_t data_write(esp_ota_service_target_t *self, const uint8_t *data,
 {
     esp_ota_service_target_data_priv_t *priv = (esp_ota_service_target_data_priv_t *)self->priv;
 
+    if (priv->partition == NULL) {
+        ESP_LOGE(TAG, "Write failed: target not opened");
+        return ESP_ERR_INVALID_STATE;
+    }
+
     esp_err_t ret = esp_partition_write(priv->partition, priv->write_offset, data, len);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Write failed: esp_partition_write @ 0x%" PRIx32 " returned %s", priv->write_offset, esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Write failed: esp_partition_write @ 0x%" PRIx32 " returned %s", priv->write_offset,
+                 esp_err_to_name(ret));
         return ret;
     }
     priv->write_offset += (uint32_t)len;
@@ -78,12 +87,16 @@ static esp_err_t data_commit(esp_ota_service_target_t *self)
 static esp_err_t data_abort(esp_ota_service_target_t *self)
 {
     esp_ota_service_target_data_priv_t *priv = (esp_ota_service_target_data_priv_t *)self->priv;
+    esp_err_t ret = ESP_OK;
     if (priv->partition && priv->write_offset > 0) {
         ESP_LOGW(TAG, "Aborting - erasing partial write on '%s'", priv->partition->label);
-        esp_partition_erase_range(priv->partition, 0, priv->partition->size);
+        ret = esp_partition_erase_range(priv->partition, 0, priv->partition->size);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Abort erase failed: %s", esp_err_to_name(ret));
+        }
     }
     priv->write_offset = 0;
-    return ESP_OK;
+    return ret;
 }
 
 static int64_t data_get_write_offset(esp_ota_service_target_t *self)

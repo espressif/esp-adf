@@ -47,6 +47,8 @@ esp_err_t esp_ota_service_mcp_schema_get(const char **out_schema);
  *       - ESP_OK                 On success (JSON written to @a result)
  *       - ESP_ERR_INVALID_ARG    If @a service, @a tool, or @a result is NULL, or @a result_size is 0
  *       - ESP_ERR_NOT_SUPPORTED  If @a tool->name is not a known OTA MCP tool
+ *       - ESP_ERR_INVALID_SIZE   If the JSON response does not fit into @a result
+ *       - ESP_ERR_NO_MEM         If the JSON response cannot be allocated
  *       - Other                  Error code returned by esp_ota_service_check_update() when that tool fails
  */
 esp_err_t esp_ota_service_tool_invoke(esp_service_t *service, const esp_service_tool_t *tool, const char *args,

@@ -8,4 +8,4 @@ if(EXISTS "$ENV{IDF_PATH}/tools/test_apps/components")
 endif()
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(esp_ota_service_ut)
+project(esp_ota_service_ut VERSION 1.0.0)

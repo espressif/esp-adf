@@ -1,4 +1,5 @@
-version: "0.5.2~3"
+version: "1.0.0-beta1"
+license: "LicenseRef-Espressif-Modified-MIT"
 description: ADF OTA Service is a highly extensible firmware upgrade module with composable source, target, checker, and verifier layers
 url: https://github.com/espressif/esp-adf/tree/master/components/esp_ota_service
 documentation: "https://github.com/espressif/esp-adf/blob/master/components/esp_ota_service/README.md"
@@ -9,6 +10,11 @@ tags:
   - "esp_service"
   - "gmf"
   - "adf"
+
+files:
+  exclude:
+    - "test_apps/**/*"
+    - "tools/esp_at_esp32c6/**/*"
 
 dependencies:
   espressif/esp_service:
@@ -21,4 +27,3 @@ dependencies:
   espressif/cjson:
     require: private
     version: "^1.7.19"
-

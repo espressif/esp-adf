@@ -41,11 +41,11 @@ Each :cpp:type:`esp_ota_upgrade_item_t` describes one partition upgrade, and con
           Open --> Vb{verifier?}
           Vb -- No --> TOpen[target.open]
           Vb -- Yes --> VBegin[verifier.verify_begin]
-          VBegin -- Rejected --> Skip
+          VBegin -- Rejected --> Fail([Abort])
           VBegin -- Accepted --> TOpen
           TOpen --> Loop{source.read loop}
           Loop --> Update[verifier.verify_update]
-          Update -- Verification failed --> Fail([Abort])
+          Update -- Verification failed --> Fail
           Update -- Passed --> Write[target.write] --> Loop
           Loop -- EOF --> Vf{verifier?}
           Vf -- No --> Commit[target.commit]
@@ -86,7 +86,7 @@ Component selection for common scenarios: for HTTP OTA combined with manifest ve
 Events and Progress
 ^^^^^^^^^^^^^^^^^^^
 
-After subscribing via :cpp:func:`esp_service_event_subscribe`, the ``payload`` field of the ``adf_event_t`` received in each callback points to an :cpp:type:`esp_ota_service_event_t`. The ``id`` field must be read first, followed by accessing the corresponding union branch: ``ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK`` reports the version check result, ``ESP_OTA_SERVICE_EVT_ITEM_PROGRESS`` updates the downloaded byte count approximately once per second, ``ESP_OTA_SERVICE_EVT_ITEM_END`` carries the success/skip/failure result of a single partition, and ``ESP_OTA_SERVICE_EVT_SESSION_END`` carries the summary statistics for the entire session. The caller can also directly poll the download progress percentage of the current item using :cpp:func:`esp_ota_service_get_progress`.
+After subscribing via :cpp:func:`esp_service_event_subscribe`, the ``payload`` field of the ``adf_event_t`` received in each callback points to an :cpp:type:`esp_ota_service_event_t`. The ``id`` field must be read first, followed by accessing the corresponding union branch: ``ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK`` reports the version check result, ``ESP_OTA_SERVICE_EVT_ITEM_PROGRESS`` updates the downloaded byte count approximately once per second, ``ESP_OTA_SERVICE_EVT_ITEM_END`` carries the success/failure result of a single partition, and ``ESP_OTA_SERVICE_EVT_SESSION_END`` carries the summary statistics for the entire session. The caller can also directly poll the download progress percentage of the current item using :cpp:func:`esp_ota_service_get_progress`.
 
 Resume and Rollback
 ^^^^^^^^^^^^^^^^^^^

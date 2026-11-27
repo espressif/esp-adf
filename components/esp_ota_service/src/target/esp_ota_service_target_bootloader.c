@@ -9,6 +9,7 @@
 #include <inttypes.h>
 
 #include "esp_log.h"
+#include "esp_flash.h"
 #include "esp_partition.h"
 #include "esp_ota_ops.h"
 #include "esp_image_format.h"
@@ -170,13 +171,17 @@ static esp_err_t bl_commit(esp_ota_service_target_t *self)
 static esp_err_t bl_abort(esp_ota_service_target_t *self)
 {
     esp_ota_service_target_bootloader_priv_t *priv = (esp_ota_service_target_bootloader_priv_t *)self->priv;
+    esp_err_t ret = ESP_OK;
     if (priv->opened && priv->staging) {
         ESP_LOGW(TAG, "Aborting bootloader OTA - erasing staging partition");
-        esp_partition_erase_range(priv->staging, 0, priv->staging->size);
+        ret = esp_partition_erase_range(priv->staging, 0, priv->staging->size);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Abort erase failed: %s", esp_err_to_name(ret));
+        }
     }
     priv->write_offset = 0;
     priv->opened = false;
-    return ESP_OK;
+    return ret;
 }
 
 static int64_t bl_get_write_offset(esp_ota_service_target_t *self)  {  return (int64_t)((esp_ota_service_target_bootloader_priv_t *)self->priv)->write_offset;  }

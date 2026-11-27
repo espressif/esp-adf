@@ -109,8 +109,8 @@ static esp_err_t checker_tone_check(esp_ota_service_checker_t *self, const char 
         return ESP_ERR_INVALID_VERSION;
     }
 
-    snprintf(result->version, sizeof(result->version), "%s", incoming.version);
-    snprintf(result->label, sizeof(result->label), "%s", incoming.project_name);
+    snprintf(result->version, sizeof(result->version), "%.*s", (int)sizeof(incoming.version), incoming.version);
+    snprintf(result->label, sizeof(result->label), "%.*s", (int)sizeof(incoming.project_name), incoming.project_name);
 
     /* Tone bins carry a non-IDF magic (0xF55F9876), so esp_ota_service_version_compare_descriptors()
      * cannot be used directly (it enforces ESP_APP_DESC_MAGIC_WORD). Evaluate the policy
@@ -119,10 +119,10 @@ static esp_err_t checker_tone_check(esp_ota_service_checker_t *self, const char 
     bool newer;
     if (obj->policy.require_higher_version) {
         uint32_t cur = esp_ota_service_version_pack_semver(obj->current_version);
-        uint32_t inc = esp_ota_service_version_pack_semver(incoming.version);
+        uint32_t inc = esp_ota_service_version_pack_semver(result->version);
         if (cur == UINT32_MAX || inc == UINT32_MAX) {
             ESP_LOGW(TAG, "Unparsable semver: current='%s' incoming='%s'",
-                     obj->current_version, incoming.version);
+                     obj->current_version, result->version);
             newer = false;
         } else {
             newer = (inc > cur);
@@ -136,7 +136,7 @@ static esp_err_t checker_tone_check(esp_ota_service_checker_t *self, const char 
         if (strncmp(incoming.project_name, obj->expected_project_name,
                     sizeof(incoming.project_name)) != 0) {
             ESP_LOGW(TAG, "Project name mismatch: expected='%s' incoming='%s'",
-                     obj->expected_project_name, incoming.project_name);
+                     obj->expected_project_name, result->label);
             newer = false;
         }
     }

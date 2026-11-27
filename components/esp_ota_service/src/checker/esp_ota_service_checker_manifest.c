@@ -10,8 +10,11 @@
 #include <inttypes.h>
 #include "esp_log.h"
 #include "esp_http_client.h"
-#include "esp_crt_bundle.h"
 #include "cJSON.h"
+#include "sdkconfig.h"
+#if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+#include "esp_crt_bundle.h"
+#endif  /* CONFIG_MBEDTLS_CERTIFICATE_BUNDLE */
 #include "adf_mem.h"
 #include "esp_ota_service_source.h"
 #include "esp_ota_service_checker_manifest.h"
@@ -21,6 +24,7 @@ static const char *TAG = "OTA_CHK_MANIFEST";
 
 #define MANIFEST_DEFAULT_TIMEOUT_MS  5000
 #define MANIFEST_MAX_SIZE            4096
+#define MANIFEST_MAX_REDIRECTS       5
 
 typedef struct {
     esp_ota_service_checker_t  base;
@@ -71,9 +75,11 @@ static esp_err_t fetch_manifest(esp_ota_service_checker_manifest_obj_t *obj, cha
         .timeout_ms = obj->timeout_ms > 0 ? obj->timeout_ms : MANIFEST_DEFAULT_TIMEOUT_MS,
         .cert_pem = obj->cert_pem,
     };
+#if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
     if (!obj->cert_pem) {
         http_cfg.crt_bundle_attach = esp_crt_bundle_attach;
     }
+#endif  /* CONFIG_MBEDTLS_CERTIFICATE_BUNDLE */
 
     esp_http_client_handle_t client = esp_http_client_init(&http_cfg);
     if (!client) {
@@ -81,30 +87,49 @@ static esp_err_t fetch_manifest(esp_ota_service_checker_manifest_obj_t *obj, cha
         return ESP_FAIL;
     }
 
-    esp_err_t ret = esp_http_client_open(client, 0);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "HTTP open failed: %s", esp_err_to_name(ret));
-        esp_http_client_cleanup(client);
-        return ret;
+    int64_t content_length = 0;
+    int status = 0;
+    for (int redirects = 0;; redirects++) {
+        esp_err_t ret = esp_http_client_open(client, 0);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "HTTP open failed: %s", esp_err_to_name(ret));
+            esp_http_client_cleanup(client);
+            return ret;
+        }
+
+        content_length = esp_http_client_fetch_headers(client);
+        status = esp_http_client_get_status_code(client);
+        if (status == 301 || status == 302 || status == 303 || status == 307 || status == 308) {
+            if (redirects >= MANIFEST_MAX_REDIRECTS) {
+                ESP_LOGE(TAG, "Too many HTTP redirects (%d)", redirects);
+                esp_http_client_close(client);
+                esp_http_client_cleanup(client);
+                return ESP_ERR_HTTP_MAX_REDIRECT;
+            }
+            (void)esp_http_client_flush_response(client, NULL);
+            esp_err_t redir_err = esp_http_client_set_redirection(client);
+            esp_http_client_close(client);
+            if (redir_err != ESP_OK) {
+                ESP_LOGE(TAG, "HTTP redirect failed: %s", esp_err_to_name(redir_err));
+                esp_http_client_cleanup(client);
+                return redir_err;
+            }
+            continue;
+        }
+        break;
     }
 
-    int content_length = esp_http_client_fetch_headers(client);
-    if (content_length < 0) {
-        content_length = MANIFEST_MAX_SIZE;
-    }
-    if (content_length > MANIFEST_MAX_SIZE) {
-        ESP_LOGE(TAG, "Manifest too large: %d bytes", content_length);
-        esp_http_client_close(client);
-        esp_http_client_cleanup(client);
-        return ESP_ERR_INVALID_SIZE;
-    }
-
-    int status = esp_http_client_get_status_code(client);
     if (status != 200) {
         ESP_LOGE(TAG, "HTTP status %d", status);
         esp_http_client_close(client);
         esp_http_client_cleanup(client);
         return ESP_FAIL;
+    }
+    if (content_length > MANIFEST_MAX_SIZE) {
+        ESP_LOGE(TAG, "Manifest too large: %" PRId64 " bytes", content_length);
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        return ESP_ERR_INVALID_SIZE;
     }
 
     char *body = adf_calloc(1, MANIFEST_MAX_SIZE + 1);
@@ -164,7 +189,7 @@ static esp_err_t manifest_evaluate_parsed_root(cJSON *root,
     }
 
     cJSON *j_size = cJSON_GetObjectItem(root, "size");
-    if (cJSON_IsNumber(j_size) && j_size->valuedouble > 0) {
+    if (cJSON_IsNumber(j_size) && j_size->valuedouble > 0 && j_size->valuedouble < (double)UINT32_MAX) {
         result->image_size = (uint32_t)j_size->valuedouble;
     }
 
@@ -187,7 +212,7 @@ static esp_err_t manifest_evaluate_parsed_root(cJSON *root,
     }
 
     if (check_project && current_project) {
-        if (result->label[0] && strcmp(result->label, current_project) != 0) {
+        if (strcmp(result->label, current_project) != 0) {
             ESP_LOGE(TAG, "Project name mismatch: current='%s' manifest='%s'",
                      current_project, result->label);
             result->upgrade_available = false;

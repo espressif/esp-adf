@@ -67,7 +67,13 @@ static esp_err_t checker_data_check(esp_ota_service_checker_t *self, const char 
         snprintf(result->version, sizeof(result->version), "0x%08" PRIx32, incoming_packed);
     }
 
-    result->upgrade_available = (incoming_packed != UINT32_MAX) && (incoming_packed > obj->current_packed);
+    /* A packed semver only uses the low 24 bits; anything else is not a version header. */
+    if (incoming_packed > 0x00FFFFFF) {
+        ESP_LOGE(TAG, "Invalid version header 0x%08" PRIx32 " (expected packed x.y.z)", incoming_packed);
+        return ESP_ERR_INVALID_VERSION;
+    }
+
+    result->upgrade_available = (incoming_packed > obj->current_packed);
 
     ESP_LOGI(TAG, "Data version check: incoming=%s current=%s upgrade_available=%s",
              result->version, obj->current_version,
@@ -100,6 +106,11 @@ esp_ota_service_checker_t *esp_ota_service_checker_data_version_create(const esp
     obj->base.priv = NULL;
 
     obj->current_packed = esp_ota_service_version_pack_semver(cfg->current_version);
+    if (obj->current_packed == UINT32_MAX) {
+        ESP_LOGE(TAG, "Invalid config: current_version '%s' is not x.y.z", cfg->current_version);
+        adf_free(obj);
+        return NULL;
+    }
     snprintf(obj->current_version, sizeof(obj->current_version), "%s", cfg->current_version);
 
     return &obj->base;

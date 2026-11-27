@@ -79,7 +79,7 @@ flowchart TD
     B --> VB{verifier?}
     VB -- no --> D
     VB -- yes --> C[verifier.verify_begin]
-    C -- rejected --> SKIP
+    C -- rejected --> FAIL
     C -- ok --> D[target.open]
     D --> E{source.read loop}
     E --> F[verifier.verify_update]
@@ -99,7 +99,11 @@ See [`examples/ota_http/`](examples/ota_http/) for a complete working example. T
 
 > **Ownership rule:** after `esp_ota_service_set_upgrade_list()` the service owns every `source`, `target`, `checker`, and `verifier` in the list. Never call their `destroy()` directly — `esp_ota_service_destroy()` will free them.
 
+> **Lifecycle rule:** `esp_ota_service_set_upgrade_list()` and `esp_ota_service_check_update()` require the service to be `INITIALIZED` and idle (`ESP_ERR_INVALID_STATE` otherwise). `esp_service_stop()` and `esp_ota_service_destroy()` wait up to `stop_timeout_ms` for the worker to exit; on `ESP_ERR_TIMEOUT` the instance and its resources remain valid for retry once the source unblocks.
+
 After rebooting into the new image, call `esp_ota_service_confirm_update()` once connectivity is confirmed to cancel the rollback timer (requires `CONFIG_OTA_ENABLE_ROLLBACK=y`).
+
+Version strings passed to the checkers must use `[v]x.y.z` (each part 0-255); malformed strings such as `1.0` or `1.0.0-rc1` are rejected. `esp_ota_service_checker_app_create(NULL)` takes `require_higher_version` from `CONFIG_OTA_FORCE_VERSION_CHECK` (default `y`).
 
 ## Choosing the Right Abstractions
 
@@ -124,16 +128,18 @@ Subscribe with `esp_service_event_subscribe((esp_service_t *)svc, &sub)`. Each c
 | `ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK` | Version check completed | `ver_check.upgrade_available`, `error` |
 | `ESP_OTA_SERVICE_EVT_ITEM_BEGIN` | Download + write loop starting | `item_index`, `item_label` |
 | `ESP_OTA_SERVICE_EVT_ITEM_PROGRESS` | ~1 s progress tick | `progress.bytes_written`, `progress.total_bytes` |
-| `ESP_OTA_SERVICE_EVT_ITEM_END` | One partition finished | `item_end.status`, `item_end.reason`, `error` |
+| `ESP_OTA_SERVICE_EVT_ITEM_END` | One partition finished | `item_end.status` (`OK` / `FAILED`), `item_end.reason`, `error` |
 | `ESP_OTA_SERVICE_EVT_SESSION_END` | All items done or aborted | `session_end.{success,failed,skipped}_count`, `aborted` |
 
-`ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK` notes: `error != ESP_OK` → checker failed, `ITEM_END(FAILED)` follows; `!upgrade_available` → item silently skipped (no `ITEM_BEGIN`/`ITEM_END`); `upgrade_available` → download proceeds.
+`ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK` notes: `error != ESP_OK` → checker failed, `ITEM_END(FAILED)` follows; `!upgrade_available` → item skipped and counted in `skipped_count` (no `ITEM_BEGIN`/`ITEM_END`); `upgrade_available` → download proceeds.
+
+A verifier rejection at any stage (`verify_begin`, `verify_update`, `verify_finish`) ends the item with `ITEM_END(FAILED)` and `reason = ESP_OTA_SERVICE_ITEM_END_REASON_VERIFIER_REJECTED`.
 
 ## Optional Features
 
 | Feature | Enable | Notes |
 |---------|--------|-------|
-| NVS-based resume | `CONFIG_OTA_ENABLE_RESUME=y` (default) | Saves offset every `OTA_RESUME_SAVE_INTERVAL_KB` KB; set `resumable = false` for targets without `set_write_offset()` (data, bootloader) or sources without `seek()` (BLE) — otherwise `esp_ota_service_set_upgrade_list()` returns `ESP_ERR_NOT_SUPPORTED` |
+| NVS-based resume | `CONFIG_OTA_ENABLE_RESUME=y` (default) | Saves offset every `OTA_RESUME_SAVE_INTERVAL_KB` KB; set `resumable = false` for targets without `set_write_offset()` (data, bootloader) or sources without `seek()` (BLE), otherwise `esp_ota_service_set_upgrade_list()` returns `ESP_ERR_NOT_SUPPORTED`. Records are matched by `(item_index, uri)`, cleared after commit or abort, and bypassed (restarting from 0) when a streaming `verifier` is attached |
 | Rollback | `CONFIG_OTA_ENABLE_ROLLBACK=y` | Call `esp_ota_service_confirm_update()` once the new image is verified (e.g., WiFi up); omitting this call causes rollback on every reboot — see `examples/ota_http/main/app_main.c` for the pattern |
 | Bootloader OTA | `CONFIG_OTA_ENABLE_BOOTLOADER_OTA=y` | Uses a staging partition; no atomicity guarantee — power loss during copy may brick the device; temporarily not covered by `test_apps` (TODO: add automated tests in a future update) |
 | BLE source | `CONFIG_OTA_ENABLE_BLE_SOURCE=y` | Requires ESP BLE OTA APP protocol; `seek` not implemented, so `resumable` must be `false` |

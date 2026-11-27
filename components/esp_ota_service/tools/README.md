@@ -31,6 +31,13 @@ tools/
 Every user-facing script is a Python 3 CLI with `--help`. The two files that
 start with `_` are internal helper modules imported by the other scripts.
 
+## Firmware version convention
+
+`esp_ota_service` requires strict `[v]x.y.z` semantic versions when comparing firmware descriptors or manifests (`CONFIG_OTA_FORCE_VERSION_CHECK=y` by default). Version resolution follows ESP-IDF's standard `project.cmake` precedence:
+
+1. **Baseline version (`CMakeLists.txt` + `_fw_common.py`)**: Each example sets a baseline `project(<name> VERSION <x.y.z>)` (`1.0.0` for `ota_http` and `ota_ble`, `0.1.0` for `ota_fs`), mirrored in `_fw_common.py` (`EXAMPLES[...]['default_version']`). A clean `idf.py build flash` without a `version.txt` file embeds this valid `x.y.z` baseline instead of a `git describe` hash.
+2. **Upgrade payload override (`version.txt`)**: Running `./build_firmware.py <example> -v <x.y.z>` writes `<example>/version.txt` (git-ignored at repository root), which ESP-IDF automatically prioritizes over the `CMakeLists.txt` baseline `VERSION` when building the upgrade `.bin`.
+
 ## Typical workflows
 
 > **Run commands from this `tools/` directory.** The examples below assume

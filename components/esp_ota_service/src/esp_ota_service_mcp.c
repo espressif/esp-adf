@@ -9,18 +9,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "freertos/FreeRTOS.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
+#include "cJSON.h"
 
 #include "esp_ota_service.h"
 #include "esp_ota_service_mcp.h"
 
 static const char *TAG = "OTA_MCP";
 
-/* Embedded JSON schema (via CMakeLists.txt EMBED_FILES) */
+/* Embedded JSON schema (via CMakeLists.txt EMBED_TXTFILES) */
 extern const uint8_t esp_ota_service_mcp_json_start[] asm("_binary_esp_ota_service_mcp_json_start");
 
 static esp_ota_service_update_info_t s_cached_check_info;
+static portMUX_TYPE s_cache_lock = portMUX_INITIALIZER_UNLOCKED;
 
 esp_err_t esp_ota_service_mcp_schema_get(const char **out_schema)
 {
@@ -41,71 +44,37 @@ static const char *state_to_str_safe(esp_service_state_t state)
     return name;
 }
 
-static bool parse_version_triplet(const char *version, int out[3])
+static void cache_store(const esp_ota_service_update_info_t *info)
 {
-    if (!version || !out) {
-        return false;
-    }
-
-    int found = 0;
-    const char *p = version;
-    while (*p != '\0' && found < 3) {
-        while (*p != '\0' && (*p < '0' || *p > '9')) {
-            p++;
-        }
-        if (*p == '\0') {
-            break;
-        }
-
-        char *end = NULL;
-        long val = strtol(p, &end, 10);
-        if (end == p || val < 0 || val > 1000000) {
-            return false;
-        }
-
-        out[found++] = (int)val;
-        p = end;
-    }
-
-    return (found == 3);
+    taskENTER_CRITICAL(&s_cache_lock);
+    s_cached_check_info = *info;
+    taskEXIT_CRITICAL(&s_cache_lock);
 }
 
-static int compare_version_triplet(const char *incoming, const char *current, bool *parsed_ok)
+/* Untrusted version/label strings go through cJSON so quotes and control
+ * characters cannot break out of the JSON result. */
+static esp_err_t emit_json(cJSON *root, char *result, size_t result_size)
 {
-    int in_ver[3] = {0};
-    int cur_ver[3] = {0};
-    bool ok = parse_version_triplet(incoming, in_ver) && parse_version_triplet(current, cur_ver);
-    if (parsed_ok) {
-        *parsed_ok = ok;
+    if (root == NULL) {
+        ESP_LOGE(TAG, "Emit JSON failed: out of memory");
+        return ESP_ERR_NO_MEM;
     }
-    if (!ok) {
-        return 0;
+    char *text = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (text == NULL) {
+        ESP_LOGE(TAG, "Emit JSON failed: cJSON_PrintUnformatted returned NULL");
+        return ESP_ERR_NO_MEM;
     }
-
-    for (int i = 0; i < 3; i++) {
-        if (in_ver[i] != cur_ver[i]) {
-            return (in_ver[i] > cur_ver[i]) ? 1 : -1;
-        }
-    }
-    return 0;
-}
-
-static void normalize_upgrade_available(esp_ota_service_update_info_t *info)
-{
-    if (!info) {
-        return;
-    }
-
-    const esp_app_desc_t *app = esp_app_get_description();
-    bool parsed_ok = false;
-    int ver_cmp = compare_version_triplet(info->version, app->version, &parsed_ok);
-
-    if (parsed_ok) {
-        info->upgrade_available = (ver_cmp > 0);
+    size_t len = strlen(text);
+    esp_err_t ret = ESP_OK;
+    if (len >= result_size) {
+        ESP_LOGE(TAG, "Result buffer too small: need %u, have %u", (unsigned)(len + 1), (unsigned)result_size);
+        ret = ESP_ERR_INVALID_SIZE;
     } else {
-        ESP_LOGW(TAG, "Version parse fallback: incoming=%s current=%s keep check_update result=%s", info->version,
-                 app->version, info->upgrade_available ? "YES" : "NO");
+        memcpy(result, text, len + 1);
     }
+    cJSON_free(text);
+    return ret;
 }
 
 void esp_ota_service_mcp_cache_update_info(const esp_ota_service_update_info_t *info)
@@ -113,9 +82,7 @@ void esp_ota_service_mcp_cache_update_info(const esp_ota_service_update_info_t *
     if (!info) {
         return;
     }
-
-    s_cached_check_info = *info;
-    normalize_upgrade_available(&s_cached_check_info);
+    cache_store(info);
 }
 
 esp_err_t esp_ota_service_tool_invoke(esp_service_t *service, const esp_service_tool_t *tool, const char *args,
@@ -134,11 +101,22 @@ esp_err_t esp_ota_service_tool_invoke(esp_service_t *service, const esp_service_
 
     if (strcmp(tool->name, "esp_ota_service_get_version") == 0) {
         const esp_app_desc_t *app = esp_app_get_description();
-        const char *latest = s_cached_check_info.version[0] ? s_cached_check_info.version : app->version;
+        esp_ota_service_update_info_t cached;
+        taskENTER_CRITICAL(&s_cache_lock);
+        cached = s_cached_check_info;
+        taskEXIT_CRITICAL(&s_cache_lock);
+        const char *latest = cached.version[0] ? cached.version : app->version;
 
-        snprintf(result, result_size, "{\"current_version\":\"%s\",\"latest_version\":\"%s\",\"upgrade_available\":%s}",
-                 app->version, latest, s_cached_check_info.upgrade_available ? "true" : "false");
-        return ESP_OK;
+        cJSON *root = cJSON_CreateObject();
+        if (!root ||
+            !cJSON_AddStringToObject(root, "current_version", app->version) ||
+            !cJSON_AddStringToObject(root, "latest_version", latest) ||
+            !cJSON_AddBoolToObject(root, "upgrade_available", cached.upgrade_available)) {
+            cJSON_Delete(root);
+            ESP_LOGE(TAG, "Emit JSON failed: out of memory");
+            return ESP_ERR_NO_MEM;
+        }
+        return emit_json(root, result, result_size);
     }
 
     if (strcmp(tool->name, "esp_ota_service_get_progress") == 0) {
@@ -150,10 +128,17 @@ esp_err_t esp_ota_service_tool_invoke(esp_service_t *service, const esp_service_
         (void)esp_ota_service_get_progress(ota, &written, &total, &percent);
         (void)esp_service_get_state((const esp_service_t *)ota, &state);
 
-        snprintf(result, result_size,
-                 "{\"state\":\"%s\",\"bytes_written\":%" PRIu32 ",\"total_bytes\":%" PRIu32 ",\"percent\":%" PRId32 "}",
-                 state_to_str_safe(state), written, total, percent);
-        return ESP_OK;
+        cJSON *root = cJSON_CreateObject();
+        if (!root ||
+            !cJSON_AddStringToObject(root, "state", state_to_str_safe(state)) ||
+            !cJSON_AddNumberToObject(root, "bytes_written", (double)written) ||
+            !cJSON_AddNumberToObject(root, "total_bytes", (total == UINT32_MAX) ? -1.0 : (double)total) ||
+            !cJSON_AddNumberToObject(root, "percent", (double)percent)) {
+            cJSON_Delete(root);
+            ESP_LOGE(TAG, "Emit JSON failed: out of memory");
+            return ESP_ERR_NO_MEM;
+        }
+        return emit_json(root, result, result_size);
     }
 
     if (strcmp(tool->name, "esp_ota_service_check_update") == 0) {
@@ -165,13 +150,21 @@ esp_err_t esp_ota_service_tool_invoke(esp_service_t *service, const esp_service_
             return ret;
         }
 
-        normalize_upgrade_available(&info);
-        s_cached_check_info = info;
+        /* The checker's policy result is authoritative (project name, data partitions). */
+        cache_store(&info);
 
-        snprintf(result, result_size,
-                 "{\"update_available\":%s,\"version\":\"%s\",\"project\":\"%s\",\"size\":%" PRIu32 "}",
-                 info.upgrade_available ? "true" : "false", info.version, info.label, info.image_size);
-        return ESP_OK;
+        cJSON *root = cJSON_CreateObject();
+        if (!root ||
+            !cJSON_AddBoolToObject(root, "update_available", info.upgrade_available) ||
+            !cJSON_AddStringToObject(root, "version", info.version) ||
+            !cJSON_AddStringToObject(root, "project", info.label) ||
+            !cJSON_AddNumberToObject(root, "size",
+                                     (info.image_size == UINT32_MAX) ? -1.0 : (double)info.image_size)) {
+            cJSON_Delete(root);
+            ESP_LOGE(TAG, "Emit JSON failed: out of memory");
+            return ESP_ERR_NO_MEM;
+        }
+        return emit_json(root, result, result_size);
     }
 
     ESP_LOGE(TAG, "Tool invoke failed: unknown tool '%s'", tool->name);

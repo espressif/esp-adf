@@ -22,10 +22,6 @@ dependencies:
     require: public
     version: "~1.0.0-beta1"
     override_path: "../esp_service"
-  espressif/adf_event_hub:
-    require: public
-    version: "^0.5"
-    override_path: "../adf_event_hub"
 
 examples:
   - path: "./examples/wifi_service_example"

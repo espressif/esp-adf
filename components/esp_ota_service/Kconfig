@@ -3,9 +3,9 @@ menu "ESP-Service: OTA Service"
     menu "Verification and rollback"
         config OTA_FORCE_VERSION_CHECK
             bool "Require higher firmware version by default"
-            default n
+            default y
             help
-                When enabled, esp_ota_service_checker_app_create(NULL) defaults to rejecting
+                When enabled, esp_ota_service_checker_app_create(NULL) rejects
                 firmware images whose version is the same as or older than the
                 currently running firmware. This can also be set per-checker at
                 runtime via esp_ota_service_checker_app_cfg_t::version_policy.

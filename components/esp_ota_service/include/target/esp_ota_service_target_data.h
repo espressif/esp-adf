@@ -29,7 +29,10 @@ typedef struct {
  *         passed to open() selects which partition to update.
  *
  *         commit() is a no-op (data is written immediately by write()).
- *         abort() erases the partition to ensure no partial data remains.
+ *         write() returns ESP_ERR_INVALID_STATE if called before open() and
+ *         ESP_ERR_INVALID_SIZE if the chunk would exceed the partition size.
+ *         abort() erases the partition when bytes were written and returns any
+ *         esp_partition_erase_range() error.
  *
  *         This target does NOT support breakpoint resume: open() erases the
  *         whole partition and @c set_write_offset is intentionally left NULL.

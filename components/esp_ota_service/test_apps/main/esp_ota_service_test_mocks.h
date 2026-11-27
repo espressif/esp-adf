@@ -169,15 +169,18 @@ int64_t esp_ota_service_mock_target_last_set_off(const esp_ota_service_target_t 
 /* ------------------------------------------------------------------------- */
 
 typedef struct {
-    esp_err_t  check_ret;
-    bool       upgrade_available;
-    uint32_t   image_size;
-    bool       install_null_check_fn;  /*!< When true, checker->check is set to NULL */
+    esp_err_t          check_ret;
+    bool               upgrade_available;
+    uint32_t           image_size;
+    bool               install_null_check_fn;  /*!< When true, checker->check is set to NULL */
+    SemaphoreHandle_t  check_reached_sem;      /*!< Given when check() is entered */
+    SemaphoreHandle_t  check_continue_sem;     /*!< Taken inside check() before returning */
 } esp_ota_service_mock_chk_cfg_t;
 
 esp_ota_service_checker_t *esp_ota_service_mock_checker_create(const esp_ota_service_mock_chk_cfg_t *tpl);
 esp_ota_service_mock_chk_cfg_t *esp_ota_service_mock_checker_cfg(esp_ota_service_checker_t *chk);
 void esp_ota_service_mock_checker_destroy(esp_ota_service_checker_t *chk);
+size_t esp_ota_service_mock_checker_check_count(const esp_ota_service_checker_t *chk);
 
 /* ------------------------------------------------------------------------- */
 /* Mock verifier                                                             */

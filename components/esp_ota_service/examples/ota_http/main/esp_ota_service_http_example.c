@@ -39,7 +39,6 @@
 
 #define EVT_OTA_DONE  (BIT0)
 #define EVT_OTA_FAIL  (BIT1)
-#define EVT_OTA_SKIP  (BIT2)
 
 static const char *TAG = "OTA_HTTP_EXAMPLE";
 
@@ -209,7 +208,6 @@ static void on_ota_adf_event(const adf_event_t *event, void *ctx)
         case ESP_OTA_SERVICE_EVT_ITEM_VER_CHECK:
             if (evt->error == ESP_OK && !evt->ver_check.upgrade_available) {
                 ESP_LOGW(TAG, "[OTA] Server firmware is not newer - skipping (no download)");
-                xEventGroupSetBits(s_ota_evt, EVT_OTA_SKIP);
             } else {
                 ESP_LOGI(TAG, "[OTA] Ver check done: err=%s upgrade_available=%s size=%" PRIu32,
                          esp_err_to_name(evt->error),
@@ -229,14 +227,12 @@ static void on_ota_adf_event(const adf_event_t *event, void *ctx)
                 case ESP_OTA_SERVICE_ITEM_STATUS_OK:
                     ESP_LOGI(TAG, "[OTA] Download + write succeeded");
                     break;
-                case ESP_OTA_SERVICE_ITEM_STATUS_SKIPPED:
-                    ESP_LOGW(TAG, "[OTA] Item skipped (reason=%d)", (int)evt->item_end.reason);
-                    xEventGroupSetBits(s_ota_evt, EVT_OTA_SKIP);
-                    break;
                 case ESP_OTA_SERVICE_ITEM_STATUS_FAILED:
                     ESP_LOGE(TAG, "[OTA] Failed: %s (reason=%d)", esp_err_to_name(evt->error),
                              (int)evt->item_end.reason);
                     xEventGroupSetBits(s_ota_evt, EVT_OTA_FAIL);
+                    break;
+                default:
                     break;
             }
             break;
@@ -389,15 +385,12 @@ esp_err_t esp_ota_service_http_example_run_ota_session(void)
     }
 
     const TickType_t session_deadline = pdMS_TO_TICKS(600000);
-    EventBits_t bits = xEventGroupWaitBits(s_ota_evt, EVT_OTA_DONE | EVT_OTA_FAIL | EVT_OTA_SKIP,
+    EventBits_t bits = xEventGroupWaitBits(s_ota_evt, EVT_OTA_DONE | EVT_OTA_FAIL,
                                            pdFALSE, pdFALSE, session_deadline);
 
     esp_err_t out = ESP_OK;
 
-    if (bits & EVT_OTA_SKIP) {
-        ESP_LOGW(TAG, "Run_ota_session: OTA session skipped (unexpected after check_update)");
-        out = ESP_OK;
-    } else if ((bits & EVT_OTA_DONE) && !(bits & EVT_OTA_FAIL)) {
+    if ((bits & EVT_OTA_DONE) && !(bits & EVT_OTA_FAIL)) {
         ESP_LOGI(TAG, "Run_ota_session: OTA session finished OK; rebooting from the application");
         ESP_ERROR_CHECK(esp_ota_service_destroy(svc));
         vEventGroupDelete(s_ota_evt);

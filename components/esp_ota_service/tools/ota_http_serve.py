@@ -113,12 +113,12 @@ def _maybe_update_manifest_url(bin_path: Path, host_ip: str, port: int) -> None:
     if not manifest:
         return
     if manifest.get('file') != bin_path.name:
-        print(f'[warn] manifest.json is tracking {manifest.get('file')!r}, '
+        print(f'[warn] manifest.json is tracking {manifest.get("file")!r}, '
               f'not {bin_path.name!r}. Run build_firmware.py http first if '
               f'you want them aligned.')
     manifest['url'] = f'http://{host_ip}:{port}/firmware.bin'
     save_manifest(manifest)
-    print(f'[manifest] url -> {manifest['url']}')
+    print(f'[manifest] url -> {manifest["url"]}')
 
 
 def main() -> int:
